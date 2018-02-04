@@ -2,6 +2,7 @@ Simple mbox viewer
 =======
 
 A simple viewer to view mbox files such as Thunderbird Archives, Google mail archives or simple Eml files.
+[![Download Windows MBox Viewer](https://img.shields.io/sourceforge/dm/mbox-viewer.svg)](https://sourceforge.net/projects/mbox-viewer/files/latest/download)
 
 Features
 -----
@@ -17,7 +18,7 @@ Changes
 
 v 1.0.1.7
 
- - more fixes by Zbigniew Minciel
+ - more fixes by Zbigniew Minciel (change for test)
 
 v 1.0.1.5
 
