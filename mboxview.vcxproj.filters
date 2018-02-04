@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\BrowseForFolder.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Browser.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ChildView.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DateParser.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FindDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LinkCursor.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MainFrm.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MboxMail.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mboxview.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mime.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MimeChar.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MimeCode.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MimeType.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NListView.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NMsgView.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NSplit.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NTreeView.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OptionsDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Profile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextUtilities.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\StdAfx.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WheelTreeCtrl.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WheelListCtrl.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\webbrowser2.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UPDialog.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\BrowseForFolder.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WheelTreeCtrl.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Browser.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ChildView.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DateParser.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FindDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\InitCommonControls.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LinkCursor.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MainFrm.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MboxMail.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mboxview.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mime.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MimeChar.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MimeCode.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NListView.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NMsgView.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NSplit.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NTreeView.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OptionsDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Profile.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Resource.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StdAfx.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WheelListCtrl.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\webbrowser2.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\UPDialog.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TextUtilities.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.markdown" />
+    <None Include="res\imview.ico">
+      <Filter>Res</Filter>
+    </None>
+    <None Include="res\mboxview.ico">
+      <Filter>Res</Filter>
+    </None>
+    <None Include="res\mboxview.rc2">
+      <Filter>Res</Filter>
+    </None>
+    <None Include="res\Toolbar.bmp">
+      <Filter>Res</Filter>
+    </None>
+    <None Include="res\treelist256.bmp">
+      <Filter>Res</Filter>
+    </None>
+    <None Include="src\xptheme.xml">
+      <Filter>Res</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{13e93ca7-1d63-4d16-b4fe-e10038305967}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{6c2531cf-86a2-4d60-a71c-a93e9ca84f0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Res">
+      <UniqueIdentifier>{67755015-2860-4ea4-bfe2-ce6836ee7a3d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\mboxview.rc">
+      <Filter>Res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="README.txt" />
+  </ItemGroup>
+</Project>
