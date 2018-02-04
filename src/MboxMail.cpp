@@ -329,7 +329,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 									while (g_tu.IsSpace(*p1))
 										p1++;
 									char *el = strchr(p1, '\n');
-									if (el != NULL) {
+									if (el != NULL) { // test for git change
 										char *el1 = el;
 										char *el2 = el;
 										while (g_tu.IsSpace(*el))
