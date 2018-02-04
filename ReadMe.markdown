@@ -15,6 +15,10 @@ Features
 Changes
 ---
 
+v 1.0.1.7
+
+ - more fixes by Zbigniew Minciel
+
 v 1.0.1.5
 
  - added sorting thanks to Zbigniew Minciel

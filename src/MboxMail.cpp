@@ -11,7 +11,7 @@ _int64 MboxMail::s_step = 0;
 const CUPDUPDATA* MboxMail::pCUPDUPData = NULL;
 
 bool MboxMail::b_mails_sorted = false;
-int MboxMail::b_mails_which_sorted = 0;
+int MboxMail::b_mails_which_sorted = 1;  // date
 CArray<MboxMail*, MboxMail*> MboxMail::s_mails_ref;
 CArray<MboxMail*, MboxMail*> MboxMail::s_mails;
 _int64 MboxMail::s_fSize = 0;
@@ -638,7 +638,6 @@ bool sortByFromDesc(MboxMail *cr1, MboxMail *cr2) {
 	return (cmp > 0);
 }
 
-
 bool sortByTo(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_to.Compare(cr2->m_to);
 	if (cmp == 0)
@@ -653,116 +652,106 @@ bool sortByToDesc(MboxMail *cr1, MboxMail *cr2) {
 }
 
 bool sortBySubject(MboxMail *cr1, MboxMail *cr2) {
-#if 1
 	unsigned char *subj1 = (unsigned char *)(LPCSTR)cr1->m_subj;
 	unsigned char *subj2 = (unsigned char *)(LPCSTR)cr2->m_subj;
 	int subjlen1 = cr1->m_subj.GetLength();
 	int subjlen2 = cr2->m_subj.GetLength();
 
-	if ((subj1[0] == 'R') || (subj1[0] == 'F'))
-	{
-		if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
-			subj1 += 4; subjlen1 -= 4;
-		}
-		else if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
-			subj1 += 5; subjlen1 -= 5;
-		}
-	}
-	if ((subj2[0] == 'R') || (subj2[0] == 'F'))
-	{
-		if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
-			subj2 += 4; subjlen2 -= 4;
-		}
-		else if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
-			subj2 += 5; subjlen2 -= 5;
+	// Not 100% correct without using from and to fields
+	if (subj1[0] == 'R') {
+		if (subjlen1 >= 4) {
+			if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
+				subj1 += 4; subjlen1 -= 4;
+			}
 		}
 	}
+	if (subj1[0] == 'F') {
+		if (subjlen1 >= 5) {
+			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
+				subj1 += 5; subjlen1 -= 5;
+			}
+		}
+	}
+	if (subj2[0] == 'R') {
+		if (subjlen2 >= 4) {
+			if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
+				subj2 += 4; subjlen2 -= 4;
+			}
+		}
+	}
+	if (subj2[0] == 'F') {
+		if (subjlen2 >= 5) {
+			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
+				subj2 += 5; subjlen2 -= 5;
+			}
+		}
+	}
+
 	if ((subjlen1 == subjlen2) && (strncmp((char*)subj1, (char*)subj2, subjlen1) == 0))
 	{
 		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
 	}
 	else
 	{
-		int subjlen;
-		if (subjlen1 < subjlen2)
-			subjlen = subjlen1;
-		else
-			subjlen = subjlen2;
-
-		if (strncmp((char*)subj1, (char*)subj2, subjlen) < 0)
+		if (strcmp((char*)subj1, (char*)subj2) < 0)
 			return true;
 		else
 			return false;
 	}
-#else
-	//else
-	{
-		if (cr1->m_subj == cr2->m_subj)
-			return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
-		else
-			return (cr1->m_subj < cr2->m_subj);
-	}
-#endif
 }
 bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
-#if 1
 	unsigned char *subj1 = (unsigned char *)(LPCSTR)cr1->m_subj;
 	unsigned char *subj2 = (unsigned char *)(LPCSTR)cr2->m_subj;
 	int subjlen1 = cr1->m_subj.GetLength();
 	int subjlen2 = cr2->m_subj.GetLength();
 
-	if ((subj1[0] == 'R') || (subj1[0] == 'F'))
-	{
-		if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
-			subj1 += 4; subjlen1 -= 4;
-		}
-		else if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
-			subj1 += 5; subjlen1 -= 5;
-		}
-	}
-	if ((subj2[0] == 'R') || (subj2[0] == 'F'))
-	{
-		if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
-			subj2 += 4; subjlen2 -= 4;
-		}
-		else if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
-			subj2 += 5; subjlen2 -= 5;
+	// Not 100% correct  without using from and to fields
+	if (subj1[0] == 'R') {
+		if (subjlen1 >= 4) {
+			if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
+				subj1 += 4; subjlen1 -= 4;
+			}
 		}
 	}
+	if (subj1[0] == 'F') {
+		if (subjlen1 >= 5) {
+			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
+				subj1 += 5; subjlen1 -= 5;
+			}
+		}
+	}
+	if (subj2[0] == 'R') {
+		if (subjlen2 >= 4) {
+			if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
+				subj2 += 4; subjlen2 -= 4;
+			}
+		}
+	}
+	if (subj2[0] == 'F') {
+		if (subjlen2 >= 5) {
+			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
+				subj2 += 5; subjlen2 -= 5;
+			}
+		}
+	}
+
 	if ((subjlen1 == subjlen2) && (strncmp((char*)subj1, (char*)subj2, subjlen1) == 0))
 	{
-		return (cr1->m_timeDate > cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
 	}
 	else
 	{
-		int subjlen;
-		if (subjlen1 < subjlen2)
-			subjlen = subjlen1;
-		else
-			subjlen = subjlen2;
-
-		if (strncmp((char*)subj1, (char*)subj2, subjlen) < 0)
-			return false;
-		else
+		if (strcmp((char*)subj1, (char*)subj2) > 0)
 			return true;
-	}
-#else
-	//else
-	{
-		if (cr1->m_subj == cr2->m_subj)
-			return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
 		else
-			return (cr1->m_subj < cr2->m_subj);
+			return false;
 	}
-#endif
 }
 
 void MboxMail::SortByDate(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
-	//std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), GreaterDate());
-	//std::sort(MboxMail::s_mails.GetData(), MboxMail::s_mails.GetData() + MboxMail::s_mails.GetSize(), GreaterDate());
-	std::stable_sort(MboxMail::s_mails.GetData(), MboxMail::s_mails.GetData() + MboxMail::s_mails.GetSize(), bDesc ? sortByDateDesc : sortByDate);
+	std::stable_sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByDateDesc : sortByDate);
 }
 void MboxMail::SortByFrom(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
 {

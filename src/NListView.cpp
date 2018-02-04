@@ -168,6 +168,13 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 	NMLISTVIEW * pLV = (NMLISTVIEW*)pNMHDR;
 	bool mustSort = false;
 	*pResult = 0;
+
+	// to follow OnEditFindAgain approach
+	if (m_bInFind)  
+		return;
+
+	m_bInFind = true;
+
 	switch (pLV->iSubItem) {
 	case 1: // date
 		if (abs(MboxMail::b_mails_which_sorted) == 1) {
@@ -199,11 +206,12 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 		break;
 	case 4: // subj
 		if (abs(MboxMail::b_mails_which_sorted) == 4) {
-			MboxMail::b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+			MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
 		}
 		else {
 			MboxMail::b_mails_which_sorted = 4;
-		}		MboxMail::SortBySubject(0, MboxMail::b_mails_which_sorted < 0);
+		}
+		MboxMail::SortBySubject(0, MboxMail::b_mails_which_sorted < 0);
 		mustSort = true;
 		break;
 	}
@@ -213,10 +221,11 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_searchString.Empty();
 		m_lastScope = 0;
 		m_lastStartDate = 0;
-		m_bInFind = false;
-		RedrawMails();
-	}
 
+		RedrawMails();
+		// MessageBeep(MB_OK); // too much ??
+	}
+	m_bInFind = false;
 }
 
 void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult) 
@@ -759,14 +768,12 @@ time_t OleToTime_t(COleDateTime *ot) {
 	return ct.GetTime();
 }
 
-void NListView::OnEditFind() 
+void NListView::OnEditFind()
 {
-	if( m_bInFind )
+	if (m_bInFind)
 		return;
 	m_bInFind = true;
 	CFindDlg dlg;
-	CTime lastStartDate;
-	CTime lastEndDate;
 
 	dlg.m_bWholeWord = m_bWholeWord;
 	dlg.m_bCaseSensitive = m_bCaseSens;
@@ -782,31 +789,16 @@ void NListView::OnEditFind()
 			if (t > max)
 				max = t;
 		}
-		lastStartDate = CTime(min);
+		m_lastStartDate = CTime(min);
 		if (max == 0)
-			lastEndDate = CTime(CTime::GetCurrentTime());
-			//m_lastEndDate = CTime(CTime::GetCurrentTime());
+			m_lastEndDate = CTime(CTime::GetCurrentTime());
 		else
-			lastEndDate = CTime(max);
-			//m_lastEndDate = CTime(max);
+			m_lastEndDate = CTime(max);
 	}
-	dlg.m_startDate = COleDateTime(lastStartDate.GetTime());
-	dlg.m_endDate = COleDateTime(lastEndDate.GetTime());
+	dlg.m_startDate = COleDateTime(m_lastStartDate.GetTime());
+	dlg.m_endDate = COleDateTime(m_lastEndDate.GetTime());
 	dlg.m_scope = m_lastScope;
 	dlg.m_filterDates = m_filterDates;
-	int retID = dlg.DoModal();
-	if (retID == IDOK)
-	{
-		/*CString searchString(dlg.m_string);
-		if (processSpecialSearchKeyword(searchString))
-		{
-			m_searchString.Empty();
-			m_lastScope = 0;  // ??
-			//m_searchPos = 0; // ??
-			m_bInFind = false;
-			return;
-		}*/
-	}
 
 	if (MboxMail::b_mails_sorted == true) {
 		MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
@@ -816,10 +808,7 @@ void NListView::OnEditFind()
 		RedrawMails();
 	}
 
-	m_lastStartDate = lastStartDate;
-	m_lastEndDate = lastEndDate;
-
-	if( retID == IDOK ) {
+	if (dlg.DoModal() == IDOK) {
 		m_filterDates = dlg.m_filterDates;
 		m_searchString = dlg.m_string;
 		m_bWholeWord = dlg.m_bWholeWord;
@@ -1129,50 +1118,9 @@ void NListView::OnUpdateEditVieweml(CCmdUI *pCmdUI)
 	pCmdUI->Enable(m_list.GetFirstSelectedItemPosition()>0);
 }
 
-bool NListView::processSpecialSearchKeyword(CString &searchString)
-{
-	bool mustSort = false;
-	if (searchString.Compare("sortFrom") == 0)
-	{
-		MboxMail::SortByFrom();
-		mustSort = true;
-	}
-	else if (searchString.Compare("sortTo") == 0)
-	{
-		MboxMail::SortByTo();
-		mustSort = true;
-	}
-	else if (searchString.Compare("sortSubject") == 0)
-	{
-		MboxMail::SortBySubject();
-		mustSort = true;
-	}
-	else if (searchString.Compare("sortDate") == 0)
-	{
-		MboxMail::SortByDate();
-		mustSort = true;
-	}
-	else if (searchString.Compare("findNextAll") == 0)
-	{
-		// TODO  select Find follow be Find with the "findNextAll"
-	}
-
-	if (mustSort)
-	{
-		MboxMail::b_mails_sorted = true;
-
-		RedrawMails();
-		return true;
-	}
-	return false;
-}
-
 void NListView::RedrawMails()
 {
 	// Based on NListView::FillCtrl(). 
-	// Below is my best quess, seem to work under typical cases. 
-	// Until now I had zero understanding of MSoft display framework(s). 
-	// Need to spent some time to learn.
 	ClearDescView();
 	m_searchPos = 0;
 	m_list.SetRedraw(FALSE);

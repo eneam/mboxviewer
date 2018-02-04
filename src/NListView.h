@@ -64,7 +64,6 @@ public:
 	int WhichOne( _int64 offset, int hint = -1, int lowhint = 0, int highhint = -1 );
 	void ResetFont();
 	void RedrawMails();
-	bool processSpecialSearchKeyword(CString &keyword);
 
 	// Generated message map functions
 protected:
