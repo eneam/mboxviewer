@@ -12,17 +12,12 @@ Features
 * export of single mail in Eml;
 * search by date, subject, sender or raw email; 
 
-Donations
-----
-If you find this software usefull please send me a postcard:
-
-    Enea Mansutti
-    via Giuseppe Marcora 6
-    20121 Milano
-    Italy
-
 Changes
 ---
+
+v 1.0.1.5
+
+ - added sorting thanks to Zbigniew Minciel
 
 v 1.0.1.4
 
