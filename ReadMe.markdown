@@ -12,6 +12,7 @@ Features
 * quick access to attachments;
 * export of single mail in Eml;
 * search by date, subject, sender or raw email; 
+* sort date, from, to and subject columns
 
 Changes
 ---

@@ -192,13 +192,70 @@ CString GetDateFormat(int i)
 	return format;
 }
 
-void UTF82Ansi(CString &res)
+UINT Str2PageCode(const  char* PageCodeStr)
+{
+	UINT CodePage = 0;
+
+	if (_stricmp(PageCodeStr, "utf-8") == 0) {
+		CodePage = CP_UTF8; // 65001
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-1") == 0) {  
+		CodePage = 28591;  // Western European 
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-2") == 0) {
+		CodePage = 28592;  // Central  European 
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-3") == 0) {
+		CodePage = 28593;  // Latin 3
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-4") == 0) {
+		CodePage = 28594;  // Baltic
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-5") == 0) {
+		CodePage = 28595;  // Cyrillic
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-6") == 0) {
+		CodePage = 28596;  // Arabic
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-7") == 0) {
+		CodePage = 28597;  // Greek
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-8") == 0) {
+		CodePage = 28598;  // Hebrew
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-9") == 0) {
+		CodePage = 28605;  // Latin 9
+	}
+	else if (_stricmp(PageCodeStr, "US-ASCII") == 0) {
+		CodePage = 20127;  // US-ASCII 7
+	}
+	return CodePage;
+}
+
+void Str2Ansi(CString &res, UINT CodePage)
 {
 	int len = res.GetLength() * 2 + 1;
-	LPWSTR buff = (LPWSTR)malloc(len);
-	int len1 = MultiByteToWideChar(CP_UTF8, 0, res, res.GetLength(), buff, len);
-	char * buff1 = (char *)malloc(len1 + 1);
+	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
+	int len1 = MultiByteToWideChar(CodePage, 0, res, res.GetLength(), buff, len);
+	if (len1 == 0) {
+		free(buff);
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		return;
+	}
+	char * buff1 = (char *)malloc(len1 + 1); // or could  call WideCharToMultiByte first to get the required length
 	int len2 = WideCharToMultiByte(CP_ACP, 0, buff, len1, buff1, len1 + 1, NULL, NULL);
+	if (len2 == 0) {
+		free(buff);
+		free(buff1);
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
+		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
+		return;
+	}
 	buff1[len2] = 0;
 	res = buff1;
 	free(buff);
@@ -208,18 +265,26 @@ void UTF82Ansi(CString &res)
 
 #include "MimeCode.h"
 
-CString DecodeSubject(CString subj)
+CString DecodeString(CString subj)
 {
-	CString str;
 	CFieldCodeText tfc;
 
+	// Not critical. Should optimize this function and Str2Ansi to reduce memory allocations/deallocations
 	tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);
 	int outputLen = tfc.GetOutputLength();
 	if (outputLen > 0) {
-		tfc.GetOutput((unsigned char *)str.GetBufferSetLength(outputLen), outputLen);
-		if (_stricmp(tfc.GetCharset(), "utf-8") == 0) {
-			UTF82Ansi(str);
+		unsigned char *outBuf = (unsigned char*)malloc(outputLen + 2);
+		int decodeLen = tfc.GetOutput(outBuf, outputLen);
+		outBuf[decodeLen] = 0;
+		CString str(outBuf);
+		free(outBuf);
+
+		UINT CodePage = Str2PageCode(tfc.GetCharset());
+
+		if (CodePage > 0) {
+			Str2Ansi(str, CodePage);
 		}
+
 		return str;
 	}
 	else
@@ -266,9 +331,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
 							m->m_length = p - msgStart - 1;
-							m->m_to = to;
-							m->m_from = from;
-							m->m_subj = DecodeSubject(subject);
+							m->m_to = DecodeString(to);
+							m->m_from = DecodeString(from);
+							m->m_subj = DecodeString(subject);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
 							int pos = g_tu.BMHSearchW((unsigned char *)msgStart, p - msgStart - 1, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), false);
@@ -394,9 +459,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
 							m->m_length = p - msgStart;
-							m->m_to = to;
-							m->m_from = from;
-							m->m_subj = DecodeSubject(subject);
+							m->m_to = DecodeString(to);;
+							m->m_from = DecodeString(from);;
+							m->m_subj = DecodeString(subject);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
 							int pos = g_tu.BMHSearch((unsigned char *)msgStart, m->m_length, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), 1);
@@ -526,9 +591,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 		//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
 		m->m_startOff = startOffset + (_int64)(msgStart - orig);
 		m->m_length = p - msgStart;
-		m->m_to = to;
-		m->m_from = from;
-		m->m_subj = DecodeSubject(subject);
+		m->m_to = DecodeString(to);
+		m->m_from = DecodeString(from);
+		m->m_subj = DecodeString(subject);
 		m->m_recv = recv;
 		m->m_timeDate = tdate;
 		s_mails.Add(m);
