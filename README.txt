@@ -2,6 +2,18 @@
 Changes
 ---
 
+v 1.0.1.9
+
+ - added support for ISO-8859-[1-9] encoded text content
+ 
+v 1.0.1.8
+
+ - added support for ISO-8859-[1-9] encoded from, to and subject fields
+
+v 1.0.1.7
+
+ - more fixes by Zbigniew Minciel (change for test)
+
 v 1.0.1.5
 
  - added sorting thanks to Zbigniew Minciel

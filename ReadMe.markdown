@@ -12,10 +12,19 @@ Features
 * quick access to attachments;
 * export of single mail in Eml;
 * search by date, subject, sender or raw email; 
-* sort date, from, to and subject columns
+* sort date, from, to and subject columns;
+* support for ISO-8859-[1-9] and utf8 encoded header fields and body text;
 
 Changes
 ---
+
+v 1.0.1.9
+
+ - added support for ISO-8859-[1-9] encoded text content
+ 
+v 1.0.1.8
+
+ - added support for ISO-8859-[1-9] encoded from, to and subject fields
 
 v 1.0.1.7
 
