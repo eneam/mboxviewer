@@ -666,9 +666,17 @@ void NListView::SelectItem(int iItem)
         if ((pBP->IsText() || pBP->IsMessage()) && (bdy.IsEmpty() || !pBP->IsAttachment()) )
         {
 			// if message contains alternate parts display last one
-            string strText;
-            pBP->GetText(strText);
+			string strText;
+			pBP->GetText(strText);
 			bdy = strText.c_str();
+
+			if (bdy.GetLength() > 0) {
+				UINT CodePage = MboxMail::Str2PageCode(charset);
+				if (((CodePage >= 28591) && (CodePage <= 28598)) || (CodePage == 28605)) {
+					MboxMail::Str2Ansi(bdy, CodePage);
+				}
+			}
+
 			ext = curExt;
 			bdycharset = charset;
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);

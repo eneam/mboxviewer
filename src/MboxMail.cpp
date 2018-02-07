@@ -192,7 +192,7 @@ CString GetDateFormat(int i)
 	return format;
 }
 
-UINT Str2PageCode(const  char* PageCodeStr)
+UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 {
 	UINT CodePage = 0;
 
@@ -232,7 +232,7 @@ UINT Str2PageCode(const  char* PageCodeStr)
 	return CodePage;
 }
 
-void Str2Ansi(CString &res, UINT CodePage)
+void MboxMail::Str2Ansi(CString &res, UINT CodePage)
 {
 	int len = res.GetLength() * 2 + 1;
 	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
@@ -265,7 +265,7 @@ void Str2Ansi(CString &res, UINT CodePage)
 
 #include "MimeCode.h"
 
-CString DecodeString(CString subj)
+CString DecodeString(CString &subj)
 {
 	CFieldCodeText tfc;
 
@@ -273,22 +273,39 @@ CString DecodeString(CString subj)
 	tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);
 	int outputLen = tfc.GetOutputLength();
 	if (outputLen > 0) {
+
 		unsigned char *outBuf = (unsigned char*)malloc(outputLen + 2);
 		int decodeLen = tfc.GetOutput(outBuf, outputLen);
 		outBuf[decodeLen] = 0;
 		CString str(outBuf);
 		free(outBuf);
 
-		UINT CodePage = Str2PageCode(tfc.GetCharset());
-
+		UINT CodePage = MboxMail::Str2PageCode(tfc.GetCharset());
 		if (CodePage > 0) {
-			Str2Ansi(str, CodePage);
+			MboxMail::Str2Ansi(str, CodePage);
+			return str;
 		}
-
-		return str;
+		else
+			return subj;
 	}
 	else
 		return subj;
+}
+
+CString MboxMail::DecodeBodyString(CString &bdy, CString &PCString)
+{
+	if (bdy.GetLength() > 0) {
+		UINT CodePage = Str2PageCode(PCString);
+		if (((CodePage >= 28591) && (CodePage <= 28598)) || (CodePage == 28605)) {
+			CString str(bdy);
+			MboxMail::Str2Ansi(str, CodePage);
+			return str;
+		}
+		else
+			return bdy;
+	}
+	else
+		return bdy;
 }
 
 char szFrom5[] = "From ";
@@ -730,7 +747,7 @@ bool sortBySubject(MboxMail *cr1, MboxMail *cr2) {
 			}
 		}
 	}
-	if (subj1[0] == 'F') {
+	else if (subj1[0] == 'F') {
 		if (subjlen1 >= 5) {
 			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
 				subj1 += 5; subjlen1 -= 5;
@@ -744,7 +761,7 @@ bool sortBySubject(MboxMail *cr1, MboxMail *cr2) {
 			}
 		}
 	}
-	if (subj2[0] == 'F') {
+	else if (subj2[0] == 'F') {
 		if (subjlen2 >= 5) {
 			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
 				subj2 += 5; subjlen2 -= 5;
@@ -778,7 +795,7 @@ bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
 			}
 		}
 	}
-	if (subj1[0] == 'F') {
+	else if (subj1[0] == 'F') {
 		if (subjlen1 >= 5) {
 			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
 				subj1 += 5; subjlen1 -= 5;
@@ -792,7 +809,7 @@ bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
 			}
 		}
 	}
-	if (subj2[0] == 'F') {
+	else if (subj2[0] == 'F') {
 		if (subjlen2 >= 5) {
 			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
 				subj2 += 5; subjlen2 -= 5;

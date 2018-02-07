@@ -42,6 +42,9 @@ public:
 	static CString s_path;
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
+	static void Str2Ansi(CString &res, UINT CodePage);
+	static CString DecodeBodyString(CString &bdy, CString &PCString);
+	static UINT MboxMail::Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bEml = false);
 	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache unsorted
