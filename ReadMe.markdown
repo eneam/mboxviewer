@@ -14,10 +14,16 @@ Features
 * search by date, subject, sender or raw email; 
 * sort date, from, to and subject columns;
 * support for ISO-8859-[1-9] and utf8 encoded header fields and body text;
+* support for searching emails sorted by header fields (except of searching of entire RAW message);
 
 Changes
 ---
 
+v 1.0.1.10
+
+ - enhanced support for ISO-8859-[1-9] encoded text content;
+ - added support for searching emails sorted by header fields (except of searching of entire RAW message);
+ 
 v 1.0.1.9
 
  - added support for ISO-8859-[1-9] encoded text content

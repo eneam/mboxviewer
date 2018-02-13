@@ -43,12 +43,11 @@ public:
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Str2Ansi(CString &res, UINT CodePage);
-	static CString DecodeBodyString(CString &bdy, CString &PCString);
 	static UINT MboxMail::Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bEml = false);
-	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache unsorted
-	static CArray<MboxMail*, MboxMail*> s_mails;  // s_mails as ptr would help to avoid copy from s_mails_ref to s_mails
+	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache
+	static CArray<MboxMail*, MboxMail*> s_mails;
 	static void SortByDate(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortByFrom(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortByTo(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);

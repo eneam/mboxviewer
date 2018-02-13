@@ -45,8 +45,10 @@ public:
 	_int64 DoFind(_int64 searchstart, _int64 searchend);
 	int DoFastFind(int searchstart);
 	CString m_searchString;
+	int m_lastFindPos;
 	_int64		m_searchPos;
 	_int64 m_startoff, m_endoff;
+	BOOL m_bEditFindFirst;
 	BOOL	m_filterDates;
 	BOOL	m_bCaseSens;
 	BOOL	m_bWholeWord;

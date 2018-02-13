@@ -86,6 +86,8 @@ CString GetDateFormat(int i);
 
 NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 {
+	m_bEditFindFirst = FALSE;
+	m_lastFindPos = 0;
 	m_searchPos = 0;
 	m_searchString.Empty();
 	m_bCaseSens = TRUE;
@@ -197,8 +199,7 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case 3: // to
 		if (abs(MboxMail::b_mails_which_sorted) == 3) {
 			MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
-		}
-		else {
+		} else {
 			MboxMail::b_mails_which_sorted = 3;
 		}
 		MboxMail::SortByTo(0, MboxMail::b_mails_which_sorted < 0);
@@ -218,9 +219,16 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if (mustSort)
 	{
 		MboxMail::b_mails_sorted = true;
-		m_searchString.Empty();
+
 		m_lastScope = 0;
-		m_lastStartDate = 0;
+		m_searchPos = 0;
+		m_lastFindPos = 0;
+		m_bEditFindFirst = TRUE;
+
+		// Don't reset below vars. It helps user to keep thse while searching amd sorting
+		//m_lastStartDate = 0;
+		//m_lastEndDate = 0;
+		//m_searchString.Empty();
 
 		RedrawMails();
 		// MessageBeep(MB_OK); // too much ??
@@ -336,14 +344,14 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 		MboxMail *m = MboxMail::s_mails[pDispInfo->item.iItem];
 //		MboxMail *m = (MboxMail*)pDispInfo->item.lParam;
 		const char *t;
-		switch(pDispInfo->item.iSubItem) {
+		switch (pDispInfo->item.iSubItem) {
 		case 0: // date
 			/*
 			if( m->m_recv == FALSE )
 				t = ast;
 			else
 				t = nul;*/
-			if( m->m_hasAttachments )
+			if (m->m_hasAttachments)
 				t = ast;
 			else
 				t = nul;
@@ -517,11 +525,6 @@ int LoadMails(LPCSTR cache)
 	sz.close();
 	MboxMail::s_fSize = MboxMail::s_oSize = fSize;
 
-	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
-	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
-	MboxMail::b_mails_sorted = true;
-	MboxMail::SortByDate();
-
 	return ni;
 }
 
@@ -529,6 +532,14 @@ void NListView::FillCtrl()
 {
 	ClearDescView();
 	m_searchPos = 0;
+	m_lastFindPos = 0;
+	m_lastScope = 0;
+
+	// Don't reset below vars. It helps user to keep thse while searching amd sorting
+	//m_lastStartDate = 0;
+	//m_lastEndDate = 0;
+	//m_searchString.Empty();
+
 	MboxMail::Destroy();
 	m_list.SetRedraw(FALSE);
 	m_list.DeleteAllItems();
@@ -563,6 +574,13 @@ void NListView::FillCtrl()
 			m_list.SetItemCount(ni);
 		}
 	}
+	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
+	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
+	MboxMail::b_mails_sorted = true;
+	MboxMail::b_mails_which_sorted = 1;
+	MboxMail::SortByDate();
+	m_bEditFindFirst = TRUE;
+
 #ifdef _DEBUG
 	tc = (GetTickCount() - tc);
 	TRACE("FillCtrl Took %d:%d %d\n", (tc/1000)/60, (tc/1000)%60, tc);
@@ -669,14 +687,6 @@ void NListView::SelectItem(int iItem)
 			string strText;
 			pBP->GetText(strText);
 			bdy = strText.c_str();
-
-			if (bdy.GetLength() > 0) {
-				UINT CodePage = MboxMail::Str2PageCode(charset);
-				if (((CodePage >= 28591) && (CodePage <= 28598)) || (CodePage == 28605)) {
-					MboxMail::Str2Ansi(bdy, CodePage);
-				}
-			}
-
 			ext = curExt;
 			bdycharset = charset;
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);
@@ -710,12 +720,17 @@ void NListView::SelectItem(int iItem)
 			pView->m_attachments.InsertItem(pView->m_attachments.GetItemCount(), name.c_str(), iIcon);
         }
     }
-	// Get temporary file name with correct extension for IE to display
-	m_curFile = CreateTempFileName(ext);
+
 	// Save mail
-	if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) {
+	if (ext.Compare("txt") == 0) {
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n" + bdy + "</pre></body></html>";
+		ext = "htm";
+	}
+	else if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) {
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset="+bdycharset+"\"></head><body>"+bdy;
 	}
+	// Get temporary file name with correct extension for IE to display
+	m_curFile = CreateTempFileName(ext);
 	CFile fp(m_curFile, CFile::modeWrite|CFile::modeCreate);
 	fp.Write(bdy, bdy.GetLength());
 	fp.Close();
@@ -786,6 +801,8 @@ void NListView::OnEditFind()
 	dlg.m_bWholeWord = m_bWholeWord;
 	dlg.m_bCaseSensitive = m_bCaseSens;
 	dlg.m_string = m_searchString;
+	if (m_filterDates == FALSE)
+		m_lastStartDate = 0;
 	if (m_lastStartDate <= 0) {
 		time_t min = time(NULL);
 		time_t max = 0;
@@ -808,14 +825,6 @@ void NListView::OnEditFind()
 	dlg.m_scope = m_lastScope;
 	dlg.m_filterDates = m_filterDates;
 
-	if (MboxMail::b_mails_sorted == true) {
-		MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
-		MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
-		MboxMail::b_mails_sorted = false;
-
-		RedrawMails();
-	}
-
 	if (dlg.DoModal() == IDOK) {
 		m_filterDates = dlg.m_filterDates;
 		m_searchString = dlg.m_string;
@@ -825,7 +834,19 @@ void NListView::OnEditFind()
 		m_lastEndDate = CTime(OleToTime_t(&dlg.m_endDate));
 		m_lastScope = dlg.m_scope;
 		m_searchPos = 0;
+		m_lastFindPos = 0;
 		m_startoff = m_endoff = 0;
+
+		if ((dlg.m_scope == 1) && (MboxMail::b_mails_sorted == true)) {
+			MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
+			MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
+			MboxMail::b_mails_sorted = false;
+			MboxMail::b_mails_which_sorted = 0;
+
+			RedrawMails();
+		}
+		m_bEditFindFirst = FALSE;
+
 		int sz = MboxMail::s_mails.GetSize();
 		if (sz > 0) {
 /*			if (m_filterDates) {
@@ -864,24 +885,26 @@ void NListView::OnEditFind()
 				else {
 					MessageBeep(MB_OK);
 					m_searchPos = 0;
+					m_lastFindPos = 0;
 				}
 			}
 			else {
 				int which = 0, w = -1;
-				if (m_searchPos)
-					which = WhichOne(m_searchPos - 1);
+				which = m_lastFindPos;
 				w = DoFastFind(which);
 				if (w >= 0)
 					SelectItemFound(w);
 				else {
 					MessageBeep(MB_OK);
 					m_searchPos = 0;
+					m_lastFindPos = 0;
 				}
 			}
 		}
 		else {
 			MessageBeep(MB_OK);
 			m_searchPos = 0;
+			m_lastFindPos = 0;
 		}
 	}
 	m_bInFind = false;
@@ -892,6 +915,10 @@ int NListView::DoFastFind(int which)
 	int w = -1;
 	int sz = MboxMail::s_mails.GetSize();
 	time_t sd = m_lastStartDate.GetTime(), ed = m_lastEndDate.GetTime();
+	CString searchString(m_searchString);
+	if (m_bCaseSens == 0)
+		searchString.MakeLower();
+
 	for (int i = which; i < sz; i++) {
 		MboxMail *m = MboxMail::s_mails[i];
 		bool process = false;
@@ -908,18 +935,18 @@ int NListView::DoFastFind(int which)
 			}
 			int pos = -1;
 			if (m_bWholeWord)
-				pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(), (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+				pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 			else
-				pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(), (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+				pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 			if (pos >= 0) {
 				w = i;
 				break;
 			}
 			pos = -1;
 			if (m_bWholeWord)
-				pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(), (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+				pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 			else
-				pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(), (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+				pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 			if (pos >= 0) {
 				w = i;
 				break;
@@ -943,26 +970,45 @@ void NListView::OnEditFindAgain()
 		OnEditFind();
 		return;
 	}
+	if (m_bEditFindFirst == TRUE) {
+		OnEditFind();
+		return;
+	}
+
 	m_bInFind = true;
 	if (m_lastScope) {
+		if (MboxMail::b_mails_sorted == true) {
+			MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
+			MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
+			MboxMail::b_mails_sorted = false;
+			m_searchPos = 0;
+			m_lastFindPos = 0;
+
+			RedrawMails();
+		}
 		_int64 w = DoFind(m_startoff, m_endoff);
 		if (w >= 0)
 			SelectPos(w);
 		else {
 			MessageBeep(MB_OK);
 			m_searchPos = 0;
+			m_lastFindPos = 0;
 		}
 	}
 	else {
 		int which = 0, w = -1;
-		if (m_searchPos)
-			which = WhichOne(m_searchPos-1)+1;
+		int sz = MboxMail::s_mails.GetSize();
+		m_lastFindPos++;
+		if (m_lastFindPos >= sz)
+			m_lastFindPos = 0;
+		which = m_lastFindPos;
 		w = DoFastFind(which);
 		if (w >= 0)
 			SelectItemFound(w);
 		else {
 			MessageBeep(MB_OK);
 			m_searchPos = 0;
+			m_lastFindPos = 0;
 		}
 	}
 	m_bInFind = false;
@@ -994,6 +1040,10 @@ _int64 NListView::DoFind(_int64 searchstart, _int64 searchend)
 	TRACE("fSize = %lld\n", fSize);
 	_int64 pos;
 	_int64 offset = 0;
+	CString searchString(m_searchString);
+	if (m_bCaseSens == 0)
+		searchString.MakeLower();
+
 	for( int i = 0; i <= mappingsInFile; i ++ ) {
 		_int64 curmap = (_int64)i * (_int64)MAPPING_SIZE;
 		DWORD bufSize = ((fSize - curmap < MAPPING_SIZE) ? (int)(fSize - curmap) : MAPPING_SIZE);
@@ -1027,9 +1077,9 @@ _int64 NListView::DoFind(_int64 searchstart, _int64 searchend)
 			bufSize -= (DWORD)(curend - searchend);
 		pos = -1;
 		if( m_bWholeWord )
-			pos = (_int64)g_tu.BMHSearchW((unsigned char *)p, bufSize, (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+			pos = (_int64)g_tu.BMHSearchW((unsigned char *)p, bufSize, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
-			pos = (_int64)g_tu.BMHSearch((unsigned char *)p, bufSize, (unsigned char *)(LPCSTR)m_searchString, m_searchString.GetLength(), m_bCaseSens);
+			pos = (_int64)g_tu.BMHSearch((unsigned char *)p, bufSize, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 
 		UnmapViewOfFile( orig );
 		if( pos >= 0 ) {
@@ -1111,6 +1161,7 @@ void NListView::SelectItemFound(int which)
 	SelectItem(which);
 	MboxMail *m = MboxMail::s_mails[which];
 	m_searchPos = m->m_startOff + m->m_length;
+	m_lastFindPos = which;
 }
 
 
@@ -1130,7 +1181,6 @@ void NListView::RedrawMails()
 {
 	// Based on NListView::FillCtrl(). 
 	ClearDescView();
-	m_searchPos = 0;
 	m_list.SetRedraw(FALSE);
 	m_list.DeleteAllItems();
 	if (m_path.IsEmpty())

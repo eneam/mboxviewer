@@ -11,7 +11,7 @@ _int64 MboxMail::s_step = 0;
 const CUPDUPDATA* MboxMail::pCUPDUPData = NULL;
 
 bool MboxMail::b_mails_sorted = false;
-int MboxMail::b_mails_which_sorted = 1;  // date
+int MboxMail::b_mails_which_sorted = 0;  // order by file offset
 CArray<MboxMail*, MboxMail*> MboxMail::s_mails_ref;
 CArray<MboxMail*, MboxMail*> MboxMail::s_mails;
 _int64 MboxMail::s_fSize = 0;
@@ -194,7 +194,8 @@ CString GetDateFormat(int i)
 
 UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 {
-	UINT CodePage = 0;
+	//UINT CodePage = 0;
+	UINT CodePage = CP_UTF8;
 
 	if (_stricmp(PageCodeStr, "utf-8") == 0) {
 		CodePage = CP_UTF8; // 65001
@@ -290,22 +291,6 @@ CString DecodeString(CString &subj)
 	}
 	else
 		return subj;
-}
-
-CString MboxMail::DecodeBodyString(CString &bdy, CString &PCString)
-{
-	if (bdy.GetLength() > 0) {
-		UINT CodePage = Str2PageCode(PCString);
-		if (((CodePage >= 28591) && (CodePage <= 28598)) || (CodePage == 28605)) {
-			CString str(bdy);
-			MboxMail::Str2Ansi(str, CodePage);
-			return str;
-		}
-		else
-			return bdy;
-	}
-	else
-		return bdy;
 }
 
 char szFrom5[] = "From ";
@@ -476,8 +461,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
 							m->m_length = p - msgStart;
-							m->m_to = DecodeString(to);;
-							m->m_from = DecodeString(from);;
+							m->m_to = DecodeString(to);
+							m->m_from = DecodeString(from);
 							m->m_subj = DecodeString(subject);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
@@ -615,17 +600,35 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 		m->m_timeDate = tdate;
 		s_mails.Add(m);
 	}
-
-	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
-	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
-	MboxMail::b_mails_sorted = true;
-	MboxMail::SortByDate();
-
 	return true;
 }
 
 #include <algorithm>
 using namespace std;
+
+bool cmpAllMbox(bool desc) {
+	int outofOrderCnt = 0;
+	for (int m = 0; m < (MboxMail::s_mails.GetSize() - 1); m++) {
+		MboxMail *mb = MboxMail::s_mails[m];
+		MboxMail *mb_next = MboxMail::s_mails[m + 1];
+		if (desc) {
+			if (mb->m_startOff < mb_next->m_startOff) {
+				outofOrderCnt++;
+			}
+		}
+		else
+		{
+			if (mb->m_startOff >= mb_next->m_startOff) {
+				outofOrderCnt++;
+			}
+		}
+	}
+	if (outofOrderCnt > 0) {
+		int deb = 1;  // setup breakpoint
+		return false;
+	}
+	return true;
+}
 
 bool cmpMbox(MboxMail* a, MboxMail *b) {
 	return a->m_startOff < b->m_startOff;
@@ -684,22 +687,29 @@ void MboxMail::Parse(LPCSTR path)
 	CloseHandle(hFileMap);
 	CloseHandle(hFile);
 
-	// sort the mails (should be sorted but arent)
+	// Set the breakpoint under debugger to detect out of order emails
+	//cmpAllMbox(false);
+
+	// sort the mails by offset, they should already be ordered by file offset anyway
 	sort(MboxMail::s_mails.GetData(), MboxMail::s_mails.GetData() + MboxMail::s_mails.GetSize(), [](MboxMail* o1, MboxMail* o2)
 	{
 		return cmpMbox(o1, o2);
 	});
-	/*
+
+	//cmpAllMbox(false);
+
+#if 0
 	CStdioFile fp("mboxmails.txt", CFile::modeCreate | CFile::modeWrite | CFile::typeText);
 	for (int m = 0; m < MboxMail::s_mails.GetSize(); m++) {
 		CString s;
 		MboxMail *mb = MboxMail::s_mails[m];
 		CTime t(mb->m_timeDate);
-		s.Format("From: %s\nTo: %s\nDate: %s\nSubject: %s\nSize:%d\n", (LPCSTR)mb->m_from, (LPCSTR)mb->m_to, (LPCSTR)t.Format("%Y%m%d"), (LPCSTR)mb->m_subj, mb->m_length);
+		s.Format("From: %s\nTo: %s\nDate: %s\nSubject: %s\nSize:%d\n", 
+			(LPCSTR)mb->m_from, (LPCSTR)mb->m_to, (LPCSTR)t.Format("%Y%m%d"), (LPCSTR)mb->m_subj, mb->m_length);
 		fp.WriteString(s);
 	}
 	fp.Close();
-	*/
+#endif
 }
 
 #include <algorithm>

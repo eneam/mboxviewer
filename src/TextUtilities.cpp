@@ -87,7 +87,7 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
     return res;
 }
 int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens )   /* Search Search pat[0..m-1] in text[0..n-1] */
-{   
+{
     char d[256];
     int i, j, k, lim;
     int res = -1;
@@ -113,7 +113,7 @@ int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, in
 		for( k=0; k < lim; k += d[(unsigned char)ToLower(text[k+m])] ) /* Searching */
 		{
 			i=k;
-			for( j=0; (unsigned char)ToLower(text[i]) == pat[j]; j++ ) {
+			for (j = 0; (unsigned char)ToLower(text[i]) == pat[j]; j++) {
 				i++; /* Could be optimal order */
 			}
 			if( j == m ) {

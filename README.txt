@@ -2,6 +2,11 @@
 Changes
 ---
 
+v 1.0.1.10
+
+ - enhanced support for ISO-8859-[1-9] encoded text content;
+ - added support for searching emails sorted by header fields (except of searching of entire RAW message);
+ 
 v 1.0.1.9
 
  - added support for ISO-8859-[1-9] encoded text content
