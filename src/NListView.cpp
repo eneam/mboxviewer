@@ -97,6 +97,13 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	m_format = GetDateFormat(iFormat);
+	CString exportEML = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"));
+	if (exportEML.IsEmpty())
+		m_bExportEml = FALSE;
+	else if (exportEML.Compare(_T("y")) == 0)
+		m_bExportEml = TRUE;
+	else
+		m_bExportEml = FALSE;
 
 }
 
@@ -215,6 +222,16 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 		MboxMail::SortBySubject(0, MboxMail::b_mails_which_sorted < 0);
 		mustSort = true;
 		break;
+	case 5: // size
+		if (abs(MboxMail::b_mails_which_sorted) == 5) {
+			MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
+		}
+		else {
+			MboxMail::b_mails_which_sorted = 5;
+		}
+		MboxMail::SortBySize(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
 	}
 	if (mustSort)
 	{
@@ -307,21 +324,95 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT);	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0);
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
 	ResetFont();
-	
+
 	m_list.InsertColumn(0, "!", LVCFMT_LEFT, 18, 0);
 	m_list.InsertColumn(1, "date", LVCFMT_LEFT, 100, 0);
 	m_list.InsertColumn(2, "from", LVCFMT_LEFT, 150, 0);
 	m_list.InsertColumn(3, "to", LVCFMT_LEFT, 150, 0);
 	m_list.InsertColumn(4, "subject", LVCFMT_LEFT, 400, 0);
+	m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 100, 0);
+
+#if 0
+	// informational
+	CRect rc_total_window;
+	GetWindowRect(&rc_total_window);
+
+	int nTextWidth = m_list.GetColumnWidth(0);
+	nTextWidth = m_list.GetColumnWidth(1);
+	nTextWidth = m_list.GetColumnWidth(2);
+	nTextWidth = m_list.GetColumnWidth(3);
+	nTextWidth = m_list.GetColumnWidth(4);
+	nTextWidth = m_list.GetColumnWidth(5);
+#endif
 
 	return 0;
 }
 
-void NListView::OnSize(UINT nType, int cx, int cy) 
+void NListView::OnSize(UINT nType, int cx, int cy)
 {
 	CWnd::OnSize(nType, cx, cy);
-	
+
+	ResizeColumns();
+
 	m_list.MoveWindow(0, 0, cx, cy);
+}
+
+void NListView::ResizeColumns()
+{
+	CRect rc;
+	GetWindowRect(&rc);
+	int w = rc.Width();
+	int sb_width = GetSystemMetrics(SM_CXVSCROLL);
+	w -= sb_width + 1;
+
+	int col_zero_len = 18;
+	int date_len = 100;
+	int min_from_len = 150;
+	int max_from_len = 400;
+	int min_to_len = 150;
+	int max_to_len = 400;
+	int min_subj_len = 200;
+	int dflt_subj_len = 400;
+	int size_len = 60;
+
+	int from_len = min_from_len;
+	int to_len = min_to_len;
+	int subj_len = min_subj_len;
+
+	int min_len = col_zero_len + date_len + from_len + to_len + subj_len + size_len;
+	int extra_space = w - min_len;
+
+
+	if (extra_space > 0) {
+		if (extra_space < (dflt_subj_len - min_subj_len)) {
+			subj_len += extra_space;
+		}
+		else {
+			subj_len = dflt_subj_len;
+			int total_len = col_zero_len + date_len + from_len + to_len + subj_len + size_len;
+			int space_left = w - total_len; // divide across from, to and subject
+
+			from_len += (int)(space_left * 0.2);
+			to_len += (int)(space_left * 0.2);
+			subj_len = (int)(space_left * 0.6);
+			if (from_len >= max_from_len)
+				from_len = max_from_len;
+			if (to_len >= max_to_len)
+				to_len = max_to_len;
+
+			total_len = col_zero_len + date_len + from_len + to_len + subj_len + size_len;
+			space_left = w - total_len;
+			subj_len += space_left;
+		}
+	}
+
+	m_list.SetColumnWidth(1, date_len);
+	m_list.SetColumnWidth(2, from_len);
+	m_list.SetColumnWidth(3, to_len);
+	m_list.SetColumnWidth(4, subj_len);
+	m_list.SetColumnWidth(5, size_len);
+
+	// no redraw seem to be needed
 }
 
 
@@ -339,6 +430,7 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 	static const char * nul = "";
 	static char datebuff[32];
 	static char subjectbuff[1024];
+	static char sizebuff[32];
 	if (pDispInfo->item.mask & LVIF_TEXT)
 	{
 		MboxMail *m = MboxMail::s_mails[pDispInfo->item.iItem];
@@ -372,6 +464,17 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 			break;
 		case 4: // subj
 			t = m->m_subj.GetBufferSetLength(m->m_subj.GetLength());
+			break;
+		case 5: // size
+			{
+				int length = m->m_length;
+				int kb = length / 1000;
+				if (length % 1000)
+					kb++;
+				sizebuff[0] = 0;
+				_itoa(kb, sizebuff, 10);
+				t = sizebuff;
+			}
 			break;
 		default:
 			t = nul;
@@ -622,6 +725,7 @@ void NListView::SelectItem(int iItem)
 	CString bdy = m->GetBody();
 
 	// Save raw message
+	if (m_bExportEml)
 	{
 	// Save mail
 		CFile fp(GetmboxviewTempPath()+"message.eml", CFile::modeWrite|CFile::modeCreate);
@@ -734,6 +838,10 @@ void NListView::SelectItem(int iItem)
 	CFile fp(m_curFile, CFile::modeWrite|CFile::modeCreate);
 	fp.Write(bdy, bdy.GetLength());
 	fp.Close();
+
+	// sometimes body is not shown and needs to be refreshed manually, but sleeping didn't help
+	// for (int ii = 0; (ii < 5) && !PathFileExist(m_curFile); ii++) Sleep(10);
+	
 	// Display mail in IE
 	pView->m_browser.Navigate(m_curFile, NULL);
 	// Update layou to show/hide attachments

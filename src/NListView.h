@@ -38,6 +38,7 @@ public:
 
 // Implementation
 public:
+	BOOL m_bExportEml;
 	BOOL m_bInFind;
 	HTREEITEM m_which;
 	void SelectPos(_int64 offset);
@@ -66,6 +67,7 @@ public:
 	int WhichOne( _int64 offset, int hint = -1, int lowhint = 0, int highhint = -1 );
 	void ResetFont();
 	void RedrawMails();
+	void ResizeColumns();
 
 	// Generated message map functions
 protected:

@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.1.11
+
+ - added email size column;
+ - added automatic column resize upon window resize;
+ - added -EMAIL_FILE=filename command line option to open specific file archive;
+ - added -EXPORT_EML=y|n command line option to suppress export of eml file to improve performance;
+ 
 v 1.0.1.10
 
  - enhanced support for ISO-8859-[1-9] encoded text content;

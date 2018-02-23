@@ -49,6 +49,7 @@ protected:  // control bar embedded members
 	CStatusBar	m_wndStatusBar;
 	CToolBar		m_wndToolBar;
 	CChildView    m_wndView;
+	BOOL m_bSelectMailFileDone;
 
 // Generated message map functions
 protected:

@@ -41,6 +41,7 @@ public:
 	void Traverse( HTREEITEM hItem, CFile &fp );
 	void SaveData();
 	void FillCtrl();
+	void SelectMailFile(); // based on -MBOX= command line argument
 	virtual ~NTreeView();
 
 	// Generated message map functions

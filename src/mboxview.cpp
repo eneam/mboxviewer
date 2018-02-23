@@ -41,6 +41,17 @@ bool PathExists(LPCSTR file)
 	FindClose(h);
 	return bRes;
 }
+
+// duplicated from NListView.cpp , may need to generalize
+BOOL _PathFileExist(LPCSTR path)
+{
+	DWORD fa = GetFileAttributes(path);
+
+	if (fa != (DWORD)0xFFFFFFFF)
+		return TRUE;
+	return FALSE;
+}
+
 #include <afxadv.h> //Has CRecentFileList class definition.
 #include "afxlinkctrl.h"
 #include "afxwin.h"
@@ -243,17 +254,81 @@ BOOL CAboutDlg::OnInitDialog()
 class CCmdLine : public CCommandLineInfo
 {
 public:
+	BOOL m_bError;
+	BOOL m_bLastPathSet;
+	CCmdLine::CCmdLine() {
+		m_bError = FALSE; m_bLastPathSet = FALSE;
+	}
 	void ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL bLast);
 };
 
 void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 {
+	if (m_bError)
+		return;
 	if (bFlag) {
-		if (strncmp(lpszParam, "FOLDER=", 5) == 0) {
+		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) {
 			CString openFolder = lpszParam + 7;
-			if (openFolder.Right(1) != "\\")
-				openFolder += "\\";
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", openFolder);
+			if (openFolder.Right(1) != _T("\\"))
+				openFolder += _T("\\");
+			if (m_bLastPathSet == FALSE)
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), openFolder);
+		}
+		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) {
+			CString mailFile = lpszParam + 10;
+			TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+			TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+			TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+			TCHAR fname[_MAX_FNAME + 1];
+
+			_tsplitpath(mailFile, drive, dir, fname, ext);
+			if (_tcslen(dir) != 0) {
+				CString txt;
+				if (!_PathFileExist(mailFile)) {
+					CString txt = _T("Nonexistent File \"") + mailFile;
+					txt += _T("\".\nDo you want to continue?");
+					HWND h = NULL; // we don't have any window yet  
+					int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+					if (answer == IDNO)
+						m_bError = TRUE;
+				}
+				else {
+					CString lastPath = CString(drive) + dir;
+					CString file(fname); file += ext;
+					m_bLastPathSet = TRUE;
+					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), lastPath);
+					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), file);
+
+				}
+			}
+			else {
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), mailFile);
+			}
+		}
+		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) {
+			CString exportEML = lpszParam + 11;
+			exportEML.MakeLower();
+			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0) || exportEML.IsEmpty())) {
+				CString txt = _T("Invalid Command Line Option Value \"");
+				CString opt = lpszParam;
+				txt += opt + _T("\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?");
+				HWND h = NULL; // we don't have any window yet  
+				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				if (answer == IDNO)
+					m_bError = TRUE;
+			}
+			else
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+		}
+		else {
+			// Unknown argument
+			CString txt = _T("Invalid Command Line Option \"");
+			CString opt = lpszParam;
+			txt += opt + _T("\".\nDo you want to continue?");
+			HWND h = NULL; // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDNO)
+				m_bError = TRUE;
 		}
 	}
 }
@@ -263,7 +338,11 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 BOOL CmboxviewApp::InitInstance()
 {
 	CCmdLine cmdInfo;
+	CString mailFile;
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "mailFile", mailFile);
 	ParseCommandLine(cmdInfo);
+	if (cmdInfo.m_bError)
+		return FALSE;
 	AfxEnableControlContainer();
 
 	// Standard initialization

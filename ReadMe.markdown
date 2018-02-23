@@ -14,11 +14,18 @@ Features
 * search by date, subject, sender or raw email; 
 * sort date, from, to and subject columns;
 * support for ISO-8859-[1-9] and utf8 encoded header fields and body text;
-* support for searching emails sorted by header fields (except of searching of entire RAW message);
+* support for searching emails sorted by header fields (except for searching of entire RAW message);
 
 Changes
 ---
 
+v 1.0.1.11
+
+ - added email size column;
+ - added automatic column resize upon window resize;
+ - added -EMAIL_FILE=filename command line option to open specific file archive;
+ - added -EXPORT_EML=y|n command line option to suppress export of eml file to improve performance;
+ 
 v 1.0.1.10
 
  - enhanced support for ISO-8859-[1-9] encoded text content;

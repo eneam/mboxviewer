@@ -45,7 +45,7 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	// TODO: add member initialization code here
-	
+	m_bSelectMailFileDone = FALSE;
 }
 
 CMainFrame::~CMainFrame()
@@ -130,8 +130,15 @@ void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
 	// let the view have first crack at the command
-	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo))
+	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo)) {
+		// Hope all objects should be initialized by now
+		if (m_bSelectMailFileDone == FALSE) {
+			m_bSelectMailFileDone = TRUE;
+			NTreeView *treeView = GetTreeView();
+			treeView->SelectMailFile();
+		}
 		return TRUE;
+	}
 
 	// otherwise, do default handling
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);

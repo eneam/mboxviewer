@@ -128,53 +128,65 @@ void NTreeView::FillCtrl()
 {
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	m_tree.DeleteAllItems();
-	if( path.IsEmpty() || !PathFileExist(path) )
+	if (path.IsEmpty() || !PathFileExist(path))
 		return;
 	CString root;
 	char *last_slash = (char*)strrchr(path, '\\');
-	if(last_slash && *last_slash) {
+	if (last_slash && *last_slash) {
 		CStdioFile fp;
-		if( fp.Open(path+"\\.mboxview", CFile::modeRead | CFile::typeText) ) {
+		if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText)) {
 			CString line;
-			while( fp.ReadString(line) ) {
+			while (fp.ReadString(line)) {
 				int w = line.Find('\t', 0);
-				if( w == -1 )
+				if (w == -1)
 					break;
 				CString p = line.Left(w);
 				_int64	fSize = 0;
-				if( w != -1 )
-					fSize = _atoi64(line.Mid(w+1));
+				if (w != -1)
+					fSize = _atoi64(line.Mid(w + 1));
 				fileSizes[p] = fSize;
 			}
 			fp.Close();
-		} else
+		}
+		else
 			fileSizes.RemoveAll();
-		root = last_slash +1;
+		root = last_slash + 1;
 		HTREEITEM hRoot = m_tree.InsertItem(root, 0, 0, TVI_ROOT);
 		CString fw = path + "\\*.*";
 		WIN32_FIND_DATA	wf;
 		HANDLE f = FindFirstFile(fw, &wf);
-		if( f != INVALID_HANDLE_VALUE ) {
+		if (f != INVALID_HANDLE_VALUE) {
 			do {
-				if( (wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.' ) {
+				if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.') {
 					CString fn = wf.cFileName;
 					CString fullPath = path + "\\" + fn;
-					if( ImboxviewFile(fullPath) ) {
+					if (ImboxviewFile(fullPath)) {
 						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
 						_int64 fSize = 0;
 						_int64 realFSize = FileSize(fullPath);
 						fileSizes.Lookup(fn, fSize);
-						if( fSize < realFSize ) {
-							CString cache= fullPath + ".mboxview";
+						if (fSize < realFSize) {
+							CString cache = fullPath + ".mboxview";
 							DeleteFile(cache);
 							m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
 						}
 					}
 				}
-			} while( FindNextFile( f, &wf ) );
+			} while (FindNextFile(f, &wf));
 			FindClose(f);
 		}
 		m_tree.Expand(hRoot, TVE_EXPAND);
+	}
+	
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) {
+		NListView *pView = pFrame->GetListView();
+		if (pView) {
+			pView->m_path = "";
+			pView->m_which = NULL;
+			// pView->ResetSize();  // check if needed
+			pView->FillCtrl();
+		}
 	}
 }
 
@@ -211,6 +223,44 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pView->m_which = pNm->itemNew.hItem;
 	pView->ResetSize();
 	pView->FillCtrl();
+}
+
+void NTreeView::SelectMailFile()
+{
+	CString str = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
+	if (str.IsEmpty())
+		return;
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"));
+	if (path.IsEmpty())
+		return;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == NULL)
+		return;
+	NListView *pView = pFrame->GetListView();
+	if (!pView)
+		return;
+
+	pView->m_path = path + _T("\\") + str;
+
+	CString txt;
+	if (!PathFileExist(path))
+		txt = _T("Nonexistent Directory \"") + path;
+	else if (!PathFileExist(pView->m_path))
+		txt = _T("Nonexistent File \"") + pView->m_path;
+
+	if (!txt.IsEmpty()) {
+		txt += _T("\".\nDo you want to continue?");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+	}
+	else {
+		pView->m_which = NULL;
+		pView->ResetSize();
+		pView->FillCtrl();
+	}
 }
 
 BOOL NTreeView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 

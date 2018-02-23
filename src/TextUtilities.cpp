@@ -41,7 +41,8 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
         d[pat[k]] = m-k;
     pat[m] = 1;          /* To avoid having code     */
     /* for special case n-k+1=m */
-    lim = n-m+1;
+    //lim = n-m+1;  // out of range and crash under debugger
+	lim = n - m;
 	if( bCaseSens ) {
 		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{
@@ -96,7 +97,8 @@ int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, in
         d[pat[k]] = m-k;
     pat[m] = 1;          /* To avoid having code     */
     /* for special case n-k+1=m */
-    lim = n-m+1;
+    //lim = n-m+1; // // out of range and crash under debugger
+	lim = n - m;
  	if( bCaseSens ) {
 		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{

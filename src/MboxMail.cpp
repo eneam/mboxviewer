@@ -225,10 +225,25 @@ UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 		CodePage = 28598;  // Hebrew
 	}
 	else if (_stricmp(PageCodeStr, "ISO-8859-9") == 0) {
+		CodePage = 28599;  // Turkish
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-13") == 0) {
+		CodePage = 28603;  // Estonian
+	}
+	else if (_stricmp(PageCodeStr, "ISO-8859-15") == 0) {
 		CodePage = 28605;  // Latin 9
 	}
 	else if (_stricmp(PageCodeStr, "US-ASCII") == 0) {
 		CodePage = 20127;  // US-ASCII 7
+	}
+	else if (_stricmp(PageCodeStr, "ISO-2022-JP") == 0) {
+		CodePage = 50220;  // Japanese with no halfwidth Katakana; Japanese (JIS) , maybe ??
+	}
+	else if (_stricmp(PageCodeStr, "csISO2022JP") == 0) {
+		CodePage = 50221;  // Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana)
+	}
+	else if (_stricmp(PageCodeStr, "ISO-2022-KR") == 0) {
+		CodePage = 50225;  // Korean
 	}
 	return CodePage;
 }
@@ -839,6 +854,16 @@ bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
 			return false;
 	}
 }
+bool sortBySize(MboxMail *cr1, MboxMail *cr2) {
+	if (cr1->m_length == cr2->m_length)
+		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+	return (cr1->m_length < cr2->m_length);
+}
+bool sortBySizeDesc(MboxMail *cr1, MboxMail *cr2) {
+	if (cr1->m_length == cr2->m_length)
+		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+	return (cr1->m_length > cr2->m_length);
+}
 
 void MboxMail::SortByDate(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
 {
@@ -860,6 +885,12 @@ void MboxMail::SortBySubject(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySubjectDesc : sortBySubject);
 }
+void MboxMail::SortBySize(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+{
+	if (s_m == 0) s_m = &MboxMail::s_mails;
+	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySizeDesc : sortBySize);
+}
+
 
 
 

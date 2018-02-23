@@ -52,6 +52,7 @@ public:
 	static void SortByFrom(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortByTo(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortBySubject(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
+	static void SortBySize(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;
 	static void Destroy() {
