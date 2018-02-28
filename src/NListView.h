@@ -8,6 +8,7 @@
 //
 
 #include "WheelListCtrl.h"
+#include "UPDialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
@@ -38,15 +39,17 @@ public:
 
 // Implementation
 public:
+	static const CUPDUPDATA * pCUPDUPData; 
 	BOOL m_bExportEml;
 	BOOL m_bInFind;
 	HTREEITEM m_which;
 	void SelectPos(_int64 offset);
 	void SelectItem(int which);
-	_int64 DoFind(_int64 searchstart, _int64 searchend);
+	_int64 DoFind(_int64 searchstart, _int64 searchend, BOOL mainThreadContext, int maxSearchDuration, BOOL &terminated, BOOL &exitted);
 	int DoFastFind(int searchstart);
 	CString m_searchString;
 	int m_lastFindPos;
+	int m_maxSearchDuration;
 	_int64		m_searchPos;
 	_int64 m_startoff, m_endoff;
 	BOOL m_bEditFindFirst;
@@ -63,6 +66,7 @@ public:
 	CString m_path;
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
+	int dumpSelectedItem(int which);
 
 	int WhichOne( _int64 offset, int hint = -1, int lowhint = 0, int highhint = -1 );
 	void ResetFont();
@@ -91,6 +95,17 @@ public:
 	afx_msg void OnEditVieweml();
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
 };
+
+typedef struct _FindArgs {
+	_int64 searchstart;
+	_int64 searchend;
+	_int64 searchpos;
+	_int64 retpos;
+	_int64 ret_retpos;  // from DoFind
+	BOOL terminated;  // ack from DoFind
+	BOOL exitted;
+	NListView *lv;
+} FIND_ARGS;
 
 /////////////////////////////////////////////////////////////////////////////
 

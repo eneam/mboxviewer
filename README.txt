@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.1.12
+
+ - added delayed search progress bar to view search progress and allow to cancel the search in progress;
+ - added -PROGRESS_BAR_DELAY=seconds command line option to control the start the progress bar. The value of -1 disables the bar;
+ - fixed an issue with searching of RAW messages;
+ - note: -MAIL_FILE=filename new option was stated incorrectly as -EMAIL_FILE=filename in the v1.0.1.11 READMEs;
+
 v 1.0.1.11
 
  - added email size column;

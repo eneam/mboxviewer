@@ -2,6 +2,8 @@
 //
 
 #include "stdafx.h"
+#include "ctype.h"
+#include "locale.h"
 #include "mboxview.h"
 #include "profile.h"
 #include "LinkCursor.h"
@@ -320,11 +322,34 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			else
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
 		}
+		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) {
+			CString barDelay = lpszParam + 19;
+			// Validate
+			int i = 0;
+			if (barDelay[i] == '-')
+				i++;
+			for ( ; i < barDelay.GetLength(); i++) {
+				if (!_istdigit(barDelay[i]))
+					break;
+			}
+			if (i != barDelay.GetLength())
+			{
+				CString txt = _T("Invalid Command Line Option Value \"");
+				CString opt = lpszParam;
+				txt += opt + _T("\".\nDo you want to continue?");
+				HWND h = NULL; // we don't have any window yet  
+				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				if (answer == IDNO)
+					m_bError = TRUE;
+			}
+			else
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+		}
 		else {
 			// Unknown argument
 			CString txt = _T("Invalid Command Line Option \"");
 			CString opt = lpszParam;
-			txt += opt + _T("\".\nDo you want to continue?");
+			txt += opt + _T("\". \nValid options: -FOLDER=,-MAIL_FILE=,-EXPORT_EML=,\n-PROGRESS_BAR_DELAY=.\nDo you want to continue?");
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)

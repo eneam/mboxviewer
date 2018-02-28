@@ -44,7 +44,7 @@ protected:
 public:
 	COleDateTime m_startDate;
 	COleDateTime m_endDate;
-	BOOL m_scope;
+	int m_scope;
 	//virtual BOOL OnInitDialog();
 	BOOL m_filterDates;
 	afx_msg void OnBnClickedFilterDates();

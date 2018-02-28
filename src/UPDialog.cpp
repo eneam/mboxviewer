@@ -87,8 +87,10 @@ void CUPDialog::Cleanup()
 
 	if(m_ThreadData.bAlive)		//If associated Thread is still alive Terminate It
 	{
-        if(WaitForSingleObject(m_hThread, m_dwTerminateDelay) != WAIT_OBJECT_0)
+		if (WaitForSingleObject(m_hThread, m_dwTerminateDelay) != WAIT_OBJECT_0) {
+			TRACE("(Cleanup)Terminating Thread\n");
 			TerminateThread(m_hThread, IDCANCEL);
+		}
 	}
 
 	if(m_hThread)
