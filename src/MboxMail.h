@@ -32,11 +32,13 @@ public:
 		}
 		return res;
 	};
+
 	_int64 m_startOff;
 	int m_hasAttachments;
 	int m_length, m_headLength, m_recv;
 	time_t m_timeDate;
 	CString m_from, m_to, m_subj;
+
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
 	static CString s_path;

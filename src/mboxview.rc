@@ -159,18 +159,24 @@ BEGIN
     CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,86,50,10
 END
 
-IDD_OPTIONS DIALOGEX 0, 0, 160, 78
+IDD_OPTIONS DIALOGEX 0, 0, 167, 137
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,23,56,50,14
-    PUSHBUTTON      "Annulla",IDCANCEL,77,56,50,14
+    DEFPUSHBUTTON   "OK",IDOK,23,110,50,14
+    PUSHBUTTON      "Annulla",IDCANCEL,77,110,50,14
     LTEXT           "Date format:",IDC_STATIC,7,7,42,8
     CONTROL         "dd/mm/yyyy",IDC_DMY,"Button",BS_AUTORADIOBUTTON | WS_GROUP,53,7,56,10
     CONTROL         "mm/dd/yyyy",IDC_MDY,"Button",BS_AUTORADIOBUTTON,53,18,56,10
     CONTROL         "yyyy/mm/dd",IDC_YMD,"Button",BS_AUTORADIOBUTTON,53,31,56,10
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,7,48,145,1
+    GROUPBOX        "Search progress bar startup delay in seconds",IDC_STATIC,7,50,153,29
+    GROUPBOX        "",IDC_STATIC,7,78,153,22
+    EDITTEXT        IDC_PROGRESS_BAR_DELAY,17,62,57,12,ES_AUTOHSCROLL
+    CONTROL         "n",IDC_EXPORT_EML,"Button",BS_AUTORADIOBUTTON | WS_GROUP,69,85,20,10
+    CONTROL         "y",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,99,85,20,10
+    LTEXT           "Export EML:",IDC_STATIC,15,85,51,9
 END
 
 
@@ -247,9 +253,9 @@ BEGIN
     IDD_OPTIONS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 153
+        RIGHTMARGIN, 160
         TOPMARGIN, 7
-        BOTTOMMARGIN, 71
+        BOTTOMMARGIN, 130
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -271,6 +277,17 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "..\\res\\mboxview.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_OPTIONS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
 
 
 /////////////////////////////////////////////////////////////////////////////

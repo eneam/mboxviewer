@@ -157,11 +157,29 @@ void CMainFrame::OnFileOptions()
 {
 	COptionsDlg d;
 	if (d.DoModal() == IDOK) {
-		GetListView()->m_format = GetDateFormat(d.m_format);
-		GetListView()->Invalidate();
-		GetMsgView()->m_browser.m_ie.Invalidate(); // .RedrawWindow();
-	}
+		CString format = GetDateFormat(d.m_format);
+		if (GetListView()->m_format.Compare(format) != 0) {
+			GetListView()->m_format = GetDateFormat(d.m_format);
+			GetListView()->Invalidate();
+			GetMsgView()->m_browser.m_ie.Invalidate(); // .RedrawWindow();
+		}
 
+		if (GetListView()->m_maxSearchDuration != d.m_barDelay) {
+			GetListView()->m_maxSearchDuration = d.m_barDelay;
+			DWORD barDelay = d.m_barDelay;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+		}
+
+		BOOL exportEml = (d.m_exportEML > 0) ? TRUE : FALSE;
+		if (GetListView()->m_bExportEml != exportEml) {
+			GetListView()->m_bExportEml = exportEml;
+			CString str_exportEML = _T("n");
+			if (exportEml == TRUE)
+				str_exportEML = _T("y");
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), str_exportEML);
+		}
+
+	}
 }
 void CMainFrame::OnFileOpen() 
 {

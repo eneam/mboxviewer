@@ -33,10 +33,12 @@
 #define IDC_DATETIMEPICKER2             1054
 #define IDC_RADIO1                      1056
 #define IDC_SCOPE                       1056
+#define IDC_EXPORT_EML                  1056
 #define IDC_RADIO2                      1057
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
 #define IDC_DONATION                    1063
+#define IDC_PROGRESS_BAR_DELAY          1065
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -48,9 +50,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        161
+#define _APS_NEXT_RESOURCE_VALUE        162
 #define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1064
+#define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

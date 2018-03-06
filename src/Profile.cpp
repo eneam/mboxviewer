@@ -97,6 +97,53 @@ int CProfile::_GetProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key )
 	return (int)result;
 }
 
+BOOL CProfile::_GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CString &str)
+{
+	DWORD	size = 4096;
+	unsigned char	data[4096];
+	data[0] = 0;
+	HKEY	myKey;
+	CString	result = (char *)("");
+	int l = result.GetLength();
+	if (result.IsEmpty()) {
+		int deb = 1;
+	}
+	long res;
+	CString	path = (char *)section;
+	if (!RegOpenKeyEx(hKey, (LPCTSTR)path,
+		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) {
+		res = RegQueryValueEx(myKey, (LPCTSTR)key,
+			NULL, NULL, data, &size);
+		RegCloseKey(myKey);
+		if (res == ERROR_SUCCESS) {
+			result = (char *)data;
+			str = result;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &intval)
+{
+	DWORD	size = sizeof(DWORD);
+	HKEY	myKey;
+	DWORD	result = 0;
+	long res;
+	CString	path = (char *)section;
+	if (!RegOpenKeyEx(hKey, (LPCTSTR)path,
+		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) {
+		res = RegQueryValueEx(myKey, (LPCTSTR)key,
+			NULL, NULL, (BYTE *)&result, &size);
+		RegCloseKey(myKey);
+		if (res == ERROR_SUCCESS) {
+			intval = result;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /*
 BOOL CProfile::_WriteProfileString( LPCTSTR section, LPCTSTR key, CString &value )
 {

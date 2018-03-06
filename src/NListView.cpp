@@ -90,7 +90,6 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 	m_bEditFindFirst = FALSE;
 	m_lastFindPos = 0;
 	m_searchPos = 0;
-	m_maxSearchDuration = 4;
 	m_searchString.Empty();
 	m_bCaseSens = TRUE;
 	m_bWholeWord = FALSE;
@@ -99,17 +98,31 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	m_format = GetDateFormat(iFormat);
-	CString exportEML = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"));
-	if (exportEML.IsEmpty())
-		m_bExportEml = FALSE;
-	else if (exportEML.Compare(_T("y")) == 0)
-		m_bExportEml = TRUE;
-	else
-		m_bExportEml = FALSE;
 
-	CString barDelay = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"));
-	if (!barDelay.IsEmpty())
-		m_maxSearchDuration = _tstoi(barDelay);
+	CString exportEML;
+	BOOL retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+	if (retval == TRUE) {
+		if (exportEML.Compare(_T("y")) == 0)
+			m_bExportEml = TRUE;
+		else
+			m_bExportEml = FALSE;
+	}
+	else {
+		exportEML = _T("n");
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+		m_bExportEml = FALSE;
+	}
+
+	DWORD barDelay;
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+	if (retval == TRUE) {
+		m_maxSearchDuration = barDelay;
+	}
+	else {
+		barDelay = 1;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+		m_maxSearchDuration = barDelay;
+	}
 }
 
 NListView::~NListView()
@@ -1626,7 +1639,23 @@ void NListView::SelectItemFound(int which)
 
 
 void NListView::OnEditVieweml()
-{
+{	// Save raw message
+	if (m_bExportEml == FALSE)
+	{
+		POSITION pos = m_list.GetFirstSelectedItemPosition();
+		int nItem = m_list.GetNextSelectedItem(pos);
+		MboxMail *m = 0;
+		if (nItem >= 0) {
+			m = MboxMail::s_mails[nItem];
+			// Get raw mail body
+			CString bdy = m->GetBody();
+			// Save mail
+			CFile fp(GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
+			fp.Write(bdy, bdy.GetLength());
+			fp.Close();
+		}
+	}
+
 	CString path = GetmboxviewTempPath();
 	HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 }
@@ -1634,6 +1663,10 @@ void NListView::OnEditVieweml()
 
 void NListView::OnUpdateEditVieweml(CCmdUI *pCmdUI)
 {
+	POSITION pos = m_list.GetFirstSelectedItemPosition();
+	int nItem = m_list.GetNextSelectedItem(pos);
+	if (nItem >= 0)
+		MboxMail *m = MboxMail::s_mails[nItem];
 	pCmdUI->Enable(m_list.GetFirstSelectedItemPosition()>0);
 }
 

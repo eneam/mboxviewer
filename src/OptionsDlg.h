@@ -21,5 +21,7 @@ protected:
 public:
 	afx_msg void OnBnClickedOk();
 	virtual BOOL OnInitDialog();
-	BOOL m_format;
+	int m_format;
+	int m_exportEML;
+	int	m_barDelay;
 };

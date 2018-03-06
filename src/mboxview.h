@@ -53,6 +53,8 @@ public:
 
 extern CmboxviewApp theApp;
 
+BOOL isNumeric(CString &str);
+
 /////////////////////////////////////////////////////////////////////////////
 
 //{{AFX_INSERT_LOCATION}}

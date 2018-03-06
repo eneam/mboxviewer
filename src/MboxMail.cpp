@@ -3,8 +3,6 @@
 #include <afxtempl.h>
 #include "mboxview.h"
 #include "MboxMail.h"
-//#include "TextUtilities.h"
-
 
 _int64 MboxMail::s_curmap = 0;
 _int64 MboxMail::s_step = 0;

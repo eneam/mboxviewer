@@ -54,6 +54,20 @@ BOOL _PathFileExist(LPCSTR path)
 	return FALSE;
 }
 
+BOOL isNumeric(CString &str) {
+	int i = 0;
+	if (str[i] == '-')
+		i++;
+	if (i == str.GetLength())
+		return FALSE;
+	for (; i < str.GetLength(); i++) {
+		if (!_istdigit(str[i])) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 #include <afxadv.h> //Has CRecentFileList class definition.
 #include "afxlinkctrl.h"
 #include "afxwin.h"
@@ -310,7 +324,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) {
 			CString exportEML = lpszParam + 11;
 			exportEML.MakeLower();
-			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0) || exportEML.IsEmpty())) {
+			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0))) {
 				CString txt = _T("Invalid Command Line Option Value \"");
 				CString opt = lpszParam;
 				txt += opt + _T("\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?");
@@ -319,20 +333,14 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
-			else
+			else {
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+			}
 		}
 		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) {
 			CString barDelay = lpszParam + 19;
 			// Validate
-			int i = 0;
-			if (barDelay[i] == '-')
-				i++;
-			for ( ; i < barDelay.GetLength(); i++) {
-				if (!_istdigit(barDelay[i]))
-					break;
-			}
-			if (i != barDelay.GetLength())
+			if (!isNumeric(barDelay))
 			{
 				CString txt = _T("Invalid Command Line Option Value \"");
 				CString opt = lpszParam;
@@ -342,8 +350,10 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
-			else
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+			else {
+				DWORD progressBarDelay = _tstoi(barDelay);
+				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), progressBarDelay);
+			}
 		}
 		else {
 			// Unknown argument
