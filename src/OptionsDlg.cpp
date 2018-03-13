@@ -12,7 +12,8 @@ IMPLEMENT_DYNAMIC(COptionsDlg, CDialog)
 
 COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(COptionsDlg::IDD, pParent)
-	, m_format(0)
+	, m_format(0), m_barDelay(0)
+	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
 {
 
 }
@@ -27,6 +28,10 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_DMY, m_format);
 	DDX_Radio(pDX, IDC_EXPORT_EML, m_exportEML);
 	DDX_Text(pDX, IDC_PROGRESS_BAR_DELAY, m_barDelay);
+	DDX_Text(pDX, IDC_FROM_ID, m_from_charsetId);
+	DDX_Text(pDX, IDC_TO_ID, m_to_charsetId);
+	DDX_Text(pDX, IDC_SUBJ_ID, m_subj_charsetId);
+	DDX_Radio(pDX, IDC_SHOW_CHARSETS, m_show_charsets);
 }
 
 
@@ -47,6 +52,11 @@ void COptionsDlg::OnBnClickedOk()
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), CString(_T("y")));
 		else
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), CString(_T("n")));
+
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), m_from_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), m_to_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), m_subj_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), m_show_charsets);
 
 		CDialog::OnOK();
 	}
@@ -74,6 +84,11 @@ BOOL COptionsDlg::OnInitDialog()
 	}
 	else
 		m_exportEML = 0;  // we should not be here; it should be initialized in NListView::NListView()
+
+	m_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
+	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
+	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
+	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control

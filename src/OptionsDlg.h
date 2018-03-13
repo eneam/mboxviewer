@@ -24,4 +24,8 @@ public:
 	int m_format;
 	int m_exportEML;
 	int	m_barDelay;
+	int m_from_charsetId;
+	int m_to_charsetId;
+	int m_subj_charsetId;
+	int m_show_charsets;
 };

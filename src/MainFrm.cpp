@@ -179,6 +179,27 @@ void CMainFrame::OnFileOptions()
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), str_exportEML);
 		}
 
+		if (GetMsgView()->m_cnf_subj_charsetId != d.m_subj_charsetId) {
+			GetMsgView()->m_cnf_subj_charsetId = d.m_subj_charsetId;
+			DWORD charsetId = d.m_subj_charsetId;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), charsetId);
+		}
+		if (GetMsgView()->m_cnf_from_charsetId != d.m_from_charsetId) {
+			GetMsgView()->m_cnf_from_charsetId = d.m_from_charsetId;
+			DWORD charsetId = d.m_from_charsetId;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), charsetId);
+		}
+		if (GetMsgView()->m_cnf_to_charsetId != d.m_to_charsetId) {
+			GetMsgView()->m_cnf_to_charsetId = d.m_to_charsetId;
+			DWORD charsetId = d.m_to_charsetId;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), charsetId);
+		}
+		if (GetMsgView()->m_show_charsets != d.m_show_charsets) {
+			GetMsgView()->m_show_charsets = d.m_show_charsets;
+			DWORD show_charsets = d.m_show_charsets;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), show_charsets);
+		}
+
 	}
 }
 void CMainFrame::OnFileOpen() 

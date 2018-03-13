@@ -4,6 +4,9 @@
 #include "mboxview.h"
 #include "MboxMail.h"
 
+UINT charset2Id(const char *char_set);
+BOOL id2charset(UINT id, std::string charset);
+
 _int64 MboxMail::s_curmap = 0;
 _int64 MboxMail::s_step = 0;
 const CUPDUPDATA* MboxMail::pCUPDUPData = NULL;
@@ -32,146 +35,22 @@ inline void GetDetail(char *&p, char *e, CString &detail)
 	strncpy(ss, s, p1 - s);
 }
 
-#include "DateParser.h"
-
-/*void MboxMail::Parse(LPCSTR path)
+inline void GetLine(char *p, char *e, CString &line)
 {
-Destroy();
-MboxMail::s_path = path;
-HANDLE hFile = CreateFile(path, GENERIC_READ, 0, NULL,
-OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-if( hFile == INVALID_HANDLE_VALUE )
-return;
+	char *s = p;
+	char *pnl = p;
+	while (pnl < e && *pnl++ != '\n');
+	char *p1 = pnl - 1;
+	while (s <= p1 && ((*s == ' ') || (*s == '\t'))) 
+		s++;
+	while (p1 >= s && ((*p1 == ' ') || (*p1 == '\t')))
+		p1--;
+	p1++;
+	char *ss = line.GetBufferSetLength(p1 - s);
+	::strncpy(ss, s, p1 - s);
+}
 
-DWORD fSize = GetFileSize(hFile, NULL);
-HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-if( hFileMap == NULL ) {
-CloseHandle( hFile );
-return;
-}
-register char *p = (char *)MapViewOfFile( hFileMap, FILE_MAP_READ, 0, 0, 0 );
-char *orig = p;
-char *e = p + fSize;
-if( p == NULL || fSize < 10) {
-CloseHandle( hFileMap );
-CloseHandle( hFile );
-return;
-}
-#ifdef _DEBUG
-DWORD tc = GetTickCount();
-#endif
-CString to, from, subject, date;
-bool	bTo = true, bFrom = true, bSubject = true, bDate = true;
-char *msgStart = NULL;
-int recv = TRUE;
-while( p < e - 4 ) {
-DWORD *dp = (DWORD *)p;
-//		if( strncmp(p, "From ", 4) == 0 ) { // "From "
-if( *dp == 0x6d6f7246 && p[4] == ' ') { // "From "
-if( msgStart == NULL )
-msgStart = p;
-else {
-if( !(bTo && bFrom && bSubject) ) {
-MboxMail *m = new MboxMail();
-m->m_startOff = msgStart - orig;
-m->m_length = p - msgStart - 1;
-m->m_to = to;
-m->m_from = from;
-m->m_subj = subject;
-m->m_date= date;
-m->m_recv = recv;
-s_mails.Add(m);
-}
-msgStart = p;
-to.Empty();
-from.Empty();
-subject.Empty();
-date.Empty();
-bTo = bFrom = bSubject = bDate = true;
-}
-p += 5;
-EATNL();
-} else
-//		if( bSubject && strncmp(p, "From: ", 6) == 0 ) {
-if( bFrom && *dp == 0x6d6f7246 && *(WORD*)(p+4) == 0x203a ) { // "From: "
-bFrom = false;
-p+=6;
-GetDetail(p, e, from);
-} else
-//		if( bSubject && strncmp(p, "To: ", 4) == 0 ) {
-if( bTo && *dp == 0x203a6f54 ) { //&& strncmp(p, "To: ", 4) == 0 ) {
-bTo = false;
-bTo = false;
-p += 4;
-GetDetail(p, e, to);
-} else
-//		if( bSubject && strncmp(p, "Subject: ", 5) == 0 ) {
-if( bSubject && *dp == 0x6a627553 && dp[1] == 0x3a746365 && p[8] == ' ' ) { // "Subject: "
-bSubject = false;
-p += 9;
-GetDetail(p, e, subject);
-} else
-//		if( bSubject && strncmp(p, "Received: ", 10) == 0 ) {
-if( bDate && *dp == 0x65636552 && dp[1] == 0x64657669 && *(WORD*)(p+8) == 0x203a ) { // "Received: "
-bDate = false;
-p += 10;
-char *p1 = p+strcspn(p, ";\n");
-while( *p1 == '\n' && (*(p1+1) == ' ' || *(p1+1) == '\t') ) {
-p1++;
-p1 += strcspn(p1, ";\n");
-}
-if( *p1 == ';' ) {
-p1++;
-while( g_tu.IsSpace(*p1) )
-p1++;
-char *el = strchr(p1, '\n');
-while( g_tu.IsSpace(*el) )
-el--;
-el++;
-char *d = date.GetBufferSetLength(el-p1);
-strncpy(d, p1, el-p1);
-SYSTEMTIME tm;
-DateParser::parseRFC822Date(d, &tm);
-date = CTime(tm).Format("%d/%m/%y %H:%I");
-recv = TRUE;
-EATNL();
-} else {
-EATNL();
-}
-} else
-if( bDate && *dp == 0x65746144 && *(WORD*)(p+4) == 0x203a ) { // "Date: "
-bDate = false;
-p += 6;
-GetDetail(p, e, date);
-SYSTEMTIME tm;
-DateParser::parseRFC822Date(date, &tm);
-date = CTime(tm).Format("%d/%m/%y %H:%I");
-recv = FALSE;
-} else
-EATNL();
-}
-if( msgStart != NULL && msgStart != p ) {
-MboxMail *m = new MboxMail();
-//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
-m->m_startOff = msgStart - orig;
-m->m_length = p - msgStart - 1;
-m->m_to = to;
-m->m_from = from;
-m->m_subj = subject;
-m->m_date = date;
-m->m_recv = recv;
-s_mails.Add(m);
-}
-#ifdef _DEBUG
-tc = (GetTickCount() - tc);
-TRACE("Parse Took %d:%d %d\n", (tc/1000)/60, (tc/1000)%60, tc);
-#endif
-UnmapViewOfFile( orig );
-CloseHandle( hFileMap );
-CloseHandle( hFile );
-}
-*/
-
+#include "DateParser.h"
 
 CString GetDateFormat(int i)
 {
@@ -192,57 +71,10 @@ CString GetDateFormat(int i)
 
 UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 {
-	//UINT CodePage = 0;
-	UINT CodePage = CP_UTF8;
+	UINT CodePage = 0;
 
-	if (_stricmp(PageCodeStr, "utf-8") == 0) {
-		CodePage = CP_UTF8; // 65001
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-1") == 0) {  
-		CodePage = 28591;  // Western European 
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-2") == 0) {
-		CodePage = 28592;  // Central  European 
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-3") == 0) {
-		CodePage = 28593;  // Latin 3
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-4") == 0) {
-		CodePage = 28594;  // Baltic
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-5") == 0) {
-		CodePage = 28595;  // Cyrillic
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-6") == 0) {
-		CodePage = 28596;  // Arabic
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-7") == 0) {
-		CodePage = 28597;  // Greek
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-8") == 0) {
-		CodePage = 28598;  // Hebrew
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-9") == 0) {
-		CodePage = 28599;  // Turkish
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-13") == 0) {
-		CodePage = 28603;  // Estonian
-	}
-	else if (_stricmp(PageCodeStr, "ISO-8859-15") == 0) {
-		CodePage = 28605;  // Latin 9
-	}
-	else if (_stricmp(PageCodeStr, "US-ASCII") == 0) {
-		CodePage = 20127;  // US-ASCII 7
-	}
-	else if (_stricmp(PageCodeStr, "ISO-2022-JP") == 0) {
-		CodePage = 50220;  // Japanese with no halfwidth Katakana; Japanese (JIS) , maybe ??
-	}
-	else if (_stricmp(PageCodeStr, "csISO2022JP") == 0) {
-		CodePage = 50221;  // Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana)
-	}
-	else if (_stricmp(PageCodeStr, "ISO-2022-KR") == 0) {
-		CodePage = 50225;  // Korean
-	}
+	CodePage = charset2Id(PageCodeStr);
+
 	return CodePage;
 }
 
@@ -279,22 +111,24 @@ void MboxMail::Str2Ansi(CString &res, UINT CodePage)
 
 #include "MimeCode.h"
 
-CString DecodeString(CString &subj)
+CString DecodeString(CString &subj, CString &charset, UINT &charsetId)
 {
 	CFieldCodeText tfc;
-
-	// Not critical. Should optimize this function and Str2Ansi to reduce memory allocations/deallocations
 	tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);
 	int outputLen = tfc.GetOutputLength();
 	if (outputLen > 0) {
-
-		unsigned char *outBuf = (unsigned char*)malloc(outputLen + 2);
-		int decodeLen = tfc.GetOutput(outBuf, outputLen);
+		int maxOutputLen = 2 * outputLen + 2;
+		unsigned char *outBuf = (unsigned char*)malloc(maxOutputLen);
+		int decodeLen = tfc.GetOutput(outBuf, maxOutputLen);
 		outBuf[decodeLen] = 0;
 		CString str(outBuf);
 		free(outBuf);
-
+		charset = tfc.GetCharset();
 		UINT CodePage = MboxMail::Str2PageCode(tfc.GetCharset());
+		charsetId = CodePage;
+		// No remapping for now. Header of message windows should show text properly
+		return str;
+
 		if (CodePage > 0) {
 			MboxMail::Str2Ansi(str, CodePage);
 			return str;
@@ -346,9 +180,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
 							m->m_length = p - msgStart - 1;
-							m->m_to = DecodeString(to);
-							m->m_from = DecodeString(from);
-							m->m_subj = DecodeString(subject);
+							m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
+							m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
+							m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
 							int pos = g_tu.BMHSearchW((unsigned char *)msgStart, p - msgStart - 1, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), false);
@@ -393,6 +227,21 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							bSubject = false;
 							p += 9;
 							GetDetail(p, e, subject);
+							// concate all subject parts
+							// Not the most efficient but this should rare
+							int cnt = 0;
+							while ((p < e - 4) && ((*p == ' ') || (*p == '\t')) && (cnt++ < 10)) {
+								CString line;
+								GetLine(p, e, line);
+								if ((line.GetAt(0) == '=') && (line.GetAt(1) == '?'))
+								{
+									CString part;
+									GetDetail(p, e, part);
+									subject += part;
+								}
+								else
+									break;
+							}
 						}
 						else
 							//		if( bSubject && strncmp(p, "Received: ", 10) == 0 ) {
@@ -474,9 +323,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
 							m->m_length = p - msgStart;
-							m->m_to = DecodeString(to);
-							m->m_from = DecodeString(from);
-							m->m_subj = DecodeString(subject);
+							m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
+							m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
+							m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
 							int pos = g_tu.BMHSearch((unsigned char *)msgStart, m->m_length, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), 1);
@@ -524,6 +373,21 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 							bSubject = false;
 							p += 9;
 							GetDetail(p, e, subject);
+							// concate all subject parts
+							// Not the most efficient but this should rare
+							int cnt = 0;
+							while ((p < e - 4) && ((*p == ' ') || (*p == '\t')) && (cnt++ < 10)) {
+								CString line;
+								GetLine(p, e, line);
+								if ((line.GetAt(0) == '=') && (line.GetAt(1) == '?'))
+								{
+									CString part;
+									GetDetail(p, e, part);
+									subject += part;
+								}
+								else
+									break;
+							}
 						}
 						else
 							//		if( bSubject && strncmp(p, "Received: ", 10) == 0 ) {
@@ -606,9 +470,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 		//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
 		m->m_startOff = startOffset + (_int64)(msgStart - orig);
 		m->m_length = p - msgStart;
-		m->m_to = DecodeString(to);
-		m->m_from = DecodeString(from);
-		m->m_subj = DecodeString(subject);
+		m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
+		m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
+		m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
 		m->m_recv = recv;
 		m->m_timeDate = tdate;
 		s_mails.Add(m);
@@ -888,6 +752,226 @@ void MboxMail::SortBySize(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySizeDesc : sortBySize);
 }
+
+
+typedef struct {
+	UINT m_charsetId;
+	char *m_charset;
+	char *m_info;
+} CP2NM;
+
+CP2NM cp2name[] = {
+	//{ Info.CodePage , "Info.Name" , "Info.DisplayName" },
+	{ 37 , "IBM037" , "IBM EBCDIC (US-Canada)" },
+	{ 437 , "IBM437" , "OEM United States" },
+	{ 500 , "IBM500" , "IBM EBCDIC (International)" },
+	{ 708 , "ASMO-708" , "Arabic (ASMO 708)" },
+	{ 720 , "DOS-720" , "Arabic (DOS)" },
+	{ 737 , "ibm737" , "Greek (DOS)" },
+	{ 775 , "ibm775" , "Baltic (DOS)" },
+	{ 850 , "ibm850" , "Western European (DOS)" },
+	{ 852 , "ibm852" , "Central European (DOS)" },
+	{ 855 , "IBM855" , "OEM Cyrillic" },
+	{ 857 , "ibm857" , "Turkish (DOS)" },
+	{ 858 , "IBM00858" , "OEM Multilingual Latin I" },
+	{ 860 , "IBM860" , "Portuguese (DOS)" },
+	{ 861 , "ibm861" , "Icelandic (DOS)" },
+	{ 862 , "DOS-862" , "Hebrew (DOS)" },
+	{ 863 , "IBM863" , "French Canadian (DOS)" },
+	{ 864 , "IBM864" , "Arabic (864)" },
+	{ 865 , "IBM865" , "Nordic (DOS)" },
+	{ 866 , "cp866" , "Cyrillic (DOS)" },
+	{ 869 , "ibm869" , "Greek, Modern (DOS)" },
+	{ 870 , "IBM870" , "IBM EBCDIC (Multilingual Latin-2)" },
+	{ 874 , "windows-874" , "Thai (Windows)" },
+	{ 875 , "cp875" , "IBM EBCDIC (Greek Modern)" },
+	{ 932 , "shift_jis" , "Japanese (Shift-JIS)" },
+	{ 936 , "gb2312" , "Chinese Simplified (GB2312)" },
+	{ 949 , "ks_c_5601-1987" , "Korean" },
+	{ 950 , "big5" , "Chinese Traditional (Big5)" },
+	{ 1026 , "IBM1026" , "IBM EBCDIC (Turkish Latin-5)" },
+	{ 1047 , "IBM01047" , "IBM Latin-1" },
+	{ 1140 , "IBM01140" , "IBM EBCDIC (US-Canada-Euro)" },
+	{ 1141 , "IBM01141" , "IBM EBCDIC (Germany-Euro)" },
+	{ 1142 , "IBM01142" , "IBM EBCDIC (Denmark-Norway-Euro)" },
+	{ 1143 , "IBM01143" , "IBM EBCDIC (Finland-Sweden-Euro)" },
+	{ 1144 , "IBM01144" , "IBM EBCDIC (Italy-Euro)" },
+	{ 1145 , "IBM01145" , "IBM EBCDIC (Spain-Euro)" },
+	{ 1146 , "IBM01146" , "IBM EBCDIC (UK-Euro)" },
+	{ 1147 , "IBM01147" , "IBM EBCDIC (France-Euro)" },
+	{ 1148 , "IBM01148" , "IBM EBCDIC (International-Euro)" },
+	{ 1149 , "IBM01149" , "IBM EBCDIC (Icelandic-Euro)" },
+	{ 1200 , "utf-16" , "Unicode" },
+	{ 1201 , "unicodeFFFE" , "Unicode (Big-Endian)" },
+	{ 1250 , "windows-1250" , "Central European (Windows)" },
+	{ 1251 , "windows-1251" , "Cyrillic (Windows)" },
+	{ 1252 , "Windows-1252" , "Western European (Windows)" },
+	{ 1253 , "windows-1253" , "Greek (Windows)" },
+	{ 1254 , "windows-1254" , "Turkish (Windows)" },
+	{ 1255 , "windows-1255" , "Hebrew (Windows)" },
+	{ 1256 , "windows-1256" , "Arabic (Windows)" },
+	{ 1257 , "windows-1257" , "Baltic (Windows)" },
+	{ 1258 , "windows-1258" , "Vietnamese (Windows)" },
+	{ 1361 , "Johab" , "Korean (Johab)" },
+	{ 10000 , "macintosh" , "Western European (Mac)" },
+	{ 10001 , "x-mac-japanese" , "Japanese (Mac)" },
+	{ 10002 , "x-mac-chinesetrad" , "Chinese Traditional (Mac)" },
+	{ 10003 , "x-mac-korean" , "Korean (Mac)" },
+	{ 10004 , "x-mac-arabic" , "Arabic (Mac)" },
+	{ 10005 , "x-mac-hebrew" , "Hebrew (Mac)" },
+	{ 10006 , "x-mac-greek" , "Greek (Mac)" },
+	{ 10007 , "x-mac-cyrillic" , "Cyrillic (Mac)" },
+	{ 10008 , "x-mac-chinesesimp" , "Chinese Simplified (Mac)" },
+	{ 10010 , "x-mac-romanian" , "Romanian (Mac)" },
+	{ 10017 , "x-mac-ukrainian" , "Ukrainian (Mac)" },
+	{ 10021 , "x-mac-thai" , "Thai (Mac)" },
+	{ 10029 , "x-mac-ce" , "Central European (Mac)" },
+	{ 10079 , "x-mac-icelandic" , "Icelandic (Mac)" },
+	{ 10081 , "x-mac-turkish" , "Turkish (Mac)" },
+	{ 10082 , "x-mac-croatian" , "Croatian (Mac)" },
+	{ 12000 , "utf-32" , "Unicode (UTF-32)" },
+	{ 12001 , "utf-32BE" , "Unicode (UTF-32 Big-Endian)" },
+	{ 20000 , "x-Chinese-CNS" , "Chinese Traditional (CNS)" },
+	{ 20001 , "x-cp20001" , "TCA Taiwan" },
+	{ 20002 , "x-Chinese-Eten" , "Chinese Traditional (Eten)" },
+	{ 20003 , "x-cp20003" , "IBM5550 Taiwan" },
+	{ 20004 , "x-cp20004" , "TeleText Taiwan" },
+	{ 20005 , "x-cp20005" , "Wang Taiwan" },
+	{ 20105 , "x-IA5" , "Western European (IA5)" },
+	{ 20106 , "x-IA5-German" , "German (IA5)" },
+	{ 20107 , "x-IA5-Swedish" , "Swedish (IA5)" },
+	{ 20108 , "x-IA5-Norwegian" , "Norwegian (IA5)" },
+	{ 20127 , "us-ascii" , "US-ASCII" },
+	{ 20261 , "x-cp20261" , "T.61" },
+	{ 20269 , "x-cp20269" , "ISO-6937" },
+	{ 20273 , "IBM273" , "IBM EBCDIC (Germany)" },
+	{ 20277 , "IBM277" , "IBM EBCDIC (Denmark-Norway)" },
+	{ 20278 , "IBM278" , "IBM EBCDIC (Finland-Sweden)" },
+	{ 20280 , "IBM280" , "IBM EBCDIC (Italy)" },
+	{ 20284 , "IBM284" , "IBM EBCDIC (Spain)" },
+	{ 20285 , "IBM285" , "IBM EBCDIC (UK)" },
+	{ 20290 , "IBM290" , "IBM EBCDIC (Japanese katakana)" },
+	{ 20297 , "IBM297" , "IBM EBCDIC (France)" },
+	{ 20420 , "IBM420" , "IBM EBCDIC (Arabic)" },
+	{ 20423 , "IBM423" , "IBM EBCDIC (Greek)" },
+	{ 20424 , "IBM424" , "IBM EBCDIC (Hebrew)" },
+	{ 20833 , "x-EBCDIC-KoreanExtended" , "IBM EBCDIC (Korean Extended)" },
+	{ 20838 , "IBM-Thai" , "IBM EBCDIC (Thai)" },
+	{ 20866 , "koi8-r" , "Cyrillic (KOI8-R)" },
+	{ 20871 , "IBM871" , "IBM EBCDIC (Icelandic)" },
+	{ 20880 , "IBM880" , "IBM EBCDIC (Cyrillic Russian)" },
+	{ 20905 , "IBM905" , "IBM EBCDIC (Turkish)" },
+	{ 20924 , "IBM00924" , "IBM Latin-1" },
+	{ 20932 , "EUC-JP" , "Japanese (JIS 0208-1990 and 0212-1990)" },
+	{ 20936 , "x-cp20936" , "Chinese Simplified (GB2312-80)" },
+	{ 20949 , "x-cp20949" , "Korean Wansung" },
+	{ 21025 , "cp1025" , "IBM EBCDIC (Cyrillic Serbian-Bulgarian)" },
+	{ 21866 , "koi8-u" , "Cyrillic (KOI8-U)" },
+	{ 28591 , "iso-8859-1" , "Western European (ISO)" },
+	{ 28592 , "iso-8859-2" , "Central European (ISO)" },
+	{ 28593 , "iso-8859-3" , "Latin 3 (ISO)" },
+	{ 28594 , "iso-8859-4" , "Baltic (ISO)" },
+	{ 28595 , "iso-8859-5" , "Cyrillic (ISO)" },
+	{ 28596 , "iso-8859-6" , "Arabic (ISO)" },
+	{ 28597 , "iso-8859-7" , "Greek (ISO)" },
+	{ 28598 , "iso-8859-8" , "Hebrew (ISO-Visual)" },
+	{ 28599 , "iso-8859-9" , "Turkish (ISO)" },
+	{ 28603 , "iso-8859-13" , "Estonian (ISO)" },
+	{ 28605 , "iso-8859-15" , "Latin 9 (ISO)" },
+	{ 29001 , "x-Europa" , "Europa" },
+	{ 38598 , "iso-8859-8-i" , "Hebrew (ISO-Logical)" },
+	{ 50220 , "iso-2022-jp" , "Japanese (JIS)" },
+	{ 50221 , "csISO2022JP" , "Japanese (JIS-Allow 1 byte Kana)" },
+	{ 50222 , "iso-2022-jp" , "Japanese (JIS-Allow 1 byte Kana - SO/SI)" },
+	{ 50225 , "iso-2022-kr" , "Korean (ISO)" },
+	{ 50227 , "x-cp50227" , "Chinese Simplified (ISO-2022)" },
+	{ 51932 , "euc-jp" , "Japanese (EUC)" },
+	{ 51936 , "EUC-CN" , "Chinese Simplified (EUC)" },
+	{ 51949 , "euc-kr" , "Korean (EUC)" },
+	{ 52936 , "hz-gb-2312" , "Chinese Simplified (HZ)" },
+	{ 54936 , "GB18030" , "Chinese Simplified (GB18030)" },
+	{ 57002 , "x-iscii-de" , "ISCII Devanagari" },
+	{ 57003 , "x-iscii-be" , "ISCII Bengali" },
+	{ 57004 , "x-iscii-ta" , "ISCII Tamil" },
+	{ 57005 , "x-iscii-te" , "ISCII Telugu" },
+	{ 57006 , "x-iscii-as" , "ISCII Assamese" },
+	{ 57007 , "x-iscii-or" , "ISCII Oriya" },
+	{ 57008 , "x-iscii-ka" , "ISCII Kannada" },
+	{ 57009 , "x-iscii-ma" , "ISCII Malayalam" },
+	{ 57010 , "x-iscii-gu" , "ISCII Gujarati" },
+	{ 57011 , "x-iscii-pa" , "ISCII Punjabi" },
+	{ 65000 , "utf-7" , "Unicode (UTF-7)" },
+	{ 65001 , "utf-8" , "Unicode (UTF-8)" },
+};
+
+#include <unordered_map>
+
+UINT charset2Id(const char *char_set)
+{
+	UINT id = 0;
+	CP2NM *item;
+	typedef unordered_map<std::string, unsigned int> myMap;
+	static myMap *ids = 0;
+	myMap::iterator it;
+
+	if (!ids)
+		ids = new myMap;
+	
+	int cp2name_size = sizeof(cp2name)/sizeof(CP2NM);
+	for (int i = 0; i < cp2name_size; i++)
+	{
+		
+		item = &cp2name[i];
+		std::string charset = item->m_charset;
+		transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
+		if (ids->find(charset) == ids->end()) {  // not found, invalid iterator returned
+			ids->insert(myMap::value_type(charset,item->m_charsetId));
+		}
+	}
+#if 0
+	for (it = ids->begin(); it != ids->end(); it++) {
+		TRACE("%d %s\n", it->second, it->first);
+	}
+#endif
+	std::string charset = char_set;
+	transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
+	if ((it = ids->find(charset)) != ids->end()) {
+		id = it->second;
+	}
+	return id;
+}
+
+BOOL id2charset(UINT id, std::string &charset)
+{
+	CP2NM *item;
+	typedef unordered_map<unsigned int, std::string> myIdMap;
+	static myIdMap *ids = 0;
+	myIdMap::iterator it;
+
+	if (!ids)
+		ids = new myIdMap;
+
+	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+	for (int i = 0; i < cp2name_size; i++)
+	{
+		item = &cp2name[i];
+		if (ids->find(item->m_charsetId) == ids->end()) {  // not found, invalid iterator returned
+			ids->insert(myIdMap::value_type(item->m_charsetId, item->m_charset));
+		}
+	}
+#if 0
+	for (it = ids->begin(); it != ids->end(); it++) {
+		TRACE("%d %s\n", it->first, it->second);
+	}
+#endif
+	if ((it = ids->find(id)) != ids->end()) {
+		charset = it->second;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
 
 
 

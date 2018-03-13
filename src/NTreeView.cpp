@@ -114,14 +114,26 @@ BOOL PathFileExist(LPCSTR path);
 
 _int64 FileSize(LPCSTR fileName)
 {
-	LARGE_INTEGER dwSize = {0};
-	OFSTRUCT	os;
-	HFILE hf = OpenFile(fileName, &os, OF_READ | OF_SHARE_DENY_NONE);
-	if( hf ) {
-		GetFileSizeEx((HANDLE)hf, &dwSize);
-		CloseHandle((HANDLE)hf);
+	LARGE_INTEGER li = { 0 };
+	HANDLE hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		TRACE(_T("(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n"), err, fileName);
+		return li.QuadPart;
 	}
-	return dwSize.QuadPart;
+	else {
+		BOOL retval = GetFileSizeEx(hFile, &li);
+		CloseHandle(hFile);
+		if (retval != TRUE) {
+			DWORD err = GetLastError();
+			TRACE(_T("(GetFileSizeEx)Failed with error=%ld file=%s\n"), err, fileName);
+		}
+		else {
+			long long fsize = li.QuadPart;
+			return li.QuadPart;
+		}
+	}
+	return li.QuadPart;
 }
 
 void NTreeView::FillCtrl()

@@ -14,7 +14,7 @@ static char THIS_FILE[] = __FILE__;
 #define CAPT_MAX_HEIGHT	50
 #define CAPT_MIN_HEIGHT 5
 
-#define TEXT_BOLD_LEFT	10
+#define TEXT_BOLD_LEFT	6 // was 10
 #define TEXT_NORM_LEFT	85
 #define TEXT_LINE_ONE	4
 #define TEXT_LINE_TWO	29
@@ -45,17 +45,38 @@ NMsgView::NMsgView()
 
 	ncm.lfMessageFont.lfWeight = 400;
 	m_NormFont.CreateFontIndirect(&ncm.lfMessageFont);
+
 	HDC hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	//ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	ncm.lfMessageFont.lfHeight = -MulDiv(11, GetDeviceCaps(hdc, LOGPIXELSY), 72);
 	::ReleaseDC(NULL, hdc);
+
 	ncm.lfMessageFont.lfWeight = 400;
 	m_BigFont.CreateFontIndirect(&ncm.lfMessageFont);
-	m_strTitle1.LoadString(IDS_DESC_TITLE);
-	m_strDescp1.LoadString(IDS_DESC_NONE);
-	m_strTitle2.LoadString(IDS_DESC_TITLE1);
-	m_strDescp2.LoadString(IDS_DESC_NONE);
-	m_strTitle3.LoadString(IDS_DESC_TITLE2);
-	m_strDescp3.LoadString(IDS_DESC_NONE);
+
+	ncm.lfMessageFont.lfWeight = 700;
+	m_BigBoldFont.CreateFontIndirect(&ncm.lfMessageFont);
+
+	m_strTitleSubject.LoadString(IDS_TITLE_SUBJECT);
+	m_strSubject.LoadString(IDS_DESC_NONE);
+	m_strTitleFrom.LoadString(IDS_TITLE_FROM);
+	m_strFrom.LoadString(IDS_DESC_NONE);
+	m_strTitleDate.LoadString(IDS_TITLE_DATE);
+	m_strDate.LoadString(IDS_DESC_NONE);
+	m_strTitleTo.LoadString(IDS_TITLE_TO);
+	m_strTo.LoadString(IDS_DESC_NONE);
+	m_strTitleBody.LoadString(IDS_TITLE_BODY);
+	m_subj_charsetId = 0;
+	m_from_charsetId = 0;
+	m_date_charsetId = 0;
+	m_to_charsetId = 0;
+	m_body_charsetId = 0;
+
+	m_cnf_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
+	m_cnf_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
+	m_cnf_date_charsetId = 0;
+	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
+	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
 }
 
 NMsgView::~NMsgView()
@@ -91,6 +112,7 @@ void NMsgView::PostNcDestroy()
 	m_BoldFont.DeleteObject();
 	m_NormFont.DeleteObject();
 	m_BigFont.DeleteObject();
+	m_BigBoldFont.DeleteObject();
 	DestroyWindow();
 	delete this;
 }
@@ -159,6 +181,7 @@ void NMsgView::UpdateLayout()
 	m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
 
 	Invalidate();
+	UpdateWindow();
 }
 
 void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORREF crend)
@@ -236,6 +259,72 @@ void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORRE
 
 }
 
+int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle,  CString &FieldText, CString &Charset, UINT CharsetId, UINT CnfCharsetId)
+{
+	HDC hDC = dc.GetSafeHdc();
+
+	int xpos = x_pos;
+	int ypos = y_pos;
+
+	if (bigFont)
+		dc.SelectObject(&m_BigBoldFont);
+	else
+		dc.SelectObject(&m_BoldFont);
+	xpos += TEXT_BOLD_LEFT;
+	dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, FieldTitle, NULL);
+	CSize szFieldTitle = dc.GetTextExtent(FieldTitle);
+
+	if (bigFont)
+		dc.SelectObject(&m_BigFont);
+	else
+		dc.SelectObject(&m_NormFont);
+
+	UINT charsetId = CharsetId;
+	CString StrCharset;
+	CString strCharSetId;
+	if (m_show_charsets)
+	{
+		if ((CharsetId == 0) && (CnfCharsetId != 0)) {
+			std::string str;
+			BOOL ret = id2charset(CnfCharsetId, str);
+			CString charset = str.c_str();
+
+			strCharSetId.Format(_T("%d"), CnfCharsetId);
+			StrCharset += " (" + charset + "/" + strCharSetId + "*)";
+
+			charsetId = CnfCharsetId;
+		}
+		else {
+			strCharSetId.Format(_T("%d"), CharsetId);
+			StrCharset += " (" + Charset + "/" + strCharSetId + ")";
+		}
+		xpos += szFieldTitle.cx;
+		dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, StrCharset, NULL);
+
+		CSize szStrCharset = dc.GetTextExtent(StrCharset);
+		xpos += szStrCharset.cx;
+	}
+	else
+		xpos += szFieldTitle.cx;
+
+	xpos += TEXT_BOLD_LEFT;
+	BOOL done = FALSE;
+	if (charsetId) {
+		CStringW strW;
+		if (Str2Wide(FieldText, charsetId, strW)) {
+			::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCWSTR)strW, strW.GetLength(), NULL);
+			done = TRUE;
+		}
+	}
+	if (!done) {
+		dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, FieldText, NULL);
+	}
+	CSize szFieldText = dc.GetTextExtent(FieldText);
+
+	xpos += szFieldText.cx;
+	return xpos;
+}
+
 void NMsgView::OnPaint() 
 {
 	CPaintDC dc(this); // device context for painting
@@ -268,15 +357,29 @@ void NMsgView::OnPaint()
 
 			dc.SetBkMode(TRANSPARENT);
 
-			CSize sz = dc.GetTextExtent( m_strTitle1 );
-			CSize sz1 = dc.GetTextExtent( m_strTitle3 );
-			dc.ExtTextOut(r.left+sz.cx+400, r.top+TEXT_LINE_TWO, ETO_CLIPPED, r, m_strTitle3, NULL);
-			dc.SelectObject(&m_BoldFont);
-			dc.ExtTextOut(r.left+TEXT_BOLD_LEFT, r.top+TEXT_LINE_TWO, ETO_CLIPPED, r, m_strDescp1, NULL);
-			dc.SelectObject(&m_NormFont);
-			dc.ExtTextOut(r.left+sz.cx+400+sz1.cx+10, r.top+TEXT_LINE_TWO, ETO_CLIPPED, r, m_strDescp3, NULL);
-			dc.SelectObject(&m_BigFont);
-			dc.ExtTextOut(r.left+TEXT_BOLD_LEFT, r.top+TEXT_LINE_ONE, ETO_CLIPPED, r, m_strDescp2, NULL);
+			int xpos = 0;
+			int ypos = r.top + TEXT_LINE_TWO;
+			UINT localCP = GetACP();
+			std::string str;
+			BOOL ret = id2charset(localCP, str);
+			m_date_charset = str.c_str();
+
+			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleDate, m_strDate, m_date_charset, localCP, m_cnf_date_charsetId);
+			xpos += TEXT_BOLD_LEFT;
+			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleFrom, m_strFrom, m_from_charset, m_from_charsetId, m_cnf_from_charsetId);
+			xpos += 3 * TEXT_BOLD_LEFT;
+			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleTo, m_strTo, m_to_charset, m_to_charsetId, m_cnf_to_charsetId);
+
+			if (m_show_charsets) {
+				xpos += 3 * TEXT_BOLD_LEFT;
+				xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleBody, m_strBody, m_body_charset, m_body_charsetId, m_body_charsetId);
+			}
+
+			ypos = r.top + TEXT_LINE_ONE;
+			xpos = 0;
+			xpos = PaintHdrField(dc, r, xpos, ypos, TRUE, m_strTitleSubject, m_strSubject, m_subj_charset, m_subj_charsetId, m_cnf_subj_charsetId);
+
+			// Rstore font
 			dc.SelectObject( pOldFont );
 		}
 	}

@@ -10,6 +10,8 @@
 #include "WheelListCtrl.h"
 #include "UPDialog.h"
 
+class CMimeMessage;
+
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
 
@@ -66,8 +68,10 @@ public:
 	CString m_path;
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
-	int dumpSelectedItem(int which);
-
+	int DumpSelectedItem(int which);
+	int DumpItemDetails(int which);
+	int DumpItemDetails(int which, CMimeMessage &mail);
+	int DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile);
 	int WhichOne( _int64 offset, int hint = -1, int lowhint = 0, int highhint = -1 );
 	void ResetFont();
 	void RedrawMails();

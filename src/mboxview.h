@@ -54,6 +54,9 @@ public:
 extern CmboxviewApp theApp;
 
 BOOL isNumeric(CString &str);
+BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW);
+UINT charset2Id(const char *char_set);
+BOOL id2charset(UINT id, std::string &charset);
 
 /////////////////////////////////////////////////////////////////////////////
 

@@ -13,7 +13,7 @@
 
 class NMsgView : public CWnd
 {
-	CFont m_BoldFont, m_NormFont, m_BigFont;
+	CFont m_BoldFont, m_NormFont, m_BigFont, m_BigBoldFont;
 // Construction
 public:
 	NMsgView();
@@ -21,12 +21,19 @@ public:
 	CBrowser m_browser;
 	CListCtrl	m_attachments;
 	CFont m_font;
-	CString m_strTitle1, m_strTitle2, m_strTitle3, m_strDescp1, m_strDescp2, m_strDescp3;
+	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleBody;
+	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strBody;
+	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_body_charsetId;
+	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId;
+	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_body_charset;
+	int m_show_charsets;
 // Attributes
 public:
 
 // Operations
 public:
+protected:
+	int PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle, CString &FieldText, CString &Charset, UINT CharsetId, UINT CnfCharsetId);
 
 // Overrides
 	// ClassWizard generated virtual function overrides

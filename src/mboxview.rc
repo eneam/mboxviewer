@@ -159,24 +159,33 @@ BEGIN
     CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,86,50,10
 END
 
-IDD_OPTIONS DIALOGEX 0, 0, 167, 137
+IDD_OPTIONS DIALOGEX 0, 0, 167, 181
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,23,110,50,14
-    PUSHBUTTON      "Annulla",IDCANCEL,77,110,50,14
+    DEFPUSHBUTTON   "OK",IDOK,27,155,50,14
+    PUSHBUTTON      "Annulla",IDCANCEL,86,155,50,14
     LTEXT           "Date format:",IDC_STATIC,7,7,42,8
     CONTROL         "dd/mm/yyyy",IDC_DMY,"Button",BS_AUTORADIOBUTTON | WS_GROUP,53,7,56,10
     CONTROL         "mm/dd/yyyy",IDC_MDY,"Button",BS_AUTORADIOBUTTON,53,18,56,10
     CONTROL         "yyyy/mm/dd",IDC_YMD,"Button",BS_AUTORADIOBUTTON,53,31,56,10
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,7,48,145,1
-    GROUPBOX        "Search progress bar startup delay in seconds",IDC_STATIC,7,50,153,29
-    GROUPBOX        "",IDC_STATIC,7,78,153,22
     EDITTEXT        IDC_PROGRESS_BAR_DELAY,17,62,57,12,ES_AUTOHSCROLL
+    GROUPBOX        "",IDC_STATIC,7,78,153,19
+    LTEXT           "Export EML:",IDC_STATIC,15,85,51,9
     CONTROL         "n",IDC_EXPORT_EML,"Button",BS_AUTORADIOBUTTON | WS_GROUP,69,85,20,10
     CONTROL         "y",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,99,85,20,10
-    LTEXT           "Export EML:",IDC_STATIC,15,85,51,9
+    LTEXT           "  Message Header Character Set IDs (0-65001)",IDC_STATIC,7,102,153,8
+    GROUPBOX        "from                        to                  subject",IDC_STATIC,7,110,153,26
+    EDITTEXT        IDC_FROM_ID,7,120,45,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TO_ID,62,120,45,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SUBJ_ID,115,120,45,12,ES_AUTOHSCROLL
+    GROUPBOX        "Search progress bar startup delay in seconds",IDC_STATIC,7,50,153,29
+    GROUPBOX        "",IDC_STATIC,7,134,153,17
+    LTEXT           "Show Charsets:",IDC_STATIC,13,139,54,9
+    CONTROL         "n",IDC_SHOW_CHARSETS,"Button",BS_AUTORADIOBUTTON | WS_GROUP,71,139,20,10
+    CONTROL         "y",IDC_RADIO6,"Button",BS_AUTORADIOBUTTON,98,139,20,10
 END
 
 
@@ -186,7 +195,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,1,12
+ FILEVERSION 1,0,1,13
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -203,7 +212,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.1.12"
+            VALUE "FileVersion", "1.0.1.13"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -255,7 +264,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 160
         TOPMARGIN, 7
-        BOTTOMMARGIN, 130
+        BOTTOMMARGIN, 174
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -379,14 +388,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DESC_TITLE          "Subject:"
-    IDS_DESC_TITLE1         "From:"
+    IDS_TITLE_SUBJECT       "Subject:"
+    IDS_TITLE_FROM          "From:"
     IDS_DESC_NONE           "<empty>"
-END
-
-STRINGTABLE
-BEGIN
-    IDS_DESC_TITLE2         "Date:"
+    IDS_TITLE_TO            "To:"
+    IDS_TITLE_DATE          "Date:"
+    IDS_TITLE_BODY          "Body:"
 END
 
 STRINGTABLE

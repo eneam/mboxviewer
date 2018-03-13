@@ -592,7 +592,7 @@ bool ALongRightProcessProcSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	6
+#define CACHE_VERSION	7
 
 BOOL SaveMails(LPCSTR cache) {
 	int ni = MboxMail::s_mails.GetSize();
@@ -611,8 +611,14 @@ BOOL SaveMails(LPCSTR cache) {
 		sz.writeInt(m->m_headLength);
 		sz.writeInt(m->m_recv);
 		sz.writeString(m->m_from);
+		sz.writeString(m->m_from_charset);
+		sz.writeInt(m->m_from_charsetId);
 		sz.writeString(m->m_to);
+		sz.writeString(m->m_to_charset);
+		sz.writeInt(m->m_to_charsetId);
 		sz.writeString(m->m_subj);
+		sz.writeString(m->m_subj_charset);
+		sz.writeInt(m->m_subj_charsetId);
 		sz.writeInt64(m->m_timeDate);
 		if (lastoff < m->m_startOff)
 			lastoff = m->m_startOff;
@@ -625,15 +631,24 @@ BOOL SaveMails(LPCSTR cache) {
 int LoadMails(LPCSTR cache)
 {
 	SerializerHelper sz(cache);
-	if( ! sz.open(FALSE) )
+	if (!sz.open(FALSE))
 		return -1;
 	int version;
 	_int64 fSize;
 	int ni = 0;
-	if( ! sz.readInt(&version) )
+	if (!sz.readInt(&version))
 		return -1;
-	if( version != CACHE_VERSION )
+	if (version != CACHE_VERSION) {
+		CString txt = _T("File \"") + CString(cache);
+		CString strVersion; 
+		strVersion.Format(_T("%d"), version);
+		txt += _T("\".\nhas incorrect version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), CACHE_VERSION);
+		txt += strVersion + "\". Will remove\n\"" + CString(cache) + "\"\nand recreate from the mail file.";
+		HWND h = NULL; // we don't have any window yet  
+		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
+	}
 	if( ! sz.readInt64(&fSize) )
 		return -1;
 	if( fSize != FileSize(MboxMail::s_path) )
@@ -654,9 +669,21 @@ int LoadMails(LPCSTR cache)
 				break;
 			if (!sz.readString(m->m_from))
 				break;
+			if (!sz.readString(m->m_from_charset))
+				break;
+			if (!sz.readUInt(&m->m_from_charsetId))
+				break;
 			if (!sz.readString(m->m_to))
 				break;
+			if (!sz.readString(m->m_to_charset))
+				break;
+			if (!sz.readUInt(&m->m_to_charsetId))
+				break;
 			if (!sz.readString(m->m_subj))
+				break;
+			if (!sz.readString(m->m_subj_charset))
+				break;
+			if (!sz.readUInt(&m->m_subj_charsetId))
 				break;
 			if (!sz.readInt64(&m->m_timeDate))
 				break;
@@ -722,9 +749,21 @@ int Cache2Text(LPCSTR cache, CString format)
 				break;
 			if (!sz.readString(m->m_from))
 				break;
+			if (!sz.readString(m->m_from_charset))
+				break;
+			if (!sz.readUInt(&m->m_from_charsetId))
+				break;
 			if (!sz.readString(m->m_to))
 				break;
+			if (!sz.readString(m->m_to_charset))
+				break;
+			if (!sz.readUInt(&m->m_to_charsetId))
+				break;
 			if (!sz.readString(m->m_subj))
+				break;
+			if (!sz.readString(m->m_subj_charset))
+				break;
+			if (!sz.readUInt(&m->m_subj_charsetId))
 				break;
 			if (!sz.readInt64(&m->m_timeDate))
 				break;
@@ -843,10 +882,18 @@ void NListView::SelectItem(int iItem)
 	// Get cached mail
 	MboxMail *m = MboxMail::s_mails[iItem];
 	// Set header data
-	pView->m_strDescp1 = m->m_from;
-	pView->m_strDescp2 = m->m_subj;
+	pView->m_strSubject = m->m_subj;
+	pView->m_strFrom = m->m_from;
 	CTime tt(m->m_timeDate);
-	pView->m_strDescp3 = tt.Format(m_format);
+	pView->m_strDate = tt.Format(m_format);
+	pView->m_strTo = m->m_to;
+	pView->m_subj_charsetId = m->m_subj_charsetId;
+	pView->m_subj_charset = m->m_subj_charset;
+	pView->m_from_charsetId = m->m_from_charsetId;
+	pView->m_from_charset = m->m_from_charset;
+	pView->m_date_charsetId = 0;
+	pView->m_to_charsetId = m->m_to_charsetId;
+	pView->m_to_charset = m->m_to_charset;
 	// Get raw mail body
 	CString bdy = m->GetBody();
 
@@ -863,6 +910,9 @@ void NListView::SelectItem(int iItem)
 	// Decode MIME message
 	CMimeMessage mail;
     int nLoadedSize = mail.Load(bdy, bdy.GetLength());
+
+	//DumpItemDetails(iItem, mail);
+
 	// Iterate all the descendant body parts
     CMimeBody::CBodyList bodies;
     int nCount = mail.GetBodyPartList(bodies);
@@ -879,7 +929,7 @@ void NListView::SelectItem(int iItem)
     for (it=bodies.begin(); it!=bodies.end(); it++)
     {
         CMimeBody* pBP = *it;
-		CString curExt;
+		CString curExt = "txt";
 
         // Iterate all the header fields of this body part:
         CMimeHeader::CFieldList& fds = pBP->Fields();
@@ -925,8 +975,8 @@ void NListView::SelectItem(int iItem)
         {
 			// Save all attachments
             string strName = pBP->GetName();
-            printf("File name: %s\r\n", strName.c_str());
-            printf("File size: %d\r\n", pBP->GetContentLength());
+            //printf("File name: %s\r\n", strName.c_str());
+            //printf("File size: %d\r\n", pBP->GetContentLength());
 			string name = strName;
             strName = string((LPCSTR)GetmboxviewTempPath()) + strName;
             pBP->WriteToFile(strName.c_str());
@@ -951,6 +1001,7 @@ void NListView::SelectItem(int iItem)
         }
     }
 
+
 	// Save mail
 	if (ext.Compare("txt") == 0) {
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n" + bdy + "</pre></body></html>";
@@ -959,20 +1010,170 @@ void NListView::SelectItem(int iItem)
 	else if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) {
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset="+bdycharset+"\"></head><body>"+bdy;
 	}
+	else {
+		int deb = 1;
+	}
+
+	pView->m_body_charsetId = charset2Id(bdycharset);
+	pView->m_body_charset = bdycharset;
+
 	// Get temporary file name with correct extension for IE to display
 	m_curFile = CreateTempFileName(ext);
 	CFile fp(m_curFile, CFile::modeWrite|CFile::modeCreate);
 	fp.Write(bdy, bdy.GetLength());
 	fp.Close();
-
-	// sometimes body is not shown and needs to be refreshed manually, but sleeping didn't help
-	// for (int ii = 0; (ii < 5) && !PathFileExist(m_curFile); ii++) Sleep(10);
 	
 	// Display mail in IE
 	pView->m_browser.Navigate(m_curFile, NULL);
 	// Update layou to show/hide attachments
 	pView->UpdateLayout();
 	return;
+}
+
+int NListView::DumpItemDetails(int iItem) {
+
+	MboxMail *m = MboxMail::s_mails[iItem];
+
+	// Get raw mail body
+	CString bdy = m->GetBody();
+
+	// Decode MIME message
+	CMimeMessage mail;
+	int nLoadedSize = mail.Load(bdy, bdy.GetLength());
+
+	int retval = DumpItemDetails(iItem, mail);
+	return retval;
+}
+
+int NListView::DumpItemDetails(int iItem, CMimeMessage &mail)
+{
+	char buff[2048];
+	char datebuff[256];
+	DWORD offset = 0;
+	DWORD nwritten = 0;
+	DWORD count = 0;
+
+	CString messageTextFile = "MBoxDumpMail.txt";
+	HANDLE hFile = CreateFile(messageTextFile, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		TRACE(_T("(DumpItemDetails)INVALID_HANDLE_VALUE error= %ld\n"), err);
+		return -1;
+	}
+
+	// Sanity check
+	if (iItem < 0 || iItem >= MboxMail::s_mails.GetSize()) {
+		return -1;
+	}
+	int m_lastSel = iItem;
+	MboxMail *m = MboxMail::s_mails[iItem];
+
+	datebuff[0] = 0;
+	if (m->m_timeDate > 0) {
+		CTime tt(m->m_timeDate);
+		strcpy(datebuff, (LPCSTR)tt.Format(m_format));
+	}
+
+	count = sprintf_s(buff, "INDX=%d first=%lld len=%d last=%lld att=%d hlen=%d rcv=%d date=\"%s\" from=\"%s\" to=\"%s\" subj=\"%s\"\n\n",
+		iItem, m->m_startOff, m->m_length, (m->m_startOff + m->m_length - 1), m->m_hasAttachments, m->m_headLength, m->m_recv,
+		datebuff, (LPCSTR)m->m_from, (LPCSTR)m->m_to, (LPCSTR)m->m_subj);
+
+	nwritten = 0;
+	if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
+		DWORD retval = GetLastError();
+	}
+
+	const char *cc = mail.GetCc();
+	const char *bcc = mail.GetBcc();
+	count = sprintf_s(buff, "INDX=%d date=\"%s\" from=\"%s\" from_charset=\"%s\" to=\"%s\" to_charset=\"%s\" cc=\"%s\" bcc=\"%s\" subj=\"%s\" to_charset=\"%s\"\n\n",
+		iItem, mail.GetDate(), (LPCSTR)mail.GetFrom(), mail.GetFieldCharset("From"), (LPCSTR)mail.GetTo(), mail.GetFieldCharset("To"),
+		cc, bcc, (LPCSTR)mail.GetSubject(), mail.GetFieldCharset("Subject"));
+
+	nwritten = 0;
+	if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
+		DWORD retval = GetLastError();
+	}
+
+	DumpCMimeMessage(mail, hFile);
+	SetEndOfFile(hFile);
+	CloseHandle(hFile);
+
+	return 1;
+}
+
+int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
+{
+	char buff[2048];
+	DWORD offset = 0;
+	DWORD nwritten = 0;
+	DWORD count = 0;
+
+	// Iterate all the descendant body parts
+	CMimeBody::CBodyList bodies;
+	int nCount = mail.GetBodyPartList(bodies);
+	CMimeBody::CBodyList::const_iterator it;
+
+	CString bdy = "";
+	CString ext = "";
+	if (bodies.begin() == bodies.end()) {
+		//bdy = mail.GetContent();
+		string strText;
+		mail.GetText(strText);
+		bdy = strText.c_str();
+		ext = "txt";
+	}
+	else {
+		count = sprintf_s(buff, "Message Body List:\n\n");
+		if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
+			DWORD retval = GetLastError();
+		}
+		int indx = 0;
+		for (it = bodies.begin(); it != bodies.end(); it++)
+		{
+			CMimeBody* pBP = *it;
+			CString curExt;
+			const unsigned char* content = pBP->GetContent();
+			int contentLength = pBP->GetContentLength();
+
+			count = sprintf_s(buff, "BodyIndx=%d IsText=%d IsMessage=%d HasBody=%d IsAttachement=%d IsMultiPart=%d ContentLength=%d "
+				"Charset=%s Description=%s Disposition=%s TransferEncoding=%s SubType=%s MainType=%s "
+				"Boundary=%s ContentType=%s MediaType=%d Name=%s\n",
+				indx, pBP->IsText(), pBP->IsMessage(), !bdy.IsEmpty(), pBP->IsAttachment(), pBP->IsMultiPart(), contentLength, 
+				pBP->GetCharset().c_str(), pBP->GetDescription(), pBP->GetDisposition(), pBP->GetTransferEncoding(), pBP->GetSubType().c_str(), pBP->GetMainType().c_str(),
+				pBP->GetBoundary().c_str(), pBP->GetContentType(), pBP->GetMediaType(), pBP->GetName().c_str());
+			if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
+				DWORD retval = GetLastError();
+			}
+
+			indx++;
+
+			// Iterate all the header fields of this body part:
+			CMimeHeader::CFieldList& fds = pBP->Fields();
+			CMimeHeader::CFieldList::const_iterator itfd;
+			//CString charset;
+			for (itfd = fds.begin(); itfd != fds.end(); itfd++)
+			{
+				const CMimeField& fd = *itfd;
+				const char *fname = fd.GetName();
+				const char *fval = fd.GetValue();
+				const char *charset = fd.GetCharset();
+				count = sprintf_s(buff, "fname=%s fval=%s charset=%s\n", fname, fval, charset);
+				if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
+					DWORD retval = GetLastError();
+				}
+			}
+			if (content && (pBP->GetMainType() == "text")) {
+				if (!WriteFile(hFile, content, contentLength, &nwritten, NULL)) {
+					DWORD retval = GetLastError();
+				}
+				char *CRLF = "\n\n";
+				if (!WriteFile(hFile, CRLF, strlen(CRLF), &nwritten, NULL)) {
+					DWORD retval = GetLastError();
+				}
+			}
+		}
+	}
+	return 1;
 }
 
 
@@ -995,9 +1196,17 @@ void NListView::ClearDescView()
 	NMsgView *pView = pFrame->GetMsgView();
 	if( ! pView )
 		return;
-	pView->m_strDescp1.LoadString(IDS_DESC_NONE);
-	pView->m_strDescp2.LoadString(IDS_DESC_NONE);
-	pView->m_strDescp3.LoadString(IDS_DESC_NONE);
+	pView->m_strSubject.LoadString(IDS_DESC_NONE);
+	pView->m_strFrom.LoadString(IDS_DESC_NONE);
+	pView->m_strDate.LoadString(IDS_DESC_NONE);
+	pView->m_strTo.LoadString(IDS_DESC_NONE);
+	pView->m_strTo.LoadString(IDS_DESC_NONE);
+	pView->m_subj_charset.SetString(_T(""));
+	pView->m_from_charset.SetString(_T(""));
+	pView->m_date_charset.SetString(_T(""));
+	pView->m_to_charset.SetString(_T(""));
+	pView->m_body_charset.SetString(_T(""));
+	pView->m_body_charsetId = 0;
 	pView->m_attachments.DeleteAllItems();
 	RemoveDir(GetmboxviewTempPath());
 	m_curFile.Empty();
@@ -1305,7 +1514,7 @@ _int64 NListView::DoFind(_int64 searchstart, _int64 searchend, BOOL mainThreadCo
 		OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
-		TRACE(_T("(DoFind)INVALID_HANDLE_VALUE error= %lld\n"), err);
+		TRACE(_T("(DoFind)INVALID_HANDLE_VALUE error= %ld\n"), err);
 		exitted = TRUE;
 		return -1;
 	}
@@ -1508,6 +1717,7 @@ void NListView::SelectPos(_int64 offset)
 	MboxMail *m = MboxMail::s_mails[which];
 	m_searchPos = m->m_startOff + m->m_length;
 	//dumpSelectedItem(which);
+	//DumpItemDetails(which);
 }
 
 __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
@@ -1530,7 +1740,7 @@ __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
 	return li.QuadPart;
 }
 
-int NListView::dumpSelectedItem(int which)
+int NListView::DumpSelectedItem(int which)
 {
 	char buff[2048];
 	char datebuff[256];
@@ -1543,7 +1753,7 @@ int NListView::dumpSelectedItem(int which)
 	HANDLE hFile = CreateFile(cacheTextFile, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
-		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %lld\n"), err);
+		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %ld\n"), err);
 		return -1;
 	}
 
@@ -1551,7 +1761,7 @@ int NListView::dumpSelectedItem(int which)
 		OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	if (mbox_hFile == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
-		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %lld\n"), err);
+		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %ld\n"), err);
 		CloseHandle(hFile);
 		return -1;
 	}
@@ -1635,6 +1845,8 @@ void NListView::SelectItemFound(int which)
 	MboxMail *m = MboxMail::s_mails[which];
 	m_searchPos = m->m_startOff + m->m_length;
 	m_lastFindPos = which;
+	//dumpSelectedItem(which);
+	//DumpItemDetails(which);
 }
 
 

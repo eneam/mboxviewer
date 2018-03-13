@@ -68,6 +68,23 @@ BOOL isNumeric(CString &str) {
 	return TRUE;
 }
 
+BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW)
+{
+	int len = res.GetLength() * 4 + 2;
+	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
+	int len1 = MultiByteToWideChar(CodePage, 0, res, res.GetLength(), buff, len);
+	if (len1 == 0) {
+		free(buff);
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		return FALSE;
+	}
+	buff[len1] = 0;
+	m_strW = buff;
+	free(buff);
+	return TRUE;
+}
+
 #include <afxadv.h> //Has CRecentFileList class definition.
 #include "afxlinkctrl.h"
 #include "afxwin.h"

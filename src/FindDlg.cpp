@@ -69,6 +69,7 @@ void CFindDlg::OnOK()
 		AfxMessageBox("Cannot search for an empty string!", MB_OK | MB_ICONHAND);
 		return;
 	}
+	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));
 /*
 	g_lastCase = m_bCaseSensitive;
 	g_lastScope = m_scope;

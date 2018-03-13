@@ -2,6 +2,15 @@
 Changes
 ---
 
+v 1.0.1.13
+
+ - updated User Manual to describe new and updated features;
+ - fixed header fields presentation in the header of Message Window;
+ - changed the layout of the header in the Message Window;
+ - added new gobal options settable from GUI;
+ - fixed occasional truncation of the subject field;
+ - fixed occasional blank Message Window during traversal and searching;
+
 v 1.0.1.12
 
  - added User Manual;

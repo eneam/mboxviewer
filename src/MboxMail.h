@@ -9,6 +9,7 @@ class MboxMail
 public:
 	MboxMail() {
 		m_startOff = m_length = m_hasAttachments = 0;
+		m_from_charsetId = m_to_charsetId = m_subj_charsetId = 0;
 		m_timeDate = 0;
 		m_recv = 1;
 	}
@@ -38,6 +39,8 @@ public:
 	int m_length, m_headLength, m_recv;
 	time_t m_timeDate;
 	CString m_from, m_to, m_subj;
+	CString m_from_charset, m_to_charset, m_subj_charset;
+	UINT m_from_charsetId, m_to_charsetId, m_subj_charsetId;
 
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
@@ -45,7 +48,7 @@ public:
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Str2Ansi(CString &res, UINT CodePage);
-	static UINT MboxMail::Str2PageCode(const  char* PageCodeStr);
+	static UINT Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bEml = false);
 	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache
@@ -150,6 +153,9 @@ public:
 		return writeN(&val, sizeof(int));
 	}
 	BOOL readInt(int *val) {
+		return readN(val, sizeof(int));
+	}
+	BOOL readUInt(unsigned int *val) {
 		return readN(val, sizeof(int));
 	}
 	BOOL writeInt64(_int64 value) {

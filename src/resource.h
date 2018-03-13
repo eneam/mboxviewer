@@ -13,9 +13,16 @@
 #define IDD_FIND                        156
 #define IDD_OPTIONS                     158
 #define IDS_DESC_TITLE                  202
+#define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
+#define IDS_TITLE_FROM                  203
 #define IDS_DESC_NONE                   204
-#define IDS_DESC_TITLE2                 242
+#define IDS_DESC_TITLE3                 205
+#define IDS_TITLE_TO                    205
+#define IDS_DESC_TITLE2                 206
+#define IDS_TITLE_DATE                  206
+#define IDS_DESC_BODY                   207
+#define IDS_TITLE_BODY                  207
 #define IDC_COMPANY_URL                 1041
 #define IDC_TREE                        1042
 #define IDC_LIST                        1043
@@ -39,6 +46,11 @@
 #define IDC_FILTERDATES                 1059
 #define IDC_DONATION                    1063
 #define IDC_PROGRESS_BAR_DELAY          1065
+#define IDC_SUBJ_ID                     1070
+#define IDC_FROM_ID                     1071
+#define IDC_TO_ID                       1072
+#define IDC_SHOW_CHARSETS               1074
+#define IDC_RADIO6                      1075
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -52,7 +64,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        162
 #define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1066
+#define _APS_NEXT_CONTROL_VALUE         1076
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif
