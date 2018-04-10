@@ -51,6 +51,12 @@
 #define IDC_TO_ID                       1072
 #define IDC_SHOW_CHARSETS               1074
 #define IDC_RADIO6                      1075
+#define IDC_CHECK_FROM                  1076
+#define IDC_CHECK_TO                    1077
+#define IDC_CHECK_SUBJECT               1078
+#define IDC_CHECK_CONTENT               1079
+#define IDC_CHECK6                      1080
+#define IDC_CHECK_ATTACHMENT            1080
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -62,9 +68,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        162
+#define _APS_NEXT_RESOURCE_VALUE        163
 #define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1076
+#define _APS_NEXT_CONTROL_VALUE         1081
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

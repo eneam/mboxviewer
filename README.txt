@@ -2,6 +2,14 @@
 Changes
 ---
 
+v 1.0.2.1
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - updated User Manual to describe new and updated features;
+ - enhanced search criteria to include from, to, subject, message and text attachments elements;
+ - deprecated searching of RAW message;
+ - eliminated false negative searches;
+
 v 1.0.1.13
 
  - updated User Manual to describe new and updated features;

@@ -19,13 +19,19 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CFindDlg::IDD, pParent)
 	, m_startDate(COleDateTime::GetCurrentTime())
 	, m_endDate(COleDateTime::GetCurrentTime())
-	, m_scope(FALSE)
+	, m_bReverse(FALSE)
 	, m_filterDates(FALSE)
 {
 	//{{AFX_DATA_INIT(CFindDlg)
 	m_string = _T("");
 	m_bWholeWord = FALSE;
 	m_bCaseSensitive = TRUE;
+
+	m_bFrom = TRUE;
+	m_bTo = TRUE;
+	m_bSubject = TRUE;
+	m_bContent = FALSE;
+	m_bAttachments = FALSE;
 	//}}AFX_DATA_INIT
 }
 
@@ -40,7 +46,12 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER1, m_startDate);
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER2, m_endDate);
-	DDX_Radio(pDX, IDC_SCOPE, m_scope);
+	//DDX_Radio(pDX, IDC_SCOPE, m_bReverse);
+	DDX_Check(pDX, IDC_CHECK_FROM, m_bFrom);
+	DDX_Check(pDX, IDC_CHECK_TO, m_bTo);
+	DDX_Check(pDX, IDC_CHECK_SUBJECT, m_bSubject);
+	DDX_Check(pDX, IDC_CHECK_CONTENT, m_bContent);
+	DDX_Check(pDX, IDC_CHECK_ATTACHMENT, m_bAttachments);
 	DDX_Check(pDX, IDC_CHECK1, m_filterDates);
 	if (pDX->m_bSaveAndValidate) {
 		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_filterDates);
@@ -69,13 +80,7 @@ void CFindDlg::OnOK()
 		AfxMessageBox("Cannot search for an empty string!", MB_OK | MB_ICONHAND);
 		return;
 	}
-	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));
-/*
-	g_lastCase = m_bCaseSensitive;
-	g_lastScope = m_scope;
-	g_lastStartDate = m_startDate;
-	g_lastEndDate = m_endDate;
-*/	
+	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));	
 	CDialog::OnOK();
 }
 

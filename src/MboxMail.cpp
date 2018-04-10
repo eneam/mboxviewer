@@ -6,6 +6,10 @@
 
 UINT charset2Id(const char *char_set);
 BOOL id2charset(UINT id, std::string charset);
+char * ParseContent(MboxMail *mail, char *startPos, char *endPos);
+
+unsigned char *MboxMail::m_pbOutput = 0;
+int MboxMail::m_maxOutput = 0;
 
 _int64 MboxMail::s_curmap = 0;
 _int64 MboxMail::s_step = 0;
@@ -27,7 +31,7 @@ inline void GetDetail(char *&p, char *e, CString &detail)
 	EATNL();
 	char *p1 = p - 1;
 	while (s <= p1 && g_tu.IsSpace(*s)) //(*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') )
-		s++;
+		s++; 
 	while (p1 >= s && g_tu.IsSpace(*p1)) //(*(p1-1) == ' ' || *(p1-1) == '\t' || *(p1-1) == '\r' || *(p1-1) == '\n') )
 		p1--;
 	p1++;
@@ -140,12 +144,40 @@ CString DecodeString(CString &subj, CString &charset, UINT &charsetId)
 		return subj;
 }
 
+CString MboxMail::GetBody()
+{
+	CString res;
+	CFile fp;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+		char *p = res.GetBufferSetLength(m_length);
+		TRACE("offset = %lld\n", m_startOff);
+		fp.Seek(m_startOff, SEEK_SET);
+		fp.Read(p, m_length);
+		char *ms = strchr(p, '\n'); //"-Version: 1.0");
+		if (ms) {
+			BOOL bAddCR = FALSE;
+			if (*(ms - 1) != '\r')
+				bAddCR = TRUE;
+			res = res.Mid(ms - p + 1); // - 4);
+			if (bAddCR) // for correct mime parsing
+				res.Replace("\n", "\r\n");
+		}
+	}
+	else
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+	}
+
+	return res;
+};
+
 char szFrom5[] = "From ";
 char szFrom6[] = "\nFrom ";
 char	*g_szFrom;
 int		g_szFromLen;
 
-bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool bEml)
+bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml)
 {
 	char *orig = p;
 	register char *e = p + bufSize - 1;
@@ -157,38 +189,62 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 	CString format = GetDateFormat(iFormat);
 	CString to, from, subject, date;
 	time_t tdate = 0;
-	bool	bTo = true, bFrom = true, bSubject = true, bDate = true;
+	bool	bTo = true, bFrom = true, bSubject = true, bDate = true;  // indicates not found, false means found 
 	char *msgStart = NULL;
 	int recv = TRUE;
 	int curstep = (int)(startOffset / (s_step?s_step:1));
-	if (bEml) { // duplicated code and taken if out of loop for speed
-		while (p < e - 4) {
-			_int64 curOff = startOffset + (p - orig);
-			if ((int)(curOff / s_step) > curstep) {
-				if (pCUPDUPData->ShouldTerminate())
-					break;
-				int step = (int)(curOff / s_step);
-				pCUPDUPData->SetProgress(step);
-			}
-			//		if( strncmp(p, "From ", 4) == 0 ) { // "From "
-			if (bEml || (*(DWORD*)p == 0x6d6f7246 && p[4] == ' ')) { // "From "
+
+	if (bEml && bFirstView) {
+		msgStart = p;
+		p += 5;
+		bEml = false;  // not used below and not needed :)
+	}
+	while (p < e - 4) 
+	{
+		try {
+			if (*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') // "From "  marks beginning of the next mail
+			{
 				if (msgStart == NULL)
 					msgStart = p;
 				else {
-					if (!(bTo && bFrom && bSubject)) {
-						if (!(to.IsEmpty() && subject.IsEmpty() && date.IsEmpty())) {
+					if ((bTo == false) || (bFrom == false) ||  (bSubject == false)) 
+					{
+						if (!from.IsEmpty() || !to.IsEmpty() ||  !subject.IsEmpty() ||  !date.IsEmpty())
+						{
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
-							m->m_length = p - msgStart - 1;
+							m->m_length = p - msgStart;
 							m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
 							m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
 							m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
-							int pos = g_tu.BMHSearchW((unsigned char *)msgStart, p - msgStart - 1, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), false);
-							if (pos >= 0)
-								m->m_hasAttachments = 1;
+							m->m_headLength = 0;  // set in ParseContent()
+
+							MailBodyContent body;
+							char *bodyStart = msgStart;
+							char *bodyEnd = msgStart + m->m_length;
+							char *nextStart = ParseContent(m, bodyStart, bodyEnd);
+							if (m->m_ContentDetailsArray.size() == 0) {
+								int deb = 1;
+							}
+
 							s_mails.Add(m);
+
+							int index = s_mails.GetCount() - 1;
+							//m->DumpMailBox(m, index);
+							//NListView::DumpItemDetails(index);
+
+							_int64 curOff = startOffset + (p - orig);
+							if ((int)(curOff / s_step) > curstep) {
+								if (pCUPDUPData->ShouldTerminate())
+									break;
+								int step = (int)(curOff / s_step);
+								pCUPDUPData->SetProgress(step);
+							}
+
+							if (pCUPDUPData->ShouldTerminate())
+								break;
 						}
 					}
 					msgStart = p;
@@ -200,13 +256,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 					bTo = bFrom = bSubject = bDate = true;
 				}
 				p += 5;
-				if (!bEml) {
-					EATNL();
-				}
-				else
-					bEml = false;
+				EATNL();
 			}
 			else
+			{
 				//		if( bSubject && strncmp(p, "From: ", 6) == 0 ) {
 				if (bFrom && *(DWORD*)p == 0x6d6f7246 && *(WORD*)(p + 4) == 0x203a) { // "From: "
 					bFrom = false;
@@ -214,6 +267,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 					GetDetail(p, e, from);
 				}
 				else
+				{
 					//		if( bSubject && strncmp(p, "To: ", 4) == 0 ) {
 					if (bTo && *(DWORD*)p == 0x203a6f54) { //&& strncmp(p, "To: ", 4) == 0 ) {
 						bTo = false;
@@ -222,30 +276,30 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 						GetDetail(p, e, to);
 					}
 					else
+					{
 						//		if( bSubject && strncmp(p, "Subject: ", 5) == 0 ) {
-						if (bSubject && *(DWORD*)p == 0x6a627553 && *(DWORD*)(p + 4) == 0x3a746365 && p[8] == ' ') { // "Subject: "
+						if (bSubject && *(DWORD*)p == 0x6a627553 && *(DWORD*)(p + 4) == 0x3a746365 && p[8] == ' ') // "Subject: "
+						{
 							bSubject = false;
 							p += 9;
 							GetDetail(p, e, subject);
-							// concate all subject parts
+							// handle multiline subject
 							// Not the most efficient but this should rare
 							int cnt = 0;
-							while ((p < e - 4) && ((*p == ' ') || (*p == '\t')) && (cnt++ < 10)) {
+							while ((p < e - 4) && ((*p == ' ') || (*p == '\t')) && (cnt++ < 10)) 
+							{
 								CString line;
+								CString part;
 								GetLine(p, e, line);
-								if ((line.GetAt(0) == '=') && (line.GetAt(1) == '?'))
-								{
-									CString part;
-									GetDetail(p, e, part);
-									subject += part;
-								}
-								else
-									break;
+								GetDetail(p, e, part);
+								subject += part;
 							}
 						}
 						else
+						{
 							//		if( bSubject && strncmp(p, "Received: ", 10) == 0 ) {
-							if (bDate && *(DWORD*)p == 0x65636552 && *(DWORD*)(p + 4) == 0x64657669 && *(WORD*)(p + 8) == 0x203a) { // "Received: "
+							if (bDate && *(DWORD*)p == 0x65636552 && *(DWORD*)(p + 4) == 0x64657669 && *(WORD*)(p + 8) == 0x203a) // "Received: "
+							{
 								bDate = false;
 								p += 10;
 								char *p1 = p + strcspn(p, ";\n");
@@ -253,12 +307,14 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 									p1++;
 									p1 += strcspn(p1, ";\n");
 								}
-								if (*p1 == ';') {
+								if (*p1 == ';') 
+								{
 									p1++;
 									while (g_tu.IsSpace(*p1))
 										p1++;
 									char *el = strchr(p1, '\n');
-									if (el != NULL) { // test for git change
+									if (el != NULL) 
+									{
 										char *el1 = el;
 										char *el2 = el;
 										while (g_tu.IsSpace(*el))
@@ -296,7 +352,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 								}
 							}
 							else
-								if (bDate && *(DWORD*)p == 0x65746144 && *(WORD*)(p + 4) == 0x203a) { // "Date: "
+							{
+								if (bDate && *(DWORD*)p == 0x65746144 && *(WORD*)(p + 4) == 0x203a) // "Date: "
+								{
 									bDate = false;
 									p += 6;
 									GetDetail(p, e, date);
@@ -309,173 +367,52 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset, bool
 									recv = FALSE;
 								}
 								else
+								{
 									EATNL();
-		}
-	}
-	while (p < e - 4) {
-		try {
-			if (*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') { // "From "
-				if (msgStart == NULL)
-					msgStart = p;
-				else {
-					if (!(bTo && bFrom && bSubject)) {
-						if (!(to.IsEmpty() && subject.IsEmpty() && date.IsEmpty())) {
-							MboxMail *m = new MboxMail();
-							m->m_startOff = startOffset + (_int64)(msgStart - orig);
-							m->m_length = p - msgStart;
-							m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
-							m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
-							m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
-							m->m_timeDate = tdate;
-							m->m_recv = recv;
-							int pos = g_tu.BMHSearch((unsigned char *)msgStart, m->m_length, (unsigned char *)(LPCSTR)contentDisposition, contentDisposition.GetLength(), 1);
-							if (pos >= 0)
-								m->m_hasAttachments = 1;
-							s_mails.Add(m);
-							_int64 curOff = startOffset + (p - orig);
-							if ((int)(curOff / s_step) > curstep) {
-								if (pCUPDUPData->ShouldTerminate())
-									break;
-								int step = (int)(curOff / s_step);
-								pCUPDUPData->SetProgress(step);
+								}
 							}
 						}
 					}
-					msgStart = p;
-					to.Empty();
-					from.Empty();
-					subject.Empty();
-					date.Empty();
-					tdate = 0;
-					bTo = bFrom = bSubject = bDate = true;
 				}
-				p += 5;
-				EATNL();
 			}
-			else
-				//		if( bSubject && strncmp(p, "From: ", 6) == 0 ) {
-				if (bFrom && *(DWORD*)p == 0x6d6f7246 && *(WORD*)(p + 4) == 0x203a) { // "From: "
-					bFrom = false;
-					p += 6;
-					GetDetail(p, e, from);
-				}
-				else
-					//		if( bSubject && strncmp(p, "To: ", 4) == 0 ) {
-					if (bTo && *(DWORD*)p == 0x203a6f54) { //&& strncmp(p, "To: ", 4) == 0 ) {
-						bTo = false;
-						bTo = false;
-						p += 4;
-						GetDetail(p, e, to);
-					}
-					else
-						//		if( bSubject && strncmp(p, "Subject: ", 5) == 0 ) {
-						if (bSubject && *(DWORD*)p == 0x6a627553 && *(DWORD*)(p + 4) == 0x3a746365 && p[8] == ' ') { // "Subject: "
-							bSubject = false;
-							p += 9;
-							GetDetail(p, e, subject);
-							// concate all subject parts
-							// Not the most efficient but this should rare
-							int cnt = 0;
-							while ((p < e - 4) && ((*p == ' ') || (*p == '\t')) && (cnt++ < 10)) {
-								CString line;
-								GetLine(p, e, line);
-								if ((line.GetAt(0) == '=') && (line.GetAt(1) == '?'))
-								{
-									CString part;
-									GetDetail(p, e, part);
-									subject += part;
-								}
-								else
-									break;
-							}
-						}
-						else
-							//		if( bSubject && strncmp(p, "Received: ", 10) == 0 ) {
-							if (bDate && *(DWORD*)p == 0x65636552 && *(DWORD*)(p + 4) == 0x64657669 && *(WORD*)(p + 8) == 0x203a) { // "Received: "
-								bDate = false;
-								p += 10;
-								char *p1 = p + strcspn(p, ";\n");
-								while (*p1 == '\n' && (*(p1 + 1) == ' ' || *(p1 + 1) == '\t')) {
-									p1++;
-									p1 += strcspn(p1, ";\n");
-								}
-								if (*p1 == ';') {
-									p1++;
-									while (g_tu.IsSpace(*p1))
-										p1++;
-									char *el = strchr(p1, '\n');
-									if (el != NULL) {
-										char *el1 = el;
-										char *el2 = el;
-										while (g_tu.IsSpace(*el))
-											el--;
-										el++;
-										int l = el - p1, l1 = 0;
-										if (*(el1 + 1) == ' ') { // for multiline dates
-											el1 = el1 + 1;
-											el2 = strchr(el1, '\n');
-											while (el1 < el2 && g_tu.IsSpace(*el1)) //strip leading spaces
-												el1++;
-											while (el2 < el1 && g_tu.IsSpace(*el2)) //strip trailing spaces
-												el2--;
-											l1 = el2 - el1 + 1;
-										}
-										char *d = date.GetBufferSetLength(l + l1);
-										strncpy(d, p1, l);
-										if (el1 != el2) {
-											d[l] = ' '; // add a space for parser
-											strncpy(d + l + 1, el1, el2 - el1);
-										}
-										d[l + l1] = 0;
-										SYSTEMTIME tm;
-										if (DateParser::parseRFC822Date(d, &tm)) {
-											CTime tt(tm);
-											date = tt.Format(format);
-											tdate = tt.GetTime();
-										}
-										recv = TRUE;
-										EATNL();
-									}
-								}
-								else {
-									EATNL();
-								}
-							}
-							else
-								if (bDate && *(DWORD*)p == 0x65746144 && *(WORD*)(p + 4) == 0x203a) { // "Date: "
-									bDate = false;
-									p += 6;
-									GetDetail(p, e, date);
-									SYSTEMTIME tm;
-									if (DateParser::parseRFC822Date(date, &tm)) {
-										CTime tt(tm);
-										date = tt.Format(format);
-										tdate = tt.GetTime();
-									}
-									recv = FALSE;
-								}
-								else
-								{
-									EATNL();
-								}
 		}
 		catch (CMemoryException *) {
 			// catch when buffer ends
 		}
 	}
 
-	// should save state for cross boundary emails
+	// should save state for cross boundary emails - resolved 2018
 	if (msgStart != NULL && msgStart != p) {
-		MboxMail *m = new MboxMail();
-		//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
-		m->m_startOff = startOffset + (_int64)(msgStart - orig);
-		m->m_length = p - msgStart;
-		m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
-		m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
-		m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
-		m->m_recv = recv;
-		m->m_timeDate = tdate;
-		s_mails.Add(m);
+		if (!bLastView) {
+			lastStartOffset = startOffset + (_int64)(msgStart - orig);
+		}
+		else if ((bTo == false) || (bFrom == false) || (bSubject == false))
+		{
+			if (!from.IsEmpty() || !to.IsEmpty() || !subject.IsEmpty() || !date.IsEmpty())
+			{
+				MboxMail *m = new MboxMail();
+				//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
+				m->m_startOff = startOffset + (_int64)(msgStart - orig);
+				m->m_length = p - msgStart;
+				m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
+				m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
+				m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
+				m->m_recv = recv;
+				m->m_timeDate = tdate;
+				m->m_headLength = 0; // set in ParseContent()
+
+				MailBodyContent body;
+				char *bodyStart = msgStart;
+				char *bodyEnd = msgStart + m->m_length;
+				char *nextStart = ParseContent(m, bodyStart, bodyEnd);
+
+				s_mails.Add(m);
+
+				int index = s_mails.GetCount() - 1;
+				//m->DumpMailBox(m, index);
+				//NListView::DumpItemDetails(index);
+			}
+		}
 	}
 	return true;
 }
@@ -518,7 +455,7 @@ void MboxMail::Parse(LPCSTR path)
 	int l = strlen(path);
 	if (l > 4 && _strnicmp(path + l - 4, ".eml", 4) == 0)
 		bEml = true;
-	HANDLE hFile = CreateFile(path, GENERIC_READ, 0, NULL,
+	HANDLE hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL,
 		OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 		return;
@@ -530,12 +467,18 @@ void MboxMail::Parse(LPCSTR path)
 	GetFileSizeEx(hFile, &li);
 	fSize = li.QuadPart;
 	s_step = fSize / 100;
-	int mappingsInFile = (int)(fSize / (_int64)MAPPING_SIZE);
+	int mappingsInFile = (int)((fSize - 1) / (_int64)MAPPING_SIZE) + 1;
 	HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, (DWORD)(fSize >> 32), (DWORD)fSize, NULL);
 	if (hFileMap == NULL) {
 		CloseHandle(hFile);
 		return;
 	}
+
+	SYSTEM_INFO systemInfo;
+	GetSystemInfo(&systemInfo);
+	DWORD dwPageSize = systemInfo.dwPageSize;
+	DWORD dwAllocationGranularity = systemInfo.dwAllocationGranularity;
+
 #ifdef _DEBUG
 	DWORD tc = GetTickCount();
 #endif
@@ -543,12 +486,37 @@ void MboxMail::Parse(LPCSTR path)
 	g_szFromLen = 5;
 	TRACE("fSize = %lld\n", fSize);
 	pCUPDUPData->SetProgress(_T("Parsing file..."), 0);
-	for (int i = 0; i <= mappingsInFile && !pCUPDUPData->ShouldTerminate(); i++) {
-		s_curmap = (_int64)i * (_int64)MAPPING_SIZE;
-		DWORD bufSize = ((fSize - s_curmap < MAPPING_SIZE) ? (int)(fSize - s_curmap) : MAPPING_SIZE);
+	// TODO: due to breaking the file into multiple chunks, it looks some emails can be lost
+	bool firstView = true;;
+	bool lastView = false;
+	DWORD bufSize = 0;
+	_int64 aligned_offset = 0;
+	_int64 delta = 0;
+
+	_int64 lastStartOffset = 0;
+	while  ((lastView == false) && !pCUPDUPData->ShouldTerminate()) 
+	{
+		s_curmap = lastStartOffset;
+		aligned_offset = (s_curmap / dwAllocationGranularity) * dwAllocationGranularity;
+		delta = s_curmap - aligned_offset;
+		bufSize = ((fSize - aligned_offset) < MAPPING_SIZE) ? (DWORD)(fSize - aligned_offset) : (DWORD)MAPPING_SIZE;
+
 		TRACE("offset=%lld, bufsize=%ld, fSize-curmap=%lld, end=%lld\n", s_curmap, bufSize, fSize - s_curmap, s_curmap + bufSize);
-		char * p = (char *)MapViewOfFileEx(hFileMap, FILE_MAP_READ, (DWORD)(s_curmap >> 32), (DWORD)s_curmap, bufSize, NULL);
-		MboxMail::Process(p, bufSize, s_curmap, bEml);
+		char * pview = (char *)MapViewOfFileEx(hFileMap, FILE_MAP_READ, (DWORD)(aligned_offset >> 32), (DWORD)aligned_offset, bufSize, NULL);
+
+		if ((aligned_offset + bufSize) < fSize)
+			lastView = false;
+		else 
+			lastView = true;
+
+		lastStartOffset = aligned_offset + bufSize;
+
+		char *p = pview + delta;
+		int viewBufSize = bufSize - (DWORD)delta;
+		_int64 viewOffset = s_curmap;
+		MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml);
+		firstView = false;
+
 		UnmapViewOfFile(p);
 	}
 #ifdef _DEBUG
@@ -916,16 +884,16 @@ UINT charset2Id(const char *char_set)
 
 	if (!ids)
 		ids = new myMap;
-	
-	int cp2name_size = sizeof(cp2name)/sizeof(CP2NM);
+
+	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
 	for (int i = 0; i < cp2name_size; i++)
 	{
-		
+
 		item = &cp2name[i];
 		std::string charset = item->m_charset;
 		transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
 		if (ids->find(charset) == ids->end()) {  // not found, invalid iterator returned
-			ids->insert(myMap::value_type(charset,item->m_charsetId));
+			ids->insert(myMap::value_type(charset, item->m_charsetId));
 		}
 	}
 #if 0
@@ -970,6 +938,591 @@ BOOL id2charset(UINT id, std::string &charset)
 	}
 	return FALSE;
 }
+
+#if 0
+DWORD WINAPI GetFullPathName(
+	_In_  LPCTSTR lpFileName,
+	_In_  DWORD   nBufferLength,
+	_Out_ LPTSTR  lpBuffer,
+	_Out_ LPTSTR  *lpFilePart
+);
+#endif
+
+int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten)
+{
+	DWORD bytesToWrite = nNumberOfBytesToWrite;
+	DWORD nwritten = 0;
+	while (bytesToWrite > 0)
+	{
+		nwritten = 0;
+		if (!WriteFile(hFile, lpBuffer, bytesToWrite, &nwritten, NULL)) {
+			DWORD retval = GetLastError();
+			break;
+		}
+		bytesToWrite -= nwritten;
+	}
+	*lpNumberOfBytesWritten = nNumberOfBytesToWrite - bytesToWrite;
+	if (*lpNumberOfBytesWritten != nNumberOfBytesToWrite)
+		return FALSE;
+	else
+		return TRUE;
+}
+
+int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
+{
+	//return 1;
+	static BOOL restarted = TRUE;
+	int deb; // set breakpoint
+	char *CRLF = "\n\n";
+	char buff[32768+2];
+	int buffsize = 32768;
+	//char *buff = &buffer[0];
+
+	char datebuff[256];
+	DWORD offset = 0;
+	DWORD nwritten = 0;
+	DWORD count = 0;
+	BOOL retval;
+
+	CString cacheTextFile = "DumpMailBox.txt";
+	HANDLE hFile = CreateFile(cacheTextFile, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %ld\n"), err);
+		return -1;
+	}
+
+	HANDLE mbox_hFile = CreateFile(MboxMail::s_path, GENERIC_READ, FILE_SHARE_READ, NULL,
+		OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	if (mbox_hFile == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		TRACE(_T("(dumpSelectedItem)INVALID_HANDLE_VALUE error= %ld\n"), err);
+		CloseHandle(hFile);
+		return -1;
+	}
+
+	_int64 pos = 0;
+	if (restarted == TRUE) {
+		SetEndOfFile(hFile);
+		restarted = FALSE;
+	}
+	else
+	{
+		LARGE_INTEGER li;
+		
+		retval = GetFileSizeEx(hFile, &li);
+		long long fsize = li.QuadPart;
+		pos = FileSeek(hFile, fsize, FILE_BEGIN);
+		if (pos < 0) {
+			DWORD err = GetLastError();
+			return -1;
+		}
+	}
+
+	MboxMail *m = mailBox;
+
+	CString format;
+	datebuff[0] = 0;
+	if (m->m_timeDate > 0) {
+		CTime tt(m->m_timeDate);
+		strcpy(datebuff, (LPCSTR)tt.Format(format));
+	}
+
+	count = sprintf_s(buff, "INDX=%d first=%lld len=%d last=%lld att=%d hlen=%d rcv=%d date=\"%s\" from=\"%s\" to=\"%s\" subj=\"%s\"\n",
+		which, m->m_startOff, m->m_length, (m->m_startOff + m->m_length - 1), m->m_hasAttachments, m->m_headLength, m->m_recv,
+		datebuff, (LPCSTR)m->m_from, (LPCSTR)m->m_to, (LPCSTR)m->m_subj);
+
+	nwritten = 0;
+	if (!Write2File(hFile, buff, count, &nwritten)) {
+		DWORD retval = GetLastError();
+	}
+
+	long long start_offset = m->m_startOff;
+	pos = FileSeek(mbox_hFile, start_offset, FILE_BEGIN);
+
+	DWORD bytestoRead = m->m_length;
+	DWORD nNumberOfBytesToRead = buffsize;
+	DWORD lpNumberOfBytesRead = 0;
+	retval = TRUE;
+
+#if 0
+	while (bytestoRead > 0)
+	{
+		if (bytestoRead > buffsize)
+			nNumberOfBytesToRead = buffsize;
+		else
+			nNumberOfBytesToRead = bytestoRead;
+
+		retval = ReadFile(mbox_hFile, buff, nNumberOfBytesToRead, &lpNumberOfBytesRead, 0);
+		if (retval != TRUE) {
+			DWORD retval = GetLastError();
+			break;
+		}
+		bytestoRead -= lpNumberOfBytesRead;
+
+		nwritten = 0;
+		if (!Write2File(hFile, buff, lpNumberOfBytesRead, &nwritten)) {
+			DWORD retval = GetLastError();
+			break;
+		}
+	}
+#endif
+
+	std::vector <MailBodyContent*>::iterator it;
+
+	if (m_ContentDetailsArray.size() > 1)
+		int deb = 1;
+
+	MailBodyContent *body;
+	for (it = m_ContentDetailsArray.begin(); it != m_ContentDetailsArray.end(); it++)
+	{
+		body = *it;
+		CString txt;
+		txt.Format(_T("\n\ntype=%s encoding=%s distribution=%s attachment=%s offset=%lld length=%ld\n"),
+			body->m_contentType, body->m_contentTransferEncoding, body->m_contentDisposition, body->m_attachmentName, body->m_contentOffset, body->m_contentLength);
+
+		nwritten = 0;
+		if (!Write2File(hFile, txt.GetBuffer(), txt.GetLength(), &nwritten)) {
+			DWORD retval = GetLastError();
+		}
+
+		start_offset = m->m_startOff + body->m_contentOffset;
+		pos = FileSeek(mbox_hFile, start_offset, FILE_BEGIN);
+
+		bytestoRead = body->m_contentLength;
+		nNumberOfBytesToRead = bytestoRead;
+		lpNumberOfBytesRead = 0;
+		retval = TRUE;
+
+		if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0) 
+		{
+			char *bigbuff = new char[body->m_contentLength+2];
+			while (bytestoRead > 0)
+			{
+				retval = ReadFile(mbox_hFile, &bigbuff[lpNumberOfBytesRead], bytestoRead, &lpNumberOfBytesRead, 0);
+				if (retval != TRUE) {
+					DWORD retval = GetLastError();
+					break;
+				}
+				bytestoRead -= lpNumberOfBytesRead;
+			}
+
+			MboxCMimeCodeBase64 *d64 = new MboxCMimeCodeBase64(bigbuff, body->m_contentLength);
+			int dlength = d64->GetOutputLength();
+			if (dlength > MboxMail::m_maxOutput) {
+				MboxMail::m_pbOutput = new unsigned char[dlength];
+				MboxMail::m_maxOutput = dlength;
+			}
+			int retlen = d64->GetOutput(MboxMail::m_pbOutput, dlength);
+#if 0
+			nwritten = 0;
+			if (!Write2File(hFile, bigbuff, body->m_contentLength, &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+
+			if (!Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+#endif
+
+			nwritten = 0;
+			if (!Write2File(hFile, MboxMail::m_pbOutput, retlen, &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+
+			if (!Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+			deb = 1;
+		}
+		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+		{
+			char *bigbuff = new char[body->m_contentLength + 2];
+			while (bytestoRead > 0)
+			{
+				retval = ReadFile(mbox_hFile, &bigbuff[lpNumberOfBytesRead], bytestoRead, &lpNumberOfBytesRead, 0);
+				if (retval != TRUE) {
+					DWORD retval = GetLastError();
+					break;
+				}
+				bytestoRead -= lpNumberOfBytesRead;
+			}
+
+			MboxCMimeCodeQP *dGP = new MboxCMimeCodeQP(bigbuff, body->m_contentLength);
+			int dlength = dGP->GetOutputLength();
+			if (dlength > MboxMail::m_maxOutput) {
+				MboxMail::m_pbOutput = new unsigned char[dlength];
+				MboxMail::m_maxOutput = dlength;
+			}
+			int retlen = dGP->GetOutput(MboxMail::m_pbOutput, dlength);
+#if 0
+			nwritten = 0;
+			if (!Write2File(hFile, bigbuff, body->m_contentLength, &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+
+			if (!Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+#endif
+			nwritten = 0;
+			if (!Write2File(hFile, MboxMail::m_pbOutput, retlen, &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+
+			if (!Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+				DWORD retval = GetLastError();
+			}
+			deb = 1;
+		}
+		else
+		{
+			bytestoRead = body->m_contentLength;
+			while (bytestoRead > 0)
+			{
+				if (bytestoRead > buffsize)
+					nNumberOfBytesToRead = buffsize;
+				else
+					nNumberOfBytesToRead = bytestoRead;
+
+				retval = ReadFile(mbox_hFile, buff, nNumberOfBytesToRead, &lpNumberOfBytesRead, 0);
+				if (retval != TRUE) {
+					DWORD retval = GetLastError();
+					break;
+				}
+				bytestoRead -= lpNumberOfBytesRead;
+
+				nwritten = 0;
+				if (!Write2File(hFile, buff, lpNumberOfBytesRead, &nwritten)) {
+					DWORD retval = GetLastError();
+					break;
+				}
+			}
+		}
+	}
+	nwritten = 0;
+	if (!Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+		DWORD retval = GetLastError();
+	}
+
+	CloseHandle(hFile);
+	CloseHandle(mbox_hFile);
+
+	return 1;
+}
+
+char * GetMultiLine(char *p, char *e, CString &line)
+{
+	char *p_beg = p;
+	while (p < e && *p++ != '\n');
+
+	char *ss = line.GetBufferSetLength(p - p_beg);
+	::memcpy(ss, p_beg, p - p_beg);
+	line.Trim();
+
+	if (line.IsEmpty())
+		return p;
+
+	while ((p < e) && ((*p == ' ') || (*p == '\t')))
+	{
+		char *p_next_beg = p;
+		EATNL();
+
+		CString nextLine;
+		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
+		::memcpy(ss, p_next_beg, p - p_next_beg);
+		nextLine.Trim();
+		line += nextLine;
+	}
+	return p;
+};
+
+int GetFieldValue(CString &fieldLine, int startPos, CString &value)
+{
+	int posEnd = fieldLine.FindOneOf(";\n\r");
+	if (posEnd < 0)
+		value = fieldLine.Mid(startPos);
+	else
+		value = fieldLine.Mid(startPos, posEnd - startPos);
+	value.Trim();
+	return 1;
+}
+
+int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength) {
+	// any can be multi line
+	// lower is fixed length
+	while ((lowerlength > 0) && (any < end) && (*lower++ == tolower(*any++))) { lowerlength--; }
+	return lowerlength;
+}
+
+int strncmpUpper2Lower(char *any, int anyLength, const char *lower, int lowerlength) {
+	// any can be multi line
+	// lower is fixed length
+	if (anyLength >= lowerlength) {
+		while ((lowerlength > 0) && (*lower++ == tolower(*any++))) { lowerlength--; }
+	}
+	return lowerlength;
+}
+
+int strncmpExact(char *any, char *end, const char *lower, int lowerlength) {
+	while ((lowerlength > 0) && (any < end) && (*lower++ == *any++)) { lowerlength--; }
+	return lowerlength;
+}
+
+
+char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
+{
+	static const char *cType = "content-type:";
+	static const int cTypeLen = strlen(cType);
+	static const char *cTransferEncoding = "content-transfer-encoding:";
+	static const int cTransferEncodingLen = strlen(cTransferEncoding);
+	static const char *cDisposition = "content-disposition:";
+	static const int cDispositionLen = strlen(cDisposition);
+	static const char *cAttachment = "attachment";
+	static const int cAttachmentLen = strlen(cAttachment);
+	static const char *cName = "name=";
+	static const int cNameLen = strlen(cName);
+	static const char *cFileName = "filename=";
+	static const int cFileNameLen = strlen(cFileName);
+
+	char *p = startPos;
+	char *e = endPos;
+	char *tag = "";
+	char *potential_tag = "";
+	int contentIndex = 0;
+	int contentLength = 0;
+	int deb; // set breakpoint
+
+	BOOL contentTypeFound = FALSE;
+	while ((p < e) && ((*p == '\r') || (*p == '\n')))  // eat empty lines
+		p++;
+
+	// make sure p is incremeneted within a loop or break
+	while (p < e)
+	{
+		if (((*p == '\r') && (*(p + 1) == '\n')) || (*p == '\n')) {
+			mail->m_headLength = p - startPos;
+			EATNL();
+			break;  // end of header
+		}
+		else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0) {
+			tag = potential_tag;
+			contentTypeFound = TRUE;
+			break;
+		}
+		else
+			potential_tag = p;
+		EATNL();
+	}
+
+	char *contentBegin = p;
+	char *contentEnd = p;
+	if (contentTypeFound == FALSE)
+	{
+		// We are at empty line; Find Content-Type line if any or the end of implicit content block
+		while (p < e)
+		{
+			if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+			{
+				tag = potential_tag;
+				contentTypeFound = TRUE;
+				break;
+			}
+			potential_tag = p;
+			EATNL();
+
+		}
+		contentEnd = p;
+		contentLength = contentEnd - contentBegin;
+		if (contentLength > 0) {
+			MailBodyContent *contentDetails = new MailBodyContent;
+			contentDetails->m_contentOffset = contentBegin - startPos;;
+			contentDetails->m_contentLength = contentLength;
+
+			mail->m_ContentDetailsArray.push_back(contentDetails);
+		}
+		else
+			deb = 1;
+		if (contentTypeFound == FALSE)
+			return p;
+	}
+
+	CString line;
+	CString transferEncoding;
+	CString disposition;
+	CString contentType;
+	CString fileName;
+
+	// make sure p is incremeneted within a loop or break
+	while (p < e)
+	{
+		if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+		{
+			transferEncoding.SetString("");
+			disposition.SetString("");
+			contentType.SetString("");
+			fileName.SetString("");
+
+			tag = potential_tag;
+			p = GetMultiLine(p, e, line);
+			GetFieldValue(line, cTypeLen, contentType);
+			int pc = line.Find(cName);
+			if (pc != -1) {
+				CString name = line.Mid(pc);
+				int nameLength = name.FindOneOf(";\n\r");
+				if (nameLength < 0)
+					fileName = name.Mid(cNameLen);
+				else
+					fileName = name.Mid(cNameLen, nameLength);
+				fileName.Trim("\"\\");
+			}
+
+			// make sure p is incremeneted within a loop or break
+			while ((p < e) && !(((*p == '\r') && (*(p + 1) == '\n')) || (*p == '\n')))
+			{
+				potential_tag = p;  // may need to update if we decide to handle unexpected cType
+				if (strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
+				{
+					p = GetMultiLine(p, e, line);
+					GetFieldValue(line, cTransferEncodingLen, transferEncoding);
+				}
+				else if (strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
+				{
+					p = GetMultiLine(p, e, line);
+					GetFieldValue(line, cDispositionLen, disposition);
+					int pc = line.Find(cFileName);
+					if (pc != -1) {
+						CString name = line.Mid(pc);
+						int nameLength = name.FindOneOf(";\n\r");
+						if (nameLength < 0)
+							fileName = name.Mid(cFileNameLen);
+						else
+							fileName = name.Mid(cFileNameLen, nameLength);
+						fileName.Trim("\"\\");
+
+						if (fileName.Compare("PTT00126.htm") == 0)
+							int deb = 1;
+					}
+				}
+				else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+				{
+					// TODO: file might not be well formatted or be corrupted. 
+					// Ignore for now to keep it simple ?
+					//p = GetMultiLine(p, e, line);
+					//GetFieldValue(line, cTypeLen, contentType);
+					contentTypeFound = TRUE;
+					// break; 
+					EATNL();  // delete if p = GetMultiLine(p, e, line); is enabled
+				}
+				else {
+					EATNL();
+				}
+			}
+
+			contentBegin = p;
+			contentEnd = p;
+			potential_tag = p;
+
+			if (disposition.CompareNoCase(cAttachment) == 0) {
+					mail->m_hasAttachments = 1;
+			}
+
+			contentType.MakeLower();
+			if (contentType.Compare("text") == 0)
+				contentType += "/plain";
+			if (contentType.Find("text/") >= 0)
+			{
+				if (strncmp(tag, "--", 2) == 0)
+				{
+					char *tagEnd = strpbrk(tag, ";\r\n");
+					int tagLen = tagEnd - tag;
+					// make sure p is incremeneted within a loop or break
+					while (p < e)
+					{
+						potential_tag = p;  // may need to update if we decide to handle unexpected cType
+						if (strncmpExact(p, e, tag, tagLen) == 0) {
+							break;
+						}
+						else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+						{
+							// TODO: file might not be well formatted or be corrupted. 
+							// Ignore for now to keep it simple ?
+							//p = GetMultiLine(p, e, line);
+							//GetFieldValue(line, cDispositionLen, disposition);
+							contentTypeFound = TRUE;
+							// break; 
+							EATNL();  // delete if p = GetMultiLine(p, e, line); is enabled
+						}
+						else {
+							EATNL();
+							contentEnd = p;
+						}
+					}
+					if (transferEncoding.CompareNoCase("base64") == 0)
+					{
+#if 0
+						MboxCMimeCodeBase64 *d64 = new MboxCMimeCodeBase64(contentBegin, contentLength);
+						int dlength = d64->GetOutputLength();
+						if (dlength > MboxMail::m_maxOutput) {
+							MboxMail::m_pbOutput = new unsigned char[dlength];
+							MboxMail::m_maxOutput = dlength;
+						}
+						int ret = d64->GetOutput(MboxMail::m_pbOutput, dlength);
+#endif
+						deb = 1;
+					}
+				}
+				else  // no tag; find next Content-Type of end of file view
+				{
+					// make sure p is incremeneted within a loop or break
+					while (p < e)
+					{
+						if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+						{
+							tag = potential_tag;
+							break;
+						}
+
+						potential_tag = p;
+						EATNL();
+						contentEnd = p;
+					}
+					deb = 1;
+				}
+
+				contentLength = contentEnd - contentBegin;
+				if (contentLength > 0) {
+					MailBodyContent *contentDetails = new MailBodyContent;
+					contentDetails->m_contentOffset = contentBegin - startPos;;
+					contentDetails->m_contentLength = contentLength;
+					contentDetails->m_contentType = contentType;
+					contentDetails->m_contentDisposition = disposition;
+					contentDetails->m_contentTransferEncoding = transferEncoding;
+					contentDetails->m_attachmentName = fileName;
+
+					mail->m_ContentDetailsArray.push_back(contentDetails);
+				}
+				else
+					deb = 1;
+			}
+			potential_tag = p;
+		}
+		else {
+			potential_tag = p;
+			EATNL();
+		}
+	}
+
+	if (e != endPos)
+		deb = 1;
+	if (e > endPos)
+		deb = 1;
+	return e;
+}
+
+
+
+
 
 
 

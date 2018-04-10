@@ -1,8 +1,40 @@
 #pragma once
 
+#include <vector>
 #include "UPDialog.h"
+#include "Mime.h"
+#include "MimeCode.h"
 
 _int64 FileSize(LPCSTR fileName);
+
+class MboxCMimeCodeBase64 : public CMimeCodeBase64
+{
+public:
+	MboxCMimeCodeBase64(const char* pbInput, int nInputSize) {
+		SetInput(pbInput, nInputSize, false);
+	}
+};
+
+class MboxCMimeCodeQP : public CMimeCodeQP
+{
+public:
+	MboxCMimeCodeQP(const char* pbInput, int nInputSize) {
+		SetInput(pbInput, nInputSize, false);
+	}
+};
+
+class MailBodyContent
+{
+public:
+	MailBodyContent() {};
+	~MailBodyContent() {};
+	CString m_contentType;
+	CString m_contentTransferEncoding;
+	CString m_contentDisposition;
+	CString m_attachmentName;
+	int  m_contentOffset;
+	int m_contentLength;
+};
 
 class MboxMail
 {
@@ -13,26 +45,10 @@ public:
 		m_timeDate = 0;
 		m_recv = 1;
 	}
-	CString GetBody() {
-		CString res;
-		CFile fp;
-		if (fp.Open(s_path, CFile::modeRead)) {
-			char *p = res.GetBufferSetLength(m_length);
-			TRACE("offset = %lld\n", m_startOff);
-			fp.Seek(m_startOff, SEEK_SET);
-			fp.Read(p, m_length);
-			char *ms = strchr(p, '\n'); //"-Version: 1.0");
-			if (ms) {
-				BOOL bAddCR = FALSE;
-				if (*(ms - 1) != '\r')
-					bAddCR = TRUE;
-				res = res.Mid(ms - p + 1); // - 4);
-				if (bAddCR) // for correct mime parsing
-					res.Replace("\n", "\r\n");
-			}
-		}
-		return res;
-	};
+	CString GetBody();
+	int DumpMailBox(MboxMail *mailBox, int which);
+
+	std::vector <MailBodyContent*> m_ContentDetailsArray;
 
 	_int64 m_startOff;
 	int m_hasAttachments;
@@ -42,6 +58,8 @@ public:
 	CString m_from_charset, m_to_charset, m_subj_charset;
 	UINT m_from_charsetId, m_to_charsetId, m_subj_charsetId;
 
+	static unsigned char *m_pbOutput;
+	static int m_maxOutput;
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
 	static CString s_path;
@@ -50,7 +68,7 @@ public:
 	static void Str2Ansi(CString &res, UINT CodePage);
 	static UINT Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
-	static bool Process(char *p, DWORD size, _int64 startOffset, bool bEml = false);
+	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml = false);
 	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache
 	static CArray<MboxMail*, MboxMail*> s_mails;
 	static void SortByDate(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
@@ -63,6 +81,10 @@ public:
 	static void Destroy() {
 		for (int i = 0; i < s_mails.GetSize(); i++)
 		{
+			for (int j = 0; j < s_mails[i]->m_ContentDetailsArray.size(); j++) {
+				delete s_mails[i]->m_ContentDetailsArray[j];
+				s_mails[i]->m_ContentDetailsArray[j] = 0;
+			}
 			delete s_mails[i];
 		}
 		s_mails.RemoveAll();

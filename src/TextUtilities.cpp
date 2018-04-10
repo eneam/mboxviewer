@@ -89,7 +89,7 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
 }
 int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens )   /* Search Search pat[0..m-1] in text[0..n-1] */
 {
-    char d[256];
+    unsigned char d[256];
     int i, j, k, lim;
     int res = -1;
     memset(d, m+1, 256);

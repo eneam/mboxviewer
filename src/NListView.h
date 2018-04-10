@@ -10,7 +10,10 @@
 #include "WheelListCtrl.h"
 #include "UPDialog.h"
 
+__int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
+
 class CMimeMessage;
+class MboxMail;
 
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
@@ -42,25 +45,58 @@ public:
 // Implementation
 public:
 	static const CUPDUPDATA * pCUPDUPData; 
+
+	// vars to handle mapped mail file
+	BOOL m_bMappingError;
+	HANDLE m_hMailFile;  // handle to mail file
+	_int64 m_MailFileSize;
+		//
+	HANDLE m_hMailFileMap;
+	_int64 m_mappingSize;
+	int m_mappingsInFile;
+
+		// offset and pointers for map view
+	_int64 m_curMapBegin;
+	_int64 m_curMapEnd;
+	char *m_pMapViewBegin;
+	char *m_pMapViewEnd;
+	DWORD m_dwPageSize;
+	DWORD m_dwAllocationGranularity;
+
+		// offset & bytes requsted and returned pointers 
+	_int64 m_OffsetRequested;
+	DWORD m_BytesRequested;
+	char *m_pViewBegin;
+	char *m_pViewEnd;
+	DWORD m_dwViewSize;
+		//
+	_int64 m_MapViewOfFileExCount;
+		//
+	BOOL SetupFileMapView(_int64 offset, DWORD length);
+	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
+	void CloseMailFile();
+	void ResetFileMapView();
+	// end of vars
+
 	BOOL m_bExportEml;
 	BOOL m_bInFind;
 	HTREEITEM m_which;
-	void SelectPos(_int64 offset);
 	void SelectItem(int which);
-	_int64 DoFind(_int64 searchstart, _int64 searchend, BOOL mainThreadContext, int maxSearchDuration, BOOL &terminated, BOOL &exitted);
-	int DoFastFind(int searchstart);
+	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration);
 	CString m_searchString;
 	int m_lastFindPos;
 	int m_maxSearchDuration;
-	_int64		m_searchPos;
-	_int64 m_startoff, m_endoff;
 	BOOL m_bEditFindFirst;
 	BOOL	m_filterDates;
 	BOOL	m_bCaseSens;
 	BOOL	m_bWholeWord;
 	CTime m_lastStartDate;
 	CTime m_lastEndDate;
-	int m_lastScope;
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bContent;
+	BOOL m_bAttachments;
 	void ClearDescView();
 	CString m_curFile;
 	int m_lastSel;
@@ -69,10 +105,10 @@ public:
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
 	int DumpSelectedItem(int which);
-	int DumpItemDetails(int which);
-	int DumpItemDetails(int which, CMimeMessage &mail);
-	int DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile);
-	int WhichOne( _int64 offset, int hint = -1, int lowhint = 0, int highhint = -1 );
+	static int DumpItemDetails(int which);
+	static int DumpItemDetails(MboxMail *m);
+	static int DumpItemDetails(int which, MboxMail *m, CMimeMessage &mail);
+	static int DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile);
 	void ResetFont();
 	void RedrawMails();
 	void ResizeColumns();
@@ -100,15 +136,16 @@ public:
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
 };
 
-typedef struct _FindArgs {
-	_int64 searchstart;
-	_int64 searchend;
-	_int64 searchpos;
-	_int64 retpos;
-	_int64 ret_retpos;  // from DoFind
-	BOOL terminated;  // ack from DoFind
+typedef struct _ParseArgs {
+	CString path;
 	BOOL exitted;
-	NListView *lv;
+} PARSE_ARGS;
+
+typedef struct _FindArgs {
+	int searchstart;
+	int retpos;
+	BOOL exitted;
+	NListView *lview;
 } FIND_ARGS;
 
 /////////////////////////////////////////////////////////////////////////////

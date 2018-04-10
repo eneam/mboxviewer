@@ -198,6 +198,7 @@ void NTreeView::FillCtrl()
 			pView->m_which = NULL;
 			// pView->ResetSize();  // check if needed
 			pView->FillCtrl();
+			pView->CloseMailFile();
 		}
 	}
 }
@@ -213,6 +214,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	NListView *pView = pFrame->GetListView();
 	if( ! pView )
 		return;
+
+	pView->CloseMailFile();
+
 	if( ! pNm->itemNew.hItem ) {
 		pView->m_path = "";
 		pView->m_which = NULL;
@@ -253,6 +257,8 @@ void NTreeView::SelectMailFile()
 	NListView *pView = pFrame->GetListView();
 	if (!pView)
 		return;
+
+	pView->CloseMailFile();
 
 	pView->m_path = path + _T("\\") + str;
 

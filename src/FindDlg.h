@@ -44,7 +44,13 @@ protected:
 public:
 	COleDateTime m_startDate;
 	COleDateTime m_endDate;
-	int m_scope;
+	int m_bReverse;
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bContent;
+	BOOL m_bAttachments;
+
 	//virtual BOOL OnInitDialog();
 	BOOL m_filterDates;
 	afx_msg void OnBnClickedFilterDates();
