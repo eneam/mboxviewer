@@ -11,13 +11,21 @@ Features
 * fast parsing of mbox;
 * quick access to attachments;
 * export of single mail in Eml;
-* search by date, subject, sender or raw email; 
-* sort date, from, to and subject columns;
-* support for ISO-8859-[1-9] and utf8 encoded header fields and body text;
-* support for searching emails sorted by header fields (except for searching of entire RAW message);
+* sort emails by date, from, to and subject columns;
+* search (unsorted emails) by date range, subject, sender, recepient, message text and text attachments; 
+* search (sorted emails) by date range, subject, sender and recepient;
+* support for header fields and body text encoded with Windows supported character sets/page codes;
 
 Changes
 ---
+
+v 1.0.2.2
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - updated User Manual to describe new and updated features;
+ - added Next/Previous search directions options to the Find dialog;
+ - reduced number of false positive searches;
+ - fixed potential search issue introduced in v 1.0.2.1;
 
 v 1.0.2.1
 

@@ -19,7 +19,7 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CFindDlg::IDD, pParent)
 	, m_startDate(COleDateTime::GetCurrentTime())
 	, m_endDate(COleDateTime::GetCurrentTime())
-	, m_bReverse(FALSE)
+	, m_bFindNext(TRUE)
 	, m_filterDates(FALSE)
 {
 	//{{AFX_DATA_INIT(CFindDlg)
@@ -46,7 +46,7 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER1, m_startDate);
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER2, m_endDate);
-	//DDX_Radio(pDX, IDC_SCOPE, m_bReverse);
+	DDX_Radio(pDX, IDC_SCOPE, m_bFindNext);
 	DDX_Check(pDX, IDC_CHECK_FROM, m_bFrom);
 	DDX_Check(pDX, IDC_CHECK_TO, m_bTo);
 	DDX_Check(pDX, IDC_CHECK_SUBJECT, m_bSubject);

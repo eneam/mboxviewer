@@ -73,12 +73,14 @@ public:
 	_int64 m_MapViewOfFileExCount;
 		//
 	BOOL SetupFileMapView(_int64 offset, DWORD length);
+	int CheckMatch(int which, CString &searchString);
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
 	void CloseMailFile();
 	void ResetFileMapView();
 	// end of vars
 
 	BOOL m_bExportEml;
+	BOOL m_bFindNext;
 	BOOL m_bInFind;
 	HTREEITEM m_which;
 	void SelectItem(int which);

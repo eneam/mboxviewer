@@ -44,7 +44,7 @@ protected:
 public:
 	COleDateTime m_startDate;
 	COleDateTime m_endDate;
-	int m_bReverse;
+	BOOL m_bFindNext;
 	BOOL m_bFrom;
 	BOOL m_bTo;
 	BOOL m_bSubject;

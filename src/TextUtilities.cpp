@@ -39,10 +39,12 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
     memset(d, m+1, 256);
     for( k=0; k<m; k++ )
         d[pat[k]] = m-k;
-    pat[m] = 1;          /* To avoid having code     */
-    /* for special case n-k+1=m */
-    //lim = n-m+1;  // out of range and crash under debugger
-	lim = n - m;
+    pat[m] = 1;          /* To avoid having code     */ /* for special case n-k+1=m */
+	// TODO original lim = n - m + 1; // // out of range and crash under debugger when searching RAW message
+	// TODO corrected  lim = n - m; doesn't crash but matching fails in some cases, restored original lim = n-m+1; 
+	/* for special case n-k+1=m */
+	lim = n - m + 1; // // out of range and may crash under debugger
+
 	if( bCaseSens ) {
 		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{
@@ -95,10 +97,12 @@ int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, in
     memset(d, m+1, 256);
     for( k=0; k<m; k++ )
         d[pat[k]] = m-k;
-    pat[m] = 1;          /* To avoid having code     */
+    pat[m] = 1;          /* To avoid having code     */  /* for special case n-k+1=m */
+	// TODO original lim = n - m + 1; // // out of range and crash under debugger when searching RAW message
+	// TODO corrected  lim = n - m; doesn't crash but matching fails in some cases, restored original lim = n-m+1; 
     /* for special case n-k+1=m */
-    //lim = n-m+1; // // out of range and crash under debugger
-	lim = n - m;
+    lim = n-m+1; // // out of range and may crash under debugger
+
  	if( bCaseSens ) {
 		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{

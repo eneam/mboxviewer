@@ -1269,6 +1269,24 @@ int strncmpExact(char *any, char *end, const char *lower, int lowerlength) {
 	return lowerlength;
 }
 
+/* ParseContent Parser is not a full blown parser but rather simplified to support searching of content blocks.
+   MIME is defined as a nested set of data containers similar to the tree structure. 
+   Boundary tags are used to indicate begining and end of the data block.
+   Example:
+   header
+   multipart/mixed ; boundary=mixTag
+   mixTag
+     multipart/alernative; boundary=altTag
+	 --altTag
+	 text/plain
+	 --altTag
+	 text/html
+	 --altTag--
+   -mixTag
+   attachment
+   --mixTag--
+*/
+
 
 char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 {
@@ -1352,6 +1370,7 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 	CString disposition;
 	CString contentType;
 	CString fileName;
+	CString plainTextTag;
 
 	// make sure p is incremeneted within a loop or break
 	while (p < e)
@@ -1399,9 +1418,6 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 						else
 							fileName = name.Mid(cFileNameLen, nameLength);
 						fileName.Trim("\"\\");
-
-						if (fileName.Compare("PTT00126.htm") == 0)
-							int deb = 1;
 					}
 				}
 				else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
@@ -1436,6 +1452,12 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 				{
 					char *tagEnd = strpbrk(tag, ";\r\n");
 					int tagLen = tagEnd - tag;
+
+					if (contentType.Compare("text/plain") == 0) {
+						LPTSTR buf = plainTextTag.GetBufferSetLength(tagLen);
+						memcpy(buf, tag, tagLen);
+					}
+
 					// make sure p is incremeneted within a loop or break
 					while (p < e)
 					{
@@ -1490,8 +1512,16 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 					deb = 1;
 				}
 
+				BOOL ignoreDuplicateHtml = FALSE;
+				if (contentType.Compare("text/html") == 0) {
+					if (strncmp(plainTextTag, tag, plainTextTag.GetLength()) == 0) {
+						ignoreDuplicateHtml = TRUE;
+						plainTextTag.SetString("");
+					}
+				}
+
 				contentLength = contentEnd - contentBegin;
-				if (contentLength > 0) {
+				if ((ignoreDuplicateHtml == FALSE) && (contentLength > 0)) {
 					MailBodyContent *contentDetails = new MailBodyContent;
 					contentDetails->m_contentOffset = contentBegin - startPos;;
 					contentDetails->m_contentLength = contentLength;
@@ -1502,8 +1532,9 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 
 					mail->m_ContentDetailsArray.push_back(contentDetails);
 				}
-				else
+				else {
 					deb = 1;
+				}
 			}
 			potential_tag = p;
 		}

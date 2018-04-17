@@ -2,6 +2,14 @@
 Changes
 ---
 
+v 1.0.2.2
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - updated User Manual to describe new and updated features;
+ - added Next/Previous search directions options to the Find dialog;
+ - reduced number of false positive searches;
+ - fixed potential search issue introduced in v 1.0.2.1;
+
 v 1.0.2.1
 
  - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

@@ -41,6 +41,7 @@
 #define IDC_RADIO1                      1056
 #define IDC_SCOPE                       1056
 #define IDC_EXPORT_EML                  1056
+#define IDC_SEARCH_PREV                 1056
 #define IDC_RADIO2                      1057
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
@@ -57,6 +58,7 @@
 #define IDC_CHECK_CONTENT               1079
 #define IDC_CHECK6                      1080
 #define IDC_CHECK_ATTACHMENT            1080
+#define IDC_SEARCH_NEXT                 1081
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -70,7 +72,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        163
 #define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1081
+#define _APS_NEXT_CONTROL_VALUE         1082
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif
