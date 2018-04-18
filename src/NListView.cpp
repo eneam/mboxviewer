@@ -636,7 +636,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	8
+#define CACHE_VERSION	9
 
 BOOL SaveMails(LPCSTR cache) {
 	int ni = MboxMail::s_mails.GetSize();
