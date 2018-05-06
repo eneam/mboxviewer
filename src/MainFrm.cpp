@@ -50,6 +50,12 @@ CMainFrame::CMainFrame()
 
 CMainFrame::~CMainFrame()
 {
+	// To stop memory leaks reports by debugger
+	void delete_charset2Id();
+	void delete_id2charset();
+	delete_charset2Id();
+	delete_id2charset();
+	int deb = 1;
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -199,7 +205,11 @@ void CMainFrame::OnFileOptions()
 			DWORD show_charsets = d.m_show_charsets;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), show_charsets);
 		}
-
+		if (GetMsgView()->m_bImageViewer != d.m_bImageViewer) {
+			GetMsgView()->m_bImageViewer = d.m_bImageViewer;
+			DWORD bImageViewer = d.m_bImageViewer;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), bImageViewer);
+		}
 	}
 }
 void CMainFrame::OnFileOpen() 

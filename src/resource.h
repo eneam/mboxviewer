@@ -4,6 +4,7 @@
 //
 #define IDD_ABOUTBOX                    100
 #define IDS_MAIN_TOOLBAR                101
+#define IDD_CPICTURECTRLDEMO_DIALOG     102
 #define IDR_MAINFRAME                   128
 #define IDR_mboxviewTYPE                129
 #define IDS_SELECT_FOLDER               129
@@ -23,6 +24,13 @@
 #define IDS_TITLE_DATE                  206
 #define IDS_DESC_BODY                   207
 #define IDS_TITLE_BODY                  207
+#define IDC_BUTTON1                     1001
+#define IDC_BUTTON_PREV                 1001
+#define IDC_BUTTON2                     1002
+#define IDC_BUTTON_NEXT                 1002
+#define IDC_BUTTON3                     1003
+#define IDC_BUTTON_ROTATE               1003
+#define IDC_STATIC_PICTURE              1006
 #define IDC_COMPANY_URL                 1041
 #define IDC_TREE                        1042
 #define IDC_LIST                        1043
@@ -59,6 +67,9 @@
 #define IDC_CHECK6                      1080
 #define IDC_CHECK_ATTACHMENT            1080
 #define IDC_SEARCH_NEXT                 1081
+#define IDC_BUTTON_ZOOM                 1083
+#define IDC_CHECK3                      1085
+#define IDC_IMAGE_VIEWER                1085
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -70,9 +81,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        163
+#define _APS_NEXT_RESOURCE_VALUE        166
 #define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1082
+#define _APS_NEXT_CONTROL_VALUE         1086
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

@@ -76,6 +76,12 @@
     <ClCompile Include="src\UPDialog.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\CPictureCtrlDemoDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PictureCtrl.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -154,6 +160,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\TextUtilities.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CPictureCtrlDemoDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PictureCtrl.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -109,6 +109,7 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 {
 	ResetFileMapView();
 
+	m_bStartSearchAtSelectedItem = 0; // FALSE; TODO: is this desired feature ?
 	m_bFindNext = TRUE;
 	m_bEditFindFirst = FALSE;
 	m_lastFindPos = -1;
@@ -911,6 +912,7 @@ void NListView::FillCtrl()
 #endif
 
 #if 0
+	// for testing of chnages to mboxview
 	{
 		int ni_old = 0;
 		int ni_new = 0;
@@ -1534,12 +1536,32 @@ void NListView::OnEditFind()
 		if (sz > 0) 
 		{
 			int which = 0, w = -1;
-			if (m_bFindNext == TRUE)
-				m_lastFindPos = 0;
+			if (m_bStartSearchAtSelectedItem == 0)
+			{
+				if (m_bFindNext == TRUE)
+					m_lastFindPos = 0;
+				else
+					m_lastFindPos = sz - 1;
+			}
 			else
-				m_lastFindPos = sz - 1;
+			{
+				if (m_bFindNext == TRUE) {
+					if ((m_lastSel >= 0) && (m_lastSel < sz))
+						m_lastFindPos = m_lastSel;
+					else
+						m_lastFindPos = 0;
+				}
+				else
+				{
+					if ((m_lastSel >= 0) && (m_lastSel < sz))
+						m_lastFindPos = m_lastSel;
+					else
+						m_lastFindPos = sz - 1;
+				}
+			}
 
 			which = m_lastFindPos;
+
 			//
 			if (m_maxSearchDuration > 0)
 				w = DoFastFind(which, TRUE, m_maxSearchDuration);
@@ -1778,26 +1800,59 @@ void NListView::OnEditFindAgain()
 	int which = 0, w = -1;
 	int sz = MboxMail::s_mails.GetSize();
 
-	if (m_bFindNext == TRUE)
+	if (m_lastFindPos != m_lastSel)
+		int deb = 1;
+
+	if (m_bStartSearchAtSelectedItem == 0)
 	{
-		if (m_lastFindPos < 0)
-			m_lastFindPos = 0;
+		if (m_bFindNext == TRUE)
+		{
+			if (m_lastFindPos < 0)
+				m_lastFindPos = 0;
+			else
+				m_lastFindPos++;
+			if (m_lastFindPos >= sz)
+				m_lastFindPos = 0;
+		}
 		else
-			m_lastFindPos++;
-		if (m_lastFindPos >= sz)
-			m_lastFindPos = 0;
+		{
+			if (m_lastFindPos < 0)
+				m_lastFindPos = sz - 1;
+			else
+				m_lastFindPos--;
+			if (m_lastFindPos < 0)
+				m_lastFindPos = sz - 1;
+		}
 	}
 	else
 	{
-		if (m_lastFindPos < 0)
-			m_lastFindPos = sz - 1;
+		if (m_bFindNext == TRUE)
+		{
+			if (m_lastSel < 0)
+				m_lastFindPos = 0;
+			else
+			{
+				m_lastFindPos = m_lastSel;
+				m_lastFindPos++;
+			}
+			if (m_lastFindPos >= sz)
+				m_lastFindPos = 0;
+		}
 		else
-			m_lastFindPos--;
-		if (m_lastFindPos < 0)
-			m_lastFindPos = sz - 1;
+		{
+			if (m_lastSel < 0)
+				m_lastFindPos = sz - 1;
+			else
+			{
+				m_lastFindPos = m_lastSel;
+				m_lastFindPos--;
+			}
+			if (m_lastFindPos < 0)
+				m_lastFindPos = sz - 1;
+		}
 	}
-
 	which = m_lastFindPos;
+
 	//
 	if (m_maxSearchDuration > 0)
 		w = DoFastFind(which, TRUE, m_maxSearchDuration);
@@ -2207,6 +2262,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
 			int dlength = d64.GetOutputLength();
 			if (dlength > MboxMail::m_maxOutput) {
+				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
 				MboxMail::m_pbOutput = new unsigned char[dlength];
 				MboxMail::m_maxOutput = dlength;
 			}
@@ -2221,6 +2277,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
 			int dlength = dGP.GetOutputLength();
 			if (dlength > MboxMail::m_maxOutput) {
+				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
 				MboxMail::m_pbOutput = new unsigned char[dlength];
 				MboxMail::m_maxOutput = dlength;
 			}

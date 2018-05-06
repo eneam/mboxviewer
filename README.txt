@@ -2,6 +2,14 @@
 Changes
 ---
 
+v 1.0.2.4
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - added picture viewer dialog to preview attachments with the png,jpg,jpe,jpeg,gif,bmp,ico,tif,tiff,jfif,emf,wmf,dib suffixes;
+ - all attachements are still accessible by double clicking selected email in the summary window or by selecting View->"View EML"menu option;
+ - corrected small memory leak;
+ - updated User Manual to describe new and updated features;
+
 v 1.0.2.3
 
  - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

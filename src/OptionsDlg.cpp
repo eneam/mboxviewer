@@ -14,6 +14,7 @@ COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(COptionsDlg::IDD, pParent)
 	, m_format(0), m_barDelay(0)
 	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
+	, m_bImageViewer(1)
 {
 
 }
@@ -32,6 +33,7 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_TO_ID, m_to_charsetId);
 	DDX_Text(pDX, IDC_SUBJ_ID, m_subj_charsetId);
 	DDX_Radio(pDX, IDC_SHOW_CHARSETS, m_show_charsets);
+	DDX_Check(pDX, IDC_IMAGE_VIEWER, m_bImageViewer);
 }
 
 
@@ -57,6 +59,7 @@ void COptionsDlg::OnBnClickedOk()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), m_to_charsetId);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), m_subj_charsetId);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), m_show_charsets);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), m_bImageViewer);
 
 		CDialog::OnOK();
 	}
@@ -89,6 +92,7 @@ BOOL COptionsDlg::OnInitDialog()
 	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
 	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
 	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
+	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "imageViewer");
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control

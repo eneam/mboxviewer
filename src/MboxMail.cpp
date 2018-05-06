@@ -5,7 +5,7 @@
 #include "MboxMail.h"
 
 UINT charset2Id(const char *char_set);
-BOOL id2charset(UINT id, std::string charset);
+BOOL id2charset(UINT id, std::string &charset);
 char * ParseContent(MboxMail *mail, char *startPos, char *endPos);
 
 unsigned char *MboxMail::m_pbOutput = 0;
@@ -874,57 +874,68 @@ CP2NM cp2name[] = {
 
 #include <unordered_map>
 
+typedef unordered_map<std::string, unsigned int> myMap;
+static myMap *cids = 0;
+
+void delete_charset2Id() {
+	delete cids;
+}
+
 UINT charset2Id(const char *char_set)
 {
 	UINT id = 0;
 	CP2NM *item;
-	typedef unordered_map<std::string, unsigned int> myMap;
-	static myMap *ids = 0;
 	myMap::iterator it;
 
-	if (!ids)
-		ids = new myMap;
+	if (!cids) {
+		cids = new myMap;
 
-	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
-	for (int i = 0; i < cp2name_size; i++)
-	{
-
-		item = &cp2name[i];
-		std::string charset = item->m_charset;
-		transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
-		if (ids->find(charset) == ids->end()) {  // not found, invalid iterator returned
-			ids->insert(myMap::value_type(charset, item->m_charsetId));
+		int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+		for (int i = 0; i < cp2name_size; i++)
+		{
+			item = &cp2name[i];
+			std::string charset = item->m_charset;
+			transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
+			if (cids->find(charset) == cids->end()) {  // not found, invalid iterator returned
+				cids->insert(myMap::value_type(charset, item->m_charsetId));
+			}
 		}
 	}
 #if 0
-	for (it = ids->begin(); it != ids->end(); it++) {
+	for (it = cids->begin(); it != cids->end(); it++) {
 		TRACE("%d %s\n", it->second, it->first);
 	}
 #endif
 	std::string charset = char_set;
 	transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
-	if ((it = ids->find(charset)) != ids->end()) {
+	if ((it = cids->find(charset)) != cids->end()) {
 		id = it->second;
 	}
 	return id;
 }
 
+typedef unordered_map<unsigned int, std::string> myIdMap;
+static myIdMap *ids = 0;
+
+void delete_id2charset() {
+	delete ids;
+}
+
 BOOL id2charset(UINT id, std::string &charset)
 {
 	CP2NM *item;
-	typedef unordered_map<unsigned int, std::string> myIdMap;
-	static myIdMap *ids = 0;
 	myIdMap::iterator it;
 
-	if (!ids)
+	if (!ids) {
 		ids = new myIdMap;
 
-	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
-	for (int i = 0; i < cp2name_size; i++)
-	{
-		item = &cp2name[i];
-		if (ids->find(item->m_charsetId) == ids->end()) {  // not found, invalid iterator returned
-			ids->insert(myIdMap::value_type(item->m_charsetId, item->m_charset));
+		int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+		for (int i = 0; i < cp2name_size; i++)
+		{
+			item = &cp2name[i];
+			if (ids->find(item->m_charsetId) == ids->end()) {  // not found, invalid iterator returned
+				ids->insert(myIdMap::value_type(item->m_charsetId, item->m_charset));
+			}
 		}
 	}
 #if 0
@@ -938,15 +949,6 @@ BOOL id2charset(UINT id, std::string &charset)
 	}
 	return FALSE;
 }
-
-#if 0
-DWORD WINAPI GetFullPathName(
-	_In_  LPCTSTR lpFileName,
-	_In_  DWORD   nBufferLength,
-	_Out_ LPTSTR  lpBuffer,
-	_Out_ LPTSTR  *lpFilePart
-);
-#endif
 
 int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten)
 {
@@ -1110,6 +1112,7 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 			MboxCMimeCodeBase64 *d64 = new MboxCMimeCodeBase64(bigbuff, body->m_contentLength);
 			int dlength = d64->GetOutputLength();
 			if (dlength > MboxMail::m_maxOutput) {
+				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
 				MboxMail::m_pbOutput = new unsigned char[dlength];
 				MboxMail::m_maxOutput = dlength;
 			}
@@ -1151,6 +1154,7 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 			MboxCMimeCodeQP *dGP = new MboxCMimeCodeQP(bigbuff, body->m_contentLength);
 			int dlength = dGP->GetOutputLength();
 			if (dlength > MboxMail::m_maxOutput) {
+				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
 				MboxMail::m_pbOutput = new unsigned char[dlength];
 				MboxMail::m_maxOutput = dlength;
 			}
@@ -1486,6 +1490,7 @@ char * ParseContent(MboxMail *mail, char *startPos, char *endPos)
 						MboxCMimeCodeBase64 *d64 = new MboxCMimeCodeBase64(contentBegin, contentLength);
 						int dlength = d64->GetOutputLength();
 						if (dlength > MboxMail::m_maxOutput) {
+							if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
 							MboxMail::m_pbOutput = new unsigned char[dlength];
 							MboxMail::m_maxOutput = dlength;
 						}

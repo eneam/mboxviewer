@@ -28,4 +28,5 @@ public:
 	int m_to_charsetId;
 	int m_subj_charsetId;
 	int m_show_charsets;
+	int m_bImageViewer;
 };

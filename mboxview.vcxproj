@@ -322,6 +322,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\CPictureCtrlDemoDlg.cpp" />
     <ClCompile Include="src\DateParser.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -445,6 +446,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="src\OptionsDlg.cpp" />
+    <ClCompile Include="src\PictureCtrl.cpp" />
     <ClCompile Include="src\Profile.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -523,6 +525,7 @@
     <ClInclude Include="src\BrowseForFolder.h" />
     <ClInclude Include="src\Browser.h" />
     <ClInclude Include="src\ChildView.h" />
+    <ClInclude Include="src\CPictureCtrlDemoDlg.h" />
     <ClInclude Include="src\DateParser.h" />
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\InitCommonControls.h" />
@@ -538,6 +541,7 @@
     <ClInclude Include="src\NSplit.h" />
     <ClInclude Include="src\NTreeView.h" />
     <ClInclude Include="src\OptionsDlg.h" />
+    <ClInclude Include="src\PictureCtrl.h" />
     <ClInclude Include="src\Profile.h" />
     <ClInclude Include="src\Resource.h" />
     <ClInclude Include="src\StdAfx.h" />

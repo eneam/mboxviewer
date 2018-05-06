@@ -102,6 +102,7 @@ public:
 	void ClearDescView();
 	CString m_curFile;
 	int m_lastSel;
+	int m_bStartSearchAtSelectedItem;
 	void FillCtrl();
 	CString m_path;
 	virtual ~NListView();

@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "mboxview.h"
 #include "NMsgView.h"
+#include "PictureCtrl.h"
+#include "CPictureCtrlDemoDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -77,6 +79,18 @@ NMsgView::NMsgView()
 	m_cnf_date_charsetId = 0;
 	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
 	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
+
+	DWORD bImageViewer;
+	BOOL retval;
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
+	if (retval == TRUE) {
+		m_bImageViewer = bImageViewer;
+	}
+	else {
+		bImageViewer = 1;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
+		m_bImageViewer = bImageViewer;
+	}
 }
 
 NMsgView::~NMsgView()
@@ -99,8 +113,24 @@ CString GetmboxviewTempPath(void);
 
 void NMsgView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	CString path = GetmboxviewTempPath();
-    HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL,NULL, SW_SHOWNORMAL );
+	if (m_bImageViewer)
+	{
+		CCPictureCtrlDemoDlg dlg;
+		INT_PTR nResponse = dlg.DoModal();
+		if (nResponse == IDOK) {
+			int deb = 1;
+		}
+		else if (nResponse == IDCANCEL)
+		{
+			int deb = 1;
+		}
+	}
+	else
+	{
+		CString path = GetmboxviewTempPath();
+		HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+	}
+
 	*pResult = 0;
 }
 /////////////////////////////////////////////////////////////////////////////
