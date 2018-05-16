@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.2.5
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - submitted Picture Viewer source code files to Github, missing in v1.0.2.4;
+ - users not interesetd in the source code don't need to reinstall mboxview binary file;
+
 v 1.0.2.4
 
  - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

@@ -10,14 +10,21 @@ Features
 * large file support > 4Gb;
 * fast parsing of mbox;
 * quick access to attachments;
+* preview the picture attachements;
 * export of single mail in Eml;
 * sort emails by date, from, to and subject columns;
 * search (unsorted emails) by date range, subject, sender, recepient, message text and text attachments; 
 * search (sorted emails) by date range, subject, sender and recepient;
-* support for header fields and body text encoded with Windows supported character sets/page codes;
+* support for header fields and body text encoded with all Windows supported character sets/page codes;
 
 Changes
 ---
+
+v 1.0.2.5
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - submitted Picture Viewer source code files to Github, missing in v1.0.2.4;
+ - users not interesetd in the source code don't need to reinstall mboxview binary file;
 
 v 1.0.2.4
 
