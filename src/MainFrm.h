@@ -50,6 +50,7 @@ protected:  // control bar embedded members
 	CToolBar		m_wndToolBar;
 	CChildView    m_wndView;
 	BOOL m_bSelectMailFileDone;
+	HICON m_hIcon;
 
 // Generated message map functions
 protected:

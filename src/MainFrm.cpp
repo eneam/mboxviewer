@@ -46,6 +46,7 @@ CMainFrame::CMainFrame()
 {
 	// TODO: add member initialization code here
 	m_bSelectMailFileDone = FALSE;
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
 CMainFrame::~CMainFrame()
@@ -91,6 +92,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 	EnableDocking(CBRS_ALIGN_ANY);
 	DockControlBar(&m_wndToolBar);
+
+	SetIcon(m_hIcon, TRUE);			// Groﬂes Symbol verwenden // use big icon
+	SetIcon(m_hIcon, FALSE);		// Kleines Symbol verwenden // Use a small icon
+
 	return 0;
 }
 
