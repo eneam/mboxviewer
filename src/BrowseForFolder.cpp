@@ -24,7 +24,7 @@ CBrowseForFolder::CBrowseForFolder(const HWND hParent /*= NULL*/, const LPITEMID
 	SetRoot(pidl);
 	SetTitle(nTitleID);
 	m_bi.lpfn = BrowseCallbackProc;
-	m_bi.lParam = reinterpret_cast<long>(this);
+	m_bi.lParam = reinterpret_cast<LPARAM>(this);
 	m_bi.pszDisplayName = m_szSelected;
 }
 
@@ -38,7 +38,7 @@ CBrowseForFolder::CBrowseForFolder(const HWND hParent , const int clsid, const i
 	SetRoot(pidlRoot);
 	SetTitle(nTitleID);
 	m_bi.lpfn = BrowseCallbackProc;
-	m_bi.lParam = reinterpret_cast<long>(this);
+	m_bi.lParam = reinterpret_cast<LPARAM>(this);
 	m_bi.pszDisplayName = m_szSelected;
 }
 
@@ -49,7 +49,7 @@ CBrowseForFolder::CBrowseForFolder(const HWND hParent, const LPITEMIDLIST pidl, 
 	SetRoot(pidl);
 	SetTitle(strTitle);
 	m_bi.lpfn = BrowseCallbackProc;
-	m_bi.lParam = reinterpret_cast<long>(this);
+	m_bi.lParam = reinterpret_cast<LPARAM>(this);
 	m_bi.pszDisplayName = m_szSelected;
 }
 
@@ -173,7 +173,7 @@ void CBrowseForFolder::SetSelection(const LPITEMIDLIST pidl) const
 	if (m_hwnd == NULL)
 		return;
 
-	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, FALSE, reinterpret_cast<long>(pidl));
+	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, FALSE, reinterpret_cast<LPARAM>(pidl));
 }
 
 void CBrowseForFolder::SetSelection(const CString& strPath) const
@@ -181,7 +181,7 @@ void CBrowseForFolder::SetSelection(const CString& strPath) const
 	if (m_hwnd == NULL)
 		return;
 
-	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, TRUE, reinterpret_cast<long>(LPCTSTR(strPath)));
+	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, TRUE, reinterpret_cast<LPARAM>(LPCTSTR(strPath)));
 }
 
 void CBrowseForFolder::SetStatusText(const CString& strText) const
@@ -189,7 +189,7 @@ void CBrowseForFolder::SetStatusText(const CString& strText) const
 	if (m_hwnd == NULL)
 		return;
 
-	(void)SendMessage(m_hwnd, BFFM_SETSTATUSTEXT, NULL, reinterpret_cast<long>(LPCTSTR(strText)));
+	(void)SendMessage(m_hwnd, BFFM_SETSTATUSTEXT, NULL, reinterpret_cast<LPARAM>(LPCTSTR(strText)));
 }
 
 int __stdcall CBrowseForFolder::BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)

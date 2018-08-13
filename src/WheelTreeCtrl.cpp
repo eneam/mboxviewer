@@ -27,18 +27,29 @@ BEGIN_MESSAGE_MAP(CWheelTreeCtrl, CTreeCtrl)
 	//{{AFX_MSG_MAP(CWheelTreeCtrl)
 	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
+	//ON_NOTIFY_REFLECT(NM_RCLICK, &CWheelTreeCtrl::OnNMRClick)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CWheelTreeCtrl message handlers
 
-BOOL CWheelTreeCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
+BOOL CWheelTreeCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	CWnd *wnd = WindowFromPoint(pt);
-	if( wnd == NULL )
+	if (wnd == NULL)
 		return FALSE;
-	if( wnd == this ) {
+	if (wnd == this) {
 		return CTreeCtrl::OnMouseWheel(nFlags, zDelta, pt);
 	}
-	return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags,zDelta), MAKELPARAM(pt.x, pt.y));
+	return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags, zDelta), MAKELPARAM(pt.x, pt.y));
 }
+
+#if 0
+void CWheelTreeCtrl::OnNMRClick(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// TODO: Add your control notification handler code here
+	// Added handle void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
+	*pResult = 0;
+}
+#endif
+

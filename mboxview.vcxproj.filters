@@ -82,6 +82,12 @@
     <ClCompile Include="src\PictureCtrl.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\ExportToCSVDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OpenContainingFolderDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -168,6 +174,15 @@
     <ClInclude Include="src\PictureCtrl.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\ExportToCSVDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dllist.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OpenContainingFolderDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.markdown" />
@@ -208,5 +223,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="README.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\print.bmp" />
+    <Image Include="res\select_folder.bmp" />
   </ItemGroup>
 </Project>

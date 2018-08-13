@@ -31,6 +31,8 @@ public:
 public:
 	virtual ~CWheelListCtrl();
 
+	virtual COLORREF OnGetCellBkColor(int /*nRow*/, int /*nColum*/);
+
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(CWheelListCtrl)
@@ -38,6 +40,8 @@ protected:
 	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnNMRClick(NMHDR *pNMHDR, LRESULT *pResult);
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,9 @@
 
 #include "Resource.h"       // main symbols
 #include "MainFrm.h"
+#include "MboxMail.h"
+#include "ExportToCSVDlg.h"
+#include "OpenContainingFolderDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -29,6 +32,11 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_OPTIONS, OnFileOptions)
 	ON_WM_ERASEBKGND()
 	//}}AFX_MSG_MAP
+	//ON_COMMAND(ID_FILE_EXPORT_TO_CSV, &CMainFrame::OnFileExportToCsv)
+	ON_COMMAND(ID_VIEW_CODEPAGEIDS, &CMainFrame::OnViewCodepageids)
+	ON_COMMAND(ID_PRINTTO_CSV, &CMainFrame::OnPrinttoCsv)
+	ON_COMMAND(ID_PRINTTO_TEXT, &CMainFrame::OnPrinttoText)
+	ON_COMMAND(ID_PRINTTO_HTML, &CMainFrame::OnPrinttoHtml)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -93,8 +101,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	EnableDocking(CBRS_ALIGN_ANY);
 	DockControlBar(&m_wndToolBar);
 
-	SetIcon(m_hIcon, TRUE);			// Großes Symbol verwenden // use big icon
-	SetIcon(m_hIcon, FALSE);		// Kleines Symbol verwenden // Use a small icon
+	SetIcon(m_hIcon, TRUE);			// use big icon
+	SetIcon(m_hIcon, FALSE);		// Use a small icon
 
 	return 0;
 }
@@ -166,13 +174,13 @@ CString GetDateFormat(int i);
 
 void CMainFrame::OnFileOptions()
 {
+	bool needRedraw = false;
 	COptionsDlg d;
 	if (d.DoModal() == IDOK) {
 		CString format = GetDateFormat(d.m_format);
 		if (GetListView()->m_format.Compare(format) != 0) {
 			GetListView()->m_format = GetDateFormat(d.m_format);
-			GetListView()->Invalidate();
-			GetMsgView()->m_browser.m_ie.Invalidate(); // .RedrawWindow();
+			needRedraw = true;
 		}
 
 		if (GetListView()->m_maxSearchDuration != d.m_barDelay) {
@@ -194,26 +202,45 @@ void CMainFrame::OnFileOptions()
 			GetMsgView()->m_cnf_subj_charsetId = d.m_subj_charsetId;
 			DWORD charsetId = d.m_subj_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), charsetId);
+			needRedraw = true;
 		}
 		if (GetMsgView()->m_cnf_from_charsetId != d.m_from_charsetId) {
 			GetMsgView()->m_cnf_from_charsetId = d.m_from_charsetId;
 			DWORD charsetId = d.m_from_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), charsetId);
+			needRedraw = true;
 		}
 		if (GetMsgView()->m_cnf_to_charsetId != d.m_to_charsetId) {
 			GetMsgView()->m_cnf_to_charsetId = d.m_to_charsetId;
 			DWORD charsetId = d.m_to_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), charsetId);
+			needRedraw = true;
 		}
 		if (GetMsgView()->m_show_charsets != d.m_show_charsets) {
 			GetMsgView()->m_show_charsets = d.m_show_charsets;
 			DWORD show_charsets = d.m_show_charsets;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), show_charsets);
+			needRedraw = true;
 		}
 		if (GetMsgView()->m_bImageViewer != d.m_bImageViewer) {
 			GetMsgView()->m_bImageViewer = d.m_bImageViewer;
 			DWORD bImageViewer = d.m_bImageViewer;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), bImageViewer);
+		}
+		if (GetListView()->m_gmtTime != d.m_bTimeType)
+		{
+			GetListView()->m_gmtTime = d.m_bTimeType;
+			DWORD bTimeType = d.m_bTimeType;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), bTimeType);
+			needRedraw = true;
+		}
+		if (needRedraw) {
+			// TODO: Invalidate() below doesn't updates column labels, so call MarkColumns() directly
+			// mboxview is basically single threaded so it should be ok to do so
+			GetListView()->MarkColumns();  // Invalidate() below doesn't updates column labels
+			GetListView()->ClearDescView();
+			GetListView()->Invalidate();
+			GetMsgView()->m_browser.m_ie.Invalidate(); // .RedrawWindow(); 
 		}
 	}
 }
@@ -257,4 +284,261 @@ BOOL CMainFrame::OnEraseBkgnd(CDC* pDC)
 {
 	// active view will paint itself
 	return TRUE;
+}
+
+BOOL PathFileExist(LPCSTR path);
+
+void CMainFrame::OnFileExportToCsv()
+{
+	// TODO: Add your command handler code here
+	ExportToCSVDlg d;
+	if (d.DoModal() == IDOK) 
+	{
+		CSVFILE_CONFIG csvConfig;
+		csvConfig.m_bFrom = d.m_bFrom;
+		csvConfig.m_bTo = d.m_bTo;
+		csvConfig.m_bSubject = d.m_bSubject;
+		csvConfig.m_bDate = d.m_bDate;
+		csvConfig.m_bContent = d.m_bContent;
+		csvConfig.m_dateFormat = d.m_dateFormat;
+		csvConfig.m_bGMTTime = d.m_bGMTTime;
+	
+		//csvConfig.m_separator = d.m_separator;
+		// Hardcoded for now.
+		csvConfig.m_separator = ",";
+
+		csvConfig.m_nCodePageId = 0;
+		if (d.m_bEncodingType == 1)
+			csvConfig.m_nCodePageId = CP_UTF8;
+		else if (d.m_bEncodingType == 2) {
+			csvConfig.m_nCodePageId = d.m_nCodePageId;
+		}
+
+		CString csvFileName;
+
+		//int ret = MboxMail::exportToCSVFileFullMailParse(csvConfig);
+		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName);
+		if (ret > 0) {
+			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			{
+				if (PathFileExist(path)) { // likely :) 
+					CString text = "Created file\n\n" + csvFileName;
+					OpenContainingFolderDlg dlg(text, 0);
+					INT_PTR nResponse = dlg.DoModal();
+					if (nResponse == IDOK)
+					{
+						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDYES)
+					{
+						ShellExecute(NULL, _T("open"), csvFileName, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDCANCEL)
+					{
+						int deb = 1;
+					}
+				}
+				else
+					;
+			}
+			else
+				; // TODO: 
+		}
+	}
+}
+
+void CMainFrame::OnViewCodepageids()
+{
+	// TODO: Add your command handler code here
+	int showCodePageTable();
+	int ret = showCodePageTable();
+}
+
+// Called when File->"Print To"->CSV
+void CMainFrame::OnPrinttoCsv()
+{
+	// TODO: Add your command handler code here
+	if (MboxMail::s_mails.GetSize() == 0) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+	OnFileExportToCsv();
+}
+
+// Called when File->"Print To"->Text
+void CMainFrame::OnPrinttoText()
+{
+	OnPrinttoTextFile(0);
+}
+
+void CMainFrame::OnPrinttoTextFile(int textType)
+{
+	// TODO: Add your command handler code here
+#if 0
+	//CPrintDialog prtDlg(FALSE);
+	CPageSetupDialog prtDlg(FALSE);
+	prtDlg.DoModal();
+#else
+	if (MboxMail::s_mails.GetSize() == 0) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+
+	//ExportToCSVDlg d;
+	//if (d.DoModal() == IDOK)
+	{
+		TEXTFILE_CONFIG textConfig;
+#if 1
+		NListView * pListView = CMainFrame::GetListView();
+		if (pListView) {
+			textConfig.m_dateFormat = pListView->m_format;
+			textConfig.m_bGMTTime = pListView->m_gmtTime;
+		}
+		else
+		{
+			textConfig.m_dateFormat = GetDateFormat(0);
+			textConfig.m_bGMTTime = 0;
+		}
+		textConfig.m_nCodePageId = CP_UTF8;
+#else
+		textConfig.m_dateFormat = GetDateFormat(d.m_dateFormat);
+		textConfig.m_bGMTTime = d.m_bGMTTime;
+
+		textConfig.m_nCodePageId = 0;
+		if (d.m_bEncodingType == 1)
+			textConfig.m_nCodePageId = CP_UTF8;
+		else if (d.m_bEncodingType == 2) {
+			textConfig.m_nCodePageId = d.m_nCodePageId;
+		}
+#endif
+
+		CString textFileName;
+		int firstMail = 0;
+		int lastMail = MboxMail::s_mails.GetCount() - 1;
+		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType);
+		if (ret > 0) {
+			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			{
+				if (PathFileExist(path)) { // likely :) 
+					CString txt = "Created file\n\n" + textFileName;
+					OpenContainingFolderDlg dlg(txt, 0);
+					INT_PTR nResponse = dlg.DoModal();
+					if (nResponse == IDOK)
+					{
+						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDYES)
+					{
+						ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDCANCEL)
+					{
+						int deb = 1;
+					}
+				}
+				else
+					;
+			}
+			else
+				; // TODO: 
+		}
+	}
+#endif
+}
+
+// called by NListView::OnRClick
+void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType)  // textType 0==Plain, 1==Html
+{
+	// TODO: Add your command handler code here
+#if 0
+	//CPrintDialog prtDlg(FALSE);
+	CPageSetupDialog prtDlg(FALSE);
+	prtDlg.DoModal();
+#else
+	if (MboxMail::s_mails.GetSize() == 0) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+
+	// Do we need extra dialog? Bypass for now
+	//ExportToCSVDlg d;
+	//if (d.DoModal() == IDOK)
+	{
+		TEXTFILE_CONFIG textConfig;
+#if 1
+		NListView * pListView = CMainFrame::GetListView();
+		if (pListView) {
+			textConfig.m_dateFormat = pListView->m_format;
+			textConfig.m_bGMTTime = pListView->m_gmtTime;
+		}
+		else
+		{
+			textConfig.m_dateFormat = GetDateFormat(0);
+			textConfig.m_bGMTTime = 0;
+		}
+		textConfig.m_nCodePageId = CP_UTF8;
+#else
+		textConfig.m_dateFormat = d.m_dateFormat;
+		textConfig.m_bGMTTime = d.m_bGMTTime;
+
+		textConfig.m_nCodePageId = 0;
+		if (d.m_bEncodingType == 1)
+			textConfig.m_nCodePageId = CP_UTF8;
+		else if (d.m_bEncodingType == 2) {
+			textConfig.m_nCodePageId = d.m_nCodePageId;
+		}
+#endif
+
+		int ret = 0;
+		CString textFileName;
+		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, textType);
+		if (ret > 0) {
+			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			{
+				if (PathFileExist(path)) { // likely :) 
+					CString txt = "Created file\n\n" + textFileName;
+					OpenContainingFolderDlg dlg(txt, 0);
+					INT_PTR nResponse = dlg.DoModal();
+					if (nResponse == IDOK)
+					{
+						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDYES)
+					{
+						ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						int deb = 1;
+					}
+					else if (nResponse == IDCANCEL)
+					{
+						int deb = 1;
+					}
+				}
+				else
+					;
+			}
+			else
+				; // TODO: 
+		}
+	}
+#endif
+}
+
+void CMainFrame::OnPrinttoHtml()
+{
+	// TODO: Add your command handler code here
+	OnPrinttoTextFile(1);
 }

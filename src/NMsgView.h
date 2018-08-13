@@ -62,6 +62,8 @@ protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	//}}AFX_MSG
 	afx_msg void OnActivating(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 };
 

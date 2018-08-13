@@ -54,7 +54,9 @@ protected:
 	afx_msg void OnFileRefresh();
 	//}}AFX_MSG
 	afx_msg void OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
+public:
 };
 
 /////////////////////////////////////////////////////////////////////////////

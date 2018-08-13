@@ -422,7 +422,7 @@ int CMimeHeader::Load(const char* pszData, int nDataSize)
 	ASSERT(pszData != NULL);
 	int nInput = 0;
 	while (pszData[nInput] != 0 && pszData[nInput] != '\r' && pszData[nInput] != '\n')
-	{
+	{ 
 		CMimeField fd;
 		int nSize = fd.Load(pszData+nInput, nDataSize-nInput);
 		if (nSize <= 0)
@@ -523,7 +523,8 @@ void CMimeBody::GetMessage(CMimeMessage* pMM) const
 {
 	ASSERT(pMM != NULL);
 	ASSERT(m_pbText != NULL);
-	pMM->Load((const char*)m_pbText, m_nTextSize);
+	const char* bodyData = (const char*)m_pbText;
+	pMM->Load(bodyData, (const char*)m_pbText, m_nTextSize);
 }
 
 // initialize the content (attachment) by reading from a file
@@ -802,7 +803,7 @@ int CMimeBody::Store(char* pszData, int nMaxSize) const
 }
 
 // load a body part from string buffer
-int CMimeBody::Load(const char* pszData, int nDataSize)
+int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize)
 {
 	// load header fields
 	int nSize = CMimeHeader::Load(pszData, nDataSize);
@@ -836,6 +837,10 @@ int CMimeBody::Load(const char* pszData, int nDataSize)
 	nSize = (int)(pszEnd - pszData);
 	if (nSize > 0)
 	{
+		m_bodyDataOffset = pszData - pszDataBase;
+		m_bodyDataLength = nSize;
+
+
 		CMimeCodeBase* pCoder = CMimeEnvironment::CreateCoder(GetTransferEncoding());
 		ASSERT(pCoder != NULL);
 		pCoder->SetInput(pszData, nSize, false);
@@ -888,7 +893,7 @@ int CMimeBody::Load(const char* pszData, int nDataSize)
 		string strMediaType = header.GetMainType();
 		CMimeBody* pBP = CreatePart(strMediaType.c_str());
 
-		int nInputSize = pBP->Load(pszStart, nEntitySize);
+		int nInputSize = pBP->Load(pszDataBase, pszStart, nEntitySize);
 		if (nInputSize < 0)
 		{
 			ErasePart(pBP);

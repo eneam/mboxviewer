@@ -41,6 +41,8 @@ class DateParser
 
 	static bool parseRFC822Date(const char *str, SYSTEMTIME *sysTime);
 
+	static bool validateSystemtime(const SYSTEMTIME *sysTime);
+
 	int OleDateFromTm(WORD wYear, WORD wMonth, WORD wDay,
 		WORD wHour, WORD wMinute, WORD wSecond, DATE& dtDest);
 

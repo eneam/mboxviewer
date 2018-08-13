@@ -2,6 +2,15 @@
 Changes
 ---
 
+v 1.0.2.6
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added options to print all mails to CSV or Text files;
+ - Added options print single mail to Text or Html file;
+ - Added option to group all related mails in the summary window;
+ - Added option to print related mails/group as Text or Html file;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.2.5
 
  - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

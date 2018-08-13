@@ -318,6 +318,26 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime)
  
 	return true;
 }
+
+// bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime) doesn't validate 
+// result and causes CTime() to fail.
+bool DateParser::validateSystemtime(const SYSTEMTIME *sysTime)
+{
+	// if (sysTime->wYear ??
+	if ((sysTime->wMonth < 1) || (sysTime->wMonth > 12))
+		return false;
+	// if ((sysTime->wDayOfWeek < 1) || (sysTime->wDayOfWeek > 7)) return false;
+	if ((sysTime->wDay < 1) || (sysTime->wDay > 31))  // This seem to be sufficient
+		return false;
+	if ((sysTime->wHour < 0) || (sysTime->wHour > 23))
+		return false;
+	if ((sysTime->wMinute < 0) || (sysTime->wMinute > 59))
+		return false;
+	if ((sysTime->wSecond < 0) || (sysTime->wSecond > 59))
+		return false;
+	//if ((sysTime->wMilliseconds < 0) || (sysTime->wMilliseconds < 0)) return false;
+	return true;
+}
  
 static int _afxMonthDays[13] =
 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};

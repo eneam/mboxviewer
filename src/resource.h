@@ -13,6 +13,10 @@
 #define IDB_IL_TREE                     155
 #define IDD_FIND                        156
 #define IDD_OPTIONS                     158
+#define IDD_EXPORT_TO_CSV               166
+#define IDD_OPEN_FOLDER                 168
+#define IDB_PRINT                       171
+#define IDB_FOLDER                      176
 #define IDS_DESC_TITLE                  202
 #define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
@@ -50,9 +54,11 @@
 #define IDC_SCOPE                       1056
 #define IDC_EXPORT_EML                  1056
 #define IDC_SEARCH_PREV                 1056
+#define IDC_ENCODING_NONE               1056
 #define IDC_RADIO2                      1057
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
+#define IDC_EXPORT_FROM                 1059
 #define IDC_DONATION                    1063
 #define IDC_PROGRESS_BAR_DELAY          1065
 #define IDC_SUBJ_ID                     1070
@@ -70,20 +76,47 @@
 #define IDC_BUTTON_ZOOM                 1083
 #define IDC_CHECK3                      1085
 #define IDC_IMAGE_VIEWER                1085
+#define IDC_EXPORT_SUBJECT              1085
+#define IDC_TIME_TYPE                   1086
+#define IDC_TIME_LOCAL                  1087
+#define IDC_TIME_GMT                    1088
+#define IDC_GROUP_PROGRES_BAR           1089
+#define IDC_GROUP_EML                   1090
+#define IDC_GROUP_SET_IDS               1091
+#define IDC_GROUP_SHOW_CHARSETS         1092
+#define IDC_GROUP_FROM_TO_SUBJ          1093
+#define IDC_OPTIONS_SEPARATOR           1094
+#define IDC_PICTURE_VIEWER              1095
+#define IDC_EXPORT_TO                   1096
+#define IDC_EXPORT_DATE                 1097
+#define IDC_EXPORT_MESSAGE              1098
+#define IDC_RADIO5                      1101
+#define IDC_ENCODING_UTF8               1106
+#define IDC_ENCODING_CODE_PAGE          1107
+#define IDC_ENCODING_CODE_PAGE_ID       1108
+#define IDC_BUTTON4                     1109
+#define IDC_BUTTON_PRT                  1109
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
 #define ID_FILE_OPTIONS                 32847
 #define ID_EDIT_VIEWEML                 32848
+#define ID_Menu                         32849
+#define ID_FILE_EXPORT_TO_CSV           32850
+#define ID_VIEW_CODEPAGEIDS             32851
+#define ID_VIEW_CONVERSATIONS           32852
+#define ID_PRINTTO_CSV                  32853
+#define ID_PRINTTO_TEXT                 32854
+#define ID_PRINTTO_HTML                 32855
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         32849
-#define _APS_NEXT_CONTROL_VALUE         1086
+#define _APS_NEXT_RESOURCE_VALUE        177
+#define _APS_NEXT_COMMAND_VALUE         32856
+#define _APS_NEXT_CONTROL_VALUE         1110
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

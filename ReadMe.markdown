@@ -12,13 +12,26 @@ Features
 * quick access to attachments;
 * preview the picture attachements;
 * export of single mail in Eml;
+* print all mails to CSV or Text files
+* print single mail to Text or Html file
+* group and view all related mails as conversations
+* print related mails/group as Text or Html file
 * sort emails by date, from, to and subject columns;
 * search (unsorted emails) by date range, subject, sender, recepient, message text and text attachments; 
 * search (sorted emails) by date range, subject, sender and recepient;
-* support for header fields and body text encoded with all Windows supported character sets/page codes;
+* support for header fields and body text encoded with any Windows supported character sets/page codes;
 
 Changes
 ---
+
+v 1.0.2.6
+
+ - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added options to print all mails to CSV or Text files;
+ - Added options print single mail to Text or Html file;
+ - Added option to group all related mails in the summary window;
+ - Added option to print related mails/group as Text or Html file;
+ - Updated User Manual to describe new and updated features;
 
 v 1.0.2.5
 

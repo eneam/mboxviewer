@@ -103,8 +103,10 @@ public:
 	CString m_curFile;
 	int m_lastSel;
 	int m_bStartSearchAtSelectedItem;
-	void FillCtrl();
+	int m_gmtTime;
 	CString m_path;
+	//
+	void FillCtrl();
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
 	int DumpSelectedItem(int which);
@@ -115,6 +117,9 @@ public:
 	void ResetFont();
 	void RedrawMails();
 	void ResizeColumns();
+	time_t OleToTime_t(COleDateTime *ot);
+	void MarkColumns();
+	void PrintMailGroupToText(int iItem, int textType);
 
 	// Generated message map functions
 protected:
@@ -133,10 +138,13 @@ protected:
 	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnEditVieweml();
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
+	afx_msg void OnViewConversations();
+	afx_msg void OnUpdateViewConversations(CCmdUI *pCmdUI);
 };
 
 typedef struct _ParseArgs {

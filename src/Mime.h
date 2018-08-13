@@ -367,11 +367,13 @@ public:
 	virtual int GetLength() const;
 	// serialization
 	virtual int Store(char* pszData, int nMaxSize) const;
-	virtual int Load(const char* pszData, int nDataSize);
+	virtual int Load(const char*& pszDataBase, const char* pszData, int nDataSize);
 
 protected:
 	unsigned char* m_pbText;		// content (text) of the body part
 	int m_nTextSize;				// length of content
+	int m_bodyDataOffset;			// Offset to body data within the mail
+	int m_bodyDataLength;			// Lenght of body data within the mail
 	CBodyList m_listBodies;			// list of all child body parts
 	CBodyList::iterator m_itFind;
 
@@ -395,7 +397,7 @@ inline bool CMimeBody::IsMessage() const
 { return GetMediaType() == MEDIA_MESSAGE; }
 
 inline bool CMimeBody::IsAttachment() const
-{ return GetName().size() > 0; }
+{ return ((GetName().size() > 0) || (GetFilename().size() > 0)); }
 
 inline bool CMimeBody::IsMultiPart() const
 { return GetMediaType() == MEDIA_MULTIPART; }

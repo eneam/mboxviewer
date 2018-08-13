@@ -106,30 +106,18 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	ON_WM_ERASEBKGND()
 	ON_WM_LBUTTONDBLCLK()
 	//}}AFX_MSG_MAP
-	ON_NOTIFY(NM_CLICK, IDC_ATTACHMENTS, OnActivating)
+	//ON_NOTIFY(NM_CLICK, IDC_ATTACHMENTS, OnActivating)  // TODO: Had to disable for now to allow OnDoubleClick to work !!
+	ON_NOTIFY(NM_DBLCLK, IDC_ATTACHMENTS, OnDoubleClick)
+	ON_NOTIFY(NM_RCLICK, IDC_ATTACHMENTS, OnRClick)  // Right Click Menu
 END_MESSAGE_MAP()
 
 CString GetmboxviewTempPath(void);
 
 void NMsgView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	if (m_bImageViewer)
-	{
-		CCPictureCtrlDemoDlg dlg;
-		INT_PTR nResponse = dlg.DoModal();
-		if (nResponse == IDOK) {
-			int deb = 1;
-		}
-		else if (nResponse == IDCANCEL)
-		{
-			int deb = 1;
-		}
-	}
-	else
-	{
-		CString path = GetmboxviewTempPath();
-		HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-	}
+	NMITEMACTIVATE *pnm = (NMITEMACTIVATE *)pNMHDR;
+	int nItem = pnm->iItem;
+	CString attachmentName = m_attachments.GetItemText(nItem, 0);
 
 	*pResult = 0;
 }
@@ -441,4 +429,178 @@ void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDblClk(nFlags, point);
 	m_browser.SetFocus();
 	*/
+}
+
+void NMsgView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMITEMACTIVATE *pnm = (NMITEMACTIVATE *)pNMHDR;
+	int nItem = pnm->iItem;
+	CString attachmentName = m_attachments.GetItemText(nItem, 0);
+
+	bool isSupportedPictureFile = false;
+	PTSTR ext = PathFindExtension(attachmentName);
+	CString cext = ext;
+	// Need to create tavble of extensions so this class and Picture viewr class can share the list
+	if (CCPictureCtrlDemoDlg::isSupportedPictureFile(attachmentName))
+	{
+		isSupportedPictureFile = true;
+	}
+
+	if (m_bImageViewer && isSupportedPictureFile)
+	{
+		CCPictureCtrlDemoDlg dlg(&attachmentName);
+		INT_PTR nResponse = dlg.DoModal();
+		if (nResponse == IDOK) {
+			int deb = 1;
+		}
+		else if (nResponse == IDCANCEL)
+		{
+			int deb = 1;
+		}
+	}
+	else
+	{
+		CString path = GetmboxviewTempPath();
+		CString fullName = path + attachmentName;
+		// Photos application doesn't show next/prev photo even with path specified
+		// Buils in Picture Viewer is set as deafault
+		HINSTANCE result = ShellExecute(NULL, _T("open"), attachmentName, NULL, path, SW_SHOWNORMAL);
+		//HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+	}
+
+	*pResult = 0;
+}
+
+int FindMenuItem(CMenu* Menu, LPCTSTR MenuName) {
+	int count = Menu->GetMenuItemCount();
+	for (int i = 0; i < count; i++) {
+		CString str;
+		if (Menu->GetMenuString(i, str, MF_BYPOSITION) &&
+			str.Compare(MenuName) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap)
+{
+	MENUITEMINFO minfo;
+	memset(&minfo, 0, sizeof(minfo));
+	minfo.cbSize = sizeof(minfo);
+	minfo.fMask = MIIM_BITMAP;
+	int pos = -1;
+	if (cmap.LoadBitmap(resourceId)) {
+		minfo.hbmpItem = cmap.operator HBITMAP();
+
+		pos = FindMenuItem(Menu, MenuName);
+		if (pos >= 0)
+			Menu->SetMenuItemBitmaps(pos, MF_BYPOSITION, &cmap, &cmap);
+	}
+	return pos;
+}
+
+void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	const char *Open = _T("Open");
+	const char *Print = _T("Print");
+	const char *OpenFileLocation = _T("Open File Location");
+
+	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+
+	int nItem = pnm->iItem;
+
+	if (nItem < 0)
+		return;
+
+	CString attachmentName = m_attachments.GetItemText(nItem, 0);
+
+	TRACE("Selecting %d\n", pnm->iItem);
+
+	// TODO: Add your control notification handler code here
+#define MaxShellExecuteErrorCode 32
+
+	CPoint pt;
+	::GetCursorPos(&pt);
+	CWnd *wnd = WindowFromPoint(pt);
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_SEPARATOR);
+
+	const UINT M_OPEN_Id = 1;
+	AppendMenu(&menu, M_OPEN_Id, Open);
+
+	const UINT M_PRINT_Id = 2;
+	AppendMenu(&menu, M_PRINT_Id, Print);
+
+	const UINT M_OpenFileLocation_Id = 3;
+	AppendMenu(&menu, M_OpenFileLocation_Id, OpenFileLocation);
+
+	CBitmap  printMap;
+	int retval = AttachIcon(&menu, Print, IDB_PRINT, printMap);
+	CBitmap  foldertMap;
+	retval = AttachIcon(&menu, OpenFileLocation, IDB_FOLDER, foldertMap);
+
+	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	UINT nFlags = TPM_RETURNCMD;
+	CString menuString;
+	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+	bool forceOpen = false;
+	HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode +1);  // OK
+	if (command == M_PRINT_Id)
+	{
+		CString path = GetmboxviewTempPath();
+		CString fullName = path + attachmentName;
+		result = ShellExecute(NULL, "print", attachmentName, NULL, path, SW_SHOWNORMAL);
+		if ((UINT)result <= MaxShellExecuteErrorCode) {
+			CString errorText;
+			ShellExecuteError2Text((UINT)result, errorText);
+			errorText += ".\nOk to try to open this file ?";
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+			if (answer == IDYES)
+				forceOpen = true;
+		}
+		int deb = 1;
+	}
+	if ((command == M_OPEN_Id) || forceOpen)
+	{
+		CString path = GetmboxviewTempPath();
+		CString fullName = path + attachmentName;
+
+		DWORD binaryType = 0;
+		BOOL isExe = GetBinaryTypeA(fullName, &binaryType);
+
+		result = ShellExecute(NULL, "open", attachmentName, NULL, path, SW_SHOWNORMAL);
+
+		if ((UINT)result <= MaxShellExecuteErrorCode) {
+			CString errorText;
+			ShellExecuteError2Text((UINT)result, errorText);
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK );
+		}
+
+		int deb = 1;
+	}
+	else if (command == M_OpenFileLocation_Id)
+	{
+		CString path = GetmboxviewTempPath();
+		result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+
+		if ((UINT)result <= MaxShellExecuteErrorCode) {
+			CString errorText;
+			ShellExecuteError2Text((UINT)result, errorText);
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		}
+
+		int deb = 1;
+	}
+
+	m_attachments.Invalidate();
+	m_attachments.UpdateWindow();
+
+	*pResult = 0;
 }

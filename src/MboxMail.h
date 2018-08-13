@@ -4,8 +4,43 @@
 #include "UPDialog.h"
 #include "Mime.h"
 #include "MimeCode.h"
+#include <unordered_map>
+#include <algorithm>
+#include "dllist.h"
 
 _int64 FileSize(LPCSTR fileName);
+void ShellExecuteError2Text(UINT errorCode, CString &errorText);
+
+class MboxMail;
+
+typedef struct _CSVFileConfig
+{
+public:
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bDate;
+	BOOL m_bContent;
+	int m_dateFormat;
+	int m_bGMTTime;
+	int m_nCodePageId;
+	CString m_separator;
+} CSVFILE_CONFIG;
+
+typedef struct _TextFileConfig
+{
+public:
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bDate;
+	BOOL m_bContent;
+	CString m_dateFormat;
+	int m_bGMTTime;
+	int m_nCodePageId;
+	CString m_separator;
+} TEXTFILE_CONFIG;
+
 
 class MboxCMimeCodeBase64 : public CMimeCodeBase64
 {
@@ -23,6 +58,109 @@ public:
 	}
 };
 
+// Investigate and use standard CString instead  ?
+class SimpleString
+{
+public:
+#define DFLT_GROW_SIZE 16
+	SimpleString() { Initialize(0, DFLT_GROW_SIZE);  }
+	SimpleString(int capacity) { Initialize(capacity, DFLT_GROW_SIZE); }
+	SimpleString(int capacity, int grow_size) { Initialize(capacity, grow_size); }
+
+	void Initialize(int capacity, int grow_size) {
+		m_data = 0;  m_count = 0;  m_grow_size = grow_size;
+		m_capacity = capacity;
+		if (m_capacity < DFLT_GROW_SIZE)
+			m_capacity = DFLT_GROW_SIZE;
+		m_data = new char[m_capacity + 1];  // extra byte for NULL
+		if (m_data)
+			m_data[0] = 0;
+		else
+			m_capacity = 0;  // this would be a problem. introduce m_error ?
+	};
+	~SimpleString() { delete [] m_data; };
+
+	char *m_data;
+	int m_capacity;
+	int m_count;
+	int m_grow_size;
+
+	char *Data() { return m_data;  }
+	char *Data(int pos) { return &m_data[pos]; }  // zero based pos
+	int Capacity() { return m_capacity; }
+	int Count() { return m_count; }
+	void SetCount(int count) {
+		ASSERT(count <= m_capacity); ASSERT(m_data);
+		m_count = count; m_data[count] = 0;
+	}
+	void Clear() {
+		SetCount(0);
+	}
+	bool CanAdd(int characters) {
+		if ((m_count + characters) <= m_capacity) 
+			return true; else  return false;
+	}
+	int Resize(int size);
+
+	int ClearAndResize(int size) {
+		int new_size = Resize(size);
+		SetCount(0);
+		return new_size;
+	}
+
+	void Copy(char c) {
+		if (1 > m_capacity) // should never be true
+			Resize(1);
+		m_data[0] = c;
+		SetCount(1);
+	}
+
+	void Append(char c) {
+		if (!CanAdd(1)) Resize(m_capacity + 1);
+		m_data[m_count++] = c;
+		m_data[m_count] = 0;
+	}
+
+	void Copy(void const* Src, size_t  Size) {
+		if (Size > m_capacity) Resize(Size);
+		::memcpy(m_data, Src, Size);
+		SetCount(Size);
+	}
+
+	void append_internal(void const* Src, size_t  Size);
+
+	void Append(void const* Src, size_t  Size) {
+		if (!CanAdd(Size))
+			Resize(m_count + Size);
+		append_internal(Src, Size);
+	}
+
+	void Copy(register char *src) {
+		int slen = strlen(src);
+		SimpleString::Copy(src, slen);
+	}
+
+	void Append(register char *src) {
+		int slen = strlen(src);
+		SimpleString::Append(src, slen);
+	}
+
+	void Copy(SimpleString &str) { 
+		Copy(str.Data(), str.Count());
+	}
+
+	void Append(SimpleString &str) {
+		Append(str.Data(), str.Count());
+	}
+
+	int FindNoCase(int offset, void const* Src, int  Size);
+	int FindAny(int offset, void const * Src);
+
+	char GetAt(int pos) {
+		return m_data[pos];
+	}
+};
+
 class MailBodyContent
 {
 public:
@@ -32,9 +170,33 @@ public:
 	CString m_contentTransferEncoding;
 	CString m_contentDisposition;
 	CString m_attachmentName;
+	UINT m_pageCode;
 	int  m_contentOffset;
 	int m_contentLength;
 };
+
+unsigned long StrHash(const char* buf, const UINT length);
+
+struct MessageIdHash;
+struct MessageIdEqual;
+
+typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
+
+class CMBodyHdr;
+
+#define White  RGB(255,255,255)
+#define Black  RGB(0,0,0)
+
+#define PeachPuff1 	RGB(255,218,185)
+#define PeachPuff2 	RGB(238,203,173)
+#define PeachPuff3 	RGB(205,175,149)
+
+#define SandyBrown RGB(244,164,96)
+#define Burlywood  RGB(222,184,135)
+
+#define AntiqueWhite2 RGB(238,223,204)
+#define AntiqueWhite3 RGB(205,192,176)
+
 
 class MboxMail
 {
@@ -42,8 +204,15 @@ public:
 	MboxMail() {
 		m_startOff = m_length = m_hasAttachments = 0;
 		m_from_charsetId = m_to_charsetId = m_subj_charsetId = 0;
+		m_cc_charsetId = m_bcc_charsetId = 0;
 		m_timeDate = 0;
-		m_recv = 1;
+		m_recv = 0;
+		m_groupId = -1;
+		m_nextMail = -1;
+		m_prevMail = -1;
+		m_duplicateId = false;
+		m_done = false;
+		m_groupColor = 0; 
 	}
 	CString GetBody();
 	int DumpMailBox(MboxMail *mailBox, int which);
@@ -55,11 +224,33 @@ public:
 	int m_length, m_headLength, m_recv;
 	time_t m_timeDate;
 	CString m_from, m_to, m_subj;
+	CString m_cc, m_bcc;
 	CString m_from_charset, m_to_charset, m_subj_charset;
+	CString m_cc_charset, m_bcc_charset;
 	UINT m_from_charsetId, m_to_charsetId, m_subj_charsetId;
+	UINT m_cc_charsetId, m_bcc_charsetId;
+	CString m_messageId;
+	CString m_replyId;
+	int m_groupId;
+	int m_groupColor;
+	int m_nextMail;
+	int m_prevMail;
+	bool m_duplicateId;
+	bool m_done;
 
-	static unsigned char *m_pbOutput;
-	static int m_maxOutput;
+	static MessageIdTableType *m_pMessageIdTable;
+	//
+	static UINT MboxMail::createMessageIdTable(UINT count);
+	static int getMessageId(CString *key);
+	static bool insertMessageId(CString *key, int val);
+	static int getReplyId(CString *key);
+	static int add2ConversationGroup(int mid, MboxMail *m);
+	//
+	static int m_nextGroupId;
+	static SimpleString *m_outbuf;
+	static SimpleString *m_inbuf;
+	static SimpleString *m_workbuf;
+
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
 	static CString s_path;
@@ -76,21 +267,35 @@ public:
 	static void SortByTo(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortBySubject(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
 	static void SortBySize(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
+	static void SortByFileOffset(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
+	static void SortByConverstionGroups(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
+	static void assignColor2ConvesationGroups();
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;
-	static void Destroy() {
-		for (int i = 0; i < s_mails.GetSize(); i++)
-		{
-			for (int j = 0; j < s_mails[i]->m_ContentDetailsArray.size(); j++) {
-				delete s_mails[i]->m_ContentDetailsArray[j];
-				s_mails[i]->m_ContentDetailsArray[j] = 0;
-			}
-			delete s_mails[i];
-		}
-		s_mails.RemoveAll();
-		s_mails_ref.RemoveAll();
-		b_mails_sorted = false;
-	};
+	static void Destroy();
+	static bool preprocessConversations();
+	static bool sortConversations();
+	static bool validateSortConversations();
+	static int charCount(char *fld, char c);
+	static int nstrcpy(char *dst, char *src);
+	static int escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar);
+	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
+	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
+	//
+	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType);
+	static int exportHeaderToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
+	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName);
+	static int exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig);
+	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
+	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
+	static int GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, SimpleString *outbuf, UINT &pageCode);
+	static void getCMimeBodyHeader(CMimeMessage *mail, CMimeBody* pBP, CMBodyHdr *pHdr);
+	static int LoadMail(const char* pszData, int nDataSize);
+	static char * ParseContent(MboxMail *mail, char *startPos, char *endPos);
+	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 };
 
 #define SZBUFFSIZE 1024*1024
@@ -113,64 +318,10 @@ public:
 	~SerializerHelper() {
 		close();
 	}
-	void close() {
-		if (m_buff != NULL) {
-			if (m_writing) {
-				m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-				if (m_hFile != INVALID_HANDLE_VALUE) {
-					DWORD nwritten = 0;
-					WriteFile(m_hFile, m_buff, m_offset, &nwritten, NULL);
-					CloseHandle(m_hFile);
-				}
-			}
-			free(m_buff);
-		}
-		m_buff = NULL;
-	}
-	BOOL open(BOOL bWrite) {
-		m_writing = bWrite;
-		if (bWrite) {
-			m_buff = (char *)malloc(m_buffSize = SZBUFFSIZE);
-			if (m_buff == NULL)
-				return false;
-			return TRUE;
-			//m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		}
-		else {
-			m_buffSize = (int)FileSize(m_path);
-			m_buff = (char *)malloc(m_buffSize);
-			if (m_buff == NULL)
-				return false;
-			m_hFile = CreateFile(m_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-			DWORD nread;
-			BOOL res = ReadFile(m_hFile, m_buff, m_buffSize, &nread, NULL);
-			CloseHandle(m_hFile);
-			m_hFile = INVALID_HANDLE_VALUE;
-			return res;
-		}
-		return m_hFile != INVALID_HANDLE_VALUE;
-	}
-	BOOL readN(void *v, int sz) {
-		if (m_buff == 0)
-			return FALSE;
-		if (m_offset + sz > m_buffSize)
-			return FALSE;
-		memcpy(v, m_buff + m_offset, sz);
-		m_offset += sz;
-		return TRUE;
-	}
-	BOOL writeN(void *v, int sz) {
-		if (m_buff == 0)
-			return FALSE;
-		if (m_offset + sz > m_buffSize) {
-			m_buff = (char *)realloc(m_buff, m_buffSize += SZBUFFSIZE);
-			if (m_buff == NULL)
-				return FALSE;
-		}
-		memcpy(m_buff + m_offset, v, sz);
-		m_offset += sz;
-		return TRUE;
-	}
+	void close();
+	BOOL open(BOOL bWrite);
+	BOOL readN(void *v, int sz);
+	BOOL writeN(void *v, int sz);
 	BOOL writeInt(int val) {
 		return writeN(&val, sizeof(int));
 	}
@@ -203,65 +354,82 @@ public:
 	}
 };
 
-/* This is too slow
-class SerializerHelper
+
+class MailHeader
 {
-private:
-CString m_path;
-HANDLE m_hFile;
 public:
-SerializerHelperFs(LPCSTR fn) {
-m_path = fn;
-}
-~SerializerHelperFs() {
-close();
-}
-void close() {
-if( m_hFile != INVALID_HANDLE_VALUE )
-CloseHandle( m_hFile );
-m_hFile = INVALID_HANDLE_VALUE;
-}
-BOOL open(BOOL bWrite) {
-if( bWrite )
-m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-else
-m_hFile = CreateFile(m_path, GENERIC_READ, 0, NULL,	OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-return m_hFile != INVALID_HANDLE_VALUE;
-}
-BOOL writeInt(int value) {
-//if( m_hFile == INVALID_HANDLE_VALUE )			return false;
-DWORD written = 0;
-return WriteFile(m_hFile, &value, sizeof(int), &written, NULL);
-}
-BOOL readInt(int *val) {
-//if( m_hFile == INVALID_HANDLE_VALUE ) return false;
-DWORD nRead = 0;
-return ReadFile(m_hFile, val, sizeof(int), &nRead, NULL);
-}
-BOOL writeInt64(_int64 value) {
-//if( m_hFile == INVALID_HANDLE_VALUE )	return false;
-DWORD written = 0;
-return WriteFile(m_hFile, &value, sizeof(_int64), &written, NULL);
-}
-BOOL readInt64(_int64 *val) {
-//if( m_hFile == INVALID_HANDLE_VALUE )	return false;
-DWORD nRead = 0;
-return ReadFile(m_hFile, val, sizeof(_int64), &nRead, NULL);
-}
-BOOL writeString(LPCSTR val) {
-int l = strlen(val);
-if( !writeInt(l) )
-return false;
-DWORD written = 0;
-return WriteFile(m_hFile, val, l, &written, NULL);
-}
-BOOL readString(CString &val) {
-int l = 0;
-if( ! readInt(&l) )
-return false;
-LPSTR buf = val.GetBufferSetLength(l);
-DWORD nRead = 0;
-return ReadFile(m_hFile, buf, l, &nRead, NULL);
-}
+	MailHeader() { Clear(); }
+	~MailHeader() { }
+public:
+	void Clear();
+	char *EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p;  }
+	
+	int Load(const char* pszData, int nDataSize);
+	bool IsMultiPart() { return m_IsMultiPart; }
+
+	bool m_IsText;
+	bool m_IsTextPlain;
+	bool m_IsTextHtml;
+	bool m_IsMessage;
+	bool m_IsAttachment;
+	bool m_IsMultiPart;
+	CString m_Charset;
+	UINT m_PageCode;
+	CString m_Description;
+	CString m_Disposition;
+	CString m_TransferEncoding;
+	CString m_SubType;
+	CString m_MainType;
+	CString m_Boundary;
+	CString m_ContentType;
+	CMimeHeader::MediaType m_MediaType;
+	CString m_AttachmentName;
+	CString m_MessageId;
+	CString m_ReplyId;
 };
-*/
+
+class MailBodyPool;
+
+class MailBody:public MailHeader
+{
+	friend class MailBodyPool;
+public:
+	MailBody() { m_bodyDataOffset = 0; };
+	~MailBody() { DeleteAll(); };
+
+	int Load(char *& pszDatabase, const char* pszData, int nDataSize);
+	typedef list<MailBody*> MailBodyList;
+	int GetBodyPartList(MailBodyList& rList);
+	int m_bodyDataOffset;
+	int m_bodyDataLength;
+
+protected:
+	char* FindBoundary(const char* pszData, const char* pszDataEnd, const char* boundary, int boundaryLength);
+	const char* FindString(const char* pszStr1, const char* pszStr2, const char* pszEnd);
+
+	DLLIST_NODE(MailBody) m_freeList_link;
+	DLLIST(MailBody, m_freeList_link) m_listBodies;
+
+	void DeleteAllParts();
+	void DeleteAll();
+	
+	static MailBody *CreatePart();
+	static void ErasePart(MailBody* body);
+
+public:
+	static MailBody *CreateMailBody();
+	static void FreeMailBody(MailBody* body);
+	static MailBodyPool *m_mpool;
+};
+
+class MailBodyPool
+{
+public:
+	MailBodyPool() {};
+	~MailBodyPool();
+
+	MailBody *AllocPart();
+	void FreePart(MailBody* body);
+
+	DLLIST(MailBody, m_freeList_link) m_freeMailBodyList;
+};

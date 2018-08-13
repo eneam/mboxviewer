@@ -28,13 +28,28 @@ CString GetmboxviewTempPath();
 
 // CCPictureCtrlDemoDlg-Dialogfeld
 
-CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CWnd* pParent /*=NULL*/)
+CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParent /*=NULL*/)
 	: CDialogEx(CCPictureCtrlDemoDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
 	CString fpath = GetmboxviewTempPath();
 	LoadImageFileNames(fpath);
+	for (int i = 0; i < m_ImageFileNameArray.GetSize(); i++)
+	{
+		const char *fullFilePath = m_ImageFileNameArray[i]->operator LPCSTR();
+		char *fileName = new char[m_ImageFileNameArray[i]->GetLength() + 1];
+		strcpy(fileName, fullFilePath);
+		PathStripPath(fileName);
+
+		if (attachmentName->Compare(fileName) == 0) {
+			m_ImageFileNameArrayPos = i;
+			delete[] fileName;
+			break;
+		}
+		delete[] fileName;
+	}
+
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
 	m_ZoomMax = 16;
@@ -65,6 +80,7 @@ BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_NEXT, &CCPictureCtrlDemoDlg::OnBnClickedNext)
 	ON_BN_CLICKED(IDC_BUTTON_ROTATE, &CCPictureCtrlDemoDlg::OnBnClickedRotate)
 	ON_BN_CLICKED(IDC_BUTTON_ZOOM, &CCPictureCtrlDemoDlg::OnBnClickedZoom)
+	ON_BN_CLICKED(IDC_BUTTON_PRT, &CCPictureCtrlDemoDlg::OnBnClickedButtonPrt)
 END_MESSAGE_MAP()
 
 
@@ -151,8 +167,10 @@ HCURSOR CCPictureCtrlDemoDlg::OnQueryDragIcon()
 
 void CCPictureCtrlDemoDlg::LoadImageFromFile()
 {
-	if (m_ImageFileNameArray.GetSize() <= 0)
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
 		return;
+	}
 
 	if ((m_ImageFileNameArrayPos >= m_ImageFileNameArray.GetCount()) ||
 		(m_ImageFileNameArrayPos < 0))
@@ -172,8 +190,10 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile()
 
 void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 {
-	if (m_ImageFileNameArray.GetSize() <= 0)
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
 		return;
+	}
 
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
@@ -181,16 +201,20 @@ void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 	m_picCtrl.SetZoomMaxForCurrentImage(m_ZoomMax);
 
 	m_ImageFileNameArrayPos--;
-	if (m_ImageFileNameArrayPos < 0)
+	if (m_ImageFileNameArrayPos < 0) {
 		m_ImageFileNameArrayPos = 0;
+		MessageBeep(MB_OK);
+	}
 
 	LoadImageFromFile();
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedNext()
 {
-	if (m_ImageFileNameArray.GetSize() <= 0)
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
 		return;
+	}
 
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
@@ -198,16 +222,20 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 	m_picCtrl.SetZoomMaxForCurrentImage(m_ZoomMax);
 
 	m_ImageFileNameArrayPos++;
-	if (m_ImageFileNameArrayPos >= m_ImageFileNameArray.GetCount())
+	if (m_ImageFileNameArrayPos >= m_ImageFileNameArray.GetCount()) {
 		m_ImageFileNameArrayPos = m_ImageFileNameArray.GetCount() - 1;
+		MessageBeep(MB_OK);
+	}
 
 	LoadImageFromFile();
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedRotate()
 {
-	if (m_ImageFileNameArray.GetSize() <= 0)
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
 		return;
+	}
 
 	m_rotateType = (Gdiplus::RotateFlipType)((int)m_rotateType + 1);
 	if (m_rotateType > Gdiplus::Rotate270FlipNone)
@@ -218,8 +246,10 @@ void CCPictureCtrlDemoDlg::OnBnClickedRotate()
 
 void CCPictureCtrlDemoDlg::OnBnClickedZoom()
 {
-	if (m_ImageFileNameArray.GetSize() <= 0)
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
 		return;
+	}
 
 	m_ZoomMaxForCurrentImage = m_ZoomMax;
 	int zoomMaxForCurrentImage = m_picCtrl.GetZoomMaxForCurrentImage();
@@ -231,6 +261,30 @@ void CCPictureCtrlDemoDlg::OnBnClickedZoom()
 		m_Zoom = 0;
 
 	LoadImageFromFile();
+}
+
+BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
+{
+	PTSTR ext = PathFindExtension(file);
+	CString cext = ext;
+	if ((cext.CompareNoCase(".png") == 0) ||
+		(cext.CompareNoCase(".jpg") == 0) ||
+		(cext.CompareNoCase(".jpeg") == 0) ||
+		(cext.CompareNoCase(".jpe") == 0) ||
+		(cext.CompareNoCase(".bmp") == 0) ||
+		(cext.CompareNoCase(".tif") == 0) ||
+		(cext.CompareNoCase(".tiff") == 0) ||
+		(cext.CompareNoCase(".dib") == 0) ||
+		(cext.CompareNoCase(".jfif") == 0) ||
+		(cext.CompareNoCase(".emf") == 0) ||
+		(cext.CompareNoCase(".wmf") == 0) ||
+		(cext.CompareNoCase(".ico") == 0) ||
+		(cext.CompareNoCase(".gif") == 0))
+	{
+		return TRUE;
+	}
+	else
+		return FALSE;
 }
 
 BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
@@ -251,19 +305,7 @@ BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
 		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0)) {
 			PTSTR ext = PathFindExtension(FileData.cFileName);
 			CString cext = ext;
-			if ((cext.CompareNoCase(".png") == 0) ||
-				(cext.CompareNoCase(".jpg") == 0) ||
-				(cext.CompareNoCase(".jpeg") == 0) ||
-				(cext.CompareNoCase(".jpe") == 0) ||
-				(cext.CompareNoCase(".bmp") == 0) ||
-				(cext.CompareNoCase(".tif") == 0) ||
-				(cext.CompareNoCase(".tiff") == 0) ||
-				(cext.CompareNoCase(".dib") == 0) ||
-				(cext.CompareNoCase(".jfif") == 0) ||
-				(cext.CompareNoCase(".emf") == 0) ||
-				(cext.CompareNoCase(".wmf") == 0) ||
-				(cext.CompareNoCase(".ico") == 0) ||
-				(cext.CompareNoCase(".gif") == 0) )
+			if (isSupportedPictureFile(FileData.cFileName))
 			{
 				if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) {
 					CString	*fileFound = new CString;
@@ -289,4 +331,28 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 	}
 	Invalidate();
 	RedrawWindow();
+}
+
+
+void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
+{
+#define MaxShellExecuteErrorCode 32
+
+	// TODO: Add your control notification handler code here
+	if (m_ImageFileNameArray.GetSize() <= 0) {
+		MessageBeep(MB_OK);
+		return;
+	}
+
+	if ((m_ImageFileNameArrayPos >= 0) && (m_ImageFileNameArrayPos <= m_ImageFileNameArray.GetSize()))
+	{
+		const char *fullFilePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCSTR();
+		HINSTANCE result = ShellExecute(NULL, _T("print"), fullFilePath, NULL, NULL, SW_SHOWNORMAL);
+		if ((UINT)result <= MaxShellExecuteErrorCode) {
+			CString errorText;
+			ShellExecuteError2Text((UINT)result, errorText);
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		}
+	}
 }

@@ -23,7 +23,7 @@ class CCPictureCtrlDemoDlg : public CDialogEx
 {
 // Konstruktion
 public:
-	CCPictureCtrlDemoDlg(CWnd* pParent = NULL);	// Standardkonstruktor
+	CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParent = NULL);	// Standardkonstruktor
 	~CCPictureCtrlDemoDlg();
 
 // Dialogfelddaten
@@ -60,4 +60,7 @@ public:
 	afx_msg void OnBnClickedZoom();
 
 	CPictureCtrl m_picCtrl;
+
+	static BOOL isSupportedPictureFile(LPCSTR file);
+	afx_msg void OnBnClickedButtonPrt();
 };

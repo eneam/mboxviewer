@@ -8,6 +8,7 @@
 #include "Mime.h"
 #include "MimeCode.h"
 #include "MboxMail.h"
+#include "OpenContainingFolderDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -109,6 +110,7 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 {
 	ResetFileMapView();
 
+	m_gmtTime = 0;
 	m_bStartSearchAtSelectedItem = 0; // FALSE; TODO: is this desired feature ?
 	m_bFindNext = TRUE;
 	m_bEditFindFirst = FALSE;
@@ -125,6 +127,7 @@ NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	m_format = GetDateFormat(iFormat);
+	m_gmtTime = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType");
 
 	CString exportEML;
 	BOOL retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
@@ -162,8 +165,9 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_WM_SIZE()
 	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
-	ON_NOTIFY(LVN_ITEMACTIVATE, IDC_LIST, OnActivating)
-	ON_NOTIFY(NM_CLICK, IDC_LIST, OnActivating)
+	//ON_NOTIFY(LVN_ITEMACTIVATE, IDC_LIST, OnActivating)
+	ON_NOTIFY(NM_CLICK, IDC_LIST, OnActivating)  // Left Click
+	ON_NOTIFY(NM_RCLICK, IDC_LIST, OnRClick)  // Right Click Menu
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST, OnDoubleClick)
 	ON_NOTIFY(LVN_COLUMNCLICK, IDC_LIST, OnColumnClick)
 	ON_NOTIFY(LVN_KEYDOWN, IDC_LIST, OnKeydown)
@@ -175,6 +179,9 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_COMMAND(ID_EDIT_FINDAGAIN, OnEditFindAgain)
 	ON_COMMAND(ID_EDIT_VIEWEML, &NListView::OnEditVieweml)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_VIEWEML, &NListView::OnUpdateEditVieweml)
+	ON_COMMAND(ID_VIEW_CONVERSATIONS, &NListView::OnViewConversations)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_CONVERSATIONS, &NListView::OnUpdateViewConversations)
+
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -217,6 +224,98 @@ void NListView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	CPoint pt;
+	::GetCursorPos(&pt);
+	CWnd *wnd = WindowFromPoint(pt);
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_SEPARATOR);
+
+	CMenu printToSubMenu;
+	printToSubMenu.CreatePopupMenu();
+	printToSubMenu.AppendMenu(MF_SEPARATOR);
+
+	CMenu printGroupToSubMenu;
+	printGroupToSubMenu.CreatePopupMenu();
+	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
+
+	const UINT S_TEXT_Id = 1;
+	AppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
+
+	const UINT S_HTML_Id = 2;
+	AppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML..."));
+
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
+	menu.AppendMenu(MF_SEPARATOR);
+
+	const UINT S_TEXT_GROUP_Id = 3;
+	AppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
+
+	const UINT S_HTML_GROUP_Id = 4;
+	AppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
+
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Related Mails To"));
+	menu.AppendMenu(MF_SEPARATOR);
+
+	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	UINT nFlags = TPM_RETURNCMD;
+	CString menuString;
+	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+	int iItem = pnm->iItem;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	switch (command)
+	{
+	case S_HTML_Id: {
+		{
+			if (pFrame) {
+				pFrame->OnPrintSingleMailtoText(iItem, 1);
+			}
+		}
+		int deb = 1;
+	}
+	break;
+	case S_TEXT_Id: {
+		if (pFrame) {
+			pFrame->OnPrintSingleMailtoText(iItem, 0);
+		}
+	}
+	break;
+	case S_HTML_GROUP_Id: {
+		{
+			PrintMailGroupToText(iItem, 1);
+		}
+		int deb = 1;
+	}
+	break;
+	case S_TEXT_GROUP_Id: {
+		{
+			PrintMailGroupToText(iItem, 0);
+		}
+	}
+	break;
+	default: {
+		int deb = 1;
+	}
+	break;
+	}
+
+	Invalidate();
+	UpdateWindow();
+
+	*pResult = 0;
+}
+
 void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NMLISTVIEW * pLV = (NMLISTVIEW*)pNMHDR;
@@ -231,20 +330,14 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	switch (pLV->iSubItem) {
 	case 0: // !
-		if (abs(MboxMail::b_mails_which_sorted) != 0)
-		{
-			MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
-			MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
-			MboxMail::b_mails_sorted = false;
-			MboxMail::b_mails_which_sorted = 0;
-			mustSort = false;
-
-			m_bContent = FALSE;
-			m_bAttachments = FALSE;
-			m_lastFindPos = -1;
-			m_bEditFindFirst = TRUE;  // must call EditFind()
-			RedrawMails();
+		if (abs(MboxMail::b_mails_which_sorted) == 99) {
+			MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
 		}
+		else {
+			MboxMail::b_mails_which_sorted = 99;
+		}
+		MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
 		break;
 	case 1: // date
 		if (abs(MboxMail::b_mails_which_sorted) == 1) {
@@ -303,7 +396,7 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_lastFindPos = -1;
 		m_bEditFindFirst = TRUE;  // must call EditFind()
 
-		// Don't reset below vars. It helps user to keep thse while searching amd sorting
+		// Don't reset below vars. It helps user to keep these while searching and sorting
 		//m_lastStartDate = 0;
 		//m_lastEndDate = 0;
 		//m_searchString.Empty();
@@ -311,6 +404,8 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 		RedrawMails();
 		// MessageBeep(MB_OK); // too much ??
 	}
+	else
+		MarkColumns();
 	m_bInFind = false;
 }
 
@@ -371,6 +466,54 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
+void NListView::MarkColumns()
+{
+	CString sDate = "date";
+	CString sFrom = "from";
+	CString sTo = "to";
+	CString sSubj = "subject";
+	CString sSize = "size(KB)";
+	CString sAppendix = "!";
+
+	if (m_gmtTime == 1)
+		sDate += " (GMT)";
+	else
+		sDate += " (Local)";
+
+	LV_COLUMN c;
+	c.mask = LVCF_TEXT;
+	if (MboxMail::b_mails_sorted)
+	{
+		char *indicator = " *";
+		int which_sorted = abs(MboxMail::b_mails_which_sorted);
+		if (which_sorted == 1)
+			sDate += indicator;
+		else if (which_sorted == 2)
+			sFrom += indicator;
+		else if (which_sorted == 3)
+			sTo += indicator;
+		else if (which_sorted == 4)
+			sSubj += indicator;
+		else if (which_sorted == 5)
+			sSize += indicator;
+		else if (which_sorted == 99)
+			sAppendix += "*";
+	}
+
+	c.pszText = (LPSTR)((LPCSTR)sDate);
+	m_list.SetColumn(1, &c);
+	c.pszText = (LPSTR)((LPCSTR)sFrom);
+	m_list.SetColumn(2, &c);
+	c.pszText = (LPSTR)((LPCSTR)sTo);
+	m_list.SetColumn(3, &c);
+	c.pszText = (LPSTR)((LPCSTR)sSubj);
+	m_list.SetColumn(4, &c);
+	c.pszText = (LPSTR)((LPCSTR)sSize);
+	m_list.SetColumn(5, &c);
+	c.pszText = (LPSTR)((LPCSTR)sAppendix);
+	m_list.SetColumn(0, &c);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // NListView message handlers
 
@@ -386,12 +529,12 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
 	ResetFont();
 
-	m_list.InsertColumn(0, "!", LVCFMT_LEFT, 18, 0);
+	m_list.InsertColumn(0, "!", LVCFMT_LEFT, 22, 0);
 	m_list.InsertColumn(1, "date", LVCFMT_LEFT, 100, 0);
 	m_list.InsertColumn(2, "from", LVCFMT_LEFT, 150, 0);
 	m_list.InsertColumn(3, "to", LVCFMT_LEFT, 150, 0);
 	m_list.InsertColumn(4, "subject", LVCFMT_LEFT, 400, 0);
-	m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 100, 0);
+	m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 120, 0);
 
 #if 0
 	// informational
@@ -424,9 +567,9 @@ void NListView::ResizeColumns()
 	GetWindowRect(&rc);
 	int w = rc.Width();
 	int sb_width = GetSystemMetrics(SM_CXVSCROLL);
-	w -= sb_width + 1;
+	w -= sb_width + 6;
 
-	int col_zero_len = 18;
+	int col_zero_len = 22;
 	int date_len = 100;
 	int min_from_len = 150;
 	int max_from_len = 400;
@@ -510,10 +653,22 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 				t = nul;
 			break;
 		case 1: // date
+			SYSTEMTIME st;
+			SYSTEMTIME lst;
+
 			datebuff[0] = 0;
-			if (m->m_timeDate > 0) {
+			if (m->m_timeDate > 0) 
+			{
 				CTime tt(m->m_timeDate);
-				strcpy(datebuff, (LPCSTR)tt.Format(m_format));
+				if (!m_gmtTime) {
+					bool ret = tt.GetAsSystemTime(st);
+					SystemTimeToTzSpecificLocalTime(0, &st, &lst);
+					CTime ltt(lst);
+					strcpy(datebuff, (LPCSTR)ltt.Format(m_format));
+				}
+				else {
+					strcpy(datebuff, (LPCSTR)tt.Format(m_format));
+				}
 			}
 			t = datebuff;
 			break;
@@ -549,35 +704,112 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-
 void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)pNMHDR;
+	NMCUSTOMDRAW   &nmcd = lplvcd->nmcd;
 	MboxMail *m;
+
+	DWORD dwItemSpec = nmcd.dwItemSpec;
+	int iSubItem = lplvcd->iSubItem;
+	DWORD dwItemType = lplvcd->dwItemType;
+	DWORD dwDrawStage = nmcd.dwDrawStage;
+	UINT uItemState = nmcd.uItemState;
+
+	*pResult = 0;
+	if (abs(MboxMail::b_mails_which_sorted) != 99)
+		return;
 
 	switch (lplvcd->nmcd.dwDrawStage)
 	{
-	case CDDS_PREPAINT:	// Request prepaint notifications for each item.
-		*pResult = CDRF_NOTIFYITEMDRAW;
-		break;
-	case CDDS_ITEMPREPAINT: //Before an item is drawn
-		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
-		// Add code here to customise whole line and return:
-		if( m->m_startOff >= MboxMail::s_oSize ) {
-			CDC dc;
-			if( dc.Attach(lplvcd->nmcd.hdc) ) {
-				dc.SelectObject(&m_boldFont);
-				dc.Detach();
-				*pResult = CDRF_NEWFONT;
-			}
-//			lplvcd->clrText = RGB(0, 0, 255);
+		case CDDS_PREPAINT:	// Request prepaint notifications for each item.
+		{
+			*pResult = CDRF_NOTIFYITEMDRAW;
 		}
-		//else lplvcd->clrText = ::GetSysColor(COLOR_WINDOWTEXT);
-		//*pResult = CDRF_NEWFONT;
 		break;
-	default:
-		*pResult = CDRF_DODEFAULT;
+		case CDDS_ITEMPREPAINT: //Before an item is drawn
+		{
+			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+			*pResult = CDRF_NOTIFYSUBITEMDRAW;
+		}
+		break;
+		case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
+		{
+			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+			//if ((iSubItem == 0) && (m->m_groupColor != 0))
+			if (iSubItem == 0)
+			{
+				lplvcd->clrText = CLR_DEFAULT;
+				//if (m->m_groupColor == 1)
+				if ((m->m_groupId % 2) == 0)
+					lplvcd->clrTextBk = PeachPuff1; 
+				else
+					//lplvcd->clrTextBk = Burlywood;
+					lplvcd->clrTextBk = AntiqueWhite3;
+				int deb = 1;
+			}
+			else {
+				lplvcd->clrText = CLR_DEFAULT;
+				lplvcd->clrTextBk = CLR_DEFAULT;
+				int deb = 1;
+			}
+			*pResult = CDRF_NOTIFYPOSTPAINT;
+		}
+		break;
+		case CDDS_ITEMPOSTPAINT:
+		{
+			int deb = 1;
+		}
+		case CDDS_ITEMPOSTPAINT | CDDS_SUBITEM:
+		{
+			// Need this fix because when item is selected system overrides any user defined drawing
+
+			LVITEM rItem;
+			ZeroMemory(&rItem, sizeof(LVITEM));
+			rItem.mask = LVIF_IMAGE | LVIF_STATE;
+			rItem.iItem = dwItemSpec;
+			rItem.stateMask = LVIS_SELECTED;
+			m_list.GetItem(&rItem);
+
+			//if ((iSubItem == 0) && (dwItemSpec % 4 != 0))
+			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+			//if ((iSubItem == 0) && (m->m_groupColor != 0))
+			if (iSubItem == 0)
+			{
+				if ((iSubItem == 0) && (rItem.state & LVIS_SELECTED))
+				{
+					CDC dc;
+					CRect rect = nmcd.rc;
+					if (dc.Attach(lplvcd->nmcd.hdc))
+					{
+						CString txt = m_list.GetItemText(dwItemSpec, iSubItem);
+						//if (m->m_groupColor == 1)
+						if ((m->m_groupId%2) == 0)
+							dc.FillRect(&rect, &CBrush(PeachPuff1));
+						else
+							//dc.FillRect(&rect, &CBrush(Burlywood));
+							dc.FillRect(&rect, &CBrush(AntiqueWhite3));
+						dc.SetBkMode(TRANSPARENT);
+						dc.SetTextColor(RGB(0, 0, 0));
+
+						// Align text. Should not have do it !!
+						CRect rcText = rect;
+						rcText.left += 2;
+						rcText.top += 3;
+
+						dc.DrawText(txt, &rcText, DT_LEFT | DT_SINGLELINE);
+						dc.Detach();
+					}
+				}
+			}
+			int deb = 1;
+		}
+		default:
+		{
+			int deb = 1;
+		}
 	}
+	int deb = 1;
 }
 
 void NListView::PostNcDestroy() 
@@ -637,7 +869,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	9
+#define CACHE_VERSION	10
 
 BOOL SaveMails(LPCSTR cache) {
 	int ni = MboxMail::s_mails.GetSize();
@@ -664,7 +896,18 @@ BOOL SaveMails(LPCSTR cache) {
 		sz.writeString(m->m_subj);
 		sz.writeString(m->m_subj_charset);
 		sz.writeInt(m->m_subj_charsetId);
+
+		sz.writeString(m->m_cc);
+		sz.writeString(m->m_cc_charset);
+		sz.writeInt(m->m_cc_charsetId);
+
+		sz.writeString(m->m_bcc);
+		sz.writeString(m->m_bcc_charset);
+		sz.writeInt(m->m_bcc_charsetId);
+
 		sz.writeInt64(m->m_timeDate);
+		sz.writeInt(m->m_groupId);
+		sz.writeInt(m->m_groupColor);
 
 		int count = m->m_ContentDetailsArray.size();
 		sz.writeInt(count);
@@ -678,6 +921,7 @@ BOOL SaveMails(LPCSTR cache) {
 			sz.writeString(body->m_contentTransferEncoding);
 			sz.writeString(body->m_contentType);
 			sz.writeString(body->m_attachmentName);
+			sz.writeInt(body->m_pageCode);
 		}
 
 		if (lastoff < m->m_startOff)
@@ -706,7 +950,7 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 		strVersion.Format(_T("%d"), CACHE_VERSION);
 		txt += strVersion + "\". Will remove\n\"" + CString(cache) + "\"\nand recreate from the mail file.";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 	if( ! sz.readInt64(&fSize) )
@@ -745,7 +989,26 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 				break;
 			if (!sz.readUInt(&m->m_subj_charsetId))
 				break;
+
+			if (!sz.readString(m->m_cc))
+				break;
+			if (!sz.readString(m->m_cc_charset))
+				break;
+			if (!sz.readUInt(&m->m_cc_charsetId))
+				break;
+
+			if (!sz.readString(m->m_bcc))
+				break;
+			if (!sz.readString(m->m_bcc_charset))
+				break;
+			if (!sz.readUInt(&m->m_bcc_charsetId))
+				break;
+
 			if (!sz.readInt64(&m->m_timeDate))
+				break;
+			if (!sz.readInt(&m->m_groupId))
+				break;
+			if (!sz.readInt(&m->m_groupColor))
 				break;
 
 			int count = 0;
@@ -766,6 +1029,8 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 				if (!sz.readString(body->m_contentType))
 					break;
 				if (!sz.readString(body->m_attachmentName))
+					break;
+				if (!sz.readUInt(&body->m_pageCode))
 					break;
 
 				m->m_ContentDetailsArray.push_back(body);
@@ -854,8 +1119,28 @@ int Cache2Text(LPCSTR cache, CString format)
 				break;
 			if (!sz.readUInt(&m->m_subj_charsetId))
 				break;
+
+			if (!sz.readString(m->m_cc))
+				break;
+			if (!sz.readString(m->m_cc_charset))
+				break;
+			if (!sz.readUInt(&m->m_cc_charsetId))
+				break;
+
+			if (!sz.readString(m->m_bcc))
+				break;
+			if (!sz.readString(m->m_bcc_charset))
+				break;
+			if (!sz.readUInt(&m->m_bcc_charsetId))
+				break;
+
 			if (!sz.readInt64(&m->m_timeDate))
 				break;
+			if (!sz.readInt(&m->m_groupId))
+				break;
+			if (!sz.readInt(&m->m_groupColor))
+				break;
+
 			if (lastoff < m->m_startOff)
 				lastoff = m->m_startOff;
 
@@ -912,7 +1197,7 @@ void NListView::FillCtrl()
 #endif
 
 #if 0
-	// for testing of chnages to mboxview
+	// for testing of changes to mboxview file
 	{
 		int ni_old = 0;
 		int ni_new = 0;
@@ -956,6 +1241,7 @@ void NListView::FillCtrl()
 
 	if( fileExists(cache) ) {
 		MboxMail::s_path = m_path;
+		// it populates s_mails from mail index/mboxview file
 		ni = LoadMails(cache);
 		if( ni < 0 ) {
 			ni = 0;
@@ -982,17 +1268,25 @@ void NListView::FillCtrl()
 			Sleep(5);
 		}
 
+		bool ret = MboxMail::preprocessConversations();
+		ret = MboxMail::sortConversations();
+		//MboxMail::assignColor2ConvesationGroups();
+
+		// creates to index/mboxview file from s_mails
 		if( SaveMails(cache) ) {
 			ni = MboxMail::s_mails.GetSize();
 			m_list.SetItemCount(ni);
 			//Cache2Text(cache, m_format);
 		}
 	}
+
+	//MboxMail::assignColor2ConvesationGroups();
 	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
 	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
 	MboxMail::b_mails_sorted = true;
 	MboxMail::b_mails_which_sorted = 1;
 	MboxMail::SortByDate();
+	MarkColumns();
 	m_bEditFindFirst = TRUE;
 
 #ifdef _DEBUG
@@ -1002,7 +1296,10 @@ void NListView::FillCtrl()
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
 	//pView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
-	pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	//BOOL retval = pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	BOOL retval = pView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
+	retval = pView->m_tree.SelectItem(m_which);
+	CString txt = pView->m_tree.GetItemText(m_which);
 	pView->SaveData();
 }
 
@@ -1032,8 +1329,26 @@ void NListView::SelectItem(int iItem)
 	// Set header data
 	pView->m_strSubject = m->m_subj;
 	pView->m_strFrom = m->m_from;
-	CTime tt(m->m_timeDate);
-	pView->m_strDate = tt.Format(m_format);
+	//CTime tt(m->m_timeDate);
+	//pView->m_strDate = tt.Format(m_format);
+	if (m->m_timeDate > 0)
+	{
+		SYSTEMTIME st;
+		SYSTEMTIME lst;
+		CTime tt(m->m_timeDate);
+		if (!m_gmtTime) {
+			bool ret = tt.GetAsSystemTime(st);
+			SystemTimeToTzSpecificLocalTime(0, &st, &lst);
+			CTime ltt(lst);
+			pView->m_strDate = ltt.Format(m_format);
+		}
+		else {
+			pView->m_strDate = tt.Format(m_format);
+		}
+	}
+	else
+		pView->m_strDate = "";
+
 	pView->m_strTo = m->m_to;
 	pView->m_subj_charsetId = m->m_subj_charsetId;
 	pView->m_subj_charset = m->m_subj_charset;
@@ -1058,7 +1373,8 @@ void NListView::SelectItem(int iItem)
 
 	// Decode MIME message
 	CMimeMessage mail;
-    int nLoadedSize = mail.Load(bdy, bdy.GetLength());
+	const char *bodyData = bdy;
+    int nLoadedSize = mail.Load(bodyData, bdy, bdy.GetLength());
 
 	//DumpItemDetails(iItem, m, mail);
 
@@ -1068,7 +1384,7 @@ void NListView::SelectItem(int iItem)
     CMimeBody::CBodyList::const_iterator it;
 	bdy = "";
 	CString ext = "";
-	if( bodies.begin() == bodies.end() ) {
+	if( bodies.begin() == bodies.end() ) {  // should never be true
 		//bdy = mail.GetContent();
 		string strText;
 		mail.GetText(strText);
@@ -1127,6 +1443,9 @@ void NListView::SelectItem(int iItem)
         {
 			// Save all attachments
             string strName = pBP->GetName();
+			if (strName.empty())
+				strName = pBP->GetFilename();
+
             //printf("File name: %s\r\n", strName.c_str());
             //printf("File size: %d\r\n", pBP->GetContentLength());
 			string name = strName;
@@ -1191,7 +1510,8 @@ int NListView::DumpItemDetails(MboxMail *m)
 
 	// Decode MIME message
 	CMimeMessage mail;
-	int nLoadedSize = mail.Load(bdy, bdy.GetLength());
+	const char* bodyData = bdy;
+	int nLoadedSize = mail.Load(bodyData, bdy, bdy.GetLength());
 
 	int retval = DumpItemDetails(iItem, m, mail);
 	return retval;
@@ -1207,7 +1527,8 @@ int NListView::DumpItemDetails(int iItem)
 
 	// Decode MIME message
 	CMimeMessage mail;
-	int nLoadedSize = mail.Load(bdy, bdy.GetLength());
+	const char* bodyData = bdy;
+	int nLoadedSize = mail.Load(bodyData, bdy, bdy.GetLength());
 
 	int retval = DumpItemDetails(iItem, m, mail);
 	return retval;
@@ -1288,6 +1609,7 @@ int NListView::DumpItemDetails(int iItem, MboxMail *m, CMimeMessage &mail)
 
 	return 1;
 }
+
 
 int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 {
@@ -1456,7 +1778,7 @@ void NListView::OnUpdateEditFind(CCmdUI* pCmdUI)
 
 #include "FindDlg.h"
 
-time_t OleToTime_t(COleDateTime *ot) {
+time_t NListView::OleToTime_t(COleDateTime *ot) {
 	SYSTEMTIME st;
 	ot->GetAsSystemTime(st);
 	st.wHour = 0;
@@ -1521,15 +1843,19 @@ void NListView::OnEditFind()
 
 		m_lastFindPos = -1;
 
+		// To optimize content/message and/or attachments search performance
 		if ((m_bContent || m_bAttachments) && (MboxMail::b_mails_sorted == true))
 		{
-			MboxMail::s_mails.SetSize(MboxMail::s_mails_ref.GetSize());
-			MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
-			MboxMail::b_mails_sorted = false;
-			MboxMail::b_mails_which_sorted = 0;
+			int whichSorted = abs(MboxMail::b_mails_which_sorted);
+			if ((whichSorted != 1) && (whichSorted != 99)) { // related mails should be in close proximity in the mail file
+				MboxMail::SortByFileOffset();
+				MboxMail::b_mails_sorted = false;
+				MboxMail::b_mails_which_sorted = 0;
 
-			RedrawMails();
+				RedrawMails();
+			}
 		}
+
 		m_bEditFindFirst = FALSE;
 
 		int sz = MboxMail::s_mails.GetSize();
@@ -1685,7 +2011,6 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 				process = true;
 			if (process)
 			{
-
 				if (CheckMatch(i, searchString) >= 0) {
 					w = i;
 					break;
@@ -2062,8 +2387,12 @@ void NListView::RedrawMails()
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
 	//pView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
-	pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	//BOOL retval = pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	BOOL retval = pView->m_tree.SetItemState(m_which, LVIS_SELECTED, TVIS_BOLD);
+	retval = pView->m_tree.SelectItem(m_which);
+	CString txt = pView->m_tree.GetItemText(m_which);
 	pView->SaveData();
+	MarkColumns();
 }
 
 void NListView::ResetFileMapView()
@@ -2230,6 +2559,9 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 	char  *pData = 0;
 	int datalen = 0;
 
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
 	CString searchString(m_searchString);
 	if (m_bCaseSens == 0)
 		searchString.MakeLower();
@@ -2237,7 +2569,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 	MboxMail *m = MboxMail::s_mails[mailPosition];
 	if (SetupFileMapView(m->m_startOff, m->m_length) == FALSE)
 		return FALSE;
-#if 1
+
 	MailBodyContent *body;
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++) 
 	{
@@ -2248,6 +2580,9 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 				continue;
 		}
 		else if (bContent == FALSE)
+			continue;
+
+		if (!body->m_contentType.CompareNoCase("text/plain"))
 			continue;
 
 		int bodyLength = body->m_contentLength;
@@ -2261,30 +2596,36 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 		{
 			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
 			int dlength = d64.GetOutputLength();
-			if (dlength > MboxMail::m_maxOutput) {
-				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
-				MboxMail::m_pbOutput = new unsigned char[dlength];
-				MboxMail::m_maxOutput = dlength;
-			}
-			int retlen = d64.GetOutput(MboxMail::m_pbOutput, dlength);
+			outbuf->ClearAndResize(dlength);
+
+			int retlen = d64.GetOutput((unsigned char*)outbuf->Data(), dlength);
 			if (retlen > 0) {
-				pData = (char*)MboxMail::m_pbOutput;
-				datalen = retlen;
+				outbuf->SetCount(retlen);
+				pData = outbuf->Data();
+				datalen = outbuf->Count();
+			}
+			else {
+				outbuf->Clear();
+				pData = 0;
+				datalen = 0;
 			}
 		}
 		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
 		{
 			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
 			int dlength = dGP.GetOutputLength();
-			if (dlength > MboxMail::m_maxOutput) {
-				if (MboxMail::m_pbOutput) delete[] MboxMail::m_pbOutput;
-				MboxMail::m_pbOutput = new unsigned char[dlength];
-				MboxMail::m_maxOutput = dlength;
-			}
-			int retlen = dGP.GetOutput(MboxMail::m_pbOutput, dlength);
+			outbuf->ClearAndResize(dlength);
+
+			int retlen = dGP.GetOutput((unsigned char*)outbuf->Data(), dlength);
 			if (retlen > 0) {
-				pData = (char*)MboxMail::m_pbOutput;
-				datalen = retlen;
+				outbuf->SetCount(retlen);
+				pData = outbuf->Data();
+				datalen = outbuf->Count();
+			}
+			else {
+				outbuf->Clear();
+				pData = 0;
+				datalen = 0;
 			}
 		}
 		else
@@ -2305,19 +2646,121 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 			}
 		}
 	}
-#else
-	// search raw data
-	if (SetupFileMapView(m->m_startOff, m->m_length))
-	{
-		int pos = -1;
-		if (m_bWholeWord)
-			pos = (_int64)g_tu.BMHSearchW((unsigned char *)m_pViewBegin, m->m_length, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
-		else
-			pos = (_int64)g_tu.BMHSearch((unsigned char *)m_pViewBegin, m->m_length, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
-		if (pos >= 0) {
-			return TRUE;
-		}
-	}
-#endif
 	return FALSE;
+}
+
+
+void NListView::OnViewConversations()
+{
+	// SendMessage to simulate Column Click ??, need to investigate
+
+	// to follow OnEditFindAgain approach
+	if (m_bInFind)
+		return;
+
+	m_bInFind = true;
+
+	// TODO: Add your command handler code here
+	if (abs(MboxMail::b_mails_which_sorted) == 99) {
+		MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
+	}
+	else {
+		MboxMail::b_mails_which_sorted = 99;
+	}
+	MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0);
+
+	MboxMail::b_mails_sorted = true;
+
+	m_bContent = FALSE;
+	m_bAttachments = FALSE;
+	m_lastFindPos = -1;
+	m_bEditFindFirst = TRUE; 
+	RedrawMails();
+
+	m_bInFind = false;
+}
+
+
+void NListView::OnUpdateViewConversations(CCmdUI *pCmdUI)
+{
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+	//pCmdUI->Enable(m_list.GetItemCount() > 0);
+}
+
+void NListView::PrintMailGroupToText(int iItem, int textType)
+{
+	if (abs(MboxMail::b_mails_which_sorted) != 99) {
+
+		CString txt = _T("Please sort all mails by conversation first.\n");
+		txt += "Select \"View\"->\"View Conversations\" or left click on the first column.";
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+	MboxMail *m = 0;
+	m = MboxMail::s_mails[iItem];
+	int groupId = m->m_groupId;
+	int firstMail = iItem;
+	int lastMail = iItem;
+	int i;
+	for (i = iItem; i >= 0; i--) 
+	{
+		m = MboxMail::s_mails[i];
+		if (m->m_groupId != groupId)
+			break;
+	}
+	if (i < 0)
+		firstMail = 0;
+	else
+		firstMail = i + 1;
+
+	int mailCount = MboxMail::s_mails.GetCount();
+	for (i = iItem; i < mailCount; i++)
+	{
+		m = MboxMail::s_mails[i];
+		if (m->m_groupId != groupId)
+			break;
+	}
+	if (i >= mailCount)
+		lastMail = mailCount - 1;
+	else
+		lastMail = i - 1;
+
+	TEXTFILE_CONFIG textConfig;
+	textConfig.m_dateFormat = m_format;
+	textConfig.m_bGMTTime = m_gmtTime;
+	textConfig.m_nCodePageId = CP_UTF8;
+
+	CString textFileName;
+	int ret = 0;
+	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType);
+	if (ret > 0) {
+		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+		if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+		{
+			if (PathFileExist(path)) { // likely :) 
+				CString txt = "Created file\n\n" + textFileName;
+				OpenContainingFolderDlg dlg(txt, 0);
+				INT_PTR nResponse = dlg.DoModal();
+				if (nResponse == IDOK)
+				{
+					ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+					int deb = 1;
+				}
+				else if (nResponse == IDYES)
+				{
+					ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+					int deb = 1;
+				}
+				else if (nResponse == IDCANCEL)
+				{
+					int deb = 1;
+				}
+			}
+			else
+				;
+		}
+		else
+			; // TODO: 
+	}
 }

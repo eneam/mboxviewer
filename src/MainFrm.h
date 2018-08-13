@@ -65,6 +65,15 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 
+public:
+	afx_msg void OnFileExportToCsv();
+	afx_msg void OnViewCodepageids();
+	afx_msg void OnPrinttoCsv();
+	afx_msg void OnPrinttoText();
+	afx_msg void OnPrinttoHtml();
+
+	void OnPrintSingleMailtoText(int mailPosition, int textType = 0);
+	void OnPrinttoTextFile(int textType);
 };
 
 /////////////////////////////////////////////////////////////////////////////
