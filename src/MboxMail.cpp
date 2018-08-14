@@ -1446,7 +1446,8 @@ int GetParamValue(CString &fieldLine, int startPos, const char *param, int param
 	// or keep it simple and require that *p == '=' at this point ?
 	while (p < pend_sv)
 	{
-		p = strstr(p, param);
+		//p = strstr(p, param);
+		p = strnstrUpper2Lower(p, pend_sv, param, paramLen);
 		if (p == 0)
 			return 0;
 
@@ -1480,6 +1481,18 @@ int GetParamValue(CString &fieldLine, int startPos, const char *param, int param
 	value.Trim("\"\t ");
 
 	return 1;
+}
+
+char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength)
+{
+	// TODO: not very efficient; optimize
+	char *p;
+	for (p = any; p < (end - lowerlength) ; p++)
+	{
+		if (strncmpUpper2Lower(p, end, lower, lowerlength) == 0)
+			return p;
+	}
+	return 0;
 }
 
 int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength) {

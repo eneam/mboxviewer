@@ -16,6 +16,37 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+BOOL BrowseToFile(LPCTSTR filename)
+{
+	BOOL retval = TRUE;
+	DWORD dwCoInit = COINIT_MULTITHREADED;
+
+	// call to CoInitializeEx() seem to be required but 
+	// Fails anyway with "HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
+	// HRESULT result = CoInitializeEx(0, dwCoInit);  
+
+	ITEMIDLIST *pidl = ILCreateFromPath(filename);
+	if (pidl) {
+		HRESULT  ret = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
+		if (ret != S_OK)
+			retval = FALSE;
+		ILFree(pidl);
+	}
+	else
+		retval = FALSE;
+	return retval;
+}
+
+#define MaxShellExecuteErrorCode 32
+void CheckShellExecuteResult(HINSTANCE  result, HWND h)
+{
+	if ((UINT)result <= MaxShellExecuteErrorCode) {
+		CString errorText;
+		ShellExecuteError2Text((UINT)result, errorText);
+		int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame
 
@@ -328,12 +359,18 @@ void CMainFrame::OnFileExportToCsv()
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
-						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						if (BrowseToFile(csvFileName) == FALSE) {
+							HWND h = GetSafeHwnd();
+							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							CheckShellExecuteResult(result, h);
+						}
 						int deb = 1;
 					}
 					else if (nResponse == IDYES)
 					{
-						ShellExecute(NULL, _T("open"), csvFileName, NULL, NULL, SW_SHOWNORMAL);
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), csvFileName, NULL, NULL, SW_SHOWNORMAL);
+						CheckShellExecuteResult(result, h);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)
@@ -433,12 +470,18 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
-						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						if (BrowseToFile(textFileName) == FALSE) {
+							HWND h = GetSafeHwnd();
+							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							CheckShellExecuteResult(result, h);
+						}
 						int deb = 1;
 					}
 					else if (nResponse == IDYES)
 					{
-						ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						CheckShellExecuteResult(result, h);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)
@@ -514,12 +557,18 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType)  // tex
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
-						ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						if (BrowseToFile(textFileName) == FALSE) {
+							HWND h = GetSafeHwnd();
+							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							CheckShellExecuteResult(result, h);
+						}
 						int deb = 1;
 					}
 					else if (nResponse == IDYES)
 					{
-						ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						CheckShellExecuteResult(result, h);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)

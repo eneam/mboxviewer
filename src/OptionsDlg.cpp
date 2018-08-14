@@ -40,6 +40,7 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(COptionsDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &COptionsDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDC_RADIO2, &COptionsDlg::OnBnClickedRadio2)
 END_MESSAGE_MAP()
 
 
@@ -100,4 +101,10 @@ BOOL COptionsDlg::OnInitDialog()
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// ECCEZIONE: le pagine delle proprietà OCX devono restituire FALSE
+}
+
+
+void COptionsDlg::OnBnClickedRadio2()
+{
+	// TODO: Add your control notification handler code here
 }

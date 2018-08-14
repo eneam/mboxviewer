@@ -464,8 +464,10 @@ void NMsgView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString fullName = path + attachmentName;
 		// Photos application doesn't show next/prev photo even with path specified
 		// Buils in Picture Viewer is set as deafault
-		HINSTANCE result = ShellExecute(NULL, _T("open"), attachmentName, NULL, path, SW_SHOWNORMAL);
-		//HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+		HWND h = GetSafeHwnd();
+		HINSTANCE result = ShellExecute(h, _T("open"), attachmentName, NULL, path, SW_SHOWNORMAL);
+		CheckShellExecuteResult(result, h);
+
 	}
 
 	*pResult = 0;
@@ -573,27 +575,21 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		DWORD binaryType = 0;
 		BOOL isExe = GetBinaryTypeA(fullName, &binaryType);
 
-		result = ShellExecute(NULL, "open", attachmentName, NULL, path, SW_SHOWNORMAL);
-
-		if ((UINT)result <= MaxShellExecuteErrorCode) {
-			CString errorText;
-			ShellExecuteError2Text((UINT)result, errorText);
-			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK );
-		}
+		HWND h = GetSafeHwnd();
+		result = ShellExecute(h, "open", attachmentName, NULL, path, SW_SHOWNORMAL);
+		CheckShellExecuteResult(result, h);
 
 		int deb = 1;
 	}
 	else if (command == M_OpenFileLocation_Id)
 	{
 		CString path = GetmboxviewTempPath();
-		result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+		CString fullName = path + attachmentName;
 
-		if ((UINT)result <= MaxShellExecuteErrorCode) {
-			CString errorText;
-			ShellExecuteError2Text((UINT)result, errorText);
+		if (BrowseToFile(fullName) == FALSE) {
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+			CheckShellExecuteResult(result, h);
 		}
 
 		int deb = 1;

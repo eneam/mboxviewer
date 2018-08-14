@@ -53,6 +53,7 @@ public:
 
 extern CmboxviewApp theApp;
 
+char* strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 BOOL isNumeric(CString &str);
 BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW);
 UINT charset2Id(const char *char_set);
@@ -60,6 +61,8 @@ BOOL id2charset(UINT id, std::string &charset);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 void AppendMenu(CMenu *menu, int commandId, const char *commandName);
 int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
+BOOL BrowseToFile(LPCTSTR filename);
+void CheckShellExecuteResult(HINSTANCE  result, HWND h = 0);
 
 /////////////////////////////////////////////////////////////////////////////
 

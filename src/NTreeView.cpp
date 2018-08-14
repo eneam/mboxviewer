@@ -450,7 +450,11 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 	case M_FileLocation_Id: {
 		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-		ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+		if (BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+			HWND h = GetSafeHwnd();
+			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+			CheckShellExecuteResult(result, h);
+		}
 	}
 	break;
 	case M_Properties_Id: {

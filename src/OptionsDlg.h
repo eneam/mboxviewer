@@ -30,4 +30,5 @@ public:
 	int m_show_charsets;
 	int m_bImageViewer;
 	int m_bTimeType;
+	afx_msg void OnBnClickedRadio2();
 };

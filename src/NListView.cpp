@@ -230,6 +230,11 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
+	int iItem = pnm->iItem;
+
+	if (iItem < 0)
+		return;
+
 	CPoint pt;
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
@@ -269,8 +274,6 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	UINT nFlags = TPM_RETURNCMD;
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
-
-	int iItem = pnm->iItem;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -2744,12 +2747,18 @@ void NListView::PrintMailGroupToText(int iItem, int textType)
 				INT_PTR nResponse = dlg.DoModal();
 				if (nResponse == IDOK)
 				{
-					ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+					if (BrowseToFile(textFileName) == FALSE) {
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						CheckShellExecuteResult(result, h);
+					}
 					int deb = 1;
 				}
 				else if (nResponse == IDYES)
 				{
-					ShellExecute(NULL, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+					HWND h = GetSafeHwnd();
+					HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+					CheckShellExecuteResult(result, h);
 					int deb = 1;
 				}
 				else if (nResponse == IDCANCEL)
