@@ -28,6 +28,9 @@ _int64 MboxMail::s_fSize = 0;
 _int64 MboxMail::s_oSize = 0;
 CString MboxMail::s_path;
 
+BOOL RemoveDir(CString & dir, bool recursive = false);
+int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+
 inline char *EatNewLine(char* p, char*e) {
 	while ((p < e) && (*p++ != '\n'));
 	return p;
@@ -1566,11 +1569,6 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 		if(pBP->m_IsAttachment)
 			m->m_hasAttachments = 1;
 
-		// For now ignore non "text/plain" bodies
-		//if (!pBP->m_IsTextPlain)
-		if (!pBP->m_IsText)
-			continue;
-
 		bodyCnt++;
 
 		int bodyLength = pBP->m_bodyDataLength;
@@ -1583,6 +1581,7 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 			contentDetails->m_contentLength = pBP->m_bodyDataLength;
 			contentDetails->m_contentType = pBP->m_ContentType;
 			contentDetails->m_contentDisposition = pBP->m_Disposition;
+			contentDetails->m_contentId = pBP->m_ContentId;
 			contentDetails->m_contentTransferEncoding = pBP->m_TransferEncoding;
 			contentDetails->m_attachmentName = pBP->m_AttachmentName;
 			contentDetails->m_pageCode = pBP->m_PageCode;
@@ -1757,7 +1756,7 @@ bool MboxMail::sortConversations()
 {
 	MboxMail *m;
 	MboxMail *m_sav;
-	int i_ref = 0;
+	int i_ref = s_mails.GetSize() - 1;
 	int i_ref_begin, i_ref_end;
 
 	s_mails_ref.SetSize(s_mails.GetSize());
@@ -1769,16 +1768,16 @@ bool MboxMail::sortConversations()
 
 	int currentGroupColor = 0; //white 
 
-	// init s_mails_ref by conversation groups
-	for (int i = 0; i < s_mails.GetSize(); i++)
+							   // init s_mails_ref by conversation groups
+	for (int i = s_mails.GetSize() - 1; i >= 0; i--)
 	{
 		m = s_mails[i];
 		if (m->m_done)
 			continue;
 
-		i_ref_begin = i_ref;
+		i_ref_end = i_ref;
 		m->m_groupId = m_nextGroupId;
-		s_mails_ref[i_ref++] = m;
+		s_mails_ref[i_ref--] = m;
 		m->m_done = true;
 
 		if (m->m_messageId == m->m_replyId) {
@@ -1793,28 +1792,28 @@ bool MboxMail::sortConversations()
 		m->m_groupColor = currentGroupColor;
 
 		m_sav = m;
-		while (m->m_nextMail >= 0)
-		{
-			m = s_mails[m->m_nextMail];
-			if (m->m_done)
-				continue;  // should never be here ??
-			m->m_groupId = m_nextGroupId;
-			m->m_groupColor = currentGroupColor;
-			s_mails_ref[i_ref++] = m;
-			m->m_done = true;
-		}
-		m = m_sav;
 		while (m->m_prevMail >= 0)
 		{
 			m = s_mails[m->m_prevMail];
 			if (m->m_done)
+				continue;  // should never be here ??
+			m->m_groupId = m_nextGroupId;
+			m->m_groupColor = currentGroupColor;
+			s_mails_ref[i_ref--] = m;
+			m->m_done = true;
+		}
+		m = m_sav;
+		while (m->m_nextMail >= 0)
+		{
+			m = s_mails[m->m_nextMail];
+			if (m->m_done)
 				continue; // should never be here ??
 			m->m_groupId = m_nextGroupId;
 			m->m_groupColor = currentGroupColor;
-			s_mails_ref[i_ref++] = m;
-			m->m_done = true;  
+			s_mails_ref[i_ref--] = m;
+			m->m_done = true;
 		}
-		i_ref_end = i_ref;
+		i_ref_begin = i_ref;
 		m_nextGroupId++;
 
 		int j;
@@ -1822,7 +1821,11 @@ bool MboxMail::sortConversations()
 		// check sorting order
 		bool outOfOrder = false;
 
-		for (j = i_ref_begin; j < (i_ref_end - 1); j++)
+		//int i_ref_end_sv = i_ref_end;
+		//i_ref_end = i_ref_begin + 1;
+		//i_ref_begin = i_ref_end_sv;
+
+		for (j = (i_ref_begin+1); j < i_ref_end; j++)
 		{
 			MboxMail *s_mails_ref_begin = s_mails_ref[j];
 			MboxMail *s_mails_ref_end = s_mails_ref[j + 1];
@@ -1837,7 +1840,7 @@ bool MboxMail::sortConversations()
 
 		if (outOfOrder)
 		{
-			for (j = i_ref_begin; j < (i_ref_end - 1); j++)
+			for (j = (i_ref_begin+1); j < i_ref_end; j++)
 			{
 				MboxMail *s_mails_ref_begin = s_mails_ref[j];
 				MboxMail *s_mails_ref_end = s_mails_ref[j + 1];
@@ -1853,7 +1856,7 @@ bool MboxMail::sortConversations()
 			; // reorder mails i_ref_begin < i_ref_end
 			CArray<MboxMail*, MboxMail*> s_group_mails;
 
-			for (j = i_ref_begin; j < i_ref_end; j++)
+			for (j = (i_ref_begin+1); j <= i_ref_end; j++)
 			{
 				s_group_mails.Add(s_mails_ref[j]);
 			}
@@ -1869,7 +1872,7 @@ bool MboxMail::sortConversations()
 			}
 
 			// Recheck mail order
-			for (j = i_ref_begin; j < (i_ref_end - 1); j++)
+			for (j = (i_ref_begin+1); j < i_ref_end; j++)
 			{
 				MboxMail *s_mails_ref_begin = s_mails_ref[j];
 				MboxMail *s_mails_ref_end = s_mails_ref[j + 1];
@@ -1884,15 +1887,26 @@ bool MboxMail::sortConversations()
 			s_group_mails.RemoveAll();
 		}
 	}
-	if (s_mails.GetSize() != i_ref) {
+	//if (s_mails.GetSize() != ref_cnt) {
+	if (i_ref != -1) {  // TODO: implementation error
+		s_mails_ref.Copy(s_mails);
+		for (int i = 0; i < s_mails.GetSize(); i++)
+		{
+			m = s_mails[i];
+			m->m_index = i;
+		}
 		return false;
 	}
 	else {
 		s_mails.Copy(s_mails_ref);
+		for (int i = 0; i < s_mails.GetSize(); i++)
+		{
+			m = s_mails[i];
+			m->m_index = i;
+		}
 		return true;
 	}
 }
-
 
 // verify that after al mails are accounted after sorting by group
 // i.e. all mails will end up in s_mails_ref
@@ -2527,7 +2541,7 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	return 1;
 }
 
-UINT getCodePageFrmHtmlBody(SimpleString *buffer)
+UINT getCodePageFromHtmlBody(SimpleString *buffer)
 {
 	char *pat = "charset=";
 	std::string charset;
@@ -2577,13 +2591,20 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	UINT pageCode = 0;
 	int textType = 1; // try first Html
 	int textlen = GetMailBody_mboxview(fpm, mailPosition, outbuflarge, pageCode, textType);  // returns pageCode
-	if (textlen != MboxMail::m_outbuf->Count())
+	if (textlen != outbuflarge->Count())
 		int deb = 1;
 
 	if (outbuflarge->Count() != 0)
 	{
 		CString bdycharset = "UTF-8";
 		CString bdy;
+
+
+		SimpleString *workbuf = MboxMail::m_workbuf;
+		workbuf->ClearAndResize(outbuflarge->Count() * 2);
+		bool useMailPosition = true;
+		fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
+		outbuflarge->Copy(*workbuf);
 
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head>";
 		bdy += "<body><pre style=\"background-color:#eee9e9;font-weight:normal;\"><font size=\"+1\">";
@@ -2604,7 +2625,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		}
 
 		if (pageCode == 0) {
-			pageCode = getCodePageFrmHtmlBody(outbuflarge);
+			pageCode = getCodePageFromHtmlBody(outbuflarge);
 		}
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
@@ -2877,8 +2898,9 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 	{
 		if (textType == 0)
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
-		else
+		else {
 			printSingleMailToHtmlFile(fp, i, fpm, textConfig);
+		}
 	}
 
 	fp.Close();
@@ -2987,6 +3009,73 @@ int MboxMail::escapeSeparators(char *workbuff, char *fldstr, int fldlen, char se
 	return outcnt;
 }
 
+int MboxMail::DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf)
+{
+	_int64 fileOffset;
+	int bodyCnt = 0;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+
+	// We are using global buffers so check and assert if we collide. 
+	SimpleString *inbuf = MboxMail::m_inbuf;
+	SimpleString *workbuf = MboxMail::m_workbuf;
+	ASSERT(outbuf != inbuf);
+	ASSERT(outbuf != workbuf);
+
+	inbuf->ClearAndResize(10000);
+	workbuf->ClearAndResize(10000);
+
+	int bodyLength = body->m_contentLength;
+	if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
+		// something is not consistent
+		bodyLength = m->m_length - body->m_contentOffset;
+	}
+
+	fileOffset = m->m_startOff + body->m_contentOffset;
+	fpm.Seek(fileOffset, SEEK_SET);
+
+	inbuf->ClearAndResize(bodyLength);
+
+	char *bodyBegin = inbuf->Data();
+	int retlen = fpm.Read(bodyBegin, bodyLength);
+	if (retlen != bodyLength) {
+		bodyLength = retlen;
+	}
+
+	if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
+	{
+		MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+		int dlength = d64.GetOutputLength();
+		int needLength = dlength + outbuf->Count();
+		outbuf->Resize(needLength);
+
+		char *outptr = outbuf->Data(outbuf->Count());
+		int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
+		if (retlen > 0)
+			outbuf->SetCount(outbuf->Count() + retlen);
+	}
+	else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+	{
+		MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
+		int dlength = dGP.GetOutputLength();
+		int needLength = dlength + outbuf->Count();
+		outbuf->Resize(needLength);
+
+		char *outptr = outbuf->Data(outbuf->Count());
+		int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
+		if (retlen > 0)
+			outbuf->SetCount(outbuf->Count() + retlen);
+	}
+	else
+	{
+		// in case we have multiple bodies of the same type ?? not sure it is valid case/concern
+		// asking for trouble ??
+		outbuf->Append(bodyBegin, bodyLength);
+	}
+
+	return outbuf->Count();
+}
+
 // Get mail text by leveraging the file offset to the mail text body in index/mboxview file. 
 // Full parsing of the mail is not done or rquired.
 int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textType)
@@ -3088,6 +3177,112 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 
 	if (pageCodeConflict)
 		pageCode = 0;
+
+	return outbuf->Count();
+}
+
+
+// Not used yet and code incomplete. might be used to dynamically create image files
+int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf)
+{
+
+	CString GetmboxviewTempPath(char *name = 0);
+
+	_int64 fileOffset;
+	int bodyCnt = 0;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+
+	// We are using global buffers so check and assert if we collide. 
+	SimpleString *inbuf = MboxMail::m_inbuf;
+	//SimpleString *workbuf = MboxMail::m_workbuf;
+	ASSERT(outbuf != inbuf);
+	//ASSERT(outbuf != workbuf);
+
+	outbuf->ClearAndResize(10000);
+	inbuf->ClearAndResize(10000);
+	//workbuf->ClearAndResize(10000);
+
+	MailBodyContent *body;
+	char *data;
+	int dataLen;
+
+	RemoveDir(GetmboxviewTempPath());
+
+	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+	{
+		body = m->m_ContentDetailsArray[j];
+
+		if (body->m_attachmentName.IsEmpty()) {
+			continue;
+		}
+
+		if (body->m_contentType.CompareNoCase("text/html") != 0) {
+			; //continue;
+		}
+
+		bodyCnt++;
+
+		int bodyLength = body->m_contentLength;
+		if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
+			// TODO: something is not consistent
+			bodyLength = m->m_length - body->m_contentOffset;
+		}
+
+		fileOffset = m->m_startOff + body->m_contentOffset;
+		fpm.Seek(fileOffset, SEEK_SET);
+
+		inbuf->ClearAndResize(bodyLength);
+
+		char *bodyBegin = inbuf->Data();
+		int retlen = fpm.Read(bodyBegin, bodyLength);
+		if (retlen != bodyLength) {
+			bodyLength = retlen;
+		}
+
+		if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
+		{
+			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+			int dlength = d64.GetOutputLength();
+			int needLength = dlength + outbuf->Count();
+			outbuf->Resize(needLength);
+
+			char *outptr = outbuf->Data(outbuf->Count());
+			int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
+			if (retlen > 0)
+				outbuf->SetCount(outbuf->Count() + retlen);
+
+			data = outbuf->Data();
+			dataLen = outbuf->Count();
+		}
+		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+		{
+			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
+			int dlength = dGP.GetOutputLength();
+			int needLength = dlength + outbuf->Count();
+			outbuf->Resize(needLength);
+
+			char *outptr = outbuf->Data(outbuf->Count());
+			int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
+			if (retlen > 0)
+				outbuf->SetCount(outbuf->Count() + retlen);
+
+			data = outbuf->Data();
+			dataLen = outbuf->Count();
+		}
+		else
+		{
+			// in case we have multiple bodies of the same type ?? not sure it is valid case/concern
+			// asking for trouble ??
+			data = bodyBegin;
+			dataLen = bodyLength;
+		}
+
+		const char *fileName = (LPCSTR)body->m_attachmentName;
+		CFile fp(fileName, CFile::modeWrite | CFile::modeCreate);
+		fp.Write(data, dataLen);
+		fp.Close();
+	}
 
 	return outbuf->Count();
 }
@@ -3850,6 +4045,7 @@ void MailHeader::Clear()
 	m_MainType.Empty();
 	m_Boundary.Empty();
 	m_ContentType.Empty();
+	m_ContentId.Empty();
 	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
 	m_MessageId.Empty();
@@ -3860,6 +4056,8 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 {
 	static const char *cType = "content-type:";
 	static const int cTypeLen = strlen(cType);
+	static const char *cContentId = "content-id:";
+	static const int cContentIdLen = strlen(cContentId);
 	static const char *cTransferEncoding = "content-transfer-encoding:";
 	static const int cTransferEncodingLen = strlen(cTransferEncoding);
 	static const char *cDisposition = "content-disposition:";
@@ -3975,6 +4173,13 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		else if (strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
 			p = GetMultiLine(p, e, line);
 			GetMessageId(line, cMsgIdLen, m_MessageId);
+		}
+		else if (strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
+			p = GetMultiLine(p, e, line);
+			GetMessageId(line, cMsgIdLen, m_ContentId);
+			m_ContentId.Trim();
+			m_ContentId.Trim("<>");
+
 		}
 		else if (strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
 			p =  GetMultiLine(p, e, line);

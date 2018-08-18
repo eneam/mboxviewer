@@ -24,7 +24,7 @@
 #define new DEBUG_NEW
 #endif
 
-CString GetmboxviewTempPath();
+CString GetmboxviewTempPath(char *name = 0);
 
 // CCPictureCtrlDemoDlg-Dialogfeld
 

@@ -111,7 +111,7 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	ON_NOTIFY(NM_RCLICK, IDC_ATTACHMENTS, OnRClick)  // Right Click Menu
 END_MESSAGE_MAP()
 
-CString GetmboxviewTempPath(void);
+CString GetmboxviewTempPath(char *name = 0);
 
 void NMsgView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult) 
 {

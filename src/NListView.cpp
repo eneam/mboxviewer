@@ -47,18 +47,22 @@ BOOL PathFileExist(LPCSTR path)
 	return FALSE;
 }
 
-CString GetmboxviewTempPath(void)
+CString GetmboxviewTempPath(char *name = 0)
 {
 	char	buf[_MAX_PATH];
 	GetTempPath(_MAX_PATH, buf);
 	if( ! PathFileExist(buf) )
 		strcpy(buf,"\\");
 	strcat(buf, "mboxview\\");
+	if (name) {
+		strcat(buf, name);
+		strcat(buf, "\\");
+	}
 	CreateDirectory(buf,NULL);
 	return buf;
 }
 
-BOOL RemoveDir(CString & dir)
+BOOL RemoveDir(CString & dir, bool recursive = false)
 {
 	WIN32_FIND_DATA FileData;
 	HANDLE hSearch;
@@ -76,7 +80,7 @@ BOOL RemoveDir(CString & dir)
 			CString	fileFound = dir + "\\" + FileData.cFileName;
 			if( FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY )
 				DeleteFile( (LPCSTR) fileFound );
-			else
+			else if (recursive)
 				RemoveDir( dir + "\\" + CString(FileData.cFileName) );
 		}
 		if( ! FindNextFile( hSearch, &FileData ) )
@@ -872,9 +876,31 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	10
+//#define CACHE_VERSION	10  go back to 10 once all done
+#define CACHE_VERSION	11
 
-BOOL SaveMails(LPCSTR cache) {
+void CPathStripPath(const char *path, CString &fileName)
+{
+	int pathlen = strlen(path);
+	char *pathbuff = new char[pathlen + 1];
+	strcpy(pathbuff, path);
+	PathStripPath(pathbuff);
+	fileName.Empty();
+	fileName.Append(pathbuff);
+}
+
+BOOL SaveMails(LPCSTR cache) 
+{
+	CFile fpm;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+		; // return -1;
+	}
+
+	CString mailFileName;
+	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
+	int pos = mailFileName.ReverseFind('.');
+	CString baseFailFileName = mailFileName.Mid(0, pos);
+
 	int ni = MboxMail::s_mails.GetSize();
 	SerializerHelper sz(cache);
 	if( ! sz.open(TRUE) )
@@ -887,6 +913,7 @@ BOOL SaveMails(LPCSTR cache) {
 		MboxMail *m = MboxMail::s_mails[i];
 		sz.writeInt64(m->m_startOff);
 		sz.writeInt(m->m_length);
+		sz.writeInt(m->m_index);
 		sz.writeInt(m->m_hasAttachments);
 		sz.writeInt(m->m_headLength);
 		sz.writeInt(m->m_recv);
@@ -919,13 +946,53 @@ BOOL SaveMails(LPCSTR cache) {
 		for (it = m->m_ContentDetailsArray.begin(); it != m->m_ContentDetailsArray.end(); it++)
 		{
 			body = *it;
+
+			if (fpm.m_hFile != CFile::hFileNull)
+			{
+				if (!body->m_attachmentName.IsEmpty())
+				{
+					if ((body->m_contentDisposition.CompareNoCase("inline") == 0) && !body->m_contentId.IsEmpty())
+					{
+						SimpleString*outbuf = MboxMail::m_outbuf;
+						outbuf->ClearAndResize(body->m_contentLength * 2);
+						int retLen = MboxMail::DecodeBody(fpm, body, i, outbuf);
+
+						if (outbuf->Count() > 1500000)
+							int deb = 1;
+
+						CString targerFolder = GetmboxviewTempPath((char*)(LPCSTR)baseFailFileName);
+						CString mailIndex;
+						mailIndex.Format("%d_", m->m_index);
+						CString attachmentName = mailIndex + body->m_contentId;
+						int pos = body->m_attachmentName.ReverseFind('.');
+						CString imageExtension = body->m_attachmentName.Mid(pos);
+						attachmentName += imageExtension;
+						CString imgFile = targerFolder + attachmentName;
+
+						body->m_attachmentName = attachmentName;
+
+						if (outbuf->Count() > 1500000)
+							int deb = 1;
+
+						const char *fileName = (LPCSTR)imgFile;
+						CFile fp(fileName, CFile::modeWrite | CFile::modeCreate);
+						fp.Write(outbuf->Data(), outbuf->Count());
+						fp.Close();
+
+						int deb = 1;
+					}
+				}
+			}
 			sz.writeInt(body->m_contentOffset);
 			sz.writeInt(body->m_contentLength);
 			sz.writeString(body->m_contentTransferEncoding);
 			sz.writeString(body->m_contentType);
+			sz.writeString(body->m_contentId);
 			sz.writeString(body->m_attachmentName);
+			sz.writeString(body->m_contentDisposition);
 			sz.writeInt(body->m_pageCode);
 		}
+
 
 		if (lastoff < m->m_startOff)
 			lastoff = m->m_startOff;
@@ -967,6 +1034,8 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 			if (!sz.readInt64(&m->m_startOff))
 				break;
 			if (!sz.readInt(&m->m_length))
+				break;
+			if (!sz.readInt(&m->m_index))
 				break;
 			if (!sz.readInt(&m->m_hasAttachments))
 				break;
@@ -1031,7 +1100,11 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 					break;
 				if (!sz.readString(body->m_contentType))
 					break;
+				if (!sz.readString(body->m_contentId))
+					break;
 				if (!sz.readString(body->m_attachmentName))
+					break;
+				if (!sz.readString(body->m_contentDisposition))
 					break;
 				if (!sz.readUInt(&body->m_pageCode))
 					break;
@@ -1098,6 +1171,8 @@ int Cache2Text(LPCSTR cache, CString format)
 				break;
 			if (!sz.readInt(&m->m_length))
 				break;
+			if (!sz.readInt(&m->m_index))
+				break;
 			if (!sz.readInt(&m->m_hasAttachments))
 				break;
 			if (!sz.readInt(&m->m_headLength))
@@ -1152,6 +1227,8 @@ int Cache2Text(LPCSTR cache, CString format)
 				CTime tt(m->m_timeDate);
 				strcpy(datebuff, (LPCSTR)tt.Format(format));
 			}
+
+			// TODO: read attachments
 
 			count = sprintf_s(buff, "indx=%d first=%lld len=%d last=%lld att=%d hlen=%d rcv=%d date=\"%s\" from=\"%s\" to=\"%s\" subj=\"%s\"\n",
 				i, m->m_startOff, m->m_length, (m->m_startOff+ m->m_length-1), m->m_hasAttachments, m->m_headLength, m->m_recv,
@@ -1306,6 +1383,171 @@ void NListView::FillCtrl()
 	pView->SaveData();
 }
 
+int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition)
+{
+	static char * img_pattern = "<img ";
+	static int img_patternLen = strlen(img_pattern);
+
+	static char * cid_pattern = "src=\"cid:";
+	static int cid_patternLen = strlen(cid_pattern);
+
+	char *input = inData;
+	int inputLength = indDataLen;
+	char *inputEnd = input + inputLength;
+	char *srcImgEnd = inputEnd;
+	char *cidBegin;
+	char *cidEnd;
+	char *pos_sv;
+	SimpleString cid;
+
+	char *fromBegin = input;
+	char *alt_pos;
+
+	MboxMail *m = 0;
+	if (useMailPosition)
+		m = MboxMail::s_mails[mailPosition];
+
+	CString mailArchiveFileName;
+	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
+	int position = mailArchiveFileName.ReverseFind('.');
+	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+
+	CString imgFile;
+
+	char *pos = input;
+	while ((pos != 0) && (pos < inputEnd)) 
+	{
+		pos = strnstrUpper2Lower(pos, inputEnd, img_pattern, img_patternLen);
+		if (pos == 0) {
+			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			break;
+		}
+
+		pos += img_patternLen;
+
+		// find end of <img src ...>
+		srcImgEnd = strnstrUpper2Lower(pos, inputEnd, ">", 1);
+		if (srcImgEnd == 0) { // TODO: corrupted file ?
+			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			break;
+		}
+		srcImgEnd++; // jump over
+
+		alt_pos = strnstrUpper2Lower(pos, srcImgEnd, "alt=\"", 5);
+
+		pos = strnstrUpper2Lower(pos, srcImgEnd, cid_pattern, cid_patternLen);
+		if (pos == 0) {
+			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
+			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+			fromBegin = pos;
+			continue;
+		}
+
+		pos += cid_patternLen;
+		cidBegin = pos;
+
+		outbuf->Append(fromBegin, cidBegin - 5 - fromBegin);
+
+		// find end of cid token
+		pos = strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+		cidEnd = pos;
+
+		cid.Copy(cidBegin, cidEnd - cidBegin);
+
+		pos++; // jump over \"
+		cidEnd = pos;
+		fromBegin = pos;
+
+		CString nameExtension;
+		if (m == 0) {
+			for (int row = 0; row < attachments->GetItemCount(); ++row)
+			{
+				CString name = attachments->GetItemText(row, 0);
+				int pos = name.ReverseFind('.');
+				CString cidPart = name.Mid(0, pos);
+				if (cidPart.Compare(cid.Data()) == 0) {
+					nameExtension = name.Mid(pos);
+					break;
+				}
+			}
+			imgFile = GetmboxviewTempPath() + CString(cid.Data()) + nameExtension;
+		}
+		else
+		{
+			MailBodyContent *body;
+			for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+			{
+				body = m->m_ContentDetailsArray[j];
+				if (!body->m_attachmentName.IsEmpty())
+				{
+					if ((body->m_contentDisposition.CompareNoCase("inline") == 0) && !body->m_contentId.IsEmpty())
+					{
+						if (outbuf->Count() > 1500000)
+							int deb = 1;
+
+						int pos = body->m_attachmentName.ReverseFind('.');
+						CString cidPart = body->m_attachmentName.Mid(0, pos);
+
+						CString extendedCid;
+						extendedCid.Format("%d_%s", m->m_index, cid.Data());
+
+						if (cidPart.Compare(extendedCid) == 0) {
+							nameExtension = body->m_attachmentName.Mid(pos);
+							break;
+						}
+
+						if (outbuf->Count() > 1500000)
+							int deb = 1;
+
+						int deb = 1;
+					}
+				}
+			}
+			CString targerFolder = GetmboxviewTempPath((char*)(LPCSTR)baseFileArchiveName);
+			imgFile = targerFolder + body->m_attachmentName;
+		}
+
+		if (nameExtension.IsEmpty()) {
+			;// TODO: any harm if no action ?
+		}
+
+		SimpleString alt;
+		if (alt_pos == 0) {
+			alt.Append("alt=\"image");
+			alt.Append((char*)(LPCSTR)nameExtension);
+			alt.Append("\"");
+			int deb = 1;
+		}
+
+		outbuf->Append("\"");
+		outbuf->Append(imgFile, imgFile.GetLength());
+		outbuf->Append("\"");
+
+		if (alt.Count()) {
+			outbuf->Append(" ");
+			outbuf->Append(alt);
+		}
+
+		pos = srcImgEnd;
+
+		int deb = 1;
+	}
+	return -1;
+}
+
+static int CALLBACK
+MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
+{
+	// lParamSort contains a pointer to the list view control.
+	CListCtrl* pListCtrl = (CListCtrl*)lParamSort;
+	int index1 = static_cast <int> (lParam1);
+	int index2 = static_cast <int> (lParam2);
+	CString    strItem1 = pListCtrl->GetItemText(index1, 0);
+	CString    strItem2 = pListCtrl->GetItemText(index2, 0);
+
+	return strcmp(strItem1, strItem2);
+}
+
 void NListView::SelectItem(int iItem) 
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1374,12 +1616,16 @@ void NListView::SelectItem(int iItem)
 	}
 	CString bdycharset = "UTF-8";
 
+	char *data = (char*)(LPCSTR)bdy;
+	int datalen = 0;
+
 	// Decode MIME message
 	CMimeMessage mail;
 	const char *bodyData = bdy;
     int nLoadedSize = mail.Load(bodyData, bdy, bdy.GetLength());
 
 	//DumpItemDetails(iItem, m, mail);
+	bool hasInlineAttachments = false;
 
 	// Iterate all the descendant body parts
     CMimeBody::CBodyList bodies;
@@ -1449,6 +1695,43 @@ void NListView::SelectItem(int iItem)
 			if (strName.empty())
 				strName = pBP->GetFilename();
 
+			CString disposition = pBP->GetDisposition();
+			const CMimeField *pfldDisposition = pBP->CMimeHeader::GetField(CMimeConst::ContentDisposition());
+			string strDisposition;
+			if (pfldDisposition != NULL)
+			{
+				pfldDisposition->GetValue(strDisposition);
+				transform(strDisposition.begin(), strDisposition.end(), strDisposition.begin(), ::tolower);
+			}
+
+			const CMimeField *pfldContentId = pBP->CMimeHeader::GetField(CMimeConst::ContentID());
+			string strContentId;
+			if (pfldContentId != NULL)
+			{
+				pfldContentId->GetValue(strContentId);
+			}
+
+			bool isAttachmentInline = false;
+			if (strDisposition.compare("inline") == 0) {
+				isAttachmentInline = true;
+				hasInlineAttachments = true;
+				CString contentId = strContentId.c_str();
+				contentId.Trim();
+				contentId.Trim("<>");
+
+				if (!contentId.IsEmpty()) {
+					CString cStrName = strName.c_str();
+					int pos = cStrName.ReverseFind('.');
+					CString nameExtension = cStrName.Mid(pos);
+					CString ext = PathFindExtension(cStrName);
+					CString newStrName = contentId + nameExtension;
+					strName.assign(newStrName);
+
+					int deb = 1;
+				}
+				int deb = 1;
+			}
+
             //printf("File name: %s\r\n", strName.c_str());
             //printf("File size: %d\r\n", pBP->GetContentLength());
 			string name = strName;
@@ -1475,15 +1758,60 @@ void NListView::SelectItem(int iItem)
         }
     }
 
+	pView->m_attachments.SortItemsEx(MyCompareProc, (LPARAM)&pView->m_attachments);
+
 	// Save mail
 	if (ext.Compare("txt") == 0) {
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n" + bdy + "</pre></body></html>";
 		ext = "htm";
+		data = (char*)(LPCSTR)bdy;
+		datalen = bdy.GetLength();
 	}
-	else if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) {
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset="+bdycharset+"\"></head><body>"+bdy;
+	else if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) 
+	{
+		if (hasInlineAttachments) {
+			SimpleString *outbuf = MboxMail::m_outbuf;
+			outbuf->ClearAndResize(bdy.GetLength() + 1000);
+
+			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+			int mailPosition = 0; // not used anyway here
+			bool useMailPosition = false;
+			char *inData = (char*)(LPCSTR)bdy;
+			int inDataLen = bdy.GetLength();
+			fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+
+			hdr = "<body><html>";
+			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+			data = outbuf->Data();
+			datalen = outbuf->Count();
+			int deb = 1;
+		}
+		else {
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>" + bdy + "<body><html>";
+			data = (char*)(LPCSTR)bdy;
+			datalen = bdy.GetLength();
+		}
 	}
 	else {
+		if (hasInlineAttachments) {
+			SimpleString *outbuf = MboxMail::m_outbuf;
+			outbuf->ClearAndResize(bdy.GetLength() + 1000);
+
+			int mailPosition = 0; // not used anyway here
+			bool useMailPosition = false;
+			char *inData = (char*)(LPCSTR)bdy;
+			int inDataLen = bdy.GetLength();
+			fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+
+			data = outbuf->Data();
+			datalen = outbuf->Count();
+		}
+		else {
+			data = (char*)(LPCSTR)bdy;
+			datalen = bdy.GetLength();
+		}
 		int deb = 1;
 	}
 
@@ -1493,7 +1821,7 @@ void NListView::SelectItem(int iItem)
 	// Get temporary file name with correct extension for IE to display
 	m_curFile = CreateTempFileName(ext);
 	CFile fp(m_curFile, CFile::modeWrite|CFile::modeCreate);
-	fp.Write(bdy, bdy.GetLength());
+	fp.Write(data, datalen);
 	fp.Close();
 	
 	// Display mail in IE

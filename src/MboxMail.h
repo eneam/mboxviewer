@@ -169,6 +169,7 @@ public:
 	CString m_contentType;
 	CString m_contentTransferEncoding;
 	CString m_contentDisposition;
+	CString m_contentId;
 	CString m_attachmentName;
 	UINT m_pageCode;
 	int  m_contentOffset;
@@ -212,7 +213,8 @@ public:
 		m_prevMail = -1;
 		m_duplicateId = false;
 		m_done = false;
-		m_groupColor = 0; 
+		m_groupColor = 0;
+		m_index = -1;
 	}
 	CString GetBody();
 	int DumpMailBox(MboxMail *mailBox, int which);
@@ -237,6 +239,7 @@ public:
 	int m_prevMail;
 	bool m_duplicateId;
 	bool m_done;
+	int m_index; // unique id == index
 
 	static MessageIdTableType *m_pMessageIdTable;
 	//
@@ -275,6 +278,7 @@ public:
 	static void Destroy();
 	static bool preprocessConversations();
 	static bool sortConversations();
+	static bool sortConversationsReverse();
 	static bool validateSortConversations();
 	static int charCount(char *fld, char c);
 	static int nstrcpy(char *dst, char *src);
@@ -294,7 +298,9 @@ public:
 	static int GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, SimpleString *outbuf, UINT &pageCode);
 	static void getCMimeBodyHeader(CMimeMessage *mail, CMimeBody* pBP, CMBodyHdr *pHdr);
 	static int LoadMail(const char* pszData, int nDataSize);
-	static char * ParseContent(MboxMail *mail, char *startPos, char *endPos);
+	static char *ParseContent(MboxMail *mail, char *startPos, char *endPos);
+	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
+	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 };
 
@@ -382,6 +388,7 @@ public:
 	CString m_MainType;
 	CString m_Boundary;
 	CString m_ContentType;
+	CString m_ContentId;
 	CMimeHeader::MediaType m_MediaType;
 	CString m_AttachmentName;
 	CString m_MessageId;

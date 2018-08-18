@@ -143,6 +143,7 @@ public:
 	const char* GetFieldCharset(const char* pszFieldName) const;
 
 	// helper functions for standard body part fields
+	const char* GetContentId() const;	
 	void SetContentType(const char* pszValue, const char* pszCharset=NULL);
 	const char* GetContentType() const;			// Content-Type: mediatype/subtype
 	string GetMainType() const;
@@ -280,6 +281,11 @@ inline void CMimeHeader::SetContentType(const char* pszValue, const char* pszCha
 
 inline const char* CMimeHeader::GetContentType() const
 { return GetFieldValue(CMimeConst::ContentType()); }
+
+inline const char* CMimeHeader::GetContentId() const
+{
+	return GetFieldValue(CMimeConst::ContentID());
+}
 
 inline string CMimeHeader::GetCharset() const
 { return GetParameter(CMimeConst::ContentType(), CMimeConst::Charset()); }

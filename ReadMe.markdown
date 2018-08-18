@@ -31,6 +31,7 @@ v 1.0.2.6
  - Added options print single mail to Text or Html file;
  - Added option to group all related mails in the summary window;
  - Added option to print related mails/group as Text or Html file;
+ - Added handling of inline/emeded images;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.2.5
