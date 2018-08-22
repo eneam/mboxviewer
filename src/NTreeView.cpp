@@ -7,9 +7,9 @@
 #include "NTreeView.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 IMPLEMENT_DYNCREATE(NTreeView, CWnd)
@@ -382,6 +382,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	HTREEITEM hRoot = m_tree.GetRootItem();
+
+	if (hRoot == 0)
+		return;
 
 	if (!(m_tree.GetItemState(hRoot, TVIS_EXPANDED) & TVIS_EXPANDED))
 		return;

@@ -7,9 +7,9 @@
 //#include "D:\\Programmi\\Microsoft Visual Studio\\VC98\\MFC\\SRC\\afximpl.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 #define CX_BORDER   1

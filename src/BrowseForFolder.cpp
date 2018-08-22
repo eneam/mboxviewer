@@ -8,7 +8,7 @@
 
 #ifdef _DEBUG
 #undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
+#define THIS_FILE __FILE__
 #define new DEBUG_NEW
 #endif
 
@@ -19,13 +19,13 @@ static char THIS_FILE[]=__FILE__;
 
 CBrowseForFolder::CBrowseForFolder(const HWND hParent /*= NULL*/, const LPITEMIDLIST pidl /*= NULL*/, const int nTitleID /*= 0*/)
 {
-	m_hwnd = NULL;
+	m_hwnd = 0;
 	SetOwner(hParent);
 	SetRoot(pidl);
 	SetTitle(nTitleID);
 	m_bi.lpfn = BrowseCallbackProc;
 	m_bi.lParam = reinterpret_cast<LPARAM>(this);
-	m_bi.pszDisplayName = m_szSelected;
+	m_bi.pszDisplayName = &m_szSelected[0];
 }
 
 CBrowseForFolder::CBrowseForFolder(const HWND hParent , const int clsid, const int nTitleID /*= 0*/)
@@ -36,10 +36,11 @@ CBrowseForFolder::CBrowseForFolder(const HWND hParent , const int clsid, const i
 	m_hwnd = NULL;
 	SetOwner(hParent);
 	SetRoot(pidlRoot);
+	m_pchTitle[0] = 0;
 	SetTitle(nTitleID);
 	m_bi.lpfn = BrowseCallbackProc;
 	m_bi.lParam = reinterpret_cast<LPARAM>(this);
-	m_bi.pszDisplayName = m_szSelected;
+	m_bi.pszDisplayName = &m_szSelected[0];
 }
 
 CBrowseForFolder::CBrowseForFolder(const HWND hParent, const LPITEMIDLIST pidl, const CString& strTitle)
@@ -47,10 +48,11 @@ CBrowseForFolder::CBrowseForFolder(const HWND hParent, const LPITEMIDLIST pidl, 
 	m_hwnd = NULL;
 	SetOwner(hParent);
 	SetRoot(pidl);
+	m_pchTitle[0] = 0;
 	SetTitle(strTitle);
 	m_bi.lpfn = BrowseCallbackProc;
 	m_bi.lParam = reinterpret_cast<LPARAM>(this);
-	m_bi.pszDisplayName = m_szSelected;
+	m_bi.pszDisplayName = &m_szSelected[0];
 }
 
 CBrowseForFolder::~CBrowseForFolder()
@@ -117,7 +119,7 @@ void CBrowseForFolder::SetFlags(const UINT ulFlags)
 
 CString CBrowseForFolder::GetSelectedFolder() const
 {
-	return m_szSelected;
+	return &m_szSelected[0];
 }
 
 bool CBrowseForFolder::SelectFolder()
@@ -131,17 +133,19 @@ bool CBrowseForFolder::SelectFolder()
 		if (SUCCEEDED(::SHGetPathFromIDList(pidl, m_szSelected)))
 		{
 			bRet = true;
-			m_strPath = m_szSelected;
+			m_strPath = &m_szSelected[0];
 		}
 
 		LPMALLOC pMalloc;
 		//Retrieve a pointer to the shell's IMalloc interface
 		if (SUCCEEDED(SHGetMalloc(&pMalloc)))
 		{
-			// free the PIDL that SHBrowseForFolder returned to us.
-			pMalloc->Free(pidl);
-			// release the shell's IMalloc interface
-			(void)pMalloc->Release();
+			if (pMalloc) {
+				// free the PIDL that SHBrowseForFolder returned to us.
+				pMalloc->Free(pidl);
+				// release the shell's IMalloc interface
+				(void)pMalloc->Release();
+			}
 		}
 	}
 	m_hwnd = NULL;
@@ -195,11 +199,13 @@ void CBrowseForFolder::SetStatusText(const CString& strText) const
 int __stdcall CBrowseForFolder::BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
 	CBrowseForFolder* pbff = reinterpret_cast<CBrowseForFolder*>(lpData);
-	pbff->m_hwnd = hwnd;
-	if (uMsg == BFFM_INITIALIZED)
-		pbff->OnInit();
-	else if (uMsg == BFFM_SELCHANGED)
-		pbff->OnSelChanged(reinterpret_cast<LPITEMIDLIST>(lParam));
+	if (pbff) {
+		pbff->m_hwnd = hwnd;
+		if (uMsg == BFFM_INITIALIZED)
+			pbff->OnInit();
+		else if (uMsg == BFFM_SELCHANGED)
+			pbff->OnSelChanged(reinterpret_cast<LPITEMIDLIST>(lParam));
+	}
 	
 	return 0;
 }

@@ -9,6 +9,12 @@
 #include "stdafx.h"
 #include "Mime.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 // Content-Type header field specifies the media type of a body part. it coule be:
 // text/image/audio/vedio/application (discrete type) or message/multipart (composite type).
 // the default Content-Type is: text/plain; charset=us-ascii (RFC 2046)

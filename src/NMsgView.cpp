@@ -8,9 +8,9 @@
 #include "CPictureCtrlDemoDlg.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 #define CAPT_MAX_HEIGHT	50
@@ -307,13 +307,13 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 			BOOL ret = id2charset(CnfCharsetId, str);
 			CString charset = str.c_str();
 
-			strCharSetId.Format(_T("%d"), CnfCharsetId);
+			strCharSetId.Format(_T("%u"), CnfCharsetId);
 			StrCharset += " (" + charset + "/" + strCharSetId + "*)";
 
 			charsetId = CnfCharsetId;
 		}
 		else {
-			strCharSetId.Format(_T("%d"), CharsetId);
+			strCharSetId.Format(_T("%u"), CharsetId);
 			StrCharset += " (" + Charset + "/" + strCharSetId + ")";
 		}
 		xpos += szFieldTitle.cx;

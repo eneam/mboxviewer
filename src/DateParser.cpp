@@ -39,6 +39,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
  
  
 /*
@@ -108,7 +114,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime)
  
 	char str[200],*s;
 	s = &str[0];
-	strncpy(str,str1,199);
+	strncpy(&str[0],str1,199);
 	str[199] = '\0';
  
 	// Convert to lowercase.
@@ -386,7 +392,7 @@ int DateParser::OleDateFromTm(WORD wYear, WORD wMonth, WORD wDay,
 	//  Offset so that 12/30/1899 is 0
 	nDate -= 693959L;
  
-	dblTime = (((long)wHour * 3600L) +  // hrs in seconds
+	dblTime = ((double)((long)wHour * 3600L) +  // hrs in seconds
 		((long)wMinute * 60L) +  // mins in seconds
 		((long)wSecond)) / 86400.;
  

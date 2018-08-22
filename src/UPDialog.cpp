@@ -1,6 +1,12 @@
 #include "stdafx.h"
 #include "updialog.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 // Disable the nasty warnings - we know what we are doing !!
 #pragma warning(disable : 4244) // disable: conversion from 'LONG_PTR' to 'LONG', possible loss of data
 #pragma warning(disable : 4312) // disable: conversion from 'LONG' to 'CUPDialog *' of greater size

@@ -1,5 +1,11 @@
 #include "stdafx.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 #pragma once
 //		prof._WriteProfileString( HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", szAppName, filePath );
 //		prof._DeleteProfileString(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", szAppName );

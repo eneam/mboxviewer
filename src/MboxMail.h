@@ -8,6 +8,12 @@
 #include <algorithm>
 #include "dllist.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 _int64 FileSize(LPCSTR fileName);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 
@@ -78,7 +84,8 @@ public:
 		else
 			m_capacity = 0;  // this would be a problem. introduce m_error ?
 	};
-	~SimpleString() { delete [] m_data; };
+	~SimpleString() { delete[] m_data; m_data = 0; m_count = 0; m_capacity = 0; };
+	void Release() { delete[] m_data; m_data = 0; m_count = 0;  m_capacity = 0; };
 
 	char *m_data;
 	int m_capacity;
@@ -164,7 +171,7 @@ public:
 class MailBodyContent
 {
 public:
-	MailBodyContent() {};
+	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0;  };
 	~MailBodyContent() {};
 	CString m_contentType;
 	CString m_contentTransferEncoding;
@@ -215,6 +222,7 @@ public:
 		m_done = false;
 		m_groupColor = 0;
 		m_index = -1;
+		m_headLength = 0;
 	}
 	CString GetBody();
 	int DumpMailBox(MboxMail *mailBox, int which);
@@ -278,7 +286,6 @@ public:
 	static void Destroy();
 	static bool preprocessConversations();
 	static bool sortConversations();
-	static bool sortConversationsReverse();
 	static bool validateSortConversations();
 	static int charCount(char *fld, char c);
 	static int nstrcpy(char *dst, char *src);
@@ -302,6 +309,8 @@ public:
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
+
+	static void ReleaseResources();
 };
 
 #define SZBUFFSIZE 1024*1024

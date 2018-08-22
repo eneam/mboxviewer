@@ -11,9 +11,9 @@
 #include "OpenContainingFolderDlg.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 BOOL BrowseToFile(LPCTSTR filename)
@@ -91,10 +91,7 @@ CMainFrame::CMainFrame()
 CMainFrame::~CMainFrame()
 {
 	// To stop memory leaks reports by debugger
-	void delete_charset2Id();
-	void delete_id2charset();
-	delete_charset2Id();
-	delete_id2charset();
+	MboxMail::ReleaseResources();
 	int deb = 1;
 }
 
@@ -185,7 +182,8 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 		if (m_bSelectMailFileDone == FALSE) {
 			m_bSelectMailFileDone = TRUE;
 			NTreeView *treeView = GetTreeView();
-			treeView->SelectMailFile();
+			if (treeView)
+				treeView->SelectMailFile();
 		}
 		return TRUE;
 	}
@@ -196,7 +194,8 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 
 void CMainFrame::OnUpdateFileOpen(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable();
+	if (pCmdUI)
+		pCmdUI->Enable();
 }
 
 #include "OptionsDlg.h"

@@ -4,6 +4,12 @@
 #include "mboxview.h"
 #include "MboxMail.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 MailBodyPool *MailBody::m_mpool = new MailBodyPool;
 
 UINT charset2Id(const char *char_set);
@@ -27,6 +33,7 @@ CArray<MboxMail*, MboxMail*> MboxMail::s_mails;
 _int64 MboxMail::s_fSize = 0;
 _int64 MboxMail::s_oSize = 0;
 CString MboxMail::s_path;
+
 
 BOOL RemoveDir(CString & dir, bool recursive = false);
 int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
@@ -107,7 +114,7 @@ UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 
 void MboxMail::Str2Ansi(CString &res, UINT CodePage)
 {
-	int len = res.GetLength() * 2 + 1;
+	int len = res.GetLength() * 2 + 2;
 	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
 	int len1 = MultiByteToWideChar(CodePage, 0, res, res.GetLength(), buff, len);
 	if (len1 == 0) {
@@ -116,7 +123,7 @@ void MboxMail::Str2Ansi(CString &res, UINT CodePage)
 		const DWORD error = ::GetLastError();
 		return;
 	}
-	char * buff1 = (char *)malloc(len1 + 1); // or could  call WideCharToMultiByte first to get the required length
+	char * buff1 = (char *)malloc(len1 + 2); // or could  call WideCharToMultiByte first to get the required length
 	int len2 = WideCharToMultiByte(CP_ACP, 0, buff, len1, buff1, len1 + 1, NULL, NULL);
 	if (len2 == 0) {
 		free(buff);
@@ -1179,8 +1186,8 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 	static BOOL restarted = TRUE;
 	int deb; // set breakpoint
 	char *CRLF = "\n\n";
-	char buff[32768+2];
-	int buffsize = 32768;
+	char buff[16382 +2]; // TODO: allocate on heap
+	int buffsize = 16382;
 	//char *buff = &buffer[0];
 
 	char datebuff[256];
@@ -1599,8 +1606,14 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 
 void MboxMail::Destroy() 
 {
-	if (m_pMessageIdTable)
+	MessageIdTableType::iterator it;
+
+	if (m_pMessageIdTable) {
+		for (it = m_pMessageIdTable->begin(); it != m_pMessageIdTable->end(); it++) {
+			delete it->first;
+		}
 		m_pMessageIdTable->clear();
+	}
 
 	for (int i = 0; i < s_mails.GetSize(); i++)
 	{
@@ -1961,6 +1974,8 @@ bool MboxMail::validateSortConversations()
 		return true;
 }
 
+
+// Not used currently
 void MboxMail::assignColor2ConvesationGroups()
 {
 	MboxMail *m;
@@ -3182,7 +3197,7 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 }
 
 
-// Not used yet and code incomplete. might be used to dynamically create image files
+// Not used currently and code incomplete. might be used to dynamically create image files
 int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf)
 {
 
@@ -3191,6 +3206,7 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 	_int64 fileOffset;
 	int bodyCnt = 0;
 
+	// TODO" validate mailPosition
 	MboxMail *m = MboxMail::s_mails[mailPosition];
 
 	// We are using global buffers so check and assert if we collide. 
@@ -4318,7 +4334,7 @@ char* MailBody::FindBoundary(const char* pszBegin, const char* pszEnd, const cha
 MailBody* MailBody::CreatePart()
 {
 	MailBody* mbody = m_mpool->AllocPart();
-	return new MailBody;
+	return mbody;
 }
 
 
@@ -4332,7 +4348,7 @@ void MailBody::ErasePart(MailBody* mbody)
 MailBody* MailBody::CreateMailBody()
 {
 	MailBody* mbody = m_mpool->AllocPart();
-	return new MailBody;
+	return mbody;
 }
 
 // public static
@@ -4383,6 +4399,17 @@ void MailBody::DeleteAll()
 	MailHeader::Clear();
 	m_bodyDataOffset = 0;
 	m_bodyDataLength = 0;
+}
+
+void MboxMail::ReleaseResources()
+{
+	delete_charset2Id();
+	delete_id2charset();
+	delete MboxMail::m_inbuf;
+	delete MboxMail::m_outbuf;
+	delete MboxMail::m_workbuf;
+	delete MailBody::m_mpool;
+	delete m_pMessageIdTable;
 }
 
 // search for string2 in string1 (strstr)

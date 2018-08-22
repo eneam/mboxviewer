@@ -7,9 +7,9 @@
 #include "resource.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 void SaveIESettings(bool save = true);
@@ -104,11 +104,13 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 	hr = pUnk->QueryInterface(IID_IDispatch, (void**)&lpWBDisp);
 	ASSERT(SUCCEEDED(hr));
 
-	if (pDisp == lpWBDisp )
-	{
+	if (lpWBDisp) {
+		if (pDisp == lpWBDisp)
+		{
 
+		}
+		lpWBDisp->Release();
 	}
-	lpWBDisp->Release();
 }
 
 #include <atlconv.h>
@@ -132,7 +134,8 @@ void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
 	if( ! pView || ! ::IsWindow(pView->m_hWnd))
 		return;
 	pView->PostMessage(WM_PAINT);
-	*Cancel = FALSE;
+	if (Cancel)
+		*Cancel = FALSE;
 	return;
 }
 

@@ -21,6 +21,8 @@
 #include "CPictureCtrlDemoDlg.h"
 
 #ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
 #define new DEBUG_NEW
 #endif
 
@@ -176,6 +178,7 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile()
 		(m_ImageFileNameArrayPos < 0))
 		return;
 
+	// fname != 0
 	CString *fname = m_ImageFileNameArray[m_ImageFileNameArrayPos];
 
 	char *fileName = new char[fname->GetLength() + 1];
@@ -302,14 +305,14 @@ BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
 		return FALSE;
 	}
 	while (!bFinished) {
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0)) {
-			PTSTR ext = PathFindExtension(FileData.cFileName);
+		if (!(strcmp(&FileData.cFileName[0], ".") == 0 || strcmp(&FileData.cFileName[0], "..") == 0)) {
+			PTSTR ext = PathFindExtension(&FileData.cFileName[0]);
 			CString cext = ext;
-			if (isSupportedPictureFile(FileData.cFileName))
+			if (isSupportedPictureFile(&FileData.cFileName[0]))
 			{
 				if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) {
 					CString	*fileFound = new CString;
-					*fileFound = dir + "\\" + FileData.cFileName;
+					*fileFound = dir + "\\" + &FileData.cFileName[0];
 					m_ImageFileNameArray.Add(fileFound);
 				}
 			}

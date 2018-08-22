@@ -11,9 +11,9 @@
 #include "OpenContainingFolderDlg.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
 #endif
 
 const CUPDUPDATA* NListView::pCUPDUPData = NULL;
@@ -887,6 +887,7 @@ void CPathStripPath(const char *path, CString &fileName)
 	PathStripPath(pathbuff);
 	fileName.Empty();
 	fileName.Append(pathbuff);
+	delete[] pathbuff;
 }
 
 BOOL SaveMails(LPCSTR cache) 
@@ -1397,7 +1398,6 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 	char *srcImgEnd = inputEnd;
 	char *cidBegin;
 	char *cidEnd;
-	char *pos_sv;
 	SimpleString cid;
 
 	char *fromBegin = input;

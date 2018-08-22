@@ -20,6 +20,13 @@
 #include "PictureCtrl.h"
 #include <GdiPlus.h>
 #include <atlimage.h>
+
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 using namespace Gdiplus;
 
 bool PathExists(LPCSTR file);
