@@ -1732,6 +1732,9 @@ bool MboxMail::preprocessConversations()
 		if (m->m_messageId == m->m_replyId) // just in case
 			continue;
 
+		if (m->m_duplicateId) // TODO: what can be done :)
+			continue;
+
 		if (m->m_replyId.GetLength())
 		{
 			int rId = getReplyId(&m->m_replyId);
@@ -1877,11 +1880,11 @@ bool MboxMail::sortConversations()
 			MboxMail::SortByDate(&s_group_mails);
 
 			j = i_ref_begin;
-			for (int i = 0; i < s_group_mails.GetSize(); i++)
+			for (int k = 0; i < s_group_mails.GetSize(); i++)
 			{
-				time_t mtime = s_group_mails[i]->m_timeDate;
+				time_t mtime = s_group_mails[k]->m_timeDate;
 
-				s_mails_ref[j++] = s_group_mails[i];
+				s_mails_ref[j++] = s_group_mails[k];
 			}
 
 			// Recheck mail order
@@ -3343,8 +3346,9 @@ int SimpleString::Resize(int size)
 				::memcpy(new_data, m_data, m_count);
 			delete[] m_data;
 			m_data = new_data;
+			m_data[m_count] = 0;
 			m_capacity = new_capacity;
-}
+		}
 		else
 			; // trouble :) caller needs to handle this ?
 	}

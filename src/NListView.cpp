@@ -724,97 +724,173 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	UINT uItemState = nmcd.uItemState;
 
 	*pResult = 0;
-	if (abs(MboxMail::b_mails_which_sorted) != 99)
-		return;
 
 	switch (lplvcd->nmcd.dwDrawStage)
 	{
-		case CDDS_PREPAINT:	// Request prepaint notifications for each item.
+	case CDDS_PREPAINT:	// Request prepaint notifications for each item.
+	{
+		*pResult = CDRF_NOTIFYITEMDRAW;
+	}
+	break;
+	case CDDS_ITEMPREPAINT: //Before an item is drawn
+	{
+		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+		*pResult = CDRF_NOTIFYSUBITEMDRAW;
+	}
+	break;
+	case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
+	{
+		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+		//if ((iSubItem == 0) && (m->m_groupColor != 0))
+		if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
 		{
-			*pResult = CDRF_NOTIFYITEMDRAW;
-		}
-		break;
-		case CDDS_ITEMPREPAINT: //Before an item is drawn
-		{
-			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
-			*pResult = CDRF_NOTIFYSUBITEMDRAW;
-		}
-		break;
-		case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
-		{
-			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
-			//if ((iSubItem == 0) && (m->m_groupColor != 0))
-			if (iSubItem == 0)
-			{
-				lplvcd->clrText = CLR_DEFAULT;
-				//if (m->m_groupColor == 1)
-				if ((m->m_groupId % 2) == 0)
-					lplvcd->clrTextBk = PeachPuff1; 
-				else
-					//lplvcd->clrTextBk = Burlywood;
-					lplvcd->clrTextBk = AntiqueWhite3;
-				int deb = 1;
-			}
-			else {
-				lplvcd->clrText = CLR_DEFAULT;
-				lplvcd->clrTextBk = CLR_DEFAULT;
-				int deb = 1;
-			}
-			*pResult = CDRF_NOTIFYPOSTPAINT;
-		}
-		break;
-		case CDDS_ITEMPOSTPAINT:
-		{
+			lplvcd->clrText = CLR_DEFAULT;
+			//if (m->m_groupColor == 1)
+			if ((m->m_groupId % 2) == 0)
+				lplvcd->clrTextBk = PeachPuff1;
+			else
+				lplvcd->clrTextBk = AntiqueWhite3;
 			int deb = 1;
 		}
-		case CDDS_ITEMPOSTPAINT | CDDS_SUBITEM:
+		else {
+			lplvcd->clrText = CLR_DEFAULT;
+			lplvcd->clrTextBk = CLR_DEFAULT;
+			int deb = 1;
+		}
+		*pResult = CDRF_NOTIFYPOSTPAINT;
+	}
+	break;
+	case CDDS_ITEMPOSTPAINT:
+	{
+		int deb = 1;
+	}
+	break;
+	case CDDS_ITEMPOSTPAINT | CDDS_SUBITEM:
+	{
+		// Need this fix because when item is selected system overrides any user defined drawing
+
+		LVITEM rItem;
+		ZeroMemory(&rItem, sizeof(LVITEM));
+		rItem.mask = LVIF_IMAGE | LVIF_STATE;
+		rItem.iItem = dwItemSpec;
+		rItem.stateMask = LVIS_SELECTED;
+		m_list.GetItem(&rItem);
+
+		if ((lplvcd->nmcd.dwItemSpec < 0) || (lplvcd->nmcd.dwItemSpec > MboxMail::s_mails.GetCount()))
+			int deb = 1;
+
+		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
+
+		//if ((iSubItem == 0) && (m->m_groupColor != 0))
+		if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
 		{
-			// Need this fix because when item is selected system overrides any user defined drawing
-
-			LVITEM rItem;
-			ZeroMemory(&rItem, sizeof(LVITEM));
-			rItem.mask = LVIF_IMAGE | LVIF_STATE;
-			rItem.iItem = dwItemSpec;
-			rItem.stateMask = LVIS_SELECTED;
-			m_list.GetItem(&rItem);
-
-			//if ((iSubItem == 0) && (dwItemSpec % 4 != 0))
-			m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
-			//if ((iSubItem == 0) && (m->m_groupColor != 0))
-			if (iSubItem == 0)
+			if ((iSubItem == 0) && (rItem.state & LVIS_SELECTED))
 			{
-				if ((iSubItem == 0) && (rItem.state & LVIS_SELECTED))
+				CDC dc;
+				CRect rect = nmcd.rc;
+				if (dc.Attach(lplvcd->nmcd.hdc))
 				{
-					CDC dc;
-					CRect rect = nmcd.rc;
-					if (dc.Attach(lplvcd->nmcd.hdc))
-					{
-						CString txt = m_list.GetItemText(dwItemSpec, iSubItem);
-						//if (m->m_groupColor == 1)
-						if ((m->m_groupId%2) == 0)
-							dc.FillRect(&rect, &CBrush(PeachPuff1));
-						else
-							//dc.FillRect(&rect, &CBrush(Burlywood));
-							dc.FillRect(&rect, &CBrush(AntiqueWhite3));
-						dc.SetBkMode(TRANSPARENT);
-						dc.SetTextColor(RGB(0, 0, 0));
+					CString txt = m_list.GetItemText(dwItemSpec, iSubItem);
+					//if (m->m_groupColor == 1)
+					if ((m->m_groupId % 2) == 0)
+						dc.FillRect(&rect, &CBrush(PeachPuff1));
+					else
+						dc.FillRect(&rect, &CBrush(AntiqueWhite3));
+					dc.SetBkMode(TRANSPARENT);
+					dc.SetTextColor(RGB(0, 0, 0));
 
-						// Align text. Should not have do it !!
-						CRect rcText = rect;
-						rcText.left += 2;
-						rcText.top += 3;
+					// Align text. Should not have do it !!
+					CRect rcText = rect;
+					rcText.left += 2;
+					rcText.top += 3;
 
-						dc.DrawText(txt, &rcText, DT_LEFT | DT_SINGLELINE);
-						dc.Detach();
-					}
+					dc.DrawText(txt, &rcText, DT_LEFT | DT_SINGLELINE);
+					dc.Detach();
 				}
 			}
-			int deb = 1;
 		}
-		default:
+		else if ((iSubItem >= 2) && (iSubItem <= 4))
 		{
-			int deb = 1;
+			CString FieldText;
+			CString Charset;
+			UINT charsetId;
+
+			if (iSubItem == 2) {
+				FieldText = m->m_from;
+				Charset = m->m_from_charset;
+				charsetId = m->m_from_charsetId;
+			}
+			else if (iSubItem == 3) {
+				FieldText = m->m_to;
+				Charset = m->m_to_charset;
+				charsetId = m->m_to_charsetId;
+			}
+			else if (iSubItem == 4) {
+				FieldText = m->m_subj;
+				Charset = m->m_subj_charset;
+				charsetId = m->m_subj_charsetId;
+			}
+
+			DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
+			DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
+
+			CDC dc;
+			CRect rect = nmcd.rc;
+			if (dc.Attach(lplvcd->nmcd.hdc))
+			{
+				if (rItem.state & LVIS_SELECTED)
+				{
+					dc.FillRect(&rect, &CBrush(bkcolor));
+					dc.SetBkMode(TRANSPARENT);
+					dc.SetTextColor(txcolor);
+				}
+				else
+				{
+					dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+					dc.SetBkMode(TRANSPARENT);
+					dc.SetTextColor(RGB(0, 0, 0));
+				}
+				dc.Detach();
+			}
+
+			HDC hDC = lplvcd->nmcd.hdc;
+
+			int x_offset = 4;
+			int xpos = rect.left + x_offset;
+			int ypos = rect.top + 3;
+
+			int h = rect.bottom - rect.top;
+			int w = rect.right - rect.left;
+			w -= x_offset;
+
+			CStringW strW;
+			if (Str2Wide(FieldText, charsetId, strW)) {
+				SIZE size;
+				int wlen = strW.GetLength();
+				int n = wlen;
+
+				CStringW txtW;
+				BOOL ret = GetTextExtentPoint32W(hDC, strW, n, &size);
+				if ((size.cx + 4) > w) {
+					n = (wlen * w) / size.cx;
+					if (n > 3)
+						n -= 3;
+					txtW = strW.Mid(0, n);
+					txtW.Append(L"...");
+				}
+				else
+					txtW = strW;
+
+				::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)txtW, txtW.GetLength(), NULL);
+			}
 		}
+		int deb = 1;
+	}
+	break;
+	default:
+	{
+		int deb = 1;
+	}
 	}
 	int deb = 1;
 }
