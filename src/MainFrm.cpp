@@ -19,11 +19,12 @@
 BOOL BrowseToFile(LPCTSTR filename)
 {
 	BOOL retval = TRUE;
-	DWORD dwCoInit = COINIT_MULTITHREADED;
+	//DWORD dwCoInit = COINIT_MULTITHREADED;
+	DWORD dwCoInit = COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE;
 
 	// call to CoInitializeEx() seem to be required but 
 	// Fails anyway with "HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
-	// HRESULT result = CoInitializeEx(0, dwCoInit);  
+	HRESULT result = CoInitializeEx(0, dwCoInit);  
 
 	ITEMIDLIST *pidl = ILCreateFromPath(filename);
 	if (pidl) {

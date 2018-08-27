@@ -120,6 +120,7 @@ public:
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
 	void PrintMailGroupToText(int iItem, int textType);
+	int MailsWhichColumnSorted() const;
 
 	// Generated message map functions
 protected:

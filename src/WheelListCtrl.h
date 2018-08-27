@@ -10,11 +10,13 @@
 /////////////////////////////////////////////////////////////////////////////
 // CWheelListCtrl window
 
+class NListView;
+
 class CWheelListCtrl : public CListCtrl
 {
 // Construction
 public:
-	CWheelListCtrl();
+	CWheelListCtrl(const NListView *cListCtrl);
 
 // Attributes
 public:
@@ -35,13 +37,14 @@ public:
 
 	// Generated message map functions
 protected:
+	const NListView *m_list;
 	//{{AFX_MSG(CWheelListCtrl)
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg void OnNMRClick(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 };
 
 /////////////////////////////////////////////////////////////////////////////

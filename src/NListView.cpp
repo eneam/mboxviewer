@@ -110,7 +110,7 @@ IMPLEMENT_DYNCREATE(NListView, CWnd)
 
 CString GetDateFormat(int i);
 
-NListView::NListView() : m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
+NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 {
 	ResetFileMapView();
 
@@ -475,6 +475,9 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 
 void NListView::MarkColumns()
 {
+	// not uysed naymore, replaced by CWheelListCtrl::OnDrawItem
+	return;
+
 	CString sDate = "date";
 	CString sFrom = "from";
 	CString sTo = "to";
@@ -555,6 +558,16 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	nTextWidth = m_list.GetColumnWidth(4);
 	nTextWidth = m_list.GetColumnWidth(5);
 #endif
+	// Take ownership of header draw
+	CHeaderCtrl* lhdr = m_list.GetHeaderCtrl();
+	int nClmCnt = lhdr->GetItemCount();
+	HDITEM rHdr;
+	for (int j = 0; j < nClmCnt; j++) {
+		lhdr->GetItem(j, &rHdr);
+		rHdr.mask = HDI_FORMAT;
+		rHdr.fmt = HDF_OWNERDRAW;
+		lhdr->SetItem(j, &rHdr);
+	}
 
 	return 0;
 }
@@ -639,9 +652,8 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 	LV_DISPINFO* pDispInfo = (LV_DISPINFO*)pNMHDR;
 	static const char * ast = "*";
 	static const char * nul = "";
-	static char datebuff[32];
-	static char subjectbuff[1024];
-	static char sizebuff[32];
+	char datebuff[32];
+	char sizebuff[32];
 	if (pDispInfo->item.mask & LVIF_TEXT)
 	{
 		MboxMail *m = MboxMail::s_mails[pDispInfo->item.iItem];
@@ -734,40 +746,25 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	case CDDS_ITEMPREPAINT: //Before an item is drawn
 	{
-		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
 		*pResult = CDRF_NOTIFYSUBITEMDRAW;
-	}
-	break;
-	case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
-	{
-		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
-		//if ((iSubItem == 0) && (m->m_groupColor != 0))
-		if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
-		{
-			lplvcd->clrText = CLR_DEFAULT;
-			//if (m->m_groupColor == 1)
-			if ((m->m_groupId % 2) == 0)
-				lplvcd->clrTextBk = PeachPuff1;
-			else
-				lplvcd->clrTextBk = AntiqueWhite3;
-			int deb = 1;
-		}
-		else {
-			lplvcd->clrText = CLR_DEFAULT;
-			lplvcd->clrTextBk = CLR_DEFAULT;
-			int deb = 1;
-		}
-		*pResult = CDRF_NOTIFYPOSTPAINT;
-	}
-	break;
-	case CDDS_ITEMPOSTPAINT:
-	{
-		int deb = 1;
 	}
 	break;
 	case CDDS_ITEMPOSTPAINT | CDDS_SUBITEM:
 	{
+		int deb = 1;  // should not be here
+	}
+	break;
+	case CDDS_ITEMPOSTPAINT:
+	{
+		int deb = 1; // should not be here
+	}
+	break;
+	case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
+	{
 		// Need this fix because when item is selected system overrides any user defined drawing
+
+		const char * ast = "*";
+		const char * nul = "";
 
 		LVITEM rItem;
 		ZeroMemory(&rItem, sizeof(LVITEM));
@@ -781,41 +778,87 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 		m = MboxMail::s_mails[lplvcd->nmcd.dwItemSpec];
 
-		//if ((iSubItem == 0) && (m->m_groupColor != 0))
+		CDC dc;
+		CRect rect = nmcd.rc;
+		HDC hDC = lplvcd->nmcd.hdc;
+		CStringW strW;
+		CStringW txtW;
+		int xpos;
+		int ypos;
+		CString FieldText;
+		CString Charset;
+		UINT charsetId;
+
 		if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
 		{
-			if ((iSubItem == 0) && (rItem.state & LVIS_SELECTED))
+			if (dc.Attach(hDC))
 			{
-				CDC dc;
-				CRect rect = nmcd.rc;
-				if (dc.Attach(lplvcd->nmcd.hdc))
-				{
-					CString txt = m_list.GetItemText(dwItemSpec, iSubItem);
-					//if (m->m_groupColor == 1)
-					if ((m->m_groupId % 2) == 0)
-						dc.FillRect(&rect, &CBrush(PeachPuff1));
-					else
-						dc.FillRect(&rect, &CBrush(AntiqueWhite3));
-					dc.SetBkMode(TRANSPARENT);
-					dc.SetTextColor(RGB(0, 0, 0));
+				if ((m->m_groupId % 2) == 0)
+					dc.FillRect(&rect, &CBrush(PeachPuff1));
+				else
+					dc.FillRect(&rect, &CBrush(AntiqueWhite3));
 
-					// Align text. Should not have do it !!
-					CRect rcText = rect;
-					rcText.left += 2;
-					rcText.top += 3;
+				dc.SetBkMode(TRANSPARENT);
+				dc.SetTextColor(RGB(0, 0, 0));
 
-					dc.DrawText(txt, &rcText, DT_LEFT | DT_SINGLELINE);
-					dc.Detach();
-				}
+				dc.Detach();
+			}
+
+			int x_offset = 4;
+			xpos = rect.left + x_offset;
+			ypos = rect.top + 3;
+
+			if (m->m_hasAttachments)
+				FieldText = ast;
+			else
+				FieldText = nul;
+
+			Charset = "UTF-8";
+			charsetId = 65001;
+
+			strW.Empty();
+			if (Str2Wide(FieldText, charsetId, strW)) {
+				::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)strW, strW.GetLength(), NULL);
 			}
 		}
-		else if ((iSubItem >= 2) && (iSubItem <= 4))
+		else if ((iSubItem >= 0) && (iSubItem <= 5))
 		{
-			CString FieldText;
-			CString Charset;
-			UINT charsetId;
+			if (iSubItem == 0)
+			{
+				if (m->m_hasAttachments)
+					FieldText = ast;
+				else
+					FieldText = nul;
 
-			if (iSubItem == 2) {
+				Charset = "UTF-8";
+				charsetId = 65001;
+
+			}
+			else if (iSubItem == 1)
+			{
+				char datebuff[32];
+				SYSTEMTIME st;
+				SYSTEMTIME lst;
+
+				datebuff[0] = 0;
+				if (m->m_timeDate > 0)
+				{
+					CTime tt(m->m_timeDate);
+					if (!m_gmtTime) {
+						bool ret = tt.GetAsSystemTime(st);
+						SystemTimeToTzSpecificLocalTime(0, &st, &lst);
+						CTime ltt(lst);
+						strcpy(datebuff, (LPCSTR)ltt.Format(m_format));
+					}
+					else {
+						strcpy(datebuff, (LPCSTR)tt.Format(m_format));
+					}
+				}
+				FieldText = datebuff;
+				Charset = "UTF-8";
+				charsetId = 65001;
+			}
+			else if (iSubItem == 2) {
 				FieldText = m->m_from;
 				Charset = m->m_from_charset;
 				charsetId = m->m_from_charsetId;
@@ -830,13 +873,26 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				Charset = m->m_subj_charset;
 				charsetId = m->m_subj_charsetId;
 			}
+			else if (iSubItem == 5)
+			{
+				char sizebuff[32];
+
+				int length = m->m_length;
+				int kb = length / 1000;
+				if (length % 1000)
+					kb++;
+				sizebuff[0] = 0;
+				_itoa(kb, sizebuff, 10);
+
+				FieldText = sizebuff;
+				Charset = "UTF-8";
+				charsetId = 65001;
+			}
 
 			DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
 			DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
 
-			CDC dc;
-			CRect rect = nmcd.rc;
-			if (dc.Attach(lplvcd->nmcd.hdc))
+			if (dc.Attach(hDC))
 			{
 				if (rItem.state & LVIS_SELECTED)
 				{
@@ -853,28 +909,29 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				dc.Detach();
 			}
 
-			HDC hDC = lplvcd->nmcd.hdc;
-
 			int x_offset = 4;
-			int xpos = rect.left + x_offset;
-			int ypos = rect.top + 3;
+			xpos = rect.left + x_offset;
+			ypos = rect.top + 3;
 
-			int h = rect.bottom - rect.top;
-			int w = rect.right - rect.left;
+			int h = rect.Height();
+			int w = rect.Width();
 			w -= x_offset;
 
-			CStringW strW;
-			if (Str2Wide(FieldText, charsetId, strW)) {
+			strW.Empty();
+			if (Str2Wide(FieldText, charsetId, strW))
+			{
 				SIZE size;
 				int wlen = strW.GetLength();
 				int n = wlen;
 
-				CStringW txtW;
+				txtW.Empty();
 				BOOL ret = GetTextExtentPoint32W(hDC, strW, n, &size);
-				if ((size.cx + 4) > w) {
-					n = (wlen * w) / size.cx;
+				if ((size.cx + 0) > w) {
+					n = (double)(wlen * w) / size.cx;
 					if (n > 3)
 						n -= 3;
+					else
+						n = 1;
 					txtW = strW.Mid(0, n);
 					txtW.Append(L"...");
 				}
@@ -884,12 +941,14 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)txtW, txtW.GetLength(), NULL);
 			}
 		}
+
+		*pResult = CDRF_SKIPDEFAULT;  // we are done, tell clist to stop futher processing
 		int deb = 1;
 	}
 	break;
 	default:
 	{
-		int deb = 1;
+		int deb = 1;  // should not be here
 	}
 	}
 	int deb = 1;
@@ -2255,9 +2314,9 @@ void NListView::OnEditFind()
 		{
 			int whichSorted = abs(MboxMail::b_mails_which_sorted);
 			if ((whichSorted != 1) && (whichSorted != 99)) { // related mails should be in close proximity in the mail file
-				MboxMail::SortByFileOffset();
-				MboxMail::b_mails_sorted = false;
-				MboxMail::b_mails_which_sorted = 0;
+				MboxMail::SortByDate();
+				MboxMail::b_mails_sorted = true;
+				MboxMail::b_mails_which_sorted = 1;
 
 				RedrawMails();
 			}
@@ -3176,4 +3235,9 @@ void NListView::PrintMailGroupToText(int iItem, int textType)
 		else
 			; // TODO: 
 	}
+}
+
+int NListView::MailsWhichColumnSorted() const
+{
+	return MboxMail::b_mails_which_sorted;
 }
