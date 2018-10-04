@@ -45,6 +45,7 @@ protected:
 
 // Implementation
 public:
+	void FindString();
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();

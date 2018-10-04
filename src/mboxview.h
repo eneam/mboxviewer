@@ -63,6 +63,7 @@ void AppendMenu(CMenu *menu, int commandId, const char *commandName);
 int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
 BOOL BrowseToFile(LPCTSTR filename);
 void CheckShellExecuteResult(HINSTANCE  result, HWND h = 0);
+void Com_Initialize();
 
 /////////////////////////////////////////////////////////////////////////////
 

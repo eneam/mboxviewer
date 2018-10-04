@@ -65,6 +65,8 @@ public:
 	void GetWords( int language, std::map<CString, int> &words, const char *text );
 #endif
 */
+
+	static bool TestAll();
 };
 
 extern TextUtilities g_tu;

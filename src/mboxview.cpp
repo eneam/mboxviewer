@@ -89,6 +89,18 @@ BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW)
 #include "afxlinkctrl.h"
 #include "afxwin.h"
 
+void Com_Initialize()
+{
+	//DWORD dwCoInit = COINIT_MULTITHREADED;
+	DWORD dwCoInit = COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE;
+
+	// call to CoInitializeEx() seem to be required but 
+	// Fails anyway with "HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
+	HRESULT result = CoInitializeEx(0, dwCoInit);
+	int deb = 1;
+}
+
+
 void CmboxviewApp::MyMRUFileHandler(UINT i)
 {
 	ASSERT_VALID(this);
@@ -117,6 +129,8 @@ CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+	//bool ret = TextUtilities::TestAll();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -402,6 +416,7 @@ BOOL CmboxviewApp::InitInstance()
 	//  of your final executable, you should remove from the following
 	//  the specific initialization routines you do not need.
 	SetBrowserEmulation();
+
 #ifdef _AFXDLL
 	Enable3dControls();			// Call this when using MFC in a shared DLL
 #else

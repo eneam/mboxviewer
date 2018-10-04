@@ -19,12 +19,9 @@
 BOOL BrowseToFile(LPCTSTR filename)
 {
 	BOOL retval = TRUE;
-	//DWORD dwCoInit = COINIT_MULTITHREADED;
-	DWORD dwCoInit = COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE;
 
-	// call to CoInitializeEx() seem to be required but 
-	// Fails anyway with "HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
-	HRESULT result = CoInitializeEx(0, dwCoInit);  
+	// It appears m_ie.Create  in CBrowser::OnCreate calls CoInitilize
+	//Com_Initialize();
 
 	ITEMIDLIST *pidl = ILCreateFromPath(filename);
 	if (pidl) {
@@ -500,7 +497,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 }
 
 // called by NListView::OnRClick
-void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType)  // textType 0==Plain, 1==Html
+void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen)  // textType 0==Plain, 1==Html
 {
 	// TODO: Add your command handler code here
 #if 0
@@ -553,26 +550,36 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType)  // tex
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
-					OpenContainingFolderDlg dlg(txt, 0);
-					INT_PTR nResponse = dlg.DoModal();
-					if (nResponse == IDOK)
+					if (forceOpen == FALSE)
 					{
-						if (BrowseToFile(textFileName) == FALSE) {
-							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-							CheckShellExecuteResult(result, h);
+						OpenContainingFolderDlg dlg(txt, 0);
+						INT_PTR nResponse = dlg.DoModal();
+						if (nResponse == IDOK)
+						{
+							if (BrowseToFile(textFileName) == FALSE) {
+								HWND h = GetSafeHwnd();
+								HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+								CheckShellExecuteResult(result, h);
+							}
+							int deb = 1;
 						}
-						int deb = 1;
+						else if (nResponse == IDYES)
+						{
+							HWND h = GetSafeHwnd();
+							HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+							CheckShellExecuteResult(result, h);
+							int deb = 1;
+						}
+						else if (nResponse == IDCANCEL)
+						{
+							int deb = 1;
+						}
 					}
-					else if (nResponse == IDYES)
+					else
 					{
 						HWND h = GetSafeHwnd();
 						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
 						CheckShellExecuteResult(result, h);
-						int deb = 1;
-					}
-					else if (nResponse == IDCANCEL)
-					{
 						int deb = 1;
 					}
 				}

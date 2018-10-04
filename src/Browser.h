@@ -40,6 +40,7 @@ protected:
 	HWND m_hWndParent;
 	BOOL m_bOffline;
 	CString m_url;
+	BOOL m_bNavigateComplete;
 
 	void PrintCurrentPage();
 public:

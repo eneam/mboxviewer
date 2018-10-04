@@ -72,7 +72,7 @@ public:
 	afx_msg void OnPrinttoText();
 	afx_msg void OnPrinttoHtml();
 
-	void OnPrintSingleMailtoText(int mailPosition, int textType = 0);
+	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE);
 	void OnPrinttoTextFile(int textType);
 };
 

@@ -39,7 +39,7 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
     memset(d, m+1, 256);
     for( k=0; k<m; k++ )
         d[pat[k]] = m-k;
-    pat[m] = 1;          /* To avoid having code     */ /* for special case n-k+1=m */
+    pat[m] = 1;          /* To avoid having code     */ /* for special case n-k+1=m */ /* null terminator overwrite, restore before exit */
 	// TODO original lim = n - m + 1; // // out of range and crash under debugger when searching RAW message
 	// TODO corrected  lim = n - m; doesn't crash but matching fails in some cases, restored original lim = n-m+1; 
 	/* for special case n-k+1=m */
@@ -86,7 +86,7 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
 			}
 		}
 	}
-    pat[m] = 0;
+    pat[m] = 0;  // restore null terminator
     return res;
 }
 int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens )   /* Search Search pat[0..m-1] in text[0..n-1] */
@@ -1555,3 +1555,50 @@ void TextUtilities::GetWords( int language, std::map<CString, int> &words, const
 	return;
 }
 */
+
+
+bool TextUtilities::TestAll()
+{
+	char *s1 = "mbox viewer bigniewZxyz";
+	s1 = "mboxview";
+	int s1Len = strlen(s1);
+
+	char *pat1 = "ewer";
+	char *pat2 = "zbigniewZ";
+	pat1 = s1;
+	pat2 = "z";
+
+	int pat1Len = strlen(pat1);
+	int pat2Len = strlen(pat2);
+
+	char *s11 = new char[s1Len];
+	memcpy(s11, s1, s1Len);
+
+	BOOL caseSensitive = TRUE;
+
+	char *pat11 = new char[pat1Len + 1];
+	strcpy(pat11, pat1);
+
+	char *pat22 = new char[pat2Len + 1];
+	strcpy(pat22, pat2);
+
+	TRACE(_T("pat1=%s pat2=%s\n"), pat11, pat22);
+
+	int pos0 = g_tu.BMHSearch((unsigned char*)s11, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+
+	int pos1 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+
+	int pos2 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat22, pat2Len, caseSensitive);
+
+	caseSensitive = FALSE;
+	int pos11 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+
+
+	//int BMHSearchW(unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE);
+
+	delete[] pat11;
+	delete[] pat22;
+
+	int deb = 1;
+	return true;
+}

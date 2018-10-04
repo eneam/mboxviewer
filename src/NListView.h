@@ -119,7 +119,7 @@ public:
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
-	void PrintMailGroupToText(int iItem, int textType);
+	void PrintMailGroupToText(int iItem, int textType, BOOL forceOpen = FALSE);
 	int MailsWhichColumnSorted() const;
 
 	// Generated message map functions

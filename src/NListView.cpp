@@ -273,6 +273,12 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Related Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
+	const UINT S_HTML_OPEN_Id = 5;
+	AppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
+
+	const UINT S_HTML_OPEN_RELATED_Id = 6;
+	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Emails in Browser"));
+
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	UINT nFlags = TPM_RETURNCMD;
@@ -284,10 +290,8 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	switch (command)
 	{
 	case S_HTML_Id: {
-		{
-			if (pFrame) {
-				pFrame->OnPrintSingleMailtoText(iItem, 1);
-			}
+		if (pFrame) {
+			pFrame->OnPrintSingleMailtoText(iItem, 1);
 		}
 		int deb = 1;
 	}
@@ -296,6 +300,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (pFrame) {
 			pFrame->OnPrintSingleMailtoText(iItem, 0);
 		}
+		int deb = 1;
 	}
 	break;
 	case S_HTML_GROUP_Id: {
@@ -308,6 +313,20 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_TEXT_GROUP_Id: {
 		{
 			PrintMailGroupToText(iItem, 0);
+		}
+	}
+	break;
+	case S_HTML_OPEN_Id: {
+		if (pFrame) {
+			BOOL forceOpen = TRUE;
+			pFrame->OnPrintSingleMailtoText(iItem, 1, forceOpen);
+		}
+	}
+	break;
+	case S_HTML_OPEN_RELATED_Id: {
+		{
+			BOOL forceOpen = TRUE;
+			PrintMailGroupToText(iItem, 1, forceOpen);
 		}
 	}
 	break;
@@ -927,7 +946,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				txtW.Empty();
 				BOOL ret = GetTextExtentPoint32W(hDC, strW, n, &size);
 				if ((size.cx + 0) > w) {
-					n = (double)(wlen * w) / size.cx;
+					n = (int)((double)(wlen * w) / size.cx);
 					if (n > 3)
 						n -= 3;
 					else
@@ -3153,7 +3172,7 @@ void NListView::OnUpdateViewConversations(CCmdUI *pCmdUI)
 	//pCmdUI->Enable(m_list.GetItemCount() > 0);
 }
 
-void NListView::PrintMailGroupToText(int iItem, int textType)
+void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
 {
 	if (abs(MboxMail::b_mails_which_sorted) != 99) {
 
@@ -3206,26 +3225,36 @@ void NListView::PrintMailGroupToText(int iItem, int textType)
 		{
 			if (PathFileExist(path)) { // likely :) 
 				CString txt = "Created file\n\n" + textFileName;
-				OpenContainingFolderDlg dlg(txt, 0);
-				INT_PTR nResponse = dlg.DoModal();
-				if (nResponse == IDOK)
+				if (forceOpen == FALSE) 
 				{
-					if (BrowseToFile(textFileName) == FALSE) {
-						HWND h = GetSafeHwnd();
-						HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-						CheckShellExecuteResult(result, h);
+					OpenContainingFolderDlg dlg(txt, 0);
+					INT_PTR nResponse = dlg.DoModal();
+					if (nResponse == IDOK)
+					{
+						if (BrowseToFile(textFileName) == FALSE) {
+							HWND h = GetSafeHwnd();
+							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							CheckShellExecuteResult(result, h);
+						}
+						int deb = 1;
 					}
-					int deb = 1;
+					else if (nResponse == IDYES)
+					{
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						CheckShellExecuteResult(result, h);
+						int deb = 1;
+					}
+					else if (nResponse == IDCANCEL)
+					{
+						int deb = 1;
+					}
 				}
-				else if (nResponse == IDYES)
+				else
 				{
 					HWND h = GetSafeHwnd();
 					HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
 					CheckShellExecuteResult(result, h);
-					int deb = 1;
-				}
-				else if (nResponse == IDCANCEL)
-				{
 					int deb = 1;
 				}
 			}

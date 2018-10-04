@@ -600,3 +600,104 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 }
+
+#include <Mshtml.h>
+#include <atlbase.h>
+void NMsgView::FindString()
+{
+
+	// < span id = 'CHtmlView_Search' style = 'color: white; background-color: darkblue' > pa< / span>
+
+	CString searchText = "work";
+	long lFlags = 2;
+
+	CString matchStyle = "color: white; background-color: darkblue";
+	CString searchID = "CHtmlView_Search";
+
+	IHTMLDocument2 *lpHtmlDocument = NULL;
+	LPDISPATCH lpDispatch = NULL;
+	lpDispatch = m_browser.m_ie.GetDocument();
+
+	lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
+
+	lpDispatch->Release();
+
+	IHTMLElementCollection *pAll;
+	HRESULT hr = lpHtmlDocument->get_all(&pAll);
+
+	long items;
+	IDispatch *ppvDisp;
+	IHTMLElement *ppvElement;
+	pAll->get_length(&items);
+
+	CComBSTR bstrTag;
+	CComBSTR bstrHTML;
+	CComBSTR bstrTEXT;
+
+	for (long j = 0; j < items; j++)
+	{
+		VARIANT index;
+		index.vt = VT_I4;
+		index.lVal = j;
+		hr = pAll->item(index, index, &ppvDisp);
+		if (ppvDisp) {
+			ppvDisp->QueryInterface(IID_IHTMLElement, (void **)&ppvElement);
+			if (ppvElement) {
+
+				ppvElement->get_tagName(&bstrTag);
+				ppvElement->get_innerHTML(&bstrHTML);
+				ppvElement->get_innerText(&bstrTEXT);
+
+				//SysFreeString(bstrTag);
+				//SysFreeString(bstrHTML);
+				//SysFreeString(bstrTEXT);
+
+
+				int deb = 1;
+			}
+		}
+		int deb = 1;
+	}
+
+	IHTMLElement *lpBodyElm;
+	IHTMLBodyElement *lpBody;
+	IHTMLTxtRange *lpTxtRange;
+
+	lpHtmlDocument->get_body(&lpBodyElm);
+	ASSERT(lpBodyElm);
+	lpHtmlDocument->Release();
+	lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
+	ASSERT(lpBody);
+	lpBodyElm->Release();
+	lpBody->createTextRange(&lpTxtRange);
+	ASSERT(lpTxtRange);
+	lpBody->Release();
+
+	CComBSTR html;
+	CComBSTR newhtml;
+	CComBSTR search(searchText.GetLength() + 1, (LPCTSTR)searchText);
+
+	long t;
+	bool bFound;
+	while (lpTxtRange->findText(search, 0, lFlags, (VARIANT_BOOL*)&bFound), bFound)
+	{
+		newhtml.Empty();
+		lpTxtRange->get_htmlText(&html);
+		newhtml.Append("<span id='");
+		newhtml.Append((LPCTSTR)searchID);
+		newhtml.Append("' style='");
+		newhtml.Append((LPCTSTR)matchStyle);
+		newhtml.Append("'>");
+		if (searchText == " ")
+			newhtml.Append("&nbsp;"); // doesn't work very well, but prevents (some) shit
+		else
+			newhtml.AppendBSTR(html);
+		newhtml.Append("</span>");
+		lpTxtRange->pasteHTML(newhtml);
+
+		lpTxtRange->moveStart((BSTR)CComBSTR("Character"), 1, &t);
+		lpTxtRange->moveEnd((BSTR)CComBSTR("Textedit"), 1, &t);
+	}
+
+	lpTxtRange->Release();
+}

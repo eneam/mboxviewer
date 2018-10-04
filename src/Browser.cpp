@@ -12,6 +12,8 @@
 #define new DEBUG_NEW
 #endif
 
+void Com_Initialize();
+
 void SaveIESettings(bool save = true);
 /////////////////////////////////////////////////////////////////////////////
 // CBrowser
@@ -21,6 +23,7 @@ CBrowser::CBrowser()
 	m_hWndParent = NULL;
 	m_bDidNavigate = false;
 	m_bDops = false;
+	m_bNavigateComplete = FALSE;
 }
 
 BEGIN_MESSAGE_MAP(CBrowser, CWnd)
@@ -51,9 +54,14 @@ int CBrowser::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CWnd ::OnCreate(lpCreateStruct) == -1)
 		return -1;
+
+	//Com_Initialize();
 	
 	if (!m_ie.Create(NULL, WS_VISIBLE | WS_CHILD, CRect(), this, IDC_EXPLORER))
 		return -1;
+
+	// It appears m_ie.Create  calls CoInitilize
+	//Com_Initialize();
 
 	return 0;
 }
@@ -76,6 +84,7 @@ void CBrowser::Navigate(LPCSTR url, DWORD flags)
 	ASSERT(pvarFlags);
 	m_url = url;
 	TRACE("CBrowser::Navigate(%s)...", url);
+	m_bNavigateComplete = FALSE;
 	m_ie.Navigate2( pvarURL, pvarFlags, pvarEmpty, pvarEmpty, pvarEmpty );
 	TRACE("Done.\n");
 	delete pvarURL;
@@ -111,6 +120,7 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		}
 		lpWBDisp->Release();
 	}
+	m_bNavigateComplete = TRUE;
 }
 
 #include <atlconv.h>
@@ -136,6 +146,14 @@ void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
 	pView->PostMessage(WM_PAINT);
 	if (Cancel)
 		*Cancel = FALSE;
+
+#if 1
+	// Best effort. User may select link before download is completed.
+	if (m_bNavigateComplete) {
+		ShellExecute(0, NULL, strURL, NULL, NULL, SW_SHOWDEFAULT);
+		*Cancel = TRUE;
+	}
+#endif
 	return;
 }
 
@@ -149,7 +167,7 @@ USES_CONVERSION;
 	if (dispid == DISPID_AMBIENT_DLCONTROL)
 	{
 		pvar->vt = VT_I4;
-		pvar->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_NO_SCRIPTS | DLCTL_NO_JAVA | DLCTL_NO_DLACTIVEXCTLS | DLCTL_NO_RUNACTIVEXCTLS | DLCTL_SILENT; // | DLCTL_NO_CLIENTPULL;
+		pvar->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_NO_SCRIPTS | DLCTL_NO_JAVA | DLCTL_NO_DLACTIVEXCTLS | DLCTL_NO_RUNACTIVEXCTLS | DLCTL_SILENT; //  | DLCTL_FORCEOFFLINE; // | DLCTL_NO_CLIENTPULL;
 
 		return TRUE;
 	}
