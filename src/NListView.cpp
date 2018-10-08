@@ -9,6 +9,7 @@
 #include "MimeCode.h"
 #include "MboxMail.h"
 #include "OpenContainingFolderDlg.h"
+#include "FindInMailDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -114,6 +115,10 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 {
 	ResetFileMapView();
 
+	m_searchStringInMail.Empty();
+	m_bCaseSensInMail = TRUE;
+	m_bWholeWordInMail = FALSE;
+
 	m_gmtTime = 0;
 	m_bStartSearchAtSelectedItem = 0; // FALSE; TODO: is this desired feature ?
 	m_bFindNext = TRUE;
@@ -127,6 +132,8 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bSubject = TRUE;
 	m_bContent = FALSE;
 	m_bAttachments = FALSE;
+	m_bHighlightAll = FALSE;
+	m_filterDates = FALSE;
 	m_lastSel = -1;
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
@@ -183,8 +190,8 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_COMMAND(ID_EDIT_FINDAGAIN, OnEditFindAgain)
 	ON_COMMAND(ID_EDIT_VIEWEML, &NListView::OnEditVieweml)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_VIEWEML, &NListView::OnUpdateEditVieweml)
-	ON_COMMAND(ID_VIEW_CONVERSATIONS, &NListView::OnViewConversations)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_CONVERSATIONS, &NListView::OnUpdateViewConversations)
+	//ON_COMMAND(ID_VIEW_CONVERSATIONS, &NListView::OnViewConversations)
+	//ON_UPDATE_COMMAND_UI(ID_VIEW_CONVERSATIONS, &NListView::OnUpdateViewConversations)
 
 END_MESSAGE_MAP()
 
@@ -279,6 +286,9 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_HTML_OPEN_RELATED_Id = 6;
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Emails in Browser"));
 
+	const UINT S_HTML_FIND_Id = 7;
+	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find"));
+
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	UINT nFlags = TPM_RETURNCMD;
@@ -330,10 +340,42 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	break;
+	case S_HTML_FIND_Id: {
+		CFindInMailDlg dlg;
+		dlg.m_bWholeWord = m_bWholeWordInMail;
+		dlg.m_bCaseSensitive = m_bCaseSensInMail;
+		dlg.m_string = m_searchStringInMail;
+		if (dlg.DoModal() == IDOK) {
+			m_searchStringInMail = dlg.m_string;
+			m_bWholeWordInMail = dlg.m_bWholeWord;
+			m_bCaseSensInMail = dlg.m_bCaseSensitive;
+
+			CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+			if (!pFrame)
+				break;
+			if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
+				break;
+			NMsgView *pView = pFrame->GetMsgView();
+			if (!pView || !::IsWindow(pView->m_hWnd))
+				break;
+
+			pView->FindStringInIHTMLDocument(m_searchStringInMail, m_bWholeWordInMail, m_bCaseSensInMail);
+
+			int dbg = 1;
+		}
+	}
+	break;
+
 	default: {
 		int deb = 1;
 	}
 	break;
+	}
+
+
+	if (m_lastSel != iItem) {
+		TRACE("Selecting %d\n", iItem);
+		SelectItem(iItem);
 	}
 
 	Invalidate();
@@ -345,8 +387,16 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NMLISTVIEW * pLV = (NMLISTVIEW*)pNMHDR;
-	bool mustSort = false;
+
 	*pResult = 0;
+
+	SortByColumn(pLV->iSubItem);
+}
+
+
+void NListView::SortByColumn(int colNumber)
+{
+	bool mustSort = false;
 
 	// to follow OnEditFindAgain approach
 	if (m_bInFind)  
@@ -354,7 +404,7 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	m_bInFind = true;
 
-	switch (pLV->iSubItem) {
+	switch (colNumber) {
 	case 0: // !
 		if (abs(MboxMail::b_mails_which_sorted) == 99) {
 			MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
@@ -1673,7 +1723,7 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 			int deb = 1;
 		}
 
-		outbuf->Append("\"");
+		outbuf->Append("\"file:\\\\\\");
 		outbuf->Append(imgFile, imgFile.GetLength());
 		outbuf->Append("\"");
 
@@ -1936,20 +1986,32 @@ void NListView::SelectItem(int iItem)
 			int inDataLen = bdy.GetLength();
 			fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
 
-			hdr = "<body><html>";
+			hdr = "</body></html>";
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 			data = outbuf->Data();
 			datalen = outbuf->Count();
 			int deb = 1;
 		}
 		else {
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>" + bdy + "<body><html>";
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>" + bdy +"</body></html>";
 			data = (char*)(LPCSTR)bdy;
 			datalen = bdy.GetLength();
 		}
 	}
 	else {
+		// TODO: need to optimize
+		BOOL charsetMissing = FALSE;
+		CString bdyLower(bdy);
+		bdyLower.MakeLower();
+		if ((ext.Compare("htm") == 0) && (bdyLower.Find("charset=") == -1))
+		{
+			//int pos = bdy.Find("<body>");
+			if (bdycharset.MakeLower().CompareNoCase("utf-8") != 0)
+				charsetMissing = TRUE;  // simplify for now, update html doc later ?
+			int deb = 1;
+		}
 		if (hasInlineAttachments) {
+			// TODO: handle charsetMissing
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
@@ -1962,7 +2024,23 @@ void NListView::SelectItem(int iItem)
 			data = outbuf->Data();
 			datalen = outbuf->Count();
 		}
+		else if (charsetMissing) {
+			SimpleString *outbuf = MboxMail::m_outbuf;
+			outbuf->ClearAndResize(bdy.GetLength() + 1000);
+
+			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+			data = (char*)(LPCSTR)bdy;
+			datalen = bdy.GetLength();
+
+			outbuf->Append(data, datalen);
+
+			data = outbuf->Data();
+			datalen = outbuf->Count();
+		}
 		else {
+			// TODO: handle charsetMissing
 			data = (char*)(LPCSTR)bdy;
 			datalen = bdy.GetLength();
 		}
@@ -2310,6 +2388,7 @@ void NListView::OnEditFind()
 	dlg.m_bSubject = m_bSubject;
 	dlg.m_bContent = m_bContent;
 	dlg.m_bAttachments = m_bAttachments;
+	dlg.m_bHighlightAll = m_bHighlightAll;
 	dlg.m_filterDates = m_filterDates;
 
 	if (dlg.DoModal() == IDOK) {
@@ -2325,6 +2404,7 @@ void NListView::OnEditFind()
 		m_bSubject = dlg.m_bSubject;
 		m_bContent = dlg.m_bContent;
 		m_bAttachments = dlg.m_bAttachments;
+		m_bHighlightAll = dlg.m_bHighlightAll;
 
 		m_lastFindPos = -1;
 
@@ -3067,7 +3147,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 		else if (bContent == FALSE)
 			continue;
 
-		if (!body->m_contentType.CompareNoCase("text/plain"))
+		if (body->m_contentType.CompareNoCase("text/plain") != 0)
 			continue;
 
 		int bodyLength = body->m_contentLength;
@@ -3135,6 +3215,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 }
 
 
+#if 0
 void NListView::OnViewConversations()
 {
 	// SendMessage to simulate Column Click ??, need to investigate
@@ -3166,18 +3247,20 @@ void NListView::OnViewConversations()
 }
 
 
+
 void NListView::OnUpdateViewConversations(CCmdUI *pCmdUI)
 {
 	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
 	//pCmdUI->Enable(m_list.GetItemCount() > 0);
 }
+#endif
 
 void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
 {
 	if (abs(MboxMail::b_mails_which_sorted) != 99) {
 
 		CString txt = _T("Please sort all mails by conversation first.\n");
-		txt += "Select \"View\"->\"View Conversations\" or left click on the first column.";
+		txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
 		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;

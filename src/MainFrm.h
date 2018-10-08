@@ -74,6 +74,18 @@ public:
 
 	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE);
 	void OnPrinttoTextFile(int textType);
+	afx_msg void OnBydate();
+	afx_msg void OnUpdateBydate(CCmdUI *pCmdUI);
+	afx_msg void OnByfrom();
+	afx_msg void OnUpdateByfrom(CCmdUI *pCmdUI);
+	afx_msg void OnByto();
+	afx_msg void OnUpdateByto(CCmdUI *pCmdUI);
+	afx_msg void OnBysubject();
+	afx_msg void OnUpdateBysubject(CCmdUI *pCmdUI);
+	afx_msg void OnBysize();
+	afx_msg void OnUpdateBysize(CCmdUI *pCmdUI);
+	afx_msg void OnByconversation();
+	afx_msg void OnUpdateByconversation(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

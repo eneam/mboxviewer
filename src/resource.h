@@ -18,6 +18,7 @@
 #define IDB_PRINT                       171
 #define IDB_FOLDER                      176
 #define IDD_FIND_ADVANCED               177
+#define IDD_FIND_IN_MAIL                180
 #define IDS_DESC_TITLE                  202
 #define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
@@ -57,22 +58,24 @@
 #define IDC_SEARCH_PREV                 1056
 #define IDC_ENCODING_NONE               1056
 #define IDC_RADIO2                      1057
+#define IDC_EXPORT_EML_Y                1057
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
 #define IDC_EXPORT_FROM                 1059
 #define IDC_CHECK_FROM_A                1059
-#define IDC_CHECK_FROM_A2               1060
-#define IDC_CHECK_FROM_A3               1061
-#define IDC_CHECK_FROM_A4               1062
+#define IDC_CHECK_TO_A                  1060
+#define IDC_CHECK_SUBJECT_A             1061
+#define IDC_CHECK_MESSAGE_A             1062
 #define IDC_DONATION                    1063
-#define IDC_CHECK_FROM_A5               1063
-#define IDC_FILTERDATES2                1064
+#define IDC_CHECK_ATTACHMENTS_A         1063
+#define IDC_FILTERDATES_A               1064
 #define IDC_PROGRESS_BAR_DELAY          1065
 #define IDC_SUBJ_ID                     1070
 #define IDC_FROM_ID                     1071
 #define IDC_TO_ID                       1072
 #define IDC_SHOW_CHARSETS               1074
 #define IDC_RADIO6                      1075
+#define IDC_SHOW_CHARSETS_Y             1075
 #define IDC_CHECK_FROM                  1076
 #define IDC_CHECK_TO                    1077
 #define IDC_CHECK_SUBJECT               1078
@@ -123,10 +126,11 @@
 #define IDC_EDIT5                       1122
 #define IDC_MATCH_WORD5                 1123
 #define IDC_REGULAR_EXPR5               1124
-#define IDC_CHECK5                      1125
-#define IDC_CHECK7                      1142
-#define IDC_CHECK8                      1143
-#define IDC_CHECK9                      1144
+#define IDC_SEARCH_BACKWARDS_A          1125
+#define IDC_MATCH_WORDS_ALL_A           1142
+#define IDC_MATCH_CASE_ALL_A            1143
+#define IDC_REGEX_ALL_A                 1144
+#define IDC_CHECK_HIGHLIGHT_ALL         1145
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -139,15 +143,22 @@
 #define ID_PRINTTO_CSV                  32853
 #define ID_PRINTTO_TEXT                 32854
 #define ID_PRINTTO_HTML                 32855
+#define ByConversation                  32861
+#define ID_SORTBY_DATE                  32862
+#define ID_SORTBY_FROM                  32863
+#define ID_SORTBY_TO                    32864
+#define ID_SORTBY_SUBJECT               32865
+#define ID_SORTBY_SIZE                  32866
+#define ID_SORTBY_CONVERSATION          32867
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        180
-#define _APS_NEXT_COMMAND_VALUE         32856
-#define _APS_NEXT_CONTROL_VALUE         1145
+#define _APS_NEXT_RESOURCE_VALUE        182
+#define _APS_NEXT_COMMAND_VALUE         32868
+#define _APS_NEXT_CONTROL_VALUE         1146
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

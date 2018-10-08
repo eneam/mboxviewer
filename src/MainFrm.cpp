@@ -66,6 +66,18 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_PRINTTO_CSV, &CMainFrame::OnPrinttoCsv)
 	ON_COMMAND(ID_PRINTTO_TEXT, &CMainFrame::OnPrinttoText)
 	ON_COMMAND(ID_PRINTTO_HTML, &CMainFrame::OnPrinttoHtml)
+	ON_COMMAND(ID_SORTBY_DATE, &CMainFrame::OnBydate)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_DATE, &CMainFrame::OnUpdateBydate)
+	ON_COMMAND(ID_SORTBY_FROM, &CMainFrame::OnByfrom)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_FROM, &CMainFrame::OnUpdateByfrom)
+	ON_COMMAND(ID_SORTBY_TO, &CMainFrame::OnByto)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_TO, &CMainFrame::OnUpdateByto)
+	ON_COMMAND(ID_SORTBY_SUBJECT, &CMainFrame::OnBysubject)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_SUBJECT, &CMainFrame::OnUpdateBysubject)
+	ON_COMMAND(ID_SORTBY_SIZE, &CMainFrame::OnBysize)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_SIZE, &CMainFrame::OnUpdateBysize)
+	ON_COMMAND(ID_SORTBY_CONVERSATION, &CMainFrame::OnByconversation)
+	ON_UPDATE_COMMAND_UI(ID_SORTBY_CONVERSATION, &CMainFrame::OnUpdateByconversation)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -120,6 +132,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create status bar\n");
 		return -1;      // fail to create
 	}
+
+	// TODO: Create seprate Mail File download status bar ?
+	//m_wndStatusBar.SetWindowText("Mail Download Complete: ");
 
 	// TODO: Delete these three lines if you don't want the toolbar to
 	//  be dockable
@@ -597,4 +612,106 @@ void CMainFrame::OnPrinttoHtml()
 {
 	// TODO: Add your command handler code here
 	OnPrinttoTextFile(1);
+}
+
+// Called when View->"Sort by"->Date
+void CMainFrame::OnBydate()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(1);
+}
+
+
+void CMainFrame::OnUpdateBydate(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+
+void CMainFrame::OnByfrom()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(2);
+}
+
+
+void CMainFrame::OnUpdateByfrom(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+
+void CMainFrame::OnByto()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(3);
+}
+
+
+void CMainFrame::OnUpdateByto(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+
+void CMainFrame::OnBysubject()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(4);
+}
+
+
+void CMainFrame::OnUpdateBysubject(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+
+void CMainFrame::OnBysize()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(5);
+}
+
+
+void CMainFrame::OnUpdateBysize(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+
+void CMainFrame::OnByconversation()
+{
+	// TODO: Add your command handler code here
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+		pListView->SortByColumn(0);
+}
+
+
+void CMainFrame::OnUpdateByconversation(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
 }

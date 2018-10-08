@@ -344,6 +344,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\FindInMailDlg.cpp" />
     <ClCompile Include="src\LinkCursor.cpp" />
     <ClCompile Include="src\MainFrm.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -532,6 +533,7 @@
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExportToCSVDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
+    <ClInclude Include="src\FindInMailDlg.h" />
     <ClInclude Include="src\InitCommonControls.h" />
     <ClInclude Include="src\LinkCursor.h" />
     <ClInclude Include="src\MainFrm.h" />
@@ -555,6 +557,7 @@
     <ClInclude Include="src\webbrowser2.h" />
     <ClInclude Include="src\WheelListCtrl.h" />
     <ClInclude Include="src\WheelTreeCtrl.h" />
+    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\imview.ico" />

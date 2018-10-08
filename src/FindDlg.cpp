@@ -32,6 +32,7 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 	m_bSubject = TRUE;
 	m_bContent = FALSE;
 	m_bAttachments = FALSE;
+	m_bHighlightAll = FALSE;
 	//}}AFX_DATA_INIT
 }
 
@@ -46,13 +47,14 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER1, m_startDate);
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER2, m_endDate);
-	DDX_Radio(pDX, IDC_SCOPE, m_bFindNext);
+	DDX_Radio(pDX, IDC_SEARCH_PREV, m_bFindNext);
 	DDX_Check(pDX, IDC_CHECK_FROM, m_bFrom);
 	DDX_Check(pDX, IDC_CHECK_TO, m_bTo);
 	DDX_Check(pDX, IDC_CHECK_SUBJECT, m_bSubject);
 	DDX_Check(pDX, IDC_CHECK_CONTENT, m_bContent);
 	DDX_Check(pDX, IDC_CHECK_ATTACHMENT, m_bAttachments);
-	DDX_Check(pDX, IDC_CHECK1, m_filterDates);
+	DDX_Check(pDX, IDC_CHECK_HIGHLIGHT_ALL, m_bHighlightAll);
+	DDX_Check(pDX, IDC_FILTERDATES, m_filterDates);
 	if (pDX->m_bSaveAndValidate) {
 		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_filterDates);
 		GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_filterDates);

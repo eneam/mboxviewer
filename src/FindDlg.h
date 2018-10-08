@@ -50,6 +50,7 @@ public:
 	BOOL m_bSubject;
 	BOOL m_bContent;
 	BOOL m_bAttachments;
+	BOOL m_bHighlightAll;
 
 	//virtual BOOL OnInitDialog();
 	BOOL m_filterDates;

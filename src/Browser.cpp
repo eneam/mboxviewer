@@ -121,6 +121,22 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		lpWBDisp->Release();
 	}
 	m_bNavigateComplete = TRUE;
+
+	CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+	if (!pFrame)
+		return;
+	if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
+		return;
+	NMsgView *pView = pFrame->GetMsgView();
+	if (!pView || !::IsWindow(pView->m_hWnd))
+		return;
+
+	NListView *pListView = pFrame->GetListView();
+	if (!pListView)
+		return;
+
+	if (pListView->m_bHighlightAll)
+		pView->FindStringInIHTMLDocument(pListView->m_searchString, pListView->m_bWholeWord, pListView->m_bCaseSens);
 }
 
 #include <atlconv.h>
@@ -149,6 +165,8 @@ void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
 
 #if 1
 	// Best effort. User may select link before download is completed.
+	// Solution not clear. Neeed to hover a link, read the link and  open in browser ?
+	// or disable left mouse click anf force user to open the link via right click menu?
 	if (m_bNavigateComplete) {
 		ShellExecute(0, NULL, strURL, NULL, NULL, SW_SHOWDEFAULT);
 		*Cancel = TRUE;

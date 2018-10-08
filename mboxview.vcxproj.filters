@@ -88,6 +88,9 @@
     <ClCompile Include="src\OpenContainingFolderDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\FindInMailDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -181,6 +184,10 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\OpenContainingFolderDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="src\FindInMailDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

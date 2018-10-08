@@ -417,6 +417,10 @@ BOOL NMsgView::OnEraseBkgnd(CDC* pDC)
 
 void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point) 
 {
+#if 1
+	CString searchID = "mboxview_Search";
+	ClearSearchResultsInIHTMLDocument(searchID);
+#else
 	CString path = GetmboxviewTempPath();
 	HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 	/*
@@ -429,6 +433,7 @@ void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDblClk(nFlags, point);
 	m_browser.SetFocus();
 	*/
+#endif
 }
 
 void NMsgView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
@@ -603,25 +608,163 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 #include <Mshtml.h>
 #include <atlbase.h>
-void NMsgView::FindString()
+
+#ifdef _DEBUG
+#define HTML_ASSERT ASSERT
+#else
+#define HTML_ASSERT(x)
+#endif
+
+void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase)
 {
+	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
+	// Did resolve some code issues, enhanced and optimized
 
-	// < span id = 'CHtmlView_Search' style = 'color: white; background-color: darkblue' > pa< / span>
+	// <span id='mboxview_Search' style='color: white; background-color: darkblue'>pa</span>
 
-	CString searchText = "work";
-	long lFlags = 2;
+	unsigned long matchWordFlag = 2;
+	unsigned long matchCaseFlag = 4;
+	long  lFlags = 0; // lFlags : 0: match in reverse: 1 , Match partial Words 2=wholeword, 4 = matchcase
+	if (matchWord)
+		lFlags |= matchWordFlag;
+	if (matchCase)
+		lFlags |= matchCaseFlag;
 
-	CString matchStyle = "color: white; background-color: darkblue";
-	CString searchID = "CHtmlView_Search";
+	CString matchStyle = "color: white; background-color: blue";
+	CString searchID = "mboxview_Search";
+
+	ClearSearchResultsInIHTMLDocument(searchID);
 
 	IHTMLDocument2 *lpHtmlDocument = NULL;
 	LPDISPATCH lpDispatch = NULL;
 	lpDispatch = m_browser.m_ie.GetDocument();
+	HTML_ASSERT(lpDispatch);
+	if (!lpDispatch)
+		return;
 
 	lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
-
+	HTML_ASSERT(lpHtmlDocument);
+	if (!lpHtmlDocument) {
+		lpDispatch->Release();
+		return;
+	}
 	lpDispatch->Release();
 
+	IHTMLElement *lpBodyElm = 0;
+	IHTMLBodyElement *lpBody = 0;
+	IHTMLTxtRange *lpTxtRange = 0;
+
+	lpHtmlDocument->get_body(&lpBodyElm);
+	HTML_ASSERT(lpBodyElm);
+	if (!lpBodyElm) {
+		lpHtmlDocument->Release();
+		return;
+	}
+	lpHtmlDocument->Release();
+
+	lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
+	HTML_ASSERT(lpBody);
+	if (!lpBody) {
+		lpBodyElm->Release();
+		return;
+	}
+	lpBodyElm->Release();
+
+	lpBody->createTextRange(&lpTxtRange);
+	HTML_ASSERT(lpTxtRange);
+	if (!lpTxtRange) {
+		lpBody->Release();
+		return;
+	}
+	lpBody->Release();
+
+	CComBSTR html;
+	CComBSTR newhtml;
+	CComBSTR search(searchText.GetLength() + 1, (LPCTSTR)searchText);
+
+	long t;
+	VARIANT_BOOL bFound;
+	long count = 0;
+
+	BSTR *Character;
+	BSTR *Textedit;
+	Character = (BSTR*)(new CComBSTR("Character"));
+	if (!Character)
+		return;
+	Textedit = (BSTR*)(new CComBSTR("Textedit"));
+	if (!Textedit)
+		return;
+
+	CString htmlPrfix;
+	htmlPrfix.Append("<span id='");
+	htmlPrfix.Append((LPCTSTR)searchID);
+	htmlPrfix.Append("' style='");
+	htmlPrfix.Append((LPCTSTR)matchStyle);
+	htmlPrfix.Append("'>");
+
+	CComBSTR bstrTag;
+	CComBSTR bstrHTML;
+	CComBSTR bstrTEXT;
+
+	bool firstRange = false;
+	while ((lpTxtRange->findText(search, count, lFlags, (VARIANT_BOOL*)&bFound) == S_OK) && (VARIANT_TRUE == bFound))
+	{
+		//IHTMLTxtRange *duplicateRange;
+		//lpTxtRange->duplicate(&duplicateRange);
+
+		IHTMLElement *parentText;
+		lpTxtRange->parentElement(&parentText);
+		if (parentText) 
+		{
+			bstrTag.Empty();
+			bstrHTML.Empty();
+			bstrTEXT.Empty();
+
+			parentText->get_tagName(&bstrTag);
+			parentText->get_innerHTML(&bstrHTML);
+			parentText->get_innerText(&bstrTEXT);
+
+			int deb = 1;
+			// Ignore Tags: TITLE, what else
+			bstrTag.ToLower();
+			if (bstrTag == L"title") {
+				lpTxtRange->moveStart(*Character, 1, &t);
+				lpTxtRange->moveEnd(*Textedit, 1, &t);
+				parentText->Release();
+				continue;
+			}
+			parentText->Release();
+		}
+
+		if (firstRange == false) {
+			firstRange = true;
+			if (lpTxtRange->select() == S_OK)
+				lpTxtRange->scrollIntoView(VARIANT_TRUE);
+		}
+
+		newhtml.Empty();
+		lpTxtRange->get_htmlText(&html);
+		newhtml.Append((LPCTSTR)htmlPrfix);
+		if (searchText == " ")
+			newhtml.Append("&nbsp;"); // doesn't work very well, but prevents (some) strange presentation
+		else
+			newhtml.AppendBSTR(html);
+		newhtml.Append("</span>");
+
+		lpTxtRange->pasteHTML(newhtml);
+
+		lpTxtRange->moveStart(*Character, searchText.GetLength(), &t);
+		lpTxtRange->moveEnd(*Textedit, 1, &t);
+	}
+
+	lpTxtRange->Release();
+	delete Character;
+	delete Textedit;
+
+
+
+#if 0
+	// brose all elements example
 	IHTMLElementCollection *pAll;
 	HRESULT hr = lpHtmlDocument->get_all(&pAll);
 
@@ -648,56 +791,102 @@ void NMsgView::FindString()
 				ppvElement->get_innerHTML(&bstrHTML);
 				ppvElement->get_innerText(&bstrTEXT);
 
-				//SysFreeString(bstrTag);
-				//SysFreeString(bstrHTML);
-				//SysFreeString(bstrTEXT);
-
-
 				int deb = 1;
 			}
 		}
 		int deb = 1;
 	}
+#endif
 
-	IHTMLElement *lpBodyElm;
-	IHTMLBodyElement *lpBody;
-	IHTMLTxtRange *lpTxtRange;
+#if 0
+	// Just for potential future use
+	// How can I get current user selection or current cursor location in HTML document? I am using MSHTML interfaces in MFC.
+	CComPtr<IHTMLSelectionObject> pSelection;
+	hr = pHTMLDocument->get_selection(&pSelection);
+	if (FAILED(hr) || pSelection == NULL)
+		return false;
 
-	lpHtmlDocument->get_body(&lpBodyElm);
-	ASSERT(lpBodyElm);
-	lpHtmlDocument->Release();
-	lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
-	ASSERT(lpBody);
-	lpBodyElm->Release();
-	lpBody->createTextRange(&lpTxtRange);
-	ASSERT(lpTxtRange);
-	lpBody->Release();
+	CComPtr<IDispatch> pDispRange;
+	hr = pSelection->createRange(&pDispRange);
+	if (FAILED(hr) || pDispRange == NULL)
+		return false;
+	CComPtr<IHTMLTxtRange> pRange;
+	hr = pDispRange->QueryInterface(IID_IHTMLTxtRange,
+		reinterpret_cast<void**>(&pRange));
+	if (FAILED(hr) || pRange == NULL)
+		return false;
+#endif
 
-	CComBSTR html;
-	CComBSTR newhtml;
-	CComBSTR search(searchText.GetLength() + 1, (LPCTSTR)searchText);
+}
 
-	long t;
-	bool bFound;
-	while (lpTxtRange->findText(search, 0, lFlags, (VARIANT_BOOL*)&bFound), bFound)
-	{
-		newhtml.Empty();
-		lpTxtRange->get_htmlText(&html);
-		newhtml.Append("<span id='");
-		newhtml.Append((LPCTSTR)searchID);
-		newhtml.Append("' style='");
-		newhtml.Append((LPCTSTR)matchStyle);
-		newhtml.Append("'>");
-		if (searchText == " ")
-			newhtml.Append("&nbsp;"); // doesn't work very well, but prevents (some) shit
-		else
-			newhtml.AppendBSTR(html);
-		newhtml.Append("</span>");
-		lpTxtRange->pasteHTML(newhtml);
+void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
+{
+	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
+	// Did resolve some code issues, enhanced and optimized
 
-		lpTxtRange->moveStart((BSTR)CComBSTR("Character"), 1, &t);
-		lpTxtRange->moveEnd((BSTR)CComBSTR("Textedit"), 1, &t);
+	CComBSTR testid(searchID.GetLength() + 1, searchID);
+	CComBSTR testtag(5, "SPAN");
+
+	IHTMLDocument2 *lpHtmlDocument = NULL;
+	LPDISPATCH lpDispatch = NULL;
+	lpDispatch = m_browser.m_ie.GetDocument();
+	HTML_ASSERT(lpDispatch);
+	if (!lpDispatch)
+		return;
+
+	lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
+	HTML_ASSERT(lpHtmlDocument);
+	if (!lpHtmlDocument) {
+		lpDispatch->Release();
+		return;
 	}
+	lpDispatch->Release();
 
-	lpTxtRange->Release();
+	IHTMLElementCollection *lpAllElements = 0;
+	lpHtmlDocument->get_all(&lpAllElements);
+	HTML_ASSERT(lpAllElements);
+	if (!lpAllElements) {
+		lpHtmlDocument->Release();
+		return;
+	}
+	lpHtmlDocument->Release();
+
+	IUnknown *lpUnk;
+	IEnumVARIANT *lpNewEnum;
+	if (SUCCEEDED(lpAllElements->get__newEnum(&lpUnk)) && lpUnk != NULL)
+	{
+		lpUnk->QueryInterface(IID_IEnumVARIANT, (void**)&lpNewEnum);
+		HTML_ASSERT(lpNewEnum);
+		if (!lpNewEnum) {
+			lpAllElements->Release();
+			return;
+		}
+		VARIANT varElement;
+		IHTMLElement *lpElement;
+
+		CComBSTR id;
+		CComBSTR tag;
+		while (lpNewEnum->Next(1, &varElement, NULL) == S_OK)
+		{
+			_ASSERTE(varElement.vt == VT_DISPATCH);
+			varElement.pdispVal->QueryInterface(IID_IHTMLElement, (void**)&lpElement);
+			HTML_ASSERT(lpElement);
+
+			if (lpElement)
+			{
+				id.Empty();
+				tag.Empty();
+				lpElement->get_id(&id);
+				lpElement->get_tagName(&tag);
+				if ((id == testid) && (tag == testtag))
+				{
+					BSTR innerText;
+					lpElement->get_innerHTML(&innerText);
+					lpElement->put_outerHTML(innerText);
+				}
+			}
+			VariantClear(&varElement);
+		}
+	}
+	lpAllElements->Release();
 }

@@ -2030,9 +2030,9 @@ int MboxMail::exportHeaderToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp)
 	if (csvConfig.m_bFrom) {
 		if (separatorNeeded)
 			colLabels += csvConfig.m_separator;
-		colLabels += "Name";
+		colLabels += "From Name";
 		colLabels += csvConfig.m_separator;
-		colLabels += "From";
+		colLabels += "From Address";
 		separatorNeeded = true;
 	}
 	if (csvConfig.m_bTo) {
@@ -3200,7 +3200,7 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 }
 
 
-// Not used currently and code incomplete. might be used to dynamically create image files
+// TODO: Not used currently and code incomplete. might be used to dynamically create image files
 int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf)
 {
 

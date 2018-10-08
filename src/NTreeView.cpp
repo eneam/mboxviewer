@@ -419,6 +419,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
+	//
 	CMenu printToSubMenu;
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
@@ -435,10 +436,37 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
-	const UINT M_FileLocation_Id = 4;
+	//
+	CMenu sortSubMenu;
+	sortSubMenu.CreatePopupMenu();
+	sortSubMenu.AppendMenu(MF_SEPARATOR);
+
+	const UINT S_SORT_BY_DATE_Id = 4;
+	AppendMenu(&sortSubMenu, S_SORT_BY_DATE_Id, _T("Date"));
+
+	const UINT S_SORT_BY_FROM_Id = 5;
+	AppendMenu(&sortSubMenu, S_SORT_BY_FROM_Id, _T("From"));
+
+	const UINT S_SORT_BY_TO_Id = 6;
+	AppendMenu(&sortSubMenu, S_SORT_BY_TO_Id, _T("To"));
+
+	const UINT S_SORT_BY_SUBJ_Id = 7;
+	AppendMenu(&sortSubMenu, S_SORT_BY_SUBJ_Id, _T("Subject"));
+
+	const UINT S_SORT_BY_SIZE_Id = 8;
+	AppendMenu(&sortSubMenu, S_SORT_BY_SIZE_Id, _T("Size"));
+
+	const UINT S_SORT_BY_CONVERSATION_Id = 9;
+	AppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
+
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
+	menu.AppendMenu(MF_SEPARATOR);
+	//
+
+	const UINT M_FileLocation_Id = 10;
 	AppendMenu(&menu, M_FileLocation_Id, _T("Open File Location"));
 
-	const UINT M_Properties_Id = 5;
+	const UINT M_Properties_Id = 11;
 	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -447,7 +475,11 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
 
+	NListView *pListView = 0;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) {
+		pListView = pFrame->GetListView();
+	}
 
 	switch (command)
 	{
@@ -514,6 +546,37 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
+	case S_SORT_BY_DATE_Id: {
+		if (pListView)
+			pListView->SortByColumn(1);
+	}
+	break;
+	case S_SORT_BY_FROM_Id: {
+		if (pListView)
+			pListView->SortByColumn(2);
+	}
+	break;
+	case S_SORT_BY_TO_Id: {
+		if (pListView)
+			pListView->SortByColumn(3);
+	}
+	break;
+	case S_SORT_BY_SUBJ_Id: {
+		if (pListView)
+			pListView->SortByColumn(4);
+	}
+	break;
+	case S_SORT_BY_SIZE_Id: {
+		if (pListView)
+			pListView->SortByColumn(5);
+	}
+	break;
+	case S_SORT_BY_CONVERSATION_Id: {
+		if (pListView)
+			pListView->SortByColumn(0);
+	}
+	break;
+
 	default: {
 		int deb = 1;
 	}

@@ -77,7 +77,13 @@ public:
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
 	void CloseMailFile();
 	void ResetFileMapView();
+	void SortByColumn(int colNumber);
 	// end of vars
+
+	// For single Mail. TODO: Should consider to define structure to avoid confusing var names
+	CString m_searchStringInMail;
+	BOOL m_bCaseSensInMail;
+	BOOL m_bWholeWordInMail;
 
 	BOOL m_bExportEml;
 	BOOL m_bFindNext;
@@ -99,6 +105,7 @@ public:
 	BOOL m_bSubject;
 	BOOL m_bContent;
 	BOOL m_bAttachments;
+	BOOL m_bHighlightAll;
 	void ClearDescView();
 	CString m_curFile;
 	int m_lastSel;
@@ -144,8 +151,8 @@ protected:
 public:
 	afx_msg void OnEditVieweml();
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
-	afx_msg void OnViewConversations();
-	afx_msg void OnUpdateViewConversations(CCmdUI *pCmdUI);
+	//afx_msg void OnViewConversations();
+	//fx_msg void OnUpdateViewConversations(CCmdUI *pCmdUI);
 };
 
 typedef struct _ParseArgs {

@@ -45,7 +45,8 @@ protected:
 
 // Implementation
 public:
-	void FindString();
+	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
+	void ClearSearchResultsInIHTMLDocument(CString searchID);
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();
