@@ -133,6 +133,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bContent = FALSE;
 	m_bAttachments = FALSE;
 	m_bHighlightAll = FALSE;
+	m_bHighlightAllSet = FALSE;
 	m_filterDates = FALSE;
 	m_lastSel = -1;
 	m_bInFind = FALSE;
@@ -297,6 +298,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
+	BOOL itemSelected = FALSE;
 	switch (command)
 	{
 	case S_HTML_Id: {
@@ -341,6 +343,12 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_HTML_FIND_Id: {
+		if (m_lastSel != iItem) {
+			TRACE("Selecting %d\n", iItem);
+			SelectItem(iItem);
+			itemSelected = TRUE;
+		}
+
 		CFindInMailDlg dlg;
 		dlg.m_bWholeWord = m_bWholeWordInMail;
 		dlg.m_bCaseSensitive = m_bCaseSensInMail;
@@ -359,7 +367,10 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			if (!pView || !::IsWindow(pView->m_hWnd))
 				break;
 
-			pView->FindStringInIHTMLDocument(m_searchStringInMail, m_bWholeWordInMail, m_bCaseSensInMail);
+			if (m_searchStringInMail.IsEmpty())
+				pView->ClearSearchResultsInIHTMLDocument(pView->m_searchID);
+			else
+				pView->FindStringInIHTMLDocument(m_searchStringInMail, m_bWholeWordInMail, m_bCaseSensInMail);
 
 			int dbg = 1;
 		}
@@ -373,7 +384,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 
-	if (m_lastSel != iItem) {
+	if ((itemSelected == FALSE) && (m_lastSel != iItem)) {
 		TRACE("Selecting %d\n", iItem);
 		SelectItem(iItem);
 	}
@@ -2477,6 +2488,7 @@ void NListView::OnEditFind()
 				w = args.retpos;
 			}
 			if (w >= 0) {
+				m_bHighlightAllSet = m_bHighlightAll;
 				SelectItemFound(w);  // sets m_lastFindPos
 			}
 			else {
@@ -2768,6 +2780,7 @@ void NListView::OnEditFindAgain()
 		w = args.retpos;
 	}
 	if (w >= 0) {
+		m_bHighlightAllSet = m_bHighlightAll;
 		SelectItemFound(w); // sets m_lastFindPos
 	}
 	else {
@@ -3136,80 +3149,100 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 		return FALSE;
 
 	MailBodyContent *body;
-	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++) 
+	BOOL textPlainFound = FALSE;
+	BOOL searchHTML = FALSE;
+	int i;
+	for (i = 0; i < 2; i++)
 	{
-		body = m->m_ContentDetailsArray[j];
+		for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+		{
+			body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty()) {
-			if (bAttachment == FALSE)
+			if (!body->m_attachmentName.IsEmpty()) {
+				if (bAttachment == FALSE)
+					continue;
+			}
+			else if (bContent == FALSE)
 				continue;
-		}
-		else if (bContent == FALSE)
-			continue;
 
-		if (body->m_contentType.CompareNoCase("text/plain") != 0)
-			continue;
-
-		int bodyLength = body->m_contentLength;
-		if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
-			// something is not consistent
-			bodyLength = m->m_length - body->m_contentOffset;  
-		}
-		char *bodyBegin = m_pViewBegin + body->m_contentOffset;
-
-		if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
-		{
-			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
-			int dlength = d64.GetOutputLength();
-			outbuf->ClearAndResize(dlength);
-
-			int retlen = d64.GetOutput((unsigned char*)outbuf->Data(), dlength);
-			if (retlen > 0) {
-				outbuf->SetCount(retlen);
-				pData = outbuf->Data();
-				datalen = outbuf->Count();
+			if (searchHTML == FALSE)
+			{
+				if (body->m_contentType.CompareNoCase("text/plain") != 0)
+					continue;
+				else
+					textPlainFound = TRUE;
 			}
-			else {
-				outbuf->Clear();
-				pData = 0;
-				datalen = 0;
+			else 
+			{
+				if (body->m_contentType.CompareNoCase("text/html") != 0)
+					continue;
+				else
+					int deb = 1;
 			}
-		}
-		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
-		{
-			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
-			int dlength = dGP.GetOutputLength();
-			outbuf->ClearAndResize(dlength);
 
-			int retlen = dGP.GetOutput((unsigned char*)outbuf->Data(), dlength);
-			if (retlen > 0) {
-				outbuf->SetCount(retlen);
-				pData = outbuf->Data();
-				datalen = outbuf->Count();
+			int bodyLength = body->m_contentLength;
+			if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
+				// something is not consistent
+				bodyLength = m->m_length - body->m_contentOffset;
 			}
-			else {
-				outbuf->Clear();
-				pData = 0;
-				datalen = 0;
-			}
-		}
-		else
-		{
-			pData = bodyBegin;
-			datalen = bodyLength;
+			char *bodyBegin = m_pViewBegin + body->m_contentOffset;
 
-		}
-		if (pData)
-		{
-			int pos = -1;
-			if (m_bWholeWord)
-				pos = (_int64)g_tu.BMHSearchW((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+			if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
+			{
+				MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+				int dlength = d64.GetOutputLength();
+				outbuf->ClearAndResize(dlength);
+
+				int retlen = d64.GetOutput((unsigned char*)outbuf->Data(), dlength);
+				if (retlen > 0) {
+					outbuf->SetCount(retlen);
+					pData = outbuf->Data();
+					datalen = outbuf->Count();
+				}
+				else {
+					outbuf->Clear();
+					pData = 0;
+					datalen = 0;
+				}
+			}
+			else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+			{
+				MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
+				int dlength = dGP.GetOutputLength();
+				outbuf->ClearAndResize(dlength);
+
+				int retlen = dGP.GetOutput((unsigned char*)outbuf->Data(), dlength);
+				if (retlen > 0) {
+					outbuf->SetCount(retlen);
+					pData = outbuf->Data();
+					datalen = outbuf->Count();
+				}
+				else {
+					outbuf->Clear();
+					pData = 0;
+					datalen = 0;
+				}
+			}
 			else
-				pos = (_int64)g_tu.BMHSearch((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
-			if (pos >= 0) {
-				return TRUE;
+			{
+				pData = bodyBegin;
+				datalen = bodyLength;
+
+			}
+			if (pData)
+			{
+				int pos = -1;
+				if (m_bWholeWord)
+					pos = (_int64)g_tu.BMHSearchW((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+				else
+					pos = (_int64)g_tu.BMHSearch((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+				if (pos >= 0) {
+					return TRUE;
+				}
 			}
 		}
+		if (textPlainFound == FALSE)
+			searchHTML = TRUE;
 	}
 	return FALSE;
 }

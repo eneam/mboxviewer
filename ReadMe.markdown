@@ -10,15 +10,15 @@ Features
 * large file support > 4Gb;
 * fast parsing of mbox;
 * quick access to attachments;
-* preview the picture attachements;
+* preview picture attachments;
 * export of single mail in Eml;
-* print all mails to CSV or Text files
-* print single mail to Text or Html file
-* group and view all related mails as conversations
-* print related mails/group as Text or Html file
-* sort emails by date, from, to and subject columns;
-* search (unsorted emails) by date range, subject, sender, recepient, message text and text attachments; 
-* search (sorted emails) by date range, subject, sender and recepient;
+* print all mails to CSV or Text or HTML files;
+* print single mail to Text or HTML file;
+* group all related mails as conversations in the summary window;
+* print related mails/mail group to Text or HTML file;
+* sort emails by date, from, subject and conversation columns;
+* find user defined text in the message and highlight all occurrences;
+* search mails by user defined date range and text in the subject, sender, recepient, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
 
 Changes
@@ -26,13 +26,16 @@ Changes
 
 v 1.0.2.6
 
- - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
- - Added options to print all mails to CSV or Text files;
- - Added options print single mail to Text or Html file;
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added options to print all mails to CSV or Text or HTML files;
+ - Added options print single mail to Text or HTML file;
  - Added option to group all related mails in the summary window;
- - Added option to print related mails/group as Text or Html file;
- - Added handling of inline/emeded images;
+ - Added option to print related mails/mail group to Text or Html file;
+ - Added handling of inline/embeded images;
+ - Added option to open single mail or group of related mails in external Browser;
+ - Added option to find user defined text in the mail's message and highlight all occurences;
  - Updated User Manual to describe new and updated features;
+ - Synchronized the version number of User Manual with the mboxview release number;
 
 v 1.0.2.5
 

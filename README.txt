@@ -4,13 +4,16 @@ Changes
 
 v 1.0.2.6
 
- - To improve mbxoview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
- - Added options to print all mails to CSV or Text files;
- - Added options print single mail to Text or Html file;
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added options to print all mails to CSV or Text or HTML files;
+ - Added options print single mail to Text or HTML file;
  - Added option to group all related mails in the summary window;
- - Added option to print related mails/group as Text or Html file;
- - Added handling of inline/emeded images;
+ - Added option to print related mails/mail group to Text or Html file;
+ - Added handling of inline/embeded images;
+ - Added option to open single mail or group of related mails in external Browser;
+ - Added option to find user defined text and highlight all occurences;
  - Updated User Manual to describe new and updated features;
+ - Synchronized User Manual version number with the mboxview release number
 
 v 1.0.2.5
 

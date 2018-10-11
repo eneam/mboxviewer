@@ -557,7 +557,6 @@
     <ClInclude Include="src\webbrowser2.h" />
     <ClInclude Include="src\WheelListCtrl.h" />
     <ClInclude Include="src\WheelTreeCtrl.h" />
-    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\imview.ico" />

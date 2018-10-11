@@ -52,6 +52,8 @@ public:
 	void UpdateLayout();
 	int m_nAttachSize;
 	BOOL m_bAttach;
+	CString m_searchID;
+	CString m_matchStyle;
 	virtual ~NMsgView();
 
 	// Generated message map functions

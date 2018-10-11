@@ -135,8 +135,10 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 	if (!pListView)
 		return;
 
-	if (pListView->m_bHighlightAll)
+	if (pListView->m_bHighlightAllSet) {
 		pView->FindStringInIHTMLDocument(pListView->m_searchString, pListView->m_bWholeWord, pListView->m_bCaseSens);
+	}
+	pListView->m_bHighlightAllSet = FALSE;
 }
 
 #include <atlconv.h>

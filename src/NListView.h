@@ -106,6 +106,7 @@ public:
 	BOOL m_bContent;
 	BOOL m_bAttachments;
 	BOOL m_bHighlightAll;
+	BOOL m_bHighlightAllSet;
 	void ClearDescView();
 	CString m_curFile;
 	int m_lastSel;

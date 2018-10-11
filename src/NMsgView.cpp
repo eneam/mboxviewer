@@ -34,6 +34,9 @@ NMsgView::NMsgView()
 	m_nAttachSize = 50;
 	m_bMax = TRUE;
 
+	m_searchID = "mboxview_Search";
+	m_matchStyle = "color: white; background-color: blue";
+
 	// Get the log font.
 	NONCLIENTMETRICS ncm;
 	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
@@ -418,8 +421,7 @@ BOOL NMsgView::OnEraseBkgnd(CDC* pDC)
 void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point) 
 {
 #if 1
-	CString searchID = "mboxview_Search";
-	ClearSearchResultsInIHTMLDocument(searchID);
+	ClearSearchResultsInIHTMLDocument(m_searchID);
 #else
 	CString path = GetmboxviewTempPath();
 	HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
@@ -630,10 +632,7 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 	if (matchCase)
 		lFlags |= matchCaseFlag;
 
-	CString matchStyle = "color: white; background-color: blue";
-	CString searchID = "mboxview_Search";
-
-	ClearSearchResultsInIHTMLDocument(searchID);
+	ClearSearchResultsInIHTMLDocument(m_searchID);
 
 	IHTMLDocument2 *lpHtmlDocument = NULL;
 	LPDISPATCH lpDispatch = NULL;
@@ -697,9 +696,9 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 
 	CString htmlPrfix;
 	htmlPrfix.Append("<span id='");
-	htmlPrfix.Append((LPCTSTR)searchID);
+	htmlPrfix.Append((LPCTSTR)m_searchID);
 	htmlPrfix.Append("' style='");
-	htmlPrfix.Append((LPCTSTR)matchStyle);
+	htmlPrfix.Append((LPCTSTR)m_matchStyle);
 	htmlPrfix.Append("'>");
 
 	CComBSTR bstrTag;
