@@ -1091,8 +1091,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-//#define CACHE_VERSION	10  go back to 10 once all done
-#define CACHE_VERSION	11
+#define CACHE_VERSION	10
 
 void CPathStripPath(const char *path, CString &fileName)
 {
