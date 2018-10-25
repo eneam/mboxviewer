@@ -5,7 +5,8 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added next, previous, rotate and zoom capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// TODO: Resizing by Mouse Move can be slow for large images
 //
 // E-Mail: tobias.eiseler@sisternicky.com
 // 
@@ -25,6 +26,9 @@ class CCPictureCtrlDemoDlg : public CDialogEx
 public:
 	CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParent = NULL);	// Standardkonstruktor
 	~CCPictureCtrlDemoDlg();
+
+	void UpdateRotateType(Gdiplus::RotateFlipType rotateType);
+	void FillRect(CBrush &brush);
 
 // Dialogfelddaten
 	enum { IDD = IDD_CPICTURECTRLDEMO_DIALOG };
@@ -63,4 +67,5 @@ public:
 
 	static BOOL isSupportedPictureFile(LPCSTR file);
 	afx_msg void OnBnClickedButtonPrt();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };

@@ -5,7 +5,7 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added next, previous, rotate and zoom capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
 //
 // E-Mail: tobias.eiseler@sisternicky.com
 // 
@@ -31,7 +31,7 @@ CString GetmboxviewTempPath(char *name = 0);
 // CCPictureCtrlDemoDlg-Dialogfeld
 
 CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParent /*=NULL*/)
-	: CDialogEx(CCPictureCtrlDemoDlg::IDD, pParent)
+	: CDialogEx(CCPictureCtrlDemoDlg::IDD, pParent), m_picCtrl(this)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
@@ -52,6 +52,7 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParen
 		delete[] fileName;
 	}
 
+	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
 	m_ZoomMax = 16;
@@ -83,6 +84,7 @@ BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_ROTATE, &CCPictureCtrlDemoDlg::OnBnClickedRotate)
 	ON_BN_CLICKED(IDC_BUTTON_ZOOM, &CCPictureCtrlDemoDlg::OnBnClickedZoom)
 	ON_BN_CLICKED(IDC_BUTTON_PRT, &CCPictureCtrlDemoDlg::OnBnClickedButtonPrt)
+	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
 
@@ -108,7 +110,7 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 
 	// TODO: Insert additional initialization here
 
-	//SetBackgroundColor(RGB(0, 0, 0));
+	this->SetBackgroundColor(RGB(0, 0, 0));
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten
@@ -125,6 +127,9 @@ void CCPictureCtrlDemoDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
 void CCPictureCtrlDemoDlg::OnPaint()
 {
+	// DeferWindowPos ?? to reduce flicker
+			//ScreenToClient(&rect);
+
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // Gerätekontext zum Zeichnen // device context for drawing
@@ -144,16 +149,20 @@ void CCPictureCtrlDemoDlg::OnPaint()
 	}
 	else
 	{
+
 		CDialog::OnPaint();
 		CRect rect;
 		GetClientRect(&rect);
-		this->GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0))); // make dialog box black
+		//this->GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0))); // make dialog box black
+
+
 #if 0
 		if (m_picCtrl.GetSafeHwnd()) {
 			m_picCtrl.GetClientRect(&rect);
 			m_picCtrl.GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0)));
 		}
 #endif
+
 		if (m_picCtrl.GetSafeHwnd()) {
 			LoadImageFromFile();
 		}
@@ -198,6 +207,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 		return;
 	}
 
+	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
 	m_ZoomMaxForCurrentImage = m_ZoomMax;
@@ -219,6 +229,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 		return;
 	}
 
+	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
 	m_Zoom = 0;
 	m_ZoomMaxForCurrentImage = m_ZoomMax;
@@ -332,7 +343,7 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 	{
 		m_picCtrl.MoveWindow(20, 40, cx-40, cy-60);
 	}
-	Invalidate();
+	//Invalidate();
 	RedrawWindow();
 }
 
@@ -358,4 +369,25 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		}
 	}
+}
+
+void CCPictureCtrlDemoDlg::UpdateRotateType(Gdiplus::RotateFlipType rotateType)
+{
+	m_rotateType = rotateType;
+}
+
+void CCPictureCtrlDemoDlg::FillRect(CBrush &brush)
+{
+	CDialog::OnPaint();
+	CRect rect;
+	GetClientRect(&rect);
+	this->GetDC()->FillRect(&rect, &brush); // make dialog box black
+}
+
+
+
+BOOL CCPictureCtrlDemoDlg::OnEraseBkgnd(CDC* pDC)
+{
+	// TODO: Add your message handler code here and/or call default
+	return CDialogEx::OnEraseBkgnd(pDC);
 }

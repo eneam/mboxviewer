@@ -5,7 +5,8 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added next, previous, rotate and zoom capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// TODO: Resizing by Mouse Move can be slow for large images
 //
 // E-Mail: tobias.eiseler@sisternicky.com
 // 
@@ -23,13 +24,15 @@
 #include <GdiPlus.h>
 #include <atlimage.h>
 
+class CCPictureCtrlDemoDlg;
+
 class CPictureCtrl :
 	public CStatic
 {
 public:
 
 	//Constructor
-	CPictureCtrl(void);
+	CPictureCtrl(void *pPictureCtrlOwner);
 
 	//Destructor
 	~CPictureCtrl(void);
@@ -45,20 +48,35 @@ public:
 	int GetZoomMaxForCurrentImage() { return m_ZoomMaxForCurrentImage; }
 	void SetZoomMaxForCurrentImage(int zoomMaxForCurrentImage) { m_ZoomMaxForCurrentImage = zoomMaxForCurrentImage; }
 
+	BOOL m_bFixOrientation;
+
 protected:
 	virtual void PreSubclassWindow();
 
 	//Draws the Control
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
-	virtual BOOL OnEraseBkgnd(CDC* pDC);
+	Gdiplus::RotateFlipType DetermineNewOrientation(Gdiplus::Image &image);
+
+	void GetStringProperty(PROPID propid, Gdiplus::Image &image, CString &str);
+	void GetPropertyEquipMake(Gdiplus::Image &image, CString &equipMake);
+	void GetPropertyEquipModel(Gdiplus::Image &image, CString &equipModel);
+	void GetPropertyDateTime(Gdiplus::Image &image, CString &imageDataTime);
+	void GetPropertyImageTitle(Gdiplus::Image &image, CString &imageTitle);
+	void GetPropertyImageDescription(Gdiplus::Image &image, CString &imageDescription);
+
+	Gdiplus::RotateFlipType m_rotateType;
+	Gdiplus::Image *m_cimage;  // not used yet
+	Gdiplus::CachedBitmap  *m_cBitmap; // not used yet, may help to reduce flicker ??
+	Gdiplus::Graphics *m_graphics;  // not used yet
 
 private:
 
 	CString m_szFilePath;
-	Gdiplus::RotateFlipType m_rotateType;
 	int m_Zoom;
 	int m_ZoomMax;
-	int m_ZoomMaxForCurrentImage;
+	int m_ZoomMaxForCurrentImage; 
+	CCPictureCtrlDemoDlg *m_pPictureCtrlOwner;
+
 
 	//Control flag if a pic is loaded
 	// TODO: kept from the original code, likely not be needed anymore
@@ -66,4 +84,7 @@ private:
 
 	//GDI Plus Token
 	ULONG_PTR m_gdiplusToken;
+public:
+	DECLARE_MESSAGE_MAP()
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };

@@ -2431,6 +2431,12 @@ void NListView::OnEditFind()
 			}
 		}
 
+		BOOL isTextUnicode = IsWindowUnicode(this->GetSafeHwnd());
+		UINT localCP = GetACP();
+		std::string str;
+		BOOL ret = id2charset(localCP, str);
+		//  http://html-codes.info/ansi/html/Windows-1252-superscript%20one_185
+
 		m_bEditFindFirst = FALSE;
 
 		int sz = MboxMail::s_mails.GetSize();
