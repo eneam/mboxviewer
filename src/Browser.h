@@ -40,13 +40,13 @@ protected:
 	HWND m_hWndParent;
 	BOOL m_bOffline;
 	CString m_url;
-	BOOL m_bNavigateComplete;
 
 	void PrintCurrentPage();
 public:
 	void PageSetup();
 	void Navigate(LPCSTR url, DWORD flags);
 	CWebBrowser2 m_ie;
+	BOOL m_bNavigateComplete;
 
 	// Generated message map functions
 protected:

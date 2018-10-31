@@ -51,6 +51,7 @@ protected:  // control bar embedded members
 	CChildView    m_wndView;
 	BOOL m_bSelectMailFileDone;
 	HICON m_hIcon;
+	BOOL m_bMailDownloadComplete;
 
 // Generated message map functions
 protected:
@@ -86,6 +87,7 @@ public:
 	afx_msg void OnUpdateBysize(CCmdUI *pCmdUI);
 	afx_msg void OnByconversation();
 	afx_msg void OnUpdateByconversation(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMailDownloadStatus(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

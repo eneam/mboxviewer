@@ -40,7 +40,7 @@ public:
 public:
 
 	//Loads an image from a file
-	BOOL LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom);
+	BOOL LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom, BOOL invalidate);
 
 	//Frees the image data
 	void FreeData();

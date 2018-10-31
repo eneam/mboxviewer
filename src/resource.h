@@ -150,6 +150,7 @@
 #define ID_SORTBY_SUBJECT               32865
 #define ID_SORTBY_SIZE                  32866
 #define ID_SORTBY_CONVERSATION          32867
+#define ID_INDICATOR_MAIL               59142
 
 // Next default values for new objects
 // 
@@ -159,6 +160,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        182
 #define _APS_NEXT_COMMAND_VALUE         32868
 #define _APS_NEXT_CONTROL_VALUE         1146
-#define _APS_NEXT_SYMED_VALUE           108
+#define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

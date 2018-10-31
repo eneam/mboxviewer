@@ -57,10 +57,9 @@ CPictureCtrl::~CPictureCtrl(void)
 	//Tidy up
 	FreeData();
 	GdiplusShutdown(m_gdiplusToken);
-	//delete cimage;
 }
 
-BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom)
+BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom, BOOL invalidate)
 {
 	//Set success error state
 	SetLastError(ERROR_SUCCESS);
@@ -73,8 +72,10 @@ BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rot
 	//Mark as Loaded
 	m_bIsPicLoaded = TRUE;
 
-	Invalidate();
-	RedrawWindow();
+	if (invalidate) {
+		Invalidate();
+		RedrawWindow();
+	}
 
 	return TRUE;
 }
@@ -178,7 +179,6 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				posLeft = (ww - ziw) / 2;
 				posTop = (hh - zih) / 2;
 
-				//m_pPictureCtrlOwner->FillRect(CBrush(RGB(0, 0, 0)));
 				//this->GetDC()->FillRect(&rc, &CBrush(RGB(0, 0, 0)));
 				graphics->DrawImage(image, posLeft, posTop, w, h);
 
@@ -205,7 +205,6 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				posTop = (hh - h) / 2;
 			}
 
-			//m_pPictureCtrlOwner->FillRect(CBrush(RGB(0, 0, 0)));
 			//this->GetDC()->FillRect(&rc, &CBrush(RGB(0, 0, 0)));
 			graphics->DrawImage(image, posLeft, posTop, w, h);
 		}

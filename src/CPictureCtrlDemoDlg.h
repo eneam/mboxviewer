@@ -36,7 +36,7 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV-Unterstützung
 	BOOL LoadImageFileNames(CString & dir);
-	void LoadImageFromFile();
+	void LoadImageFromFile(BOOL invalidate = TRUE);
 
 
 // Implementierung

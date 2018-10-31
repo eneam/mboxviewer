@@ -78,11 +78,13 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_SORTBY_SIZE, &CMainFrame::OnUpdateBysize)
 	ON_COMMAND(ID_SORTBY_CONVERSATION, &CMainFrame::OnByconversation)
 	ON_UPDATE_COMMAND_UI(ID_SORTBY_CONVERSATION, &CMainFrame::OnUpdateByconversation)
+	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL, &CMainFrame::OnUpdateMailDownloadStatus)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
+	ID_INDICATOR_MAIL,
 	ID_INDICATOR_CAPS,
 	ID_INDICATOR_NUM,
 	ID_INDICATOR_SCRL,
@@ -94,6 +96,7 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	// TODO: add member initialization code here
+	m_bMailDownloadComplete = FALSE;
 	m_bSelectMailFileDone = FALSE;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -714,4 +717,36 @@ void CMainFrame::OnUpdateByconversation(CCmdUI *pCmdUI)
 {
 	// TODO: Add your command update UI handler code here
 	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+
+	NMsgView * msgView = GetMsgView();
+	NListView * listView = GetListView();
+	if ((listView == 0) || (msgView == 0))
+	{
+		pCmdUI->Enable(0);
+		return;
+	}
+
+	if (listView->m_lastSel < 0)
+	{
+		pCmdUI->Enable(0);
+		return;
+	}
+
+	pCmdUI->Enable();
+	CString strPage;
+	if (msgView->m_browser.m_bNavigateComplete)
+		m_bMailDownloadComplete = TRUE;
+	else
+		m_bMailDownloadComplete = FALSE;
+
+	if (m_bMailDownloadComplete)
+		strPage.Format("%s", _T("Mail Retrieval Complete"));
+	else
+		strPage.Format("%s", _T("Mail Retrieval In Progress ..."));
+	pCmdUI->SetText(strPage);
 }

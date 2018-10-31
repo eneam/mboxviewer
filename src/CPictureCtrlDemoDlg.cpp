@@ -75,7 +75,7 @@ void CCPictureCtrlDemoDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
 	ON_WM_SYSCOMMAND()
-	ON_WM_PAINT()
+	//ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
 	//}}AFX_MSG_MAP
@@ -111,6 +111,11 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 	// TODO: Insert additional initialization here
 
 	this->SetBackgroundColor(RGB(0, 0, 0));
+	// Disable ON_WM_PAINT() if you enable below. Both cases seem to work, need to figure best approach.
+	if (m_picCtrl.GetSafeHwnd()) {
+		BOOL invalidate = TRUE;
+		LoadImageFromFile(invalidate);
+	}
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten
@@ -149,22 +154,14 @@ void CCPictureCtrlDemoDlg::OnPaint()
 	}
 	else
 	{
-
 		CDialog::OnPaint();
 		CRect rect;
 		GetClientRect(&rect);
 		//this->GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0))); // make dialog box black
 
-
-#if 0
 		if (m_picCtrl.GetSafeHwnd()) {
-			m_picCtrl.GetClientRect(&rect);
-			m_picCtrl.GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0)));
-		}
-#endif
-
-		if (m_picCtrl.GetSafeHwnd()) {
-			LoadImageFromFile();
+			BOOL invalidate = TRUE;
+			LoadImageFromFile(invalidate);
 		}
 	}
 }
@@ -176,7 +173,7 @@ HCURSOR CCPictureCtrlDemoDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CCPictureCtrlDemoDlg::LoadImageFromFile()
+void CCPictureCtrlDemoDlg::LoadImageFromFile(BOOL invalidate)
 {
 	if (m_ImageFileNameArray.GetSize() <= 0) {
 		MessageBeep(MB_OK);
@@ -197,7 +194,7 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile()
 	//Load an Image from File
 	SetWindowText(fileName);
 	delete[] fileName;
-	m_picCtrl.LoadFromFile(*fname, m_rotateType, m_Zoom);
+	m_picCtrl.LoadFromFile(*fname, m_rotateType, m_Zoom, invalidate);
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedPrev()
@@ -341,10 +338,11 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 
 	if (m_picCtrl.GetSafeHwnd())
 	{
-		m_picCtrl.MoveWindow(20, 40, cx-40, cy-60);
+		BOOL repaint = TRUE;
+		m_picCtrl.MoveWindow(20, 40, cx-40, cy-60, repaint);
 	}
-	//Invalidate();
-	RedrawWindow();
+	Invalidate();
+	//RedrawWindow();
 }
 
 
