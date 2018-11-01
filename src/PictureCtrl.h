@@ -48,6 +48,8 @@ public:
 	int GetZoomMaxForCurrentImage() { return m_ZoomMaxForCurrentImage; }
 	void SetZoomMaxForCurrentImage(int zoomMaxForCurrentImage) { m_ZoomMaxForCurrentImage = zoomMaxForCurrentImage; }
 
+	void ReleaseImage();
+
 	BOOL m_bFixOrientation;
 
 protected:
@@ -65,7 +67,7 @@ protected:
 	void GetPropertyImageDescription(Gdiplus::Image &image, CString &imageDescription);
 
 	Gdiplus::RotateFlipType m_rotateType;
-	Gdiplus::Image *m_cimage;  // not used yet
+	Gdiplus::Image *m_cimage; 
 	Gdiplus::CachedBitmap  *m_cBitmap; // not used yet, may help to reduce flicker ??
 	Gdiplus::Graphics *m_graphics;  // not used yet
 

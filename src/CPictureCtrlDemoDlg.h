@@ -64,6 +64,7 @@ public:
 	afx_msg void OnBnClickedZoom();
 
 	CPictureCtrl m_picCtrl;
+	BOOL m_bDrawOnce;
 
 	static BOOL isSupportedPictureFile(LPCSTR file);
 	afx_msg void OnBnClickedButtonPrt();

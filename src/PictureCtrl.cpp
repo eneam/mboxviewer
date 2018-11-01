@@ -56,6 +56,7 @@ CPictureCtrl::~CPictureCtrl(void)
 {
 	//Tidy up
 	FreeData();
+	delete m_cimage;
 	GdiplusShutdown(m_gdiplusToken);
 }
 
@@ -74,7 +75,6 @@ BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rot
 
 	if (invalidate) {
 		Invalidate();
-		RedrawWindow();
 	}
 
 	return TRUE;
@@ -105,13 +105,22 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		CRect rc;
 		this->GetClientRect(&rc);
 
+		Gdiplus::Rect rC((int)rc.left, (int)rc.top, (int)rc.Width(), (int)rc.Height());
+
 		Gdiplus::Graphics graphicsDev(lpDrawItemStruct->hDC);
 		Gdiplus::Graphics *graphics = &graphicsDev;
 
 		CStringW f(m_szFilePath);
 
-		Image fimage(f);
-		Image *image = &fimage;
+		if (m_cimage == 0) {
+			m_cimage = Image::FromFile(f);
+		}
+
+		Image *image = m_cimage;
+
+		// Create an Image object 
+		Bitmap bmp(rc.right, rc.bottom);
+		Gdiplus::Graphics* graph = Gdiplus::Graphics::FromImage(&bmp);
 
 		CString equipMake;
 		GetPropertyEquipMake(*image, equipMake);
@@ -128,20 +137,28 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		CString sep = " ";
 		CString largeSep = "   - ";
-		CString windowText = fileName + largeSep + pictureDateTime + sep + equipModel + sep + equipMake;
+
+		CString windowText = fileName;
 		delete[] fileName;
+
+		if (!(pictureDateTime.IsEmpty() && equipModel.IsEmpty() && equipMake.IsEmpty()))
+			windowText += largeSep + pictureDateTime + sep + equipModel + sep + equipMake;
 
 		m_pPictureCtrlOwner->SetWindowText(windowText);
 
 		if (m_bFixOrientation)
 		{
 			m_rotateType = DetermineNewOrientation(*image);
-			m_pPictureCtrlOwner->UpdateRotateType(m_rotateType);
-			m_bFixOrientation = FALSE;
+			image->RotateFlip(m_rotateType);
+			m_rotateType = Gdiplus::RotateNoneFlipNone;
 		}
 
-		if (m_rotateType != Gdiplus::RotateNoneFlipNone)
+		if (m_rotateType != Gdiplus::RotateNoneFlipNone) {
 			image->RotateFlip(m_rotateType);
+			m_rotateType = Gdiplus::RotateNoneFlipNone;
+		}
+
+		m_bFixOrientation = FALSE;
 
 		INT h;
 		INT w;
@@ -179,8 +196,10 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				posLeft = (ww - ziw) / 2;
 				posTop = (hh - zih) / 2;
 
-				//this->GetDC()->FillRect(&rc, &CBrush(RGB(0, 0, 0)));
-				graphics->DrawImage(image, posLeft, posTop, w, h);
+				Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+				graph->FillRectangle(&bb, rC);
+				graph->DrawImage(image, posLeft, posTop, w, h);
+				graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 
 				done = TRUE;
 			}
@@ -205,8 +224,10 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				posTop = (hh - h) / 2;
 			}
 
-			//this->GetDC()->FillRect(&rc, &CBrush(RGB(0, 0, 0)));
-			graphics->DrawImage(image, posLeft, posTop, w, h);
+			Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+			graph->FillRectangle(&bb, rC);
+			graph->DrawImage(image, posLeft, posTop, w, h);
+			graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 		}
 	}
 }
@@ -315,18 +336,7 @@ Gdiplus::RotateFlipType CPictureCtrl::DetermineNewOrientation(Gdiplus::Image &im
 
 BOOL CPictureCtrl::OnEraseBkgnd(CDC *pDC)
 {
-	if(m_bIsPicLoaded)
-	{
-		//Get control measures
-		CRect rc;
-		this->GetClientRect(&rc);
-		pDC->FillRect(rc, &CBrush(RGB(0, 0, 0)));
-		return TRUE;
-	}
-	else
-	{
-		return CStatic::OnEraseBkgnd(pDC);
-	}
+	return TRUE;
 }
 
 void CPictureCtrl::GetStringProperty(PROPID propid, Gdiplus::Image &image, CString &str)
@@ -400,6 +410,15 @@ void CPictureCtrl::GetPropertyImageDescription(Gdiplus::Image &image, CString &i
 {
 	PROPID propid = PropertyTagImageDescription; // Type 	PropertyTagTypeASCII , Count 	Length of the string including the NULL terminator
 	GetStringProperty(propid, image, imageDescription);
+}
+
+void CPictureCtrl::ReleaseImage()
+{
+	if (m_cimage) 
+	{
+		delete m_cimage;
+		m_cimage = 0;
+	}
 }
 
 

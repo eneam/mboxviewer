@@ -57,6 +57,7 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParen
 	m_Zoom = 0;
 	m_ZoomMax = 16;
 	m_ZoomMaxForCurrentImage = m_ZoomMax;
+	m_bDrawOnce = TRUE;
 }
 
 CCPictureCtrlDemoDlg::~CCPictureCtrlDemoDlg()
@@ -75,7 +76,7 @@ void CCPictureCtrlDemoDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
 	ON_WM_SYSCOMMAND()
-	//ON_WM_PAINT()
+	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
 	//}}AFX_MSG_MAP
@@ -111,11 +112,6 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 	// TODO: Insert additional initialization here
 
 	this->SetBackgroundColor(RGB(0, 0, 0));
-	// Disable ON_WM_PAINT() if you enable below. Both cases seem to work, need to figure best approach.
-	if (m_picCtrl.GetSafeHwnd()) {
-		BOOL invalidate = TRUE;
-		LoadImageFromFile(invalidate);
-	}
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten
@@ -155,9 +151,6 @@ void CCPictureCtrlDemoDlg::OnPaint()
 	else
 	{
 		CDialog::OnPaint();
-		CRect rect;
-		GetClientRect(&rect);
-		//this->GetDC()->FillRect(&rect, &CBrush(RGB(0, 0, 0))); // make dialog box black
 
 		if (m_picCtrl.GetSafeHwnd()) {
 			BOOL invalidate = TRUE;
@@ -216,6 +209,8 @@ void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 		MessageBeep(MB_OK);
 	}
 
+	m_picCtrl.ReleaseImage();
+
 	LoadImageFromFile();
 }
 
@@ -238,6 +233,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 		MessageBeep(MB_OK);
 	}
 
+	m_picCtrl.ReleaseImage();
 	LoadImageFromFile();
 }
 
@@ -248,11 +244,11 @@ void CCPictureCtrlDemoDlg::OnBnClickedRotate()
 		return;
 	}
 
-	m_rotateType = (Gdiplus::RotateFlipType)((int)m_rotateType + 1);
-	if (m_rotateType > Gdiplus::Rotate270FlipNone)
-		m_rotateType = Gdiplus::RotateNoneFlipNone;
+	m_rotateType = Gdiplus::Rotate90FlipNone;
 
 	LoadImageFromFile();
+
+	m_rotateType = Gdiplus::RotateNoneFlipNone;
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedZoom()
@@ -338,11 +334,11 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 
 	if (m_picCtrl.GetSafeHwnd())
 	{
-		BOOL repaint = TRUE;
+		m_bDrawOnce = TRUE;
+		BOOL repaint = FALSE;
 		m_picCtrl.MoveWindow(20, 40, cx-40, cy-60, repaint);
 	}
 	Invalidate();
-	//RedrawWindow();
 }
 
 
@@ -387,5 +383,12 @@ void CCPictureCtrlDemoDlg::FillRect(CBrush &brush)
 BOOL CCPictureCtrlDemoDlg::OnEraseBkgnd(CDC* pDC)
 {
 	// TODO: Add your message handler code here and/or call default
-	return CDialogEx::OnEraseBkgnd(pDC);
+
+	if (m_bDrawOnce)
+	{
+		m_bDrawOnce = FALSE;
+		return CDialogEx::OnEraseBkgnd(pDC);
+	}
+	else
+		return TRUE;
 }
