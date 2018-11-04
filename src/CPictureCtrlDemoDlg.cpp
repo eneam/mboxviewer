@@ -5,7 +5,7 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
 //
 // E-Mail: tobias.eiseler@sisternicky.com
 // 
@@ -54,10 +54,14 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParen
 
 	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
-	m_Zoom = 0;
-	m_ZoomMax = 16;
-	m_ZoomMaxForCurrentImage = m_ZoomMax;
+	m_Zoom = 1;
+	m_bZoomEnabled = FALSE;
 	m_bDrawOnce = TRUE;
+	m_sliderRange = 100;
+	m_sliderFreq = 5;
+
+	m_hightZoom = 1;
+	m_widthZoom = 1;
 }
 
 CCPictureCtrlDemoDlg::~CCPictureCtrlDemoDlg()
@@ -72,6 +76,8 @@ void CCPictureCtrlDemoDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_STATIC_PICTURE, m_picCtrl);
+	DDX_Control(pDX, IDC_SLIDER_ZOOM, m_sliderCtrl);
+	int deb = 1;
 }
 
 BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
@@ -86,6 +92,14 @@ BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_ZOOM, &CCPictureCtrlDemoDlg::OnBnClickedZoom)
 	ON_BN_CLICKED(IDC_BUTTON_PRT, &CCPictureCtrlDemoDlg::OnBnClickedButtonPrt)
 	ON_WM_ERASEBKGND()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	//ON_WM_RBUTTONDOWN()
+	//ON_WM_RBUTTONUP()
+	ON_WM_HSCROLL()
+	ON_BN_CLICKED(IDCANCEL, &CCPictureCtrlDemoDlg::OnBnClickedCancel)
+	ON_STN_CLICKED(IDC_STATIC_PICTURE, &CCPictureCtrlDemoDlg::OnStnClickedStaticPicture)
 END_MESSAGE_MAP()
 
 
@@ -112,6 +126,13 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 	// TODO: Insert additional initialization here
 
 	this->SetBackgroundColor(RGB(0, 0, 0));
+
+	m_sliderCtrl.SetRange(0, m_sliderRange);
+	m_sliderCtrl.SetTicFreq(m_sliderFreq);
+
+	EnableZoom(FALSE);
+
+	UpdateData(TRUE);
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten
@@ -153,8 +174,7 @@ void CCPictureCtrlDemoDlg::OnPaint()
 		CDialog::OnPaint();
 
 		if (m_picCtrl.GetSafeHwnd()) {
-			BOOL invalidate = TRUE;
-			LoadImageFromFile(invalidate);
+			LoadImageFromFile();
 		}
 	}
 }
@@ -166,7 +186,7 @@ HCURSOR CCPictureCtrlDemoDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CCPictureCtrlDemoDlg::LoadImageFromFile(BOOL invalidate)
+void CCPictureCtrlDemoDlg::LoadImageFromFile()
 {
 	if (m_ImageFileNameArray.GetSize() <= 0) {
 		MessageBeep(MB_OK);
@@ -187,7 +207,7 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile(BOOL invalidate)
 	//Load an Image from File
 	SetWindowText(fileName);
 	delete[] fileName;
-	m_picCtrl.LoadFromFile(*fname, m_rotateType, m_Zoom, invalidate);
+	m_picCtrl.LoadFromFile(*fname, m_rotateType, m_Zoom);
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedPrev()
@@ -199,9 +219,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 
 	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
-	m_Zoom = 0;
-	m_ZoomMaxForCurrentImage = m_ZoomMax;
-	m_picCtrl.SetZoomMaxForCurrentImage(m_ZoomMax);
+	m_Zoom = 1;
 
 	m_ImageFileNameArrayPos--;
 	if (m_ImageFileNameArrayPos < 0) {
@@ -210,7 +228,9 @@ void CCPictureCtrlDemoDlg::OnBnClickedPrev()
 	}
 
 	m_picCtrl.ReleaseImage();
+	m_picCtrl.ResetDrag();
 
+	EnableZoom(FALSE);
 	LoadImageFromFile();
 }
 
@@ -223,9 +243,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 
 	m_picCtrl.m_bFixOrientation = TRUE;
 	m_rotateType = Gdiplus::RotateNoneFlipNone;
-	m_Zoom = 0;
-	m_ZoomMaxForCurrentImage = m_ZoomMax;
-	m_picCtrl.SetZoomMaxForCurrentImage(m_ZoomMax);
+	m_Zoom = 1;
 
 	m_ImageFileNameArrayPos++;
 	if (m_ImageFileNameArrayPos >= m_ImageFileNameArray.GetCount()) {
@@ -234,6 +252,9 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 	}
 
 	m_picCtrl.ReleaseImage();
+	m_picCtrl.ResetDrag();
+
+	EnableZoom(FALSE);
 	LoadImageFromFile();
 }
 
@@ -258,16 +279,24 @@ void CCPictureCtrlDemoDlg::OnBnClickedZoom()
 		return;
 	}
 
-	m_ZoomMaxForCurrentImage = m_ZoomMax;
-	int zoomMaxForCurrentImage = m_picCtrl.GetZoomMaxForCurrentImage();
-	if ((zoomMaxForCurrentImage > 0) && (zoomMaxForCurrentImage < m_ZoomMax))
-		m_ZoomMaxForCurrentImage = zoomMaxForCurrentImage;
+	m_bZoomEnabled = !m_bZoomEnabled;
 
-	m_Zoom += 1;
-	if (m_Zoom >= m_ZoomMaxForCurrentImage)
-		m_Zoom = 0;
+	EnableZoom(m_bZoomEnabled);
 
 	LoadImageFromFile();
+}
+
+void CCPictureCtrlDemoDlg::EnableZoom(BOOL enableZoom)
+{
+	m_Zoom = 1;
+	m_picCtrl.ResetDrag();
+	m_sliderCtrl.SetPos(m_sliderRange / 2);
+	GetDlgItem(IDC_SLIDER_POS)->SetWindowText(_T("0"));
+
+	GetDlgItem(IDC_SLIDER_ZOOM)->EnableWindow(enableZoom);
+	GetDlgItem(IDC_SLIDER_POS)->EnableWindow(enableZoom);
+
+	m_bZoomEnabled = enableZoom;
 }
 
 BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
@@ -336,7 +365,7 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 	{
 		m_bDrawOnce = TRUE;
 		BOOL repaint = FALSE;
-		m_picCtrl.MoveWindow(20, 40, cx-40, cy-60, repaint);
+		m_picCtrl.MoveWindow(20, 40, cx - 40, cy - 60, repaint);
 	}
 	Invalidate();
 }
@@ -378,8 +407,6 @@ void CCPictureCtrlDemoDlg::FillRect(CBrush &brush)
 	this->GetDC()->FillRect(&rect, &brush); // make dialog box black
 }
 
-
-
 BOOL CCPictureCtrlDemoDlg::OnEraseBkgnd(CDC* pDC)
 {
 	// TODO: Add your message handler code here and/or call default
@@ -391,4 +418,90 @@ BOOL CCPictureCtrlDemoDlg::OnEraseBkgnd(CDC* pDC)
 	}
 	else
 		return TRUE;
+}
+
+void CCPictureCtrlDemoDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	m_picCtrl.ResetDraggedFlag();
+
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+void CCPictureCtrlDemoDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void CCPictureCtrlDemoDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CCPictureCtrlDemoDlg::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialogEx::OnRButtonDown(nFlags, point);
+}
+
+void CCPictureCtrlDemoDlg::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialogEx::OnRButtonUp(nFlags, point);
+}
+
+
+void CCPictureCtrlDemoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	nPos = m_sliderCtrl.GetPos();
+	int pos = nPos;
+
+	//TRACE(_T("Slider Position: %d\n"), pos);
+
+	if (pos <= (m_sliderRange / 2)) 
+	{
+		pos = m_sliderRange / 2 - pos;
+		m_Zoom = (float)pos /( m_sliderRange / 2);
+		m_Zoom = (float)1 - m_Zoom;
+		float minZoom = (float)0.05;
+		if (m_Zoom < minZoom)
+			m_Zoom = minZoom;
+	}
+	else {
+		pos = pos - (m_sliderRange / 2);
+		m_Zoom = (float)pos / 10 + 1;
+	}
+
+	//TRACE(_T("zoom=%f\n"), m_Zoom);
+
+	CString zoomLevel;
+	int level = nPos - (m_sliderRange / 2);
+	zoomLevel.Format(_T("%d"), level);
+	GetDlgItem(IDC_SLIDER_POS)->SetWindowText(zoomLevel);
+
+	Invalidate();
+
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+}
+
+
+void CCPictureCtrlDemoDlg::OnBnClickedCancel()
+{
+	// TODO: Add your control notification handler code here
+	CDialogEx::OnCancel();
+}
+
+
+void CCPictureCtrlDemoDlg::OnStnClickedStaticPicture()
+{
+	// TODO: Add your control notification handler code here
 }

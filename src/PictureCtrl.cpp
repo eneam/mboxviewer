@@ -7,7 +7,7 @@
 // E-Mail: tobias.eiseler@sisternicky.com
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
 // 
 // Function: A MFC Picture Control to display
 //           an image on a Dialog, etc.
@@ -43,13 +43,17 @@ CPictureCtrl::CPictureCtrl(void *pPictureCtrlOwner)
 	GdiplusStartupInput gdiplusStartupInput;
 	GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
 
-	m_Zoom = 0;
-	m_ZoomMax = 16;
-	m_ZoomMaxForCurrentImage = 0;
+	m_Zoom = 1;
 	m_pPictureCtrlOwner = (CCPictureCtrlDemoDlg*)pPictureCtrlOwner;
 	m_cimage = 0;
 	m_cBitmap = 0;
 	m_graphics = 0;
+	m_bIsDragged = FALSE;
+
+	m_PointDragBegin.SetPoint(0, 0);;
+	m_PointDragEnd.SetPoint(0, 0);
+	m_deltaDragX = 0;
+	m_deltaDragY = 0;
 }
 
 CPictureCtrl::~CPictureCtrl(void)
@@ -60,7 +64,7 @@ CPictureCtrl::~CPictureCtrl(void)
 	GdiplusShutdown(m_gdiplusToken);
 }
 
-BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom, BOOL invalidate)
+BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom)
 {
 	//Set success error state
 	SetLastError(ERROR_SUCCESS);
@@ -73,9 +77,7 @@ BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rot
 	//Mark as Loaded
 	m_bIsPicLoaded = TRUE;
 
-	if (invalidate) {
-		Invalidate();
-	}
+	Invalidate();
 
 	return TRUE;
 }
@@ -88,7 +90,7 @@ void CPictureCtrl::FreeData()
 void CPictureCtrl::PreSubclassWindow()
 {
 	CStatic::PreSubclassWindow();
-	ModifyStyle(0, SS_OWNERDRAW);
+	ModifyStyle(0, SS_OWNERDRAW | SS_NOTIFY);
 }
 
 void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
@@ -99,13 +101,12 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		return;
 	}
 
+	//TRACE(_T("CPictureCtrl::DrawItem\n"));
+
 	if (m_bIsPicLoaded)
 	{
-		//Get control measures
 		CRect rc;
 		this->GetClientRect(&rc);
-
-		Gdiplus::Rect rC((int)rc.left, (int)rc.top, (int)rc.Width(), (int)rc.Height());
 
 		Gdiplus::Graphics graphicsDev(lpDrawItemStruct->hDC);
 		Gdiplus::Graphics *graphics = &graphicsDev;
@@ -118,10 +119,13 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		Image *image = m_cimage;
 
-		// Create an Image object 
 		Bitmap bmp(rc.right, rc.bottom);
-		Gdiplus::Graphics* graph = Gdiplus::Graphics::FromImage(&bmp);
+		Gdiplus::Graphics gr(&bmp);
+		Gdiplus::Graphics *graph = &gr;
 
+		// rectangle fro graphics graph
+		Gdiplus::Rect rC((int)rc.left, (int)rc.top, (int)rc.Width(), (int)rc.Height());
+		
 		CString equipMake;
 		GetPropertyEquipMake(*image, equipMake);
 
@@ -166,69 +170,125 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		INT ww = rc.right - rc.left;
 		INT hh = rc.bottom - rc.top;
 
-		INT iw = image->GetWidth();
-		INT ih = image->GetHeight();
+		INT iw = image->GetWidth();  // iw - image width
+		INT ih = image->GetHeight();  // ih - image hight
 
 		INT posLeft = 0;
 		INT posTop = 0;
 
-		BOOL done = FALSE;
-		if (m_Zoom != 0)
-		{
-			INT zih = ih * m_Zoom;
-			INT ziw = iw * m_Zoom;
-
-			int wZoomMaxForCurrentImage = ww / iw + 1;
-			int hZoomMaxForCurrentImage = hh / ih + 1;
-			if (hZoomMaxForCurrentImage < wZoomMaxForCurrentImage)
-				m_ZoomMaxForCurrentImage = hZoomMaxForCurrentImage;
-			else
-				m_ZoomMaxForCurrentImage = wZoomMaxForCurrentImage;
-
-			if ((ziw > ww) || (zih > hh)) {
-				m_ZoomMaxForCurrentImage = m_Zoom;
-			}
-			else
-			{
-				h = zih;
-				w = ziw;
-
-				posLeft = (ww - ziw) / 2;
-				posTop = (hh - zih) / 2;
-
-				Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
-				graph->FillRectangle(&bb, rC);
-				graph->DrawImage(image, posLeft, posTop, w, h);
-				graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
-
-				done = TRUE;
-			}
+		DOUBLE hratio = (DOUBLE)hh / ih;  // hh = hratio * ih
+		w = (int)(hratio * iw);
+		h = (int)(hratio * ih);
+		if (w > ww) {  
+			// image width > client rectagle width , adjust image size
+			DOUBLE wratio = (DOUBLE)ww / iw;
+			h = (int)(wratio * ih);
+			w = (int)(wratio * iw);
 		}
 
-		if (done == FALSE)
+		if (m_Zoom == 1)
 		{
-			DOUBLE hratio = (DOUBLE)hh / ih;  // hh = hratio * ih
-			w = (int)(hratio * iw);
-			h = (int)(hratio * ih);
-			if (w > ww) {
-
-				DOUBLE wratio = (DOUBLE)ww / iw;
-				h = (int)(wratio * ih);
-				w = (int)(wratio * iw);
-			}
-
 			if (w < ww) {
 				posLeft = (ww - w) / 2;
 			}
 			if (h < hh) {
 				posTop = (hh - h) / 2;
 			}
-
-			Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
-			graph->FillRectangle(&bb, rC);
-			graph->DrawImage(image, posLeft, posTop, w, h);
-			graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 		}
+		else if (m_Zoom != 1)
+		{
+
+			// Adjust m_deltaDragX and m_deltaDragY. TODO: needs some work but good enough for now.
+			if (m_rect.Height() && m_rect.Width() && rc.Height() && rc.Width())
+			{
+				m_hightZoom = (float)rc.Height() / m_rect.Height();
+				m_widthZoom = (float)rc.Width() / m_rect.Width();
+
+				m_hightZoom = abs(m_hightZoom);
+				m_widthZoom = abs(m_widthZoom);
+
+				m_deltaDragX = (int)(m_widthZoom*m_deltaDragX);
+				m_deltaDragY = (int)(m_hightZoom*m_deltaDragY);
+			}
+			if (rc.Height() && rc.Width())
+				m_rect = rc;
+
+			//TRACE(_T("m_hightZoom=%f m_widthZoom=%f\n"), m_hightZoom, m_widthZoom);
+
+			w = (int)(m_Zoom * w);
+			h = (int)(m_Zoom * h);
+
+			posLeft = (ww - w) / 2;
+			posTop = (hh - h) / 2;
+
+			if (m_Zoom < 1) {
+				m_deltaDragX = 0;
+				m_deltaDragY = 0;
+			}
+			else if (m_Zoom > 1)
+			{
+				posLeft += m_deltaDragX;
+				posTop += m_deltaDragY;
+
+				int posRight; posRight = posLeft + w;
+				int posBottom; posBottom = posTop + h;
+
+				// Likely logic can be reduced :)
+				if (h > hh)  // zommed image hight > client rectagle hight
+				{
+					// make sure posTop <= 0 and posBottom >= h
+					if (posTop > 0) {
+						m_deltaDragY -= posTop;
+						posTop = 0;
+					}
+					else if (posBottom < hh) {
+						m_deltaDragY += (hh - posBottom);
+						posTop += (hh - posBottom);
+					}
+				}
+				else {
+					// make sure posTop >= 0 or posBottom <= h
+					if (posTop < 0) {
+						m_deltaDragY -= posTop;
+						posTop = 0;
+					}
+					else if (posBottom > hh) {
+						m_deltaDragY += (hh - posBottom);
+						posTop += (hh - posBottom);
+					}
+				}
+
+				if (w > ww) // zommed image width > client rectagle width
+				{
+					// make sure posLeft <= 0 and posRight >= w
+					if (posLeft > 0) {
+						m_deltaDragX -= posLeft;
+						posLeft = 0;
+					}
+					else if (posRight < ww) {
+						m_deltaDragX += (ww - posRight);
+						posLeft += (ww - posRight);
+					}
+				}
+				else
+				{
+					// make sure posLeft >= 0 or posRight <= w
+					if (posLeft < 0) {
+						m_deltaDragX -= posLeft;
+						posLeft = 0;
+					}
+					else if (posRight > ww) {
+						m_deltaDragX += (ww - posRight);
+						posLeft += (ww - posRight);
+					}
+				}
+			}
+		}
+
+		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+		graph->FillRectangle(&bb, rC);
+		graph->DrawImage(image, posLeft, posTop, w, h);
+		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 	}
 }
 
@@ -425,4 +485,128 @@ void CPictureCtrl::ReleaseImage()
 
 BEGIN_MESSAGE_MAP(CPictureCtrl, CStatic)
 	ON_WM_ERASEBKGND()
+	//ON_WM_NCMOUSEMOVE()
+	ON_WM_MOUSEMOVE()
+	//ON_WM_MENURBUTTONUP()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	//ON_WM_RBUTTONDOWN()
+	//ON_WM_RBUTTONUP()
+	ON_WM_MOUSEWHEEL()
+	//ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
+
+
+void CPictureCtrl::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if ((m_bIsDragged == TRUE) && (m_Zoom > 1))
+	{
+		m_PointDragEnd = point;
+
+		int deltaDragX = m_PointDragEnd.x - m_PointDragBegin.x;
+		int deltaDragY = m_PointDragEnd.y - m_PointDragBegin.y;
+
+		m_deltaDragX += deltaDragX;
+		m_deltaDragY += deltaDragY;
+
+		m_PointDragBegin = m_PointDragEnd;
+
+		Invalidate();
+	}
+
+	CStatic::OnMouseMove(nFlags, point);
+}
+
+
+void CPictureCtrl::OnMenuRButtonUp(UINT nPos, CMenu *pMenu)
+{
+	// This feature requires Windows 2000 or greater.
+	// The symbols _WIN32_WINNT and WINVER must be >= 0x0500.
+	// TODO: Add your message handler code here and/or call default
+
+	CStatic::OnMenuRButtonUp(nPos, pMenu);
+}
+
+
+void CPictureCtrl::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	m_bIsDragged = TRUE;
+
+	m_PointDragBegin = point;
+	m_PointDragEnd.SetPoint(0, 0);
+
+	CStatic::OnLButtonDown(nFlags, point);
+}
+
+
+void CPictureCtrl::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	m_bIsDragged = FALSE;
+	m_PointDragEnd = point;
+
+	int deltaDragX = m_PointDragEnd.x - m_PointDragBegin.x;
+	int deltaDragY = m_PointDragEnd.y - m_PointDragBegin.y;
+
+	m_deltaDragX += deltaDragX;
+	m_deltaDragY += deltaDragY;
+
+	m_PointDragBegin = m_PointDragEnd;
+
+	CStatic::OnLButtonUp(nFlags, point);
+}
+
+
+void CPictureCtrl::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CStatic::OnRButtonDown(nFlags, point);
+}
+
+
+void CPictureCtrl::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CStatic::OnRButtonUp(nFlags, point);
+}
+
+void CPictureCtrl::ResetDraggedFlag()
+{
+	if (m_bIsDragged)
+		int deb = 1;
+	m_bIsDragged = FALSE;
+}
+
+void CPictureCtrl::ResetDrag()
+{
+	m_deltaDragX = 0;
+	m_deltaDragY = 0;
+}
+
+BOOL CPictureCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if ((m_bIsDragged == FALSE) && (m_Zoom > 1))
+	{
+		m_deltaDragX += 0;
+		m_deltaDragY += zDelta;
+
+		Invalidate();
+	}
+
+	return CStatic::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+
+void CPictureCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CStatic::OnLButtonDblClk(nFlags, point);
+}

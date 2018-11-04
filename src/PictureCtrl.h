@@ -5,7 +5,7 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
 // TODO: Resizing by Mouse Move can be slow for large images
 //
 // E-Mail: tobias.eiseler@sisternicky.com
@@ -40,17 +40,20 @@ public:
 public:
 
 	//Loads an image from a file
-	BOOL LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, int zoom, BOOL invalidate);
+	BOOL LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom);
 
 	//Frees the image data
 	void FreeData();
 
-	int GetZoomMaxForCurrentImage() { return m_ZoomMaxForCurrentImage; }
-	void SetZoomMaxForCurrentImage(int zoomMaxForCurrentImage) { m_ZoomMaxForCurrentImage = zoomMaxForCurrentImage; }
-
 	void ReleaseImage();
+	void ResetDraggedFlag();
+	void ResetDrag();
 
 	BOOL m_bFixOrientation;
+	CPoint m_PointDragBegin;
+	CPoint m_PointDragEnd;
+	int m_deltaDragX;
+	int m_deltaDragY;
 
 protected:
 	virtual void PreSubclassWindow();
@@ -74,10 +77,15 @@ protected:
 private:
 
 	CString m_szFilePath;
-	int m_Zoom;
-	int m_ZoomMax;
-	int m_ZoomMaxForCurrentImage; 
+	float m_Zoom;
 	CCPictureCtrlDemoDlg *m_pPictureCtrlOwner;
+	BOOL m_bIsDragged;
+	int m_sliderRange;
+	int m_sliderFreq;
+
+	CRect m_rect; // current static rectangle
+	float m_hightZoom;
+	float m_widthZoom;
 
 
 	//Control flag if a pic is loaded
@@ -89,4 +97,12 @@ private:
 public:
 	DECLARE_MESSAGE_MAP()
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnMenuRButtonUp(UINT nPos, CMenu *pMenu);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 };

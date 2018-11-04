@@ -5,7 +5,7 @@
 // Author: Tobias Eiseler
 //
 // Adapted for Windows MBox Viewer by the mboxview development
-// Simplified, added re-orientation, added next, previous, rotate, zoom and print capabilities
+// Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
 // TODO: Resizing by Mouse Move can be slow for large images
 //
 // E-Mail: tobias.eiseler@sisternicky.com
@@ -29,6 +29,7 @@ public:
 
 	void UpdateRotateType(Gdiplus::RotateFlipType rotateType);
 	void FillRect(CBrush &brush);
+	void EnableZoom(BOOL enableZoom);
 
 // Dialogfelddaten
 	enum { IDD = IDD_CPICTURECTRLDEMO_DIALOG };
@@ -36,7 +37,7 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV-Unterstützung
 	BOOL LoadImageFileNames(CString & dir);
-	void LoadImageFromFile(BOOL invalidate = TRUE);
+	void LoadImageFromFile();
 
 
 // Implementierung
@@ -45,9 +46,12 @@ protected:
 	CArray<CString*, CString*> m_ImageFileNameArray;
 	int m_ImageFileNameArrayPos;
 	Gdiplus::RotateFlipType m_rotateType;
-	int m_Zoom;  // current zoom multiplier
-	int m_ZoomMax;  // maximum zoom iterartions
-	int m_ZoomMaxForCurrentImage;  // maximum zoom iterartions determined for the current image
+	float m_Zoom;  // current zoom multiplier
+	BOOL m_bZoomEnabled;
+
+	CRect m_rect; // current static rectangle
+	float m_hightZoom;
+	float m_widthZoom;
 
 	// Generierte Funktionen für die Meldungstabellen
 	// Generated functions for the message tables
@@ -64,9 +68,20 @@ public:
 	afx_msg void OnBnClickedZoom();
 
 	CPictureCtrl m_picCtrl;
+	CSliderCtrl m_sliderCtrl;
 	BOOL m_bDrawOnce;
+	int m_sliderRange;
+	int m_sliderFreq;
 
 	static BOOL isSupportedPictureFile(LPCSTR file);
 	afx_msg void OnBnClickedButtonPrt();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnBnClickedCancel();
+	afx_msg void OnStnClickedStaticPicture();
 };
