@@ -2,6 +2,14 @@
 Changes
 ---
 
+v 1.0.2.7
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Fixed picture orientation in Picture Viewer;
+ - Added mail message retrieval state in the status bar"
+ - Improved performance of Picture Viewer to reduce flicker;
+ - Added zoom slider and image dragging using mouse to Picture Viewer;
+
 v 1.0.2.6
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
