@@ -16,6 +16,7 @@ Features
 * print single mail to Text or HTML file;
 * group all related mails as conversations in the summary window;
 * print related mails/mail group to Text or HTML file;
+* open a single or group of related mails in external browser;
 * sort emails by date, from, subject and conversation columns;
 * find user defined text in the message and highlight all occurrences;
 * search mails by user defined date range and text in the subject, sender, recepient, message text and text attachments; 
@@ -28,9 +29,10 @@ v 1.0.2.7
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
  - Fixed picture orientation in Picture Viewer;
- - Added mail message retrieval state in the status bar"
  - Improved performance of Picture Viewer to reduce flicker;
  - Added zoom slider and image dragging using mouse to Picture Viewer;
+ - Added mail message retrieval state in the status bar;
+ - Updated User Manual to describe new and updated features;
 
 v 1.0.2.6
 
