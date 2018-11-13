@@ -42,6 +42,7 @@ public:
 	void SaveData();
 	void FillCtrl();
 	void SelectMailFile(); // based on -MBOX= command line argument
+	void ForceParseMailFile(HTREEITEM hItem);
 	virtual ~NTreeView();
 
 	// Generated message map functions

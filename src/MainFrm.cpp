@@ -79,6 +79,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_SORTBY_CONVERSATION, &CMainFrame::OnByconversation)
 	ON_UPDATE_COMMAND_UI(ID_SORTBY_CONVERSATION, &CMainFrame::OnUpdateByconversation)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL, &CMainFrame::OnUpdateMailDownloadStatus)
+	ON_UPDATE_COMMAND_UI(ID_INDICATOR_NUM, &CMainFrame::OnUpdateMailIndex)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -98,6 +99,7 @@ CMainFrame::CMainFrame()
 	// TODO: add member initialization code here
 	m_bMailDownloadComplete = FALSE;
 	m_bSelectMailFileDone = FALSE;
+	m_MailIndex = -1;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -748,5 +750,32 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 		strPage.Format("%s", _T("Mail Retrieval Complete"));
 	else
 		strPage.Format("%s", _T("Mail Retrieval In Progress ..."));
+
 	pCmdUI->SetText(strPage);
+}
+
+void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+
+	NMsgView * msgView = GetMsgView();
+	NListView * listView = GetListView();
+	if ((listView == 0) || (msgView == 0))
+	{
+		pCmdUI->Enable(0);
+		return;
+	}
+
+	if (listView->m_lastSel < 0)
+	{
+		pCmdUI->Enable(0);
+		return;
+	}
+
+	pCmdUI->Enable();
+	CString strMailIndex;
+	if (listView->m_lastSel >= 0)
+		strMailIndex.Format("%d", listView->m_lastSel);
+
+	pCmdUI->SetText(strMailIndex);
 }

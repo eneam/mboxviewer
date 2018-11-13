@@ -52,6 +52,7 @@ protected:  // control bar embedded members
 	BOOL m_bSelectMailFileDone;
 	HICON m_hIcon;
 	BOOL m_bMailDownloadComplete;
+	int m_MailIndex;
 
 // Generated message map functions
 protected:
@@ -67,14 +68,15 @@ protected:
 
 
 public:
+	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE);
+	void OnPrinttoTextFile(int textType);
+
 	afx_msg void OnFileExportToCsv();
 	afx_msg void OnViewCodepageids();
 	afx_msg void OnPrinttoCsv();
 	afx_msg void OnPrinttoText();
 	afx_msg void OnPrinttoHtml();
 
-	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE);
-	void OnPrinttoTextFile(int textType);
 	afx_msg void OnBydate();
 	afx_msg void OnUpdateBydate(CCmdUI *pCmdUI);
 	afx_msg void OnByfrom();
@@ -88,6 +90,7 @@ public:
 	afx_msg void OnByconversation();
 	afx_msg void OnUpdateByconversation(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateMailDownloadStatus(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMailIndex(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

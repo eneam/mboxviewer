@@ -23,7 +23,7 @@ CBrowser::CBrowser()
 	m_hWndParent = NULL;
 	m_bDidNavigate = false;
 	m_bDops = false;
-	m_bNavigateComplete = FALSE;
+	m_bNavigateComplete = TRUE;
 }
 
 BEGIN_MESSAGE_MAP(CBrowser, CWnd)
@@ -83,9 +83,13 @@ void CBrowser::Navigate(LPCSTR url, DWORD flags)
 	ASSERT(pvarEmpty);
 	ASSERT(pvarFlags);
 	m_url = url;
-	TRACE("CBrowser::Navigate(%s)...", url);
+	TRACE("CBrowser::Navigate(%s)... m_bNavigateComplete(%d)\n", url, m_bNavigateComplete);
 	m_bNavigateComplete = FALSE;
+	//m_ie.Stop();
 	m_ie.Navigate2( pvarURL, pvarFlags, pvarEmpty, pvarEmpty, pvarEmpty );
+	CString loc = m_ie.GetLocationURL();
+	if (loc.CompareNoCase(url))
+		int deb = 1;
 	TRACE("Done.\n");
 	delete pvarURL;
 	delete pvarEmpty;
@@ -106,6 +110,12 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 	IUnknown*  pUnk;
 	LPDISPATCH lpWBDisp;
 	HRESULT    hr;
+
+	CString strURL = V_BSTR(URL);
+	CString locURL = m_ie.GetLocationURL();
+	
+	TRACE("CBrowser::OnDocumentCompleteExplorer(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
+		strURL, m_bNavigateComplete, m_url, locURL);
 
 	pUnk = m_ie.GetControlUnknown();
 	ASSERT(pUnk);
@@ -142,8 +152,9 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 }
 
 #include <atlconv.h>
+BOOL _PathFileExist(LPCSTR path);
 
-void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
+void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		VARIANT* Flags, VARIANT* TargetFrameName,
 		VARIANT* PostData, VARIANT* Headers, BOOL* Cancel)
 {
@@ -152,6 +163,11 @@ void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
 	USES_CONVERSION;
 
 	CString strURL = V_BSTR(URL);
+	CString locURL = m_ie.GetLocationURL();
+
+	TRACE("CBrowser::BeforeNavigate(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
+		strURL, m_bNavigateComplete, m_url, locURL);
+
 	m_bDidNavigate = true;
 	CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
 	if( ! pFrame )
@@ -166,12 +182,14 @@ void CBrowser::BeforeNavigate(LPDISPATCH /* pDisp */, VARIANT* URL,
 		*Cancel = FALSE;
 
 #if 1
-	// Best effort. User may select link before download is completed.
-	// Solution not clear. Neeed to hover a link, read the link and  open in browser ?
-	// or disable left mouse click anf force user to open the link via right click menu?
-	if (m_bNavigateComplete) {
+	// TODO: Best effort. Microsoft recommded solution not clear.
+	// May need to intercept mouse click, update doc to attach action events to all links ?
+	if (strURL.CompareNoCase("about:blank") && !_PathFileExist(strURL)) {
+		if (Cancel)
+			*Cancel = TRUE;
+		//IDispatch *api = pDisp;
+		//m_ie.Stop();
 		ShellExecute(0, NULL, strURL, NULL, NULL, SW_SHOWDEFAULT);
-		*Cancel = TRUE;
 	}
 #endif
 	return;

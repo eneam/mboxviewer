@@ -1166,6 +1166,11 @@ BOOL SaveMails(LPCSTR cache)
 			{
 				if (!body->m_attachmentName.IsEmpty())
 				{
+					// Assume that if m_contentId is not empty, need to fix embeded image declared as non inline incorrectly;
+					// Better more expensive solution would be to evaluate html content
+					if (body->m_contentDisposition.CompareNoCase("inline") && !body->m_contentId.IsEmpty())
+						body->m_contentDisposition = "inline";
+
 					if ((body->m_contentDisposition.CompareNoCase("inline") == 0) && !body->m_contentId.IsEmpty())
 					{
 						SimpleString*outbuf = MboxMail::m_outbuf;
@@ -1749,6 +1754,16 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 	return -1;
 }
 
+void FindItem(CListCtrl* pListCtrl)
+{
+	for (int i = 0; pListCtrl->GetItemCount(); i++)
+	{
+		CString itemText = pListCtrl->GetItemText(i, 0); // instead of 0 you can put the number of an subitem if you have multicolumns
+		//do what you want with itemText
+	}
+}
+
+
 static int CALLBACK
 MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
@@ -1926,10 +1941,16 @@ void NListView::SelectItem(int iItem)
 			}
 
 			bool isAttachmentInline = false;
+			CString contentId = strContentId.c_str();
+			// Assume that if m_contentId is not empty, need to fix embeded image declared as non inline incorrectly;
+			// Better more expensive solution would be to evaluate html content
+			if (strDisposition.compare("inline") && !contentId.IsEmpty()) {
+				strDisposition.assign("inline");
+			}
 			if (strDisposition.compare("inline") == 0) {
 				isAttachmentInline = true;
 				hasInlineAttachments = true;
-				CString contentId = strContentId.c_str();
+				
 				contentId.Trim();
 				contentId.Trim("<>");
 

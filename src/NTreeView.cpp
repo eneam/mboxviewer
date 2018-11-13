@@ -244,6 +244,43 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pView->FillCtrl();
 }
 
+void NTreeView::ForceParseMailFile(HTREEITEM hItem)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == NULL)
+		return;
+	NListView *pView = pFrame->GetListView();
+	if (!pView)
+		return;
+
+	pView->CloseMailFile();
+
+	if (!hItem) {
+		pView->m_path = "";
+		pView->m_which = NULL;
+		pView->FillCtrl();
+		return;
+	}
+	HTREEITEM hRoot = m_tree.GetRootItem();
+	if (hItem == hRoot) {
+		pView->m_path = "";
+		pView->m_which = NULL;
+		pView->ResetSize();
+		pView->FillCtrl();
+		return;
+	}
+	CString str = m_tree.GetItemText(hItem);
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (str.IsEmpty() || path.IsEmpty())
+		return;
+	pView->m_path = path + "\\" + str;
+	CString cache = pView->m_path + ".mboxview";
+	DeleteFile(cache);
+	pView->m_which = hItem;
+	pView->ResetSize();
+	pView->FillCtrl();
+}
+
 void NTreeView::SelectMailFile()
 {
 	CString str = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
@@ -283,6 +320,8 @@ void NTreeView::SelectMailFile()
 		pView->FillCtrl();
 	}
 }
+
+
 
 BOOL NTreeView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
 {
@@ -341,6 +380,8 @@ void NTreeView::OnFileRefresh()
 	m_tree.DeleteAllItems();
 	FillCtrl();
 	return;
+
+	// Below was moved to FillCtrl() called above;
 	HTREEITEM hSel = m_tree.GetSelectedItem();
 	HTREEITEM hRoot = m_tree.GetRootItem();
 	if( hRoot == NULL || ! m_tree.ItemHasChildren(hRoot) )
@@ -469,6 +510,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_Properties_Id = 11;
 	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
+	const UINT M_Reload_Id = 12;
+	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
+
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 	
 	UINT nFlags = TPM_RETURNCMD;
@@ -574,6 +618,11 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_SORT_BY_CONVERSATION_Id: {
 		if (pListView)
 			pListView->SortByColumn(0);
+	}
+	break;
+
+	case M_Reload_Id: {
+		ForceParseMailFile(hItem);
 	}
 	break;
 
