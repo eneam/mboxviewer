@@ -174,10 +174,12 @@ public:
 	virtual int Store(char* pszData, int nMaxSize) const;
 	virtual int Load(const char* pszData, int nDataSize);
 
+
 protected:
 	list<CMimeField> m_listFields;	// list of all header fields
 	list<CMimeField>::const_iterator FindField(const char* pszFieldName) const;
 	list<CMimeField>::iterator FindField(const char* pszFieldName);
+
 
 	struct MediaTypeCvt
 	{
@@ -191,6 +193,8 @@ protected:
 private:
 	CMimeHeader& operator=(const CMimeHeader&);		// forbid operator =
 };
+
+
 
 // add a new field or update an existing field
 inline void CMimeHeader::SetField(const CMimeField& field)
@@ -332,12 +336,16 @@ class CMimeBody : public CMimeHeader
 protected:
 	CMimeBody() :				// instantiate a CMimeBody object explicitly is not allowed. call CreatePart()
 		m_pbText(NULL),
-		m_nTextSize(0) {}
+		m_nTextSize(0), m_bIsRelated(false) {}
 	virtual ~CMimeBody() { Clear(); }
 
 public:
 	int GetContentLength() const;
 	const unsigned char* GetContent() const;
+
+
+	// Parent block is multipart/related block 
+	bool IsRelated();
 
 	// operations for 'text' or 'message' media
 	bool IsText() const;
@@ -376,6 +384,7 @@ public:
 	virtual int Load(const char*& pszDataBase, const char* pszData, int nDataSize);
 
 protected:
+	bool m_bIsRelated;              // is part of multipart/related block 
 	unsigned char* m_pbText;		// content (text) of the body part
 	int m_nTextSize;				// length of content
 	int m_bodyDataOffset;			// Offset to body data within the mail
@@ -389,6 +398,10 @@ protected:
 
 	friend class CMimeEnvironment;
 };
+
+inline bool CMimeBody::IsRelated() {
+	return m_bIsRelated;
+}
 
 inline int CMimeBody::GetContentLength() const
 { return m_nTextSize; }

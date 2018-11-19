@@ -13,6 +13,7 @@
 #include "MimeCode.h"
 #include "MimeChar.h"
 #include "Mime.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -670,6 +671,65 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 		for (it=m_listBodies.begin(); it!=m_listBodies.end(); it++)
 		{
 			CMimeBody* pBP = *it;
+#if 0
+			// For problem investigation
+			const unsigned char* this_cContent = 0;
+			const char* this_cContentType = 0;
+			const char* this_cTransferEncoding = 0;
+			const char* this_cDisposition = 0;
+			const char* this_cContentId = 0;
+
+			string thisContent;
+			string thisContentType;
+			string thisTransferEncoding;
+			string thisDisposition;
+			string thisContentId;
+
+			CMimeHeader::MediaType thisMediaType = MEDIA_UNKNOWN;
+
+			// Below functions are not safe, they may return NULL pointer
+			this_cContent  = this->GetContent();
+			if (this_cContent) thisContent.assign((char*)this_cContent);
+
+			this_cContentType = this->GetContentType();
+			if (this_cContentType) thisContentType.assign(this_cContentType);
+
+			this_cTransferEncoding = this->GetTransferEncoding();
+			if (this_cTransferEncoding) thisTransferEncoding.assign(this_cTransferEncoding);
+
+			this_cDisposition = this->GetDisposition();
+			if (this_cDisposition) thisDisposition.assign(this_cDisposition);
+
+			this_cContentId = this->GetContentId();
+			if (this_cContentId) thisContentId.assign(this_cContentId);
+			
+			// Below function are safe; they return string
+			string thisMainType = this->GetMainType();
+			string thisSubType = this->GetSubType();
+			string thisBoundary = this->GetBoundary();
+			string thisFilename = this->GetFilename();
+			string thisName = this->GetName();
+			string thisCharset = this->GetCharset();
+			thisMediaType = this->GetMediaType();
+#endif
+
+			string strSubType = GetSubType();
+			transform(strSubType.begin(), strSubType.end(), strSubType.begin(), ::tolower);
+			if (strSubType.compare("related") == 0) 
+			{
+				if (pBP->IsAttachment()) 
+				{
+					string strDisposition;
+					const CMimeField *pFld = pBP->CMimeHeader::GetField(CMimeConst::ContentDisposition());
+					if (pFld)
+						pFld->GetValue(strDisposition);
+
+					transform(strDisposition.begin(), strDisposition.end(), strDisposition.begin(), ::tolower);
+					if (strDisposition.compare("attachment") == 0)
+						pBP->m_bIsRelated = true;
+					int deb = 1;
+				}
+			}
 			ASSERT(pBP != NULL);
 			nCount += pBP->GetBodyPartList(rList);
 		}

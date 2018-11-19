@@ -1396,12 +1396,44 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 
 char * GetMultiLine(char *p, char *e, CString &line)
 {
+#if 1
+	// TODO: not the most efficient implementation
 	char *p_beg = p;
 	p = EatNewLine(p, e);
 
 	char *ss = line.GetBufferSetLength(p - p_beg);
 	::memcpy(ss, p_beg, p - p_beg);
-	line.Trim();
+	line.TrimRight("\r\n");  // TODO: should we discard the last " " ?? see also below
+
+	if (line.IsEmpty())
+		return p;
+
+	while ((p < e) && ((*p == ' ') || (*p == '\t')))
+	{
+		char *p_next_beg = p;
+		p = EatNewLine(p, e);
+
+		CString nextLine;
+		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
+		::memcpy(ss, p_next_beg, p - p_next_beg);
+		line.TrimRight("\r\n");
+
+		// TODO: below is likely incorrect; should not have to add " "/ space; 
+		// what is we have multiple spaces ate the line begining; 
+		// Usually not critical but what about if multiple spaces are part of the file name, etc ?
+		// Should just join line(s) if the first charcater is " "
+		line += nextLine;  
+	}
+	return p;
+#else
+	// This is what is in github 1.0.2.7
+	// TODO: not the most efficient implementation
+	char *p_beg = p;
+	p = EatNewLine(p, e);
+
+	char *ss = line.GetBufferSetLength(p - p_beg);
+	::memcpy(ss, p_beg, p - p_beg);
+	line.Trim();  // TODO: should we disaqcrd the last " " ?? see also below
 
 	if (line.IsEmpty())
 		return p;
@@ -1415,9 +1447,15 @@ char * GetMultiLine(char *p, char *e, CString &line)
 		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
 		::memcpy(ss, p_next_beg, p - p_next_beg);
 		nextLine.Trim();
+
+		// TODO: below is likely incorrect; should not have to add " "/ space; 
+		// what is we have multiple spaces ate the line begining; 
+		// Usually not critical but what about if multiple spaces are part of the file name, etc ?
+		// Should just join line(s) if the first charcater is " "
 		line += " " + nextLine;
 	}
 	return p;
+#endif
 };
 
 int GetFieldValue(CString &fieldLine, int startPos, CString &value)
@@ -1528,21 +1566,100 @@ int strncmpExact(char *any, char *end, const char *lower, int lowerlength) {
 
 /* ParseContent Parser parses mail file to determine the file offset and length of content blocks.
    MIME is defined as a nested set of data containers similar to the tree structure. 
-   Boundary tags are used to indicate begining and end of the data block.
+   Boundary tags are used to indicate begining and end of the data block. Structure can be recursive.
    Example:
-   header
-   multipart/mixed ; boundary=mixTag
-   mixTag
-     multipart/alernative; boundary=altTag
-	 --altTag
-	 text/plain
-	 --altTag
-	 text/html
-	 --altTag--
-   -mixTag
-   attachment
-   --mixTag--
+
+   optional-header fields such as List-Unsubscribe: seem to appear in the optional header also, see Expedia
+
+Header
+| From: email
+| To : email
+| MIME - Version : 1.0
+| Content - Type : multipart/mixed; boundary = "boundaryMix1";
+Message body
+|    emails from Expedia insert optional-header fields such as List-Unsubscribe: after multipart/mixed; doesn't seem to be correct ZM
+|    also, emails from Expedia insert optional-header fields such as List-Unsubscribe: as part of the header; that seem to be correct ZM
+| multipart/mixed --boundaryMix1
+| --boundaryMix1
+| multipart/related --boundaryRel1
+|   |--boundaryReleated1
+|   |   multipart/alternative --boundaryAlt1
+|   |   |--boundaryAlt1
+|   |   |text / plain
+|   |   |--boundaryAlt1
+|   |   |text / html
+|   |   |--boundaryAlt1--
+|   |--boundaryRel1
+|   |Inline image
+|   |--boundaryRel1
+|   |Inline image
+|   |--boundaryRel1--
+| --boundaryMix1
+| Attachment1
+| --boundaryMix1
+| Attachment2
+| --boundaryMix1
+| Attachment3
+| --boundaryMix1--
+|
+.
 */
+
+/*
+You can set by selecting "Optional Header" as the search Target and set the following conditions as the Optional Header :
+
+Optional Header Fields:
+: X-TO-ADDR …Extracts a unique email address included in TO
+: X-CC-ADDR …Extracts a unique email address included in CC
+: X-TO-CC-ADDR …Extracts a unique email address included in TO and CC
+: X-TO-DOMAIN …Extracts a unique domain included in TO
+: X-CC-DOMAIN …Extracts a unique domain included in CC
+: X-TO-CC-DOMAIN …Extracts a unique domain included in TO and CC
+*/
+
+/*
+http://www.ietf.org/rfc/rfc2369.txt
+Optional Header Fields:
+3.2.List - Unsubscribe
+
+The List - Unsubscribe field describes the command(preferably using
+	mail) to directly unsubscribe the user(removing them from the list).
+
+	Examples:
+
+List - Unsubscribe : <mailto : list@host.com ? subject = unsubscribe>
+List - Unsubscribe : (Use this command to get off the list)
+< mailto : list - manager@host.com ? body = unsubscribe % 20list >
+List - Unsubscribe : <mailto : list - off@host.com>
+
+
+
+Neufeld & Baer              Standards Track[Page 4]
+
+RFC 2369                  URLs as Meta - Syntax                  July 1998
+
+
+List - Unsubscribe: < http ://www.host.com/list.cgi?cmd=unsub&lst=list>,
+	<mailto : list - request@host.com ? subject = unsubscribe>
+
+	3.3.List - Subscribe
+
+	The List - Subscribe field describes the command(preferably using
+		mail) to directly subscribe the user(request addition to the list).
+
+	Examples:
+
+List - Subscribe : <mailto : list@host.com ? subject = subscribe>
+List - Subscribe : <mailto : list - request@host.com ? subject = subscribe>
+List - Subscribe : (Use this command to join the list)
+< mailto : list - manager@host.com ? body = subscribe % 20list >
+List - Subscribe : <mailto : list - on@host.com>
+List - Subscribe : < http ://www.host.com/list.cgi?cmd=sub&lst=list>,
+	<mailto : list - manager@host.com ? body = subscribe % 20list>
+
+*/
+
+
 
 
 char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
@@ -4312,6 +4429,13 @@ int MailBody::GetBodyPartList(MailBodyList& rList)
 		MailBody *iter;
 		for (iter = m_listBodies.head(); iter != 0; iter = m_listBodies.next(iter))
 		{
+			if (m_ContentType.CompareNoCase("multipart/related") == 0) {
+				if ((!iter->m_ContentId.IsEmpty()) &&
+					(iter->m_Disposition.CompareNoCase("attachment") == 0))
+				{
+					iter->m_Disposition = "inline";
+				}
+			}
 			nCount += iter->GetBodyPartList(rList);
 		}
 	}
@@ -4578,4 +4702,58 @@ void ShellExecuteError2Text(UINT errorCode, CString &errorText) {
 		errorText = "Access denied";
 	else if (errorCode == ERROR_BAD_FORMAT)
 		errorText = "Bad executable image";
+}
+
+void MboxCMimeHelper::GetContentTypeValue(CMimeBody* pBP, CString &value)
+{
+	const char *fieldName = CMimeConst::ContentType();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+
+void MboxCMimeHelper::GetTransferEncoding(CMimeBody* pBP, CString &value)
+{
+	const char *fieldName = CMimeConst::TransferEncoding();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+void MboxCMimeHelper::GetContentID(CMimeBody* pBP, CString &value)
+{
+	const char *fieldName = CMimeConst::ContentID();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+void MboxCMimeHelper::GetContentDescription(CMimeBody* pBP, CString &value)
+{
+	const char *fieldName = CMimeConst::ContentDescription();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+void MboxCMimeHelper::GetContentDisposition(CMimeBody* pBP, CString &value)
+{
+	const char *fieldName = CMimeConst::ContentDisposition();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+void MboxCMimeHelper::GetCharset(CMimeBody* pBP, CString &value)
+{
+	string str = pBP->GetCharset();
+	value = str.c_str();
+}
+void MboxCMimeHelper::Name(CMimeBody* pBP, CString &value)
+{
+	string str = pBP->GetName();
+	value = str.c_str();
+}
+void MboxCMimeHelper::Filename(CMimeBody* pBP, CString &value)
+{
+	string str = pBP->GetFilename();
+	value = str.c_str();
+}
+void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &value)
+{
+	const CMimeField *pFld = pBP->CMimeHeader::GetField(fieldName);
+	if (pFld)
+	{
+		string strValue;
+		pFld->GetValue(strValue);
+		value = strValue.c_str();
+	}
+	else
+		value.Empty();
 }

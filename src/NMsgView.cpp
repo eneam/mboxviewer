@@ -207,6 +207,7 @@ void NMsgView::UpdateLayout()
 
 void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORREF crend)
 {
+	// draw black frame around the message window
 	// do top
 	int r1=GetRValue(crstart),g1=GetGValue(crstart),b1=GetBValue(crstart);
 	int r2=GetRValue(crend),g2=GetGValue(crend),b2=GetBValue(crend);
@@ -277,7 +278,6 @@ void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORRE
 	rect.bottom -= size-1;
 	rect.top += size-1;
 	::FrameRect(dc->m_hDC, rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
 }
 
 int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle,  CString &FieldText, CString &Charset, UINT CharsetId, UINT CnfCharsetId)

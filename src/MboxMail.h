@@ -47,6 +47,21 @@ public:
 	CString m_separator;
 } TEXTFILE_CONFIG;
 
+class MboxCMimeHelper
+{
+public:
+	static void GetContentTypeValue(CMimeBody* pBP, CString &value);
+	static void GetTransferEncoding(CMimeBody* pBP, CString &value);
+	static void GetContentID(CMimeBody* pBP, CString &value);
+	static void GetContentDescription(CMimeBody* pBP, CString &value);
+	static void GetContentDisposition(CMimeBody* pBP, CString &value);
+	static void GetCharset(CMimeBody* pBP, CString &value);
+	static void Name(CMimeBody* pBP, CString &value);
+	static void Filename(CMimeBody* pBP, CString &value);
+protected:
+	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
+};
+
 
 class MboxCMimeCodeBase64 : public CMimeCodeBase64
 {

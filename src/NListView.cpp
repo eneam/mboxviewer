@@ -1166,11 +1166,6 @@ BOOL SaveMails(LPCSTR cache)
 			{
 				if (!body->m_attachmentName.IsEmpty())
 				{
-					// Assume that if m_contentId is not empty, need to fix embeded image declared as non inline incorrectly;
-					// Better more expensive solution would be to evaluate html content
-					if (body->m_contentDisposition.CompareNoCase("inline") && !body->m_contentId.IsEmpty())
-						body->m_contentDisposition = "inline";
-
 					if ((body->m_contentDisposition.CompareNoCase("inline") == 0) && !body->m_contentId.IsEmpty())
 					{
 						SimpleString*outbuf = MboxMail::m_outbuf;
@@ -1754,16 +1749,6 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 	return -1;
 }
 
-void FindItem(CListCtrl* pListCtrl)
-{
-	for (int i = 0; pListCtrl->GetItemCount(); i++)
-	{
-		CString itemText = pListCtrl->GetItemText(i, 0); // instead of 0 you can put the number of an subitem if you have multicolumns
-		//do what you want with itemText
-	}
-}
-
-
 static int CALLBACK
 MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
@@ -1883,7 +1868,7 @@ void NListView::SelectItem(int iItem)
             const CMimeField& fd = *itfd;
 			const char *fname = fd.GetName();
 			const char *fval = fd.GetValue();
-			// Check content type to get mail extension
+			// Check content type to get mail extension TODO: encapsulate in function
 			if( _stricmp(fname, "Content-Type") == 0 && _strnicmp(fval, "text/", 5) == 0 ) {
 				const char *p = fd.GetValue()+5;
 				if( _strnicmp(p, "plain", 5) == 0 )
@@ -1924,42 +1909,34 @@ void NListView::SelectItem(int iItem)
 			if (strName.empty())
 				strName = pBP->GetFilename();
 
-			CString disposition = pBP->GetDisposition();
-			const CMimeField *pfldDisposition = pBP->CMimeHeader::GetField(CMimeConst::ContentDisposition());
-			string strDisposition;
-			if (pfldDisposition != NULL)
-			{
-				pfldDisposition->GetValue(strDisposition);
-				transform(strDisposition.begin(), strDisposition.end(), strDisposition.begin(), ::tolower);
-			}
-
-			const CMimeField *pfldContentId = pBP->CMimeHeader::GetField(CMimeConst::ContentID());
-			string strContentId;
-			if (pfldContentId != NULL)
-			{
-				pfldContentId->GetValue(strContentId);
-			}
+			CString disposition;
+			MboxCMimeHelper::GetContentDisposition(pBP, disposition);
 
 			bool isAttachmentInline = false;
-			CString contentId = strContentId.c_str();
-			// Assume that if m_contentId is not empty, need to fix embeded image declared as non inline incorrectly;
-			// Better more expensive solution would be to evaluate html content
-			if (strDisposition.compare("inline") && !contentId.IsEmpty()) {
-				strDisposition.assign("inline");
+			CString contentId;
+			MboxCMimeHelper::GetContentID(pBP, contentId);
+
+			// fix embeded image declared as non inline incorrectly;
+			if (pBP->IsRelated() && (disposition.CompareNoCase("attachment") == 0) && !contentId.IsEmpty()) {
+				disposition = "inline";
 			}
-			if (strDisposition.compare("inline") == 0) {
+
+			if (disposition.CompareNoCase("inline") == 0) 
+			{
 				isAttachmentInline = true;
 				hasInlineAttachments = true;
 				
 				contentId.Trim();
 				contentId.Trim("<>");
 
-				if (!contentId.IsEmpty()) {
+				if (!contentId.IsEmpty()) 
+				{
 					CString cStrName = strName.c_str();
 					int pos = cStrName.ReverseFind('.');
 					CString nameExtension = cStrName.Mid(pos);
 					CString ext = PathFindExtension(cStrName);
 					CString newStrName = contentId + nameExtension;
+
 					strName.assign(newStrName);
 
 					int deb = 1;
@@ -2030,7 +2007,7 @@ void NListView::SelectItem(int iItem)
 		}
 	}
 	else {
-		// TODO: need to optimize
+		// TODO: need to optimize use of buffers
 		BOOL charsetMissing = FALSE;
 		CString bdyLower(bdy);
 		bdyLower.MakeLower();
@@ -2087,7 +2064,7 @@ void NListView::SelectItem(int iItem)
 	fp.Write(data, datalen);
 	fp.Close();
 	
-	// Display mail in IE
+	// Display mail in internal IE
 	pView->m_browser.Navigate(m_curFile, NULL);
 	// Update layou to show/hide attachments
 	pView->UpdateLayout();
