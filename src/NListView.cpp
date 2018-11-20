@@ -2163,11 +2163,11 @@ int NListView::DumpItemDetails(int iItem, MboxMail *m, CMimeMessage &mail)
 		DWORD retval = GetLastError();
 	}
 
-	const char *cc = mail.GetCc();
-	const char *bcc = mail.GetBcc();
 	count = sprintf_s(buff, "INDX=%d date=\"%s\" from=\"%s\" from_charset=\"%s\" to=\"%s\" to_charset=\"%s\" cc=\"%s\" bcc=\"%s\" subj=\"%s\" to_charset=\"%s\"\n\n",
-		iItem, mail.GetDate(), (LPCSTR)mail.GetFrom(), mail.GetFieldCharset("From"), (LPCSTR)mail.GetTo(), mail.GetFieldCharset("To"),
-		cc, bcc, (LPCSTR)mail.GetSubject(), mail.GetFieldCharset("Subject"));
+		iItem, FixIfNull(mail.GetDate()), FixIfNull(mail.GetFrom()), FixIfNull(mail.GetFieldCharset("From")), 
+		FixIfNull(mail.GetTo()), FixIfNull(mail.GetFieldCharset("To")),
+		FixIfNull(mail.GetCc()), FixIfNull(mail.GetBcc()), FixIfNull(mail.GetSubject()), 
+		FixIfNull(mail.GetFieldCharset("Subject")));
 
 	nwritten = 0;
 	if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
@@ -2206,12 +2206,18 @@ int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 	const unsigned char* content = pBP->GetContent();
 	int contentLength = pBP->GetContentLength();
 
+	char* cContentType = FixIfNull(pBP->GetContentType());
+	char* cDescription = FixIfNull(pBP->GetDescription());
+	char* cDisposition = FixIfNull(pBP->GetDisposition());
+	char* cTransferEncoding = FixIfNull(pBP->GetTransferEncoding());
+
 	count = sprintf_s(buff, "BodyIndx=%d IsText=%d IsMessage=%d HasBody=%d IsAttachement=%d IsMultiPart=%d ContentLength=%d "
 		"Charset=%s Description=%s Disposition=%s TransferEncoding=%s SubType=%s MainType=%s "
 		"Boundary=%s ContentType=%s MediaType=%d Name=%s\n",
 		indx, pBP->IsText(), pBP->IsMessage(), !bdy.IsEmpty(), pBP->IsAttachment(), pBP->IsMultiPart(), contentLength,
-		pBP->GetCharset().c_str(), pBP->GetDescription(), pBP->GetDisposition(), pBP->GetTransferEncoding(), pBP->GetSubType().c_str(), pBP->GetMainType().c_str(),
-		pBP->GetBoundary().c_str(), pBP->GetContentType(), pBP->GetMediaType(), pBP->GetName().c_str());
+		pBP->GetCharset().c_str(), cDescription, cDisposition, cTransferEncoding, pBP->GetSubType().c_str(), pBP->GetMainType().c_str(),
+		pBP->GetBoundary().c_str(), cContentType, pBP->GetMediaType(), pBP->GetName().c_str());
+
 	if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
 		DWORD retval = GetLastError();
 	}
@@ -2223,10 +2229,11 @@ int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 	for (itfd = fds.begin(); itfd != fds.end(); itfd++)
 	{
 		const CMimeField& fd = *itfd;
-		const char *fname = fd.GetName();
-		const char *fval = fd.GetValue();
-		const char *charset = fd.GetCharset();
+		const char *fname = FixIfNull(fd.GetName());
+		const char *fval = FixIfNull(fd.GetValue());
+		const char *charset = FixIfNull(fd.GetCharset());
 		count = sprintf_s(buff, "fname=%s fval=%s charset=%s\n", fname, fval, charset);
+
 		if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
 			DWORD retval = GetLastError();
 		}
@@ -2257,15 +2264,22 @@ int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 		{
 			CMimeBody* pBP = *it;
 			CString curExt;
+
 			const unsigned char* content = pBP->GetContent();
 			int contentLength = pBP->GetContentLength();
+
+			char* cContentType = FixIfNull(pBP->GetContentType());
+			char* cDescription = FixIfNull(pBP->GetDescription());
+			char* cDisposition = FixIfNull(pBP->GetDisposition());
+			char* cTransferEncoding = FixIfNull(pBP->GetTransferEncoding());
 
 			count = sprintf_s(buff, "BodyIndx=%d IsText=%d IsMessage=%d HasBody=%d IsAttachement=%d IsMultiPart=%d ContentLength=%d "
 				"Charset=%s Description=%s Disposition=%s TransferEncoding=%s SubType=%s MainType=%s "
 				"Boundary=%s ContentType=%s MediaType=%d Name=%s\n",
 				indx, pBP->IsText(), pBP->IsMessage(), !bdy.IsEmpty(), pBP->IsAttachment(), pBP->IsMultiPart(), contentLength, 
-				pBP->GetCharset().c_str(), pBP->GetDescription(), pBP->GetDisposition(), pBP->GetTransferEncoding(), pBP->GetSubType().c_str(), pBP->GetMainType().c_str(),
-				pBP->GetBoundary().c_str(), pBP->GetContentType(), pBP->GetMediaType(), pBP->GetName().c_str());
+				pBP->GetCharset().c_str(), cDescription, cDisposition, cTransferEncoding, pBP->GetSubType().c_str(), pBP->GetMainType().c_str(),
+				pBP->GetBoundary().c_str(), cContentType, pBP->GetMediaType(), pBP->GetName().c_str());
+
 			if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
 				DWORD retval = GetLastError();
 			}
@@ -2279,10 +2293,11 @@ int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 			for (itfd = fds.begin(); itfd != fds.end(); itfd++)
 			{
 				const CMimeField& fd = *itfd;
-				const char *fname = fd.GetName();
-				const char *fval = fd.GetValue();
-				const char *charset = fd.GetCharset();
+				const char *fname = FixIfNull(fd.GetName());
+				const char *fval = FixIfNull(fd.GetValue());
+				const char *charset = FixIfNull(fd.GetCharset());
 				count = sprintf_s(buff, "fname=%s fval=%s charset=%s\n", fname, fval, charset);
+
 				if (!WriteFile(hFile, buff, count, &nwritten, NULL)) {
 					DWORD retval = GetLastError();
 				}

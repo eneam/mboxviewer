@@ -3514,16 +3514,20 @@ void MboxMail::getCMimeBodyHeader(CMimeMessage *mail, CMimeBody* pBP, CMBodyHdr 
 	pHdr->IsMessage = pBP->IsMessage();
 	pHdr->IsAttachement = pBP->IsAttachment();
 	pHdr->IsMultiPart = pBP->IsMultiPart();
-	pHdr->Content = (unsigned char*)pBP->GetContent();
+	pHdr->Content = FixIfNull((char*)pBP->GetContent());
 	pHdr->ContentLength = pBP->GetContentLength();
 	pHdr->Charset = pBP->GetCharset().c_str();
-	pHdr->Description = pBP->GetDescription();
-	pHdr->Disposition = pBP->GetDisposition();
-	pHdr->TransferEncoding = pBP->GetTransferEncoding();
+
+	pHdr->Description = FixIfNull(pBP->GetDescription());
+	pHdr->Disposition = FixIfNull(pBP->GetDisposition());
+	pHdr->TransferEncoding = FixIfNull(pBP->GetTransferEncoding());
+
 	pHdr->SubType = pBP->GetSubType().c_str();
 	pHdr->MainType = pBP->GetMainType().c_str();
 	pHdr->Boundary = pBP->GetBoundary().c_str();
-	pHdr->ContentType = pBP->GetContentType();
+
+	pHdr->ContentType = FixIfNull(pBP->GetContentType());
+
 	pHdr->MediaType = pBP->GetMediaType();
 	pHdr->Name = pBP->GetName().c_str();
 	pHdr->BodiesCount = 0;
@@ -3686,22 +3690,22 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 			if (charset && (charset[0] != 0)) {
 				page_code = MboxMail::Str2PageCode(charset);
 			}
-			int deb = 1;
-			cstr = fname;
+
+			cstr = fname ? fname : "";
 			if (cstr.CompareNoCase("from") == 0) {
-				m->m_from = fval;
+				m->m_from = fval ? fval : "";
 				m->m_from.Replace("\n", "");
 				m->m_from.Replace("\r", "");
 				m->m_from_charsetId = page_code;
 			}
 			else if (cstr.CompareNoCase("to") == 0) {
-				m->m_to = fval;
+				m->m_to = fval ? fval : "";
 				m->m_to.Replace("\n", "");
 				m->m_to.Replace("\r", "");
 				m->m_to_charsetId = page_code;
 			}
 			else if (cstr.CompareNoCase("subject") == 0) {
-				m->m_subj = fval;
+				m->m_subj = fval ? fval : "";
 				if (m->m_subj.Find("Microsoft account") >= 0)
 					int deb = 1;
 				m->m_subj.Replace("\n", "");
@@ -4032,7 +4036,10 @@ int MboxMail::GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, Sim
 
 					char* content = (char*)pBP->GetContent();
 					int contentLength = pBP->GetContentLength();
-					outbuf->Append(content, contentLength);
+					if (content)
+						outbuf->Append(content, contentLength);
+					else
+						outbuf->Append("");
 
 					std::string charset = pBP->GetCharset();
 					UINT page_code = MboxMail::Str2PageCode(charset.c_str());
@@ -4704,7 +4711,7 @@ void ShellExecuteError2Text(UINT errorCode, CString &errorText) {
 		errorText = "Bad executable image";
 }
 
-void MboxCMimeHelper::GetContentTypeValue(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentType(CMimeBody* pBP, CString &value)
 {
 	const char *fieldName = CMimeConst::ContentType();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);

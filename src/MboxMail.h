@@ -50,7 +50,7 @@ public:
 class MboxCMimeHelper
 {
 public:
-	static void GetContentTypeValue(CMimeBody* pBP, CString &value);
+	static void GetContentType(CMimeBody* pBP, CString &value);
 	static void GetTransferEncoding(CMimeBody* pBP, CString &value);
 	static void GetContentID(CMimeBody* pBP, CString &value);
 	static void GetContentDescription(CMimeBody* pBP, CString &value);
@@ -463,4 +463,9 @@ public:
 	void FreePart(MailBody* body);
 
 	DLLIST(MailBody, m_freeList_link) m_freeMailBodyList;
+};
+
+inline char* FixIfNull(const char* ptr)
+{
+	return ptr ? ptr : "null";
 };
