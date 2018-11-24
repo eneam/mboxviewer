@@ -1397,13 +1397,16 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 char * GetMultiLine(char *p, char *e, CString &line)
 {
 #if 1
+	// Implementation not according to spec but preserves the number of "spaces" in mail file
+	// I have impression that the "incorrect" version below may work better in practice
 	// TODO: not the most efficient implementation
 	char *p_beg = p;
 	p = EatNewLine(p, e);
 
 	char *ss = line.GetBufferSetLength(p - p_beg);
 	::memcpy(ss, p_beg, p - p_beg);
-	line.TrimRight("\r\n");  // TODO: should we discard the last " " ?? see also below
+	line.TrimLeft("\r\n");
+	line.TrimRight("\r\n");
 
 	if (line.IsEmpty())
 		return p;
@@ -1416,24 +1419,21 @@ char * GetMultiLine(char *p, char *e, CString &line)
 		CString nextLine;
 		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
 		::memcpy(ss, p_next_beg, p - p_next_beg);
-		line.TrimRight("\r\n");
+		line.TrimLeft("\r\n");
+		nextLine.TrimRight("\r\n");
 
-		// TODO: below is likely incorrect; should not have to add " "/ space; 
-		// what is we have multiple spaces ate the line begining; 
-		// Usually not critical but what about if multiple spaces are part of the file name, etc ?
-		// Should just join line(s) if the first charcater is " "
 		line += nextLine;  
 	}
 	return p;
 #else
-	// This is what is in github 1.0.2.7
+	// Implementation not according to spec but reduces number of "spaces"
 	// TODO: not the most efficient implementation
 	char *p_beg = p;
 	p = EatNewLine(p, e);
 
 	char *ss = line.GetBufferSetLength(p - p_beg);
 	::memcpy(ss, p_beg, p - p_beg);
-	line.Trim();  // TODO: should we disaqcrd the last " " ?? see also below
+	line.Trim(); 
 
 	if (line.IsEmpty())
 		return p;
@@ -1448,10 +1448,6 @@ char * GetMultiLine(char *p, char *e, CString &line)
 		::memcpy(ss, p_next_beg, p - p_next_beg);
 		nextLine.Trim();
 
-		// TODO: below is likely incorrect; should not have to add " "/ space; 
-		// what is we have multiple spaces ate the line begining; 
-		// Usually not critical but what about if multiple spaces are part of the file name, etc ?
-		// Should just join line(s) if the first charcater is " "
 		line += " " + nextLine;
 	}
 	return p;
@@ -2703,7 +2699,7 @@ UINT getCodePageFromHtmlBody(SimpleString *buffer)
 }
 
 
-int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig)
+int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in - mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail)
 {
 	char *token = 0;
 	int tokenlen = 0;
@@ -2740,6 +2736,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bool useMailPosition = true;
 		fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
+
+		if (firstMail)
+		{
+			bdy = "<html><head></head><body><div style=\'margin-left:5px;text-align:left\'></body></html>\r\n";
+			fp.Write(bdy, bdy.GetLength());
+		}
 
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head>";
 		bdy += "<body><pre style=\"background-color:#eee9e9;font-weight:normal;\"><font size=\"+1\">";
@@ -2794,8 +2796,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		if (textlen != outbuflarge->Count())
 			int deb = 1;
 
-		CString bdycharset = "UTF-8";
 		CString bdy;
+		if (firstMail)
+		{
+			bdy = "<html><head></head><body><div style=\'margin-left:5px;text-align:left\'></body></html>\r\n";
+			fp.Write(bdy, bdy.GetLength());
+		}
+
+		CString bdycharset = "UTF-8";
+
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head>";
 		bdy += "<body><pre style=\"background-color:#eee9e9;font-weight:normal;\"><font size=\"+1\">";
 		fp.Write(bdy, bdy.GetLength());
@@ -3034,7 +3043,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		if (textType == 0)
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
 		else {
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig);
+			printSingleMailToHtmlFile(fp, i, fpm, textConfig, i == firstMail);
 		}
 	}
 
@@ -4671,7 +4680,7 @@ int showCodePageTable()
 
 	txt.Empty();
 	txt.Format("|%22s |%26s |%42s |\n",
-		"Code Page Identifiers", "Name", "Additional Infornmation");
+		"Code Page Identifiers", "Name", "Additional Information");
 	fp.Write((LPCSTR)txt, txt.GetLength());
 
 	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);

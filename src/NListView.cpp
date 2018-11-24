@@ -191,9 +191,6 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_COMMAND(ID_EDIT_FINDAGAIN, OnEditFindAgain)
 	ON_COMMAND(ID_EDIT_VIEWEML, &NListView::OnEditVieweml)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_VIEWEML, &NListView::OnUpdateEditVieweml)
-	//ON_COMMAND(ID_VIEW_CONVERSATIONS, &NListView::OnViewConversations)
-	//ON_UPDATE_COMMAND_UI(ID_VIEW_CONVERSATIONS, &NListView::OnUpdateViewConversations)
-
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -285,7 +282,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
 
 	const UINT S_HTML_OPEN_RELATED_Id = 6;
-	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Emails in Browser"));
+	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Mails in Browser"));
 
 	const UINT S_HTML_FIND_Id = 7;
 	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find"));
@@ -3264,47 +3261,6 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 	}
 	return FALSE;
 }
-
-
-#if 0
-void NListView::OnViewConversations()
-{
-	// SendMessage to simulate Column Click ??, need to investigate
-
-	// to follow OnEditFindAgain approach
-	if (m_bInFind)
-		return;
-
-	m_bInFind = true;
-
-	// TODO: Add your command handler code here
-	if (abs(MboxMail::b_mails_which_sorted) == 99) {
-		MboxMail::b_mails_which_sorted = -MboxMail::b_mails_which_sorted;
-	}
-	else {
-		MboxMail::b_mails_which_sorted = 99;
-	}
-	MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0);
-
-	MboxMail::b_mails_sorted = true;
-
-	m_bContent = FALSE;
-	m_bAttachments = FALSE;
-	m_lastFindPos = -1;
-	m_bEditFindFirst = TRUE; 
-	RedrawMails();
-
-	m_bInFind = false;
-}
-
-
-
-void NListView::OnUpdateViewConversations(CCmdUI *pCmdUI)
-{
-	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
-	//pCmdUI->Enable(m_list.GetItemCount() > 0);
-}
-#endif
 
 void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
 {
