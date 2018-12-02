@@ -37,6 +37,7 @@ CString MboxMail::s_path;
 
 BOOL RemoveDir(CString & dir, bool recursive = false);
 int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
 inline char *EatNewLine(char* p, char*e) {
 	while ((p < e) && (*p++ != '\n'));
@@ -112,6 +113,8 @@ UINT MboxMail::Str2PageCode(const  char* PageCodeStr)
 	return CodePage;
 }
 
+// TODO: Find time to reduce number of conversion functions, duplicates
+
 void MboxMail::Str2Ansi(CString &res, UINT CodePage)
 {
 	int len = res.GetLength() * 2 + 2;
@@ -159,6 +162,7 @@ BOOL Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleSt
 	int outLen = wlen *4 + 2;
 	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
 	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
+	//int utf8Len = WideCharToMultiByte(outCodePage, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
 	if (utf8Len == 0) {
 		result->Clear();
 		// error - implement error log file
@@ -170,6 +174,44 @@ BOOL Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleSt
 		return FALSE;
 	}
 	result->SetCount(utf8Len);
+	return TRUE;
+}
+
+BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result)
+{
+	int outLen = wlen * 4 + 2;
+	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
+	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wbuff, wlen, result->Data(), outLen, NULL, NULL);
+	//int utf8Len = WideCharToMultiByte(outCodePage, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
+	if (utf8Len == 0) {
+		result->Clear();
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
+		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
+		return FALSE;
+	}
+	result->SetCount(utf8Len);
+	return TRUE;
+}
+
+BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr)
+{
+	int wbuffLen = str->Count() * 4 + 2;
+	wstr->ClearAndResize(wbuffLen);
+
+	int wlen = MultiByteToWideChar(inCodePage, 0, str->Data(), str->Count(), (LPWSTR)((void*)wstr->Data()), wbuffLen);
+	if (wlen == 0) {
+		wstr->Clear();
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		return FALSE;
+	}
+	wstr->SetCount(wlen * 2);
+	*wstr->Data(wlen * 2 + 1) = 0;
+	wchar_t *wbuf = (LPWSTR)((void*)wstr->Data());
 	return TRUE;
 }
 
@@ -2663,6 +2705,58 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 		else
 			fp.Write(MboxMail::m_outbuf->Data(), MboxMail::m_outbuf->Count());
 	}
+	else
+	{
+		MboxMail::m_outbuf->Clear();
+		pageCode = 0;
+		int textType = 1; // HTML
+
+		int textlen = GetMailBody_mboxview(fpm, mailPosition, MboxMail::m_outbuf, pageCode, textType);  // returns pageCode
+		if (textlen != MboxMail::m_outbuf->Count())
+			int deb = 1;
+
+		if (MboxMail::m_outbuf->Count())
+		{
+			SimpleString *inbuf = MboxMail::m_inbuf;
+			SimpleString *outbuf = MboxMail::m_outbuf;
+
+			CString bdycharset;
+			std::string charSet;
+			if (pageCode > 0)
+				BOOL ret = id2charset(pageCode, charSet);
+			else
+				pageCode = getCodePageFromHtmlBody(outbuf, charSet);
+				
+			bdycharset.Append(charSet.c_str());
+
+			inbuf->Clear();
+
+			CString bdy;
+			bool extraHtmlHdr = false;
+			if (outbuf->FindNoCase(0, "<body", 5) < 0) // didn't find if true
+			{
+				extraHtmlHdr = true;
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+				inbuf->Append(bdy, bdy.GetLength());
+			}
+
+			inbuf->Append(*outbuf);
+			if (extraHtmlHdr)
+				inbuf->Append("</body></html>\r\n");
+
+			outbuf->Clear();
+
+			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+			if (pFrame) {
+				NMsgView *pView = pFrame->GetMsgView();
+				if (pView) {
+					UINT outPageCode = CP_UTF8;
+					pView->GetTextFromIHTMLDocument(inbuf, outbuf, pageCode, outPageCode);
+					fp.Write(MboxMail::m_outbuf->Data(), MboxMail::m_outbuf->Count());
+				}
+			}
+		}
+	}
 
 	outbuf.Clear();
 	outbuf.Append("\r\n");
@@ -2672,10 +2766,10 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	return 1;
 }
 
-UINT getCodePageFromHtmlBody(SimpleString *buffer)
+UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset)
 {
 	char *pat = "charset=";
-	std::string charset;
+	charset.assign("");
 	UINT codePage = 0;
 	int patlen = strlen(pat);
 	int posEnd = -1;
@@ -2761,8 +2855,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			fp.Write(bdy, bdy.GetLength());
 		}
 
+		std::string charSet;
 		if (pageCode == 0) {
-			pageCode = getCodePageFromHtmlBody(outbuflarge);
+			pageCode = getCodePageFromHtmlBody(outbuflarge, charSet);
 		}
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))

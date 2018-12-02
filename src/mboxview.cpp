@@ -14,7 +14,11 @@
 #undef THIS_FILE
 #define THIS_FILE __FILE__
 #define new DEBUG_NEW
+//#define _CRTDBG_MAP_ALLOC  
+//#include <stdlib.h>  
+//#include <crtdbg.h> 
 #endif
+
 
 const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
 
@@ -131,6 +135,9 @@ CmboxviewApp::CmboxviewApp()
 	// Place all significant initialization in InitInstance
 
 	//bool ret = TextUtilities::TestAll();
+
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
+	//SetNoOaCache();
 }
 
 /////////////////////////////////////////////////////////////////////////////

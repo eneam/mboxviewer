@@ -6,11 +6,15 @@
 #include "NMsgView.h"
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
+#include "MboxMail.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
 #define THIS_FILE __FILE__
 #define new DEBUG_NEW
+//#define _CRTDBG_MAP_ALLOC  
+//#include <stdlib.h>  
+//#include <crtdbg.h> 
 #endif
 
 #define CAPT_MAX_HEIGHT	50
@@ -617,12 +621,561 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 #define HTML_ASSERT(x)
 #endif
 
+char *EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; }
+
+char *SkipEmptyLine(char* p, char* e)
+{
+	char *p_save = p;
+	while ((p < e) && ((*p == '\r') || (*p == ' ') || (*p == '\t')))  // eat empty lines
+		p++;
+	if (*p == '\n')
+		p++;
+	else
+		p = p_save;
+	return p;
+}
+
+void BreakBeforeGoingCleanup()
+{
+	int deb = 1;
+}
+
+
+void NMsgView::GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage)
+{
+	IHTMLDocument2 *lpHtmlDocument = 0;
+	LPDISPATCH lpDispatch = 0;
+	HRESULT hr;
+
+	if (lpHtmlDocument == 0) 
+	{
+		BOOL retVal = CreateHTMLDocument(&lpHtmlDocument, inbuf, workbuf, inCodePage);
+		if ((retVal == FALSE) || (lpHtmlDocument == 0)){
+			return;
+		}
+	}
+
+	IHTMLElement *lpBodyElm = 0;
+	hr = lpHtmlDocument->get_body(&lpBodyElm);
+	//HTML_ASSERT(SUCCEEDED(hr) && lpBodyElm);
+	if (!lpBodyElm) {
+		lpHtmlDocument->Release();
+		return;
+	}
+
+	// Need to remove STYLE tag otherwise it will be part of text from lpBodyElm->get_innerText(&bstrTxt);
+	// TODO: IHTMLDocument2:get_text() is not the greatest, adding or missing text, and slow.
+	// Don't think any work is done on MFC and c++ IHTMLDocument.
+	// Implemented incomplete PrintIHTMLDocument based on IHTMLDocument framework but is incomplete. It still be slow.
+	//
+	RemoveStyleTagFromIHTMLDocument(lpBodyElm);
+
+	CComBSTR bstrTxt;
+	hr = lpBodyElm->get_innerText(&bstrTxt);
+	HTML_ASSERT(SUCCEEDED(hr));
+	if (FAILED(hr)) {
+		lpBodyElm->Release();
+		return;
+	}
+
+	int wlen = bstrTxt.Length();
+	wchar_t *wstr = bstrTxt;
+
+	//SimpleString *workbuf = MboxMail::m_workbuf;
+	workbuf->ClearAndResize(10000);
+
+	BOOL ret = WStr2CodePage(wstr, wlen, outCodePage, workbuf);
+
+	// Delete duplicate empty lines
+	char *p = workbuf->Data();
+	char *e = p + workbuf->Count();
+
+	char *p_end_data;
+	char *p_beg_data;
+	char *p_save;
+	char *p_data;
+
+	unsigned long  len;
+	int dataCount = 0;
+	int emptyLineCount = 0;
+
+	while (p < e)
+	{
+		emptyLineCount = 0;
+		p_save = 0;
+		while ((p < e) && (p != p_save))
+		{
+			p_save = p;
+			p = SkipEmptyLine(p, e);
+			if (p != p_save)
+				emptyLineCount++;
+
+		}
+		p_beg_data = p;
+
+		while ((p < e) && !((*p == '\r') || (*p == '\n')))
+			p = EatNLine(p, e);
+
+		p_end_data = p;
+
+		if (emptyLineCount > 0)
+		{
+			p_data = workbuf->Data() + dataCount;
+			memcpy(p_data, "\r\n", 2);
+			dataCount += 2;
+		}
+
+		len = p_end_data - p_beg_data;
+		//g_tu.hexdump("Data:\n", p_beg_data, len);
+
+		if (len > 0) {
+			p_data = workbuf->Data() + dataCount;
+			memcpy(p_data, p_beg_data, len);
+			dataCount += len;
+		}
+	}
+
+	workbuf->SetCount(dataCount);
+
+	if (lpBodyElm)
+		lpBodyElm->Release();
+
+	if (lpHtmlDocument)
+		lpHtmlDocument->Release();
+}
+
+BOOL NMsgView::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage)
+{
+	HRESULT hr;
+	BOOL ret = TRUE;
+	*lpDocument = 0;
+
+	IHTMLDocument2 *lpDoc = 0;
+	SAFEARRAY *psaStrings = 0;
+
+	//CComBSTR bstr(inbuf->Data());
+	//int bstrLen = bstr.Length();
+
+#if 0
+	USES_CONVERSION;
+	BSTR  bstr = SysAllocString(A2W(inbuf->Data())); // efficient but relies on stack and not heap; but what is Data() is > stack ?
+	int bstrLen = SysStringByteLen(bstr);
+	int wlen = wcslen(bstr);
+#else
+	ret = CodePage2WStr(inbuf, inCodePage, workbuf);
+	OLECHAR *oledata = (OLECHAR*)workbuf->Data();
+	BSTR  bstr = SysAllocString(oledata); 
+	int bstrLen = SysStringByteLen(bstr);
+	int wlen = wcslen(bstr);
+#endif
+
+	hr = CoCreateInstance(CLSID_HTMLDocument, NULL, CLSCTX_INPROC_SERVER,
+		IID_IHTMLDocument2, (void**)&lpDoc);
+	HTML_ASSERT(SUCCEEDED(hr) && lpDoc);
+	if (FAILED(hr) || !lpDoc) {
+		BreakBeforeGoingCleanup();
+		ret = FALSE;
+		goto cleanup;
+	}
+
+	// Creates a new one-dimensional array
+	psaStrings = SafeArrayCreateVector(VT_VARIANT, 0, 1);
+	HTML_ASSERT(psaStrings);
+	if (psaStrings == 0) {
+		BreakBeforeGoingCleanup();
+		ret = FALSE;
+		goto cleanup;
+	}
+	VARIANT *param = 0;
+	hr = SafeArrayAccessData(psaStrings, (LPVOID*)&param);
+	HTML_ASSERT(SUCCEEDED(hr) && param);
+	if (FAILED(hr) || (param == 0)) {
+		BreakBeforeGoingCleanup();
+		ret = FALSE;
+		goto cleanup;
+	}
+	param->vt = VT_BSTR;
+	param->bstrVal = bstr;
+
+	// put_designMode(L"on");  should disable all activity such as running scripts
+	// May need better solution
+	hr = lpDoc->put_designMode(L"on");  
+	hr = lpDoc->writeln(psaStrings);
+	HTML_ASSERT(SUCCEEDED(hr));
+	if (FAILED(hr)) {
+		BreakBeforeGoingCleanup();
+		ret = FALSE;
+		goto cleanup;
+	}
+
+cleanup:
+	// Assume SafeArrayDestroy calls SysFreeString for each BSTR :)
+	if (psaStrings != 0) {
+		hr = SafeArrayUnaccessData(psaStrings);
+		hr = SafeArrayDestroy(psaStrings);
+	}
+	if (ret == FALSE)
+	{
+		if (lpDoc) {
+			hr = lpDoc->close();
+			if (FAILED(hr)) {
+				int deb = 1;
+			}
+			lpDoc->Release();
+			lpDoc = 0;
+		}
+	}
+	else
+	{
+		hr = lpDoc->close();
+		if (FAILED(hr)) 
+		{
+			int deb = 1;
+		}
+		*lpDocument = lpDoc;
+	}
+	return ret;
+}
+
+void NMsgView::RemoveStyleTagFromIHTMLDocument(IHTMLElement *lpElm)
+{
+	CComBSTR emptyText("");
+	CComBSTR bstrTag;
+	//CComBSTR bstrHTML;
+	//CComBSTR bstrTEXT;
+	VARIANT index;
+	HRESULT hr;
+
+	IDispatch *lpCh = 0;
+	hr = lpElm->get_children(&lpCh);
+	if (FAILED(hr) || !lpCh)
+	{
+		return;
+	}
+
+	IHTMLElementCollection *lpChColl = 0;
+	hr = lpCh->QueryInterface(IID_IHTMLElementCollection, (VOID**)&lpChColl);
+	if (FAILED(hr) || !lpChColl)
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+	long items = 0;
+	IDispatch *ppvDisp = 0;
+	IHTMLElement *ppvElement = 0;
+
+	lpChColl->get_length(&items);
+
+	for (long j = 0; j < items; j++)
+	{
+		index.vt = VT_I4;
+		index.lVal = j;
+		ppvDisp = 0;
+		hr = lpChColl->item(index, index, &ppvDisp);
+		if (FAILED(hr) || !ppvDisp) {
+			BreakBeforeGoingCleanup();
+			goto cleanup;
+		}
+		if (ppvDisp)
+		{
+			ppvElement = 0;
+			hr = ppvDisp->QueryInterface(IID_IHTMLElement, (void **)&ppvElement);
+			if (FAILED(hr) || !ppvElement) {
+				BreakBeforeGoingCleanup();
+				goto cleanup;
+			}
+			if (ppvElement)
+			{
+				bstrTag.Empty();
+				//bstrHTML.Empty();
+				//bstrTEXT.Empty();
+
+				ppvElement->get_tagName(&bstrTag);
+				//ppvElement->get_outerHTML(&bstrHTML);
+				//ppvElement->get_innerText(&bstrTEXT);
+
+				CString tag(bstrTag);
+				if (tag.CollateNoCase("style") == 0) {
+					ppvElement->put_innerText(emptyText);
+					int deb = 1;
+				}
+
+				RemoveStyleTagFromIHTMLDocument(ppvElement);
+
+				ppvElement->Release();
+				ppvElement = 0;
+
+				int deb = 1;
+			}
+			ppvDisp->Release();
+			ppvDisp = 0;
+		}
+		int deb = 1;
+	}
+cleanup:
+
+	if (ppvElement)
+		ppvElement->Release();
+
+	if (ppvDisp)
+		ppvDisp->Release();
+
+	if (lpChColl)
+		lpChColl->Release();
+
+	if (lpCh)
+		lpCh->Release();
+}
+
+
+BOOL NMsgView::FindElementByTagInIHTMLDocument(IHTMLDocument2 *lpDocument, IHTMLElement **ppvEl, CString &tag)
+{
+	// browse all elements and return first element found
+	IHTMLElementCollection *pAll = 0;
+	CComBSTR bstrTag;
+	CComBSTR bstrHTML;
+	CComBSTR bstrTEXT;
+	VARIANT index;
+
+	*ppvEl = 0;
+	HRESULT hr = lpDocument->get_all(&pAll);
+	if (FAILED(hr) || !pAll) {
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+	long items = 0;
+	IDispatch *ppvDisp = 0;
+	IHTMLElement *ppvElement = 0;
+
+	pAll->get_length(&items);
+
+	for (long j = 0; j < items; j++)
+	{
+		index.vt = VT_I4;
+		index.lVal = j;
+		ppvDisp = 0;
+		hr = pAll->item(index, index, &ppvDisp);
+		if (FAILED(hr) || !ppvDisp) {
+			BreakBeforeGoingCleanup();
+			goto cleanup;
+		}
+		if (ppvDisp) 
+		{
+			ppvElement = 0;
+			hr = ppvDisp->QueryInterface(IID_IHTMLElement, (void **)&ppvElement);
+			if (FAILED(hr) || !ppvElement) {
+				BreakBeforeGoingCleanup();
+				goto cleanup;
+			}
+			if (ppvElement)
+			{
+				bstrTag.Empty();
+				//bstrHTML.Empty();
+				//bstrTEXT.Empty();
+
+				ppvElement->get_tagName(&bstrTag);
+				//ppvElement->get_innerHTML(&bstrHTML);
+				//ppvElement->get_innerText(&bstrTEXT);
+
+				CString eltag(bstrTag);
+				TRACE("TAG=%s\n", (LPCSTR)eltag);
+
+				if (eltag.CompareNoCase(tag))
+				{
+					ppvElement->Release();
+					ppvElement = 0;
+				}
+				else
+					break;
+
+				int deb = 1;
+			}
+			ppvDisp->Release();
+			ppvDisp = 0;
+		}
+		int deb = 1;
+	}
+
+cleanup:
+	if (ppvElement)
+		*ppvEl = ppvElement;
+
+	if (ppvDisp)
+		ppvDisp->Release();
+
+	if (pAll)
+		pAll->Release();
+
+	return FALSE;
+}
+
+void NMsgView::PrintIHTMLDocument(IHTMLDocument2 *lpDocument)
+{
+	// Actually this will print BODY
+	CString tag("body");
+	IHTMLElement *lpElm = 0;
+	FindElementByTagInIHTMLDocument(lpDocument, &lpElm, tag);
+	if (!lpElm)
+	{
+		return;
+	}
+
+	CComBSTR bstrTEXT;
+	lpElm->get_innerText(&bstrTEXT);
+
+	CStringW text;
+	PrintIHTMLElement(lpElm, text);
+
+	SimpleString *workbuf = MboxMail::m_workbuf;
+	workbuf->ClearAndResize(10000);
+
+	const wchar_t *wstr = text.operator LPCWSTR();
+	int wlen = text.GetLength();
+	UINT outCodePage = CP_UTF8;
+	BOOL ret = WStr2CodePage((wchar_t *)wstr, wlen, outCodePage, workbuf);
+
+	TRACE("TEXT=%s\n", workbuf->Data());
+}
+
+void NMsgView::PrintIHTMLElement(IHTMLElement *lpElm, CStringW &text)
+{
+	CComBSTR bstrTag;
+	CComBSTR bstrHTML;
+	CComBSTR bstrTEXT;
+	VARIANT index;
+	HRESULT hr;
+
+	IDispatch *lpCh = 0;
+	hr = lpElm->get_children(&lpCh);
+	if (FAILED(hr) || !lpCh)
+	{
+		return;
+	}
+
+	IHTMLElementCollection *lpChColl = 0;
+	hr = lpCh->QueryInterface(IID_IHTMLElementCollection, (VOID**)&lpChColl);
+	if (FAILED(hr) || !lpChColl)
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;;
+	}
+
+	long items;
+	IDispatch *ppvDisp = 0;
+	IHTMLElement *ppvElement = 0;
+
+	lpChColl->get_length(&items);
+
+	// TODO: This doesn't quite work, need to find solution.
+	if (items <= 0)
+	{
+		lpElm->get_tagName(&bstrTag);
+		lpElm->get_outerHTML(&bstrHTML);
+		lpElm->get_innerText(&bstrTEXT);
+
+		text.Append(bstrTEXT);
+
+		CString tag(bstrTag);
+		//text.Append("\r\n\r\n");
+		TRACE("TAG=%s\n", (LPCSTR)tag);
+		//TRACE("TEXT=%s\n", (LPCSTR)innerText);
+	}
+	else
+		text.Append(L"\r\n\r\n");
+
+	for (long j = 0; j < items; j++)
+	{
+		index.vt = VT_I4;
+		index.lVal = j;
+		ppvDisp = 0;
+		hr = lpChColl->item(index, index, &ppvDisp);
+		if (FAILED(hr) || !ppvDisp) {
+			BreakBeforeGoingCleanup();
+			goto cleanup;
+		}
+		if (ppvDisp)
+		{
+			hr = ppvDisp->QueryInterface(IID_IHTMLElement, (void **)&ppvElement);
+			if (FAILED(hr) || !ppvElement) {
+				BreakBeforeGoingCleanup();
+				goto cleanup;
+			}
+			if (ppvElement)
+			{
+				bstrTag.Empty();
+				bstrHTML.Empty();
+				bstrTEXT.Empty();
+
+				ppvElement->get_tagName(&bstrTag);
+				ppvElement->get_outerHTML(&bstrHTML);
+				ppvElement->get_innerText(&bstrTEXT);
+
+
+				CString tag(bstrTag);
+				TRACE("TAG=%s\n", (LPCSTR)tag);
+
+				if (tag.CollateNoCase("style") == 0)
+					int deb = 1;
+
+				if (tag.CollateNoCase("tbody") == 0)
+					int deb = 1;
+
+				if (tag.CollateNoCase("td") == 0)
+					int deb = 1;
+
+				if (tag.CollateNoCase("body") == 0)
+					int deb = 1;
+
+				if (tag.CollateNoCase("style") == 0) {
+					CComBSTR emptyText("");
+					ppvElement->put_innerText(emptyText);
+					int deb = 1;
+				}
+
+
+				PrintIHTMLElement(ppvElement, text);
+
+
+				ppvElement->Release();
+				ppvElement = 0;
+
+				int deb = 1;
+			}
+			ppvDisp->Release();
+			ppvDisp = 0;
+		}
+		int deb = 1;
+	}
+cleanup:
+
+	if (ppvElement)
+		ppvElement->Release();
+
+	if (ppvDisp)
+		ppvDisp->Release();
+
+	if (lpChColl)
+		lpChColl->Release();
+
+	if (lpCh)
+		lpCh->Release();
+}
+
+
 void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase)
 {
 	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
 	// Did resolve some code issues, enhanced and optimized
 
 	// <span id='mboxview_Search' style='color: white; background-color: darkblue'>pa</span>
+
+	HRESULT hr;
+	CComBSTR bstrTag;
+	CComBSTR bstrHTML;
+	CComBSTR bstrTEXT;
+	CString htmlPrfix;
 
 	unsigned long matchWordFlag = 2;
 	unsigned long matchCaseFlag = 4;
@@ -641,8 +1194,8 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 	if (!lpDispatch)
 		return;
 
-	lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
-	HTML_ASSERT(lpHtmlDocument);
+	hr = lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
+	HTML_ASSERT(SUCCEEDED(hr) && lpHtmlDocument);
 	if (!lpHtmlDocument) {
 		lpDispatch->Release();
 		return;
@@ -653,24 +1206,24 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 	IHTMLBodyElement *lpBody = 0;
 	IHTMLTxtRange *lpTxtRange = 0;
 
-	lpHtmlDocument->get_body(&lpBodyElm);
-	HTML_ASSERT(lpBodyElm);
+	hr = lpHtmlDocument->get_body(&lpBodyElm);
+	HTML_ASSERT(SUCCEEDED(hr) && lpBodyElm);
 	if (!lpBodyElm) {
 		lpHtmlDocument->Release();
 		return;
 	}
 	lpHtmlDocument->Release();
 
-	lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
-	HTML_ASSERT(lpBody);
+	hr = lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
+	HTML_ASSERT(SUCCEEDED(hr) && lpBody);
 	if (!lpBody) {
 		lpBodyElm->Release();
 		return;
 	}
 	lpBodyElm->Release();
 
-	lpBody->createTextRange(&lpTxtRange);
-	HTML_ASSERT(lpTxtRange);
+	hr = lpBody->createTextRange(&lpTxtRange);
+	HTML_ASSERT(SUCCEEDED(hr) && lpTxtRange);
 	if (!lpTxtRange) {
 		lpBody->Release();
 		return;
@@ -685,25 +1238,14 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 	VARIANT_BOOL bFound;
 	long count = 0;
 
-	BSTR *Character;
-	BSTR *Textedit;
-	Character = (BSTR*)(new CComBSTR("Character"));
-	if (!Character)
-		return;
-	Textedit = (BSTR*)(new CComBSTR("Textedit"));
-	if (!Textedit)
-		return;
+	CComBSTR Character(L"Character");
+	CComBSTR Textedit(L"Textedit");
 
-	CString htmlPrfix;
 	htmlPrfix.Append("<span id='");
 	htmlPrfix.Append((LPCTSTR)m_searchID);
 	htmlPrfix.Append("' style='");
 	htmlPrfix.Append((LPCTSTR)m_matchStyle);
 	htmlPrfix.Append("'>");
-
-	CComBSTR bstrTag;
-	CComBSTR bstrHTML;
-	CComBSTR bstrTEXT;
 
 	bool firstRange = false;
 	while ((lpTxtRange->findText(search, count, lFlags, (VARIANT_BOOL*)&bFound) == S_OK) && (VARIANT_TRUE == bFound))
@@ -711,9 +1253,9 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 		//IHTMLTxtRange *duplicateRange;
 		//lpTxtRange->duplicate(&duplicateRange);
 
-		IHTMLElement *parentText;
-		lpTxtRange->parentElement(&parentText);
-		if (parentText) 
+		IHTMLElement *parentText = 0;
+		hr = lpTxtRange->parentElement(&parentText);
+		if (SUCCEEDED(hr) && parentText)
 		{
 			bstrTag.Empty();
 			bstrHTML.Empty();
@@ -724,16 +1266,19 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 			parentText->get_innerText(&bstrTEXT);
 
 			int deb = 1;
-			// Ignore Tags: TITLE, what else
+			// Ignore Tags: TITLE, what else ?
 			bstrTag.ToLower();
 			if (bstrTag == L"title") {
-				lpTxtRange->moveStart(*Character, 1, &t);
-				lpTxtRange->moveEnd(*Textedit, 1, &t);
+				lpTxtRange->moveStart(Character, 1, &t);
+				lpTxtRange->moveEnd(Textedit, 1, &t);
+
 				parentText->Release();
 				continue;
 			}
 			parentText->Release();
 		}
+		if (parentText)
+			parentText->Release();
 
 		if (firstRange == false) {
 			firstRange = true;
@@ -752,70 +1297,11 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 
 		lpTxtRange->pasteHTML(newhtml);
 
-		lpTxtRange->moveStart(*Character, searchText.GetLength(), &t);
-		lpTxtRange->moveEnd(*Textedit, 1, &t);
+		lpTxtRange->moveStart(Character, searchText.GetLength(), &t);
+		lpTxtRange->moveEnd(Textedit, 1, &t);
 	}
-
-	lpTxtRange->Release();
-	delete Character;
-	delete Textedit;
-
-
-
-#if 0
-	// brose all elements example
-	IHTMLElementCollection *pAll;
-	HRESULT hr = lpHtmlDocument->get_all(&pAll);
-
-	long items;
-	IDispatch *ppvDisp;
-	IHTMLElement *ppvElement;
-	pAll->get_length(&items);
-
-	CComBSTR bstrTag;
-	CComBSTR bstrHTML;
-	CComBSTR bstrTEXT;
-
-	for (long j = 0; j < items; j++)
-	{
-		VARIANT index;
-		index.vt = VT_I4;
-		index.lVal = j;
-		hr = pAll->item(index, index, &ppvDisp);
-		if (ppvDisp) {
-			ppvDisp->QueryInterface(IID_IHTMLElement, (void **)&ppvElement);
-			if (ppvElement) {
-
-				ppvElement->get_tagName(&bstrTag);
-				ppvElement->get_innerHTML(&bstrHTML);
-				ppvElement->get_innerText(&bstrTEXT);
-
-				int deb = 1;
-			}
-		}
-		int deb = 1;
-	}
-#endif
-
-#if 0
-	// Just for potential future use
-	// How can I get current user selection or current cursor location in HTML document? I am using MSHTML interfaces in MFC.
-	CComPtr<IHTMLSelectionObject> pSelection;
-	hr = pHTMLDocument->get_selection(&pSelection);
-	if (FAILED(hr) || pSelection == NULL)
-		return false;
-
-	CComPtr<IDispatch> pDispRange;
-	hr = pSelection->createRange(&pDispRange);
-	if (FAILED(hr) || pDispRange == NULL)
-		return false;
-	CComPtr<IHTMLTxtRange> pRange;
-	hr = pDispRange->QueryInterface(IID_IHTMLTxtRange,
-		reinterpret_cast<void**>(&pRange));
-	if (FAILED(hr) || pRange == NULL)
-		return false;
-#endif
-
+	if (lpTxtRange)
+		lpTxtRange->Release();
 }
 
 void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
@@ -826,6 +1312,7 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 	CComBSTR testid(searchID.GetLength() + 1, searchID);
 	CComBSTR testtag(5, "SPAN");
 
+	HRESULT hr;
 	IHTMLDocument2 *lpHtmlDocument = NULL;
 	LPDISPATCH lpDispatch = NULL;
 	lpDispatch = m_browser.m_ie.GetDocument();
@@ -833,8 +1320,8 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 	if (!lpDispatch)
 		return;
 
-	lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
-	HTML_ASSERT(lpHtmlDocument);
+	hr = lpDispatch->QueryInterface(IID_IHTMLDocument2, (void**)&lpHtmlDocument);
+	HTML_ASSERT(SUCCEEDED(hr) && lpHtmlDocument);
 	if (!lpHtmlDocument) {
 		lpDispatch->Release();
 		return;
@@ -842,20 +1329,24 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 	lpDispatch->Release();
 
 	IHTMLElementCollection *lpAllElements = 0;
-	lpHtmlDocument->get_all(&lpAllElements);
-	HTML_ASSERT(lpAllElements);
+	hr = lpHtmlDocument->get_all(&lpAllElements);
+	HTML_ASSERT(SUCCEEDED(hr) && lpAllElements);
 	if (!lpAllElements) {
 		lpHtmlDocument->Release();
 		return;
 	}
 	lpHtmlDocument->Release();
 
+	CComBSTR id;
+	CComBSTR tag;
+	CComBSTR innerText;
+
 	IUnknown *lpUnk;
 	IEnumVARIANT *lpNewEnum;
-	if (SUCCEEDED(lpAllElements->get__newEnum(&lpUnk)) && lpUnk != NULL)
+	if (SUCCEEDED(lpAllElements->get__newEnum(&lpUnk)) && (lpUnk != NULL))
 	{
-		lpUnk->QueryInterface(IID_IEnumVARIANT, (void**)&lpNewEnum);
-		HTML_ASSERT(lpNewEnum);
+		hr = lpUnk->QueryInterface(IID_IEnumVARIANT, (void**)&lpNewEnum);
+		HTML_ASSERT(SUCCEEDED(hr) && lpNewEnum);
 		if (!lpNewEnum) {
 			lpAllElements->Release();
 			return;
@@ -863,13 +1354,12 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 		VARIANT varElement;
 		IHTMLElement *lpElement;
 
-		CComBSTR id;
-		CComBSTR tag;
+		VariantInit(&varElement);
 		while (lpNewEnum->Next(1, &varElement, NULL) == S_OK)
 		{
-			_ASSERTE(varElement.vt == VT_DISPATCH);
-			varElement.pdispVal->QueryInterface(IID_IHTMLElement, (void**)&lpElement);
-			HTML_ASSERT(lpElement);
+			HTML_ASSERT(varElement.vt == VT_DISPATCH);
+			hr = varElement.pdispVal->QueryInterface(IID_IHTMLElement, (void**)&lpElement);
+			HTML_ASSERT(SUCCEEDED(hr) && lpElement);
 
 			if (lpElement)
 			{
@@ -879,12 +1369,12 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 				lpElement->get_tagName(&tag);
 				if ((id == testid) && (tag == testtag))
 				{
-					BSTR innerText;
+					innerText.Empty();
 					lpElement->get_innerHTML(&innerText);
 					lpElement->put_outerHTML(innerText);
 				}
 			}
-			VariantClear(&varElement);
+			hr = VariantClear(&varElement);
 		}
 	}
 	lpAllElements->Release();

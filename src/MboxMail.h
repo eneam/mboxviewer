@@ -16,6 +16,8 @@
 
 _int64 FileSize(LPCSTR fileName);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
+BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr);
+BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result);
 
 class MboxMail;
 

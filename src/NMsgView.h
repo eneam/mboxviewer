@@ -11,6 +11,8 @@
 /////////////////////////////////////////////////////////////////////////////
 // NMsgView window
 
+class SimpleString;
+
 class NMsgView : public CWnd
 {
 	CFont m_BoldFont, m_NormFont, m_BigFont, m_BigBoldFont;
@@ -47,6 +49,12 @@ protected:
 public:
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
 	void ClearSearchResultsInIHTMLDocument(CString searchID);
+	void GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage);
+	BOOL CreateHTMLDocument(struct IHTMLDocument2 **lpDocument, SimpleString *inbuf, SimpleString *workbuf, UINT inCodepage);
+	BOOL FindElementByTagInIHTMLDocument(struct IHTMLDocument2 *lpDocument, struct IHTMLElement **ppvEl, CString &tag);
+	void PrintIHTMLDocument(struct IHTMLDocument2 *lpDocument);
+	void PrintIHTMLElement(struct IHTMLElement *lpElm, CStringW &text);
+	void RemoveStyleTagFromIHTMLDocument(struct IHTMLElement *lpElm);
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();

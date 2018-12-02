@@ -49,6 +49,7 @@ public:
 	bool IsAllCaps( register const char *s );
 	int BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE );
 	int BMHSearchW( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE );
+	void hexdump(char *title, char *area, int length);
 /*
 	char EntityToAscii( char * &p );
 	int LowerCompareNoCaseN(register const char *low, register const char *mix, register int count);

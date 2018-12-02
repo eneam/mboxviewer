@@ -284,7 +284,10 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_HTML_OPEN_RELATED_Id = 6;
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Mails in Browser"));
 
-	const UINT S_HTML_FIND_Id = 7;
+	const UINT S_HTML_OPEN_RELATED_FILES_Id = 7;
+	AppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
+
+	const UINT S_HTML_FIND_Id = 8;
 	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find"));
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -339,6 +342,21 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	break;
+
+	case S_HTML_OPEN_RELATED_FILES_Id: {
+		{
+			CString path = GetmboxviewTempPath();
+
+			if (PathFileExist(path)) {
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+				CheckShellExecuteResult(result, h);
+			}
+			int deb = 1;
+		}
+	}
+	break;
+
 	case S_HTML_FIND_Id: {
 		if (m_lastSel != iItem) {
 			TRACE("Selecting %d\n", iItem);
@@ -1976,9 +1994,14 @@ void NListView::SelectItem(int iItem)
 		data = (char*)(LPCSTR)bdy;
 		datalen = bdy.GetLength();
 	}
-	else if (ext.Compare("htm") == 0 && CString(bdy).MakeLower().Find("<body") == -1) 
+	// TODO: Looks need to rewrite the login; check first if required TAGs exists such as html, body, head ? and attribute charcter set.
+	// This is not inexpenisve proposition. Should we ignore xml extensions ?
+	else if ((ext.Compare("htm") == 0) && (CString(bdy).MakeLower().Find("<body") == -1))
 	{
-		if (hasInlineAttachments) {
+		// File has htm extension but body tag is missing. 
+		// TODO: Below assume html TAG is present.  Do we need to check for html TAG ?
+		if (hasInlineAttachments) 
+		{
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
@@ -2003,19 +2026,25 @@ void NListView::SelectItem(int iItem)
 			datalen = bdy.GetLength();
 		}
 	}
-	else {
+	else // (extension is htm and body TAG found) or (extension is not htm)  TODO: logic is suspect/incomplete and needs rewrite and simplification.
+	{
 		// TODO: need to optimize use of buffers
 		BOOL charsetMissing = FALSE;
 		CString bdyLower(bdy);
 		bdyLower.MakeLower();
 		if ((ext.Compare("htm") == 0) && (bdyLower.Find("charset=") == -1))
 		{
-			//int pos = bdy.Find("<body>");
+			// File has htm extension but body tag is missing. 
+			// TODO: need to check for html TAG ?
+
+			// TODO: no need to check for body TAG ?
+			//int pos = bdy.Find("<body>");   
 			if (bdycharset.MakeLower().CompareNoCase("utf-8") != 0)
-				charsetMissing = TRUE;  // simplify for now, update html doc later ?
+				charsetMissing = TRUE;  // simplify for now, update html doc
 			int deb = 1;
 		}
-		if (hasInlineAttachments) {
+		if (hasInlineAttachments) 
+		{
 			// TODO: handle charsetMissing
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
@@ -2029,7 +2058,8 @@ void NListView::SelectItem(int iItem)
 			data = outbuf->Data();
 			datalen = outbuf->Count();
 		}
-		else if (charsetMissing) {
+		else if (charsetMissing) 
+		{
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
 

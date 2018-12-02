@@ -356,6 +356,108 @@ bool TextUtilities::IsAllCaps( register const char *s ) {
 	return *s == 0;
 }
 
+#define N_CHARS		16			/* number of bytes printed in one line */
+#define	MAX_BUFF	4094		/* size of print buffer for sprintf() and max TRACE can accept */
+
+void TextUtilities::hexdump(char *title, char *area, int length)
+{
+	char	buff[MAX_BUFF + 1];
+	char	tmp[128];
+	size_t	cnt, n, len;
+	int	m_length = length;
+	int	jj, ii;
+	char	ch;
+
+	cnt = 0;
+
+	if (strlen(title) > 0)
+	{
+		(void *)sprintf(tmp, "%s (length=%d)", title, length);
+		(void *)sprintf(&buff[cnt], "%-22s = \n", tmp);
+		n = strlen(&buff[cnt]);
+		if (n > 0) cnt += n;
+	}
+
+	for (jj = 0; jj < m_length; jj += N_CHARS) /* print block of 16 bytes */
+	{
+		len = m_length - jj;			/* bytes left */
+		if (len > N_CHARS)
+			len = N_CHARS;
+
+		(void *)sprintf(&buff[cnt], "%04d  ", (jj % 10000));
+		n = strlen(&buff[cnt]);
+		if (n > 0) cnt += n;
+
+		for (ii = 0; ii < len; ++ii)			/* N_CHARS bytes hex */
+		{
+			if (ii == N_CHARS / 2)
+			{
+				(void *)sprintf(&buff[cnt], "| ");
+				n = strlen(&buff[cnt]);
+				if (n > 0) cnt += n;
+			}
+			(void *)sprintf(&buff[cnt], "%02x ", (unsigned char)area[jj + ii]);
+			n = strlen(&buff[cnt]);
+			if (n > 0) cnt += n;
+		}
+
+		for (ii = len; ii < N_CHARS; ii++)		/* padd with spaces */
+		{
+			if (ii == N_CHARS / 2)
+			{
+				(void *)sprintf(&buff[cnt], "  ");
+				n = strlen(&buff[cnt]);
+				if (n > 0) cnt += n;
+			}
+			(void *)sprintf(&buff[cnt], "   ");
+			n = strlen(&buff[cnt]);
+			if (n > 0) cnt += n;
+		}
+
+		(void *)sprintf(&buff[cnt], "      ");		/* 6 spaces */
+		n = strlen(&buff[cnt]);
+		if (n > 0) cnt += n;
+
+		for (ii = 0; ii < len; ii++)			/* N_CHARS bytes ascii */
+		{
+			ch = area[jj + ii];
+			if (ch < ' ' || ch > '~')
+				ch = '_';
+
+			(void *)sprintf(&buff[cnt], "%c", ch);
+			n = strlen(&buff[cnt]);
+			if (n > 0) cnt += n;
+		}
+
+		(void *)sprintf(&buff[cnt], "\n");
+		n = strlen(&buff[cnt]);
+		if (n > 0) cnt += n;
+
+		/* print accumulated characters */
+		if (cnt > (MAX_BUFF - (N_CHARS*20)))
+		{
+			buff[cnt] = '\0';
+			TRACE("%s", buff);
+			cnt = 0;
+			(void *)sprintf(&buff[cnt], "\n");
+			n = strlen(&buff[cnt]);
+			if (n > 0) cnt += n;
+		}
+	}
+	/*
+		(void *) sprintf(&buff[cnt],"\n");
+		n = strlen(&buff[cnt]);
+		if ( n > 0 ) cnt += n;
+	*/
+
+	if (cnt >= 0)
+	{
+		buff[cnt] = '\0';
+		TRACE("%s", buff);
+	}
+}
+
+
 
 bool TextUtilities::TestAll()
 {
