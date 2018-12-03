@@ -1833,7 +1833,7 @@ void NListView::SelectItem(int iItem)
 	pView->m_to_charset = m->m_to_charset;
 
 	// Get raw mail body
-	CString bdy = m->GetBody();
+	CString bdy;   m->GetBody(bdy);
 
 	// Save raw message
 	if (m_bExportEml)
@@ -1988,99 +1988,127 @@ void NListView::SelectItem(int iItem)
 	pView->m_attachments.SortItemsEx(MyCompareProc, (LPARAM)&pView->m_attachments);
 
 	// Save mail
-	if (ext.Compare("txt") == 0) {
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n" + bdy + "</pre></body></html>";
-		ext = "htm";
-		data = (char*)(LPCSTR)bdy;
-		datalen = bdy.GetLength();
-	}
-	// TODO: Looks need to rewrite the login; check first if required TAGs exists such as html, body, head ? and attribute charcter set.
-	// This is not inexpenisve proposition. Should we ignore xml extensions ?
-	else if ((ext.Compare("htm") == 0) && (CString(bdy).MakeLower().Find("<body") == -1))
+	if (ext.Compare("txt") == 0) 
 	{
-		// File has htm extension but body tag is missing. 
-		// TODO: Below assume html TAG is present.  Do we need to check for html TAG ?
-		if (hasInlineAttachments) 
+		// Wrap as HTML to display text with different charsets correctly
+		ext = "htm";
+
+		SimpleString *outbuf = MboxMail::m_outbuf;
+		outbuf->ClearAndResize(bdy.GetLength() + 1000);
+
+		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n";
+		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+		char *inData = (char*)(LPCSTR)bdy;
+		int inDataLen = bdy.GetLength();
+		outbuf->Append(inData, inDataLen);
+
+		hdr = "</pre></body></html>";
+		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+		data = outbuf->Data();
+		datalen = outbuf->Count();
+		int deb = 1;
+	}
+	else if (ext.Compare("htm") == 0) 
+	{
+		BOOL bodyTagMissing = FALSE;
+
+		const char *pBdy = bdy;
+		int bodyLength = bdy.GetLength();
+
+		if (findNoCase(pBdy, bodyLength, "<body", 5) < 0)
+			bodyTagMissing = TRUE;
+
+		if (bodyTagMissing)
 		{
+			// File has htm extension but body tag is missing. 
+			// TODO: Below assume html TAG is present.  Do we need to check for html TAG ?
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
-			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>\r\n";
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
-			int mailPosition = 0; // not used anyway here
-			bool useMailPosition = false;
 			char *inData = (char*)(LPCSTR)bdy;
 			int inDataLen = bdy.GetLength();
-			fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+
+			if (hasInlineAttachments)
+			{
+				int mailPosition = 0; // not used anyway here
+				bool useMailPosition = false;
+				fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+			}
+			else
+				outbuf->Append(inData, inDataLen);
 
 			hdr = "</body></html>";
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
 			data = outbuf->Data();
 			datalen = outbuf->Count();
 			int deb = 1;
 		}
-		else {
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>" + bdy +"</body></html>";
-			data = (char*)(LPCSTR)bdy;
-			datalen = bdy.GetLength();
+		else // body TAG found
+		{
+			// Assume HTML tag is present :)
+
+			// TODO: need to optimize use of buffers
+			BOOL charsetMissing = FALSE;
+
+			if (findNoCase(pBdy, bodyLength, "charset=", 5) < 0)
+				charsetMissing = TRUE;
+
+			// For now always append missing charset
+#if 0
+			if (charsetMissing)
+			{
+				// assume that dflt for browsers is UTF8 so no need to do anything ?
+				if (bdycharset.CompareNoCase("utf-8") == 0)  // 
+					charsetMissing = FALSE; 
+				int deb = 1;
+			}
+#endif
+
+			if ((charsetMissing) || (hasInlineAttachments))
+			{
+				SimpleString *outbuf = MboxMail::m_outbuf;
+				outbuf->ClearAndResize(bdy.GetLength() + 1000);
+
+				if (charsetMissing)
+				{
+					CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><html>\r\n";
+					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+					int deb = 1;
+				}
+
+				char *inData = (char*)(LPCSTR)bdy;
+				int inDataLen = bdy.GetLength();
+
+				if (hasInlineAttachments)
+				{
+					int mailPosition = 0; // not used anyway here
+					bool useMailPosition = false;
+					fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+				}
+				else
+					outbuf->Append(inData, inDataLen);
+
+				data = outbuf->Data();
+				datalen = outbuf->Count();
+				int deb = 1;
+			}
+			else 
+			{
+				data = (char*)(LPCSTR)bdy;
+				datalen = bdy.GetLength();
+				int deb = 1;
+			}
+			int deb = 1;
 		}
 	}
-	else // (extension is htm and body TAG found) or (extension is not htm)  TODO: logic is suspect/incomplete and needs rewrite and simplification.
-	{
-		// TODO: need to optimize use of buffers
-		BOOL charsetMissing = FALSE;
-		CString bdyLower(bdy);
-		bdyLower.MakeLower();
-		if ((ext.Compare("htm") == 0) && (bdyLower.Find("charset=") == -1))
-		{
-			// File has htm extension but body tag is missing. 
-			// TODO: need to check for html TAG ?
-
-			// TODO: no need to check for body TAG ?
-			//int pos = bdy.Find("<body>");   
-			if (bdycharset.MakeLower().CompareNoCase("utf-8") != 0)
-				charsetMissing = TRUE;  // simplify for now, update html doc
-			int deb = 1;
-		}
-		if (hasInlineAttachments) 
-		{
-			// TODO: handle charsetMissing
-			SimpleString *outbuf = MboxMail::m_outbuf;
-			outbuf->ClearAndResize(bdy.GetLength() + 1000);
-
-			int mailPosition = 0; // not used anyway here
-			bool useMailPosition = false;
-			char *inData = (char*)(LPCSTR)bdy;
-			int inDataLen = bdy.GetLength();
-			fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
-
-			data = outbuf->Data();
-			datalen = outbuf->Count();
-		}
-		else if (charsetMissing) 
-		{
-			SimpleString *outbuf = MboxMail::m_outbuf;
-			outbuf->ClearAndResize(bdy.GetLength() + 1000);
-
-			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
-			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
-
-			data = (char*)(LPCSTR)bdy;
-			datalen = bdy.GetLength();
-
-			outbuf->Append(data, datalen);
-
-			data = outbuf->Data();
-			datalen = outbuf->Count();
-		}
-		else {
-			// TODO: handle charsetMissing
-			data = (char*)(LPCSTR)bdy;
-			datalen = bdy.GetLength();
-		}
+	else 
 		int deb = 1;
-	}
 
 	pView->m_body_charsetId = charset2Id(bdycharset);
 	pView->m_body_charset = bdycharset;
@@ -2104,7 +2132,7 @@ int NListView::DumpItemDetails(MboxMail *m)
 	int iItem = 1;
 
 	// Get raw mail body
-	CString bdy = m->GetBody();
+	CString bdy;   m->GetBody(bdy);
 
 	// Decode MIME message
 	CMimeMessage mail;
@@ -2121,7 +2149,7 @@ int NListView::DumpItemDetails(int iItem)
 	MboxMail *m = MboxMail::s_mails[iItem];
 
 	// Get raw mail body
-	CString bdy = m->GetBody();
+	CString bdy;   m->GetBody(bdy);
 
 	// Decode MIME message
 	CMimeMessage mail;
@@ -2967,7 +2995,7 @@ void NListView::OnEditVieweml()
 		if (nItem >= 0) {
 			m = MboxMail::s_mails[nItem];
 			// Get raw mail body
-			CString bdy = m->GetBody();
+			CString bdy;   m->GetBody(bdy);
 			// Save mail
 			CFile fp(GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
 			fp.Write(bdy, bdy.GetLength());

@@ -259,9 +259,10 @@ CString MboxMail::DecodeString(CString &subj, CString &charset, UINT &charsetId,
 		return subj;
 }
 
-CString MboxMail::GetBody()
+BOOL MboxMail::GetBody(CString &res)
 {
-	CString res;
+	BOOL ret = TRUE;
+	//CString res;
 	CFile fp;
 	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
 		char *p = res.GetBufferSetLength(m_length);
@@ -282,9 +283,10 @@ CString MboxMail::GetBody()
 	{
 		DWORD err = GetLastError();
 		TRACE("Open Mail File failed err=%ld\n", err);
+		ret = FALSE;
 	}
 
-	return res;
+	return ret;
 };
 
 int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
@@ -1600,6 +1602,19 @@ int strncmpUpper2Lower(char *any, int anyLength, const char *lower, int lowerlen
 int strncmpExact(char *any, char *end, const char *lower, int lowerlength) {
 	while ((lowerlength > 0) && (any < end) && (*lower++ == *any++)) { lowerlength--; }
 	return lowerlength;
+}
+
+int findNoCase(const char *input, int count, void const* Str, int  Size)
+{
+	int i;
+	register char *p = (char*)input;
+	register int delta_count = count - Size;
+	for (i = 0; i < delta_count; i++,p++)
+	{
+		if (strncmpUpper2Lower(p, (count - i), (char*)Str, Size) == 0)
+			return i;
+	}
+	return -1;
 }
 
 /* ParseContent Parser parses mail file to determine the file offset and length of content blocks.
@@ -4074,6 +4089,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 				else
 					fp.Write(inbuf->Data(), inbuf->Count());
 			}
+			// else TODO: get HTML block and do html2text, see print single mail to text function
 
 			outbuf.Clear();
 			outbuf.Append('"');
@@ -4868,3 +4884,108 @@ void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &v
 	else
 		value.Empty();
 }
+
+// Debug support functions
+
+int MboxMail::DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int mailsArrayCount)
+{
+	MboxMail *m;
+
+	CString mailFile = MboxMail::s_path;
+
+	if (s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path wil fail first
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(mailFile, drive, dir, fname, ext);
+
+	CFile fp;
+	CString statsFile = path + "\\" + CString(fname) + "_stats.txt";
+
+	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate)) {
+		CString txt = _T("Could not create \"") + statsFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	CFile fpm;  
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+		return -1;
+	}
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
+	BOOL hasPlain;
+	BOOL hasHtml;
+	BOOL hasBody;
+	BOOL hasCharset;
+
+
+	CString text;
+
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+
+		outbuf->Clear();
+
+		hasPlain = FALSE;
+		hasHtml = FALSE;
+		hasBody = FALSE;
+		hasCharset = FALSE;
+
+		UINT pageCode = 0;
+		int textType = 0; //PLAIN
+		int textlen = GetMailBody_mboxview(fpm, i, outbuf, pageCode, textType);  // fast
+		if (textlen != outbuf->Count())
+			int deb = 1;
+
+		if (outbuf->Count())
+		{
+			hasPlain = TRUE;
+		}
+
+		outbuf->Clear();
+
+		pageCode = 0;
+		textType = 1; //HTML
+		textlen = GetMailBody_mboxview(fpm, i, MboxMail::m_outbuf, pageCode, textType);  // fast
+		if (textlen != outbuf->Count())
+			int deb = 1;
+
+		if (outbuf->Count())
+		{
+			hasHtml = TRUE;
+
+			if (findNoCase(outbuf->Data(), outbuf->Count(), "<body", 5) >= 0)
+				hasBody = TRUE;
+
+			if (findNoCase(outbuf->Data(), outbuf->Count(), "charset=", 5) >= 0)
+				hasCharset = TRUE;
+		}
+
+		text.Empty();
+		text.Format("INDX=%d PLAIN=%d HTML=%d BODY=%d CHARSET=%d\n",
+			i, hasPlain, hasHtml, hasBody, hasCharset);
+
+		fp.Write(text, text.GetLength());
+	}
+	fp.Close();
+	return 1;
+}
+

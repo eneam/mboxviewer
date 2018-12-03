@@ -18,6 +18,7 @@ _int64 FileSize(LPCSTR fileName);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr);
 BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result);
+int findNoCase(const char *input, int count, void const* Str, int  Size);
 
 class MboxMail;
 
@@ -241,7 +242,7 @@ public:
 		m_index = -1;
 		m_headLength = 0;
 	}
-	CString GetBody();
+	BOOL GetBody(CString &str);
 	int DumpMailBox(MboxMail *mailBox, int which);
 
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
@@ -325,6 +326,7 @@ public:
 	static char *ParseContent(MboxMail *mail, char *startPos, char *endPos);
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
+	static int DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int mailArrayCount);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 
 	static void ReleaseResources();

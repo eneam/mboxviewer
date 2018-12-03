@@ -623,6 +623,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	case M_Reload_Id: {
 		ForceParseMailFile(hItem);
+		// For internal testing
+		//int ret = MboxMail::DumpMailStatsToFile(&MboxMail::s_mails, MboxMail::s_mails.GetCount());
 	}
 	break;
 
