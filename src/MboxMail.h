@@ -30,6 +30,7 @@ public:
 	BOOL m_bSubject;
 	BOOL m_bDate;
 	BOOL m_bContent;
+	CString m_MessageLimitString;
 	int m_dateFormat;
 	int m_bGMTTime;
 	int m_nCodePageId;
@@ -48,7 +49,31 @@ public:
 	int m_bGMTTime;
 	int m_nCodePageId;
 	CString m_separator;
+	CString errorText;
 } TEXTFILE_CONFIG;
+
+typedef struct _PrintMailArchiveArgs
+{
+	TEXTFILE_CONFIG textConfig;
+	CString textFile;
+	int firstMail;
+	int lastMail;
+	int textType;
+	BOOL terminated;
+	BOOL exitted;
+	CString errorText;
+} PRINT_MAIL_ARCHIVE_ARGS;
+
+typedef struct _PrintMailArchiveToCSVArgs
+{
+	CSVFILE_CONFIG csvConfig;
+	CString csvFile;
+	int firstMail;
+	int lastMail;
+	BOOL terminated;
+	BOOL exitted;
+	CString errorText;
+} PRINT_MAIL_ARCHIVE_TO_CSV_ARGS;
 
 class MboxCMimeHelper
 {
@@ -276,9 +301,13 @@ public:
 	static int add2ConversationGroup(int mid, MboxMail *m);
 	//
 	static int m_nextGroupId;
+	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :)
 	static SimpleString *m_outbuf;
 	static SimpleString *m_inbuf;
 	static SimpleString *m_workbuf;
+	static SimpleString *m_tmpbuf;
+
+	static int m_Html2TextCount;
 
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
@@ -314,9 +343,12 @@ public:
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
-	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType);
-	static int exportHeaderToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
-	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName);
+	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progressBar);
+	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
+	static int printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig);
+	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, int firstMail, int lastMail, BOOL progressBar);
+	static int printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig, bool firstMail);
 	static int exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig);
 	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
 	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
@@ -327,6 +359,9 @@ public:
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
 	static int DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int mailArrayCount);
+	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
+	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, BOOL progressBar, CString &errorText);
+	static int DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 
 	static void ReleaseResources();

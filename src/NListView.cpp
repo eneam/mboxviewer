@@ -1564,19 +1564,28 @@ void NListView::FillCtrl()
 		args.path = m_path;
 		args.exitted = FALSE;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
-		if( !Dlg.DoModal() )
+		INT_PTR nResult = Dlg.DoModal();
+		if (!nResult)  // should never be true ?
 			return;
-		if (!args.exitted)
-		{
+
+		int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+		int retResult = LOWORD(nResult);
+
+		if (retResult != IDOK)
+		{  // IDOK==0, IDCANCEL==2
+			// We should be here when user selects Cancel button
+			//ASSERT(cancelledbyUser == TRUE);
+			int loopCnt = 20;
 			DWORD tc_start = GetTickCount();
-			while (args.exitted == FALSE) {
-				Sleep(1);
+			while ((loopCnt-- > 0) && (args.exitted == FALSE))
+			{
+				Sleep(25);
 			}
 			DWORD tc_end = GetTickCount();
 			DWORD delta = tc_end - tc_start;
 			TRACE("(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
-			Sleep(5);
 		}
+
 
 		bool ret = MboxMail::preprocessConversations();
 		ret = MboxMail::sortConversations();
@@ -2543,20 +2552,30 @@ void NListView::OnEditFind()
 			FIND_ARGS args;
 			/*IN*/ args.lview = this; args.searchstart = m_lastFindPos;
 			/*OUT*/ args.exitted = FALSE; args.retpos = -1;
-			if ((w == -2) || (m_maxSearchDuration == 0)) {
+			if ((w == -2) || (m_maxSearchDuration == 0)) 
+			{
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
-				if (!Dlg.DoModal())
+
+				INT_PTR nResult = Dlg.DoModal();
+				if (!nResult) // should never be true ?
 					return;
-				if (!args.exitted)
-				{
+
+				int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+				int retResult = LOWORD(nResult);
+
+				if (retResult != IDOK)
+				{  // IDOK==0, IDCANCEL==2
+					// We should be here when user selects Cancel button
+					//ASSERT(cancelledbyUser == TRUE);
+					int loopCnt = 20;
 					DWORD tc_start = GetTickCount();
-					while (args.exitted == FALSE) {
-						Sleep(1);
+					while ((loopCnt-- > 0) && (args.exitted == FALSE))
+					{
+						Sleep(25);
 					}
 					DWORD tc_end = GetTickCount();
 					DWORD delta = tc_end - tc_start;
 					TRACE("(OnEditFind)Waited %ld milliseconds for thread to exist.\n", delta);
-					Sleep(5);
 				}
 				w = args.retpos;
 			}
@@ -2835,20 +2854,30 @@ void NListView::OnEditFindAgain()
 	FIND_ARGS args;
 	/*IN*/ args.lview = this; args.searchstart = m_lastFindPos;
 	/*OUT*/ args.exitted = FALSE; args.retpos = -1;
-	if ((w == -2) || (m_maxSearchDuration == 0)) {
+	if ((w == -2) || (m_maxSearchDuration == 0)) 
+	{
 		CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
-		if (!Dlg.DoModal())
+
+		INT_PTR nResult = Dlg.DoModal();
+		if (!nResult) // should never be true ?
 			return;
-		if (!args.exitted)
-		{
+
+		int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+		int retResult = LOWORD(nResult);
+
+		if (retResult != IDOK)
+		{  // IDOK==0, IDCANCEL==2
+			// We should be here when user selects Cancel button
+			//ASSERT(cancelledbyUser == TRUE);
+			int loopCnt = 20;
 			DWORD tc_start = GetTickCount();
-			while (args.exitted == FALSE) {
-				Sleep(1);
+			while ((loopCnt-- > 0) && (args.exitted == FALSE))
+			{
+				Sleep(25);
 			}
 			DWORD tc_end = GetTickCount();
 			DWORD delta = tc_end - tc_start;
-			TRACE("(OnEditFind)Waited %ld milliseconds for thread to exist.\n", delta);
-			Sleep(5);
+			TRACE("(OnEditFindAgain)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
 		w = args.retpos;
 	}
@@ -3366,10 +3395,11 @@ void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
 
 	CString textFileName;
 	int ret = 0;
-	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType);
+	BOOL progressBar = FALSE;
+	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType, progressBar);
 	if (ret > 0) {
 		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-		if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+		if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(....);
 		{
 			if (PathFileExist(path)) { // likely :) 
 				CString txt = "Created file\n\n" + textFileName;

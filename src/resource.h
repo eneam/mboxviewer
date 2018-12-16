@@ -133,6 +133,7 @@
 #define IDC_CHECK_HIGHLIGHT_ALL         1145
 #define IDC_SLIDER_ZOOM                 1146
 #define IDC_SLIDER_POS                  1149
+#define IDC_EXPORT_MESSAGE_LIMIT        1150
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -161,7 +162,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        182
 #define _APS_NEXT_COMMAND_VALUE         32868
-#define _APS_NEXT_CONTROL_VALUE         1150
+#define _APS_NEXT_CONTROL_VALUE         1151
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

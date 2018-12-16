@@ -49,12 +49,13 @@ protected:
 public:
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
 	void ClearSearchResultsInIHTMLDocument(CString searchID);
-	void GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage);
-	BOOL CreateHTMLDocument(struct IHTMLDocument2 **lpDocument, SimpleString *inbuf, SimpleString *workbuf, UINT inCodepage);
+	static void GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage);
+	static BOOL CreateHTMLDocument(struct IHTMLDocument2 **lpDocument, SimpleString *inbuf, SimpleString *workbuf, UINT inCodepage);
 	BOOL FindElementByTagInIHTMLDocument(struct IHTMLDocument2 *lpDocument, struct IHTMLElement **ppvEl, CString &tag);
 	void PrintIHTMLDocument(struct IHTMLDocument2 *lpDocument);
 	void PrintIHTMLElement(struct IHTMLElement *lpElm, CStringW &text);
-	void RemoveStyleTagFromIHTMLDocument(struct IHTMLElement *lpElm);
+	static void RemoveStyleTagFromIHTMLDocument(struct IHTMLElement *lpElm);
+	static void MergeWhiteLines(SimpleString *inbuf, int maxoutLines);
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();

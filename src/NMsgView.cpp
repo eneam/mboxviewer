@@ -635,9 +635,109 @@ char *SkipEmptyLine(char* p, char* e)
 	return p;
 }
 
+
+
 void BreakBeforeGoingCleanup()
 {
 	int deb = 1;
+}
+
+void NMsgView::MergeWhiteLines(SimpleString *workbuf, int maxOutLines)
+{
+	if (maxOutLines == 0) {
+		workbuf->SetCount(0);
+		return;
+	}
+
+	// Delete duplicate empty lines
+	char *p = workbuf->Data();
+	char *e = p + workbuf->Count();
+
+	char *p_end_data;
+	char *p_beg_data;
+	char *p_save;
+	char *p_data;
+
+	unsigned long  len;
+	int dataCount = 0;
+	int emptyLineCount = 0;
+	int outLineCnt = 0;
+
+	while (p < e)
+	{
+		emptyLineCount = 0;
+		p_save = 0;
+		while ((p < e) && (p != p_save))
+		{
+			p_save = p;
+			p = SkipEmptyLine(p, e);
+			if (p != p_save)
+				emptyLineCount++;
+
+		}
+		p_beg_data = p;
+
+		while ((p < e) && !((*p == '\r') || (*p == '\n')))
+		{
+			p = EatNLine(p, e);
+			outLineCnt++;
+			if ((maxOutLines > 0) && (outLineCnt >= maxOutLines))
+			{
+				e = p;
+				break;
+			}
+		}
+
+		p_end_data = p;
+
+		if (emptyLineCount > 0)
+		{
+			p_data = workbuf->Data() + dataCount;
+			if ((p_beg_data - p_data) > 1) {
+				memcpy(p_data, "\r\n", 2);
+				dataCount += 2;
+			}
+			else
+			{
+				memcpy(p_data, "\n", 1);
+				dataCount += 1;
+			}
+			outLineCnt++;
+		}
+
+		len = p_end_data - p_beg_data;
+		//g_tu.hexdump("Data:\n", p_beg_data, len);
+
+		if (len > 0) {
+			p_data = workbuf->Data() + dataCount;
+			memcpy(p_data, p_beg_data, len);
+			dataCount += len;
+		}
+		if ((maxOutLines > 0) && (outLineCnt >= maxOutLines))
+			break;
+	}
+
+	workbuf->SetCount(dataCount);
+
+#if 0
+	// Verify that outLineCnt is valid
+	{
+		if (maxOutLines <= 0)
+			return;
+
+
+		char *p = workbuf->Data();
+		e = p + workbuf->Count();
+		int lineCnt = 0;
+		while (p < e)
+		{
+			p = EatNLine(p, e);
+			lineCnt++;
+		}
+		if (lineCnt != outLineCnt)
+			int deb = 1;
+	}
+#endif
 }
 
 
@@ -686,56 +786,7 @@ void NMsgView::GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workb
 
 	BOOL ret = WStr2CodePage(wstr, wlen, outCodePage, workbuf);
 
-	// Delete duplicate empty lines
-	char *p = workbuf->Data();
-	char *e = p + workbuf->Count();
-
-	char *p_end_data;
-	char *p_beg_data;
-	char *p_save;
-	char *p_data;
-
-	unsigned long  len;
-	int dataCount = 0;
-	int emptyLineCount = 0;
-
-	while (p < e)
-	{
-		emptyLineCount = 0;
-		p_save = 0;
-		while ((p < e) && (p != p_save))
-		{
-			p_save = p;
-			p = SkipEmptyLine(p, e);
-			if (p != p_save)
-				emptyLineCount++;
-
-		}
-		p_beg_data = p;
-
-		while ((p < e) && !((*p == '\r') || (*p == '\n')))
-			p = EatNLine(p, e);
-
-		p_end_data = p;
-
-		if (emptyLineCount > 0)
-		{
-			p_data = workbuf->Data() + dataCount;
-			memcpy(p_data, "\r\n", 2);
-			dataCount += 2;
-		}
-
-		len = p_end_data - p_beg_data;
-		//g_tu.hexdump("Data:\n", p_beg_data, len);
-
-		if (len > 0) {
-			p_data = workbuf->Data() + dataCount;
-			memcpy(p_data, p_beg_data, len);
-			dataCount += len;
-		}
-	}
-
-	workbuf->SetCount(dataCount);
+	MergeWhiteLines(workbuf, -1);
 
 	if (lpBodyElm)
 		lpBodyElm->Release();
@@ -755,6 +806,10 @@ BOOL NMsgView::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *inb
 
 	//CComBSTR bstr(inbuf->Data());
 	//int bstrLen = bstr.Length();
+	//int deb1 = 1;
+	//BSTR  bstrTest = SysAllocString(L"TEST");  // Test heap allocations
+	//SysFreeString(bstrTest);
+	//int deb = 1;
 
 #if 0
 	USES_CONVERSION;

@@ -350,6 +350,7 @@ void CMainFrame::OnFileExportToCsv()
 		csvConfig.m_bContent = d.m_bContent;
 		csvConfig.m_dateFormat = d.m_dateFormat;
 		csvConfig.m_bGMTTime = d.m_bGMTTime;
+		csvConfig.m_MessageLimitString = d.m_MessageLimitString;
 	
 		//csvConfig.m_separator = d.m_separator;
 		// Hardcoded for now.
@@ -362,10 +363,13 @@ void CMainFrame::OnFileExportToCsv()
 			csvConfig.m_nCodePageId = d.m_nCodePageId;
 		}
 
-		CString csvFileName;
 
-		//int ret = MboxMail::exportToCSVFileFullMailParse(csvConfig);
-		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName);
+		CString csvFileName;
+		int firstMail = 0;
+		int lastMail = MboxMail::s_mails.GetCount() - 1;
+		BOOL progressBar = TRUE;
+
+		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName, firstMail, lastMail, progressBar);
 		if (ret > 0) {
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
@@ -412,6 +416,7 @@ void CMainFrame::OnViewCodepageids()
 }
 
 // Called when File->"Print To"->CSV
+// File->"Print To"->CVS -> OnPrinttoCsv() -> OnFileExportToCsv() -> exportToCSVFile() for firstMail;lastMail -> NO separate printSingleMailToTextFile(index) yet
 void CMainFrame::OnPrinttoCsv()
 {
 	// TODO: Add your command handler code here
@@ -425,6 +430,7 @@ void CMainFrame::OnPrinttoCsv()
 }
 
 // Called when File->"Print To"->Text
+// File->"Print To"->Text -> OnPrinttoText() -> OnPrinttoTextFile() -> exportToTextFile() for firstMail;lastMail -> printSingleMailToTextFile(index)
 void CMainFrame::OnPrinttoText()
 {
 	OnPrinttoTextFile(0);
@@ -433,11 +439,6 @@ void CMainFrame::OnPrinttoText()
 void CMainFrame::OnPrinttoTextFile(int textType)
 {
 	// TODO: Add your command handler code here
-#if 0
-	//CPrintDialog prtDlg(FALSE);
-	CPageSetupDialog prtDlg(FALSE);
-	prtDlg.DoModal();
-#else
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = _T("Please open mail file first.");
 		HWND h = GetSafeHwnd(); // we don't have any window yet
@@ -445,6 +446,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 		return;
 	}
 
+	// For now Kept in case we will add extra dialog similar to print to CSV
 	//ExportToCSVDlg d;
 	//if (d.DoModal() == IDOK)
 	{
@@ -472,14 +474,16 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			textConfig.m_nCodePageId = d.m_nCodePageId;
 		}
 #endif
-
+#if 1
 		CString textFileName;
 		int firstMail = 0;
 		int lastMail = MboxMail::s_mails.GetCount() - 1;
-		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType);
+		BOOL progressBar = TRUE;
+		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType, progressBar);
+
 		if (ret > 0) {
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
@@ -520,11 +524,6 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen)  // textType 0==Plain, 1==Html
 {
 	// TODO: Add your command handler code here
-#if 0
-	//CPrintDialog prtDlg(FALSE);
-	CPageSetupDialog prtDlg(FALSE);
-	prtDlg.DoModal();
-#else
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = _T("Please open mail file first.");
 		HWND h = GetSafeHwnd(); // we don't have any window yet
@@ -560,13 +559,15 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 			textConfig.m_nCodePageId = d.m_nCodePageId;
 		}
 #endif
+#if 1
 
 		int ret = 0;
+		BOOL progressBar = FALSE;
 		CString textFileName;
-		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, textType);
+		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, textType, progressBar);
 		if (ret > 0) {
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
@@ -613,6 +614,8 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 #endif
 }
 
+
+// File->"Print To"->Text->OnPrinttoHtml()->OnPrinttoTextFile()->exportToTextFile() for firstMail; lastMail->printSingleMailToTextFile(index)
 void CMainFrame::OnPrinttoHtml()
 {
 	// TODO: Add your command handler code here
