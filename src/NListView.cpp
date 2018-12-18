@@ -1139,7 +1139,8 @@ BOOL SaveMails(LPCSTR cache)
 	sz.writeInt64(MboxMail::s_fSize = FileSize(MboxMail::s_path));	// file size
 	sz.writeInt(ni);					// number of elements
 	_int64 lastoff = 0;
-	for (int i = 0; i < ni; i++) {
+	for (int i = 0; i < ni; i++) 
+	{
 		MboxMail *m = MboxMail::s_mails[i];
 		sz.writeInt64(m->m_startOff);
 		sz.writeInt(m->m_length);
@@ -1205,9 +1206,27 @@ BOOL SaveMails(LPCSTR cache)
 							int deb = 1;
 
 						const char *fileName = (LPCSTR)imgFile;
-						CFile fp(fileName, CFile::modeWrite | CFile::modeCreate);
-						fp.Write(outbuf->Data(), outbuf->Count());
-						fp.Close();
+
+						CFileException ex;
+						CFile fp;
+						if (!fp.Open(imgFile, CFile::modeWrite | CFile::modeCreate, &ex))
+						{
+							TCHAR szError[1024];
+							ex.GetErrorMessage(szError, 1024);
+							CFileStatus rStatus;
+							BOOL ret = fp.GetStatus(rStatus);
+							CString errorText(szError);
+
+							HWND h = NULL;
+							// Ignore for now
+							//int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
+							continue;
+						}
+						else {
+							fp.Write(outbuf->Data(), outbuf->Count());
+							fp.Close();
+						}
 
 						int deb = 1;
 					}
@@ -1941,8 +1960,12 @@ void NListView::SelectItem(int iItem)
 			MboxCMimeHelper::GetContentID(pBP, contentId);
 
 			// fix embeded image declared as non inline incorrectly;
-			if (pBP->IsRelated() && (disposition.CompareNoCase("attachment") == 0) && !contentId.IsEmpty()) {
-				disposition = "inline";
+			// TODO: need better solution, i.e. decode archive and detrmine all relations
+			if (pBP->IsRelated()) {
+				if ((disposition.CompareNoCase("attachment") == 0) && !contentId.IsEmpty())
+					disposition = "inline";
+				else if (disposition.IsEmpty() && !contentId.IsEmpty())
+					disposition = "inline";
 			}
 
 			if (disposition.CompareNoCase("inline") == 0) 

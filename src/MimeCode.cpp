@@ -375,6 +375,8 @@ int CMimeCodeQP::Decode(unsigned char* pbOutput, int nMaxSize)
 			}
 			else if (ch == '\r' && *pbData == '\n')
 				pbData++;			// Soft Line Break, eat it
+			else if (ch == '\n')
+				int deb = 1; // Soft Line Break
 			else					// invalid endcoding, let it go
 				*pbOutput++ = ch;
 		}

@@ -42,6 +42,50 @@ BOOL RemoveDir(CString & dir, bool recursive = false);
 int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
+
+void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
+{
+	// Assume out is done by caller
+	out->ClearAndResize(inLength * 2);
+	register char *p = (char*)in;
+	register char *e = p + inLength;
+	register char ch;
+	char *p_beg;
+	int len;
+
+	p_beg = p;
+	while (p < e)
+	{
+		while ((p < e) && (*p != '\n')) p++;
+		if (p < e)
+		{
+			if (*(p - 1) != '\r')
+			{
+				len = p - p_beg;
+				if (len > 0)
+					out->Append(p_beg, len);
+
+				out->Append("\r\n", 2);
+				p++;  // jump over NL
+				p_beg = p;
+			}
+			else
+				p++;
+		}
+		else
+			int deb = 1;
+	}
+	if (p <= e)
+	{
+		len = p - p_beg;
+		if (len > 0)
+		{
+			out->Append(p_beg, len);
+			out->Append("\r\n", 2);
+		}
+	}
+}
+
 inline char *EatNewLine(char* p, char*e) {
 	while ((p < e) && (*p++ != '\n'));
 	return p;
@@ -289,7 +333,26 @@ BOOL MboxMail::GetBody(CString &res)
 				bAddCR = TRUE;
 			res = res.Mid(ms - p + 1); // - 4);
 			if (bAddCR) // for correct mime parsing
+			{
+				ReplaceNL2CRNL((LPCSTR)res, res.GetLength(), MboxMail::m_tmpbuf);
+#if 0
 				res.Replace("\n", "\r\n");
+
+				int resLen = res.GetLength();
+				int tmpLen = MboxMail::m_tmpbuf->Count();
+				if (resLen == tmpLen)
+				{
+					if (memcmp((LPCSTR)res, MboxMail::m_tmpbuf->Data(), MboxMail::m_tmpbuf->Count()) != 0)
+						int deb = 1;
+				}
+				else
+					int deb = 1;
+#endif
+				res.Empty();
+				res.Append(MboxMail::m_tmpbuf->Data(), MboxMail::m_tmpbuf->Count());
+
+				//res.Replace("\n", "\r\n");
+			}
 		}
 	}
 	else
@@ -4926,8 +4989,14 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			}
 			else {
 				int ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_AttachmentName);
-				if (!m_AttachmentName.IsEmpty())
+				if (!m_AttachmentName.IsEmpty()) {
+					CString charset;
+					UINT charsetId = 0;
+					CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
+					// TODO: what about charset and charsetId :)
+					m_AttachmentName = attachmentName;
 					m_IsAttachment = true;
+				}
 			}
 		}
 		else if (strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
@@ -4945,6 +5014,15 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 				int ret = GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
 				if (m_AttachmentName.IsEmpty())
 					ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_AttachmentName);
+
+				if (!m_AttachmentName.IsEmpty()) {
+					CString charset;
+					UINT charsetId = 0;
+					CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
+					// TODO: what about charset and charsetId :)
+					m_AttachmentName = attachmentName;
+					m_IsAttachment = true;
+				}
 			}
 		}
 		else if (strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
@@ -5069,9 +5147,16 @@ int MailBody::GetBodyPartList(MailBodyList& rList)
 		MailBody *iter;
 		for (iter = m_listBodies.head(); iter != 0; iter = m_listBodies.next(iter))
 		{
+			// TODO: decode fully emial parts and save into enhanced database.
+			// This woill allow to reliably determine embeded images.
+			// Below is the best effort
 			if (m_ContentType.CompareNoCase("multipart/related") == 0) {
 				if ((!iter->m_ContentId.IsEmpty()) &&
 					(iter->m_Disposition.CompareNoCase("attachment") == 0))
+				{
+					iter->m_Disposition = "inline";
+				}
+				else if ((!iter->m_ContentId.IsEmpty()) && iter->m_Disposition.IsEmpty())
 				{
 					iter->m_Disposition = "inline";
 				}

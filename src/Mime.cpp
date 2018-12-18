@@ -712,7 +712,7 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 			string thisCharset = this->GetCharset();
 			thisMediaType = this->GetMediaType();
 #endif
-
+			// TODO: need better solution, i.e. decode archive and detrmine all relations
 			string strSubType = GetSubType();
 			transform(strSubType.begin(), strSubType.end(), strSubType.begin(), ::tolower);
 			if (strSubType.compare("related") == 0) 
@@ -721,13 +721,16 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 				{
 					string strDisposition;
 					const CMimeField *pFld = pBP->CMimeHeader::GetField(CMimeConst::ContentDisposition());
-					if (pFld)
+					if (pFld) {
 						pFld->GetValue(strDisposition);
 
-					transform(strDisposition.begin(), strDisposition.end(), strDisposition.begin(), ::tolower);
-					if (strDisposition.compare("attachment") == 0)
+						transform(strDisposition.begin(), strDisposition.end(), strDisposition.begin(), ::tolower);
+						if (strDisposition.compare("attachment") == 0)
+							pBP->m_bIsRelated = true;
+						int deb = 1;
+					}
+					else
 						pBP->m_bIsRelated = true;
-					int deb = 1;
 				}
 			}
 			ASSERT(pBP != NULL);
