@@ -1935,6 +1935,9 @@ void NListView::SelectItem(int iItem)
 			}
         }
 
+		// TODO: inefficient when we have bot text and html parts. 
+		// We read and initialize bdy as text and later override with html.
+		// Need to redo.
         if ((pBP->IsText() || pBP->IsMessage()) && (bdy.IsEmpty() || !pBP->IsAttachment()) )
         {
 			// if message contains alternate parts display last one
@@ -1959,13 +1962,20 @@ void NListView::SelectItem(int iItem)
 			CString contentId;
 			MboxCMimeHelper::GetContentID(pBP, contentId);
 
-			// fix embeded image declared as non inline incorrectly;
-			// TODO: need better solution, i.e. decode archive and detrmine all relations
-			if (pBP->IsRelated()) {
-				if ((disposition.CompareNoCase("attachment") == 0) && !contentId.IsEmpty())
-					disposition = "inline";
-				else if (disposition.IsEmpty() && !contentId.IsEmpty())
-					disposition = "inline";
+			CString contentType;
+			MboxCMimeHelper::GetContentType(pBP, contentType);
+
+			contentType.MakeLower();
+			if (contentType.Find("image/") >= 0) 
+			{
+				// fix embeded image declared as non inline incorrectly;
+				// TODO: need better solution, i.e. decode archive and detrmine all relations
+				if (pBP->IsRelated()) {
+					if ((disposition.CompareNoCase("attachment") == 0) && !contentId.IsEmpty())
+						disposition = "inline";
+					else if (disposition.IsEmpty() && !contentId.IsEmpty())
+						disposition = "inline";
+				}
 			}
 
 			if (disposition.CompareNoCase("inline") == 0) 

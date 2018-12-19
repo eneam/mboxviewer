@@ -49,7 +49,6 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 	out->ClearAndResize(inLength * 2);
 	register char *p = (char*)in;
 	register char *e = p + inLength;
-	register char ch;
 	char *p_beg;
 	int len;
 
@@ -57,7 +56,7 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 	while (p < e)
 	{
 		while ((p < e) && (*p != '\n')) p++;
-		if (p < e)
+		if (p < e)  // found NL
 		{
 			if (*(p - 1) != '\r')
 			{
@@ -72,16 +71,15 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 			else
 				p++;
 		}
-		else
-			int deb = 1;
-	}
-	if (p <= e)
-	{
-		len = p - p_beg;
-		if (len > 0)
+		else // p >= e didn't foung NL done with looping
 		{
-			out->Append(p_beg, len);
-			out->Append("\r\n", 2);
+			// we can be here if input is not terminated by NL
+			len = p - p_beg;
+			if (len > 0)
+			{
+				out->Append(p_beg, len);
+				out->Append("\r\n", 2);
+			}
 		}
 	}
 }
@@ -331,11 +329,14 @@ BOOL MboxMail::GetBody(CString &res)
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
-			res = res.Mid(ms - p + 1); // - 4);
+			int pos = ms - p + 1;
+			//res = res.Mid(pos); // - 4);
 			if (bAddCR) // for correct mime parsing
 			{
-				ReplaceNL2CRNL((LPCSTR)res, res.GetLength(), MboxMail::m_tmpbuf);
+				ReplaceNL2CRNL((LPCSTR)res + pos, res.GetLength() - pos, MboxMail::m_tmpbuf);
 #if 0
+				// CString Replace is very slow, verify new replace
+				res = res.Mid(pos); // - 4);
 				res.Replace("\n", "\r\n");
 
 				int resLen = res.GetLength();
@@ -5150,15 +5151,19 @@ int MailBody::GetBodyPartList(MailBodyList& rList)
 			// TODO: decode fully emial parts and save into enhanced database.
 			// This woill allow to reliably determine embeded images.
 			// Below is the best effort
-			if (m_ContentType.CompareNoCase("multipart/related") == 0) {
-				if ((!iter->m_ContentId.IsEmpty()) &&
-					(iter->m_Disposition.CompareNoCase("attachment") == 0))
+			if (m_ContentType.CompareNoCase("multipart/related") == 0) 
+			{
+				if (iter->m_ContentType.MakeLower().Find("image/") >= 0)
 				{
-					iter->m_Disposition = "inline";
-				}
-				else if ((!iter->m_ContentId.IsEmpty()) && iter->m_Disposition.IsEmpty())
-				{
-					iter->m_Disposition = "inline";
+					if ((!iter->m_ContentId.IsEmpty()) &&
+						(iter->m_Disposition.CompareNoCase("attachment") == 0))
+					{
+						iter->m_Disposition = "inline";
+					}
+					else if ((!iter->m_ContentId.IsEmpty()) && iter->m_Disposition.IsEmpty())
+					{
+						iter->m_Disposition = "inline";
+					}
 				}
 			}
 			nCount += iter->GetBodyPartList(rList);
