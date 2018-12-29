@@ -653,16 +653,25 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	nTextWidth = m_list.GetColumnWidth(4);
 	nTextWidth = m_list.GetColumnWidth(5);
 #endif
+
+#if 0
+	// TODO: Seem to cause exception. Seem to work without below. Need to investigate.
+	// May need to preload DLL or move for later execution/call.
 	// Take ownership of header draw
 	CHeaderCtrl* lhdr = m_list.GetHeaderCtrl();
-	int nClmCnt = lhdr->GetItemCount();
-	HDITEM rHdr;
-	for (int j = 0; j < nClmCnt; j++) {
-		lhdr->GetItem(j, &rHdr);
-		rHdr.mask = HDI_FORMAT;
-		rHdr.fmt = HDF_OWNERDRAW;
-		lhdr->SetItem(j, &rHdr);
+	if (lhdr) {
+		int nClmCnt = lhdr->GetItemCount();
+		HDITEM rHdr;
+		for (int j = 0; j < nClmCnt; j++) {
+			lhdr->GetItem(j, &rHdr);
+			rHdr.mask = HDI_FORMAT;
+			rHdr.fmt = HDF_OWNERDRAW;
+			lhdr->SetItem(j, &rHdr);
+		}
 	}
+	else
+		int deb = 1;
+#endif
 
 	return 0;
 }
