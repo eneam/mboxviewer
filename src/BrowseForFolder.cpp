@@ -130,7 +130,7 @@ bool CBrowseForFolder::SelectFolder()
 	if ((pidl = ::SHBrowseForFolder(&m_bi)) != NULL)
 	{
 		m_strPath.Empty();
-		if (SUCCEEDED(::SHGetPathFromIDList(pidl, m_szSelected)))
+		if (::SHGetPathFromIDList(pidl, m_szSelected))
 		{
 			bRet = true;
 			m_strPath = &m_szSelected[0];

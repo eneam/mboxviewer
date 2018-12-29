@@ -19,6 +19,13 @@
 //#include <crtdbg.h> 
 #endif
 
+LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
+{
+	// Do something, for example generate error report
+	//..
+	// Execute default exception handler next
+	return EXCEPTION_EXECUTE_HANDLER;
+}
 
 const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
 
@@ -410,6 +417,8 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 
 BOOL CmboxviewApp::InitInstance()
 {
+	//SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
 	CCmdLine cmdInfo;
 	CString mailFile;
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "mailFile", mailFile);
