@@ -654,26 +654,27 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	nTextWidth = m_list.GetColumnWidth(5);
 #endif
 
-#if 0
-	// TODO: Seem to cause exception. Seem to work without below. Need to investigate.
-	// May need to preload DLL or move for later execution/call.
 	// Take ownership of header draw
+	SetLabelOwnership();
+
+	return 0;
+}
+
+void NListView::SetLabelOwnership()
+{
 	CHeaderCtrl* lhdr = m_list.GetHeaderCtrl();
 	if (lhdr) {
 		int nClmCnt = lhdr->GetItemCount();
 		HDITEM rHdr;
 		for (int j = 0; j < nClmCnt; j++) {
-			lhdr->GetItem(j, &rHdr);
 			rHdr.mask = HDI_FORMAT;
-			rHdr.fmt = HDF_OWNERDRAW;
+			lhdr->GetItem(j, &rHdr);
+			rHdr.fmt |= HDF_OWNERDRAW;  // TODO: seem to also work without merging fmt options
 			lhdr->SetItem(j, &rHdr);
 		}
 	}
 	else
 		int deb = 1;
-#endif
-
-	return 0;
 }
 
 void NListView::OnSize(UINT nType, int cx, int cy)

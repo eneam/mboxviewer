@@ -5,12 +5,12 @@ Changes
 v 1.0.2.8
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Updated VS project and fixed code to address random startup failures;
  - Added handling of embedded images declared incorrectly as non inline attachments in the mail;
  - Fixed incorrect text alignment in some cases when printing group of mails to HTML;
  - Added html2text conversion to print mails without plain text block;
  - Added progress bar when printing mail archive to Text or HTML or CSV files;
  - Fixed race condition (introduced in 1.0.2.7) that could result in message and mail summary out of sync;
- - Updated VS project to address occasional startup problem;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.2.7

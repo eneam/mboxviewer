@@ -129,6 +129,7 @@ public:
 	void MarkColumns();
 	void PrintMailGroupToText(int iItem, int textType, BOOL forceOpen = FALSE);
 	int MailsWhichColumnSorted() const;
+	void SetLabelOwnership();
 
 	// Generated message map functions
 protected:
