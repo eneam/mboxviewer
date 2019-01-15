@@ -68,7 +68,7 @@ protected:
 
 
 public:
-	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE);
+	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
 	void OnPrinttoTextFile(int textType);
 
 	afx_msg void OnFileExportToCsv();

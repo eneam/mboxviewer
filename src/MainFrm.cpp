@@ -521,7 +521,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 }
 
 // called by NListView::OnRClick
-void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen)  // textType 0==Plain, 1==Html
+void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen, BOOL printToPrinter)  // textType 0==Plain, 1==Html
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
@@ -571,7 +571,29 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
-					if (forceOpen == FALSE)
+					if (printToPrinter)
+					{
+						CFile fp;
+						if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
+							ULONGLONG ll = fp.GetLength();
+							SimpleString *inbuf = MboxMail::m_inbuf;
+							SimpleString *workbuf = MboxMail::m_workbuf;
+							inbuf->ClearAndResize((int)ll);
+
+							UINT l = fp.Read(inbuf->Data(), (UINT)ll);
+							inbuf->SetCount(l);
+
+							UINT inCodePage = CP_UTF8;
+							NMsgView::PrintHTMLDocumentToPrinter(inbuf, workbuf, inCodePage);
+
+							int deb = 1;
+						}
+						else {
+							// MessageBox ??
+							int deb = 1;
+						}
+					}
+					else if (forceOpen == FALSE)
 					{
 						OpenContainingFolderDlg dlg(txt, 0);
 						INT_PTR nResponse = dlg.DoModal();

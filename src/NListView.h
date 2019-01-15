@@ -127,7 +127,7 @@ public:
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
-	void PrintMailGroupToText(int iItem, int textType, BOOL forceOpen = FALSE);
+	void PrintMailGroupToText(int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
 	int MailsWhichColumnSorted() const;
 	void SetLabelOwnership();
 
@@ -168,6 +168,17 @@ typedef struct _FindArgs {
 	BOOL exitted;
 	NListView *lview;
 } FIND_ARGS;
+
+
+class ViewContext
+{
+public:
+	ViewContext();
+	~ViewContext();
+
+	CArray<MboxMail*, MboxMail*> s_mails;
+
+};
 
 /////////////////////////////////////////////////////////////////////////////
 

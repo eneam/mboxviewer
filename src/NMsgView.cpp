@@ -740,6 +740,63 @@ void NMsgView::MergeWhiteLines(SimpleString *workbuf, int maxOutLines)
 #endif
 }
 
+void NMsgView::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage)
+{
+	//CComBSTR cmdID(_T("PRINT"));
+	//VARIANT_BOOL vBool;
+
+	IHTMLDocument2 *lpHtmlDocument = 0;
+	HRESULT hr;
+	VARIANT val;
+	VariantInit(&val);
+	VARIANT valOut;
+	VariantInit(&valOut);
+
+	BOOL retVal = CreateHTMLDocument(&lpHtmlDocument, inbuf, workbuf, inCodePage);
+	if ((retVal == FALSE) || (lpHtmlDocument == 0)) {
+		return;
+	}
+
+#if 0
+	CHtmlEditCtrl PrintCtrl;
+
+	if (!PrintCtrl.Create(NULL, WS_CHILD, CRect(0, 0, 0, 0), this, 1))
+	{
+		ASSERT(FALSE);
+		return; // Error!
+	}
+
+	//CPrintDialog dlgl(FALSE);  INT_PTR userResult = dlgl.DoModal();
+#endif
+
+	//lpHtmlDocument->execCommand(cmdID, VARIANT_TRUE, val, &vBool);
+
+	IOleCommandTarget  *lpOleCommandTarget = 0;
+	hr = lpHtmlDocument->QueryInterface(IID_IOleCommandTarget, (VOID**)&lpOleCommandTarget);
+	if (FAILED(hr) || !lpOleCommandTarget)
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+	hr = lpOleCommandTarget->Exec(NULL, OLECMDID_PRINT, OLECMDEXECOPT_PROMPTUSER, &val, &valOut);
+	if (FAILED(hr))
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+cleanup:
+
+	hr = VariantClear(&val);
+	hr = VariantClear(&valOut);
+
+	if (lpOleCommandTarget)
+		lpOleCommandTarget->Release();
+
+	if (lpHtmlDocument)
+		lpHtmlDocument->Release();
+}
 
 void NMsgView::GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage)
 {
@@ -856,6 +913,7 @@ BOOL NMsgView::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *inb
 	// May need better solution
 	hr = lpDoc->put_designMode(L"on");  
 	hr = lpDoc->writeln(psaStrings);
+
 	HTML_ASSERT(SUCCEEDED(hr));
 	if (FAILED(hr)) {
 		BreakBeforeGoingCleanup();

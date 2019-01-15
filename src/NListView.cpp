@@ -260,34 +260,41 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
+	// Create enums or replace switch statment with if else ..
 	const UINT S_TEXT_Id = 1;
 	AppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
 
 	const UINT S_HTML_Id = 2;
 	AppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML..."));
 
+	const UINT S_PRINTER_Id = 3;
+	AppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
-	const UINT S_TEXT_GROUP_Id = 3;
+	const UINT S_TEXT_GROUP_Id = 4;
 	AppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
 
-	const UINT S_HTML_GROUP_Id = 4;
+	const UINT S_HTML_GROUP_Id = 5;
 	AppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
+
+	const UINT S_PRINTER_GROUP_Id = 6;
+	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Related Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
-	const UINT S_HTML_OPEN_Id = 5;
+	const UINT S_HTML_OPEN_Id = 7;
 	AppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
 
-	const UINT S_HTML_OPEN_RELATED_Id = 6;
+	const UINT S_HTML_OPEN_RELATED_Id = 8;
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Related Mails in Browser"));
 
-	const UINT S_HTML_OPEN_RELATED_FILES_Id = 7;
+	const UINT S_HTML_OPEN_RELATED_FILES_Id = 9;
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
 
-	const UINT S_HTML_FIND_Id = 8;
+	const UINT S_HTML_FIND_Id = 10;
 	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find"));
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -315,6 +322,13 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
+	case S_PRINTER_Id: {
+		if (pFrame) {
+			pFrame->OnPrintSingleMailtoText(iItem, 1, FALSE, TRUE);
+		}
+		int deb = 1;
+	}
+	break;
 	case S_HTML_GROUP_Id: {
 		{
 			PrintMailGroupToText(iItem, 1);
@@ -325,6 +339,12 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_TEXT_GROUP_Id: {
 		{
 			PrintMailGroupToText(iItem, 0);
+		}
+	}
+	break;
+	case S_PRINTER_GROUP_Id: {
+		{
+			PrintMailGroupToText(iItem, 1, FALSE, TRUE);
 		}
 	}
 	break;
@@ -3392,7 +3412,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 	return FALSE;
 }
 
-void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
+void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen, BOOL printToPrinter)
 {
 	if (abs(MboxMail::b_mails_which_sorted) != 99) {
 
@@ -3446,7 +3466,29 @@ void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen)
 		{
 			if (PathFileExist(path)) { // likely :) 
 				CString txt = "Created file\n\n" + textFileName;
-				if (forceOpen == FALSE) 
+				if (printToPrinter)
+				{
+					CFile fp;
+					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
+						ULONGLONG ll = fp.GetLength();
+						SimpleString *inbuf = MboxMail::m_inbuf;
+						SimpleString *workbuf = MboxMail::m_workbuf;
+						inbuf->ClearAndResize((int)ll);
+
+						UINT l = fp.Read(inbuf->Data(), (UINT)ll);
+						inbuf->SetCount(l);
+
+						UINT inCodePage = CP_UTF8;
+						NMsgView::PrintHTMLDocumentToPrinter(inbuf, workbuf, inCodePage);
+
+						int deb = 1;
+					}
+					else {
+						// MessageBox ??
+						int deb = 1;
+					}
+				}
+				else if (forceOpen == FALSE) 
 				{
 					OpenContainingFolderDlg dlg(txt, 0);
 					INT_PTR nResponse = dlg.DoModal();

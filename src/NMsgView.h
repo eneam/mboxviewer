@@ -56,6 +56,7 @@ public:
 	void PrintIHTMLElement(struct IHTMLElement *lpElm, CStringW &text);
 	static void RemoveStyleTagFromIHTMLDocument(struct IHTMLElement *lpElm);
 	static void MergeWhiteLines(SimpleString *inbuf, int maxoutLines);
+	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();
