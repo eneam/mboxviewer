@@ -31,6 +31,7 @@ public:
 	public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
+	//virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -40,6 +41,13 @@ public:
 	NTreeView * GetTreeView();
 	virtual ~CMainFrame();
 	void DoOpen(CString& path);
+	void SetMailList(int nID);
+	void EnableMailList(int nId, BOOL enable);
+	void EnableAllMailLists(BOOL enable);
+	void SetupMailListsToInitialState();
+	BOOL IsUserMailsListEnabled();
+
+	void CreateMailListsInfoText(CFile &fp);
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -47,12 +55,17 @@ public:
 
 protected:  // control bar embedded members
 	CStatusBar	m_wndStatusBar;
-	CToolBar		m_wndToolBar;
+	CToolBar	m_wndToolBar;
+	CReBar      m_wndReBar;
+	CDialogBar    m_wndDlgBar;
 	CChildView    m_wndView;
+	CComboBox m_wndSearchCombo;
 	BOOL m_bSelectMailFileDone;
 	HICON m_hIcon;
 	BOOL m_bMailDownloadComplete;
 	int m_MailIndex;
+	//BOOL m_bMailListType;
+	BOOL m_bUserSelectedMailsCheckSet;
 
 // Generated message map functions
 protected:
@@ -65,6 +78,8 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
+	void NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult);
 
 
 public:
@@ -91,6 +106,17 @@ public:
 	afx_msg void OnUpdateByconversation(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateMailDownloadStatus(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateMailIndex(CCmdUI *pCmdUI);
+	afx_msg void OnBnClickedArchiveList();
+	afx_msg void OnBnClickedFindList();
+	afx_msg void OnBnClickedEditList();
+	afx_msg void OnNMCustomdrawArchiveList(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMCustomdrawFindList(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButton2();
+	afx_msg void OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnViewUserselectedmails();
+	afx_msg void OnUpdateViewUserselectedmails(CCmdUI *pCmdUI);
+	afx_msg void OnHelpMboxviewhelp();
 };
 
 /////////////////////////////////////////////////////////////////////////////

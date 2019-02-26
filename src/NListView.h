@@ -9,11 +9,20 @@
 
 #include "WheelListCtrl.h"
 #include "UPDialog.h"
+#include "FindAdvancedDlg.h"
+#include "FindDlg.h"
 
 __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
+void CPathStripPath(const char *path, CString &fileName);
+BOOL CPathGetPath(const char *path, CString &filePath);
 
 class CMimeMessage;
 class MboxMail;
+class MyMailArray;
+class SerializerHelper;
+
+
+typedef CArray<int, int> MailIndexList;
 
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
@@ -46,6 +55,9 @@ public:
 public:
 	static const CUPDUPDATA * pCUPDUPData; 
 
+	//CImageList m_ImageList;
+	MailIndexList m_selectedMailsList;
+
 	// vars to handle mapped mail file
 	BOOL m_bMappingError;
 	HANDLE m_hMailFile;  // handle to mail file
@@ -72,12 +84,15 @@ public:
 		//
 	_int64 m_MapViewOfFileExCount;
 		//
-	BOOL SetupFileMapView(_int64 offset, DWORD length);
+	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
 	int CheckMatch(int which, CString &searchString);
+	int CheckMatchAdvanced(int i, CFindAdvancedParams &params);
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
+	BOOL AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams &params);
 	void CloseMailFile();
 	void ResetFileMapView();
-	void SortByColumn(int colNumber);
+	void SortByColumn(int colNumber, BOOL sortByPosition = FALSE);
+	void RefreshSortByColumn();
 	// end of vars
 
 	// For single Mail. TODO: Should consider to define structure to avoid confusing var names
@@ -90,11 +105,12 @@ public:
 	BOOL m_bInFind;
 	HTREEITEM m_which;
 	void SelectItem(int which);
-	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration);
+	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	CString m_searchString;
 	int m_lastFindPos;
 	int m_maxSearchDuration;
 	BOOL m_bEditFindFirst;
+
 	BOOL	m_filterDates;
 	BOOL	m_bCaseSens;
 	BOOL	m_bWholeWord;
@@ -106,13 +122,21 @@ public:
 	BOOL m_bContent;
 	BOOL m_bAttachments;
 	BOOL m_bHighlightAll;
+	BOOL m_bFindAll;
 	BOOL m_bHighlightAllSet;
+
+	//struct CFindDlgParams m_findParams;  // TODO: review later, requires too many chnages for now
+	struct CFindAdvancedParams m_advancedParams;
+	CString m_stringWithCase[5];
+	BOOL m_advancedFind;
+
 	void ClearDescView();
 	CString m_curFile;
 	int m_lastSel;
 	int m_bStartSearchAtSelectedItem;
 	int m_gmtTime;
 	CString m_path;
+	int m_findAllCount;
 	//
 	void FillCtrl();
 	virtual ~NListView();
@@ -127,9 +151,26 @@ public:
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
-	void PrintMailGroupToText(int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
+	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
 	int MailsWhichColumnSorted() const;
 	void SetLabelOwnership();
+	void ItemState2Str(UINT uState, CString &strState);
+	void ItemChange2Str(UINT uChange, CString &strState);
+	void PrintSelected();
+	void OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult);
+	void OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult);
+	int RemoveSelectedMails();
+	int RemoveAllMails();
+	int CopySelectedMails();
+	int CopyAllMails();
+	int FindInHTML(int iItem);
+	void SwitchToMailList(int nID, BOOL force = FALSE);
+	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
+	void RunFindAdvancedOnSelectedMail(int iItem);
+	int SaveAsMboxFile();
+	int ReloadMboxFile();
+	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
+	int OpenArchiveFileLocation();
 
 	// Generated message map functions
 protected:
@@ -149,12 +190,17 @@ protected:
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnItemchangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnODStateChangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnReleaseCaptureListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnODFindItemListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnODCacheHintListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnEditVieweml();
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
-	//afx_msg void OnViewConversations();
-	//fx_msg void OnUpdateViewConversations(CCmdUI *pCmdUI);
+	afx_msg void OnEditFindadvanced();
+	afx_msg void OnUpdateEditFindadvanced(CCmdUI *pCmdUI);
 };
 
 typedef struct _ParseArgs {
@@ -163,22 +209,13 @@ typedef struct _ParseArgs {
 } PARSE_ARGS;
 
 typedef struct _FindArgs {
+	BOOL findAll;
 	int searchstart;
 	int retpos;
 	BOOL exitted;
 	NListView *lview;
 } FIND_ARGS;
 
-
-class ViewContext
-{
-public:
-	ViewContext();
-	~ViewContext();
-
-	CArray<MboxMail*, MboxMail*> s_mails;
-
-};
 
 /////////////////////////////////////////////////////////////////////////////
 

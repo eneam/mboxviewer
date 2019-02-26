@@ -19,6 +19,7 @@
 #define IDB_FOLDER                      176
 #define IDD_FIND_ADVANCED               177
 #define IDD_FIND_IN_MAIL                180
+#define IDD_EDITOR                      194
 #define IDS_DESC_TITLE                  202
 #define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
@@ -57,17 +58,24 @@
 #define IDC_EXPORT_EML                  1056
 #define IDC_SEARCH_PREV                 1056
 #define IDC_ENCODING_NONE               1056
+#define IDC_ARCHIVE_LIST                1056
+#define IDC_FILTER1                     1056
 #define IDC_RADIO2                      1057
 #define IDC_EXPORT_EML_Y                1057
+#define IDC_FIND_LIST                   1057
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
 #define IDC_EXPORT_FROM                 1059
 #define IDC_CHECK_FROM_A                1059
 #define IDC_CHECK_TO_A                  1060
+#define IDC_EDIT_TO_CHECKED             1060
 #define IDC_CHECK_SUBJECT_A             1061
+#define IDC_EDIT_SUBJECT_CHECKED        1061
 #define IDC_CHECK_MESSAGE_A             1062
+#define IDC_EDIT_MESSAGE_CHECKED        1062
 #define IDC_DONATION                    1063
 #define IDC_CHECK_ATTACHMENTS_A         1063
+#define IDC_EDIT_ATTACHMENT_CHECKED     1063
 #define IDC_FILTERDATES_A               1064
 #define IDC_PROGRESS_BAR_DELAY          1065
 #define IDC_SUBJ_ID                     1070
@@ -88,14 +96,19 @@
 #define IDC_IMAGE_VIEWER                1085
 #define IDC_EXPORT_SUBJECT              1085
 #define IDC_MATCH_CASE                  1085
+#define IDC_EDIT_FROM_CASE              1085
 #define IDC_TIME_TYPE                   1086
 #define IDC_MATCH_CASE2                 1086
+#define IDC_EDIT_TO_CASE                1086
 #define IDC_TIME_LOCAL                  1087
 #define IDC_MATCH_CASE3                 1087
+#define IDC_EDIT_SUBJECT_CASE           1087
 #define IDC_TIME_GMT                    1088
 #define IDC_MATCH_CASE4                 1088
+#define IDC_EDIT_MESSAGE_CASE           1088
 #define IDC_GROUP_PROGRES_BAR           1089
 #define IDC_MATCH_CASE5                 1089
+#define IDC_EDIT_ATTACHMENT_CASE        1089
 #define IDC_GROUP_EML                   1090
 #define IDC_GROUP_SET_IDS               1091
 #define IDC_GROUP_SHOW_CHARSETS         1092
@@ -112,28 +125,44 @@
 #define IDC_BUTTON4                     1109
 #define IDC_BUTTON_PRT                  1109
 #define IDC_EDIT1                       1110
+#define IDC_EDIT_FROM                   1110
 #define IDC_MATCH_WORD                  1111
+#define IDC_EDIT_FROM_WHOLE             1111
 #define IDC_REGULAR_EXPR                1112
 #define IDC_EDIT2                       1113
+#define IDC_EDIT_TO                     1113
 #define IDC_MATCH_WORD2                 1114
+#define IDC_EDIT_TO_WHOLE               1114
 #define IDC_REGULAR_EXPR2               1115
 #define IDC_EDIT3                       1116
+#define IDC_EDIT_SUBJECT                1116
 #define IDC_MATCH_WORD3                 1117
+#define IDC_EDIT_SUBJECT_WHOLE          1117
 #define IDC_REGULAR_EXPR3               1118
 #define IDC_EDIT4                       1119
+#define IDC_EDIT_MESSAGE                1119
 #define IDC_MATCH_WORD4                 1120
+#define IDC_EDIT_MESSAGE_WHOLE          1120
 #define IDC_REGULAR_EXPR4               1121
 #define IDC_EDIT5                       1122
+#define IDC_EDIT_ATTACHMENT             1122
 #define IDC_MATCH_WORD5                 1123
+#define IDC_EDIT_ATTACHMENT_WHOLE       1123
 #define IDC_REGULAR_EXPR5               1124
 #define IDC_SEARCH_BACKWARDS_A          1125
 #define IDC_MATCH_WORDS_ALL_A           1142
+#define IDC_EDIT_SET_ALL_WHOLE          1142
 #define IDC_MATCH_CASE_ALL_A            1143
+#define IDC_EDIT_SET_ALL_CASE           1143
 #define IDC_REGEX_ALL_A                 1144
 #define IDC_CHECK_HIGHLIGHT_ALL         1145
 #define IDC_SLIDER_ZOOM                 1146
 #define IDC_SLIDER_POS                  1149
 #define IDC_EXPORT_MESSAGE_LIMIT        1150
+#define IDC_FIND_ALL_OCCURENCES         1151
+#define IDC_CHECK_FIND_ALL              1151
+#define IDC_EDIT_LIST                   1152
+#define IDC_EDIT_FROM_CHECKED           1157
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -153,16 +182,23 @@
 #define ID_SORTBY_SUBJECT               32865
 #define ID_SORTBY_SIZE                  32866
 #define ID_SORTBY_CONVERSATION          32867
+#define ID_BUTTON32868                  32868
+#define ID_BUTTON32875                  32875
+#define ID_BUTTON32876                  32876
+#define ID_VIEW_USERSELECTEDMAILS       32878
+#define ID_HELP_MBOXVIEWHELP            32879
+#define ID_EDIT_FINDADVANCED            32880
 #define ID_INDICATOR_MAIL               59142
+#define ID_INDICATOR_MAIL_INDEX         59143
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        182
-#define _APS_NEXT_COMMAND_VALUE         32868
-#define _APS_NEXT_CONTROL_VALUE         1151
-#define _APS_NEXT_SYMED_VALUE           109
+#define _APS_NEXT_RESOURCE_VALUE        198
+#define _APS_NEXT_COMMAND_VALUE         32881
+#define _APS_NEXT_CONTROL_VALUE         1158
+#define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

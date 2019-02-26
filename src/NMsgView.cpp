@@ -612,7 +612,9 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+#pragma component(browser, off, references)  // wliminates too many refrences warning but at what price ?
 #include <Mshtml.h>
+#pragma component(browser, on, references)
 #include <atlbase.h>
 
 #ifdef _DEBUG

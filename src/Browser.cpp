@@ -137,8 +137,8 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		return;
 	if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
 		return;
-	NMsgView *pView = pFrame->GetMsgView();
-	if (!pView || !::IsWindow(pView->m_hWnd))
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if (!pMsgView || !::IsWindow(pMsgView->m_hWnd))
 		return;
 
 	NListView *pListView = pFrame->GetListView();
@@ -146,7 +146,7 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		return;
 
 	if (pListView->m_bHighlightAllSet) {
-		pView->FindStringInIHTMLDocument(pListView->m_searchString, pListView->m_bWholeWord, pListView->m_bCaseSens);
+		pMsgView->FindStringInIHTMLDocument(pListView->m_searchString, pListView->m_bWholeWord, pListView->m_bCaseSens);
 	}
 	pListView->m_bHighlightAllSet = FALSE;
 }
@@ -174,10 +174,10 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		return;
 	if( ! ::IsWindow(pFrame->m_hWnd) || ! pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)) )
 		return;
-	NMsgView *pView = pFrame->GetMsgView();
-	if( ! pView || ! ::IsWindow(pView->m_hWnd))
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if( ! pMsgView || ! ::IsWindow(pMsgView->m_hWnd))
 		return;
-	pView->PostMessage(WM_PAINT);
+	pMsgView->PostMessage(WM_PAINT);
 	if (Cancel)
 		*Cancel = FALSE;
 

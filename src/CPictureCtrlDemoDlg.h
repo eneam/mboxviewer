@@ -14,6 +14,8 @@
 ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+#if !defined(_PICTURE_CTRL_DEMO_)
+#define _PICTURE_CTRL_DEMO_
 
 #pragma once
 #include "picturectrl.h"
@@ -85,3 +87,5 @@ public:
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnStnClickedStaticPicture();
 };
+
+#endif //  _PICTURE_CTRL_DEMO_

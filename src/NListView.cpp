@@ -10,6 +10,7 @@
 #include "MboxMail.h"
 #include "OpenContainingFolderDlg.h"
 #include "FindInMailDlg.h"
+#include "FindAdvancedDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -119,11 +120,15 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bCaseSensInMail = TRUE;
 	m_bWholeWordInMail = FALSE;
 
+	m_advancedParams.SetDflts();
+	m_advancedFind = FALSE;
 	m_gmtTime = 0;
 	m_bStartSearchAtSelectedItem = 0; // FALSE; TODO: is this desired feature ?
 	m_bFindNext = TRUE;
-	m_bEditFindFirst = FALSE;
-	m_lastFindPos = -1;
+	m_bFindAll = FALSE;
+	m_findAllCount = 0;
+	m_bEditFindFirst = FALSE;  // must call OnEditFind() first and not OnEditFindAgain()
+	m_lastFindPos = -1;  // last find position, start for the next find again
 	m_searchString.Empty();
 	m_bCaseSens = TRUE;
 	m_bWholeWord = FALSE;
@@ -135,7 +140,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bHighlightAll = FALSE;
 	m_bHighlightAllSet = FALSE;
 	m_filterDates = FALSE;
-	m_lastSel = -1;
+	m_lastSel = -1;  // last/currently selected item
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	m_format = GetDateFormat(iFormat);
@@ -184,13 +189,23 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_NOTIFY(LVN_COLUMNCLICK, IDC_LIST, OnColumnClick)
 	ON_NOTIFY(LVN_KEYDOWN, IDC_LIST, OnKeydown)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST, OnCustomDraw)
-	ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST, OnGetDispInfo)
+	//ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST, OnGetDispInfo)  // no longer needed, using Custom Draw
 	ON_UPDATE_COMMAND_UI(ID_EDIT_FIND, OnUpdateEditFind)
 	ON_COMMAND(ID_EDIT_FIND, OnEditFind)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_FINDAGAIN, OnUpdateEditFindAgain)
 	ON_COMMAND(ID_EDIT_FINDAGAIN, OnEditFindAgain)
 	ON_COMMAND(ID_EDIT_VIEWEML, &NListView::OnEditVieweml)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_VIEWEML, &NListView::OnUpdateEditVieweml)
+	//
+#if 0  // was trying to learn how this works
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST, OnItemchangedListCtrl)
+	ON_NOTIFY(LVN_ODSTATECHANGED, IDC_LIST, OnODStateChangedListCtrl)
+	ON_NOTIFY(LVN_ODFINDITEM, IDC_LIST, OnODFindItemListCtrl)
+	ON_NOTIFY(LVN_ODCACHEHINT, IDC_LIST, OnODCacheHintListCtrl)
+	ON_NOTIFY(NM_RELEASEDCAPTURE, IDC_LIST, OnReleaseCaptureListCtrl)
+#endif
+	ON_COMMAND(ID_EDIT_FINDADVANCED, &NListView::OnEditFindadvanced)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_FINDADVANCED, &NListView::OnUpdateEditFindadvanced)
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -211,6 +226,13 @@ void NListView::ResetFont()
 
 void NListView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult) 
 {
+	*pResult = 0;
+
+	SHORT ctrlState = GetAsyncKeyState(VK_CONTROL);
+	SHORT shiftState = GetAsyncKeyState(VK_SHIFT);
+	// TODO: this is work around. Not sure why OnDoubleClick() is called when SHIFT+MOUSEWHEEL_UP
+	if (((ctrlState & 0x8000) != 0) || ((shiftState & 0x8000) != 0)) return;
+
 	NMITEMACTIVATE *pnm = (NMITEMACTIVATE *)pNMHDR;
 	if( m_lastSel == pnm->iItem ) {
 		CString path = GetmboxviewTempPath();
@@ -218,9 +240,7 @@ void NListView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if( PathFileExist(path) )
 			ShellExecute(NULL, _T("open"), path, NULL,NULL, SW_SHOWNORMAL );
 	}
-	*pResult = 0;
 }
-
 
 void NListView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult) 
 {
@@ -230,10 +250,43 @@ void NListView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult)
 		SelectItem(pnm->iItem);
 	}
 
+	if (m_lastSel != pnm->iItem)
+		int deb = 1;
+	else
+		int deb = 1;
+
 	*pResult = 0;
 }
 
 void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	int iItem = pnm->iItem;
+
+	if (iItem < 0)
+		return;
+
+	POSITION pos = m_list.GetFirstSelectedItemPosition();
+	int nItem;
+	int nItemCnt = 0;
+	while (pos)
+	{
+		nItem = m_list.GetNextSelectedItem(pos);
+		nItemCnt++;
+		if (nItemCnt > 1)
+			break;
+	}
+
+	if (nItemCnt == 1)
+		OnRClickSingleSelect(pNMHDR, pResult);
+	else
+		OnRClickMultipleSelect(pNMHDR, pResult);
+}
+
+void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	// TODO: Add your control notification handler code here
@@ -295,7 +348,48 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
 
 	const UINT S_HTML_FIND_Id = 10;
-	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find"));
+	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find Text"));
+
+	const UINT S_ADVANCED_FIND_Id = 11;
+	AppendMenu(&menu, S_ADVANCED_FIND_Id, _T("Find Advanced"));
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	const UINT S_REMOVE_Id = 12;
+	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
+		AppendMenu(&menu, S_REMOVE_Id, _T("Remove Selected Mail"));
+	}
+
+	const UINT S_REMOVE_ALL_Id = 21;
+	if (pFrame && (MboxMail::IsFindMailsSelected() || (MboxMail::IsUserMailsSelected()) && (pFrame->IsUserMailsListEnabled()))) {
+		AppendMenu(&menu, S_REMOVE_ALL_Id, _T("Remove All Mails"));
+	}
+
+	const UINT S_COPY_ALL_Id = 22;
+	const UINT S_COPY_SELECTED_Id = 23;
+
+	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected())) {
+		if (pFrame->IsUserMailsListEnabled()) {
+			AppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
+			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
+		}
+	}
+
+	const UINT S_SAVE_AS_Id = 24;
+	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected()))
+		AppendMenu(&menu, S_SAVE_AS_Id, _T("Save as Mail Archive file"));
+
+	const UINT S_RELOAD_ARCHIVE_Id = 25;
+	if (pFrame && MboxMail::IsUserMailsSelected())
+		AppendMenu(&menu, S_RELOAD_ARCHIVE_Id, _T("Reload from Mail Archive"));
+
+	const UINT S_RESTORE_ARCHIVE_Id = 26;
+	if (pFrame && MboxMail::IsAllMailsSelected() && pFrame->IsUserMailsListEnabled() && (MboxMail::s_mails_edit.GetCount() == 0))
+		AppendMenu(&menu, S_RESTORE_ARCHIVE_Id, _T("Restore User Selected List from Archive"));
+
+	const UINT M_ARCHIVE_LOCATION_Id = 27;
+	if (pFrame && MboxMail::IsUserMailsSelected())
+		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mail Archive Location"));
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -303,8 +397,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
 
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-
+	BOOL multipleSelectedMails = FALSE;
 	BOOL itemSelected = FALSE;
 	switch (command)
 	{
@@ -331,20 +424,20 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	case S_HTML_GROUP_Id: {
 		{
-			PrintMailGroupToText(iItem, 1);
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1);
 		}
 		int deb = 1;
 	}
 	break;
 	case S_TEXT_GROUP_Id: {
 		{
-			PrintMailGroupToText(iItem, 0);
+			PrintMailGroupToText(multipleSelectedMails, iItem, 0);
 		}
 	}
 	break;
 	case S_PRINTER_GROUP_Id: {
 		{
-			PrintMailGroupToText(iItem, 1, FALSE, TRUE);
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 		}
 	}
 	break;
@@ -358,7 +451,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_HTML_OPEN_RELATED_Id: {
 		{
 			BOOL forceOpen = TRUE;
-			PrintMailGroupToText(iItem, 1, forceOpen);
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1, forceOpen);
 		}
 	}
 	break;
@@ -377,37 +470,214 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case S_HTML_FIND_Id: {
-		if (m_lastSel != iItem) {
-			TRACE("Selecting %d\n", iItem);
-			SelectItem(iItem);
-			itemSelected = TRUE;
-		}
-
-		CFindInMailDlg dlg;
-		dlg.m_bWholeWord = m_bWholeWordInMail;
-		dlg.m_bCaseSensitive = m_bCaseSensInMail;
-		dlg.m_string = m_searchStringInMail;
-		if (dlg.DoModal() == IDOK) {
-			m_searchStringInMail = dlg.m_string;
-			m_bWholeWordInMail = dlg.m_bWholeWord;
-			m_bCaseSensInMail = dlg.m_bCaseSensitive;
-
-			CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
-			if (!pFrame)
-				break;
-			if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
-				break;
-			NMsgView *pView = pFrame->GetMsgView();
-			if (!pView || !::IsWindow(pView->m_hWnd))
-				break;
-
-			if (m_searchStringInMail.IsEmpty())
-				pView->ClearSearchResultsInIHTMLDocument(pView->m_searchID);
+	case S_HTML_FIND_Id: 
+	{
+		itemSelected = FindInHTML(iItem);
+	}
+	break;
+	case S_REMOVE_Id: {
+		{
+			int firstItemRemoved = RemoveSelectedMails();
+			if (MboxMail::s_mails.GetCount() > 0)
+			{
+				if (firstItemRemoved > 0)
+					SelectItemFound(firstItemRemoved - 1);
+				else if (firstItemRemoved == 0)
+					SelectItemFound(0);
+			}
 			else
-				pView->FindStringInIHTMLDocument(m_searchStringInMail, m_bWholeWordInMail, m_bCaseSensInMail);
+				m_lastSel = -1;
 
-			int dbg = 1;
+			// TODO: SelectItemFound sets  m_lastFindPos. Need to reset to 0 ?
+			m_lastFindPos = -1;
+			m_bEditFindFirst = TRUE;
+		}
+	}
+	break;
+	case S_COPY_ALL_Id: {
+		{
+			CopyAllMails();
+		}
+	}
+	break;
+	case S_REMOVE_ALL_Id: {
+		{
+			CString txt = _T("Do you want to remove all mails?");
+			HWND h = GetSafeHwnd();
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDYES) {
+				RemoveAllMails();
+			}
+		}
+	}
+	break;
+	case S_SAVE_AS_Id: {
+		{
+			SaveAsMboxFile();
+		}
+	}
+	break;
+	case S_COPY_SELECTED_Id: {
+		{
+			CopySelectedMails();
+		}
+	}
+	break;
+	case S_ADVANCED_FIND_Id: {
+		{
+			RunFindAdvancedOnSelectedMail(iItem);
+		}
+	}
+	break;
+	case S_RELOAD_ARCHIVE_Id: {
+		{
+			ReloadMboxFile();
+		}
+	}
+	break;
+	case S_RESTORE_ARCHIVE_Id: {
+		{
+			ReloadMboxFile();
+		}
+	}
+	break;
+	case M_ARCHIVE_LOCATION_Id: {
+		OpenArchiveFileLocation();
+	}
+	break;
+	default: {
+		int deb = 1;
+	}
+	break;
+	}
+
+
+	// TODO: review below check
+	if (command == S_REMOVE_Id)
+		; // done
+	else if ((itemSelected == FALSE) && (m_lastSel != iItem)) {
+		TRACE("Selecting %d\n", iItem);
+		SelectItem(iItem);
+	}
+
+	Invalidate();
+	UpdateWindow();
+
+	*pResult = 0;
+}
+
+void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	int iItem = pnm->iItem;
+
+	if (iItem < 0)
+		return;
+
+	CPoint pt;
+	::GetCursorPos(&pt);
+	CWnd *wnd = WindowFromPoint(pt);
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_SEPARATOR);
+
+	CMenu printToSubMenu;
+	printToSubMenu.CreatePopupMenu();
+	printToSubMenu.AppendMenu(MF_SEPARATOR);
+
+	CMenu printGroupToSubMenu;
+	printGroupToSubMenu.CreatePopupMenu();
+	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
+
+	// Create enums or replace switch statment with if else ..
+
+	const UINT S_TEXT_GROUP_Id = 4;
+	AppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
+
+	const UINT S_HTML_GROUP_Id = 5;
+	AppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
+
+	const UINT S_PRINTER_GROUP_Id = 6;
+	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
+
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
+	menu.AppendMenu(MF_SEPARATOR);
+
+	const UINT S_HTML_OPEN_RELATED_Id = 7;
+	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Selected Mails in Browser"));
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	const UINT S_REMOVE_SELECTED_Id = 8;
+	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
+		AppendMenu(&menu, S_REMOVE_SELECTED_Id, _T("Remove Selected Mails"));
+	}
+
+	const UINT S_COPY_SELECTED_Id = 22;
+	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected())) {
+		if (pFrame->IsUserMailsListEnabled()) {
+			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
+		}
+	}
+
+	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	UINT nFlags = TPM_RETURNCMD;
+	CString menuString;
+	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+	BOOL multipleSelectedMails = TRUE;
+	BOOL itemSelected = FALSE;
+	switch (command)
+	{
+	case S_HTML_GROUP_Id: {
+		{
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1);
+		}
+		int deb = 1;
+	}
+	break;
+	case S_TEXT_GROUP_Id: {
+		{
+			PrintMailGroupToText(multipleSelectedMails, iItem, 0);
+		}
+	}
+	break;
+	case S_PRINTER_GROUP_Id: {
+		{
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
+		}
+	}
+	break;
+	case S_HTML_OPEN_RELATED_Id: {
+		{
+			BOOL forceOpen = TRUE;
+			PrintMailGroupToText(multipleSelectedMails, iItem, 1, forceOpen);
+		}
+	}
+	break;
+
+	case S_REMOVE_SELECTED_Id: {
+		{
+			int firstItemRemoved = RemoveSelectedMails();
+			if ((firstItemRemoved > 0) && MboxMail::s_mails.GetCount())
+				SelectItemFound(firstItemRemoved - 1);
+			else if ((firstItemRemoved == 0) && MboxMail::s_mails.GetCount())
+				SelectItemFound(0);
+
+			// TODO: SelectItemFound sets m_lastFindPos. Need to reset to 0 ?
+			m_lastFindPos = -1;
+			m_bEditFindFirst = TRUE;
+		}
+	}
+	break;
+	case S_COPY_SELECTED_Id: {
+		{
+			CopySelectedMails();
 		}
 	}
 	break;
@@ -418,11 +688,6 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	}
 
-
-	if ((itemSelected == FALSE) && (m_lastSel != iItem)) {
-		TRACE("Selecting %d\n", iItem);
-		SelectItem(iItem);
-	}
 
 	Invalidate();
 	UpdateWindow();
@@ -440,7 +705,7 @@ void NListView::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 
-void NListView::SortByColumn(int colNumber)
+void NListView::SortByColumn(int colNumber, BOOL sortByPosition)
 {
 	bool mustSort = false;
 
@@ -458,7 +723,10 @@ void NListView::SortByColumn(int colNumber)
 		else {
 			MboxMail::b_mails_which_sorted = 99;
 		}
-		MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0);
+
+		MboxMail::SortByGroupId(0, MboxMail::b_mails_which_sorted < 0);
+		MboxMail::assignColor2ConvesationGroups(&MboxMail::s_mails);
+		//MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0);  // TODO: review
 		mustSort = true;
 		break;
 	case 1: // date
@@ -467,7 +735,10 @@ void NListView::SortByColumn(int colNumber)
 		} else {
 			MboxMail::b_mails_which_sorted = 1;
 		}
-		MboxMail::SortByDate(0, MboxMail::b_mails_which_sorted < 0);
+		if (sortByPosition == FALSE)
+			MboxMail::SortByDate(0, MboxMail::b_mails_which_sorted < 0);
+		else
+			MboxMail::SortByFileOffset(0, MboxMail::b_mails_which_sorted < 0);
 		mustSort = true;
 		break;
 	case 2: // from
@@ -523,6 +794,77 @@ void NListView::SortByColumn(int colNumber)
 		//m_lastEndDate = 0;
 		//m_searchString.Empty();
 
+
+		//  sets m_lastSel to -1 via ClearDescView
+		RedrawMails();
+		// MessageBeep(MB_OK); // too much ??
+	}
+	else
+		MarkColumns();  // not used anymore
+	m_bInFind = false;
+}
+
+
+// Refresh mail list, don't update MboxMail::b_mails_which_sorted
+void NListView::RefreshSortByColumn()
+{
+	bool mustSort = false;
+
+	// to follow OnEditFindAgain approach
+	if (m_bInFind)
+		return;
+
+	m_bInFind = true;
+
+	int colNumber;
+	if (abs(MboxMail::b_mails_which_sorted) == 99)
+		colNumber = 0;
+	else
+		colNumber = abs(MboxMail::b_mails_which_sorted);
+
+	switch (colNumber) {
+	case 0: // !
+		MboxMail::SortByGroupId(0, MboxMail::b_mails_which_sorted < 0);
+		MboxMail::assignColor2ConvesationGroups(&MboxMail::s_mails);
+		//MboxMail::SortByConverstionGroups(0, MboxMail::b_mails_which_sorted < 0); // TODO: review
+		mustSort = true;
+		break;
+	case 1: // date
+		MboxMail::SortByDate(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
+	case 2: // from
+		MboxMail::SortByFrom(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
+	case 3: // to
+		MboxMail::SortByTo(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
+	case 4: // subj
+		MboxMail::SortBySubject(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
+	case 5: // size
+		MboxMail::SortBySize(0, MboxMail::b_mails_which_sorted < 0);
+		mustSort = true;
+		break;
+	}
+	if (mustSort)
+	{
+		MboxMail::b_mails_sorted = true;
+
+		m_bContent = FALSE;
+		m_bAttachments = FALSE;
+		m_lastFindPos = -1;
+		m_bEditFindFirst = TRUE;  // must call EditFind()
+
+		// Don't reset below vars. It helps user to keep these while searching and sorting
+		//m_lastStartDate = 0;
+		//m_lastEndDate = 0;
+		//m_searchString.Empty();
+
+		//  sets m_lastSel to -1 via ClearDescView
 		RedrawMails();
 		// MessageBeep(MB_OK); // too much ??
 	}
@@ -647,7 +989,8 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
-	if( !m_list.Create(WS_CHILD|WS_VISIBLE|LVS_SINGLESEL|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDATA, CRect(), this, IDC_LIST) )
+	//if( !m_list.Create(WS_CHILD|WS_VISIBLE|LVS_SINGLESEL|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDATA, CRect(), this, IDC_LIST) )
+	if (!m_list.Create(WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDATA, CRect(), this, IDC_LIST))
 		return -1;
 
 	m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT);	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0);
@@ -676,6 +1019,15 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Take ownership of header draw
 	SetLabelOwnership();
+
+#if 0
+	// Create and attach image list
+	// TODO: finish or remove
+	m_ImageList.Create(16, 16, ILC_COLOR16 | ILC_MASK, 1, 0);
+	m_ImageList.Add(AfxGetApp()->LoadIcon(IDI_ICON_CHECK_ON));
+	m_ImageList.Add(AfxGetApp()->LoadIcon(IDI_ICON_CHECK_OFF));
+	m_list.SetImageList(&m_ImageList, LVSIL_SMALL);
+#endif
 
 	return 0;
 }
@@ -888,6 +1240,8 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		// Need this fix because when item is selected system overrides any user defined drawing
 
+		//strW = L'\u2713';  // check mark
+		//strW = L'\u2714';  // check mark
 		const char * ast = "*";
 		const char * nul = "";
 
@@ -918,7 +1272,8 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			if (dc.Attach(hDC))
 			{
-				if ((m->m_groupId % 2) == 0)
+				//if ((m->m_groupId % 2) == 0)  // doesn't work with new mail list types
+				if (m->m_groupColor == 0)
 					dc.FillRect(&rect, &CBrush(PeachPuff1));
 				else
 					dc.FillRect(&rect, &CBrush(AntiqueWhite3));
@@ -1131,12 +1486,14 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	DWORD myThreadPri = GetThreadPriority(h);
 	TRACE(_T("threadId=%ld threadPriority=%ld\n"), myThreadId, myThreadPri);
 
-	args->retpos = args->lview->DoFastFind(args->searchstart, FALSE, -1);
+	BOOL mainThreadContext = FALSE;
+	int maxSearchDuration = -1;
+	args->retpos = args->lview->DoFastFind(args->searchstart, mainThreadContext, maxSearchDuration, args->findAll);
 	args->exitted = TRUE;
 	return true;
 }
 
-#define CACHE_VERSION	10
+#define CACHE_VERSION	11
 
 void CPathStripPath(const char *path, CString &fileName)
 {
@@ -1149,11 +1506,26 @@ void CPathStripPath(const char *path, CString &fileName)
 	delete[] pathbuff;
 }
 
+BOOL CPathGetPath(const char *path, CString &filePath)
+{
+	int pathlen = strlen(path);
+	char *pathbuff = new char[2*pathlen + 1];
+	strcpy(pathbuff, path);
+	BOOL ret = PathRemoveFileSpec(pathbuff);
+	//HRESULT  ret = PathCchRemoveFileSpec(pathbuff, pathlen);  //   pathbuff must be of PWSTR type
+	
+	filePath.Empty();
+	filePath.Append(pathbuff);
+	delete[] pathbuff;
+	return ret;
+}
+
 BOOL SaveMails(LPCSTR cache) 
 {
 	CFile fpm;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		; // return -1;
+		// Not critical failure
+		; // return FALSE;
 	}
 
 	CString mailFileName;
@@ -1161,10 +1533,31 @@ BOOL SaveMails(LPCSTR cache)
 	int pos = mailFileName.ReverseFind('.');
 	CString baseFailFileName = mailFileName.Mid(0, pos);
 
-	int ni = MboxMail::s_mails.GetSize();
+ 	int ni = MboxMail::s_mails.GetSize();
 	SerializerHelper sz(cache);
-	if( ! sz.open(TRUE) )
+	if (!sz.open(TRUE)) {
+		// TODO: MessageMbox ?
+		fpm.Close();  // if open
 		return FALSE;
+	}
+
+	//CString filePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString imageCachePath;
+	BOOL ret = CPathGetPath(MboxMail::s_path, imageCachePath);
+	imageCachePath.Append("\\");
+	imageCachePath.Append("ImageCache");
+	imageCachePath.Append("\\");
+
+	BOOL createDirOk = TRUE;
+	if (!PathFileExist(imageCachePath))
+		createDirOk = CreateDirectory(imageCachePath, NULL);
+
+	imageCachePath.Append(baseFailFileName);
+	imageCachePath.Append("\\");
+
+	if (!PathFileExist(imageCachePath))
+		createDirOk = CreateDirectory(imageCachePath, NULL);
+
 	sz.writeInt(CACHE_VERSION);			// version
 	sz.writeInt64(MboxMail::s_fSize = FileSize(MboxMail::s_path));	// file size
 	sz.writeInt(ni);					// number of elements
@@ -1208,7 +1601,8 @@ BOOL SaveMails(LPCSTR cache)
 		{
 			body = *it;
 
-			if (fpm.m_hFile != CFile::hFileNull)
+			// Create image files of embeded images in the ImageCache folder
+			if ((fpm.m_hFile != CFile::hFileNull) && createDirOk)
 			{
 				if (!body->m_attachmentName.IsEmpty())
 				{
@@ -1221,7 +1615,8 @@ BOOL SaveMails(LPCSTR cache)
 						if (outbuf->Count() > 1500000)
 							int deb = 1;
 
-						CString targerFolder = GetmboxviewTempPath((char*)(LPCSTR)baseFailFileName);
+						CString targerFolder = imageCachePath;
+
 						CString mailIndex;
 						mailIndex.Format("%d_", m->m_index);
 						CString attachmentName = mailIndex + body->m_contentId;
@@ -1278,10 +1673,11 @@ BOOL SaveMails(LPCSTR cache)
 	}
 	TRACE("lastoff=%lld\n", lastoff);
 	sz.close();
+	fpm.Close();
 	return TRUE;
 }
 
-int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
+int LoadMails(LPCSTR cache, MailArray *mails = 0)
 {
 	SerializerHelper sz(cache);
 	if (!sz.open(FALSE))
@@ -1289,23 +1685,32 @@ int LoadMails(LPCSTR cache, CArray<MboxMail*, MboxMail*> *mails = 0)
 	int version;
 	_int64 fSize;
 	int ni = 0;
+
 	if (!sz.readInt(&version))
 		return -1;
+
 	if (version != CACHE_VERSION) {
-		CString txt = _T("File \"") + CString(cache);
+		CString cacheName;
+		CPathStripPath(cache, cacheName);
+
+		CString txt = _T("Index file\n\"") + cacheName;
 		CString strVersion; 
 		strVersion.Format(_T("%d"), version);
-		txt += _T("\".\nhas incorrect version\"") + strVersion + "\". Expected version \"";
+		txt += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
 		strVersion.Format(_T("%d"), CACHE_VERSION);
-		txt += strVersion + "\". Will remove\n\"" + CString(cache) + "\"\nand recreate from the mail file.";
+		txt += strVersion + "\".\nWill remove\n\"" + cacheName + "\"\nand recreate from the mail archive file.";
 		HWND h = NULL; // we don't have any window yet  
 		int answer = MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
 		return -1;
 	}
 	if( ! sz.readInt64(&fSize) )
 		return -1;
+
+	// TODO: Verify file length of both mbox and mboxview files
 	if( fSize != FileSize(MboxMail::s_path) )
 		return -1;
+
 	_int64 lastoff = 0;
 	if( sz.readInt(&ni) ) {
 		for( int i = 0; i < ni; i++ ) {
@@ -1546,8 +1951,8 @@ void NListView::FillCtrl()
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if( ! pFrame )
 		return;
-	NTreeView *pView = pFrame->GetTreeView();
-	if( ! pView )
+	NTreeView *pTreeView = pFrame->GetTreeView();
+	if( ! pTreeView )
 		return;
 	CString cache= m_path + ".mboxview";
 	int ni = 0;
@@ -1561,7 +1966,7 @@ void NListView::FillCtrl()
 		int ni_old = 0;
 		int ni_new = 0;
 		CString cache_new = cache + ".new";
-		CArray<MboxMail*, MboxMail*> s_mails_new;
+		MailArray s_mails_new;
 		if (fileExists(cache_new)) {
 			MboxMail::s_path = m_path;
 			ni_new = LoadMails(cache_new, &s_mails_new);
@@ -1570,7 +1975,7 @@ void NListView::FillCtrl()
 			}
 		}
 		CString cache_old = cache + ".old";
-		CArray<MboxMail*, MboxMail*> s_mails_old;
+		MailArray s_mails_old;
 		if (fileExists(cache_old)) {
 			MboxMail::s_path = m_path;
 			ni_old = LoadMails(cache_old, &s_mails_old);
@@ -1598,7 +2003,8 @@ void NListView::FillCtrl()
 	}
 #endif
 
-	if( fileExists(cache) ) {
+	if( fileExists(cache) ) 
+	{
 		MboxMail::s_path = m_path;
 		// it populates s_mails from mail index/mboxview file
 		ni = LoadMails(cache);
@@ -1608,7 +2014,8 @@ void NListView::FillCtrl()
 		} else
 			m_list.SetItemCount(ni);
 	}
-	if( ! fileExists(cache) ) {
+	if( ! fileExists(cache) ) 
+	{
 		PARSE_ARGS args;
 		args.path = m_path;
 		args.exitted = FALSE;
@@ -1635,8 +2042,13 @@ void NListView::FillCtrl()
 			TRACE("(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
 
-
+		// s_mails will be sorted by date, and all related mails are lined by indexing
 		bool ret = MboxMail::preprocessConversations();
+		// s_mails are sorted by data here; 
+		// sortConversations assigns related mails to unique group ID, 
+		// mails are sorted by group ID into s_mails_ref; s_mails is not touched, i.e re mails sorted by date
+		// finally unique index is assigned to each mail according to its position in the array
+		// TODO: fix the function name ??
 		ret = MboxMail::sortConversations();
 		//MboxMail::assignColor2ConvesationGroups();
 
@@ -1648,14 +2060,14 @@ void NListView::FillCtrl()
 		}
 	}
 
-	//MboxMail::assignColor2ConvesationGroups();
-	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
+	MboxMail::s_mails_ref.SetSizeKeepData(MboxMail::s_mails.GetSize());
 	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
 	MboxMail::b_mails_sorted = true;
 	MboxMail::b_mails_which_sorted = 1;
 	MboxMail::SortByDate();
+
 	MarkColumns();
-	m_bEditFindFirst = TRUE;
+	m_bEditFindFirst = TRUE;  // must call OnEditFind() first and not OnEditFindAgain()
 
 #ifdef _DEBUG
 	tc = (GetTickCount() - tc);
@@ -1663,12 +2075,18 @@ void NListView::FillCtrl()
 #endif
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
-	//pView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
-	//BOOL retval = pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
-	BOOL retval = pView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
-	retval = pView->m_tree.SelectItem(m_which);
-	CString txt = pView->m_tree.GetItemText(m_which);
-	pView->SaveData();
+	//pTreeView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
+	//BOOL retval = pTreeView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	BOOL retval = pTreeView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
+	retval = pTreeView->m_tree.SelectItem(m_which);
+	CString txt = pTreeView->m_tree.GetItemText(m_which);
+
+	_int64 fSize = FileSize(MboxMail::s_path);
+	pTreeView->UpdateFileSizesTable(txt, fSize);
+	pTreeView->SaveData();
+
+	if (pFrame)
+		pFrame->SetupMailListsToInitialState();
 }
 
 int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition)
@@ -1698,6 +2116,14 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
 	int position = mailArchiveFileName.ReverseFind('.');
 	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+
+	CString imageCachePath;
+	BOOL ret = CPathGetPath(MboxMail::s_path, imageCachePath);
+	imageCachePath.Append("\\");
+	imageCachePath.Append("ImageCache");
+	imageCachePath.Append("\\");
+	imageCachePath.Append(baseFileArchiveName);
+	imageCachePath.Append("\\");
 
 	CString imgFile;
 
@@ -1790,8 +2216,7 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 					}
 				}
 			}
-			CString targerFolder = GetmboxviewTempPath((char*)(LPCSTR)baseFileArchiveName);
-			imgFile = targerFolder + body->m_attachmentName;
+			imgFile = imageCachePath + body->m_attachmentName;
 		}
 
 		if (nameExtension.IsEmpty()) {
@@ -1840,10 +2265,10 @@ void NListView::SelectItem(int iItem)
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if( ! pFrame )
 		return;
-	NMsgView *pView = pFrame->GetMsgView();
-	if( ! pView )
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if( ! pMsgView )
 		return;
-	pView->m_bAttach = FALSE;
+	pMsgView->m_bAttach = FALSE;
 	// Sanity check
 	if( iItem < 0 || iItem >= MboxMail::s_mails.GetSize() ) {
 		return;
@@ -1853,16 +2278,16 @@ void NListView::SelectItem(int iItem)
 	m_lastSel = iItem;
 	// Erase any files previously saved
 	RemoveDir(GetmboxviewTempPath());
-	pView->m_attachments.DeleteAllItems();
+	pMsgView->m_attachments.DeleteAllItems();
 
 	// Get cached mail
 	MboxMail *m = MboxMail::s_mails[iItem];
 
 	// Set header data
-	pView->m_strSubject = m->m_subj;
-	pView->m_strFrom = m->m_from;
+	pMsgView->m_strSubject = m->m_subj;
+	pMsgView->m_strFrom = m->m_from;
 	//CTime tt(m->m_timeDate);
-	//pView->m_strDate = tt.Format(m_format);
+	//pMsgView->m_strDate = tt.Format(m_format);
 	if (m->m_timeDate > 0)
 	{
 		SYSTEMTIME st;
@@ -1872,23 +2297,23 @@ void NListView::SelectItem(int iItem)
 			bool ret = tt.GetAsSystemTime(st);
 			SystemTimeToTzSpecificLocalTime(0, &st, &lst);
 			CTime ltt(lst);
-			pView->m_strDate = ltt.Format(m_format);
+			pMsgView->m_strDate = ltt.Format(m_format);
 		}
 		else {
-			pView->m_strDate = tt.Format(m_format);
+			pMsgView->m_strDate = tt.Format(m_format);
 		}
 	}
 	else
-		pView->m_strDate = "";
+		pMsgView->m_strDate = "";
 
-	pView->m_strTo = m->m_to;
-	pView->m_subj_charsetId = m->m_subj_charsetId;
-	pView->m_subj_charset = m->m_subj_charset;
-	pView->m_from_charsetId = m->m_from_charsetId;
-	pView->m_from_charset = m->m_from_charset;
-	pView->m_date_charsetId = 0;
-	pView->m_to_charsetId = m->m_to_charsetId;
-	pView->m_to_charset = m->m_to_charset;
+	pMsgView->m_strTo = m->m_to;
+	pMsgView->m_subj_charsetId = m->m_subj_charsetId;
+	pMsgView->m_subj_charset = m->m_subj_charset;
+	pMsgView->m_from_charsetId = m->m_from_charsetId;
+	pMsgView->m_from_charset = m->m_from_charset;
+	pMsgView->m_date_charsetId = 0;
+	pMsgView->m_to_charsetId = m->m_to_charsetId;
+	pMsgView->m_to_charset = m->m_to_charset;
 
 	// Get raw mail body
 	CString bdy;   m->GetBody(bdy);
@@ -2052,12 +2477,12 @@ void NListView::SelectItem(int iItem)
 				// we only need the index from the system image list
 				DestroyIcon( shFinfo.hIcon );
 			}
-			pView->m_bAttach = TRUE;
-			pView->m_attachments.InsertItem(pView->m_attachments.GetItemCount(), name.c_str(), iIcon);
+			pMsgView->m_bAttach = TRUE;
+			pMsgView->m_attachments.InsertItem(pMsgView->m_attachments.GetItemCount(), name.c_str(), iIcon);
         }
     }
 
-	pView->m_attachments.SortItemsEx(MyCompareProc, (LPARAM)&pView->m_attachments);
+	pMsgView->m_attachments.SortItemsEx(MyCompareProc, (LPARAM)&pMsgView->m_attachments);
 
 	// Save mail
 	if (ext.Compare("txt") == 0) 
@@ -2109,7 +2534,7 @@ void NListView::SelectItem(int iItem)
 			{
 				int mailPosition = 0; // not used anyway here
 				bool useMailPosition = false;
-				fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+				fixInlineSrcImgPath(inData, inDataLen, outbuf, &pMsgView->m_attachments, mailPosition, useMailPosition);
 			}
 			else
 				outbuf->Append(inData, inDataLen);
@@ -2161,7 +2586,7 @@ void NListView::SelectItem(int iItem)
 				{
 					int mailPosition = 0; // not used anyway here
 					bool useMailPosition = false;
-					fixInlineSrcImgPath(inData, inDataLen, outbuf, &pView->m_attachments, mailPosition, useMailPosition);
+					fixInlineSrcImgPath(inData, inDataLen, outbuf, &pMsgView->m_attachments, mailPosition, useMailPosition);
 				}
 				else
 					outbuf->Append(inData, inDataLen);
@@ -2182,8 +2607,8 @@ void NListView::SelectItem(int iItem)
 	else 
 		int deb = 1;
 
-	pView->m_body_charsetId = charset2Id(bdycharset);
-	pView->m_body_charset = bdycharset;
+	pMsgView->m_body_charsetId = charset2Id(bdycharset);
+	pMsgView->m_body_charset = bdycharset;
 
 	// Get temporary file name with correct extension for IE to display
 	m_curFile = CreateTempFileName(ext);
@@ -2192,9 +2617,9 @@ void NListView::SelectItem(int iItem)
 	fp.Close();
 	
 	// Display mail in internal IE
-	pView->m_browser.Navigate(m_curFile, NULL);
+	pMsgView->m_browser.Navigate(m_curFile, NULL);
 	// Update layou to show/hide attachments
-	pView->UpdateLayout();
+	pMsgView->UpdateLayout();
 	return;
 }
 
@@ -2450,9 +2875,14 @@ BOOL NListView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	if( wnd == NULL )
 		return FALSE;
 	if( wnd == this ) {
-		return CWnd::OnMouseWheel(nFlags, zDelta, pt);
+		BOOL ret = CWnd::OnMouseWheel(nFlags, zDelta, pt);
+		return TRUE;
 	}
-	return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags,zDelta), MAKELPARAM(pt.x, pt.y));
+	if ((GetKeyState(VK_CONTROL) & 0x80) == 0) {  // if CTRL key not Down; Do we need to post msg further anyway
+		// Commented out, it freezes mbox viewer and and even IE for few seconds when CTRL/SHIFT/etc key are kept down
+		; // return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags, zDelta), MAKELPARAM(pt.x, pt.y));
+	}
+	return TRUE;
 }
 
 void NListView::ClearDescView()
@@ -2460,25 +2890,25 @@ void NListView::ClearDescView()
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if( ! pFrame )
 		return;
-	NMsgView *pView = pFrame->GetMsgView();
-	if( ! pView )
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if( ! pMsgView )
 		return;
-	pView->m_strSubject.LoadString(IDS_DESC_NONE);
-	pView->m_strFrom.LoadString(IDS_DESC_NONE);
-	pView->m_strDate.LoadString(IDS_DESC_NONE);
-	pView->m_strTo.LoadString(IDS_DESC_NONE);
-	pView->m_strTo.LoadString(IDS_DESC_NONE);
-	pView->m_subj_charset.SetString(_T(""));
-	pView->m_from_charset.SetString(_T(""));
-	pView->m_date_charset.SetString(_T(""));
-	pView->m_to_charset.SetString(_T(""));
-	pView->m_body_charset.SetString(_T(""));
-	pView->m_body_charsetId = 0;
-	pView->m_attachments.DeleteAllItems();
+	pMsgView->m_strSubject.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strFrom.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strDate.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strTo.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strTo.LoadString(IDS_DESC_NONE);
+	pMsgView->m_subj_charset.SetString(_T(""));
+	pMsgView->m_from_charset.SetString(_T(""));
+	pMsgView->m_date_charset.SetString(_T(""));
+	pMsgView->m_to_charset.SetString(_T(""));
+	pMsgView->m_body_charset.SetString(_T(""));
+	pMsgView->m_body_charsetId = 0;
+	pMsgView->m_attachments.DeleteAllItems();
 	RemoveDir(GetmboxviewTempPath());
 	m_curFile.Empty();
-	pView->m_browser.Navigate("about:blank", NULL);
-	pView->UpdateLayout();
+	pMsgView->m_browser.Navigate("about:blank", NULL);
+	pMsgView->UpdateLayout();
 	m_lastSel = -1;
 }
 
@@ -2486,7 +2916,6 @@ void NListView::OnUpdateEditFind(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(! m_bInFind && m_list.GetItemCount()>0 );
 	return;
-	
 }
 
 #include "FindDlg.h"
@@ -2505,12 +2934,15 @@ void NListView::OnEditFind()
 {
 	if (m_bInFind)
 		return;
+
+	m_advancedFind = FALSE;
+
 	m_bInFind = true;
 	CFindDlg dlg;
 
-	dlg.m_bWholeWord = m_bWholeWord;
-	dlg.m_bCaseSensitive = m_bCaseSens;
-	dlg.m_string = m_searchString;
+	dlg.m_params.m_bWholeWord = m_bWholeWord;
+	dlg.m_params.m_bCaseSensitive = m_bCaseSens;
+	dlg.m_params.m_string = m_searchString;
 	if (m_filterDates == FALSE)
 		m_lastStartDate = 0;
 	if (m_lastStartDate <= 0) {
@@ -2530,31 +2962,34 @@ void NListView::OnEditFind()
 		else
 			m_lastEndDate = CTime(max);
 	}
-	dlg.m_startDate = COleDateTime(m_lastStartDate.GetTime());
-	dlg.m_endDate = COleDateTime(m_lastEndDate.GetTime());
-	dlg.m_bFindNext = m_bFindNext;
-	dlg.m_bFrom = m_bFrom;
-	dlg.m_bTo = m_bTo;
-	dlg.m_bSubject = m_bSubject;
-	dlg.m_bContent = m_bContent;
-	dlg.m_bAttachments = m_bAttachments;
-	dlg.m_bHighlightAll = m_bHighlightAll;
-	dlg.m_filterDates = m_filterDates;
+	dlg.m_params.m_startDate = COleDateTime(m_lastStartDate.GetTime());
+	dlg.m_params.m_endDate = COleDateTime(m_lastEndDate.GetTime());
+	dlg.m_params.m_bFindNext = m_bFindNext;
+	dlg.m_params.m_bFrom = m_bFrom;
+	dlg.m_params.m_bTo = m_bTo;
+	dlg.m_params.m_bSubject = m_bSubject;
+	dlg.m_params.m_bContent = m_bContent;
+	dlg.m_params.m_bAttachments = m_bAttachments;
+	dlg.m_params.m_bHighlightAll = m_bHighlightAll;
+	dlg.m_params.m_bFindAll = m_bFindAll;
+	dlg.m_params.m_filterDates = m_filterDates;
+
 
 	if (dlg.DoModal() == IDOK) {
-		m_filterDates = dlg.m_filterDates;
-		m_searchString = dlg.m_string;
-		m_bWholeWord = dlg.m_bWholeWord;
-		m_bCaseSens = dlg.m_bCaseSensitive;
-		m_lastStartDate = CTime(OleToTime_t(&dlg.m_startDate));
-		m_lastEndDate = CTime(OleToTime_t(&dlg.m_endDate));
-		m_bFindNext = dlg.m_bFindNext;
-		m_bFrom = dlg.m_bFrom;
-		m_bTo = dlg.m_bTo;
-		m_bSubject = dlg.m_bSubject;
-		m_bContent = dlg.m_bContent;
-		m_bAttachments = dlg.m_bAttachments;
-		m_bHighlightAll = dlg.m_bHighlightAll;
+		m_filterDates = dlg.m_params.m_filterDates;
+		m_searchString = dlg.m_params.m_string;
+		m_bWholeWord = dlg.m_params.m_bWholeWord;
+		m_bCaseSens = dlg.m_params.m_bCaseSensitive;
+		m_lastStartDate = CTime(OleToTime_t(&dlg.m_params.m_startDate));
+		m_lastEndDate = CTime(OleToTime_t(&dlg.m_params.m_endDate));
+		m_bFindNext = dlg.m_params.m_bFindNext;
+		m_bFrom = dlg.m_params.m_bFrom;
+		m_bTo = dlg.m_params.m_bTo;
+		m_bSubject = dlg.m_params.m_bSubject;
+		m_bContent = dlg.m_params.m_bContent;
+		m_bAttachments = dlg.m_params.m_bAttachments;
+		m_bHighlightAll = dlg.m_params.m_bHighlightAll;
+		m_bFindAll = dlg.m_params.m_bFindAll;
 
 		m_lastFindPos = -1;
 
@@ -2577,7 +3012,7 @@ void NListView::OnEditFind()
 		BOOL ret = id2charset(localCP, str);
 		//  http://html-codes.info/ansi/html/Windows-1252-superscript%20one_185
 
-		m_bEditFindFirst = FALSE;
+		m_bEditFindFirst = FALSE;  // done with OnEditFind() , now we allow to call OnEditFindAgain()
 
 		int sz = MboxMail::s_mails.GetSize();
 		if (sz > 0) 
@@ -2610,18 +3045,25 @@ void NListView::OnEditFind()
 			which = m_lastFindPos;
 
 			//
-			if (m_maxSearchDuration > 0)
-				w = DoFastFind(which, TRUE, m_maxSearchDuration);
+			int maxSearchDuration = m_maxSearchDuration;
+			if (m_bFindAll)
+				maxSearchDuration = 0;
+			if (maxSearchDuration > 0) {
+				BOOL findAll = FALSE;
+				w = DoFastFind(which, TRUE, maxSearchDuration, findAll);
+			}
 			FIND_ARGS args;
 			/*IN*/ args.lview = this; args.searchstart = m_lastFindPos;
-			/*OUT*/ args.exitted = FALSE; args.retpos = -1;
-			if ((w == -2) || (m_maxSearchDuration == 0)) 
+			/*OUT*/ args.exitted = FALSE; args.retpos = -1; args.findAll = m_bFindAll;
+			if ((w == -2) || (maxSearchDuration == 0)) 
 			{
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
 
 				INT_PTR nResult = Dlg.DoModal();
-				if (!nResult) // should never be true ?
+				if (!nResult) { // should never be true ?
+					m_bInFind = false;
 					return;
+				}
 
 				int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
 				int retResult = LOWORD(nResult);
@@ -2642,7 +3084,27 @@ void NListView::OnEditFind()
 				}
 				w = args.retpos;
 			}
-			if (w >= 0) {
+			if (m_bFindAll) 
+			{
+				if (MboxMail::s_mails_find.GetCount() > 0)
+					MboxMail::m_findMails.m_lastSel = 0;
+				else
+					MboxMail::m_findMails.m_lastSel = -1;
+				MboxMail::m_findMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+
+				if (MboxMail::IsFindMailsSelected())
+				{
+					// TODO: how about additional function; what would be the name ?
+					SwitchToMailList(IDC_FIND_LIST, TRUE);
+				}
+				else
+				{
+					SwitchToMailList(IDC_FIND_LIST, FALSE);
+				}
+				m_bInFind = false;
+				return;
+			}
+			else if (w >= 0) {
 				m_bHighlightAllSet = m_bHighlightAll;
 				SelectItemFound(w);  // sets m_lastFindPos
 			}
@@ -2712,13 +3174,27 @@ int NListView::CheckMatch(int i, CString &searchString)
 }
 
 
-int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDuration)
+int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll)
 {
 	int w = -1;
 	int sz = MboxMail::s_mails.GetSize();
 	time_t sd = m_lastStartDate.GetTime(), ed = m_lastEndDate.GetTime();
 	CString searchString(m_searchString);
-	if (m_bCaseSens == 0)
+	if (m_advancedFind) 
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			m_stringWithCase[i] = m_advancedParams.m_string[i];
+			if (m_advancedParams.m_bEditChecked[i])
+			{
+				if (m_advancedParams.m_bCaseSensitive[i] == FALSE) 
+				{
+					m_stringWithCase[i].MakeLower();
+				}
+			}
+		}
+	}
+	else if (m_bCaseSens == 0)
 		searchString.MakeLower();
 
 	if (!mainThreadContext) {
@@ -2729,8 +3205,11 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 	DWORD myThreadId = GetCurrentThreadId();
 	DWORD tc_start = GetTickCount();
 
-	if (m_bFindNext)
+	if (m_bFindNext || findAll)
 	{
+		m_findAllCount = 0;
+		if (findAll)
+			MboxMail::s_mails_find.SetSizeKeepData(MboxMail::s_mails.GetCount());
 		for (int i = which; i < sz; i++)
 		{
 			MboxMail *m = MboxMail::s_mails[i];
@@ -2743,9 +3222,23 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 				process = true;
 			if (process)
 			{
-				if (CheckMatch(i, searchString) >= 0) {
-					w = i;
-					break;
+				if (m_advancedFind) {
+					if (CheckMatchAdvanced(i, m_advancedParams) >= 0) {
+						if (findAll) {  
+							MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
+							m_findAllCount++;
+						}
+					}
+				}
+				else if (CheckMatch(i, searchString) >= 0) {
+					if (findAll) {
+						MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
+						m_findAllCount++;
+					}
+					else {
+						w = i;
+						break;
+					}
 				}
 
 				DWORD tc_curr = GetTickCount();
@@ -2775,6 +3268,10 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 					}
 				}
 			}
+		}
+		if (findAll) {
+			MboxMail::s_mails_find.SetSizeKeepData(m_findAllCount);
+			TRACE("DoFastFind: s_mails_find count=%d\n", MboxMail::s_mails_find.GetCount());
 		}
 	}
 	else
@@ -2836,13 +3333,18 @@ void NListView::OnUpdateEditFindAgain(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(! m_bInFind && m_list.GetItemCount()>0);
 	return;
-	
 }
 
 void NListView::OnEditFindAgain() 
 {
 	if( m_bInFind )
 		return;
+
+	if (m_bFindAll) {
+		OnEditFind();
+		return;
+	}
+
 	if( m_searchString.IsEmpty() ) {
 		OnEditFind();
 		return;
@@ -2851,6 +3353,8 @@ void NListView::OnEditFindAgain()
 		OnEditFind();
 		return;
 	}
+
+	m_advancedFind = FALSE;
 
 	m_bInFind = true;
 
@@ -2911,19 +3415,23 @@ void NListView::OnEditFindAgain()
 	which = m_lastFindPos;
 
 	//
-	if (m_maxSearchDuration > 0)
-		w = DoFastFind(which, TRUE, m_maxSearchDuration);
+	if (m_maxSearchDuration > 0) {
+		BOOL findAll = FALSE;  // m_findAll should be FALSE
+		w = DoFastFind(which, TRUE, m_maxSearchDuration, findAll);
+	}
 
 	FIND_ARGS args;
 	/*IN*/ args.lview = this; args.searchstart = m_lastFindPos;
-	/*OUT*/ args.exitted = FALSE; args.retpos = -1;
+	/*OUT*/ args.exitted = FALSE; args.retpos = -1; args.findAll = FALSE; // m_findAll should be FALSE
 	if ((w == -2) || (m_maxSearchDuration == 0)) 
 	{
 		CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
 
 		INT_PTR nResult = Dlg.DoModal();
-		if (!nResult) // should never be true ?
+		if (!nResult) { // should never be true ?
+			m_bInFind = false;
 			return;
+		}
 
 		int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
 		int retResult = LOWORD(nResult);
@@ -3062,9 +3570,10 @@ void NListView::SelectItemFound(int which)
 	}
 
 	POSITION pos = m_list.GetFirstSelectedItemPosition();
+	int nItem;
 	while (pos)
 	{
-		int nItem = m_list.GetNextSelectedItem(pos);
+		nItem = m_list.GetNextSelectedItem(pos);
 		m_list.SetItemState(nItem, 0, LVIS_SELECTED | LVIS_FOCUSED);
 	}
 	m_list.SetItemState(which, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
@@ -3120,8 +3629,8 @@ void NListView::RedrawMails()
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (!pFrame)
 		return;
-	NTreeView *pView = pFrame->GetTreeView();
-	if (!pView)
+	NTreeView *pTreeView = pFrame->GetTreeView();
+	if (!pTreeView)
 		return;
 
 	int ni = MboxMail::s_mails.GetSize();
@@ -3129,12 +3638,15 @@ void NListView::RedrawMails()
 
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
-	//pView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
-	//BOOL retval = pView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
-	BOOL retval = pView->m_tree.SetItemState(m_which, LVIS_SELECTED, TVIS_BOLD);
-	retval = pView->m_tree.SelectItem(m_which);
-	CString txt = pView->m_tree.GetItemText(m_which);
-	pView->SaveData();
+#if 0
+	// TODO: Commneted out in 1.0.3.0;  doesn't seem to be needed
+	//pTreeView->m_tree.SetItemData(m_which, (DWORD)FileSize(m_path));
+	//BOOL retval = pTreeView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
+	BOOL retval = pTreeView->m_tree.SetItemState(m_which, LVIS_SELECTED, TVIS_BOLD);
+	retval = pTreeView->m_tree.SelectItem(m_which);
+	CString txt = pTreeView->m_tree.GetItemText(m_which);
+	pTreeView->SaveData(); // TODO: commented out
+#endif
 	MarkColumns();
 }
 
@@ -3160,7 +3672,7 @@ void NListView::ResetFileMapView()
 	//
 }
 
-BOOL NListView::SetupFileMapView(_int64 offset, DWORD length)
+BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 {
 	if (m_bMappingError) {
 		return FALSE;
@@ -3229,7 +3741,7 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length)
 	_int64 aligned_offset;
 	DWORD bufSize;
 	_int64 dataEnd;
-	if (m_bFindNext == TRUE)
+	if (findNext == TRUE)
 	{
 		aligned_offset = (offset / m_dwAllocationGranularity) * m_dwAllocationGranularity;
 		bufSize = ((m_MailFileSize - aligned_offset) < m_mappingSize) ? (DWORD)(m_MailFileSize - aligned_offset) : (DWORD)m_mappingSize;
@@ -3310,27 +3822,27 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 		searchString.MakeLower();
 
 	MboxMail *m = MboxMail::s_mails[mailPosition];
-	if (SetupFileMapView(m->m_startOff, m->m_length) == FALSE)
+	if (SetupFileMapView(m->m_startOff, m->m_length, m_bFindNext) == FALSE)
 		return FALSE;
 
 	MailBodyContent *body;
 	BOOL textPlainFound = FALSE;
 	BOOL searchHTML = FALSE;
 	int i;
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 2; i++)  // search plain text blocks first or html text blocks if no text blocks
 	{
 		for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 		{
 			body = m->m_ContentDetailsArray[j];
 
-			if (!body->m_attachmentName.IsEmpty()) {
+			if (!body->m_attachmentName.IsEmpty()) {  // this is attachment
 				if (bAttachment == FALSE)
 					continue;
 			}
-			else if (bContent == FALSE)
+			else if (bContent == FALSE)  // not an attachment but we are not interested in the content/message
 				continue;
 
-			if (searchHTML == FALSE)
+			if (searchHTML == FALSE) // first iteration we are not looking html blocks
 			{
 				if (body->m_contentType.CompareNoCase("text/plain") != 0)
 					continue;
@@ -3398,12 +3910,144 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 			{
 				int pos = -1;
 				if (m_bWholeWord)
-					pos = (_int64)g_tu.BMHSearchW((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+					pos = g_tu.BMHSearchW((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 				else
-					pos = (_int64)g_tu.BMHSearch((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+					pos = g_tu.BMHSearch((unsigned char *)pData, datalen, (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 				if (pos >= 0) {
 					return TRUE;
 				}
+			}
+		}
+		if (textPlainFound == FALSE)  // first iteration done; didn't find any plain text blocks
+			searchHTML = TRUE;
+	}
+	return FALSE;
+}
+
+
+// TODO: Below is similar to FindInMailContent above; Merge?, yes when time permits ?
+BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams &params)
+{
+	char  *pData = 0;
+	int datalen = 0;
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (SetupFileMapView(m->m_startOff, m->m_length, TRUE) == FALSE)
+		return FALSE;
+
+	MailBodyContent *body;
+	BOOL textPlainFound = FALSE;
+	BOOL searchHTML = FALSE;
+	BOOL fromChecked = TRUE;
+	BOOL isAttachment = FALSE;
+	int i;
+	for (i = 0; i < 2; i++) // search plain text blocks first or html text blocks if no text blocks
+	{
+		for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+		{
+			body = m->m_ContentDetailsArray[j];
+
+			isAttachment = FALSE;
+			if (!body->m_attachmentName.IsEmpty()) {
+				if (bAttachment == FALSE)
+					continue;
+				else
+					isAttachment = TRUE;
+			}
+			else if (bContent == FALSE)
+				continue;
+
+			if (searchHTML == FALSE)
+			{
+				if (body->m_contentType.CompareNoCase("text/plain") != 0)
+					continue;
+				else
+					textPlainFound = TRUE;
+			}
+			else
+			{
+				if (body->m_contentType.CompareNoCase("text/html") != 0)
+					continue;
+				else
+					int deb = 1;
+			}
+
+			int bodyLength = body->m_contentLength;
+			if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
+				// something is not consistent
+				bodyLength = m->m_length - body->m_contentOffset;
+			}
+			char *bodyBegin = m_pViewBegin + body->m_contentOffset;
+
+			if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
+			{
+				MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+				int dlength = d64.GetOutputLength();
+				outbuf->ClearAndResize(dlength);
+
+				int retlen = d64.GetOutput((unsigned char*)outbuf->Data(), dlength);
+				if (retlen > 0) {
+					outbuf->SetCount(retlen);
+					pData = outbuf->Data();
+					datalen = outbuf->Count();
+				}
+				else {
+					outbuf->Clear();
+					pData = 0;
+					datalen = 0;
+				}
+			}
+			else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+			{
+				MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
+				int dlength = dGP.GetOutputLength();
+				outbuf->ClearAndResize(dlength);
+
+				int retlen = dGP.GetOutput((unsigned char*)outbuf->Data(), dlength);
+				if (retlen > 0) {
+					outbuf->SetCount(retlen);
+					pData = outbuf->Data();
+					datalen = outbuf->Count();
+				}
+				else {
+					outbuf->Clear();
+					pData = 0;
+					datalen = 0;
+				}
+			}
+			else
+			{
+				pData = bodyBegin;
+				datalen = bodyLength;
+
+			}
+			if (pData)
+			{  
+				// main diff comparing with FindInMailContent
+				int pos = -1;
+				int fldIndx = 3; // Message
+				if (isAttachment)
+					fldIndx = 4;
+
+				if (params.m_bEditChecked[fldIndx])
+				{
+					fromChecked = TRUE;
+					if (params.m_bWholeWord[fldIndx]) {
+						pos = g_tu.BMHSearchW((unsigned char *)pData, datalen,
+							(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+					}
+					else {
+						pos = g_tu.BMHSearch((unsigned char *)pData, datalen,
+							(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+					}
+					if (pos >= 0) {
+						return TRUE;
+					}
+				}
+
 			}
 		}
 		if (textPlainFound == FALSE)
@@ -3412,44 +4056,52 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 	return FALSE;
 }
 
-void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen, BOOL printToPrinter)
+void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen, BOOL printToPrinter)
 {
-	if (abs(MboxMail::b_mails_which_sorted) != 99) {
+	int firstMail = 0;
+	int lastMail = 0;
 
-		CString txt = _T("Please sort all mails by conversation first.\n");
-		txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
-		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-		return;
-	}
-	MboxMail *m = 0;
-	m = MboxMail::s_mails[iItem];
-	int groupId = m->m_groupId;
-	int firstMail = iItem;
-	int lastMail = iItem;
-	int i;
-	for (i = iItem; i >= 0; i--) 
+	if (multipleSelectedMails == FALSE)
 	{
-		m = MboxMail::s_mails[i];
-		if (m->m_groupId != groupId)
-			break;
-	}
-	if (i < 0)
-		firstMail = 0;
-	else
-		firstMail = i + 1;
+		if (abs(MboxMail::b_mails_which_sorted) != 99) {
 
-	int mailCount = MboxMail::s_mails.GetCount();
-	for (i = iItem; i < mailCount; i++)
-	{
-		m = MboxMail::s_mails[i];
-		if (m->m_groupId != groupId)
-			break;
+			CString txt = _T("Please sort all mails by conversation first.\n");
+			txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+			HWND h = GetSafeHwnd(); // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			return;
+		}
+
+		MboxMail *m = 0;
+		m = MboxMail::s_mails[iItem];
+		int groupId = m->m_groupId;
+		firstMail = iItem;
+		lastMail = iItem;
+
+		int i;
+		for (i = iItem; i >= 0; i--)
+		{
+			m = MboxMail::s_mails[i];
+			if (m->m_groupId != groupId)
+				break;
+		}
+		if (i < 0)
+			firstMail = 0;
+		else
+			firstMail = i + 1;
+
+		int mailCount = MboxMail::s_mails.GetCount();
+		for (i = iItem; i < mailCount; i++)
+		{
+			m = MboxMail::s_mails[i];
+			if (m->m_groupId != groupId)
+				break;
+		}
+		if (i >= mailCount)
+			lastMail = mailCount - 1;
+		else
+			lastMail = i - 1;
 	}
-	if (i >= mailCount)
-		lastMail = mailCount - 1;
-	else
-		lastMail = i - 1;
 
 	TEXTFILE_CONFIG textConfig;
 	textConfig.m_dateFormat = m_format;
@@ -3459,7 +4111,25 @@ void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen, BO
 	CString textFileName;
 	int ret = 0;
 	BOOL progressBar = FALSE;
-	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType, progressBar);
+	MailIndexList *selectedMailsIndexList = 0;
+	if (multipleSelectedMails) 
+	{
+		int selectedCnt = m_list.GetSelectedCount();
+		m_selectedMailsList.SetSize(selectedCnt);
+		POSITION p = m_list.GetFirstSelectedItemPosition();
+		int nSelected;
+		int i = 0;
+		while (p)
+		{
+			if (i >= selectedCnt) // just a test 
+				int deb = 1;
+			nSelected = m_list.GetNextSelectedItem(p);
+			m_selectedMailsList.SetAtGrow(i, nSelected); // to be safe grow just in case
+			i++;
+		}
+		selectedMailsIndexList = &m_selectedMailsList;
+	}
+	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, selectedMailsIndexList, textType, progressBar);
 	if (ret > 0) {
 		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 		if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(....);
@@ -3529,7 +4199,1285 @@ void NListView::PrintMailGroupToText(int iItem, int textType, BOOL forceOpen, BO
 	}
 }
 
+int NListView::RemoveSelectedMails()
+{
+	int i = 0;
+
+	int removeFirst;
+	int removeLast;
+	int keepFirst;
+	int keepLast;
+	int position;
+	int nextPositionToMoveMails = -1;
+	int removedTotal = 0;
+	int removeFirstPosition = -1;
+
+	int selectedCnt = m_list.GetSelectedCount();
+
+	m_list.SetRedraw(FALSE);
+
+	// Assume indexes are sorted from lowest to highest
+	// TODO: assert assumption , sort if needed
+	POSITION p = m_list.GetFirstSelectedItemPosition();
+
+	int sv_mailsCnt = MboxMail::s_mails.GetCount();
+	while (p)
+	{
+		// find block of mails to remove
+		if (nextPositionToMoveMails < 0) 
+		{
+			removeFirst = m_list.GetNextSelectedItem(p);
+			removeLast = removeFirst;
+			nextPositionToMoveMails = removeFirst;
+			removeFirstPosition = removeFirst;
+		}
+
+		BOOL moreToRemove = FALSE;
+		while (p)
+		{
+			position = m_list.GetNextSelectedItem(p);
+			if (position == (removeLast + 1))
+				removeLast = position;
+			else
+			{
+				moreToRemove = TRUE;
+				break;
+			}
+		}
+
+		removedTotal += removeLast - removeFirst + 1;
+
+		// if there is more mails to remove
+		if (moreToRemove)
+		{
+			// move block of mails to keep
+			keepFirst = removeLast + 1;
+			keepLast = position;
+
+			// move mails to keep to removeFirst position
+			int keepCnt = keepLast - keepFirst;
+			for (i = keepFirst; i < keepLast; i++)
+			{
+				MboxMail::s_mails[nextPositionToMoveMails++] = MboxMail::s_mails[i];
+			}
+			// position points already to the next mail block
+			removeFirst = position;
+			removeLast = removeFirst;
+			if (p == 0)
+			{
+				// leveragee CArray to shift remaining mails
+				int removeCnt = removeLast - nextPositionToMoveMails + 1;
+				if (removeCnt)
+					MboxMail::s_mails.RemoveAt(nextPositionToMoveMails, removeCnt);
+
+				removedTotal += removeLast - removeFirst + 1;
+			}
+		}
+		else
+		{
+			// leveragee CArray to shift remaining mails
+			int removeCnt = removeLast - nextPositionToMoveMails + 1;
+			if (removeCnt)
+				MboxMail::s_mails.RemoveAt(nextPositionToMoveMails, removeCnt);
+		}
+	}
+
+	if (selectedCnt != removedTotal)
+		int deb = 1;
+
+	if (sv_mailsCnt == MboxMail::s_mails.GetCount())
+		int deb = 1;
+	else
+		int deb = 1;
+
+	if (abs(MboxMail::b_mails_which_sorted) == 99) {
+		MboxMail::SortByGroupId(0, MboxMail::b_mails_which_sorted < 0);  // TODO: this is probably not needed; keep it simple for now
+		MboxMail::assignColor2ConvesationGroups(&MboxMail::s_mails);
+	}
+
+
+	RedrawMails();
+
+	return removeFirstPosition;
+}
+
+int NListView::RemoveAllMails()
+{
+	m_list.SetRedraw(FALSE);
+
+	MboxMail::s_mails.SetSize(0);
+	if (MboxMail::IsFindMailsSelected())
+		MboxMail::s_mails_find.SetSize(0);
+	else if (MboxMail::IsUserMailsSelected())
+		MboxMail::s_mails_edit.SetSize(0);
+	else
+		int deb = 1; // ASSERT ?
+	
+
+	// RedrawMails sets m_list.SetItemCount();
+	RedrawMails();
+
+	m_lastFindPos = -1;
+	m_lastSel = -1;
+	m_bEditFindFirst = TRUE;
+
+	return 1;
+}
+
+int NListView::CopySelectedMails()
+{
+	int i = 0;
+
+	int nIndx;
+	MailArray &selected_mails = MboxMail::s_mails_selected;
+	MboxMail *m;
+
+	int selectedCnt = m_list.GetSelectedCount();
+	selected_mails.SetSizeKeepData(selectedCnt);
+
+	POSITION p = m_list.GetFirstSelectedItemPosition();
+	int mailsCnt = MboxMail::s_mails.GetCount();
+	while (p)
+	{
+		nIndx = m_list.GetNextSelectedItem(p);
+		if (nIndx >= mailsCnt)
+			return -1; // TODO: error
+		m = MboxMail::s_mails[nIndx];
+		selected_mails.SetAtGrow(i++, m);
+	}
+
+	// ASSERT i <= selectedCnt
+	selected_mails.SetSizeKeepData(i);
+
+	MailArray &merged_mails = MboxMail::s_mails_merged;
+	MboxMail::MergeTwoMailLists(&selected_mails, &MboxMail::s_mails_edit, &merged_mails);
+	//MboxMail::VerifyMergeOfTwoMailLists(&selected_mails, &MboxMail::s_mails_edit, &merged_mails);
+	MboxMail::s_mails_edit.CopyKeepData(merged_mails);
+
+	// TODO: consider marking MboxMail::s_mails_edit as dirty, i.e. to allow sorting when selected
+	MboxMail::SortByDate(&MboxMail::s_mails_edit);
+	MboxMail::m_editMails.m_lastSel = -1;
+	if (MboxMail::s_mails_edit.GetCount() > 0)
+		MboxMail::m_editMails.m_lastSel = 0;
+	MboxMail::m_editMails.b_mails_which_sorted = 1;
+
+	return 1;
+}
+
+int NListView::CopyAllMails()
+{
+	CString txt = _T("Do you want to copy all mails to Users Selected Mails?");
+	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	if (answer == IDYES) {
+		// TODO: evaluate other merge solutions
+		MailArray &merged_mails = MboxMail::s_mails_merged;
+		MboxMail::s_mails_selected.CopyKeepData(MboxMail::s_mails);
+		MboxMail::MergeTwoMailLists(&MboxMail::s_mails_selected, &MboxMail::s_mails_edit, &merged_mails);
+		//MboxMail::VerifyMergeOfTwoMailLists(&MboxMail::s_mails_selected, &MboxMail::s_mails_edit, &merged_mails);
+		MboxMail::s_mails_edit.CopyKeepData(merged_mails);
+
+		// TODO: consider marking MboxMail::s_mails_edit as dirty, i.e. to allow sorting when selected
+		MboxMail::SortByDate(&MboxMail::s_mails_edit);
+		MboxMail::m_editMails.m_lastSel = -1;
+		if (MboxMail::s_mails_edit.GetCount() > 0)
+			MboxMail::m_editMails.m_lastSel = 0;
+		MboxMail::m_editMails.b_mails_which_sorted = 1;
+	}
+
+	return 1;
+}
+
+int NListView::FindInHTML(int iItem)
+{
+	BOOL itemSelected = FALSE;
+	if (m_lastSel != iItem) {
+		TRACE("Selecting %d\n", iItem);
+		SelectItem(iItem);
+		itemSelected = TRUE;
+	}
+
+	CFindInMailDlg dlg;
+	dlg.m_bWholeWord = m_bWholeWordInMail;
+	dlg.m_bCaseSensitive = m_bCaseSensInMail;
+	dlg.m_string = m_searchStringInMail;
+	if (dlg.DoModal() == IDOK) 
+	{
+		m_searchStringInMail = dlg.m_string;
+		m_bWholeWordInMail = dlg.m_bWholeWord;
+		m_bCaseSensInMail = dlg.m_bCaseSensitive;
+
+		CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+		if (!pFrame)
+			return itemSelected;
+		if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
+			return itemSelected;;
+		NMsgView *pMsgView = pFrame->GetMsgView();
+		if (!pMsgView || !::IsWindow(pMsgView->m_hWnd))
+			return itemSelected;;
+
+		if (m_searchStringInMail.IsEmpty())
+			pMsgView->ClearSearchResultsInIHTMLDocument(pMsgView->m_searchID);
+		else
+			pMsgView->FindStringInIHTMLDocument(m_searchStringInMail, m_bWholeWordInMail, m_bCaseSensInMail);
+
+		int dbg = 1;
+	}
+	return itemSelected;
+}
+
 int NListView::MailsWhichColumnSorted() const
 {
 	return MboxMail::b_mails_which_sorted;
+}
+
+void NListView::OnItemchangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+
+	CString strNewState;
+	CString strOldState;
+	CString strChanged;
+	ItemState2Str(pNMListView->uNewState, strNewState);
+	ItemState2Str(pNMListView->uOldState, strOldState);
+	ItemChange2Str(pNMListView->uChanged, strChanged);
+
+	TRACE(_T("\n\tOnItemchangedListCtrl.  Item index: %d SubItem index: %d NewState: %s OldState: %s strChanged: %s\n"),
+		pNMListView->iItem, pNMListView->iSubItem, (LPCSTR)strNewState, (LPCSTR)strOldState, (LPCSTR)strChanged);
+
+	PrintSelected();
+
+	*pResult = 0;
+}
+
+void NListView::OnODStateChangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLVODSTATECHANGE lpStateChange = (LPNMLVODSTATECHANGE)pNMHDR;
+
+
+	CString strNewState;
+	CString strOldState;
+	ItemState2Str(lpStateChange->uNewState, strNewState);
+	ItemState2Str(lpStateChange->uOldState, strOldState);
+
+	TRACE(_T("\n\tOnODStateChangedListCtrl.  From Item index: %d To Item index: %d NewState: %s OldState: %s\n"), 
+		lpStateChange->iFrom, lpStateChange->iTo, (LPCSTR)strNewState, (LPCSTR)strOldState);
+
+	PrintSelected();
+
+	*pResult = 0;
+}
+
+void NListView::OnODFindItemListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVFINDITEM *lpFindItem = (NMLVFINDITEM*)pNMHDR;
+
+	CString str;
+	//str.Format(_T("OnODFindItemListCtrl.  From Item index: %d To Item index: %d"), lpStateChange->iFrom, lpStateChange->iTo);
+
+	*pResult = 0;
+}
+
+
+void NListView::OnReleaseCaptureListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMHDR lpReleaseCapture = (LPNMHDR)pNMHDR;
+
+	CString str;
+	//str.Format(_T("OnReleaseCaptureListCtrl.  From Item index: %d To Item index: %d"), lpReleaseCapture->iFrom, lpStateChange->iTo);
+
+	*pResult = 0;
+}
+
+void NListView::OnODCacheHintListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVCACHEHINT  *lpCacheHint = (NMLVCACHEHINT*)pNMHDR;
+
+	CString str;
+	//str.Format(_T("OnODCacheHintListCtrl.  From Item index: %d To Item index: %d"), lpReleaseCapture->iFrom, lpStateChange->iTo);
+
+	*pResult = 0;
+}
+
+
+void NListView::ItemState2Str(UINT uState, CString &strState)
+{
+	strState.Empty();
+	switch (uState)
+	{
+	case LVIS_ACTIVATING: strState.Append("LVIS_ACTIVATING"); break;
+	case LVIS_CUT: strState.Append("LVIS_CUT"); break;
+	case LVIS_DROPHILITED: strState.Append("LVIS_DROPHILITED"); break;
+	case LVIS_FOCUSED: strState.Append("LVIS_FOCUSED"); break;
+	case LVIS_OVERLAYMASK: strState.Append("LVIS_OVERLAYMASK"); break;
+	case LVIS_SELECTED: strState.Append("LVIS_SELECTED"); break;
+	case LVIS_STATEIMAGEMASK: strState.Append("LVIS_STATEIMAGEMASK"); break;
+	default: strState.Append("LVIS_UNKNOWN"); break;
+	}
+}
+
+
+void NListView::ItemChange2Str(UINT uChange, CString &strState)
+{
+	strState.Empty();
+	// if (uChange & LVIF_COLFMT) strState.Append("LVIF_COLFMT ");   //  require (NTDDI_VERSION >= NTDDI_VISTA)
+	if (uChange & LVIF_COLUMNS) strState.Append("LVIF_COLUMNS ");
+	if (uChange & LVIF_DI_SETITEM) strState.Append("LVIF_DI_SETITEM ");
+	if (uChange & LVIF_GROUPID) strState.Append("LVIF_GROUPID ");
+	if (uChange & LVIF_IMAGE) strState.Append("LVIF_IMAGE ");
+
+	if (uChange & LVIF_INDENT) strState.Append("LVIF_INDENT ");
+	if (uChange & LVIF_NORECOMPUTE) strState.Append("LVIF_NORECOMPUTE ");
+	if (uChange & LVIF_PARAM) strState.Append("LVIF_PARAM ");
+	if (uChange & LVIF_STATE) strState.Append("LVIF_STATE ");
+	if (uChange & LVIF_TEXT) strState.Append("LVIF_TEXT ");
+
+	if (strState.IsEmpty()) strState.Append("LVIS_UNKNOWN");
+}
+
+// Debug support
+void NListView::PrintSelected()
+{
+	// Get the selected items in the control
+	POSITION p = m_list.GetFirstSelectedItemPosition();
+	CString msg = _T("");
+	CString str;
+
+	if (p)
+		msg = _T("The following items are selected: \n\t");
+
+	while (p)
+	{
+		int nSelected = m_list.GetNextSelectedItem(p);
+
+		str.Empty();
+		str.Format(_T("%d"), nSelected);
+
+		if (p)
+			str += _T(", ");
+
+		msg += str;
+		if (msg.GetLength() > 100) {
+			TRACE(_T("%s\n"), (LPCSTR)msg);
+			msg.Empty();
+			msg.Append("cont:\n\t");
+		}
+	}
+	if (msg.IsEmpty()) {
+		msg = _T("There are no selected items");
+	}
+	TRACE(_T("%s\n"), (LPCSTR)msg);
+}
+
+void NListView::SwitchToMailList(int nID, BOOL force)
+{
+	// TODO: there is more optimization/simplication/cleanup when force is set to TRUE
+	// force is set to TRUE when running FIND option while FIND list is active
+	int nWhichMailList = MboxMail::nWhichMailList;
+	if ((nWhichMailList == nID) && (force == FALSE))
+		return;
+
+	CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+	if (!pFrame)
+		return;
+
+	if (!::IsWindow(pFrame->m_hWnd) || !pFrame->IsKindOf(RUNTIME_CLASS(CMainFrame)))
+		return;
+
+	if (nWhichMailList != nID)
+	{
+		// save current environment before switching to new mail list
+		if (nWhichMailList == IDC_ARCHIVE_LIST) {
+			MboxMail::s_mails_all.Copy(MboxMail::s_mails);
+			MboxMail::m_allMails.m_lastSel = m_lastSel;
+			MboxMail::m_allMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+		}
+		else if (nWhichMailList == IDC_FIND_LIST) {
+			MboxMail::s_mails_find.CopyKeepData(MboxMail::s_mails);
+			MboxMail::m_findMails.m_lastSel = m_lastSel;
+			MboxMail::m_findMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+		}
+		else if (nWhichMailList == IDC_EDIT_LIST) {
+			MboxMail::s_mails_edit.CopyKeepData(MboxMail::s_mails);
+			MboxMail::m_editMails.m_lastSel = m_lastSel;
+			MboxMail::m_editMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+		}
+		else
+			; // TODO: ASSERT ?
+	}
+
+	// setup environment for new mail list
+	if (nID == IDC_ARCHIVE_LIST) {
+		MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_all);
+		m_lastSel = MboxMail::m_allMails.m_lastSel;
+		MboxMail::m_mailList = &MboxMail::m_allMails;
+		MboxMail::b_mails_which_sorted = MboxMail::m_allMails.b_mails_which_sorted;
+	}
+	else if (nID == IDC_FIND_LIST) {
+		MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_find);
+		m_lastSel = MboxMail::m_findMails.m_lastSel;
+		MboxMail::m_mailList = &MboxMail::m_findMails;
+		MboxMail::b_mails_which_sorted = MboxMail::m_findMails.b_mails_which_sorted;
+	}
+	else if (nID == IDC_EDIT_LIST) {
+		MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_edit);
+		m_lastSel = MboxMail::m_editMails.m_lastSel;
+		MboxMail::m_mailList = &MboxMail::m_editMails;
+		MboxMail::b_mails_which_sorted = MboxMail::m_editMails.b_mails_which_sorted;
+	}
+	else
+		; // TODO: ASSERT ?
+
+	if (abs(MboxMail::b_mails_which_sorted) == 99) {
+		MboxMail::SortByGroupId(0, MboxMail::b_mails_which_sorted < 0);  // TODO: this is probably not needed; keep it simple for now
+		MboxMail::assignColor2ConvesationGroups(&MboxMail::s_mails);
+	}
+
+	m_list.SetItemCount(MboxMail::s_mails.GetCount());
+	MboxMail::nWhichMailList = nID;
+	pFrame->SetMailList(nID);
+
+
+#if 0
+	if (abs(MboxMail::b_mails_which_sorted) == 99)
+		RefreshSortByColumn();
+#endif
+
+	MarkColumns();  // not used anymore -Invalidate() below doesn't updates column labels
+
+	int sv_lastSel = m_lastSel;
+	ClearDescView();  // set m_lastSel to -1 ; m_lastFindPos is not updated
+	m_lastSel = sv_lastSel;
+
+	Invalidate();
+
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if (pMsgView)
+		pMsgView->Invalidate(); 
+		//pMsgView->m_browser.m_ie.Invalidate(); // TODO: changed to GetMsgView()->Invalidate(); and it seem to work :)
+
+	int mailCnt = MboxMail::s_mails.GetCount();
+	if (mailCnt > 0) {
+		if ((m_lastSel >= mailCnt)  || (m_lastSel < 0))
+			m_lastSel = 0;
+		SelectItemFound(m_lastSel);  // m_lastFindPos to  m_lastSel
+	}
+	else
+		m_lastSel = -1;
+
+	m_lastFindPos = -1;  // TODO: can we preserve Find in process while mswitching ?
+}
+
+void NListView::OnEditFindadvanced()
+{
+	EditFindAdvanced();
+}
+
+void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
+{
+	// TODO: Add your command handler code here
+
+	if (m_bInFind)
+		return;
+
+	m_advancedFind = TRUE;
+
+	m_bInFind = true;
+
+	CFindAdvancedDlg dlg;
+
+	if (from && to && subject)
+	{
+		SimpleString name;
+		SimpleString addr;
+		CString tmpAddr;
+		CString fromAddr;
+		CString toAddr;
+		CString subjAddr;
+		CString subj;
+		CString tmp;
+
+		int fromlen = from->GetLength();
+		name.ClearAndResize(fromlen);
+		addr.ClearAndResize(fromlen);
+		MboxMail::splitMailAddress(from->operator LPCSTR(), fromlen, &name, &addr);
+		fromAddr = addr.Data();
+		fromAddr.Trim(" \t\"<>");
+
+		m_advancedParams.m_string[0].Empty();
+		m_advancedParams.m_string[0].Append(fromAddr);
+		if (!fromAddr.IsEmpty()) {
+			m_advancedParams.m_bEditChecked[0] = TRUE;
+			m_advancedParams.m_bCaseSensitive[0] = FALSE; \
+		}
+		else
+			m_advancedParams.m_bEditChecked[0] = FALSE;
+
+		int posBeg = 0;
+		int posEnd = 0;
+		int maxNumbOfAddr = 1;
+		for (int i = 0; i < maxNumbOfAddr; )
+		{
+			posEnd = to->Find("@", posBeg);
+			if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
+				posEnd = to->Find(",", posEnd + 1);
+
+			if (posEnd >= 0)
+				tmp = to->Mid(posBeg, posEnd - posBeg);
+			else
+				tmp = to->Mid(posBeg, to->GetLength());
+
+			int tolen = tmp.GetLength();
+			name.ClearAndResize(tolen);
+			addr.ClearAndResize(tolen);
+			MboxMail::splitMailAddress((LPCSTR)tmp, tolen, &name, &addr);
+			tmpAddr = addr.Data();
+			tmpAddr.Trim(" \t\"<>");
+			toAddr.Append(tmpAddr);
+
+			if (posEnd < 0)
+				break;
+			posBeg = posEnd + 1;
+			i++;
+			if (i < maxNumbOfAddr)
+				toAddr.Append(",");
+		}
+
+		m_advancedParams.m_string[1].Empty();
+		m_advancedParams.m_string[1].Append(toAddr);
+		if (!toAddr.IsEmpty()) {
+			m_advancedParams.m_bEditChecked[1] = TRUE;
+			m_advancedParams.m_bCaseSensitive[1] = FALSE;
+		}
+		else
+			m_advancedParams.m_bEditChecked[1] = FALSE;
+
+		subj.Append(*subject);
+
+		int length = subj.GetLength();
+		for (int i = 0; i < 10; i++) // to be safe, limit number of iterations
+		{
+			subj.TrimLeft();
+
+			if (subj.GetLength() >= 5)
+			{
+				if ((strncmp((LPCSTR)subj, "Fwd: ", 5) == 0) || (strncmp((LPCSTR)subj, "FWD: ", 5) == 0))
+					subj.Delete(0, 5);
+				else if ((strncmp((LPCSTR)subj, "Re: ", 4) == 0) || (strncmp((LPCSTR)subj, "RE: ", 4) == 0))
+					subj.Delete(0, 4);
+			}
+			else if (subj.GetLength() >= 4)
+			{
+				if ((strncmp((LPCSTR)subj, "Re: ", 4) == 0) || (strncmp((LPCSTR)subj, "RE: ", 4) == 0))
+					subj.Delete(0, 4);
+			}
+			if (length == subj.GetLength())
+				break;
+
+			length = subj.GetLength();
+		}
+		subj.Trim();
+
+		m_advancedParams.m_string[2].Empty();
+		m_advancedParams.m_string[2].Append(subj);
+		if (!subj.IsEmpty()) {
+			m_advancedParams.m_bEditChecked[2] = TRUE;
+			m_advancedParams.m_bCaseSensitive[2] = FALSE;
+		}
+		else
+			m_advancedParams.m_bEditChecked[2] = FALSE;
+	}
+
+	dlg.m_params.Copy(m_advancedParams);
+
+	if (m_filterDates == FALSE)
+		m_lastStartDate = 0;
+	if (m_lastStartDate <= 0) {
+		time_t min = time(NULL);
+		time_t max = 0;
+		int sz = MboxMail::s_mails.GetSize();
+		for (int i = 0; i < sz; i++) {
+			time_t t = MboxMail::s_mails[i]->m_timeDate;
+			if (t < min && t > 0)
+				min = t;
+			if (t > max)
+				max = t;
+		}
+		m_lastStartDate = CTime(min);
+		if (max == 0)
+			m_lastEndDate = CTime(CTime::GetCurrentTime());
+		else
+			m_lastEndDate = CTime(max);
+	}
+	dlg.m_params.m_startDate = COleDateTime(m_lastStartDate.GetTime());
+	dlg.m_params.m_endDate = COleDateTime(m_lastEndDate.GetTime());
+
+	if (dlg.DoModal() == IDOK) 
+	{
+		m_advancedParams.Copy(dlg.m_params);
+		m_lastFindPos = -1;
+
+		// To optimize content/message and/or attachments search performance
+		if (((m_advancedParams.m_bEditChecked[3] && m_advancedParams.m_string[3])  ||
+			(m_advancedParams.m_bEditChecked[4] && m_advancedParams.m_string[4])) && 
+			(MboxMail::b_mails_sorted == true))
+		{
+			int whichSorted = abs(MboxMail::b_mails_which_sorted);
+			if ((whichSorted != 1) && (whichSorted != 99)) { // related mails should be in close proximity in the mail file
+				MboxMail::SortByDate();
+				MboxMail::b_mails_sorted = true;
+				MboxMail::b_mails_which_sorted = 1;
+
+				RedrawMails();
+			}
+		}
+
+		BOOL isTextUnicode = IsWindowUnicode(this->GetSafeHwnd());
+		UINT localCP = GetACP();
+		std::string str;
+		BOOL ret = id2charset(localCP, str);
+		//  http://html-codes.info/ansi/html/Windows-1252-superscript%20one_185
+
+		// m_bEditFindFirst = FALSE;  // this is applicable only to OnEditFind/OnEditFindAgain
+
+		int sz = MboxMail::s_mails.GetSize();
+		if (sz > 0)
+		{
+			int which = 0, w = -1;
+
+			m_lastFindPos = 0;
+			which = m_lastFindPos;
+
+			//
+			int maxSearchDuration = 0;
+			maxSearchDuration = 0;
+			FIND_ARGS args;
+			/*IN*/ args.lview = this; args.searchstart = m_lastFindPos;
+			/*OUT*/ args.exitted = FALSE; args.retpos = -1; args.findAll = TRUE;
+	
+			{
+				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
+
+				INT_PTR nResult = Dlg.DoModal();
+				if (!nResult) { // should never be true ? 
+					m_bInFind = false;
+					return;
+				}
+
+				int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+				int retResult = LOWORD(nResult);
+
+				if (retResult != IDOK)
+				{  // IDOK==0, IDCANCEL==2
+					// We should be here when user selects Cancel button
+					//ASSERT(cancelledbyUser == TRUE);
+					int loopCnt = 20;
+					DWORD tc_start = GetTickCount();
+					while ((loopCnt-- > 0) && (args.exitted == FALSE))
+					{
+						Sleep(25);
+					}
+					DWORD tc_end = GetTickCount();
+					DWORD delta = tc_end - tc_start;
+					TRACE("(EditFindAdvanced)Waited %ld milliseconds for thread to exist.\n", delta);
+				}
+				w = args.retpos;
+			}
+			if (MboxMail::s_mails_find.GetCount() > 0)
+				MboxMail::m_findMails.m_lastSel = 0;
+			else
+				MboxMail::m_findMails.m_lastSel = -1;
+			MboxMail::m_findMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+
+			if (MboxMail::IsFindMailsSelected()) 
+			{
+				SwitchToMailList(IDC_FIND_LIST, TRUE);
+			}
+			else 
+			{
+				SwitchToMailList(IDC_FIND_LIST, FALSE);
+			}
+			m_bInFind = false;
+			return;
+		}
+		else {
+			MessageBeep(MB_OK);
+			m_lastFindPos = -1;
+		}
+	}
+	m_bInFind = false;
+}
+
+int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
+{
+	int deb;
+	int pos = -1;
+	MboxMail *m = MboxMail::s_mails[i];
+
+	int fromPos = -1;
+	int toPos = -1;
+	int subjectPos = -1;
+	BOOL fromChecked = FALSE;
+	BOOL toChecked = FALSE;
+	BOOL doReverseCheck = FALSE;
+
+	int fldIndx = 0; // From
+	if (params.m_bEditChecked[fldIndx])
+	{
+		fromChecked = TRUE;
+		if (params.m_bWholeWord[fldIndx]) {
+			fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+		else {
+			fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+	}
+
+	if (fromPos >= 0)
+		deb = 1;
+
+	// logical AND rule
+
+	fldIndx = 1; // To
+	if (params.m_bEditChecked[fldIndx])
+	{
+		toChecked = TRUE;
+		if (params.m_bWholeWord[fldIndx]) {
+			toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+		else {
+			toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+	}
+	if (toPos >= 0)
+		deb = 1;
+
+	doReverseCheck = FALSE;
+	if (fromChecked && toChecked) 
+	{
+		if ((fromPos < 0) || (toPos < 0)) 
+		{
+			if (params.m_bBiderectionalMatch)
+				doReverseCheck = TRUE;
+			else
+				return -1;
+		}
+	}
+	else if (fromChecked)
+	{
+		if (fromPos < 0)
+		{
+			if (params.m_bBiderectionalMatch)
+				doReverseCheck = TRUE;
+			else
+				return -1;
+		}
+	}
+	else if (toChecked)
+	{
+		if (toPos < 0)
+		{
+			if (params.m_bBiderectionalMatch)
+				doReverseCheck = TRUE;
+			else
+				return -1;
+		}
+	}
+
+	if (doReverseCheck)
+	{
+		fromPos = -1;
+		toPos = -1;
+
+		fromChecked = FALSE;
+		toChecked = FALSE;
+
+		int fldIndx = 1; // To is From
+		if (params.m_bEditChecked[fldIndx])
+		{
+			fromChecked = TRUE;
+			if (params.m_bWholeWord[fldIndx]) {
+				fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+			}
+			else {
+				fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+			}
+		}
+		if (fromPos >= 0)
+			deb = 1;
+
+		fldIndx = 0; // From is To
+		if (params.m_bEditChecked[fldIndx])
+		{
+			toChecked = TRUE;
+			if (params.m_bWholeWord[fldIndx]) {
+				toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+			}
+			else {
+				toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+			}
+		}
+		if (toPos >= 0)
+			deb = 1;
+
+		if (fromChecked && toChecked)
+		{
+			if ((fromPos < 0) || (toPos < 0))
+				return -1;
+		}
+		else if (fromChecked)
+		{
+			if (fromPos < 0)
+				return -1;
+		}
+		else if (toChecked)
+		{
+			if (toPos < 0)
+				return -1;
+		}
+	}
+
+	// We are here so: either From and To matched or not checked
+
+	fldIndx = 2; // subject
+	if (params.m_bEditChecked[fldIndx])
+	{
+		if (params.m_bWholeWord[fldIndx]) {
+			subjectPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+		else {
+			subjectPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(),
+				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+		}
+		if (subjectPos >= 0) {
+			return i;
+		}
+	}
+
+	if (params.m_bEditChecked[3] || params.m_bEditChecked[4]) {
+		if (AdvancedFindInMailContent(i, params.m_bEditChecked[3], params.m_bEditChecked[4], params) == TRUE) {
+			return i;
+		}
+	}
+
+	// We are here so: either From and To matched or not checked
+	if (params.m_bEditChecked[2] || params.m_bEditChecked[3] || params.m_bEditChecked[4]) {
+		// Subject or Message or Attachments checked but no match; From and/or To may match but it doesn't matter
+		return -1;
+	}
+	else if (params.m_bEditChecked[0] || params.m_bEditChecked[1]) {
+		// Subject or Message or Attachments not checked but From and/or To must be checked, i.e. enforced by the advanced find dialog
+		return i;
+	}
+	else
+		return -1;
+}
+
+
+void NListView::OnUpdateEditFindadvanced(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(!m_bInFind && (m_list.GetItemCount() > 0));
+	return;
+}
+
+void NListView::RunFindAdvancedOnSelectedMail(int iItem)
+{
+	if (iItem >= MboxMail::s_mails.GetCount())
+		return;
+
+	MboxMail *m = MboxMail::s_mails[iItem];
+	EditFindAdvanced(&m->m_from, &m->m_to, &m->m_subj);
+
+	int deb = 1;
+}
+
+#define MAIL_LIST_VERSION_BASE  0x73215500
+#define MAIL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+1)
+
+int NListView::SaveAsMboxFile()
+{
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+	CString mboxFileSuffix;
+	if (MboxMail::IsUserMailsSelected())
+		mboxFileSuffix = "_USER.mbox";
+	else if (MboxMail::IsFindMailsSelected())
+		mboxFileSuffix = "_FIND.mbox";
+	else
+	{
+		// We should never be here
+		return -1;
+	}
+
+	MboxMail *m;
+
+	CString mailFile = MboxMail::s_path;
+
+	if (MboxMail::s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path wil fail first
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(mailFile, drive, dir, fname, ext);
+
+	CFile fp;
+	CString mboxFile = path + "\\" + CString(fname) + mboxFileSuffix;
+
+	if (PathFileExist(mboxFile))
+	{
+		CString txt = _T("File \"") + mboxFile;
+		txt += _T("\" exists.\nOverwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+
+	if (!fp.Open(mboxFile, CFile::modeWrite | CFile::modeCreate)) {
+		CString txt = _T("Could not create \"") + mboxFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
+	BOOL ret;
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		outbuf->Clear();
+		ret = m->GetBody(outbuf);
+		fp.Write(outbuf->Data(), outbuf->Count());
+	}
+	fp.Close();
+
+	CString mboxviewFile = mboxFile + ".mboxview";
+	ret = DeleteFile(mboxviewFile);
+
+	CString mboxFileListSuffix = ".mboxlist";
+	CString mboxListFile = mboxFile + mboxFileListSuffix;
+
+	SerializerHelper sz(mboxListFile);
+	if (!sz.open(TRUE)) {
+		CString txt = _T("Could not create \"") + mboxListFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	// Create mboxlist file to allow reload of archive file
+
+	sz.writeInt(MAIL_LIST_VERSION);			// version
+	sz.writeInt64(MboxMail::s_fSize = FileSize(MboxMail::s_path));	// file size
+	_int64 mailFileSize = FileSize(mboxFile);
+	sz.writeInt64(mailFileSize);	// file size
+	sz.writeInt(mailsArray->GetSize());
+
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		sz.writeInt64(m->m_startOff);
+		sz.writeInt(m->m_length);
+		sz.writeInt(m->m_index);
+		sz.writeInt(m->m_ContentDetailsArray.size());
+	}
+	sz.close();
+
+	return 1;
+}
+
+int NListView::ReloadMboxFile()
+{
+	int ret = 1;  //OK
+
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+	if (!(MboxMail::IsUserMailsSelected() || MboxMail::IsAllMailsSelected()))
+	{
+		// should never be here
+		return -1;
+	}
+
+	if (MboxMail::IsUserMailsSelected())
+	{
+		CString txt = _T("List not empty. Overwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+
+	CString mboxFileSuffix = "_USER.mbox";
+
+	CString mailFile = MboxMail::s_path;
+
+	if (MboxMail::s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path will fail first
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(mailFile, drive, dir, fname, ext);
+
+	CString mboxFile = path + "\\" + CString(fname) + mboxFileSuffix;
+	CString mboxFileListSuffix = ".mboxlist";
+	CString mboxListFile = mboxFile + mboxFileListSuffix;
+
+	if (!PathFileExist(mailFile))
+	{
+		CString txt = _T("File \"") + mailFile;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!PathFileExist(mboxFile))
+	{
+		CString txt = _T("File \"") + mboxFile;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!PathFileExist(mboxListFile))
+	{
+		CString txt = _T("File \"") + mboxListFile;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	SerializerHelper sz(mboxListFile);
+	if (!sz.open(FALSE)) {
+		CString txt = _T("Could not open \"") + mboxListFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	int version;
+	_int64 mailFileSize;
+	_int64 mboxFileSize;
+	int mailListCnt;
+
+	CString txt = _T("Mail list file\n\"") + mboxListFile;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload. Create new archive to resolve the issue.");
+
+	if (!sz.readInt(&version)) {
+		return -1;
+	}
+
+	if (version != MAIL_LIST_VERSION)
+	{
+		sz.close();
+
+		CString text = _T("Mail list file\n\"") + mboxListFile;
+		CString strVersion;
+		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
+		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
+		text += strVersion + "\".\nCan't reload. Create new archive to resolve the issue.";
+
+		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt64(&mailFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt64(&mboxFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt(&mailListCnt)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	_int64 nMailFileSize = FileSize(mailFile);
+	_int64 nMboxFileSize = FileSize(mboxFile);
+
+	if ((mailListCnt < 0) || (mailListCnt > MboxMail::s_mails_ref.GetCount()) ||
+		(mailFileSize != nMailFileSize) || (mboxFileSize != nMboxFileSize) )
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	BOOL errorDoNothing = FALSE;
+	BOOL verifyOnly = TRUE;
+	int pos = sz.GetReadPointer();
+	ret = PopulateUserMailArray(sz, mailListCnt, verifyOnly);
+	if (ret > 0) {
+		verifyOnly = FALSE;
+		sz.SetReadPointer(pos);
+		ret = PopulateUserMailArray(sz, mailListCnt, verifyOnly);
+	}
+	else 
+	{
+		sz.close();
+		CString txt = _T("Mail list file\n\"") + mboxListFile;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease create new archive from Selected User Mails.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
+		return - 1; // do nothing
+	}
+
+	sz.close();
+
+	if (ret < 0)
+	{
+		MboxMail::s_mails_edit.SetSizeKeepData(0);
+
+		CString txt = _T("Mail list file\n\"") + mboxListFile;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease create new archive from Selected User Mails.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+	else
+	{
+		MboxMail::SortByDate(&MboxMail::s_mails_edit);
+		if (MboxMail::s_mails_edit.GetCount() > 0)
+			MboxMail::m_editMails.m_lastSel = 0;
+		else
+			MboxMail::m_editMails.m_lastSel = -1;
+		MboxMail::m_editMails.b_mails_which_sorted = 1;
+
+		if (MboxMail::IsUserMailsSelected())
+		{
+			SwitchToMailList(IDC_EDIT_LIST, TRUE);
+		}
+		else if (MboxMail::IsAllMailsSelected())
+		{
+			SwitchToMailList(IDC_EDIT_LIST, FALSE);
+		}
+	}
+
+	return ret;
+}
+
+int NListView::PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly)
+{
+	int ret = 1;
+
+	MboxMail *m;
+
+	_int64 startOff;
+	int length;
+	int index;
+	int contentDetailsArrayCnt;
+
+	if (!verifyOnly)
+		MboxMail::s_mails_edit.SetSize(mailListCnt);
+
+	int i = 0;
+	for (i = 0; i < mailListCnt; i++)
+	{
+		if (!sz.readInt64(&startOff))
+			break;
+		if (!sz.readInt(&length))
+			break;
+		if (!sz.readInt(&index))
+			break;
+		if (!sz.readInt(&contentDetailsArrayCnt))
+			break;
+
+		if ((index < 0) || (index >= MboxMail::s_mails_ref.GetCount()))
+		{
+			ret = -1;
+			break;
+		}
+
+		m = MboxMail::s_mails_ref[index];
+		if ((m->m_startOff != startOff) ||
+			(m->m_length != length) ||
+			(m->m_index != index) ||
+			(m->m_ContentDetailsArray.size() != contentDetailsArrayCnt))
+		{
+			ret = -1;
+			break;
+		}
+
+		if (!verifyOnly)
+			MboxMail::s_mails_edit[i] = m;
+
+		int deb = 1;
+	}
+
+	if (!verifyOnly) 
+	{
+		if (ret > 0)
+			MboxMail::s_mails_edit.SetSizeKeepData(i);
+		else
+			MboxMail::s_mails_edit.SetSizeKeepData(0);
+	}
+
+
+	return ret;
+}
+
+int NListView::OpenArchiveFileLocation()
+{
+	CString mboxFileSuffix;
+	mboxFileSuffix.Append("_USER.mbox");
+
+	CString mailFile = MboxMail::s_path;
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(mailFile, drive, dir, fname, ext);
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString mboxFile = path + "\\" + CString(fname) + mboxFileSuffix;
+
+	if (!PathFileExist(mboxFile))
+	{
+		CString txt = _T("File \"") + mboxFile;
+		txt += _T("\" doesn't exist. Can't open location.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+	if (BrowseToFile(mboxFile) == FALSE) {  // TODO: s_path error checking ??
+		HWND h = GetSafeHwnd();
+		HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+		CheckShellExecuteResult(result, h);
+	}
 }

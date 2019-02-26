@@ -17,6 +17,9 @@
 ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+#if !defined(_PICTURE_CTRL_)
+#define _PICTURE_CTRL_
+
 #pragma once
 #include "afxstr.h"
 #include "afxwin.h"
@@ -106,3 +109,5 @@ public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 };
+
+#endif // _PICTURE_CTRL_

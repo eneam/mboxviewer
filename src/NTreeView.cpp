@@ -81,6 +81,8 @@ void NTreeView::PostNcDestroy()
 
 #define BUFF_PREVIEW_SIZE	1024
 
+// This function checks whether file archive is valid
+// TODO: add MessageBox to report an error
 BOOL ImboxviewFile(LPCSTR fileName)
 {
 	BOOL bRet = FALSE;
@@ -138,6 +140,9 @@ _int64 FileSize(LPCSTR fileName)
 	return li.QuadPart;
 }
 
+
+// Called on Startup, File open and All File Refresh
+// Items are inserted into CTree only by this function
 void NTreeView::FillCtrl()
 {
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
@@ -146,7 +151,11 @@ void NTreeView::FillCtrl()
 		return;
 	CString root;
 	char *last_slash = (char*)strrchr(path, '\\');
-	if (last_slash && *last_slash) {
+	if (last_slash && *last_slash) 
+	{
+		// Read first file index file if it exists from previous runs
+		// and add to the filesSize hash table
+		// new archive files might be discovered and added ??
 		CStdioFile fp;
 		if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText)) {
 			CString line;
@@ -164,10 +173,14 @@ void NTreeView::FillCtrl()
 		}
 		else
 			fileSizes.RemoveAll();
+
 		root = last_slash + 1;
 		HTREEITEM hRoot = m_tree.InsertItem(root, 0, 0, TVI_ROOT);
 		CString fw = path + "\\*.*";
 		WIN32_FIND_DATA	wf;
+		BOOL found;
+		// Iterate all archive file mbox or eml in the lastPath folder
+		// New archives file can be addedd to CTree but not to fileSizes hash table
 		HANDLE f = FindFirstFile(fw, &wf);
 		if (f != INVALID_HANDLE_VALUE) {
 			do {
@@ -178,30 +191,46 @@ void NTreeView::FillCtrl()
 						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
 						_int64 fSize = 0;
 						_int64 realFSize = FileSize(fullPath);
-						fileSizes.Lookup(fn, fSize);
-						if (fSize < realFSize) {
+						found = fileSizes.Lookup(fn, fSize);
+						if (fSize != realFSize) 
+						{
+							//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
 							CString cache = fullPath + ".mboxview";
 							DeleteFile(cache);
 							m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
 							CString txt = m_tree.GetItemText(hItem);
+							int deb = 1;
 						}
 					}
 				}
 			} while (FindNextFile(f, &wf));
 			FindClose(f);
+
+#if 0
+			CString line;
+			CString path;
+			_int64 fSize = 0;
+
+			TRACE("FillCtrl: Hash Table fileSizes Count=%d\n", fileSizes.GetCount());
+			POSITION pos = fileSizes.GetStartPosition();
+			while (pos) {
+				fileSizes.GetNextAssoc(pos, path, fSize);
+				TRACE("File=%s FileSize=%lld\n", path, fSize);
+			}
+#endif
 		}
 		m_tree.Expand(hRoot, TVE_EXPAND);
 	}
 	
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame) {
-		NListView *pView = pFrame->GetListView();
-		if (pView) {
-			pView->m_path = "";
-			pView->m_which = NULL;
+		NListView *pListView = pFrame->GetListView();
+		if (pListView) {
+			pListView->m_path = "";
+			pListView->m_which = NULL;
 			// pView->ResetSize();  // check if needed
-			pView->FillCtrl();
-			pView->CloseMailFile();
+			pListView->FillCtrl();
+			pListView->CloseMailFile();
 		}
 	}
 }
@@ -214,34 +243,36 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if( pFrame == NULL )
 		return;
-	NListView *pView = pFrame->GetListView();
-	if( ! pView )
+	NListView *pListView = pFrame->GetListView();
+	if( ! pListView )
 		return;
 
-	pView->CloseMailFile();
+	pListView->CloseMailFile();
 
 	if( ! pNm->itemNew.hItem ) {
-		pView->m_path = "";
-		pView->m_which = NULL;
-		pView->FillCtrl();
+		pListView->m_path = "";
+		pListView->m_which = NULL;
+		pListView->FillCtrl();
 		return;
 	}
+	// This is called when tree is closed
 	HTREEITEM hRoot = m_tree.GetRootItem();
 	if( pNm->itemNew.hItem == hRoot ) {
-		pView->m_path = "";
-		pView->m_which = NULL;
-		pView->ResetSize();
-		pView->FillCtrl();
+		pListView->m_path = "";
+		pListView->m_which = NULL;
+		pListView->ResetSize();
+		pListView->FillCtrl();
 		return;
 	}
 	CString str = m_tree.GetItemText(pNm->itemNew.hItem);
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if( str.IsEmpty() || path.IsEmpty() )
 		return;
-	pView->m_path = path + "\\" + str;
-	pView->m_which = pNm->itemNew.hItem;
-	pView->ResetSize();
-	pView->FillCtrl();
+	pListView->m_path = path + "\\" + str;
+	pListView->m_which = pNm->itemNew.hItem;
+	pListView->ResetSize();
+	pListView->FillCtrl();
+	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
 }
 
 void NTreeView::ForceParseMailFile(HTREEITEM hItem)
@@ -249,38 +280,41 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame == NULL)
 		return;
-	NListView *pView = pFrame->GetListView();
-	if (!pView)
+	NListView *pListView = pFrame->GetListView();
+	if (!pListView)
 		return;
 
-	pView->CloseMailFile();
+	pListView->CloseMailFile();
 
 	if (!hItem) {
-		pView->m_path = "";
-		pView->m_which = NULL;
-		pView->FillCtrl();
+		pListView->m_path = "";
+		pListView->m_which = NULL;
+		pListView->FillCtrl();
 		return;
 	}
 	HTREEITEM hRoot = m_tree.GetRootItem();
 	if (hItem == hRoot) {
-		pView->m_path = "";
-		pView->m_which = NULL;
-		pView->ResetSize();
-		pView->FillCtrl();
+		pListView->m_path = "";
+		pListView->m_which = NULL;
+		pListView->ResetSize();
+		pListView->FillCtrl();
 		return;
 	}
 	CString str = m_tree.GetItemText(hItem);
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if (str.IsEmpty() || path.IsEmpty())
 		return;
-	pView->m_path = path + "\\" + str;
-	CString cache = pView->m_path + ".mboxview";
+	pListView->m_path = path + "\\" + str;
+	CString cache = pListView->m_path + ".mboxview";
 	DeleteFile(cache);
-	pView->m_which = hItem;
-	pView->ResetSize();
-	pView->FillCtrl();
+	pListView->m_which = hItem;
+	pListView->ResetSize();
+	pListView->FillCtrl();
+	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
 }
 
+
+// Called when user specified command line option MAIL_FILE=
 void NTreeView::SelectMailFile()
 {
 	CString str = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
@@ -294,19 +328,19 @@ void NTreeView::SelectMailFile()
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame == NULL)
 		return;
-	NListView *pView = pFrame->GetListView();
-	if (!pView)
+	NListView *pListView = pFrame->GetListView();
+	if (!pListView)
 		return;
 
-	pView->CloseMailFile();
+	pListView->CloseMailFile();
 
-	pView->m_path = path + _T("\\") + str;
+	pListView->m_path = path + _T("\\") + str;
 
 	CString txt;
 	if (!PathFileExist(path))
 		txt = _T("Nonexistent Directory \"") + path;
-	else if (!PathFileExist(pView->m_path))
-		txt = _T("Nonexistent File \"") + pView->m_path;
+	else if (!PathFileExist(pListView->m_path))
+		txt = _T("Nonexistent File \"") + pListView->m_path;
 
 	if (!txt.IsEmpty()) {
 		txt += _T("\".\nDo you want to continue?");
@@ -315,9 +349,9 @@ void NTreeView::SelectMailFile()
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
 	}
 	else {
-		pView->m_which = NULL;
-		pView->ResetSize();
-		pView->FillCtrl();
+		pListView->m_which = NULL;
+		pListView->ResetSize();
+		pListView->FillCtrl();
 	}
 }
 
@@ -329,9 +363,14 @@ BOOL NTreeView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	if( wnd == NULL )
 		return FALSE;
 	if( wnd == this ) {
-		return CWnd::OnMouseWheel(nFlags, zDelta, pt);
+		BOOL ret =  CWnd::OnMouseWheel(nFlags, zDelta, pt);
+		return TRUE;
 	}
-	return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags,zDelta), MAKELPARAM(pt.x, pt.y));
+	if ((GetKeyState(VK_CONTROL) & 0x80) == 0) { // if CTRL key not Down; Do we need to post msg further anyway
+		// Commented out, it freezes mbox viewer and and even IE for few seconds when CTRL/SHIFT/etc key are kept down
+		; // return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags, zDelta), MAKELPARAM(pt.x, pt.y));
+	}
+	return TRUE;
 }
 
 void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
@@ -344,8 +383,13 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 		if( ! path.IsEmpty() && ! fpath.IsEmpty() ) {
 			CString fullPath = fpath + "\\" + path;
 			_int64 fSize = 0;
-			if( ! fileSizes.Lookup(path, fSize) )
-				fileSizes[path] = fSize = FileSize(fullPath);
+			//_int64 realFSize = FileSize(fullPath);
+			BOOL found = fileSizes.Lookup(path, fSize);
+			//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", path, realFSize, fSize);
+			if (!found) {
+				_int64 realFSize = FileSize(fullPath);
+				fileSizes[path] = fSize = realFSize;
+			}
 			line.Format("%s\t%lld\n", path, fSize);
 			fp.Write(line, line.GetLength());
 		}
@@ -357,6 +401,10 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 	}
 }
 
+
+// Thhis function creates or updates per folder .mboxview index file
+// It is called when selcting new mail archive file or by RedrawMails called after sorting
+// or touching mail list
 void NTreeView::SaveData()
 {
 	HTREEITEM hRoot = m_tree.GetRootItem();
@@ -368,6 +416,30 @@ void NTreeView::SaveData()
 		Traverse(hRoot, fp);
 		fp.Close();
 	}
+#if 0
+	TRACE("SaveData: Hash Table fileSizes Count=%d\n", fileSizes.GetCount());
+	_int64 fSize = 0;
+	POSITION pos = fileSizes.GetStartPosition();
+	while (pos) {
+		fileSizes.GetNextAssoc(pos, path, fSize);
+		TRACE("File=%s FileSize=%lld\n", path, fSize);
+	}
+#endif
+}
+
+void NTreeView::UpdateFileSizesTable(CString &path, _int64 realFSize)
+{
+	_int64 fSize = 0;
+	BOOL found = fileSizes.Lookup(path, fSize);
+	if (found)
+	{
+		if (fSize != realFSize) {
+			fileSizes.RemoveKey(path);
+			fileSizes[path] = realFSize;
+		}
+	}
+	else
+		fileSizes[path] = realFSize;
 }
 
 void NTreeView::OnUpdateFileRefresh(CCmdUI* pCmdUI) 
@@ -395,7 +467,7 @@ void NTreeView::OnFileRefresh()
 			CString fullPath = fpath + "\\" + str;
 			_int64 fSize = 0;
 			fileSizes.Lookup(str, fSize);
-			if( fSize < FileSize(fullPath) ) {
+			if( fSize != FileSize(fullPath) ) {
 				CString cache= fullPath + ".mboxview";
 				DeleteFile(cache);
 				m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
@@ -500,18 +572,26 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_SORT_BY_CONVERSATION_Id = 9;
 	AppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
 
+	const UINT S_SORT_BY_POSITION_Id = 10;
+#if 1
+	// Sort by position in the archive file. Enabled for debugging only
+	AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Position"));
+#endif
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
 	menu.AppendMenu(MF_SEPARATOR);
 	//
 
-	const UINT M_FileLocation_Id = 10;
+	const UINT M_FileLocation_Id = 11;
 	AppendMenu(&menu, M_FileLocation_Id, _T("Open File Location"));
 
-	const UINT M_Properties_Id = 11;
+	const UINT M_Properties_Id = 12;
 	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
-	const UINT M_Reload_Id = 12;
+	const UINT M_Reload_Id = 13;
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 	
@@ -520,7 +600,6 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
 
 	NListView *pListView = 0;
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame) {
 		pListView = pFrame->GetListView();
 	}
@@ -552,7 +631,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (!fileSizeStr_inBytes)
 			sizeStr_inBytes[0] = 0;
 
-		int mailCount = MboxMail::s_mails.GetCount();
+		int mailCount = MboxMail::s_mails_ref.GetCount();
 
 		txt.Empty();
 		txt.Format("File: %s\n", mailFile);
@@ -620,9 +699,19 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			pListView->SortByColumn(0);
 	}
 	break;
+	// Sort by position in the archive file. Enabled for debugging only
+	case S_SORT_BY_POSITION_Id: {
+		if (pListView)
+			pListView->SortByColumn(1, TRUE);
+	}
+	break;
 
 	case M_Reload_Id: {
-		ForceParseMailFile(hItem);
+		CString txt = _T("Do you want to refresh index file?");
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+			ForceParseMailFile(hItem);
 		// For internal testing
 		//int ret = MboxMail::DumpMailStatsToFile(&MboxMail::s_mails, MboxMail::s_mails.GetCount());
 	}

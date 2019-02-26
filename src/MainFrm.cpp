@@ -79,13 +79,25 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_SORTBY_CONVERSATION, &CMainFrame::OnByconversation)
 	ON_UPDATE_COMMAND_UI(ID_SORTBY_CONVERSATION, &CMainFrame::OnUpdateByconversation)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL, &CMainFrame::OnUpdateMailDownloadStatus)
-	ON_UPDATE_COMMAND_UI(ID_INDICATOR_NUM, &CMainFrame::OnUpdateMailIndex)
+	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL_INDEX, &CMainFrame::OnUpdateMailIndex)
+	ON_BN_CLICKED(IDC_ARCHIVE_LIST, &CMainFrame::OnBnClickedArchiveList)
+	ON_BN_CLICKED(IDC_FIND_LIST, &CMainFrame::OnBnClickedFindList)
+	ON_BN_CLICKED(IDC_EDIT_LIST, &CMainFrame::OnBnClickedEditList)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_ARCHIVE_LIST, &CMainFrame::OnNMCustomdrawArchiveList)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_FIND_LIST, &CMainFrame::OnNMCustomdrawFindList)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_EDIT_LIST, &CMainFrame::OnNMCustomdrawEditList)
+	ON_BN_CLICKED(IDC_BUTTON2, &CMainFrame::OnBnClickedButton2)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
+	ON_COMMAND(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnViewUserselectedmails)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnUpdateViewUserselectedmails)
+	ON_COMMAND(ID_HELP_MBOXVIEWHELP, &CMainFrame::OnHelpMboxviewhelp)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
 	ID_INDICATOR_MAIL,
+	ID_INDICATOR_MAIL_INDEX,
 	ID_INDICATOR_CAPS,
 	ID_INDICATOR_NUM,
 	ID_INDICATOR_SCRL,
@@ -97,11 +109,22 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	// TODO: add member initialization code here
-	m_bMailDownloadComplete = FALSE;
+	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
 	m_bSelectMailFileDone = FALSE;
-	m_MailIndex = -1;
+	m_MailIndex = -1;  // Not used ??
+	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
+
+#if 0
+void CMainFrame::DoDataExchange(CDataExchange* pDX)
+{
+	//m_wndDlgBar.DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CMainFrame);
+	DDX_Check(pDX, IDC_CASE, m_bMailListType);
+	//}}AFX_DATA_MAP
+}
+#endif
 
 CMainFrame::~CMainFrame()
 {
@@ -112,6 +135,9 @@ CMainFrame::~CMainFrame()
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
+	// Just a test of not related functionality :)
+	//BOOL ret = MboxMail::Test_MergeTwoMailLists();
+
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	// create a view to occupy the client area of the frame
@@ -121,7 +147,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create view window\n");
 		return -1;
 	}
-	
+
+#if 0
 	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 		| CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
 		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
@@ -129,6 +156,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
+#else
+	if (!m_wndToolBar.CreateEx(this) ||
+		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
+	{
+		TRACE0("Failed to create toolbar\n");
+		return -1;      // fail to create
+	}
+
+	// TODO: Remove this if you don't want tool tips
+	m_wndToolBar.SetBarStyle(m_wndToolBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_TOP | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC);
+#endif
+
+	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
@@ -138,14 +178,37 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 
+	if (!m_wndDlgBar.Create(this, IDD_EDITOR,
+		CBRS_ALIGN_TOP | CBRS_ALIGN_LEFT, AFX_IDW_DIALOGBAR))
+	{
+		TRACE0("Failed to create dialogbar\n");
+		return -1;		// fail to create
+	}
+
+	DWORD dwCtrlStyle = RBS_BANDBORDERS;
+	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP;
+
+	if (!m_wndReBar.Create(this, dwCtrlStyle, dwStyle) ||
+		!m_wndReBar.AddBar(&m_wndToolBar) ||
+		!m_wndReBar.AddBar(&m_wndDlgBar))
+	{
+		TRACE0("Failed to create rebar\n");
+		return -1;      // fail to create
+	}
+
+	CReBarCtrl &rebarCtl = m_wndReBar.GetReBarCtrl();
+	int iIndex = 0;
+	rebarCtl.MinimizeBand(iIndex);
+
 	// TODO: Create seprate Mail File download status bar ?
 	//m_wndStatusBar.SetWindowText("Mail Download Complete: ");
 
-	// TODO: Delete these three lines if you don't want the toolbar to
-	//  be dockable
-	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
-	EnableDocking(CBRS_ALIGN_ANY);
-	DockControlBar(&m_wndToolBar);
+	// TODO: Delete these three lines if you don't want the toolbar to be dockable
+	//m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
+	//EnableDocking(CBRS_ALIGN_ANY);
+	//DockControlBar(&m_wndToolBar);
+
+	EnableAllMailLists(FALSE);
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
@@ -199,9 +262,9 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 		// Hope all objects should be initialized by now
 		if (m_bSelectMailFileDone == FALSE) {
 			m_bSelectMailFileDone = TRUE;
-			NTreeView *treeView = GetTreeView();
-			if (treeView)
-				treeView->SelectMailFile();
+			NTreeView *pTreeView = GetTreeView();
+			if (pTreeView)
+				pTreeView->SelectMailFile();
 		}
 		return TRUE;
 	}
@@ -288,7 +351,8 @@ void CMainFrame::OnFileOptions()
 			GetListView()->MarkColumns();  // Invalidate() below doesn't updates column labels
 			GetListView()->ClearDescView();
 			GetListView()->Invalidate();
-			GetMsgView()->m_browser.m_ie.Invalidate(); // .RedrawWindow(); 
+			GetMsgView()->Invalidate(); 
+			//GetMsgView()->m_browser.m_ie.Invalidate(); // TODO: changed to GetMsgView()->Invalidate();
 		}
 	}
 }
@@ -479,7 +543,8 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 		int firstMail = 0;
 		int lastMail = MboxMail::s_mails.GetCount() - 1;
 		BOOL progressBar = TRUE;
-		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, textType, progressBar);
+		MailIndexList *selectedMailsIndexList = 0;
+		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, selectedMailsIndexList, textType, progressBar);
 
 		if (ret > 0) {
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
@@ -564,7 +629,8 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 		int ret = 0;
 		BOOL progressBar = FALSE;
 		CString textFileName;
-		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, textType, progressBar);
+		MailIndexList *selectedMailsIndexList = 0;
+		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, selectedMailsIndexList, textType, progressBar);
 		if (ret > 0) {
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
@@ -779,6 +845,8 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 	pCmdUI->SetText(strPage);
 }
 
+
+// Show on the status bar mailNumber of totalMailCnt
 void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 {
 	// TODO: Add your command update UI handler code here
@@ -791,7 +859,9 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 		return;
 	}
 
-	if (listView->m_lastSel < 0)
+	//if (listView->m_lastSel < 0)
+	int mailCnt = MboxMail::s_mails.GetCount();
+	if (mailCnt <= 0)
 	{
 		pCmdUI->Enable(0);
 		return;
@@ -800,7 +870,442 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 	pCmdUI->Enable();
 	CString strMailIndex;
 	if (listView->m_lastSel >= 0)
-		strMailIndex.Format("%d", listView->m_lastSel);
+		strMailIndex.Format("Mail %d of %d", listView->m_lastSel + 1, mailCnt);
+	else
+		strMailIndex.Format("Mail xx of %d", mailCnt);
 
 	pCmdUI->SetText(strMailIndex);
+
+}
+
+void CMainFrame::SetupMailListsToInitialState()
+{
+	// called when index archive is loaded into MboxMail::s_mails
+	MboxMail::s_mails_all.SetSizeKeepData(0);
+	MboxMail::s_mails_find.SetSizeKeepData(0);
+	MboxMail::s_mails_edit.SetSizeKeepData(0);
+
+
+	if (MboxMail::b_mails_which_sorted != 1)
+		int deb = 1; // TODO: ASSERT ?
+
+
+	MboxMail::m_allMails.m_lastSel = -1;
+	MboxMail::m_allMails.b_mails_which_sorted = 1; // by date
+	MboxMail::m_findMails.m_lastSel = -1;
+	MboxMail::m_findMails.b_mails_which_sorted = 1; // not really, shpuld be unknown yet
+	MboxMail::m_editMails.m_lastSel = -1;
+	MboxMail::m_editMails.b_mails_which_sorted = 1; // not really, shpuld be unknown yet
+
+	CMenu *menu = this->GetMenu();
+	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
+	m_bUserSelectedMailsCheckSet = FALSE;
+
+	// User Selected Mails will not be enabled :) fix it/make it clear ?
+	EnableAllMailLists(TRUE);
+
+	int nID = IDC_ARCHIVE_LIST;
+	SetMailList(nID);
+}
+
+void CMainFrame::SetMailList(int nID)
+{
+	// clear check marks from all buttons and set nID button
+	int nIDFirstButton = IDC_ARCHIVE_LIST;
+	int nIDLastButton = IDC_EDIT_LIST;
+	m_wndDlgBar.CheckRadioButton(nIDFirstButton, nIDLastButton, nID);
+}
+
+void CMainFrame::EnableMailList(int nId, BOOL enable)
+{
+	if (m_wndDlgBar.GetSafeHwnd())
+	{
+		CWnd *p = m_wndDlgBar.GetDlgItem(nId);
+		if (p) {
+			int nFlags = ((CButton*)p)->GetCheck();
+			((CButton*)p)->SetCheck(0);
+			p->EnableWindow(enable);
+		}
+	}
+}
+
+void CMainFrame::EnableAllMailLists(BOOL enable)  // enable/disable
+{
+	//int idList[3] = { IDC_ARCHIVE_LIST , IDC_FIND_LIST , IDC_EDIT_LIST };
+	if (m_wndDlgBar.GetSafeHwnd()) 
+	{
+		CWnd *p = m_wndDlgBar.GetDlgItem(IDC_ARCHIVE_LIST);
+		if (p) {
+			int nFlags = ((CButton*)p)->GetCheck();
+			((CButton*)p)->SetCheck(0);
+			p->EnableWindow(enable);
+		}
+		p = m_wndDlgBar.GetDlgItem(IDC_FIND_LIST);
+		if (p) {
+			((CButton*)p)->SetCheck(0);
+			p->EnableWindow(enable);
+		}
+
+		p = m_wndDlgBar.GetDlgItem(IDC_EDIT_LIST);  // disable only; enable in other places
+		if (p) {
+			((CButton*)p)->SetCheck(0);
+			if (enable == FALSE)
+				p->EnableWindow(enable);
+		}
+	}
+}
+
+
+void CMainFrame::OnBnClickedArchiveList()
+{
+	// TODO: Add your control notification handler code here
+	int nID = IDC_ARCHIVE_LIST;
+	if (MboxMail::nWhichMailList == nID)
+		return; // do nothing
+
+	NListView * pListView = GetListView();
+	if (pListView) {
+		pListView->SwitchToMailList(nID);
+	}
+	int deb = 1;
+}
+
+void CMainFrame::OnBnClickedFindList()
+{
+	// TODO: Add your control notification handler code here
+	int nID = IDC_FIND_LIST;
+	if (MboxMail::nWhichMailList == nID)
+		return; // do nothing
+
+	NListView * pListView = GetListView();
+	if (pListView) {
+		pListView->SwitchToMailList(nID);
+	}
+	int deb = 1;
+}
+
+void CMainFrame::OnBnClickedEditList()
+{
+	// TODO: Add your control notification handler code here
+	int nID = IDC_EDIT_LIST;
+	if (MboxMail::nWhichMailList == nID)
+		return; // do nothing
+
+	NListView * pListView = GetListView();
+	if (pListView) {
+		pListView->SwitchToMailList(nID);
+	}
+	int deb = 1;
+}
+
+void CMainFrame::OnNMCustomdrawArchiveList(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+	NMCustomdrawEditList(pNMHDR, pResult);
+}
+
+
+void CMainFrame::OnNMCustomdrawFindList(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+	NMCustomdrawEditList(pNMHDR, pResult);
+}
+
+
+void CMainFrame::OnNMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+	NMCustomdrawEditList(pNMHDR, pResult);
+}
+
+void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	CWnd *p = m_wndDlgBar.GetDlgItem(pNMCD->dwItemSpec);
+	if (p) {
+		CButton *button = (CButton*)p;
+		int nFlags = button->GetCheck();
+
+		if (nFlags == 0)
+			return;
+		int deb = 1;
+	}
+
+	switch (pNMCD->dwDrawStage)
+	{
+	case CDDS_PREERASE:
+	{
+		CDC dc;
+		CRect rect = pNMCD->rc;
+		HDC hDC = pNMCD->hdc;
+
+#define LightGreen 	RGB(193,255,193) // green
+
+		if (dc.Attach(hDC))
+		{
+			dc.FillRect(&rect, &CBrush(LightGreen));
+			dc.SetBkMode(TRANSPARENT);
+			dc.SetTextColor(RGB(0, 0, 0));
+
+			dc.Detach();
+		}
+		int deb = 1;
+	}
+	break;
+	default:
+	{
+		*pResult = CDDS_PREERASE;
+		int deb = 1;  // should not be here
+	}
+	}
+	int deb = 1;
+}
+
+
+void CMainFrame::OnBnClickedButton2()  // help button on tool bar
+{
+	// TODO: Add your control notification handler code here
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (!path.IsEmpty())
+	{
+		if (!PathFileExist(path)) {
+			return;
+		}
+	}
+	else
+		return;
+
+	CString codePageIdsFile = "MailListsInfo.htm";
+	CString fullPath = path + "\\" + codePageIdsFile;
+
+	CFile fp;
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
+		CString txt = _T("Could not create \"") + fullPath;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return;
+	}
+
+	CreateMailListsInfoText(fp);
+
+	fp.Close();
+
+	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
+
+	int deb = 1;
+	return;
+}
+
+
+void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0x1ff;
+
+	switch (pNMCD->dwDrawStage)
+	{
+	case CDDS_PREERASE:
+		break;
+	case CDDS_PREPAINT:
+	{
+		CDC dc;
+		CRect rect = pNMCD->rc;
+		HDC hDC = pNMCD->hdc;
+
+#define LightGray 	RGB(240,240,240) // gray
+
+		if (dc.Attach(hDC))
+		{
+			dc.FillRect(&rect, &CBrush(LightGray));
+			dc.SetBkMode(TRANSPARENT);
+			dc.SetTextColor(RGB(0, 0, 0));
+
+			dc.Detach();
+		}
+		int deb = 1;
+	}
+	break;
+	default:
+	{
+		int deb = 1;  // should not be here
+	}
+	}
+	int deb = 1;
+}
+
+void CMainFrame::CreateMailListsInfoText(CFile &fp)
+{
+	CString htmlHdr;
+
+	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
+	htmlHdr += "<br><font size=\"+2\"><b>Mail List Dialog Bar</b></font><br><br>";
+
+	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
+
+	CString text;
+	text.Append(
+		"Mbox Viewer maintains 3 internal mail lists:<br>"
+		"<ul>"
+		"<li>All Mails list is populated from the the selected archive file under Mail Tree.</li>"
+		"<li>Find Mails list is populated by the search results. User can run Find Advanced dialog or set the Find All option in the Find dialog.</li>"
+		"<li>User Selected Mails list is composed by a user from the mails in the All Mails and Find Mails lists.</li>"
+		"</ul>"
+		"Each internal mail list has associated button in the dialog bar located next to the tool bar. When a particular mail list is shown in the Mail Summary Windows, associated button is highlighted.<br>"
+		"<br>"
+		"Access to the User Selected Mails list is disabled upon startup and the associated Button gray out. It can be enabled by the user to perfom simple list auditing if desired by selecting View->User Selected Mail List to enable/disable.<br>"
+		"<br>"
+		"When User Selected Mails list is enabled, additional mail menu options will also be enabled such as Copy Selected Mails to User Selected Mails.<br>"
+		"<br>"
+		"Content of the User Selected Mails list is controlled by the user. User can merge search results with the content of the User Selected List.<br>"
+		"<br>"
+		"User can run the search multiples time and merge multiple times with the User Selected List. Search results can be pruned before merging.<br>"
+		"<br>"
+		"In addition, user has an option to select/highlight one or more mails in the Summary Mail Window and copy to the User Selected Mails list.<br>"
+		"<br>"
+		"Merging/copying process will not create duplicate mails in the User Selected List.<br>"
+		"<br>"
+		"User can select and highlight one or more mails in the Summary Mail Window and remove from the active list. Mails can't be removed from the All Mails list.<br>"
+		"<br>"
+		"All Mails list content persists until new mail archive is selected.<br>"
+		"<br>"
+		"Find Mails list content persists until new search or when All Mails list is invalidated.<br>"
+		"<br>"
+		"User Selected Mails list content persists until cleared by the user or when All Mails list is invalidated.<br>"
+		"<br>"
+		"<font size=\"+1\"><b>Mail List Archiving</b></font><br>"
+		"<br>"
+		"Find Mails list and User Selected Mails list content can be saved to new mbox archive files.<br>"
+		"<br>"
+		"Archive file will be created in the the same folder as the All Mails root archive.<br>"
+		"<br>"
+		"Archive file created from the Find Mails list will be created by appending _FIND to the base name of the root archive file name.<br>"
+		"<br>"
+		"The _USER suffix will be appended when created archive file from the User Selected Mails list.<br>"
+		"<br>"
+		"For example, if the root mbox archive file from gmail is called \"All mail Including Spam and Trash.11.09.2018.mbox\", then created archive file will be named \"All mail Including Spam and Trash.11.09.2018_USER.mbox.\"<br>"
+		"<br>"
+		"When creating archive file for User Selected Mails list, the mbox viewer will also create file with the list of all archived mails, for example \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist.\"<br>"
+		"<br>"
+		"The mail list file allows user to reload the last archived mail list into the User Select Mails. Reload can be requested at any time including after restart of the mbox viewer.<br>"
+		"<br>"
+		"After mbox viewer restart or when User Selected Mails List is empty, User Selected Mails List can be restored when All Mails List is active.<br>"
+		"<br>"
+		"When User Selected Mails List is active it can be reloaded when List is not empty.<br>"
+		"<br>"
+	);
+
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	CString htmlEnd = "\r\n</body></html>";
+	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
+}
+
+
+void CMainFrame::OnViewUserselectedmails()
+{
+	// TODO: Add your command handler code here
+	CMenu *menu = this->GetMenu();
+	if (m_bUserSelectedMailsCheckSet) {
+		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
+		m_bUserSelectedMailsCheckSet = FALSE;
+		EnableMailList(IDC_EDIT_LIST, FALSE);
+		//TRACE("OnViewUserselectedmails: MF_CHECKED->MF_UNCHECKED\n");
+
+		// we disabled User Selected List, switch to archive list
+		if (MboxMail::IsUserMailsSelected()) {
+			NListView * pListView = GetListView();
+			if (pListView) {
+				pListView->SwitchToMailList(IDC_ARCHIVE_LIST);
+				CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+				if (pFrame)
+					pFrame->SetMailList(IDC_ARCHIVE_LIST);
+
+				MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
+			}
+		}
+	}
+	else
+	{
+		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
+		m_bUserSelectedMailsCheckSet = TRUE;
+		EnableMailList(IDC_EDIT_LIST, TRUE);
+		//TRACE("OnViewUserselectedmails: MF_UNCHECKED->MF_CHECKED\n");
+	}
+}
+
+
+void CMainFrame::OnUpdateViewUserselectedmails(CCmdUI *pCmdUI)
+{
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+BOOL CMainFrame::IsUserMailsListEnabled()
+{
+	return m_bUserSelectedMailsCheckSet;
+}
+
+void CMainFrame::OnHelpMboxviewhelp()
+{
+	// TODO: Add your command handler code here
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (!path.IsEmpty())
+	{
+		if (!PathFileExist(path)) {
+			return;
+		}
+	}
+	else
+		return;
+
+	CString codePageIdsFile = "MboxviewerHelp.htm";
+	CString fullPath = path + "\\" + codePageIdsFile;
+
+	CFile fp;
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
+		CString txt = _T("Could not create \"") + fullPath;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return;
+	}
+
+	CString htmlHdr;
+
+	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
+	htmlHdr += "<br><font size=\"+2\"><b>Mbox Viewer Help</b></font><br><br>";
+
+	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
+
+	CString text;
+	text.Append(
+		"Please review the User Guide provided with the package and/or<br>"
+		"<br>"
+		"right/left single and double click on any item within the Mbox Viewer window and try all presented options.<br>"
+		"<br>"
+		"To get started, please install the mbox mail archive in the local folder and then select File->Select Folder menu option to open that folder.<br>"
+		"<br>"
+	);
+
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	CString htmlEnd = "\r\n</body></html>";
+	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
+
+	fp.Close();
+
+	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
+	int deb = 1;
 }

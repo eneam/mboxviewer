@@ -43,6 +43,7 @@ public:
 	void FillCtrl();
 	void SelectMailFile(); // based on -MBOX= command line argument
 	void ForceParseMailFile(HTREEITEM hItem);
+	void UpdateFileSizesTable(CString &path, _int64 fSize);
 	virtual ~NTreeView();
 
 	// Generated message map functions

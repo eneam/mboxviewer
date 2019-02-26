@@ -1,3 +1,6 @@
+#if !defined(_MBOX_MAIL_)
+#define _MBOX_MAIL_
+
 #pragma once
 
 #include <vector>
@@ -21,6 +24,33 @@ BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *res
 int findNoCase(const char *input, int count, void const* Str, int  Size);
 
 class MboxMail;
+
+typedef CArray<int, int> MailIndexList;
+
+class MyMailArray : public CArray<MboxMail*, MboxMail*>
+{
+public:
+	// Kludge to prevent CArray from deleting data buffer
+	// Otherwise will need to reimplement array
+	void SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
+	void CopyKeepData(const MyMailArray& src);
+};
+
+typedef MyMailArray MailArray;
+
+class MailList
+{
+public:
+	MailList(int nId);
+	MailList();
+	~MailList();
+
+	int m_nId;
+	//MailArray s_mails;
+	int b_mails_which_sorted;  // column to sort
+	int m_lastSel;  // position of last selected mail
+	//BOOL m_bIsDirty;  // content from s_mails was touched and needs to be copied to this mail list
+};
 
 typedef struct _CSVFileConfig
 {
@@ -252,8 +282,9 @@ class CMBodyHdr;
 class MboxMail
 {
 public:
-	MboxMail() {
-		m_startOff = m_length = m_hasAttachments = 0;
+	MboxMail() 
+	{
+		m_startOff = m_length = m_hasAttachments = m_headLength = 0;
 		m_from_charsetId = m_to_charsetId = m_subj_charsetId = 0;
 		m_cc_charsetId = m_bcc_charsetId = 0;
 		m_timeDate = 0;
@@ -266,9 +297,8 @@ public:
 		m_groupColor = 0;
 		m_index = -1;
 		m_headLength = 0;
+
 	}
-	BOOL GetBody(CString &str);
-	int DumpMailBox(MboxMail *mailBox, int which);
 
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
 
@@ -290,7 +320,11 @@ public:
 	int m_prevMail;
 	bool m_duplicateId;
 	bool m_done;
-	int m_index; // unique id == index
+	int m_index; // servers as unique id == index
+
+	BOOL GetBody(CString &str);
+	BOOL GetBody(SimpleString *str);
+	int DumpMailBox(MboxMail *mailBox, int which);
 
 	static MessageIdTableType *m_pMessageIdTable;
 	//
@@ -318,16 +352,41 @@ public:
 	static UINT Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml = false);
-	static CArray<MboxMail*, MboxMail*> s_mails_ref;  // original cache
-	static CArray<MboxMail*, MboxMail*> s_mails;
-	static void SortByDate(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortByFrom(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortByTo(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortBySubject(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortBySize(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortByFileOffset(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
-	static void SortByConverstionGroups(CArray<MboxMail*, MboxMail*> *s_mails = 0, bool bDesc = false);
+	
+
+	// TODO:  need to rewrite, encapsulate in objects, etc
+	static MailArray s_mails_ref;  // original cache
+	static MailArray s_mails;  // other lists need to be copied here since that is how initial implementation works, need to change in many places
+	static MailArray s_mails_all;
+	static MailArray s_mails_find;
+	static MailArray s_mails_edit;
+	static MailArray s_mails_selected;
+	static MailArray s_mails_merged;
+	static int nWhichMailList;
+
+	static MailList *m_mailList;  // must match nWhichMailList
+	static MailList m_allMails;
+	static MailList m_findMails;
+	static MailList m_editMails;
+
+	static BOOL IsAllMailsSelected();
+	static BOOL IsFindMailsSelected();
+	static BOOL IsUserMailsSelected();
+	static int AllMailsSelectedId();
+	static int FindMailsSelectedId();
+	static int UserMailsSelectedId();
+
+	static void SortByDate(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByFrom(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByTo(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortBySubject(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortBySize(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByGroupId(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByFileOffset(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByConverstionGroups(MailArray *s_mails = 0, bool bDesc = false);
+	static void SortByIndex(MailArray *s_mails = 0, bool bDesc = false);
 	static void assignColor2ConvesationGroups();
+	static void assignColor2ConvesationGroups(MailArray *mails);
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;
 	static void Destroy();
@@ -344,7 +403,7 @@ public:
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
-	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progressBar);
+	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
 	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
 	static int printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig);
 	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, int firstMail, int lastMail, BOOL progressBar);
@@ -358,10 +417,15 @@ public:
 	static char *ParseContent(MboxMail *mail, char *startPos, char *endPos);
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
-	static int DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int mailArrayCount);
+	static int DumpMailStatsToFile(MailArray *mailsArray, int mailArrayCount);
 	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
 	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, BOOL progressBar, CString &errorText);
 	static int DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit);
+	static int MergeTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
+	static BOOL VerifyMergeOfTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
+	static BOOL Test_MergeTwoMailLists();
+	static void PopulateCArray(MailArray *mails, int *carray, int carrayCnt);
+	static BOOL VerifyMerge(MailArray *mails, int *carray, int carrayCnt);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 
 	static void ReleaseResources();
@@ -389,6 +453,8 @@ public:
 	}
 	void close();
 	BOOL open(BOOL bWrite);
+	int GetReadPointer();
+	BOOL SetReadPointer(int pos);
 	BOOL readN(void *v, int sz);
 	BOOL writeN(void *v, int sz);
 	BOOL writeInt(int val) {
@@ -508,3 +574,5 @@ inline char* FixIfNull(const char* ptr)
 {
 	return ptr ? ptr : "null";
 };
+
+#endif // _MBOX_MAIL_

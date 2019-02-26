@@ -1,4 +1,3 @@
-#include "ATLComTime.h"
 #if !defined(AFX_FINDDLG_H__139BBE54_571D_4C79_A9CD_B6035D054686__INCLUDED_)
 #define AFX_FINDDLG_H__139BBE54_571D_4C79_A9CD_B6035D054686__INCLUDED_
 
@@ -8,8 +7,33 @@
 // FindDlg.h : header file
 //
 
+#include "ATLComTime.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // CFindDlg dialog
+
+struct CFindDlgParams
+{
+	CString	m_string;
+	BOOL	m_bWholeWord;
+	BOOL	m_bCaseSensitive;
+
+	COleDateTime m_startDate;
+	COleDateTime m_endDate;
+	BOOL m_filterDates;
+
+	BOOL m_bFindNext;
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bContent;
+	BOOL m_bAttachments;
+	BOOL m_bHighlightAll;
+	BOOL m_bFindAll;
+
+	void SetDflts();
+	void Copy(CFindDlgParams &src);
+};
 
 class CFindDlg : public CDialog
 {
@@ -20,9 +44,8 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CFindDlg)
 	enum { IDD = IDD_FIND };
-	CString	m_string;
-	BOOL	m_bWholeWord;
-	BOOL	m_bCaseSensitive;
+
+	struct CFindDlgParams m_params;
 	//}}AFX_DATA
 
 
@@ -42,20 +65,11 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:
-	COleDateTime m_startDate;
-	COleDateTime m_endDate;
-	BOOL m_bFindNext;
-	BOOL m_bFrom;
-	BOOL m_bTo;
-	BOOL m_bSubject;
-	BOOL m_bContent;
-	BOOL m_bAttachments;
-	BOOL m_bHighlightAll;
-
 	//virtual BOOL OnInitDialog();
-	BOOL m_filterDates;
+
 	afx_msg void OnBnClickedFilterDates();
 	afx_msg BOOL OnInitDialog();
+	afx_msg void OnBnClickedCheckFindAll();
 };
 
 //{{AFX_INSERT_LOCATION}}

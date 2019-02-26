@@ -332,6 +332,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\FindAdvancedDlg.cpp" />
     <ClCompile Include="src\FindDlg.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -490,6 +491,7 @@
     <ClInclude Include="src\DateParser.h" />
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExportToCSVDlg.h" />
+    <ClInclude Include="src\FindAdvancedDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
     <ClInclude Include="src\InitCommonControls.h" />

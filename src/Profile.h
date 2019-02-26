@@ -1,3 +1,6 @@
+#if !defined(_PROFILE_)
+#define _PROFILE_
+
 #pragma once
 
 class CProfile {
@@ -25,3 +28,5 @@ public:
 private:
 //	CString	m_regAppKey;
 };
+
+#endif // _PROFILE_

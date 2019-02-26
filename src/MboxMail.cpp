@@ -31,11 +31,26 @@ const CUPDUPDATA* MboxMail::pCUPDUPData = NULL;
 
 bool MboxMail::b_mails_sorted = false;
 int MboxMail::b_mails_which_sorted = 0;  // order by file offset
-CArray<MboxMail*, MboxMail*> MboxMail::s_mails_ref;
-CArray<MboxMail*, MboxMail*> MboxMail::s_mails;
+
+MailArray MboxMail::s_mails_ref;
+MailArray MboxMail::s_mails;
+MailArray MboxMail::s_mails_all;
+MailArray MboxMail::s_mails_find;
+MailArray MboxMail::s_mails_edit;
+
+MailList *MboxMail::m_mailList = &MboxMail::m_allMails;
+
+MailList MboxMail::m_allMails(IDC_ARCHIVE_LIST);
+MailList MboxMail::m_findMails(IDC_FIND_LIST);
+MailList MboxMail::m_editMails(IDC_EDIT_LIST);
+
+MailArray MboxMail::s_mails_selected;
+MailArray MboxMail::s_mails_merged;
+
 _int64 MboxMail::s_fSize = 0;
 _int64 MboxMail::s_oSize = 0;
 CString MboxMail::s_path;
+int MboxMail::nWhichMailList = -1;
 
 
 BOOL RemoveDir(CString & dir, bool recursive = false);
@@ -317,9 +332,9 @@ CString MboxMail::DecodeString(CString &subj, CString &charset, UINT &charsetId,
 BOOL MboxMail::GetBody(CString &res)
 {
 	BOOL ret = TRUE;
-	//CString res;
 	CFile fp;
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	{
 		char *p = res.GetBufferSetLength(m_length);
 		TRACE("offset = %lld\n", m_startOff);
 		fp.Seek(m_startOff, SEEK_SET);
@@ -334,27 +349,37 @@ BOOL MboxMail::GetBody(CString &res)
 			if (bAddCR) // for correct mime parsing
 			{
 				ReplaceNL2CRNL((LPCSTR)res + pos, res.GetLength() - pos, MboxMail::m_tmpbuf);
-#if 0
-				// CString Replace is very slow, verify new replace
-				res = res.Mid(pos); // - 4);
-				res.Replace("\n", "\r\n");
-
-				int resLen = res.GetLength();
-				int tmpLen = MboxMail::m_tmpbuf->Count();
-				if (resLen == tmpLen)
-				{
-					if (memcmp((LPCSTR)res, MboxMail::m_tmpbuf->Data(), MboxMail::m_tmpbuf->Count()) != 0)
-						int deb = 1;
-				}
-				else
-					int deb = 1;
-#endif
 				res.Empty();
 				res.Append(MboxMail::m_tmpbuf->Data(), MboxMail::m_tmpbuf->Count());
 
 				//res.Replace("\n", "\r\n");
 			}
 		}
+		fp.Close();  // TODO: verify why Close() was not called
+	}
+	else
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+		ret = FALSE;
+	}
+
+	return ret;
+};
+
+BOOL MboxMail::GetBody(SimpleString *res)
+{
+	BOOL ret = TRUE;
+	CFile fp;
+	res->Clear();
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	{
+		res->Resize(m_length);
+		//TRACE("offset = %lld\n", m_startOff);
+		fp.Seek(m_startOff, SEEK_SET);
+		fp.Read(res->Data(), m_length);
+		res->SetCount(m_length);
+		fp.Close();
 	}
 	else
 	{
@@ -488,7 +513,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							//m->DumpMailBox(m, index);
 							//NListView::DumpItemDetails(index);
 
-							if (s_mails.GetCount() == 42)
+							if (s_mails.GetCount() == 863)
 								int deb = 1;
 
 							_int64 curOff = startOffset + (p - orig);
@@ -511,7 +536,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					cc.Empty();
 					bcc.Empty();
 					tdate = 0;
-					bTo = bFrom = bSubject = bDate = bRcvDate = true;
+					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
 				}
 				p += 5;
 				p = EatNewLine(p, e);
@@ -727,7 +752,7 @@ void MboxMail::Parse(LPCSTR path)
 	CString parsingFileText = _T("Parsing \"") + mailFile + _T("\" ...");
 
 	//pCUPDUPData->SetProgress(parsingFileText, 0);  // works but doesn't always fit into progress bar
-	pCUPDUPData->SetProgress(_T("Parsing file ..."), 0);
+	pCUPDUPData->SetProgress(_T("Parsing archive file to create index file ..."), 0);
 	// TODO: due to breaking the file into multiple chunks, it looks some emails can be lost : Fixed
 	bool firstView = true;;
 	bool lastView = false;
@@ -788,7 +813,7 @@ void MboxMail::Parse(LPCSTR path)
 
 #if 0
 	// Just test to see if final sort wil restore order according to mail file
-	MboxMail::s_mails_ref.SetSize(MboxMail::s_mails.GetSize());
+	MboxMail::s_mails_ref.SetSizeKeepData(MboxMail::s_mails.GetSize());
 	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
 
 	MboxMail::SortByDate(0, 1);
@@ -831,26 +856,30 @@ bool sortByFrom(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_from.Compare(cr2->m_from);
 	if (cmp == 0)
 		return (cr1->m_timeDate > cr2->m_timeDate); // make stable sort
-	return (cmp < 0);
+	else
+		return (cmp < 0);
 }
 bool sortByFromDesc(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_from.Compare(cr2->m_from);
 	if (cmp == 0)
 		return (cr1->m_timeDate > cr2->m_timeDate); // make stable sort
-	return (cmp > 0);
+	else
+		return (cmp > 0);
 }
 
 bool sortByTo(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_to.Compare(cr2->m_to);
 	if (cmp == 0)
 		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
-	return (cmp < 0);
+	else
+		return (cmp < 0);
 }
 bool sortByToDesc(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_to.Compare(cr2->m_to);
 	if (cmp == 0)
 		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
-	return (cmp > 0);
+	else
+		return (cmp > 0);
 }
 
 bool sortBySubject(MboxMail *cr1, MboxMail *cr2) {
@@ -949,15 +978,31 @@ bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
 			return false;
 	}
 }
+
+bool sortByGroupId(MboxMail *cr1, MboxMail *cr2) {
+	if (cr1->m_groupId == cr2->m_groupId)
+		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+	else
+		return (cr1->m_groupId < cr2->m_groupId);
+}
+bool sortByGroupIdDesc(MboxMail *cr1, MboxMail *cr2) {
+	if (cr1->m_groupId == cr2->m_groupId)
+		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+	else
+		return (cr1->m_groupId > cr2->m_groupId);
+}
+
 bool sortBySize(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_length == cr2->m_length)
 		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
-	return (cr1->m_length < cr2->m_length);
+	else
+		return (cr1->m_length < cr2->m_length);
 }
 bool sortBySizeDesc(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_length == cr2->m_length)
 		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
-	return (cr1->m_length > cr2->m_length);
+	else
+		return (cr1->m_length > cr2->m_length);
 }
 
 bool sortByFileOffset(MboxMail *cr1, MboxMail *cr2) {
@@ -967,43 +1012,55 @@ bool sortByFileOffsetDesc(MboxMail *cr1, MboxMail *cr2) {
 	return (cr1->m_startOff > cr2->m_startOff);
 }
 
-void MboxMail::SortByDate(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+bool sortByArrayIndex(MboxMail *cr1, MboxMail *cr2) {
+	return (cr1->m_index < cr2->m_index);
+}
+bool sortByArrayIndexDesc(MboxMail *cr1, MboxMail *cr2) {
+	return (cr1->m_index > cr2->m_index);
+}
+
+void MboxMail::SortByDate(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::stable_sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByDateDesc : sortByDate);
 }
-void MboxMail::SortByFrom(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+void MboxMail::SortByFrom(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByFromDesc : sortByFrom);
 }
-void MboxMail::SortByTo(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+void MboxMail::SortByTo(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByToDesc : sortByTo);
 }
-void MboxMail::SortBySubject(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+void MboxMail::SortBySubject(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySubjectDesc : sortBySubject);
 }
-void MboxMail::SortBySize(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+void MboxMail::SortBySize(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySizeDesc : sortBySize);
 }
+void MboxMail::SortByGroupId(MailArray *s_m, bool bDesc)
+{
+	if (s_m == 0) s_m = &MboxMail::s_mails;
+	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByGroupId : sortByGroupIdDesc);
+}
 
-void MboxMail::SortByFileOffset(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc)
+void MboxMail::SortByFileOffset(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByFileOffsetDesc : sortByFileOffset);
 }
 
-void MboxMail::SortByConverstionGroups(CArray<MboxMail*, MboxMail*> *s_m, bool bDesc) 
+void MboxMail::SortByConverstionGroups(MailArray *s_m, bool bDesc)
 {
 	// Assumption here is that s_mails_ref array is already ordered by groups
 	int arraySize = s_mails_ref.GetSize();
-	MboxMail::s_mails.SetSize(arraySize);
+	MboxMail::s_mails.SetSizeKeepData(arraySize);
 	if (bDesc) // descending order
 	{
 		for (int i = 0; i < arraySize; i++)
@@ -1013,6 +1070,12 @@ void MboxMail::SortByConverstionGroups(CArray<MboxMail*, MboxMail*> *s_m, bool b
 	}
 	else
 		MboxMail::s_mails.Copy(MboxMail::s_mails_ref);
+}
+
+void MboxMail::SortByIndex(MailArray *s_m, bool bDesc)
+{
+	if (s_m == 0) s_m = &MboxMail::s_mails;
+	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByArrayIndexDesc : sortByArrayIndex);
 }
 
 
@@ -1859,19 +1922,32 @@ void MboxMail::Destroy()
 		m_pMessageIdTable->clear();
 	}
 
-	for (int i = 0; i < s_mails.GetSize(); i++)
+	for (int i = 0; i < s_mails_ref.GetSize(); i++)
 	{
-		for (int j = 0; j < s_mails[i]->m_ContentDetailsArray.size(); j++) {
-			delete s_mails[i]->m_ContentDetailsArray[j];
-			s_mails[i]->m_ContentDetailsArray[j] = 0;
+		for (int j = 0; j < s_mails_ref[i]->m_ContentDetailsArray.size(); j++) {
+			delete s_mails_ref[i]->m_ContentDetailsArray[j];
+			s_mails_ref[i]->m_ContentDetailsArray[j] = 0;
 		}
-		delete s_mails[i];
+		delete s_mails_ref[i];
 	}
-	s_mails.RemoveAll();
-	s_mails_ref.RemoveAll();
+	// TODO:  CString is not most efficient class.
+	// Below will release memory, need to invent work around to keep memeory around
+	// Long term need differnt solution anyway to help to scale mboxview to larger mailk sets
+	s_mails.SetSizeKeepData(0);
+	s_mails_ref.SetSizeKeepData(0);
+	s_mails_find.SetSizeKeepData(0);
+	s_mails_edit.SetSizeKeepData(0);
+	s_mails_selected.SetSizeKeepData(0);
+	s_mails_merged.SetSizeKeepData(0);
+
 	b_mails_sorted = false;
 	MboxMail::s_path = "";
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+		pFrame->EnableAllMailLists(FALSE);
+
+	MboxMail::nWhichMailList = -1;
 };
 
 unsigned long StrHash(const char* buf, const UINT length)
@@ -2019,14 +2095,15 @@ bool MboxMail::sortConversations()
 	int i_ref = s_mails.GetSize() - 1;
 	int i_ref_begin, i_ref_end;
 
-	s_mails_ref.SetSize(s_mails.GetSize());
+	s_mails_ref.SetSizeKeepData(s_mails.GetSize());
 
 	if (!validateSortConversations()) {
 		//s_mails is already left sorted by date
 		return false;
 	}
 
-	int currentGroupColor = 0; //white 
+	int currentGroupColor = 0; // TODO; white , not used currently, remove ?
+	m_nextGroupId = 0;
 
 							   // init s_mails_ref by conversation groups
 	for (int i = s_mails.GetSize() - 1; i >= 0; i--)
@@ -2081,10 +2158,6 @@ bool MboxMail::sortConversations()
 		// check sorting order
 		bool outOfOrder = false;
 
-		//int i_ref_end_sv = i_ref_end;
-		//i_ref_end = i_ref_begin + 1;
-		//i_ref_begin = i_ref_end_sv;
-
 		for (j = (i_ref_begin+1); j < i_ref_end; j++)
 		{
 			MboxMail *s_mails_ref_begin = s_mails_ref[j];
@@ -2114,7 +2187,7 @@ bool MboxMail::sortConversations()
 			}
 
 			; // reorder mails i_ref_begin < i_ref_end
-			CArray<MboxMail*, MboxMail*> s_group_mails;
+			MailArray s_group_mails;
 
 			for (j = (i_ref_begin+1); j <= i_ref_end; j++)
 			{
@@ -2147,7 +2220,18 @@ bool MboxMail::sortConversations()
 			s_group_mails.RemoveAll();
 		}
 	}
-	//if (s_mails.GetSize() != ref_cnt) {
+#if 1
+	MboxMail::SortByFileOffset(&MboxMail::s_mails_ref);
+	for (int i = 0; i < s_mails_ref.GetSize(); i++)
+	{
+		m = s_mails_ref[i];
+		m->m_index = i;
+	}
+	s_mails.Copy(s_mails_ref);
+	return true;
+
+#else
+	// make content of both s_mails_ref and s_mails the same 
 	if (i_ref != -1) {  // TODO: implementation error
 		s_mails_ref.Copy(s_mails);
 		for (int i = 0; i < s_mails.GetSize(); i++)
@@ -2166,9 +2250,10 @@ bool MboxMail::sortConversations()
 		}
 		return true;
 	}
+#endif
 }
 
-// verify that after al mails are accounted after sorting by group
+// verify that after all mails are accounted after sorting by group
 // i.e. all mails will end up in s_mails_ref
 bool MboxMail::validateSortConversations()
 {
@@ -2222,7 +2307,7 @@ bool MboxMail::validateSortConversations()
 }
 
 
-// Not used currently
+// Not used currently/anymore delete ?? !!!
 void MboxMail::assignColor2ConvesationGroups()
 {
 	MboxMail *m;
@@ -2253,6 +2338,39 @@ void MboxMail::assignColor2ConvesationGroups()
 	if (i < s_mails_ref.GetSize()) {
 		i = s_mails_ref.GetSize() - 1;
 		m = s_mails_ref[i];
+		m->m_groupColor = groupColor;
+	}
+}
+
+
+// This works on entire list or subset
+void MboxMail::assignColor2ConvesationGroups(MailArray *mails)
+{
+	MboxMail *m;
+	MboxMail *m_prev;
+	int i_ref = 0;
+
+	int groupColor = 0;
+
+	if (mails->GetSize() <= 0)
+		return;
+
+	m = mails->operator[](0);
+	m->m_groupColor = groupColor;
+
+	int i;
+	for (i = 1; i < mails->GetSize(); i++)
+	{
+		m = mails->operator[](i);
+		m_prev = mails->operator[](i-1);
+		if (m->m_groupId != m_prev->m_groupId) 
+		{
+			if (groupColor == 0)
+				groupColor = 1;
+			else
+				groupColor = 0;
+
+		}
 		m->m_groupColor = groupColor;
 	}
 }
@@ -2437,6 +2555,9 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		outbuf.Append('"');
 
+
+		// disable to support investigation of group Ids
+#if 1
 		int namelen = name.Count();
 
 		tmpbuf.ClearAndResize(2 * namelen);
@@ -2455,7 +2576,13 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		else {
 			outbuf.Append(tmpbuf);
 		}
-
+#else
+		UINT pageCode = m->m_from_charsetId;
+		// print GroupId instead of name for testing
+		CString strGroupId;
+		strGroupId.Format("%d", m->m_groupId);
+		outbuf.Append((LPCSTR)strGroupId, strGroupId.GetLength());
+#endif
 
 		outbuf.Append('"');
 		outbuf.Append(sepchar);
@@ -2955,6 +3082,56 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	}
 	outbuf->Append("\r\n");
 	////
+	if (!m->m_cc.IsEmpty())
+	{
+		int cclen = m->m_cc.GetLength();
+		char *ccstr = (char *)(LPCSTR)m->m_cc;
+
+		char *cCC = "CC: ";
+		int cCCLen = strlen(cCC);
+		outbuf->Append(cCC, cCCLen);
+
+		pageCode = m->m_cc_charsetId;
+		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
+		{
+			tmpbuf.Copy(ccstr, cclen);
+			BOOL ret = Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+			if (ret)
+				outbuf->Append(*inbuf);
+			else
+				outbuf->Append(tmpbuf);
+		}
+		else {
+			outbuf->Append(ccstr, cclen);
+		}
+		outbuf->Append("\r\n");
+		////
+	}
+	if (!m->m_bcc.IsEmpty())
+	{
+		int bcclen = m->m_bcc.GetLength();
+		char *bccstr = (char *)(LPCSTR)m->m_bcc;
+
+		char *cBCC = "BCC: ";
+		int cBCCLen = strlen(cBCC);
+		outbuf->Append(cBCC, cBCCLen);
+
+		pageCode = m->m_bcc_charsetId;
+		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
+		{
+			tmpbuf.Copy(bccstr, bcclen);
+			BOOL ret = Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+			if (ret)
+				outbuf->Append(*inbuf);
+			else
+				outbuf->Append(tmpbuf);
+		}
+		else {
+			outbuf->Append(bccstr, bcclen);
+		}
+		outbuf->Append("\r\n");
+		////
+	}
 	SYSTEMTIME st;
 	SYSTEMTIME lst;
 	char datebuff[32];
@@ -3152,34 +3329,39 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CString bdycharset = "UTF-8";
 		CString bdy;
 
-
 		SimpleString *workbuf = MboxMail::m_workbuf;
 		workbuf->ClearAndResize(outbuflarge->Count() * 2);
 		bool useMailPosition = true;
 		fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
 
-		if (firstMail)
-		{
-			bdy = "<html><head></head><body><div style=\'margin-left:5px;text-align:left\'></body></html>\r\n";
-			fp.Write(bdy, bdy.GetLength());
-		}
+		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
+		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head>";
-		bdy += "<body><pre style=\"background-color:#eee9e9;font-weight:normal;\"><font size=\"+1\">";
+		bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
 		fp.Write(bdy, bdy.GetLength());
 
 		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
-		bdy = "</font></pre></body></html>\r\n";
+		bdy = "</div><br></body></html>";
 		fp.Write(bdy, bdy.GetLength());
+
+		bdy = "</div>";
+		fp.Write(bdy, bdy.GetLength());
+
+		// This seem to help when printing multiple mails
+		//if (!firstMail)
+		{
+			bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
+			fp.Write(bdy, bdy.GetLength());
+		}
 
 		bool extraHtmlHdr = false;
 		if (outbuflarge->FindNoCase(0, "<body", 5) < 0) // didn't find if true
 		{
 			extraHtmlHdr = true;
 			CString bdycharset = "UTF-8";
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -3206,7 +3388,13 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 
 		if (extraHtmlHdr) {
-			CString bdy = "</body></html>\r\n";
+			bdy = "<br></body></html>";
+			fp.Write(bdy, bdy.GetLength());
+		}
+
+		//if (!firstMail) 
+		{
+			bdy = "</div>";
 			fp.Write(bdy, bdy.GetLength());
 		}
 	}
@@ -3220,21 +3408,21 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			int deb = 1;
 
 		CString bdy;
-		if (firstMail)
-		{
-			bdy = "<html><head></head><body><div style=\'margin-left:5px;text-align:left\'></body></html>\r\n";
-			fp.Write(bdy, bdy.GetLength());
-		}
 
 		CString bdycharset = "UTF-8";
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head>";
-		bdy += "<body><pre style=\"background-color:#eee9e9;font-weight:normal;\"><font size=\"+1\">";
+		bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
 		fp.Write(bdy, bdy.GetLength());
 
 		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
-		bdy = "</font></pre><pre>\r\n";
+		bdy = "</div><br></body></html>";
+		fp.Write(bdy, bdy.GetLength());
+
+		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
+		fp.Write(bdy, bdy.GetLength());
+
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre><br>";
 		fp.Write(bdy, bdy.GetLength());
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
@@ -3243,6 +3431,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			inbuf->ClearAndResize(needLength);
 
 			BOOL ret = Str2CodePage(outbuflarge, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+			// TODO: replcae CR LF with <br> to enable line wrapping
 			if (ret) {
 				fp.Write(inbuf->Data(), inbuf->Count());
 			}
@@ -3253,14 +3442,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		else
 			fp.Write(outbuflarge->Data(), outbuflarge->Count());
 
-		bdy = "</pre></body></html>\r\n";
+		bdy = "<br></pre></body></html>";
+		fp.Write(bdy, bdy.GetLength());
+
+		bdy = "</div>";
 		fp.Write(bdy, bdy.GetLength());
 	}
-
-	outbuf.Clear();
-	outbuf.Append("\r\n");
-
-	fp.Write(outbuf.Data(), outbuf.Count());
 
 	return 1;
 }
@@ -3318,7 +3505,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	else {
 		outbuf.Append(tmpbuf);
 	}
-	outbuf.Append("\r\n");
+	outbuf.Append("<br>");
 
 	//
 	int fromlen = m->m_from.GetLength();
@@ -3342,7 +3529,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	else {
 		outbuf.Append(tmpbuf);
 	}
-	outbuf.Append("\r\n");
+	outbuf.Append("<br>");
 
 	//
 	int tolen = m->m_to.GetLength();
@@ -3366,7 +3553,61 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	else {
 		outbuf.Append(tmpbuf);
 	}
-	outbuf.Append("\r\n");
+	outbuf.Append("<br>");
+
+	if (!m->m_cc.IsEmpty())
+	{
+		//
+		int cclen = m->m_cc.GetLength();
+		char *ccstr = (char *)(LPCSTR)m->m_cc;
+
+		char *cCC = "CC: ";
+		int cCCLen = strlen(cCC);
+		outbuf.Append(cCC, cCCLen);
+		tmpbuf.Copy(ccstr, cclen);
+		encodeTextAsHtml(tmpbuf);
+
+		pageCode = m->m_cc_charsetId;
+		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
+		{
+			BOOL ret = Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+			if (ret)
+				outbuf.Append(*inbuf);
+			else
+				outbuf.Append(tmpbuf);
+		}
+		else {
+			outbuf.Append(tmpbuf);
+		}
+		outbuf.Append("<br>");
+	}
+
+	if (!m->m_bcc.IsEmpty())
+	{
+		//
+		int bcclen = m->m_bcc.GetLength();
+		char *bccstr = (char *)(LPCSTR)m->m_bcc;
+
+		char *cBCC = "BCC: ";
+		int cBCCLen = strlen(cBCC);
+		outbuf.Append(cBCC, cBCCLen);
+		tmpbuf.Copy(bccstr, bcclen);
+		encodeTextAsHtml(tmpbuf);
+
+		pageCode = m->m_bcc_charsetId;
+		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
+		{
+			BOOL ret = Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+			if (ret)
+				outbuf.Append(*inbuf);
+			else
+				outbuf.Append(tmpbuf);
+		}
+		else {
+			outbuf.Append(tmpbuf);
+		}
+		outbuf.Append("<br>");
+	}
 
 	//
 	SYSTEMTIME st;
@@ -3397,12 +3638,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	int datelen = strlen(datebuff);
 	outbuf.Append(datebuff, datelen);
 
-	//outbuf.Append("\r\n\r\n");
-	fp.Write(outbuf.Data(), outbuf.Count());
-
-	outbuf.Clear();
-	//outbuf.Append("\r\n");
-
+	outbuf.Append("<br>");
 	fp.Write(outbuf.Data(), outbuf.Count());
 
 	return 1;
@@ -3431,7 +3667,7 @@ bool ALongRightProcessProcPrintMailArchive(const CUPDUPDATA* pCUPDUPData)
 }
 
 
-int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progressBar)
+int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar)
 {
 	CString colLabels;
 	CString separator;
@@ -3495,12 +3731,29 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			}
 		}
 
-		for (int i = firstMail; i <= lastMail; i++)
-		{
-			if (textType == 0)
-				printSingleMailToTextFile(fp, i, fpm, textConfig);
-			else {
-				printSingleMailToHtmlFile(fp, i, fpm, textConfig, i == firstMail);
+		if (selectedMailIndexList == 0) {
+			for (int i = firstMail; i <= lastMail; i++)
+			{
+				if (textType == 0)
+					printSingleMailToTextFile(fp, i, fpm, textConfig);
+				else {
+					printSingleMailToHtmlFile(fp, i, fpm, textConfig, i == firstMail);
+				}
+			}
+		}
+		else {
+			int i;
+			firstMail = (*selectedMailIndexList)[0];
+			int cnt = selectedMailIndexList->GetCount();
+			for (int j = 0; j < cnt; j++)
+			{
+				//i = selectedMailIndexList->ElementAt(j);
+				i = (*selectedMailIndexList)[j];
+				if (textType == 0)
+					printSingleMailToTextFile(fp, i, fpm, textConfig);
+				else {
+					printSingleMailToHtmlFile(fp, i, fpm, textConfig, i == firstMail);
+				}
 			}
 		}
 
@@ -5328,6 +5581,30 @@ BOOL SerializerHelper::open(BOOL bWrite) {
 	return m_hFile != INVALID_HANDLE_VALUE;
 }
 
+int SerializerHelper::GetReadPointer()
+{
+	if (m_writing == TRUE)
+		return -1;
+	return m_offset;
+}
+
+BOOL SerializerHelper::SetReadPointer(int pos) 
+{
+	if (m_writing == TRUE)
+		return FALSE;
+
+	m_offset = pos;
+	return TRUE;
+#if 0
+	DWORD pos = SetFilePointer(myFile, iBytePos, NULL, FILE_BEGIN);
+
+	if (pos == INVALID_SET_FILE_POINTER)
+		return FALSE;
+#endif
+}
+
+
+
 BOOL SerializerHelper::readN(void *v, int sz) {
 	if (m_buff == 0)
 		return FALSE;
@@ -5379,8 +5656,8 @@ int showCodePageTable()
 
 	CString htmlHdr;
 	
-	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body><pre>";
-	htmlHdr += "\r\n\r\n<font size=\"+2\"><b>WINDOWS CODE PAGE IDENTIFIERS TABLE\r\n\r\n</b></font></pre>";
+	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
+	htmlHdr += "<br><br><font size=\"+2\"><b>WINDOWS CODE PAGE IDENTIFIERS TABLE<br><br><br></font>";
 	htmlHdr += "For additional information check the Microsoft document <a href=\"https://docs.microsoft.com/en-us/windows/desktop/intl/code-page-identifiers\">Code Page Identifiers</a>";
 	htmlHdr += "<div style=\'text-decoration:underline\'><pre>\r\n";
 
@@ -5491,7 +5768,7 @@ void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &v
 
 // Debug support functions
 
-int MboxMail::DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int mailsArrayCount)
+int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 {
 	MboxMail *m;
 
@@ -5592,4 +5869,278 @@ int MboxMail::DumpMailStatsToFile(CArray<MboxMail*, MboxMail*> *mailsArray, int 
 	fp.Close();
 	return 1;
 }
+
+MailList::MailList(int nId)
+{
+	m_nId = nId;
+	//s_mails;
+	b_mails_which_sorted = 0;
+	m_lastSel = -1;
+	//m_bIsDirty;
+}
+
+MailList::MailList()
+{
+	m_nId = IDC_ARCHIVE_LIST;
+	//s_mails;
+	b_mails_which_sorted = 0;
+	m_lastSel = -1;
+	//m_bIsDirty;
+}
+
+MailList::~MailList()
+{
+	;
+}
+
+
+int MboxMail::MergeTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails)
+{
+	MboxMail::SortByIndex(mails1, false);
+	MboxMail::SortByIndex(mails2, false);
+
+	int mails1Cnt = mails1->GetCount();
+	int mails2Cnt = mails2->GetCount();
+
+	merged_mails->SetSizeKeepData(mails1Cnt + mails2Cnt);
+
+	int mails1Index = 0;
+	int mails2Index = 0;
+	int merged_mailsIndex = 0;
+
+	MboxMail *m1, *m2;
+
+	for (;;)
+	{
+		while ((mails1Index < mails1Cnt) && (mails2Index < mails2Cnt)) 
+		{
+			m1 = (*mails1)[mails1Index];
+			m2 = (*mails2)[mails2Index];
+			if (m1->m_index == m2->m_index) {
+				(*merged_mails)[merged_mailsIndex++] = m1;
+				mails1Index++;
+				mails2Index++;
+			}
+			else
+				break;
+
+		}
+		if ((mails1Index >= mails1Cnt) || (mails2Index >= mails2Cnt))
+			break;
+
+		m2 = (*mails2)[mails2Index];
+		while (mails1Index < mails1Cnt) 
+		{
+			m1 = (*mails1)[mails1Index];
+			if ((m1->m_index < m2->m_index)) {
+				(*merged_mails)[merged_mailsIndex++] = m1;
+				mails1Index++;
+			}
+			else
+				break;
+		}
+
+		if (mails1Index >= mails1Cnt)
+			break;
+
+		m1 = (*mails1)[mails1Index];
+		while (mails2Index < mails2Cnt)
+		{
+			m2 = (*mails2)[mails2Index];
+			if ((m2->m_index < m1->m_index)) {
+				(*merged_mails)[merged_mailsIndex++] = m2;
+				mails2Index++;
+			}
+			else
+				break;
+		}
+
+		if (mails2Index >= mails2Cnt)
+			break;
+
+	}
+
+	if ((mails1Index < mails1Cnt) && (mails2Index < mails2Cnt))
+		int deb = 1; // it should never be true
+
+	while (mails1Index < mails1Cnt)
+	{
+		m1 = (*mails1)[mails1Index++];
+		(*merged_mails)[merged_mailsIndex++] = m1;
+	}
+
+	while (mails2Index < mails2Cnt)
+	{
+		m2 = (*mails2)[mails2Index++];
+		(*merged_mails)[merged_mailsIndex++] = m2;
+	}
+
+	merged_mails->SetSizeKeepData(merged_mailsIndex);
+
+	return merged_mailsIndex;
+}
+
+BOOL MboxMail::VerifyMergeOfTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails)
+{
+	typedef unordered_map<int, int> ArrayIndexMap;
+	ArrayIndexMap indexMap;
+
+	ArrayIndexMap::iterator it;
+
+	BOOL ret = TRUE;
+	int index;
+	int ii = 0;
+	for (ii = 0; ii < merged_mails->GetCount(); ii++)
+	{
+		index = (*merged_mails)[ii]->m_index;
+
+		if (indexMap.find(index) == indexMap.end())
+			indexMap.insert(ArrayIndexMap::value_type(index, index));
+		else
+		{
+			ret = FALSE;
+			int deb = 1; // duplicates
+		}
+	}
+
+	for (ii = 0; ii < mails1->GetCount(); ii++)
+	{
+		index = (*mails1)[ii]->m_index;
+
+		if (indexMap.find(index) == indexMap.end()) {
+			ret = FALSE;
+			int deb = 1; // missing
+		}
+	}
+
+	for (ii = 0; ii < mails2->GetCount(); ii++)
+	{
+		index = (*mails2)[ii]->m_index;
+
+		if (indexMap.find(index) == indexMap.end()) {
+			ret = FALSE;
+			int deb = 1; // missing
+		}
+	}
+	if (ret == FALSE)
+		int deb = 1;
+
+	return ret;
+}
+
+BOOL MboxMail::Test_MergeTwoMailLists()
+{
+	MailArray mails1;
+	MailArray mails2;
+	MailArray merged_mails;
+
+	int carray1[] = { 1,2,4,5,11,26,30,42,50 };
+	int carray1Size = sizeof(carray1) / sizeof(int);
+	int carray2[] = { 2,4,5,9,10,11,25,26,30,40,42,48,50 };
+	int carray2Size = sizeof(carray2) / sizeof(int);
+
+	int expectedCarray[] = { 1,2,4,5,9,10,11,25,26,30,40,42,48,50 };
+	int expectedCarraySize = sizeof(expectedCarray) / sizeof(int);
+
+	PopulateCArray(&mails1, carray1, carray1Size);
+	PopulateCArray(&mails2, carray2, carray2Size);
+
+	MergeTwoMailLists(&mails1, &mails2, &merged_mails);
+	BOOL ret = VerifyMerge(&merged_mails, expectedCarray, expectedCarraySize);
+	if (ret == FALSE)
+		int deb = 1;
+
+	return TRUE;
+}
+
+void MboxMail::PopulateCArray(MailArray *mails, int *carray, int carrayCnt)
+{
+	MboxMail *m;
+	for (int i = 0; i < carrayCnt; i++) {
+		m = new MboxMail;
+		int cval = carray[i];
+		m->m_index = cval;
+		mails ->Add(m);
+	}
+}
+
+// mails is merged array, carray constains list of indexes into root/full mail list
+BOOL MboxMail::VerifyMerge(MailArray *mails, int *carray, int carrayCnt)
+{
+	MboxMail *m;
+	if (carrayCnt != mails->GetCount())
+		return FALSE;
+
+	for (int i = 0; i < carrayCnt; i++) {
+		m = (*mails)[i];
+		int cval = carray[i];
+		if (m->m_index != cval)
+			return FALSE;
+	}
+	return TRUE;
+}
+
+BOOL MboxMail::IsAllMailsSelected() {
+	return (nWhichMailList == IDC_ARCHIVE_LIST);
+}
+BOOL MboxMail::IsFindMailsSelected() {
+	return (nWhichMailList == IDC_FIND_LIST);
+}
+BOOL MboxMail::IsUserMailsSelected() {
+	return (nWhichMailList == IDC_EDIT_LIST);
+
+}
+
+int MboxMail::AllMailsSelectedId() {
+	return (IDC_ARCHIVE_LIST);
+}
+int MboxMail::FindMailsSelectedId() {
+	return (IDC_FIND_LIST);
+}
+int MboxMail::UserMailsSelectedId() {
+	return (IDC_EDIT_LIST);
+
+}
+
+//void *bsearch(const void *key, const void *base, size_t num, size_t width, int(__cdecl *compare) (const void *key, const void *datum));
+
+// search for X in array
+int Binary_search(int arr[], int X, int low, int high)
+{
+
+	while (low <= high) // till low is less than high i.e. there is atleast one integer in the considered part of array
+	{
+
+		int mid = low + (high - low) / 2; //compute the middle index
+
+		if (arr[mid] == X) //if equal then return
+			return mid;
+
+		else if (arr[mid] < X) //if smaller then increase the lower limit
+			low = mid + 1;
+
+		else //if larger then decrease the upper limit
+			high = mid - 1;
+	}
+
+	return -1;
+}
+
+// class MyMailArray
+void MyMailArray::SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy)
+{
+	if (nNewSize == 0)
+		m_nSize = 0;
+	else
+		SetSize(nNewSize, nGrowBy);
+}
+void MyMailArray::CopyKeepData(const MyMailArray& src)
+{
+	if (src.GetSize() == 0) 
+		m_nSize = 0;
+	else
+		Copy(src);
+}
+
+
 

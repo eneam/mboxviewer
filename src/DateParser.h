@@ -31,6 +31,10 @@
 /** Modified 2005 by Diodia Software				(http://www.diodia.com/)	**/
 /**																								**/
 /****************************************************************************/
+
+#if !defined(_DATE_PARSER_)
+#define _DATE_PARSER_
+
 #pragma once
 
 class DateParser 
@@ -52,3 +56,5 @@ class DateParser
 
 	void generateCurrentDateRFC822(char *formattedDate, int bufSize);
 };
+
+#endif // _DATE_PARSER_

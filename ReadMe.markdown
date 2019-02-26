@@ -25,6 +25,18 @@ Features
 Changes
 ---
 
+v 1.0.3.0
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added mail list editing capability to enable users to compose list as subset of mails from multiple searches;
+ - Added capability to archive search results and/or mail list composed by users to file;
+ - Added capability to reload mail list composed by users from archive;
+ - Added capability to select one or more mails and print, remove and/or copy;
+ - Added option to directly print mails to user selected printer;
+ - Addedd Advanced Find/Search capability;
+ - Added option to find all matching mails;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.2.8
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

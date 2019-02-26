@@ -1,3 +1,6 @@
+#if !defined(_OPTIONS_DLG_)
+#define _OPTIONS_DLG_
+
 #pragma once
 
 
@@ -32,3 +35,5 @@ public:
 	int m_bTimeType;
 	afx_msg void OnBnClickedRadio2();
 };
+
+#endif // _OPTIONS_DLG_

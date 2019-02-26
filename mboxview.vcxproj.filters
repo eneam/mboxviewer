@@ -91,6 +91,9 @@
     <ClCompile Include="src\FindInMailDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\FindAdvancedDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -187,6 +190,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\FindInMailDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FindAdvancedDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

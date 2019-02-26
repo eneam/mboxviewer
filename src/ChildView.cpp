@@ -114,14 +114,14 @@ BOOL CChildView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if( pFrame ) {
-		CWnd *pView = pFrame->GetTreeView();
-		if( pView && pView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
+		CWnd *pTreeView = pFrame->GetTreeView();
+		if( pTreeView && pTreeView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
 			return TRUE;
-		pView = pFrame->GetListView();
-		if( pView && pView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
+		CWnd *pListView = pFrame->GetListView();
+		if( pListView && pListView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
 			return TRUE;
-		pView = pFrame->GetMsgView();
-		if( pView && pView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
+		CWnd *pMsgView = pFrame->GetMsgView();
+		if( pMsgView && pMsgView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
 			return TRUE;
 	}
 	
