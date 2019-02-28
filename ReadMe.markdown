@@ -13,7 +13,7 @@ Features
 * preview picture attachments;
 * export of single mail in Eml;
 * print all mails to CSV or Text or HTML files;
-* print single mail to Text or HTML file;
+* print single mail to Text or HTML file or to printer;
 * group all related mails as conversations in the summary window;
 * print related mails/mail group to Text or HTML file;
 * open a single or group of related mails in external browser;
@@ -21,6 +21,7 @@ Features
 * find user defined text in the message and highlight all occurrences;
 * search mails by user defined date range and text in the subject, sender, recepient, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
+* support for composing mail list from single or multiple search results and archiving if desired;
 
 Changes
 ---
@@ -33,7 +34,7 @@ v 1.0.3.0
  - Added capability to reload mail list composed by users from archive;
  - Added capability to select one or more mails and print, remove and/or copy;
  - Added option to directly print mails to user selected printer;
- - Addedd Advanced Find/Search capability;
+ - Added Advanced Find/Search capability;
  - Added option to find all matching mails;
  - Updated User Manual to describe new and updated features;
 
