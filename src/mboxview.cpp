@@ -455,7 +455,15 @@ BOOL CmboxviewApp::InitInstance()
 
 	g_tu.Init();
 
-	CMainFrame* pFrame = new CMainFrame;
+	DWORD msgViewPosition = 1;
+	BOOL retval;
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), msgViewPosition);
+	if (retval == TRUE) {
+		if ((msgViewPosition < 1) && (msgViewPosition > 3))
+			msgViewPosition = 1;  // bottom=1
+	}
+
+	CMainFrame* pFrame = new CMainFrame(msgViewPosition);
 	m_pMainWnd = pFrame;
 
 	// create and load the frame with its resources

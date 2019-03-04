@@ -188,6 +188,10 @@
 #define ID_VIEW_USERSELECTEDMAILS       32878
 #define ID_HELP_MBOXVIEWHELP            32879
 #define ID_EDIT_FINDADVANCED            32880
+#define ID_VIEW_MESSAGEWINDOW           32881
+#define ID_MESSAGEWINDOW_BOTTOM         32882
+#define ID_MESSAGEWINDOW_RIGHT          32883
+#define ID_MESSAGEWINDOW_LEFT           32884
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -197,7 +201,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        198
-#define _APS_NEXT_COMMAND_VALUE         32881
+#define _APS_NEXT_COMMAND_VALUE         32885
 #define _APS_NEXT_CONTROL_VALUE         1158
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

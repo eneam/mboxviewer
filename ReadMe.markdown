@@ -22,6 +22,7 @@ Features
 * search mails by user defined date range and text in the subject, sender, recepient, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
 * support for composing mail list from single or multiple search results and archiving if desired;
+* support for setting Message Window position to Bottom, Right or Left;
 
 Changes
 ---
@@ -36,6 +37,7 @@ v 1.0.3.0
  - Added option to directly print mails to user selected printer;
  - Added Advanced Find/Search capability;
  - Added option to find all matching mails;
+ - Added option to set Message Window position to Bottom, Right or Left;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.2.8

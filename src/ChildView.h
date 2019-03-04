@@ -21,8 +21,9 @@ class CChildView : public CWnd
 {
 // Construction
 public:
-	CChildView();
+	CChildView(int msgViewPosition = 1);  // 1=bottom 2=right  3=left
 	CNSplit	m_verSplitter, m_horSplitter;
+	int m_msgViewPosition;
 
 // Attributes
 public:

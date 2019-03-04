@@ -20,6 +20,7 @@ class CMimeMessage;
 class MboxMail;
 class MyMailArray;
 class SerializerHelper;
+class SimpleString;
 
 
 typedef CArray<int, int> MailIndexList;
@@ -137,6 +138,10 @@ public:
 	int m_gmtTime;
 	CString m_path;
 	int m_findAllCount;
+	// Used in Custom Draw
+	SimpleString *m_name;
+	SimpleString *m_addr;
+	BOOL m_bLongMailAddress;
 	//
 	void FillCtrl();
 	virtual ~NListView();
@@ -171,6 +176,7 @@ public:
 	int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
+	void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 
 	// Generated message map functions
 protected:

@@ -79,6 +79,11 @@ protected:
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
+	afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
+	afx_msg void OnWindowPosChanging(WINDOWPOS* lpwndpos);
+	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 };
 
 /////////////////////////////////////////////////////////////////////////////

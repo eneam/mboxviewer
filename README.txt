@@ -12,6 +12,7 @@ v 1.0.3.0
  - Added option to directly print mails to user selected printer;
  - Addedd Advanced Find/Search capability;
  - Added option to find all matching mails;
+ - Added option to set Message Window position to Bottom, Right or Left;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.2.8

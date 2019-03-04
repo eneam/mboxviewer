@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "Profile.h"
 #include "mboxview.h"
 
 #include "Resource.h"       // main symbols
@@ -91,6 +92,9 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnViewUserselectedmails)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnUpdateViewUserselectedmails)
 	ON_COMMAND(ID_HELP_MBOXVIEWHELP, &CMainFrame::OnHelpMboxviewhelp)
+	ON_COMMAND(ID_MESSAGEWINDOW_BOTTOM, &CMainFrame::OnMessagewindowBottom)
+	ON_COMMAND(ID_MESSAGEWINDOW_RIGHT, &CMainFrame::OnMessagewindowRight)
+	ON_COMMAND(ID_MESSAGEWINDOW_LEFT, &CMainFrame::OnMessagewindowLeft)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -106,9 +110,10 @@ static UINT indicators[] =
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame construction/destruction
 
-CMainFrame::CMainFrame()
+CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
+	m_msgViewPosition = msgViewPosition; // bottom=1
 	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
 	m_bSelectMailFileDone = FALSE;
 	m_MailIndex = -1;  // Not used ??
@@ -140,6 +145,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
+
 	// create a view to occupy the client area of the frame
 	if (!m_wndView.Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
 		CRect(0, 0, 0, 0), this, AFX_IDW_PANE_FIRST, NULL))
@@ -198,7 +204,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CReBarCtrl &rebarCtl = m_wndReBar.GetReBarCtrl();
 	int iIndex = 0;
-	rebarCtl.MinimizeBand(iIndex);
+	if (m_msgViewPosition != 3)
+		rebarCtl.MinimizeBand(iIndex);
 
 	// TODO: Create seprate Mail File download status bar ?
 	//m_wndStatusBar.SetWindowText("Mail Download Complete: ");
@@ -209,6 +216,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//DockControlBar(&m_wndToolBar);
 
 	EnableAllMailLists(FALSE);
+
+	NListView *pListView = GetListView();
+	if (pListView) {
+		if (m_msgViewPosition == 1)
+			pListView->m_bLongMailAddress = TRUE;
+		else
+			pListView->m_bLongMailAddress = FALSE;
+	}
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
@@ -384,12 +399,26 @@ NTreeView * CMainFrame::GetTreeView()
 
 NListView * CMainFrame::GetListView()
 {
-	return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);
+	if (m_msgViewPosition == 1)
+		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);
+	else if (m_msgViewPosition == 2)
+		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);
+	else if (m_msgViewPosition == 3)
+		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 1);
+	else
+		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);  // should never be here ASSERT ?
 }
 
 NMsgView * CMainFrame::GetMsgView()
 {
-	return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);
+	if (m_msgViewPosition == 1)
+		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);
+	else if (m_msgViewPosition == 2)
+		return (NMsgView *)m_wndView.m_horSplitter.GetPane(0, 1);
+	else if (m_msgViewPosition == 3)
+		return (NMsgView *)m_wndView.m_horSplitter.GetPane(0, 0);
+	else
+		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);  // should never be here ASSERT ?
 }
 
 BOOL CMainFrame::OnEraseBkgnd(CDC* pDC) 
@@ -1204,6 +1233,25 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"When User Selected Mails list is active, it can be reloaded when List is not empty.<br>"
 		"<br>"
+		"<font size=\"+1\"><b>Managing Multiple Archives</b></font><br>"
+		"<br>"
+		"Mutiple archives can be created from the the same single main archive. However, before you create new content and new archive from User Selected List, the last archive with hard-coded name must be renamed first.<br>"
+		"<br>"
+		"Click on Open Mail Archive Location and rename both hard-coded mail and mail list archives, for example:<br>"
+		"<br>"
+		"\"All mail Including Spam and Trash.11.09.2018_USER.mbox.\" --> \"All mail from Amazon.11.09.2018_USER.mbox.\"<br>"
+		"<br>"
+		"\"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\" --> \"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"<br>"
+		"<br>"
+		"You must restore files to original names if you plan to continue to update these archives at later date. For example:<br>"
+		"<br>"
+		"\"All mail from Amazon.11.09.2018_USER.mbox.\" ---copy -->  \"All mail Including Spam and Trash.11.09.2018_USER.mbox.\"<br>"
+		"<br>"
+		"\"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"  ---copy or --> \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\"<br>"
+		"<br>"
+		"Future releases may address the issue better. User fedback may help to prioritize :)<br>"
+		"<br>"
+		"<br>"
 	);
 
 	fp.Write((LPCSTR)text, text.GetLength());
@@ -1308,4 +1356,74 @@ void CMainFrame::OnHelpMboxviewhelp()
 
 	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
 	int deb = 1;
+}
+
+
+void CMainFrame::OnMessagewindowBottom()
+{
+	// TODO: Add your command handler code here
+	ConfigMessagewindowPosition(1);
+}
+
+
+void CMainFrame::OnMessagewindowRight()
+{
+	// TODO: Add your command handler code here
+	ConfigMessagewindowPosition(2);
+}
+
+
+void CMainFrame::OnMessagewindowLeft()
+{
+	// TODO: Add your command handler code here
+	ConfigMessagewindowPosition(3);
+}
+
+void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
+{
+	if ((msgViewPosition < 1) && (msgViewPosition > 3)) {
+		int deb = 1;
+		return;  // should never be here
+	}
+
+	int curMsgViewPosition = m_msgViewPosition;
+
+	CString curPos = "Bottom";
+	if (curMsgViewPosition == 1)
+		curPos = "Bottom";
+	else if (curMsgViewPosition == 2)
+		curPos = "Right";
+	else if (curMsgViewPosition == 3)
+		curPos = "Left";
+	else
+		; // shpould never be here
+
+	CString newPos = "Bottom";
+	if (msgViewPosition == 1)
+		newPos = "Bottom";
+	else if (msgViewPosition == 2)
+		newPos = "Right";
+	else if (msgViewPosition == 3)
+		newPos = "Left";
+	else
+		; // shpould never be here
+
+
+	HWND h = GetSafeHwnd();
+
+	if (msgViewPosition == curMsgViewPosition) {
+		CString txt = _T("New and current Message Window position are the same: ") + newPos + _T(" and ") + curPos + _T(".\nNo action will be taken.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	CString txt = _T("Do you want to configure Message Window position from " + curPos + " to " + newPos 
+		+ " ?\nIf you say Yes, please exit and restart mbox viewer for new position to take effect.");
+
+	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	if (answer == IDYES) 
+	{
+		DWORD newPosition = msgViewPosition;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), newPosition);
+	}
 }

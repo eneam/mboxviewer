@@ -116,6 +116,10 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	//ON_NOTIFY(NM_CLICK, IDC_ATTACHMENTS, OnActivating)  // TODO: Had to disable for now to allow OnDoubleClick to work !!
 	ON_NOTIFY(NM_DBLCLK, IDC_ATTACHMENTS, OnDoubleClick)
 	ON_NOTIFY(NM_RCLICK, IDC_ATTACHMENTS, OnRClick)  // Right Click Menu
+	ON_WM_GETMINMAXINFO()
+	ON_WM_WINDOWPOSCHANGED()
+	ON_WM_WINDOWPOSCHANGING()
+	ON_WM_SIZING()
 END_MESSAGE_MAP()
 
 CString GetmboxviewTempPath(char *name = 0);
@@ -177,7 +181,37 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void NMsgView::OnSize(UINT nType, int cx, int cy) 
 {
+	int deb1, deb2, deb3, deb4;
 	CWnd::OnSize(nType, cx, cy);
+
+	if (nType == SIZE_RESTORED)
+		int deb = 1;
+
+	switch (nType)
+	{
+	case SIZE_MAXIMIZED:
+		// window was maximized
+		deb1 = 1;
+		break;
+
+	case SIZE_MINIMIZED:
+		// window was minimized
+		deb2 = 1;
+		break;
+
+	case SIZE_RESTORED:
+		// misleading - this occurs when restored from minimized/maximized AND
+		// for normal size operations when already restored
+		deb3 = 1;
+		break;
+
+	default:
+		// you could also deal with SIZE_MAXHIDE and SIZE_MAXSHOW
+		// but rarely need to
+		deb4 = 1;
+		break;
+	}
+
 	int nOffset = m_bMax?CAPT_MAX_HEIGHT:CAPT_MIN_HEIGHT;
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
@@ -186,7 +220,10 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 	
 	m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
 	m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
-	
+
+	// TODO: seem to fix resizing issue; it should not be needed by iy seem to work
+	Invalidate();
+	UpdateWindow();
 }
 
 void NMsgView::UpdateLayout()
@@ -372,7 +409,7 @@ void NMsgView::OnPaint()
 	dc.Draw3dRect(m_rcCaption, ::GetSysColor(COLOR_BTNHIGHLIGHT),
 		::GetSysColor(COLOR_BTNSHADOW));
 
-	if (m_bMax)
+	//if (m_bMax)
 	{
 		CRect	r = m_rcCaption;
 
@@ -1493,4 +1530,37 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 		}
 	}
 	lpAllElements->Release();
+}
+
+
+void NMsgView::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
+{
+	// TODO: Add your message handler code here and/or call default
+	int deb = 1;
+
+	CWnd::OnGetMinMaxInfo(lpMMI);
+}
+
+
+void NMsgView::OnWindowPosChanged(WINDOWPOS* lpwndpos)
+{
+	CWnd::OnWindowPosChanged(lpwndpos);
+
+	// TODO: Add your message handler code here
+}
+
+
+void NMsgView::OnWindowPosChanging(WINDOWPOS* lpwndpos)
+{
+	CWnd::OnWindowPosChanging(lpwndpos);
+
+	// TODO: Add your message handler code here
+}
+
+
+void NMsgView::OnSizing(UINT fwSide, LPRECT pRect)
+{
+	CWnd::OnSizing(fwSide, pRect);
+
+	// TODO: Add your message handler code here
 }

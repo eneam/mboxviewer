@@ -90,6 +90,13 @@ BEGIN
     BEGIN
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
+        POPUP "Message Window"
+        BEGIN
+            MENUITEM "Bottom",                      ID_MESSAGEWINDOW_BOTTOM
+            MENUITEM "Right",                       ID_MESSAGEWINDOW_RIGHT
+            MENUITEM "Left",                        ID_MESSAGEWINDOW_LEFT
+        END
+        MENUITEM SEPARATOR
         MENUITEM "User Selected Mails",         ID_VIEW_USERSELECTEDMAILS
         MENUITEM SEPARATOR
         MENUITEM "View EML",                    ID_EDIT_VIEWEML
@@ -354,7 +361,7 @@ BEGIN
     LTEXT           "&Find what:",IDC_STATIC,7,8,34,8
 END
 
-IDD_EDITOR DIALOGEX 0, 0, 411, 14
+IDD_EDITOR DIALOGEX 0, 0, 330, 14
 STYLE DS_SETFONT | WS_CHILD
 FONT 8, "MS Sans Serif", 400, 0, 0x0
 BEGIN
@@ -483,7 +490,7 @@ BEGIN
 
     IDD_EDITOR, DIALOG
     BEGIN
-        RIGHTMARGIN, 410
+        RIGHTMARGIN, 329
         BOTTOMMARGIN, 13
     END
 END

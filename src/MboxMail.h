@@ -235,6 +235,7 @@ public:
 
 	int FindNoCase(int offset, void const* Src, int  Size);
 	int FindAny(int offset, void const * Src);
+	int Find(int offset, char const c);
 
 	char GetAt(int pos) {
 		return m_data[pos];
@@ -307,6 +308,7 @@ public:
 	int m_length, m_headLength, m_recv;
 	time_t m_timeDate;
 	CString m_from, m_to, m_subj;
+	//CString m_from_name, m_to_name;  // TODO: should we precalculate ? or calculate run time ?
 	CString m_cc, m_bcc;
 	CString m_from_charset, m_to_charset, m_subj_charset;
 	CString m_cc_charset, m_bcc_charset;
@@ -398,6 +400,7 @@ public:
 	static int escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar);
 	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
 	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
+	static void InsertHtmlBreak(const char *in, int inLength, SimpleString *out);
 	//
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);

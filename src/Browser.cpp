@@ -71,7 +71,6 @@ void CBrowser::OnSize(UINT nType, int cx, int cy)
 	CWnd ::OnSize(nType, cx, cy);
 	
 	m_ie.MoveWindow( 0, 0, cx, cy );
-//	m_ie.UpdateWindow();
 }
 
 void CBrowser::Navigate(LPCSTR url, DWORD flags)

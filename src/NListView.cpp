@@ -116,6 +116,10 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 {
 	ResetFileMapView();
 
+	m_bLongMailAddress = TRUE;
+	m_name = new SimpleString(64);
+	m_addr = new SimpleString(64);
+
 	m_searchStringInMail.Empty();
 	m_bCaseSensInMail = TRUE;
 	m_bWholeWordInMail = FALSE;
@@ -323,6 +327,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_PRINTER_Id = 3;
 	AppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
 
+	const UINT S_PDF_DIRECT_Id = 28;
+	AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
@@ -391,6 +398,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pFrame && MboxMail::IsUserMailsSelected())
 		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mail Archive Location"));
 
+	// Used above for printing to PDF
+	//const UINT S_PDF_DIRECT_Id = 28;
+
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	UINT nFlags = TPM_RETURNCMD;
@@ -419,6 +429,54 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		if (pFrame) {
 			pFrame->OnPrintSingleMailtoText(iItem, 1, FALSE, TRUE);
 		}
+		int deb = 1;
+	}
+	break;
+	case S_PDF_DIRECT_Id: {
+
+		CFileDialog dlgFile(TRUE);
+		INT_PTR res = dlgFile.DoModal();
+		CString filePath;
+		if (res == IDOK)
+			filePath = dlgFile.GetPathName();
+
+		CString initialFolder = "C:\\Program Files (x86)";
+		CFolderPickerDialog dlgFolder(initialFolder, OFN_FILEMUSTEXIST | OFN_ENABLESIZING, this, sizeof(OPENFILENAME));
+
+		res = dlgFolder.DoModal();
+		CString folderPath;
+		if (res == IDOK)
+			folderPath = dlgFolder.GetPathName();
+
+		HWND h = GetSafeHwnd();
+		CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
+		//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
+		CString fn = "\"C:\\Users\\tata\\Documents\\Mail\\All mail Including Spam and Trash-10.12.2018.htm\"";
+		CString args = "--headless --disable-gpu --print-to-pdf=\"C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\gg.pdf\" " + fn;
+		//CString args = "--headless --disable-gpu --print-to-pdf=C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\gg.pdf " + fn;
+		//CString args = fn;
+#if 1
+		HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_SHOW);
+		//HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOW);
+		CheckShellExecuteResult(result, h);
+#else
+		HINSTANCE result = S_OK;
+		SHELLEXECUTEINFO ShExecInfo = { 0 };
+		ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+		ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+		ShExecInfo.hwnd = NULL;
+		ShExecInfo.lpVerb = NULL;
+		ShExecInfo.lpFile = path;
+		ShExecInfo.lpParameters = args;
+		ShExecInfo.lpDirectory = NULL;
+		ShExecInfo.nShow = SW_SHOW;
+		ShExecInfo.hInstApp = result;
+		ShellExecuteEx(&ShExecInfo);
+		CheckShellExecuteResult(ShExecInfo.hInstApp, h);
+		WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+		CloseHandle(ShExecInfo.hProcess);
+
+#endif
 		int deb = 1;
 	}
 	break;
@@ -997,12 +1055,26 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
 	ResetFont();
 
-	m_list.InsertColumn(0, "!", LVCFMT_LEFT, 22, 0);
-	m_list.InsertColumn(1, "date", LVCFMT_LEFT, 100, 0);
-	m_list.InsertColumn(2, "from", LVCFMT_LEFT, 150, 0);
-	m_list.InsertColumn(3, "to", LVCFMT_LEFT, 150, 0);
-	m_list.InsertColumn(4, "subject", LVCFMT_LEFT, 400, 0);
-	m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 120, 0);
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if ((pFrame == 0) || (pFrame->GetMessageWindowPosition() == 1))
+	{
+		m_list.InsertColumn(0, "!", LVCFMT_LEFT, 22, 0);
+		m_list.InsertColumn(1, "date", LVCFMT_LEFT, 100, 0);
+		m_list.InsertColumn(2, "from", LVCFMT_LEFT, 150, 0);
+		m_list.InsertColumn(3, "to", LVCFMT_LEFT, 150, 0);
+		m_list.InsertColumn(4, "subject", LVCFMT_LEFT, 400, 0);
+		m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 120, 0);
+	}
+	else
+	{
+		m_list.InsertColumn(0, "!", LVCFMT_LEFT, 22, 0);
+		m_list.InsertColumn(1, "date", LVCFMT_LEFT, 100, 0);
+		m_list.InsertColumn(2, "from", LVCFMT_LEFT, 100, 0);
+		m_list.InsertColumn(3, "to", LVCFMT_LEFT, 100, 0);
+		m_list.InsertColumn(4, "subject", LVCFMT_LEFT, 400, 0);
+		m_list.InsertColumn(5, _T("size(KB)"), LVCFMT_LEFT, 120, 0);
+	}
 
 #if 0
 	// informational
@@ -1075,6 +1147,19 @@ void NListView::ResizeColumns()
 	int min_subj_len = 200;
 	int dflt_subj_len = 400;
 	int size_len = 60;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if ((pFrame != 0) || (pFrame->GetMessageWindowPosition() != 1))
+	{
+		min_from_len = 100;
+		max_from_len = 400;
+		min_to_len = 100;
+		max_to_len = 400;
+		min_subj_len = 200;
+		dflt_subj_len = 400;
+		size_len = 60;
+	}
 
 	int from_len = min_from_len;
 	int to_len = min_to_len;
@@ -1338,15 +1423,72 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				Charset = "UTF-8";
 				charsetId = 65001;
 			}
-			else if (iSubItem == 2) {
-				FieldText = m->m_from;
+			else if (iSubItem == 2) 
+			{
 				Charset = m->m_from_charset;
 				charsetId = m->m_from_charsetId;
+				if (m_bLongMailAddress) {
+					FieldText = m->m_from;
+				}
+				else 
+				{
+					int fromlen = m->m_from.GetLength();
+					m_name->ClearAndResize(fromlen);
+					m_addr->ClearAndResize(fromlen);
+					MboxMail::splitMailAddress(m->m_from, fromlen, m_name, m_addr);
+					FieldText.Empty();
+					if (m_name->Count()) {
+						FieldText.Append(m_name->Data(), m_name->Count());
+					}
+					else {
+						int pos = m_addr->Find(0, '@');
+						if (pos >= 0)
+							FieldText.Append(m_addr->Data(), pos);
+						else
+							FieldText.Append(m_addr->Data(), m_addr->Count());
+					}
+				}
 			}
-			else if (iSubItem == 3) {
-				FieldText = m->m_to;
+			else if (iSubItem == 3) 
+			{
+				
 				Charset = m->m_to_charset;
 				charsetId = m->m_to_charsetId;
+
+				if (m_bLongMailAddress) {
+					FieldText = m->m_to;
+				}
+				else
+				{
+					CString from;
+
+					int posBeg = 0;
+					int posEnd = 0;
+					posEnd = m->m_to.Find("@", posBeg);
+					if ((posEnd >= 0) && ((posEnd + 1) < m->m_to.GetLength()))
+						posEnd = m->m_to.Find(",", posEnd + 1);
+
+					if (posEnd >= 0)
+						from = m->m_to.Mid(posBeg, posEnd - posBeg);
+					else
+						from = m->m_to.Mid(posBeg, m->m_to.GetLength());
+
+					int fromlen = from.GetLength();
+					m_name->ClearAndResize(fromlen);
+					m_addr->ClearAndResize(fromlen);
+					MboxMail::splitMailAddress(from, fromlen, m_name, m_addr);
+					FieldText.Empty();
+					if (m_name->Count()) {
+						FieldText.Append(m_name->Data(), m_name->Count());
+					}
+					else {
+						int pos = m_addr->Find(0, '@');
+						if (pos >= 0)
+							FieldText.Append(m_addr->Data(), pos);
+						else
+							FieldText.Append(m_addr->Data(), m_addr->Count());
+					}
+				}
 			}
 			else if (iSubItem == 4) {
 				FieldText = m->m_subj;
@@ -2493,14 +2635,20 @@ void NListView::SelectItem(int iItem)
 		SimpleString *outbuf = MboxMail::m_outbuf;
 		outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
-		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><pre>\r\n";
+		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+		
 
 		char *inData = (char*)(LPCSTR)bdy;
 		int inDataLen = bdy.GetLength();
+		MboxMail::InsertHtmlBreak(inData, inDataLen, MboxMail::m_tmpbuf);
+		inData = MboxMail::m_tmpbuf->Data();
+		inDataLen = MboxMail::m_tmpbuf->Count();
+
 		outbuf->Append(inData, inDataLen);
 
-		hdr = "</pre></body></html>";
+		hdr = "</body></html>";
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
 		data = outbuf->Data();
@@ -2524,7 +2672,7 @@ void NListView::SelectItem(int iItem)
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
-			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>\r\n";
+			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
 			char *inData = (char*)(LPCSTR)bdy;
@@ -2574,7 +2722,7 @@ void NListView::SelectItem(int iItem)
 
 				if (charsetMissing)
 				{
-					CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><html>\r\n";
+					CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
 					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 					int deb = 1;
 				}
@@ -4672,6 +4820,43 @@ void NListView::OnEditFindadvanced()
 	EditFindAdvanced();
 }
 
+void NListView::TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr)
+{
+	SimpleString name;
+	SimpleString addr;
+	CString tmpAddr;
+	CString tmp;
+
+	int posBeg = 0;
+	int posEnd = 0;
+	for (int i = 0; i < maxNumbOfAddr; )
+	{
+		posEnd = to->Find("@", posBeg);
+		if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
+			posEnd = to->Find(",", posEnd + 1);
+
+		if (posEnd >= 0)
+			tmp = to->Mid(posBeg, posEnd - posBeg);
+		else
+			tmp = to->Mid(posBeg, to->GetLength());
+
+		int tolen = tmp.GetLength();
+		name.ClearAndResize(tolen);
+		addr.ClearAndResize(tolen);
+		MboxMail::splitMailAddress((LPCSTR)tmp, tolen, &name, &addr);
+		tmpAddr = addr.Data();
+		tmpAddr.Trim(" \t\"<>");
+		toAddr.Append(tmpAddr);
+
+		if (posEnd < 0)
+			break;
+		posBeg = posEnd + 1;
+		i++;
+		if (i < maxNumbOfAddr)
+			toAddr.Append(",");
+	}
+}
+
 void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 {
 	// TODO: Add your command handler code here
@@ -4712,35 +4897,8 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 		else
 			m_advancedParams.m_bEditChecked[0] = FALSE;
 
-		int posBeg = 0;
-		int posEnd = 0;
 		int maxNumbOfAddr = 1;
-		for (int i = 0; i < maxNumbOfAddr; )
-		{
-			posEnd = to->Find("@", posBeg);
-			if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
-				posEnd = to->Find(",", posEnd + 1);
-
-			if (posEnd >= 0)
-				tmp = to->Mid(posBeg, posEnd - posBeg);
-			else
-				tmp = to->Mid(posBeg, to->GetLength());
-
-			int tolen = tmp.GetLength();
-			name.ClearAndResize(tolen);
-			addr.ClearAndResize(tolen);
-			MboxMail::splitMailAddress((LPCSTR)tmp, tolen, &name, &addr);
-			tmpAddr = addr.Data();
-			tmpAddr.Trim(" \t\"<>");
-			toAddr.Append(tmpAddr);
-
-			if (posEnd < 0)
-				break;
-			posBeg = posEnd + 1;
-			i++;
-			if (i < maxNumbOfAddr)
-				toAddr.Append(",");
-		}
+		TrimToAddr(to, toAddr, maxNumbOfAddr);
 
 		m_advancedParams.m_string[1].Empty();
 		m_advancedParams.m_string[1].Append(toAddr);
@@ -5480,4 +5638,5 @@ int NListView::OpenArchiveFileLocation()
 		HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 		CheckShellExecuteResult(result, h);
 	}
+	return 1;
 }

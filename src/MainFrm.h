@@ -15,7 +15,7 @@ class CMainFrame : public CFrameWnd
 {
 	
 public:
-	CMainFrame();
+	CMainFrame(int msgViewPosition = 1);
 protected: 
 	DECLARE_DYNAMIC(CMainFrame)
 
@@ -46,6 +46,8 @@ public:
 	void EnableAllMailLists(BOOL enable);
 	void SetupMailListsToInitialState();
 	BOOL IsUserMailsListEnabled();
+	void ConfigMessagewindowPosition(int msgViewPosition);
+	int GetMessageWindowPosition() { return m_msgViewPosition; }
 
 	void CreateMailListsInfoText(CFile &fp);
 #ifdef _DEBUG
@@ -66,6 +68,7 @@ protected:  // control bar embedded members
 	int m_MailIndex;
 	//BOOL m_bMailListType;
 	BOOL m_bUserSelectedMailsCheckSet;
+	int m_msgViewPosition;
 
 // Generated message map functions
 protected:
@@ -117,6 +120,9 @@ public:
 	afx_msg void OnViewUserselectedmails();
 	afx_msg void OnUpdateViewUserselectedmails(CCmdUI *pCmdUI);
 	afx_msg void OnHelpMboxviewhelp();
+	afx_msg void OnMessagewindowBottom();
+	afx_msg void OnMessagewindowRight();
+	afx_msg void OnMessagewindowLeft();
 };
 
 /////////////////////////////////////////////////////////////////////////////

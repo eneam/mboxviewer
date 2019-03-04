@@ -57,14 +57,58 @@ BOOL RemoveDir(CString & dir, bool recursive = false);
 int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
-
+#if 1
 void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 {
 	// Assume out is done by caller
 	out->ClearAndResize(inLength * 2);
 	register char *p = (char*)in;
 	register char *e = p + inLength;
-	char *p_beg;
+	char *p_beg = p;
+	int len;
+
+	p_beg = p;
+	while (p < e)
+	{
+		if (*p == '\n') 
+		{
+			if (p == in)
+			{
+				out->Append("\r\n", 2);
+				p++;  // jump over NL
+				p_beg = p;
+			}
+			else if (*(p - 1) != '\r')
+			{
+				len = p - p_beg;
+				if (len > 0)
+					out->Append(p_beg, len);
+
+				out->Append("\r\n", 2);
+				p++;  // jump over NL
+				p_beg = p;
+			}
+			else // found CR LF; keep going
+				p++;
+		}
+		else
+			p++;
+	}
+	len = p - p_beg;
+	if (len > 0)
+	{
+		out->Append(p_beg, len);
+		out->Append("\r\n", 2);
+	}
+}
+#else
+void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
+{
+	// Assume out is done by caller
+	out->ClearAndResize(inLength * 2);
+	register char *p = (char*)in;
+	register char *e = p + inLength;
+	char *p_beg = p;
 	int len;
 
 	p_beg = p;
@@ -73,7 +117,13 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 		while ((p < e) && (*p != '\n')) p++;
 		if (p < e)  // found NL
 		{
-			if (*(p - 1) != '\r')
+			if (p == in)
+			{
+				out->Append("\r\n", 2);
+				p++;  // jump over NL
+				p_beg = p;
+			}
+			else if (*(p - 1) != '\r')
 			{
 				len = p - p_beg;
 				if (len > 0)
@@ -86,7 +136,7 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 			else
 				p++;
 		}
-		else // p >= e didn't foung NL done with looping
+		else // p >= e didn't found NL done with looping
 		{
 			// we can be here if input is not terminated by NL
 			len = p - p_beg;
@@ -98,6 +148,7 @@ void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 		}
 	}
 }
+#endif
 
 inline char *EatNewLine(char* p, char*e) {
 	while ((p < e) && (*p++ != '\n'));
@@ -113,6 +164,55 @@ BOOL isEmptyLine(const char* p, const char* e)
 	else
 		return FALSE;
 }
+
+void MboxMail::InsertHtmlBreak(const char *in, int inLength, SimpleString *out)
+{
+	// Assume out is done by caller
+	out->ClearAndResize(inLength * 2);
+	register char *p = (char*)in;
+	register char *e = p + inLength;
+	char *p_beg;
+	int len;
+	char c;
+
+	p_beg = p;
+	while (p < e)
+	{
+		c = *p;
+		// TODO: implement as table and evalute performance
+		if ((c == '>') || (c == '<') || (c == '\"') || (c == '&') || (c == '\''))
+		{
+			len = p - p_beg;
+			if (len > 0) out->Append(p_beg, len);
+			switch (c) {
+			case '&':  out->Append("&amp;"); break;
+			case '\"': out->Append("&quot;"); break;
+			case '\'': out->Append("&apos;"); break;
+			case '<':  out->Append("&lt;"); break;
+			case '>':  out->Append("&gt;"); break;
+			default:   break; // we should never be here
+			}
+			p++;
+			p_beg = p;
+		}
+		else if (*p == '\r')
+		{
+			len = p - p_beg;
+			if (len > 0)  out->Append(p_beg, len);
+			out->Append("<br>\r", 5);
+			p++;
+			p_beg = p;
+		}
+		else
+			p++;
+	}
+	len = p - p_beg;
+	if (len > 0)
+	{
+		out->Append(p_beg, len);
+	}
+}
+
 
 struct MsgIdHash {
 public:
@@ -3427,6 +3527,11 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 		{
+			char *inData = outbuflarge->Data();
+			int inDataLen = outbuflarge->Count();
+			MboxMail::InsertHtmlBreak(inData, inDataLen, workbuf);
+			outbuflarge->Copy(*workbuf);
+
 			int needLength = outbuflarge->Count() * 2 + 1;
 			inbuf->ClearAndResize(needLength);
 
@@ -4393,6 +4498,15 @@ int SimpleString::FindAny(int offset, void const* Src)
 			return i;
 	}
 	return -1;
+}
+
+int SimpleString::Find(int offset, char const c)
+{
+	const char *p = ::strchr((const char*)(m_data+offset), c);
+	if (p)
+		return(p - m_data);
+	else
+		return -1;
 }
 
 int SimpleString::Resize(int size)

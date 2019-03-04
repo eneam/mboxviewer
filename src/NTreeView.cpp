@@ -228,7 +228,7 @@ void NTreeView::FillCtrl()
 		if (pListView) {
 			pListView->m_path = "";
 			pListView->m_which = NULL;
-			// pView->ResetSize();  // check if needed
+			// pListView->ResetSize();  // check if needed
 			pListView->FillCtrl();
 			pListView->CloseMailFile();
 		}
