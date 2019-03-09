@@ -63,6 +63,7 @@ BEGIN
         MENUITEM "Select &folder...\tF2",       ID_FILE_OPEN
         MENUITEM "Refresh\tF5",                 ID_FILE_REFRESH
         MENUITEM "Options...",                  ID_FILE_OPTIONS
+        MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
         POPUP "Print To"
         BEGIN
             MENUITEM "CSV..",                       ID_PRINTTO_CSV
@@ -371,6 +372,25 @@ BEGIN
     PUSHBUTTON      "Help",IDC_BUTTON2,274,0,50,14
 END
 
+IDD_PRINT_DLG DIALOGEX 0, 0, 229, 123
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Print Configuration"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,111,102,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,166,102,50,14
+    GROUPBOX        "File Name Configuration",IDC_STATIC,7,16,215,76
+    EDITTEXT        IDC_FILE_NAME_MAX_SIZE,97,62,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Compose File Name Pattern From",IDC_STATIC,17,31,124,8
+    LTEXT           "Max File Name Length",IDC_STATIC,17,64,72,8
+    CONTROL         "Date",IDC_FILE_DATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,46,31,10
+    CONTROL         "Time",IDC_FILE_TIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,48,46,31,10
+    CONTROL         "From",IDC_FILE_FROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,79,46,32,10
+    CONTROL         "To",IDC_FILE_TO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,111,46,24,10
+    CONTROL         "Subject",IDC_FILE_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,46,40,10
+    CONTROL         "Unique Id",IDC_FILE_UNIQUE_ID,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,174,46,47,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -493,6 +513,14 @@ BEGIN
         RIGHTMARGIN, 329
         BOTTOMMARGIN, 13
     END
+
+    IDD_PRINT_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 222
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 116
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -561,6 +589,11 @@ BEGIN
 END
 
 IDD_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_PRINT_DLG AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

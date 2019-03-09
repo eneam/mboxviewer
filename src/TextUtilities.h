@@ -49,6 +49,7 @@ public:
 	bool IsAllCaps( register const char *s );
 	int BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE );
 	int BMHSearchW( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE );
+	static UINT32 TextUtilities::CalcCRC32(const char* buf, const UINT length);
 	void hexdump(char *title, char *area, int length);
 /*
 	char EntityToAscii( char * &p );

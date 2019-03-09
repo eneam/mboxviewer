@@ -24,6 +24,7 @@ BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *res
 int findNoCase(const char *input, int count, void const* Str, int  Size);
 
 class MboxMail;
+struct NamePatternParams;
 
 typedef CArray<int, int> MailIndexList;
 
@@ -298,11 +299,12 @@ public:
 		m_groupColor = 0;
 		m_index = -1;
 		m_headLength = 0;
-
+		//m_crc32 = 0xffffffff;
 	}
 
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
 
+	//UINT32 m_crc32;
 	_int64 m_startOff;
 	int m_hasAttachments;
 	int m_length, m_headLength, m_recv;
@@ -400,7 +402,7 @@ public:
 	static int escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar);
 	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
 	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
-	static void InsertHtmlBreak(const char *in, int inLength, SimpleString *out);
+	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
 	//
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
@@ -430,6 +432,8 @@ public:
 	static void PopulateCArray(MailArray *mails, int *carray, int carrayCnt);
 	static BOOL VerifyMerge(MailArray *mails, int *carray, int carrayCnt);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
+	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName);
+	static CString GetDateFormat(int i);
 
 	static void ReleaseResources();
 };

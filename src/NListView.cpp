@@ -110,7 +110,7 @@ IMPLEMENT_DYNCREATE(NListView, CWnd)
 /////////////////////////////////////////////////////////////////////////////
 // NListView
 
-CString GetDateFormat(int i);
+//CString GetDateFormat(int i);
 
 NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDate((time_t)-1)
 {
@@ -147,7 +147,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_lastSel = -1;  // last/currently selected item
 	m_bInFind = FALSE;
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
-	m_format = GetDateFormat(iFormat);
+	m_format = MboxMail::GetDateFormat(iFormat);
 	m_gmtTime = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType");
 
 	CString exportEML;
@@ -178,6 +178,8 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 
 NListView::~NListView()
 {
+	delete m_name;
+	delete m_addr;
 }
 
 BEGIN_MESSAGE_MAP(NListView, CWnd)
@@ -328,7 +330,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 28;
-	AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+	//AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -1357,7 +1359,8 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			if (dc.Attach(hDC))
 			{
-				//if ((m->m_groupId % 2) == 0)  // doesn't work with new mail list types
+				//if ((m->m_groupId % 2) == 0)  // doesn't work with new mail list types 
+				// unless we don't support sorting by converstation of new (find & User Seected) mail lists
 				if (m->m_groupColor == 0)
 					dc.FillRect(&rect, &CBrush(PeachPuff1));
 				else
@@ -1734,6 +1737,7 @@ BOOL SaveMails(LPCSTR cache)
 		sz.writeInt64(m->m_timeDate);
 		sz.writeInt(m->m_groupId);
 		sz.writeInt(m->m_groupColor);
+		//sz.writeInt(m->m_crc32);
 
 		int count = m->m_ContentDetailsArray.size();
 		sz.writeInt(count);
@@ -1908,6 +1912,8 @@ int LoadMails(LPCSTR cache, MailArray *mails = 0)
 				break;
 			if (!sz.readInt(&m->m_groupColor))
 				break;
+			//if (!sz.readUInt(&m->m_crc32))
+				//break;
 
 			int count = 0;
 			if (!sz.readInt(&count))
@@ -2044,6 +2050,8 @@ int Cache2Text(LPCSTR cache, CString format)
 				break;
 			if (!sz.readInt(&m->m_groupColor))
 				break;
+			//if (!sz.readUInt(&m->m_crc32))
+				//break;
 
 			if (lastoff < m->m_startOff)
 				lastoff = m->m_startOff;
@@ -2642,7 +2650,7 @@ void NListView::SelectItem(int iItem)
 
 		char *inData = (char*)(LPCSTR)bdy;
 		int inDataLen = bdy.GetLength();
-		MboxMail::InsertHtmlBreak(inData, inDataLen, MboxMail::m_tmpbuf);
+		MboxMail::EncodeAsHtml(inData, inDataLen, MboxMail::m_tmpbuf);
 		inData = MboxMail::m_tmpbuf->Data();
 		inDataLen = MboxMail::m_tmpbuf->Count();
 

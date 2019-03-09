@@ -116,10 +116,10 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	//ON_NOTIFY(NM_CLICK, IDC_ATTACHMENTS, OnActivating)  // TODO: Had to disable for now to allow OnDoubleClick to work !!
 	ON_NOTIFY(NM_DBLCLK, IDC_ATTACHMENTS, OnDoubleClick)
 	ON_NOTIFY(NM_RCLICK, IDC_ATTACHMENTS, OnRClick)  // Right Click Menu
-	ON_WM_GETMINMAXINFO()
-	ON_WM_WINDOWPOSCHANGED()
-	ON_WM_WINDOWPOSCHANGING()
-	ON_WM_SIZING()
+	//ON_WM_GETMINMAXINFO()
+	//ON_WM_WINDOWPOSCHANGED()
+	//ON_WM_WINDOWPOSCHANGING()
+	//ON_WM_SIZING()
 END_MESSAGE_MAP()
 
 CString GetmboxviewTempPath(char *name = 0);
@@ -409,7 +409,7 @@ void NMsgView::OnPaint()
 	dc.Draw3dRect(m_rcCaption, ::GetSysColor(COLOR_BTNHIGHLIGHT),
 		::GetSysColor(COLOR_BTNSHADOW));
 
-	//if (m_bMax)
+	if (m_bMax)
 	{
 		CRect	r = m_rcCaption;
 

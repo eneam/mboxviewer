@@ -10,6 +10,7 @@
 #endif // _MSC_VER > 1000
 
 #include "ChildView.h"
+#include "PrintConfigDlg.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -31,7 +32,6 @@ public:
 	public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-	//virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -69,6 +69,8 @@ protected:  // control bar embedded members
 	//BOOL m_bMailListType;
 	BOOL m_bUserSelectedMailsCheckSet;
 	int m_msgViewPosition;
+public:
+	struct NamePatternParams m_NamePatternParams;
 
 // Generated message map functions
 protected:
@@ -123,6 +125,7 @@ public:
 	afx_msg void OnMessagewindowBottom();
 	afx_msg void OnMessagewindowRight();
 	afx_msg void OnMessagewindowLeft();
+	afx_msg void OnFilePrintconfig();
 };
 
 /////////////////////////////////////////////////////////////////////////////

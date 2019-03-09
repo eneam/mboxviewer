@@ -55,8 +55,9 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CFindAdvancedDlg)
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//virtual BOOL OnInitDialog();
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -68,8 +69,6 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:
-
-	//virtual BOOL OnInitDialog();
 
 	afx_msg void OnBnClickedFilterDates();
 	afx_msg BOOL OnInitDialog();

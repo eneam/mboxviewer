@@ -573,7 +573,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
 
 	const UINT S_SORT_BY_POSITION_Id = 10;
-#if 1
+#if 0
 	// Sort by position in the archive file. Enabled for debugging only
 	AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Position"));
 #endif

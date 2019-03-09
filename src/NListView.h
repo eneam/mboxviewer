@@ -176,7 +176,7 @@ public:
 	int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
-	void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
+	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 
 	// Generated message map functions
 protected:

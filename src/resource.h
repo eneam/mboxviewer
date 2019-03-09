@@ -20,6 +20,7 @@
 #define IDD_FIND_ADVANCED               177
 #define IDD_FIND_IN_MAIL                180
 #define IDD_EDITOR                      194
+#define IDD_PRINT_DLG                   195
 #define IDS_DESC_TITLE                  202
 #define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
@@ -67,6 +68,7 @@
 #define IDC_FILTERDATES                 1059
 #define IDC_EXPORT_FROM                 1059
 #define IDC_CHECK_FROM_A                1059
+#define IDC_FILE_DATE                   1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_CHECK_SUBJECT_A             1061
@@ -97,6 +99,7 @@
 #define IDC_EXPORT_SUBJECT              1085
 #define IDC_MATCH_CASE                  1085
 #define IDC_EDIT_FROM_CASE              1085
+#define IDC_FILE_FROM                   1085
 #define IDC_TIME_TYPE                   1086
 #define IDC_MATCH_CASE2                 1086
 #define IDC_EDIT_TO_CASE                1086
@@ -126,11 +129,13 @@
 #define IDC_BUTTON_PRT                  1109
 #define IDC_EDIT1                       1110
 #define IDC_EDIT_FROM                   1110
+#define IDC_FILE_NAME_FORMAT            1110
 #define IDC_MATCH_WORD                  1111
 #define IDC_EDIT_FROM_WHOLE             1111
 #define IDC_REGULAR_EXPR                1112
 #define IDC_EDIT2                       1113
 #define IDC_EDIT_TO                     1113
+#define IDC_FILE_NAME_MAX_SIZE          1113
 #define IDC_MATCH_WORD2                 1114
 #define IDC_EDIT_TO_WHOLE               1114
 #define IDC_REGULAR_EXPR2               1115
@@ -163,6 +168,11 @@
 #define IDC_CHECK_FIND_ALL              1151
 #define IDC_EDIT_LIST                   1152
 #define IDC_EDIT_FROM_CHECKED           1157
+#define IDC_FILE_TIME                   1158
+#define IDC_FILE_TO                     1159
+#define IDC_FILE_SUBJECT                1160
+#define IDC_CHECK2                      1161
+#define IDC_FILE_UNIQUE_ID              1161
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -192,6 +202,7 @@
 #define ID_MESSAGEWINDOW_BOTTOM         32882
 #define ID_MESSAGEWINDOW_RIGHT          32883
 #define ID_MESSAGEWINDOW_LEFT           32884
+#define ID_FILE_PRINTCONFIG             32885
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -200,9 +211,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        198
-#define _APS_NEXT_COMMAND_VALUE         32885
-#define _APS_NEXT_CONTROL_VALUE         1158
+#define _APS_NEXT_RESOURCE_VALUE        200
+#define _APS_NEXT_COMMAND_VALUE         32886
+#define _APS_NEXT_CONTROL_VALUE         1162
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

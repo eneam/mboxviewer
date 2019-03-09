@@ -9,6 +9,7 @@
 #include "MainFrm.h"
 #include "MboxMail.h"
 #include "ExportToCSVDlg.h"
+#include "PrintConfigDlg.h"
 #include "OpenContainingFolderDlg.h"
 
 #ifdef _DEBUG
@@ -95,6 +96,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_MESSAGEWINDOW_BOTTOM, &CMainFrame::OnMessagewindowBottom)
 	ON_COMMAND(ID_MESSAGEWINDOW_RIGHT, &CMainFrame::OnMessagewindowRight)
 	ON_COMMAND(ID_MESSAGEWINDOW_LEFT, &CMainFrame::OnMessagewindowLeft)
+	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -113,6 +115,9 @@ static UINT indicators[] =
 CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
+
+	m_NamePatternParams.SetDflts();
+
 	m_msgViewPosition = msgViewPosition; // bottom=1
 	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
 	m_bSelectMailFileDone = FALSE;
@@ -120,16 +125,6 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
-
-#if 0
-void CMainFrame::DoDataExchange(CDataExchange* pDX)
-{
-	//m_wndDlgBar.DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CMainFrame);
-	DDX_Check(pDX, IDC_CASE, m_bMailListType);
-	//}}AFX_DATA_MAP
-}
-#endif
 
 CMainFrame::~CMainFrame()
 {
@@ -225,6 +220,17 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			pListView->m_bLongMailAddress = FALSE;
 	}
 
+#if 0
+	DWORD dwFileNameFormatSizeLimit = m_NamePatternParams.m_nFileNameFormatSizeLimit;
+	BOOL retval;
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameSizeLimit"), dwFileNameFormatSizeLimit);
+	if (retval == TRUE) {
+		m_NamePatternParams.m_nFileNameFormatSizeLimit = dwFileNameFormatSizeLimit;
+	}
+#endif
+
+	m_NamePatternParams.LoadFromRegistry();
+
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
 
@@ -296,16 +302,16 @@ void CMainFrame::OnUpdateFileOpen(CCmdUI* pCmdUI)
 
 #include "OptionsDlg.h"
 
-CString GetDateFormat(int i);
+//CString GetDateFormat(int i);
 
 void CMainFrame::OnFileOptions()
 {
 	bool needRedraw = false;
 	COptionsDlg d;
 	if (d.DoModal() == IDOK) {
-		CString format = GetDateFormat(d.m_format);
+		CString format = MboxMail::GetDateFormat(d.m_format);
 		if (GetListView()->m_format.Compare(format) != 0) {
-			GetListView()->m_format = GetDateFormat(d.m_format);
+			GetListView()->m_format = MboxMail::GetDateFormat(d.m_format);
 			needRedraw = true;
 		}
 
@@ -552,12 +558,12 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 		}
 		else
 		{
-			textConfig.m_dateFormat = GetDateFormat(0);
+			textConfig.m_dateFormat = MboxMail::GetDateFormat(0);
 			textConfig.m_bGMTTime = 0;
 		}
 		textConfig.m_nCodePageId = CP_UTF8;
 #else
-		textConfig.m_dateFormat = GetDateFormat(d.m_dateFormat);
+		textConfig.m_dateFormat = MboxMail::GetDateFormat(d.m_dateFormat);
 		textConfig.m_bGMTTime = d.m_bGMTTime;
 
 		textConfig.m_nCodePageId = 0;
@@ -638,7 +644,7 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 		}
 		else
 		{
-			textConfig.m_dateFormat = GetDateFormat(0);
+			textConfig.m_dateFormat = MboxMail::GetDateFormat(0);
 			textConfig.m_bGMTTime = 0;
 		}
 		textConfig.m_nCodePageId = CP_UTF8;
@@ -1249,7 +1255,7 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"\"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"  ---copy or --> \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\"<br>"
 		"<br>"
-		"Future releases may address the issue better. User fedback may help to prioritize :)<br>"
+		"Future releases may address the issue better, implement subfolder for each archives<br>"
 		"<br>"
 		"<br>"
 	);
@@ -1425,5 +1431,20 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 	{
 		DWORD newPosition = msgViewPosition;
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), newPosition);
+	}
+}
+
+
+void CMainFrame::OnFilePrintconfig()
+{
+	// TODO: Add your command handler code here
+	PrintConfigDlg dlg;
+
+	dlg.m_NamePatternParams.Copy(m_NamePatternParams);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		m_NamePatternParams.UpdateRegistry(m_NamePatternParams, dlg.m_NamePatternParams);
+		m_NamePatternParams.Copy(dlg.m_NamePatternParams);
 	}
 }
