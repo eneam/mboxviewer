@@ -13,7 +13,7 @@ v 1.0.3.0
  - Addedd Advanced Find/Search capability;
  - Added option to find all matching mails;
  - Added option to set Message Window position to Bottom, Right or Left;
- - Added option to configure file name for printing to a file;
+ - Added option to configure file name for printing a mail to a file;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.2.8
