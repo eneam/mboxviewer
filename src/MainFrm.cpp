@@ -97,6 +97,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_MESSAGEWINDOW_RIGHT, &CMainFrame::OnMessagewindowRight)
 	ON_COMMAND(ID_MESSAGEWINDOW_LEFT, &CMainFrame::OnMessagewindowLeft)
 	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
+	//ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1447,4 +1448,33 @@ void CMainFrame::OnFilePrintconfig()
 		m_NamePatternParams.UpdateRegistry(m_NamePatternParams, dlg.m_NamePatternParams);
 		m_NamePatternParams.Copy(dlg.m_NamePatternParams);
 	}
+}
+
+
+void CMainFrame::OnSize(UINT nType, int cx, int cy)
+{
+	CFrameWnd::OnSize(nType, cx, cy);
+
+	// TODO: Add your message handler code here
+
+	// TODO: resize panes dynamically; more investigation and changes needed
+#if 0
+	if (nType == 2) 
+	{
+		if (m_msgViewPosition == 2) 
+		{
+			NListView *pListView = GetListView();
+			NTreeView *pTreeView = GetTreeView();
+
+			CRect rect;
+			m_wndView.GetWindowRect(&rect);
+			m_wndView.m_horSplitter.GetWindowRect(&rect);
+
+			m_wndView.m_horSplitter.SetColumnInfo(0, rect.Width() - 700, 20);
+			//m_wndView.m_horSplitter.SetColumnInfo(1, 700, 20);
+
+			m_wndView.m_horSplitter.RecalcLayout();
+		}
+	}
+#endif
 }

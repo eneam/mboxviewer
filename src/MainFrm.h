@@ -126,6 +126,7 @@ public:
 	afx_msg void OnMessagewindowRight();
 	afx_msg void OnMessagewindowLeft();
 	afx_msg void OnFilePrintconfig();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };
 
 /////////////////////////////////////////////////////////////////////////////

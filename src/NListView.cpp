@@ -1158,7 +1158,7 @@ void NListView::ResizeColumns()
 		max_from_len = 400;
 		min_to_len = 100;
 		max_to_len = 400;
-		min_subj_len = 200;
+		min_subj_len = 150;
 		dflt_subj_len = 400;
 		size_len = 60;
 	}
