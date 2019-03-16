@@ -3823,6 +3823,75 @@ bool ALongRightProcessProcPrintMailArchive(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
+BOOL MboxMail::GetPrintCachePath(CString &prtCachePath)
+{
+	prtCachePath.Empty();
+
+	CString mailFile = MboxMail::s_path;
+
+	if (s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return FALSE;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty()) {
+		CString txt = _T("No path to archive file folder.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return FALSE;  // Hopefully s_path wil fail first
+	}
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(mailFile, drive, dir, fname, ext);
+
+	CString mailArchiveFileName;
+	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
+	int position = mailArchiveFileName.ReverseFind('.');
+	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+
+	CString printCachePath;
+	BOOL ret = CPathGetPath(MboxMail::s_path, printCachePath);
+	printCachePath.Append("\\");
+	printCachePath.Append("PrintCache");
+
+	BOOL createDirOk = TRUE;
+	if (!PathFileExist(printCachePath)) {
+		createDirOk = CreateDirectory(printCachePath, NULL);
+	}
+
+	if (!createDirOk) {
+		CString txt = _T("Could not create \"") + printCachePath;
+		txt += _T("\" folder for print destination.\nResolve the problem and try again.");
+		HWND h = NULL;
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return FALSE;
+	}
+
+	printCachePath.Append("\\");
+	printCachePath.Append(baseFileArchiveName);
+
+	createDirOk = TRUE;
+	if (!PathFileExist(printCachePath))
+		createDirOk = CreateDirectory(printCachePath, NULL);
+
+	if (!createDirOk) {
+		CString txt = _T("Could not create \"") + printCachePath;
+		txt += _T("\" folder for print destination.\nResolve the problem and try again.");
+		HWND h = NULL;
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return FALSE;
+	}
+	prtCachePath.Append(printCachePath);
+	return TRUE;
+}
+
 
 int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar)
 {
@@ -3859,7 +3928,12 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	CString fileName;
 	MboxMail *m = MboxMail::s_mails[firstMail];
-	MakeFileName(m, &pFrame->m_NamePatternParams, fileName);
+	if (pFrame) {
+		MakeFileName(m, &pFrame->m_NamePatternParams, fileName);
+	}
+	else {
+		fileName.Format("%d", m->m_index); // should never be here
+	}
 
 	CString mailArchiveFileName;
 	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
@@ -3949,6 +4023,8 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 
 	textFileName = textFile;
+	int textFileLength = textFile.GetLength();
+	int maxPath = _MAX_PATH;
 
 	if (!progressBar)
 	{
@@ -6496,18 +6572,20 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 		int deb = 1;
 
 	}
-	int subjLength = m->m_subj.GetLength();
-	int subjLengthAllowed = namePatternParams->m_nFileNameFormatSizeLimit - subjLength;
-	if (subjLengthAllowed > subjLength)
-		subjLengthAllowed = subjLength;
+	
+	int subjLengthAllowed = namePatternParams->m_nFileNameFormatSizeLimit - fileName.GetLength();
 
 	CString crc32;
 	//crc32.Format("%X", m->m_crc32);
 	crc32.Format("%d", m->m_index);
 
-	subjLengthAllowed = subjLengthAllowed - crc32.GetLength();
+	subjLengthAllowed = subjLengthAllowed - (crc32.GetLength() + 3);  // 3 is for 2 * dash plus at least one character fo subject
 	if (subjLengthAllowed < 0)
 		subjLengthAllowed = 0;
+
+	int subjLength = m->m_subj.GetLength();
+	if (subjLengthAllowed > subjLength)
+		subjLengthAllowed = subjLength;
 
 	if ((subjLengthAllowed > 0) && namePatternParams->m_bSubject)
 	{
@@ -6515,25 +6593,38 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 			fileName.AppendChar(sepchar);
 			int deb = 1;
 		}
+		int outCnt = 0;
+		int ignoreCnt = 0;
 		int i;
-		for (i = 0; i < subjLengthAllowed; i++)
+		for (i = 0; i < subjLength; i++)
 		{
+			if (outCnt >= subjLengthAllowed)
+				break;
+
 			char c = m->m_subj.GetAt(i);
 			unsigned char cc = c;
 
 			if ((cc < 127) && isalnum(c)) {
 				fileName.AppendChar(c);
 				allowUnderscore = TRUE;
+				outCnt++;
 			}
-			else if (allowUnderscore && (i < (subjLengthAllowed - 1)))
+			else if (allowUnderscore)
 			{
-				fileName.AppendChar('_');
-				allowUnderscore = FALSE;
+				//if (outCnt < (subjLengthAllowed - 1)) {
+					fileName.AppendChar('_');
+					allowUnderscore = FALSE;
+					outCnt++;
+				//}
+				//else break;
 			}
+			else
+				ignoreCnt++;
 		}
 		separatorNeeded = TRUE;
 	}
 
+	fileName.TrimRight("_");
 	if (separatorNeeded) {
 		fileName.AppendChar(sepchar);
 		int deb = 1;

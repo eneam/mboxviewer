@@ -156,7 +156,8 @@ public:
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
-	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
+	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
+	void PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem);
 	int MailsWhichColumnSorted() const;
 	void SetLabelOwnership();
 	void ItemState2Str(UINT uState, CString &strState);

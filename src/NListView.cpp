@@ -344,6 +344,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_PRINTER_GROUP_Id = 6;
 	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
+	const UINT S_PDF_DIRECT_GROUP_Id = 29;
+	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_GROUP_Id, _T("PDF..."));
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Related Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
@@ -402,6 +405,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	// Used above for printing to PDF
 	//const UINT S_PDF_DIRECT_Id = 28;
+	// const UINT S_PDF_DIRECT_GROUP_Id = 29;
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -435,50 +439,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
-
-		CFileDialog dlgFile(TRUE);
-		INT_PTR res = dlgFile.DoModal();
-		CString filePath;
-		if (res == IDOK)
-			filePath = dlgFile.GetPathName();
-
-		CString initialFolder = "C:\\Program Files (x86)";
-		CFolderPickerDialog dlgFolder(initialFolder, OFN_FILEMUSTEXIST | OFN_ENABLESIZING, this, sizeof(OPENFILENAME));
-
-		res = dlgFolder.DoModal();
-		CString folderPath;
-		if (res == IDOK)
-			folderPath = dlgFolder.GetPathName();
-
-		HWND h = GetSafeHwnd();
-		CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
-		//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
-		CString fn = "\"C:\\Users\\tata\\Documents\\Mail\\All mail Including Spam and Trash-10.12.2018.htm\"";
-		CString args = "--headless --disable-gpu --print-to-pdf=\"C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\gg.pdf\" " + fn;
-		//CString args = "--headless --disable-gpu --print-to-pdf=C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\gg.pdf " + fn;
-		//CString args = fn;
-#if 1
-		HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_SHOW);
-		//HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOW);
-		CheckShellExecuteResult(result, h);
-#else
-		HINSTANCE result = S_OK;
-		SHELLEXECUTEINFO ShExecInfo = { 0 };
-		ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-		ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-		ShExecInfo.hwnd = NULL;
-		ShExecInfo.lpVerb = NULL;
-		ShExecInfo.lpFile = path;
-		ShExecInfo.lpParameters = args;
-		ShExecInfo.lpDirectory = NULL;
-		ShExecInfo.nShow = SW_SHOW;
-		ShExecInfo.hInstApp = result;
-		ShellExecuteEx(&ShExecInfo);
-		CheckShellExecuteResult(ShExecInfo.hInstApp, h);
-		WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-		CloseHandle(ShExecInfo.hProcess);
-
-#endif
+		if (pFrame) {
+			pFrame->PrintSingleMailtoPDF(iItem);
+		}
 		int deb = 1;
 	}
 	break;
@@ -499,6 +462,11 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 		}
+	}
+	break;
+	case S_PDF_DIRECT_GROUP_Id: {
+		PrintMailGroupToPDF(multipleSelectedMails, iItem);
+		int deb = 1;
 	}
 	break;
 	case S_HTML_OPEN_Id: {
@@ -664,6 +632,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_PRINTER_GROUP_Id = 6;
 	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
+	const UINT S_PDF_DIRECT_Id = 28;
+	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
@@ -683,6 +654,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 		}
 	}
+
+	// Used above for printing to PDF
+	//const UINT S_PDF_DIRECT_Id = 28;
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -711,6 +685,11 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 		}
+	}
+	break;
+	case S_PDF_DIRECT_Id: {
+		PrintMailGroupToPDF(multipleSelectedMails, iItem);
+		int deb = 1;
 	}
 	break;
 	case S_HTML_OPEN_RELATED_Id: {
@@ -4212,7 +4191,7 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 	return FALSE;
 }
 
-void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen, BOOL printToPrinter)
+void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen, BOOL printToPrinter, BOOL createFileOnly)
 {
 	int firstMail = 0;
 	int lastMail = 0;
@@ -4292,7 +4271,10 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 		{
 			if (PathFileExist(path)) { // likely :) 
 				CString txt = "Created file\n\n" + textFileName;
-				if (printToPrinter)
+				if (createFileOnly) {
+					int deb = 1;
+				}
+				else if (printToPrinter)
 				{
 					CFile fp;
 					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
@@ -4353,6 +4335,138 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 		else
 			; // TODO: 
 	}
+}
+void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
+{
+	BOOL createFileOnly = TRUE;
+	PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, FALSE, createFileOnly);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CString fileName;
+	CString printCachePath;
+	CString fn;
+	MboxMail *m = MboxMail::s_mails[iItem];
+
+	CString spath = MboxMail::s_path;
+	if (spath.IsEmpty()) {
+		CString txt = _T("No path to archive file folder.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;  // Hopefully s_path wil fail first
+	}
+
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1];
+
+	_tsplitpath(MboxMail::s_path, drive, dir, fname, ext);
+
+	if (pFrame)
+	{
+		BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
+		if (ret == TRUE) {
+			MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
+			fileName = printCachePath + "\\" + fname + ".pdf";
+		}
+	}
+	else
+		int deb = 1;
+
+	CString htmFileName = printCachePath + "\\" + fname + ".htm";
+
+	HWND h = GetSafeHwnd();
+	CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
+	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
+	//CFile::Remove(fname);
+	BOOL delStatus = DeleteFile(fileName);
+	if (delStatus == FALSE) {
+		DWORD error = GetLastError();
+	}
+
+	CString options;
+	//options.Append(" -—run-all-compositor-stages-before-draw");
+	//options.Append(" --default-background-color=ff0000ff");
+	//options.Append(" --disable-component-extensions-with-background-pages");
+
+	options.Append(" --default-background-color=00000000");
+
+	//CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + options + "\" \"" + htmFileName + "\"";
+	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
+#if 1
+	HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_HIDE);
+	CheckShellExecuteResult(result, h);
+#else
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = path;
+	ShExecInfo.lpParameters = args;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE) {
+		DWORD err = GetLastError();
+		return;
+	}
+	CheckShellExecuteResult(ShExecInfo.hInstApp, h);
+	DWORD msec = 100;
+	BOOL signaled = FALSE;
+	BOOL failed = FALSE;
+	for (;;)
+	{
+		msec = 20;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_ABANDONED: {
+			failed = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_OBJECT_0: {
+			signaled = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_FAILED: {
+			failed = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_TIMEOUT: {
+			BOOL ret = PathFileExist(fileName);
+			if (ret) {
+				CFile fp;
+				if (!fp.Open(fileName, CFile::modeWrite | CFile::shareExclusive)) {
+					int deb = 1;
+				}
+				else
+				{
+					fp.Close();
+					int deb = 1;
+				}
+			}
+			int deb = 1;
+			break;
+		}
+		default: {
+			int deb = 1;
+			break;
+		}
+		}
+		if (signaled || failed)
+			break;
+
+	}
+	CloseHandle(ShExecInfo.hProcess);
+
+#endif
+	int deb = 1;
 }
 
 int NListView::RemoveSelectedMails()

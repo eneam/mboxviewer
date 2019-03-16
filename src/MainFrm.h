@@ -88,8 +88,10 @@ protected:
 
 
 public:
-	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE);
+	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly= FALSE);
 	void OnPrinttoTextFile(int textType);
+	void PrintSingleMailtoPDF(int iItem);
+	void UpdateFilePrintconfig();
 
 	afx_msg void OnFileExportToCsv();
 	afx_msg void OnViewCodepageids();
@@ -127,6 +129,7 @@ public:
 	afx_msg void OnMessagewindowLeft();
 	afx_msg void OnFilePrintconfig();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnUpdateFilePrintconfig(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

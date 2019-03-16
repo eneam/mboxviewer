@@ -98,6 +98,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_MESSAGEWINDOW_LEFT, &CMainFrame::OnMessagewindowLeft)
 	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
 	//ON_WM_SIZE()
+	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -622,7 +623,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 }
 
 // called by NListView::OnRClick
-void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen, BOOL printToPrinter)  // textType 0==Plain, 1==Html
+void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen, BOOL printToPrinter, BOOL createFileOnly)  // textType 0==Plain, 1==Html
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
@@ -673,7 +674,10 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
-					if (printToPrinter)
+					if (createFileOnly) {
+						int deb = 1;
+					}
+					else if (printToPrinter)
 					{
 						CFile fp;
 						if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
@@ -738,6 +742,131 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 #endif
 }
 
+void CMainFrame::PrintSingleMailtoPDF(int iItem)
+{
+#if 0
+	CFileDialog dlgFile(TRUE);
+	INT_PTR res = dlgFile.DoModal();
+	CString filePath;
+	if (res == IDOK)
+		filePath = dlgFile.GetPathName();
+
+	CString initialFolder = "C:\\Program Files (x86)";
+	CFolderPickerDialog dlgFolder(initialFolder, OFN_FILEMUSTEXIST | OFN_ENABLESIZING, this, sizeof(OPENFILENAME));
+
+	res = dlgFolder.DoModal();
+	CString folderPath;
+	if (res == IDOK)
+		folderPath = dlgFolder.GetPathName();
+#endif
+	BOOL createFileOnly = TRUE;
+	OnPrintSingleMailtoText(iItem, 1, FALSE, FALSE, createFileOnly);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CString fileName;
+	CString printCachePath;
+	CString fn;
+	MboxMail *m = MboxMail::s_mails[iItem];
+
+
+		BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
+		if (ret == TRUE) {
+			MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
+			fileName = printCachePath + "\\" + fn + ".pdf";
+		}
+
+	CString htmFileName = printCachePath + "\\" + fn + ".htm";
+
+	BOOL delStatus = DeleteFile(fileName);
+	if (delStatus == FALSE) {
+		DWORD error = GetLastError();
+	}
+
+	HWND h = GetSafeHwnd();
+	CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
+	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
+	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
+#if 1
+	HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_HIDE);
+	CheckShellExecuteResult(result, h);
+#else
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = path;
+	ShExecInfo.lpParameters = args;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE) {
+		DWORD err = GetLastError();
+		return;
+	}
+	CheckShellExecuteResult(ShExecInfo.hInstApp, h);
+	DWORD msec = 100;
+	BOOL signaled = FALSE;
+	BOOL failed = FALSE;
+	for (;;)
+	{
+		msec = 100;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_ABANDONED: {
+			failed = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_OBJECT_0: {
+			signaled = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_FAILED: {
+			failed = TRUE;
+			int deb = 1;
+			break;
+		}
+		case WAIT_TIMEOUT: {
+			BOOL ret = PathFileExist(fileName);
+			if (ret) {
+				CFile fp;
+				if (!fp.Open(fileName, CFile::modeWrite | CFile::shareExclusive)) {
+					int deb = 1;
+				}
+				else
+				{
+					fp.Close();
+					int deb = 1;
+				}
+			}
+			else
+			{
+				TRACE(_T("No pdf file yet=%s\n"), fileName);
+			}
+			//signaled = TRUE;
+			int deb = 1;
+			break;
+		}
+		default: {
+			int deb = 1;
+			break;
+		}
+		}
+		if (signaled || failed)
+			break;
+
+	}
+	CloseHandle(ShExecInfo.hProcess);
+
+#endif
+	int deb = 1;
+	return;
+}
 
 // File->"Print To"->Text->OnPrinttoHtml()->OnPrinttoTextFile()->exportToTextFile() for firstMail; lastMail->printSingleMailToTextFile(index)
 void CMainFrame::OnPrinttoHtml()
@@ -1477,4 +1606,16 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 		}
 	}
 #endif
+}
+
+
+void CMainFrame::OnUpdateFilePrintconfig(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+}
+
+void CMainFrame::UpdateFilePrintconfig()
+{
+	NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
 }

@@ -273,6 +273,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pListView->ResetSize();
 	pListView->FillCtrl();
 	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
+
+	pFrame->UpdateFilePrintconfig();
 }
 
 void NTreeView::ForceParseMailFile(HTREEITEM hItem)

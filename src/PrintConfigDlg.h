@@ -20,11 +20,13 @@ struct NamePatternParams
 	int m_bSubject;
 	int m_bUniqueId;
 	int m_nFileNameFormatSizeLimit;
+	int m_nWantedFileNameFormatSizeLimit;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);
 	void UpdateRegistry(NamePatternParams &current, NamePatternParams &updated);
 	void LoadFromRegistry();
+	static void UpdateFilePrintconfig(struct NamePatternParams &namePatternParams);
 };
 
 class PrintConfigDlg : public CDialogEx

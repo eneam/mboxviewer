@@ -130,6 +130,7 @@
 #define IDC_EDIT1                       1110
 #define IDC_EDIT_FROM                   1110
 #define IDC_FILE_NAME_FORMAT            1110
+#define IDC_FILE_NAME_ADJUSTED_MAX_SIZE 1110
 #define IDC_MATCH_WORD                  1111
 #define IDC_EDIT_FROM_WHOLE             1111
 #define IDC_REGULAR_EXPR                1112
@@ -171,7 +172,6 @@
 #define IDC_FILE_TIME                   1158
 #define IDC_FILE_TO                     1159
 #define IDC_FILE_SUBJECT                1160
-#define IDC_CHECK2                      1161
 #define IDC_FILE_UNIQUE_ID              1161
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839

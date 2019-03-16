@@ -434,6 +434,7 @@ public:
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName);
 	static CString GetDateFormat(int i);
+	static BOOL GetPrintCachePath(CString &printCachePath);
 
 	static void ReleaseResources();
 };

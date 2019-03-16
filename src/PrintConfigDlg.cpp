@@ -5,6 +5,7 @@
 #include "mboxview.h"
 #include "PrintConfigDlg.h"
 #include "afxdialogex.h"
+#include "MboxMail.h"
 
 
 // PrintConfigDlg dialog
@@ -30,7 +31,8 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FILE_TO, m_NamePatternParams.m_bTo);
 	DDX_Check(pDX, IDC_FILE_SUBJECT, m_NamePatternParams.m_bSubject);
 	DDX_Check(pDX, IDC_FILE_UNIQUE_ID, m_NamePatternParams.m_bUniqueId);
-	DDX_Text(pDX, IDC_FILE_NAME_MAX_SIZE, m_NamePatternParams.m_nFileNameFormatSizeLimit);
+	DDX_Text(pDX, IDC_FILE_NAME_ADJUSTED_MAX_SIZE, m_NamePatternParams.m_nFileNameFormatSizeLimit);
+	DDX_Text(pDX, IDC_FILE_NAME_MAX_SIZE, m_NamePatternParams.m_nWantedFileNameFormatSizeLimit);
 }
 
 
@@ -63,11 +65,7 @@ void PrintConfigDlg::OnBnClickedOk()
 	}
 #endif
 
-	if (m_NamePatternParams.m_nFileNameFormatSizeLimit > 256)
-	{
-		AfxMessageBox("File Name Size not valid > 255 !", MB_OK | MB_ICONHAND);
-		return;
-	}
+	NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
 
 	CDialogEx::OnOK();
 }
@@ -76,15 +74,25 @@ BOOL PrintConfigDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	UpdateData(TRUE);
+
 	if (GetSafeHwnd()) {
 		CWnd *p = GetDlgItem(IDC_FILE_UNIQUE_ID);
 		if (p) {
 			((CButton*)p)->SetCheck(1);
 			p->EnableWindow(FALSE);
 		}
+		p = GetDlgItem(IDC_FILE_NAME_ADJUSTED_MAX_SIZE);
+		if (p) {
+			NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
+			CString adjustedMaxSize;
+			adjustedMaxSize.Format("%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
+			((CButton*)p)->SetWindowText(adjustedMaxSize);
+			p->EnableWindow(FALSE);
+		}
 	}
 
-	UpdateData(TRUE);
+	//UpdateData(TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -99,6 +107,34 @@ void PrintConfigDlg::OnEnChangeFileNameMaxSize()
 	// with the ENM_CHANGE flag ORed into the mask.
 
 	// TODO:  Add your control notification handler code here
+	NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
+	if (GetSafeHwnd())
+	{
+		CString wantedMaxSize;
+		CWnd *p = GetDlgItem(IDC_FILE_NAME_MAX_SIZE);
+		if (p) {
+			((CButton*)p)->GetWindowText(wantedMaxSize);
+			int nWantedMaxSize = atoi((LPCSTR)wantedMaxSize);
+			if (nWantedMaxSize > 260)
+			{
+				wantedMaxSize = "260";
+				((CButton*)p)->SetWindowText(wantedMaxSize);
+			}
+		}
+		else
+			return;
+
+		m_NamePatternParams.m_nWantedFileNameFormatSizeLimit = atoi((LPCSTR)wantedMaxSize);
+		NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
+		p = GetDlgItem(IDC_FILE_NAME_ADJUSTED_MAX_SIZE);
+		if (p) {
+			CString adjustedMaxSize;
+			adjustedMaxSize.Format("%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
+			((CButton*)p)->SetWindowText(adjustedMaxSize);
+			p->EnableWindow(FALSE);
+		}
+	}
+	int deb = 1;
 }
 
 void NamePatternParams::SetDflts()
@@ -109,7 +145,8 @@ void NamePatternParams::SetDflts()
 	m_bTo = TRUE;
 	m_bSubject = TRUE;
 	m_bUniqueId = TRUE;
-	m_nFileNameFormatSizeLimit = 100;
+	m_nFileNameFormatSizeLimit = 260;
+	m_nWantedFileNameFormatSizeLimit = m_nFileNameFormatSizeLimit;
 }
 
 void NamePatternParams::Copy(NamePatternParams &src)
@@ -124,6 +161,7 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bSubject = src.m_bSubject;
 	m_bUniqueId = src.m_bUniqueId;
 	m_nFileNameFormatSizeLimit = src.m_nFileNameFormatSizeLimit;
+	m_nWantedFileNameFormatSizeLimit = src.m_nWantedFileNameFormatSizeLimit;
 }
 
 void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternParams &updated)
@@ -148,7 +186,7 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 
 	}
 	if (updated.m_nFileNameFormatSizeLimit != current.m_nFileNameFormatSizeLimit) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameMaxLength", updated.m_nFileNameFormatSizeLimit);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameMaxLength", updated.m_nWantedFileNameFormatSizeLimit);
 	}
 }
 
@@ -156,7 +194,7 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 void NamePatternParams::LoadFromRegistry()
 {
 	BOOL retval;
-	DWORD bDate, bTime, bFrom, bTo, bSubject, nFileNameFormatSizeLimit;
+	DWORD bDate, bTime, bFrom, bTo, bSubject, nWantedFileNameFormatSizeLimit;
 
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameDate"), bDate))
 		m_bDate = bDate;
@@ -168,6 +206,23 @@ void NamePatternParams::LoadFromRegistry()
 		m_bTo = bTo;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameSubject"), bSubject))
 		m_bSubject = bSubject;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameMaxLength"), nFileNameFormatSizeLimit))
-		m_nFileNameFormatSizeLimit = nFileNameFormatSizeLimit;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameMaxLength"), nWantedFileNameFormatSizeLimit))
+		m_nWantedFileNameFormatSizeLimit = nWantedFileNameFormatSizeLimit;
+}
+
+void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)
+{
+	CString printCacheName;
+	MboxMail::GetPrintCachePath(printCacheName);
+	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 2; // -1 for flder separatorr, -4 for suffix, -2 for fudge factor
+	if (maxFileSize < 0)
+		maxFileSize = 0;
+
+	if (namePatternParams.m_nWantedFileNameFormatSizeLimit > maxFileSize)
+	{
+		namePatternParams.m_nFileNameFormatSizeLimit = maxFileSize;
+	}
+	else
+		namePatternParams.m_nFileNameFormatSizeLimit = namePatternParams.m_nWantedFileNameFormatSizeLimit;
+
 }
