@@ -146,9 +146,6 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE("Failed to create left view\n");
 		return -1;
 	}
-
-	if( pFrame && pFrame->GetTreeView() )
-		pFrame->GetTreeView()->FillCtrl();
 	
 	return 0;
 }

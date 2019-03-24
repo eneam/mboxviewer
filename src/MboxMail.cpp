@@ -16,6 +16,7 @@ UINT charset2Id(const char *char_set);
 BOOL id2charset(UINT id, std::string &charset);
 
 MessageIdTableType *MboxMail::m_pMessageIdTable = 0;
+MboxMailTableType *MboxMail::m_pMboxMailTable = 0;
 int MboxMail::m_nextGroupId = 0;
 
 SimpleString* MboxMail::m_outbuf = new SimpleString(10000);
@@ -637,7 +638,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							//m->DumpMailBox(m, index);
 							//NListView::DumpItemDetails(index);
 
-							if (s_mails.GetCount() == 863)
+							if (s_mails.GetCount() == 1098)
 								int deb = 1;
 
 							_int64 curOff = startOffset + (p - orig);
@@ -789,6 +790,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				int index = s_mails.GetCount() - 1;
 				//m->DumpMailBox(m, index);
 				//NListView::DumpItemDetails(index);
+
+				if (s_mails.GetCount() == 1098)
+					int deb = 1;
 			}
 		}
 	}
@@ -2041,14 +2045,9 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 
 void MboxMail::Destroy() 
 {
-	MessageIdTableType::iterator it;
 
-	if (m_pMessageIdTable) {
-		for (it = m_pMessageIdTable->begin(); it != m_pMessageIdTable->end(); it++) {
-			delete it->first;
-		}
-		m_pMessageIdTable->clear();
-	}
+	clearMboxMailTable();
+	clearMessageIdTable();
 
 	for (int i = 0; i < s_mails_ref.GetSize(); i++)
 	{
@@ -2093,14 +2092,14 @@ unsigned long StrHash(const char* buf, const UINT length)
 //
 int MboxMail::getMessageId(CString *key)
 {
-	MboxMail *m = 0;
 	MessageIdTableType::iterator it;
 	if (m_pMessageIdTable == 0)
-		createMessageIdTable(10000);
+		createMessageIdTable(50000);
 
 	it = m_pMessageIdTable->find(key);
-	if (it != m_pMessageIdTable->cend())
+	if (it != m_pMessageIdTable->cend()) {
 		return it->second;
+	}
 	else
 		return -1;
 }
@@ -2118,7 +2117,7 @@ int MboxMail::getReplyId(CString *key)
 	MboxMail *m = 0;
 	MessageIdTableType::iterator it;
 	if (m_pMessageIdTable == 0)
-		createMessageIdTable(10000);
+		createMessageIdTable(50000);
 
 	it = m_pMessageIdTable->find(key);
 	if (it != m_pMessageIdTable->cend())
@@ -2132,6 +2131,18 @@ UINT MboxMail::createMessageIdTable(UINT count)
 	m_pMessageIdTable = new MessageIdTableType;
 	m_pMessageIdTable->reserve(count);
 	return count;
+}
+
+void MboxMail::clearMessageIdTable()
+{
+	MessageIdTableType::iterator it;
+
+	if (m_pMessageIdTable) {
+		for (it = m_pMessageIdTable->begin(); it != m_pMessageIdTable->end(); it++) {
+			delete it->first;
+		}
+		m_pMessageIdTable->clear();
+	}
 }
 
 int MboxMail::add2ConversationGroup(int mid, MboxMail *m)
@@ -3935,43 +3946,10 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		fileName.Format("%d", m->m_index); // should never be here
 	}
 
-	CString mailArchiveFileName;
-	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
-	int position = mailArchiveFileName.ReverseFind('.');
-	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
-
-	CString printCachePath;
-	BOOL ret = CPathGetPath(MboxMail::s_path, printCachePath);
-	printCachePath.Append("\\");
-	printCachePath.Append("PrintCache");
-
-	BOOL createDirOk = TRUE;
-	if (!PathFileExist(printCachePath)) {
-		createDirOk = CreateDirectory(printCachePath, NULL);
-	}
-
-	if (!createDirOk) {
-		CString txt = _T("Could not create \"") + printCachePath;
-		txt += _T("\" folder for print destination.\nResolve the problem and try again.");
-		HWND h = NULL;
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	CString printCachePath;;
+	BOOL retval = GetPrintCachePath(printCachePath);
+	if (retval == FALSE)
 		return -1;
-	}
-
-	printCachePath.Append("\\");
-	printCachePath.Append(baseFileArchiveName);
-
-	createDirOk = TRUE;
-	if (!PathFileExist(printCachePath))
-		createDirOk = CreateDirectory(printCachePath, NULL);
-
-	if (!createDirOk) {
-		CString txt = _T("Could not create \"") + printCachePath;
-		txt += _T("\" folder for print destination.\nResolve the problem and try again.");
-		HWND h = NULL;
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-		return -1;
-	}
 
 	if (!progressBar)
 	{
@@ -5853,6 +5831,7 @@ void MboxMail::ReleaseResources()
 	delete MboxMail::m_tmpbuf;
 	delete MailBody::m_mpool;
 	delete m_pMessageIdTable;
+	delete m_pMboxMailTable;
 }
 
 // search for string2 in string1 (strstr)
@@ -6478,7 +6457,7 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	SimpleString name;
 	SimpleString addr;
 	SimpleString addrTo;
-	CString tmpAddr;
+	//CString tmpAddr;
 	CString fromAddr;
 	CString toAddr;
 	CString subjAddr;
@@ -6543,7 +6522,7 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 			fromAddr.Append(addr.Data(), pos);
 		else
 			fromAddr.Append(addr.Data(), addr.Count());
-		fromAddr.Trim(" \t\"<>");
+		fromAddr.Trim(" \t\"<>:;,");  // may need to remove more not aphanumerics
 		fileName.Append(fromAddr);
 
 		separatorNeeded = TRUE;
@@ -6565,7 +6544,13 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 		else
 			addrTo.Append(toAddr, toAddr.GetLength());
 
-		fileName.Append(addrTo.Data(), addrTo.Count());
+		toAddr.Empty();
+		toAddr.Append(addrTo.Data(), addrTo.Count());
+
+		toAddr.Trim(" \t\"<>:;,"); // may need to remove more not aphanumerics
+
+		//fileName.Append(addrTo.Data(), addrTo.Count());
+		fileName.Append(toAddr);
 
 		separatorNeeded = TRUE;
 
@@ -6593,6 +6578,7 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 			fileName.AppendChar(sepchar);
 			int deb = 1;
 		}
+		// TODO: create function
 		int outCnt = 0;
 		int ignoreCnt = 0;
 		int i;
@@ -6637,6 +6623,127 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 
 }
 
+
+int MboxMail::RemoveDuplicateMails()
+{
+	MboxMail *m;
+	MboxMail *m_found;
+
+	// !! s_mails is already populated from mboxview file
+
+	// Remove duplicate mails
+	if (s_mails.GetCount() > s_mails_edit.GetCount())
+		s_mails_edit.SetSizeKeepData(s_mails.GetCount());
+
+	int to_i = 0;
+	for (int i = 0; i < s_mails.GetSize(); i++)
+	{
+		m = s_mails[i];
+
+		if (m->m_messageId.GetLength())
+		{
+			m_found = getMboxMail(&m->m_messageId);
+			if (m_found == 0)
+			{
+				insertMboxMail(&m->m_messageId, m);
+
+				s_mails_edit[to_i] = s_mails[i];
+				to_i++;
+				m->m_duplicateId = false;
+			}
+			else 
+			{
+				if ((m_found->m_timeDate != m->m_timeDate) ||
+					(m_found->m_from != m->m_from) ||
+					(m_found->m_to != m->m_to) )
+				{
+					s_mails_edit[to_i] = s_mails[i];
+					to_i++;
+					m->m_duplicateId = false;
+				}
+				else
+					m->m_duplicateId = true;
+			}
+		}
+		else 
+		{
+			s_mails_edit[to_i] = s_mails[i];
+			to_i++;
+			int deb = 1;
+		}
+	}
+	s_mails_edit.SetSizeKeepData(to_i);
+
+	int dupCnt = s_mails.GetSize() - s_mails_edit.GetSize();
+
+	s_mails.CopyKeepData(s_mails_edit);
+
+	clearMboxMailTable();
+
+	return dupCnt;
+}
+
+
+//
+MboxMail* MboxMail::getMboxMail(CString *key)
+{
+	MboxMailTableType::iterator it;
+	if (m_pMboxMailTable == 0)
+		createMboxMailTable(50000);
+
+	it = m_pMboxMailTable->find(key);
+	if (it != m_pMboxMailTable->cend()) {
+		return it->second;
+	}
+	else
+		return 0;
+}
+
+bool MboxMail::insertMboxMail(CString *key, MboxMail *mbox)
+{
+	CString *mapKey = new CString;
+	*mapKey = *key;
+	std::pair<MboxMailTableType::iterator, bool> result = m_pMboxMailTable->insert(MboxMailTableType::value_type(mapKey, mbox));
+	return result.second;
+}
+
+UINT MboxMail::createMboxMailTable(UINT count)
+{
+	m_pMboxMailTable = new MboxMailTableType;
+	m_pMboxMailTable->reserve(count);
+	return count;
+}
+
+void MboxMail::clearMboxMailTable()
+{
+	MboxMailTableType::iterator it;
+
+	if (m_pMboxMailTable) {
+		for (it = m_pMboxMailTable->begin(); it != m_pMboxMailTable->end(); it++) {
+			delete it->first;
+		}
+		m_pMboxMailTable->clear();
+	}
+}
+
+void MboxMail::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention)
+{
+	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
+	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
+	TCHAR fname[_MAX_FNAME + 1]; fname[0] = 0;
+
+	_tsplitpath_s(fileName, 
+		drive, _MAX_DRIVE + 1,
+		dir, _MAX_DIR + 1,
+		fname, _MAX_FNAME + 1, 
+		ext, _MAX_EXT + 1);
+
+	driveName.Append(drive);
+	directory.Append(dir);
+	fileNameBase.Append(fname);
+	fileNameExtention.Append(ext);
+}
 
 
 

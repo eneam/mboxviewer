@@ -330,7 +330,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 28;
-	//AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+	AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -345,7 +345,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_GROUP_Id = 29;
-	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_GROUP_Id, _T("PDF..."));
+	AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_GROUP_Id, _T("PDF..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Related Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -402,6 +402,10 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_ARCHIVE_LOCATION_Id = 27;
 	if (pFrame && MboxMail::IsUserMailsSelected())
 		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mail Archive Location"));
+
+	const UINT M_REMOVE_DUPLICATE_MAILS_Id = 31;
+	if (pFrame && MboxMail::IsUserMailsSelected())
+		AppendMenu(&menu, M_REMOVE_DUPLICATE_MAILS_Id, _T("Remove Duplicate Mails"));
 
 	// Used above for printing to PDF
 	//const UINT S_PDF_DIRECT_Id = 28;
@@ -573,6 +577,10 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		OpenArchiveFileLocation();
 	}
 	break;
+	case M_REMOVE_DUPLICATE_MAILS_Id: {
+		RemoveDuplicateMails();
+	}
+	break;
 	default: {
 		int deb = 1;
 	}
@@ -581,7 +589,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 
 	// TODO: review below check
-	if (command == S_REMOVE_Id)
+	if ((command == S_REMOVE_Id) || (command == M_REMOVE_DUPLICATE_MAILS_Id) || (command == S_REMOVE_ALL_Id))
 		; // done
 	else if ((itemSelected == FALSE) && (m_lastSel != iItem)) {
 		TRACE("Selecting %d\n", iItem);
@@ -633,7 +641,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 28;
-	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+	AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -688,7 +696,12 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
-		PrintMailGroupToPDF(multipleSelectedMails, iItem);
+		//PrintMailGroupToPDF(multipleSelectedMails, iItem);
+		BOOL multipleSelectedMails = TRUE;
+		int nItem = -1;
+		int firstMail = -1;
+		int lastMail = -1;
+		ExportMailGroupToSeparatePDF(firstMail, lastMail, multipleSelectedMails, nItem);
 		int deb = 1;
 	}
 	break;
@@ -1617,7 +1630,30 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	11
+bool ALongRightProcessProcPrintMailGroupToSepratePDF(const CUPDUPDATA* pCUPDUPData)
+{
+	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS *args = (PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)pCUPDUPData->GetAppData();
+	MboxMail::pCUPDUPData = pCUPDUPData;
+
+	HANDLE h = GetCurrentThread();
+	BOOL prio = SetThreadPriority(h, THREAD_PRIORITY_ABOVE_NORMAL);
+	DWORD myThreadId = GetCurrentThreadId();
+	DWORD myThreadPri = GetThreadPriority(h);
+	TRACE(_T("(ALongRightProcessProcPrintMailArchiveToCSV) threadId=%ld threadPriority=%ld\n"), myThreadId, myThreadPri);
+
+	BOOL progressBar = TRUE;
+	Com_Initialize();
+
+	// TODO: CUPDUPDATA* pCUPDUPData is global set as  MboxMail::pCUPDUPData = pCUPDUPData; Should conider to pass as param to printMailArchiveToTextFile
+	CString errorText;
+
+	args->retpos = args->lview->PrintMailGroupToSeparatePDF(args->firstMail, args->lastMail, args->selectedMailIndexList, args->nItem);
+
+	args->exitted = TRUE;
+	return true;
+}
+
+#define CACHE_VERSION	12
 
 void CPathStripPath(const char *path, CString &fileName)
 {
@@ -1716,6 +1752,7 @@ BOOL SaveMails(LPCSTR cache)
 		sz.writeInt64(m->m_timeDate);
 		sz.writeInt(m->m_groupId);
 		sz.writeInt(m->m_groupColor);
+		sz.writeString(m->m_messageId);
 		//sz.writeInt(m->m_crc32);
 
 		int count = m->m_ContentDetailsArray.size();
@@ -1891,6 +1928,8 @@ int LoadMails(LPCSTR cache, MailArray *mails = 0)
 				break;
 			if (!sz.readInt(&m->m_groupColor))
 				break;
+			if (!sz.readString(m->m_messageId))
+				break;
 			//if (!sz.readUInt(&m->m_crc32))
 				//break;
 
@@ -2028,6 +2067,8 @@ int Cache2Text(LPCSTR cache, CString format)
 			if (!sz.readInt(&m->m_groupId))
 				break;
 			if (!sz.readInt(&m->m_groupColor))
+				break;
+			if (!sz.readString(m->m_messageId))
 				break;
 			//if (!sz.readUInt(&m->m_crc32))
 				//break;
@@ -2187,6 +2228,8 @@ void NListView::FillCtrl()
 			m_list.SetItemCount(ni);
 			//Cache2Text(cache, m_format);
 		}
+
+		MboxMail::clearMessageIdTable();
 	}
 
 	MboxMail::s_mails_ref.SetSizeKeepData(MboxMail::s_mails.GetSize());
@@ -4336,6 +4379,177 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 			; // TODO: 
 	}
 }
+
+int NListView::ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem)
+{
+	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS args;
+
+	MailIndexList *selectedMailsIndexList = 0;
+	if (multipleSelectedMails)
+	{
+		int selectedCnt = m_list.GetSelectedCount();
+		m_selectedMailsList.SetSize(selectedCnt);
+		POSITION p = m_list.GetFirstSelectedItemPosition();
+		int nSelected;
+		int i = 0;
+		while (p)
+		{
+			if (i >= selectedCnt) // just a test 
+				int deb = 1;
+			nSelected = m_list.GetNextSelectedItem(p);
+			m_selectedMailsList.SetAtGrow(i, nSelected); // to be safe grow just in case
+			i++;
+		}
+		selectedMailsIndexList = &m_selectedMailsList;
+	}
+
+	/*IN*/ 
+	args.lview = this; 
+	args.firstMail = firstMail;
+	args.lastMail = lastMail;
+	args.selectedMailIndexList = selectedMailsIndexList;
+	args.nItem = nItem;
+
+	/*OUT*/ 
+	args.exitted = FALSE; 
+	args.retpos = -1; 
+
+	{
+		CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSepratePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+
+		INT_PTR nResult = Dlg.DoModal();
+		if (!nResult) { // should never be true ?
+			return -1;
+		}
+
+		int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+		int retResult = LOWORD(nResult);
+
+		if (retResult != IDOK)
+		{  // IDOK==0, IDCANCEL==2
+			// We should be here when user selects Cancel button
+			//ASSERT(cancelledbyUser == TRUE);
+			int loopCnt = 20;
+			DWORD tc_start = GetTickCount();
+			while ((loopCnt-- > 0) && (args.exitted == FALSE))
+			{
+				Sleep(25);
+			}
+			DWORD tc_end = GetTickCount();
+			DWORD delta = tc_end - tc_start;
+			TRACE("(ExportMailGroupToSeparatePDF)Waited %ld milliseconds for thread to exist.\n", delta);
+		}
+		int w = args.retpos;
+	}
+	return 1;
+}
+
+int NListView::PrintMailGroupToSeparatePDF(int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int nItem)
+{
+	BOOL progressBar = TRUE;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if (selectedMailIndexList)
+	{
+		if (progressBar && MboxMail::pCUPDUPData)
+		{
+			MboxMail::pCUPDUPData->SetProgress(_T("Printing mail group/archive to PDF file ..."), 0);
+		}
+
+		float step = (float)(lastMail - firstMail) / 100;
+		if (step <= 1) step = 1;
+
+		float curstep = 1;
+		if (progressBar && MboxMail::pCUPDUPData)
+			MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
+
+
+		int i;
+		firstMail = (*selectedMailIndexList)[0];
+		int cnt = selectedMailIndexList->GetCount();
+		for (int j = 0; j < cnt; j++)
+		{
+			//i = selectedMailIndexList->ElementAt(j);
+			i = (*selectedMailIndexList)[j];
+			if (pFrame)
+				pFrame->PrintSingleMailtoPDF(i);
+
+			if (progressBar && MboxMail::pCUPDUPData)
+			{
+				float newstep = (float)(i - firstMail) / step + 1;
+				if (newstep > curstep)
+				{
+					if (MboxMail::pCUPDUPData->ShouldTerminate()) {
+						int deb = 1;
+						break;
+					}
+
+					MboxMail::pCUPDUPData->SetProgress((UINT_PTR)newstep);
+					curstep = newstep;
+				}
+
+				if (MboxMail::pCUPDUPData->ShouldTerminate()) {
+					int deb = 1;
+					break;
+				}
+			}
+
+		}
+		int deb = 1;
+	}
+	else if (nItem >= 0) 
+	{
+		int deb = 1;
+	}
+	else if (firstMail >= 0)
+	{
+		if (progressBar && MboxMail::pCUPDUPData)
+		{
+				MboxMail::pCUPDUPData->SetProgress(_T("Printing mail group/archive to PDF file ..."), 0);
+		}
+
+		float step = (float)(lastMail - firstMail) / 100;
+		if (step <= 1) step = 1;
+
+		float curstep = 1;
+		if (progressBar && MboxMail::pCUPDUPData)
+			MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
+
+		for (int i = firstMail; i <= lastMail; i++)
+		{
+			if (pFrame) {
+				pFrame->PrintSingleMailtoPDF(i);
+			}
+
+			if (progressBar && MboxMail::pCUPDUPData)
+			{
+				float newstep = (float)(i - firstMail) / step + 1;
+				if (newstep > curstep)
+				{
+					if (MboxMail::pCUPDUPData->ShouldTerminate()) {
+						int deb = 1;
+						break;
+					}
+
+					MboxMail::pCUPDUPData->SetProgress((UINT_PTR)newstep);
+					curstep = newstep;
+				}
+
+				if (MboxMail::pCUPDUPData->ShouldTerminate()) {
+					int deb = 1;
+					break;
+				}
+			}
+
+		}
+		int deb = 1;
+	}
+	else
+		int deb = 1;
+
+	return  1;
+}
+
 void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
 {
 	BOOL createFileOnly = TRUE;
@@ -4362,6 +4576,7 @@ void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
 
 	_tsplitpath(MboxMail::s_path, drive, dir, fname, ext);
 
+	CString path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
 	if (pFrame)
 	{
 		BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
@@ -4369,14 +4584,22 @@ void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
 			MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
 			fileName = printCachePath + "\\" + fname + ".pdf";
 		}
+		path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
 	}
 	else
 		int deb = 1;
 
+	if (!PathFileExist(path)) {
+		CString txt = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and/or path is correct.\nOr disable Print to .. PDF option.\nSelect File->Print Config to update setup.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		int deb = 1;
+		return;
+	}
+
 	CString htmFileName = printCachePath + "\\" + fname + ".htm";
 
 	HWND h = GetSafeHwnd();
-	CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
+	
 	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
 	//CFile::Remove(fname);
 	BOOL delStatus = DeleteFile(fileName);
@@ -4387,12 +4610,12 @@ void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
 	CString options;
 	//options.Append(" -—run-all-compositor-stages-before-draw");
 	//options.Append(" --default-background-color=ff0000ff");
-	//options.Append(" --disable-component-extensions-with-background-pages");
-
 	options.Append(" --default-background-color=00000000");
 
 	//CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + options + "\" \"" + htmFileName + "\"";
-	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
+	//CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
+
+	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"" + " --print-to-pdf=\"" "1." + fileName + "\" \"" + htmFileName + "\"";
 #if 1
 	HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_HIDE);
 	CheckShellExecuteResult(result, h);
@@ -4406,7 +4629,7 @@ void NListView::PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem)
 	ShExecInfo.lpFile = path;
 	ShExecInfo.lpParameters = args;
 	ShExecInfo.lpDirectory = NULL;
-	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = result;
 	BOOL retval = ShellExecuteEx(&ShExecInfo);
 	if (retval == FALSE) {
@@ -5760,5 +5983,26 @@ int NListView::OpenArchiveFileLocation()
 		HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 		CheckShellExecuteResult(result, h);
 	}
+	return 1;
+}
+
+int NListView::RemoveDuplicateMails()
+{
+	m_list.SetRedraw(FALSE);
+
+	MboxMail::RemoveDuplicateMails();
+	RedrawMails();
+
+	if (MboxMail::s_mails.GetCount() > 0)
+	{
+		SelectItemFound(0);
+	}
+	else
+		m_lastSel = -1;
+
+	// TODO: SelectItemFound sets  m_lastFindPos. Need to reset to 0 ?
+	m_lastFindPos = -1;
+	m_bEditFindFirst = TRUE;
+
 	return 1;
 }

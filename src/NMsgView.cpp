@@ -779,6 +779,57 @@ void NMsgView::MergeWhiteLines(SimpleString *workbuf, int maxOutLines)
 #endif
 }
 
+void NMsgView::PrintToPrinterPageSetup(CWnd *parent)
+{
+	//CComBSTR cmdID(_T("PRINT"));
+	//VARIANT_BOOL vBool;
+
+	IHTMLDocument2 *lpHtmlDocument = 0;
+	HRESULT hr;
+	VARIANT val;
+	VariantInit(&val);
+	VARIANT valOut;
+	VariantInit(&valOut);
+
+	SimpleString inbuf;
+	inbuf.Append("<html></html>");
+	SimpleString workbuf;
+	UINT inCodePage = CP_UTF8;
+
+	BOOL retVal = CreateHTMLDocument(&lpHtmlDocument, &inbuf, &workbuf, inCodePage);
+	if ((retVal == FALSE) || (lpHtmlDocument == 0)) {
+		return;
+	}
+
+	IOleCommandTarget  *lpOleCommandTarget = 0;
+	hr = lpHtmlDocument->QueryInterface(IID_IOleCommandTarget, (VOID**)&lpOleCommandTarget);
+	if (FAILED(hr) || !lpOleCommandTarget)
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+	hr = lpOleCommandTarget->Exec(NULL, OLECMDID_PAGESETUP, OLECMDEXECOPT_PROMPTUSER, &val, &valOut);
+
+	if (FAILED(hr))
+	{
+		BreakBeforeGoingCleanup();
+		goto cleanup;
+	}
+
+cleanup:
+
+	hr = VariantClear(&val);
+	hr = VariantClear(&valOut);
+
+	if (lpOleCommandTarget)
+		lpOleCommandTarget->Release();
+
+	if (lpHtmlDocument)
+		lpHtmlDocument->Release();
+
+}
+
 void NMsgView::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage)
 {
 	//CComBSTR cmdID(_T("PRINT"));
@@ -818,7 +869,22 @@ void NMsgView::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *wor
 		goto cleanup;
 	}
 
-	hr = lpOleCommandTarget->Exec(NULL, OLECMDID_PRINT, OLECMDEXECOPT_PROMPTUSER, &val, &valOut);
+	DWORD nCmdId = OLECMDID_PRINT;
+	DWORD nCmdOption = OLECMDEXECOPT_DONTPROMPTUSER;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) 
+	{
+		if (pFrame->m_NamePatternParams.m_bPrintDialog == 1) {
+			nCmdId = OLECMDID_PRINT;
+			nCmdOption = OLECMDEXECOPT_PROMPTUSER;
+		}
+		else if (pFrame->m_NamePatternParams.m_bPrintDialog == 2) {
+			nCmdId = OLECMDID_PRINTPREVIEW;
+			nCmdOption = OLECMDEXECOPT_PROMPTUSER;
+		}
+	}
+
+	hr = lpOleCommandTarget->Exec(NULL, nCmdId, nCmdOption, &val, &valOut);
 	if (FAILED(hr))
 	{
 		BreakBeforeGoingCleanup();

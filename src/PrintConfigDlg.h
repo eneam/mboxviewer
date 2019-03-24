@@ -21,6 +21,10 @@ struct NamePatternParams
 	int m_bUniqueId;
 	int m_nFileNameFormatSizeLimit;
 	int m_nWantedFileNameFormatSizeLimit;
+	int m_bPrintDialog;
+	int m_bScriptType;
+	CString	m_ChromeBrowserPath;
+	CString	m_UserDefinedScriptPath;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);
@@ -52,6 +56,7 @@ public:
 public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnEnChangeFileNameMaxSize();
+	afx_msg void OnBnClickedPrtPageSetp();
 };
 
 #endif _PRINT_CONFIG_DLG_

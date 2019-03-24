@@ -34,6 +34,7 @@
 #define IDS_TITLE_BODY                  207
 #define IDC_BUTTON1                     1001
 #define IDC_BUTTON_PREV                 1001
+#define IDC_PRT_PAGE_SETP               1001
 #define IDC_BUTTON2                     1002
 #define IDC_BUTTON_NEXT                 1002
 #define IDC_BUTTON3                     1003
@@ -61,6 +62,7 @@
 #define IDC_ENCODING_NONE               1056
 #define IDC_ARCHIVE_LIST                1056
 #define IDC_FILTER1                     1056
+#define IDC_PRT_DO_NOT_PROMPT           1056
 #define IDC_RADIO2                      1057
 #define IDC_EXPORT_EML_Y                1057
 #define IDC_FIND_LIST                   1057
@@ -142,11 +144,13 @@
 #define IDC_REGULAR_EXPR2               1115
 #define IDC_EDIT3                       1116
 #define IDC_EDIT_SUBJECT                1116
+#define IDC_CHROME_EXE_PATH             1116
 #define IDC_MATCH_WORD3                 1117
 #define IDC_EDIT_SUBJECT_WHOLE          1117
 #define IDC_REGULAR_EXPR3               1118
 #define IDC_EDIT4                       1119
 #define IDC_EDIT_MESSAGE                1119
+#define IDC_HTML2PDF_SCRIPT_PATH        1119
 #define IDC_MATCH_WORD4                 1120
 #define IDC_EDIT_MESSAGE_WHOLE          1120
 #define IDC_REGULAR_EXPR4               1121
@@ -173,6 +177,10 @@
 #define IDC_FILE_TO                     1159
 #define IDC_FILE_SUBJECT                1160
 #define IDC_FILE_UNIQUE_ID              1161
+#define IDC_PRT_PREVIEW_DIALOG          1162
+#define IDC_PRT_PRINT_DIALOG            1163
+#define IDC_HTML2PDF_SCRIPT_TYPE        1164
+#define IDC_RADIO3                      1165
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -203,6 +211,7 @@
 #define ID_MESSAGEWINDOW_RIGHT          32883
 #define ID_MESSAGEWINDOW_LEFT           32884
 #define ID_FILE_PRINTCONFIG             32885
+#define ID_FILE_MERGEARCHIVEFILES       32886
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -212,8 +221,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        200
-#define _APS_NEXT_COMMAND_VALUE         32886
-#define _APS_NEXT_CONTROL_VALUE         1162
+#define _APS_NEXT_COMMAND_VALUE         32887
+#define _APS_NEXT_CONTROL_VALUE         1166
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -99,6 +99,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
 	//ON_WM_SIZE()
 	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
+	ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -150,6 +151,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create view window\n");
 		return -1;
 	}
+
+	m_pTreeView = DetTreeView();
+	m_pListView = DetListView();
+	m_pMsgView = DetMsgView();
+
+	if (GetTreeView())
+		GetTreeView()->FillCtrl();
 
 #if 0
 	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
@@ -213,6 +221,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//DockControlBar(&m_wndToolBar);
 
 	EnableAllMailLists(FALSE);
+
+
 
 	NListView *pListView = GetListView();
 	if (pListView) {
@@ -400,12 +410,17 @@ void CMainFrame::DoOpen(CString& path)
 	GetTreeView()->FillCtrl();
 }
 
-NTreeView * CMainFrame::GetTreeView()
+NTreeView * CMainFrame::DetTreeView()
 {
 	return (NTreeView *)m_wndView.m_verSplitter.GetPane(0, 0);
 }
 
-NListView * CMainFrame::GetListView()
+NTreeView * CMainFrame::GetTreeView()
+{
+	return m_pTreeView;
+}
+
+NListView * CMainFrame::DetListView()
 {
 	if (m_msgViewPosition == 1)
 		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);
@@ -417,7 +432,12 @@ NListView * CMainFrame::GetListView()
 		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);  // should never be here ASSERT ?
 }
 
-NMsgView * CMainFrame::GetMsgView()
+NListView * CMainFrame::GetListView()
+{
+	return m_pListView;
+}
+
+NMsgView * CMainFrame::DetMsgView()
 {
 	if (m_msgViewPosition == 1)
 		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);
@@ -427,6 +447,11 @@ NMsgView * CMainFrame::GetMsgView()
 		return (NMsgView *)m_wndView.m_horSplitter.GetPane(0, 0);
 	else
 		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);  // should never be here ASSERT ?
+}
+
+NMsgView * CMainFrame::GetMsgView()
+{
+	return m_pMsgView;
 }
 
 BOOL CMainFrame::OnEraseBkgnd(CDC* pDC) 
@@ -769,11 +794,11 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 	MboxMail *m = MboxMail::s_mails[iItem];
 
 
-		BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
-		if (ret == TRUE) {
-			MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
-			fileName = printCachePath + "\\" + fn + ".pdf";
-		}
+	BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
+	if (ret == TRUE) {
+		MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
+		fileName = printCachePath + "\\" + fn + ".pdf";
+	}
 
 	CString htmFileName = printCachePath + "\\" + fn + ".htm";
 
@@ -782,24 +807,68 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 		DWORD error = GetLastError();
 	}
 
-	HWND h = GetSafeHwnd();
-	CString path = "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"";
-	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
+	int bScriptType = 0;
+	CString path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
 	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
-#if 1
+	if (pFrame)
+	{
+		bScriptType = pFrame->m_NamePatternParams.m_bScriptType;
+		if (pFrame->m_NamePatternParams.m_bScriptType == 0) {
+			path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
+			// args no change
+		}
+		else 
+		{
+			path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
+			args = "\"" + htmFileName + "\"";
+		}
+
+	}
+	else
+		int deb = 1;
+
+	//path = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe";
+	//path = "C:\\Users\\tata\\Documents\\GIT\\Scripts\\HTML2PDFsample-chrome.cmd";
+
+	if (bScriptType == 0)
+	{
+		if (!PathFileExist(path)) {
+			CString txt = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update setup.");
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+			int deb = 1;
+			return;
+		}
+	}
+	else
+	{
+		if (!PathFileExist(path)) {
+			CString txt = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+			int deb = 1;
+			return;
+		}
+	}
+
+	HWND h = GetSafeHwnd();
+	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
+	//CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
+	//CString args = "--log-level none --no-background --footer-right \"Page [page] of [toPage]\" " + CString("\"") + htmFileName + "\" \"" + fileName + "\"";
+	// CString args = "\"" + htmFileName + "\"";
+#if 0
 	HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_HIDE);
 	CheckShellExecuteResult(result, h);
 #else
 	HINSTANCE result = S_OK;
 	SHELLEXECUTEINFO ShExecInfo = { 0 };
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
 	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 	ShExecInfo.hwnd = NULL;
 	ShExecInfo.lpVerb = NULL;
 	ShExecInfo.lpFile = path;
 	ShExecInfo.lpParameters = args;
 	ShExecInfo.lpDirectory = NULL;
-	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = result;
 	BOOL retval = ShellExecuteEx(&ShExecInfo);
 	if (retval == FALSE) {
@@ -832,6 +901,7 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 			break;
 		}
 		case WAIT_TIMEOUT: {
+#if 0
 			BOOL ret = PathFileExist(fileName);
 			if (ret) {
 				CFile fp;
@@ -843,6 +913,7 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 					fp.Close();
 					int deb = 1;
 				}
+				int deb = 1;
 			}
 			else
 			{
@@ -850,6 +921,7 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 			}
 			//signaled = TRUE;
 			int deb = 1;
+#endif
 			break;
 		}
 		default: {
@@ -859,7 +931,6 @@ void CMainFrame::PrintSingleMailtoPDF(int iItem)
 		}
 		if (signaled || failed)
 			break;
-
 	}
 	CloseHandle(ShExecInfo.hProcess);
 
@@ -1568,6 +1639,7 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 void CMainFrame::OnFilePrintconfig()
 {
 	// TODO: Add your command handler code here
+
 	PrintConfigDlg dlg;
 
 	dlg.m_NamePatternParams.Copy(m_NamePatternParams);
@@ -1618,4 +1690,185 @@ void CMainFrame::OnUpdateFilePrintconfig(CCmdUI *pCmdUI)
 void CMainFrame::UpdateFilePrintconfig()
 {
 	NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
+}
+
+int CMainFrame::MergeArchiveFiles()
+{
+	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
+#define MAX_CFileDialog_FILE_COUNT 1000
+	int FILE_LIST_BUFFER_SIZE = (MAX_CFileDialog_FILE_COUNT * (MAX_PATH + 1)) + 1;
+
+	MboxMail::m_outbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
+	TCHAR *fileNameBuffer = MboxMail::m_outbuf->Data();
+
+	CString  sFilters  = "Mail Files (*.mbox)|*.mbox|All Files (*.*)|*.*||";
+
+	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	CFileDialog dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
+
+	CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+#if 0
+	// No need to enforce the below
+	if (!inFolderPath.IsEmpty())
+	{
+		if (!PathFileExist(inFolderPath)) {
+			return -1;
+		}
+	}
+	else {
+		return -1;
+	}
+#endif
+
+	OPENFILENAME& ofn = dlgFile.GetOFN();
+	ofn.Flags |= OFN_ALLOWMULTISELECT;
+	ofn.lpstrFile = fileNameBuffer;
+	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+	ofn.lpstrInitialDir = inFolderPath;
+	ofn.lpstrTitle = "Select Mail Archives For Merging";
+
+restart:
+	INT_PTR ret = dlgFile.DoModal();
+	if (ret == IDOK)
+	{
+		CString folder = dlgFile.GetFolderPath();
+		TRACE("FOLDER=%s\n", folder);
+
+		int fileCount = 0;
+		CString strFilePath;
+		POSITION pos = dlgFile.GetStartPosition();
+		while (NULL != pos) 
+		{
+			fileCount++;
+			strFilePath = dlgFile.GetNextPathName(pos);
+			if (!PathFileExist(strFilePath))
+			{
+				CString txt = _T("File path invalid.\n");
+				txt.Append(strFilePath);
+				txt.Append("\nRetry or Cancel?");
+
+				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
+				if (answer == IDRETRY)
+				{
+					goto restart;
+				}
+			}
+			TRACE("FILE=%s\n", strFilePath);
+		}
+
+		// All archive files are valid; merge
+		CString title = "Enter Name for New Archive File";
+		CString  fileNameFilter = "Mail Files (*.mbox)|*.mbox|All Files (*.*)|*.*||";
+		CString dfltExtension = "mbox";
+
+		CString outFolderPath;
+		CString fileName;
+		BOOL ret = SaveFileDialog(fileName, fileNameFilter, dfltExtension, inFolderPath, outFolderPath, title);
+		CString filePath = outFolderPath + "\\" + fileName;
+		CString fileExtension = ::PathFindExtension(fileName);
+		CString fileName2 = ::PathFindFileName(filePath);
+		//MboxMail::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+		if (ret == TRUE) 
+		{
+			CFile fp;
+			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+				CString txt = _T("Could not create \"") + filePath;
+				txt += _T("\" file.\nMake sure file is not open on other applications.");
+				HWND h = NULL; // we don't have any window yet
+				int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				return -1;
+			}
+
+			pos = dlgFile.GetStartPosition();
+			while (NULL != pos)
+			{
+				strFilePath = dlgFile.GetNextPathName(pos);
+				// Check again anyway
+				if (PathFileExist(strFilePath))
+				{
+					CFile fp_input;
+					if (!fp_input.Open(strFilePath, CFile::modeRead)) {
+						CString txt = _T("Could not create \"") + strFilePath;
+						txt += _T("\" file.\nMake sure file is not open on other applications.");
+						HWND h = NULL; // we don't have any window yet
+						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+						fp.Close();
+						return -1;
+					}
+					// Append file
+					UINT wantBytes = 16 * 1024;
+					// don't use  MboxMail::m_oubuf is still used by dlgFile above !!!!! 
+					MboxMail::m_inbuf->ClearAndResize(wantBytes+2);
+					TCHAR *inBuffer = MboxMail::m_inbuf->Data();
+
+					UINT readBytes = 0;
+					do {
+						readBytes = fp_input.Read(inBuffer, wantBytes);
+						fp.Write(inBuffer, readBytes);
+					} while (readBytes > 0);
+
+#if 0
+					// not sure whether below is neeeded in case no CR NL or just NL at the file end
+					// It would change total length on new archive which should not be an issue 
+					// unless someone would try to add all lengths manually to verify
+					MboxMail::m_inbuf->Clear();
+					MboxMail::m_inbuf->Append("\r\n"); 
+					fp.Write(inBuffer, readBytes);
+#endif
+
+					fp_input.Close();
+
+				}
+				TRACE("FILE=%s\n", strFilePath);
+			}
+			fp.Close();
+			int deb = 1;
+		}
+	}
+	else
+	{
+		int deb = 1;
+	}
+	return 1;
+}
+
+BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title)
+{
+	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
+	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 1;
+
+	MboxMail::m_inbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
+	TCHAR *fileNameBuffer = MboxMail::m_inbuf->Data();
+
+	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	CFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
+
+	OPENFILENAME& ofn = dlgFile.GetOFN();
+	//ofn.Flags |= ??;
+	ofn.lpstrFile = fileNameBuffer;
+	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+	ofn.lpstrInitialDir = inFolderPath;
+	ofn.lpstrTitle = title;
+
+	INT_PTR ret = dlgFile.DoModal();
+	if (ret == IDOK)
+	{
+		outFolderPath = dlgFile.GetFolderPath();
+		fileName = dlgFile.GetFileName();
+		TRACE("FOLDER=%s\n", outFolderPath);
+		TRACE("FILE=%s\n", fileName);
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
+
+void CMainFrame::OnFileMergearchivefiles()
+{
+	// TODO: Add your command handler code here
+	MergeArchiveFiles();
 }

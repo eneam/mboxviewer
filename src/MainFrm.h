@@ -39,6 +39,9 @@ public:
 	NMsgView * GetMsgView();
 	NListView * GetListView();
 	NTreeView * GetTreeView();
+	NMsgView * DetMsgView();
+	NListView * DetListView();
+	NTreeView * DetTreeView();
 	virtual ~CMainFrame();
 	void DoOpen(CString& path);
 	void SetMailList(int nID);
@@ -69,6 +72,9 @@ protected:  // control bar embedded members
 	//BOOL m_bMailListType;
 	BOOL m_bUserSelectedMailsCheckSet;
 	int m_msgViewPosition;
+	NListView *m_pListView;
+	NTreeView *m_pTreeView;
+	NMsgView *m_pMsgView;
 public:
 	struct NamePatternParams m_NamePatternParams;
 
@@ -92,6 +98,8 @@ public:
 	void OnPrinttoTextFile(int textType);
 	void PrintSingleMailtoPDF(int iItem);
 	void UpdateFilePrintconfig();
+	int MergeArchiveFiles();
+	BOOL SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
 
 	afx_msg void OnFileExportToCsv();
 	afx_msg void OnViewCodepageids();
@@ -130,6 +138,7 @@ public:
 	afx_msg void OnFilePrintconfig();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnUpdateFilePrintconfig(CCmdUI *pCmdUI);
+	afx_msg void OnFileMergearchivefiles();
 };
 
 /////////////////////////////////////////////////////////////////////////////

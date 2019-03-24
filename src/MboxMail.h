@@ -264,6 +264,8 @@ struct MessageIdHash;
 struct MessageIdEqual;
 
 typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
+typedef std::unordered_map<CString*, MboxMail*, MessageIdHash, MessageIdEqual> MboxMailTableType;
+
 
 class CMBodyHdr;
 
@@ -331,12 +333,19 @@ public:
 	int DumpMailBox(MboxMail *mailBox, int which);
 
 	static MessageIdTableType *m_pMessageIdTable;
+	static MboxMailTableType *m_pMboxMailTable;
 	//
 	static UINT MboxMail::createMessageIdTable(UINT count);
+	static void MboxMail::clearMessageIdTable();
 	static int getMessageId(CString *key);
 	static bool insertMessageId(CString *key, int val);
 	static int getReplyId(CString *key);
 	static int add2ConversationGroup(int mid, MboxMail *m);
+
+	static MboxMail* getMboxMail(CString *key);
+	static bool insertMboxMail(CString *key, MboxMail *mbox);
+	static UINT createMboxMailTable(UINT count);
+	static void clearMboxMailTable();
 	//
 	static int m_nextGroupId;
 	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :)
@@ -435,6 +444,8 @@ public:
 	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName);
 	static CString GetDateFormat(int i);
 	static BOOL GetPrintCachePath(CString &printCachePath);
+	static int RemoveDuplicateMails();
+	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
 
 	static void ReleaseResources();
 };

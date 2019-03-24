@@ -548,6 +548,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_HTML_Id = 3;
 	AppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML.."));
 
+	const UINT S_PDF_Id = 33;
+	AppendMenu(&printToSubMenu, S_PDF_Id, _T("PDF.."));
+
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
@@ -668,6 +671,20 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			pFrame->OnPrinttoTextFile(1);
 		}
 
+		int deb = 1;
+	}
+	break;
+	case S_PDF_Id: {
+		if (pFrame) {
+			NListView *pListView = pFrame->GetListView();
+			if (pListView) {
+				BOOL multipleSelectedMails = FALSE;
+				int nItem = -1;
+				int firstMail = 0;
+				int lastMail = MboxMail::s_mails.GetCount() - 1;
+				pListView->ExportMailGroupToSeparatePDF(firstMail, lastMail, multipleSelectedMails, nItem);
+			}
+		}
 		int deb = 1;
 	}
 	break;

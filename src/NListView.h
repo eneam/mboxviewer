@@ -177,6 +177,10 @@ public:
 	int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
+	int RemoveDuplicateMails();
+	int ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem);
+	static int PrintMailGroupToSeparatePDF(int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int nItem);
+
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 
 	// Generated message map functions
@@ -222,6 +226,17 @@ typedef struct _FindArgs {
 	BOOL exitted;
 	NListView *lview;
 } FIND_ARGS;
+
+typedef struct _PrintMailGroupToSeparatePDFArgs 
+{
+	int firstMail;
+	int lastMail;
+	MailIndexList *selectedMailIndexList;
+	int nItem;
+	int retpos;
+	BOOL exitted;
+	NListView *lview;
+} PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS;
 
 
 /////////////////////////////////////////////////////////////////////////////

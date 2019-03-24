@@ -70,6 +70,7 @@ BEGIN
             MENUITEM "Text...",                     ID_PRINTTO_TEXT
             MENUITEM "HTML...",                     ID_PRINTTO_HTML
         END
+        MENUITEM "Merge Archive Files...",      ID_FILE_MERGEARCHIVEFILES
         MENUITEM SEPARATOR
         MENUITEM "most recent folders",         ID_FILE_MRU_FILE1
         MENUITEM SEPARATOR
@@ -372,26 +373,38 @@ BEGIN
     PUSHBUTTON      "Help",IDC_BUTTON2,274,0,50,14
 END
 
-IDD_PRINT_DLG DIALOGEX 0, 0, 229, 129
+IDD_PRINT_DLG DIALOGEX 0, 0, 229, 275
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Print Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,111,108,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,166,108,50,14
-    GROUPBOX        "File Name Configuration",IDC_STATIC,7,7,215,100
-    EDITTEXT        IDC_FILE_NAME_MAX_SIZE,127,66,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    DEFPUSHBUTTON   "OK",IDOK,111,254,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,166,254,50,14
+    GROUPBOX        "File Name Configuration",IDC_STATIC,7,7,215,89
+    EDITTEXT        IDC_FILE_NAME_MAX_SIZE,127,59,40,14,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Compose File Name Pattern From",IDC_STATIC,17,18,124,8
-    LTEXT           "Wanted Max File Name Length",IDC_STATIC,14,70,102,8
+    LTEXT           "Wanted Max File Name Length",IDC_STATIC,14,64,102,8
     CONTROL         "Date",IDC_FILE_DATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,33,31,10
     CONTROL         "Time",IDC_FILE_TIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,48,33,31,10
     CONTROL         "From",IDC_FILE_FROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,79,33,32,10
     CONTROL         "To",IDC_FILE_TO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,111,33,24,10
     CONTROL         "Subject",IDC_FILE_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,33,40,10
     CONTROL         "Unique Id",IDC_FILE_UNIQUE_ID,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,174,33,47,10
-    EDITTEXT        IDC_FILE_NAME_ADJUSTED_MAX_SIZE,127,85,40,14,ES_AUTOHSCROLL
-    LTEXT           "Adjusted Max File Name Length",IDC_STATIC,14,88,101,8
-    LTEXT           "Max file path length supported by Windows is 260 characters",IDC_STATIC,14,55,208,8
+    EDITTEXT        IDC_FILE_NAME_ADJUSTED_MAX_SIZE,127,76,40,14,ES_AUTOHSCROLL
+    LTEXT           "Adjusted Max File Name Length",IDC_STATIC,14,81,101,8
+    LTEXT           "Max file path length supported by Windows is 260 characters",IDC_STATIC,14,48,208,8
+    GROUPBOX        "Print to .. Printer Menu Option Setup",IDC_STATIC,7,99,215,47
+    PUSHBUTTON      "Page Setup",IDC_PRT_PAGE_SETP,15,127,50,14
+    CONTROL         "DO NOT PROMPT",IDC_PRT_DO_NOT_PROMPT,"Button",BS_AUTORADIOBUTTON | WS_GROUP,14,113,69,10
+    CONTROL         "PRINT PROMPT",IDC_PRT_PRINT_DIALOG,"Button",BS_AUTORADIOBUTTON,87,113,65,10
+    CONTROL         "PRINT PREVIEW",IDC_PRT_PREVIEW_DIALOG,"Button",BS_AUTORADIOBUTTON,154,114,68,10
+    GROUPBOX        "Print to .. PDF Menu Option Setup",IDC_STATIC,7,148,215,97
+    EDITTEXT        IDC_CHROME_EXE_PATH,15,187,199,14,ES_AUTOHSCROLL
+    LTEXT           "Path to Chrome Browser executable",IDC_STATIC,15,173,193,8
+    CONTROL         "Chrome Browser",IDC_HTML2PDF_SCRIPT_TYPE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,17,160,69,10
+    CONTROL         "Path To User Defined Script",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,100,160,104,10
+    LTEXT           "Path To User Defined Script",IDC_STATIC,15,209,122,8
+    EDITTEXT        IDC_HTML2PDF_SCRIPT_PATH,15,222,200,14,ES_AUTOHSCROLL
 END
 
 
@@ -401,7 +414,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,0
+ FILEVERSION 1,0,3,1
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -418,7 +431,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.0"
+            VALUE "FileVersion", "1.0.3.1"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -522,7 +535,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 222
         TOPMARGIN, 7
-        BOTTOMMARGIN, 122
+        BOTTOMMARGIN, 268
     END
 END
 #endif    // APSTUDIO_INVOKED
