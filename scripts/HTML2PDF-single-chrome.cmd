@@ -15,13 +15,14 @@ REM The modifiers can be combined to get compound results:
 REM %~dp1       - expands %1 to a drive letter and path only
 REM %~nx1       - expands %1 to a file name and extension only
 
-REM This is a working example script to leverage headless Chrome Browser to convert content of HTML link to PDF.
+REM This is a working example script to leverage headless Chrome Browser to to render HTML to PDF.
 REM This is the same as hardcoded default processing in Mbox Viewer.
-REM No need to configure this script in Mbox Viewer unless new additional options are supported by the headless Chrome or 
-REM different directory is needed for PDF files.
+REM No need to configure and enable this script in Mbox Viewer unless new additional options are supported by the headless Chrome or 
+REM different target directory is needed for PDF files.
 
-REM This script is invoked by Mbox Viewer, if configured, and the full path to HTML file is passed as the first argument.
-REM To avoid suprises, acript need to tested outside of the Mbox Viewer to make sure it works.
+REM This script is invoked by Mbox Viewer and the full path to HTML file is passed as the first argument.
+REM Path to Chrome executable can be reconfigured if needed and enabled by selecting proper option in File -> Print Config.
+REM To avoid suprises, script needs to be tested outside of the Mbox Viewer to make sure it works.
 
 set HTMLFilePath=%1
 Set HTMLdir=%~dp1
