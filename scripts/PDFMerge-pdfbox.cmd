@@ -15,10 +15,11 @@ REM %~dp1       - expands %1 to a drive letter and path only
 REM %~nx1       - expands %1 to a file name and extension only
 
 REM This script is working example script to merge multiple PDF files by leveraging open source Java Apache PDFBox tool.
-REM PDFBox doesn't seem to be able to merge very large number of PDF files and therefore the max number of PDF files to merge is configurable in this script.
-REM Also, dos string seem to be limited to 8191 characters limiting the number of files to merge.
-REM The PDF file name is derived from HTML file name and the length cen be limited by selecting File -> Print Config option in Mbox Viewer.
-REM Script can be updated to leverage different and hopefully better PDF merge tools.
+REM PDFBox is licensed under Apache License version 2.0
+REM DOS string seem to be limited to 8191 characters thus limiting the maximum number of PDF files to merge.
+REM Script will merge files until DOS string limit or configurable max number of PDF files to merge is exceeded.
+REM Work around is to merge PDF files multiple times, i.e. merge the merged files until only single merged PDF file remains.
+REM Script can be updated to leverage different PDF merge tools.
 
 setlocal enabledelayedexpansion
 
@@ -52,7 +53,7 @@ Set formattedTotalCount=0000000!totalCount!
 Set formattedTotalCount=!formattedTotalCount:~-6%!
 
 REM Duplicated code, no OR in DOS and using goto seem to break for loop
-REM Max string length seem to be limited to 8191, 8192 - MAX_FILE_PATH ~ 7700
+REM Max string length seem to be limited to 8191, MAX_FILE_PATH ~ 260
 	set doPDF=n
 	if !len! gtr 7700 (
 

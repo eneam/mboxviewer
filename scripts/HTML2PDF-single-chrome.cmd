@@ -44,4 +44,5 @@ set PDFdir=%HTMLdir%
 
 "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"  --headless --disable-gpu --print-to-pdf="%PDFdir%\%HTMLNameBase%.pdf" "%HTMLFilePath%"
 
+REM Replace "REM pause" with "pause" for testing.
 REM pause

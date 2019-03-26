@@ -156,23 +156,24 @@ void NamePatternParams::SetDflts()
 	m_bPrintDialog = 1;
 	m_bScriptType = 0;
 	m_ChromeBrowserPath = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-	m_UserDefinedScriptPath = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe";
-
-#if 0
-	// Doesn't seem to work
-	DWORD  nBufferLength = 0;
-	LPTSTR lpBuffer = 0;
-	DWORD neededBufferLength = GetCurrentDirectory(nBufferLength, lpBuffer);
-	lpBuffer = new TCHAR[neededBufferLength*2 + 2];
-	DWORD retBufferLength = GetCurrentDirectory(nBufferLength, lpBuffer);
-	retBufferLength = GetModuleFileName(NULL, lpBuffer, nBufferLength);
-#endif
-
+	
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);
-	CString procPath;
+	CString procFullPath;
 	if ((er == 0) && pValue)
-		procPath.Append(pValue);
+		procFullPath.Append(pValue);
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	MboxMail::SplitFilePath(procFullPath, driveName, directory, fileNameBase, fileNameExtention);
+
+	CString procPath;
+	BOOL ret = CPathGetPath(procFullPath, procPath);
+
+	m_UserDefinedScriptPath = procPath + "\\scripts\\HTML2PDF-single-wkhtmltopdf.cmd";
 
 	int deb = 1;
 }

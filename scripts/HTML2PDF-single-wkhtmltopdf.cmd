@@ -15,10 +15,10 @@ REM The modifiers can be combined to get compound results:
 REM %~dp1       - expands %1 to a drive letter and path only
 REM %~nx1       - expands %1 to a file name and extension only
 
-REM This is a working example script to leverage open source (LGPLv3) tool to render HTML to PDF.
-REM This is the same as default configurable script in Mbox Viewer.
-REM No need to configure this script in Mbox Viewer unless new additional options are supported by the headless Chrome or 
-REM different target directory is needed for PDF files.
+REM This is a working example script to leverage open source (LGPLv3) wkhtmltopdf tool to render HTML to PDF.
+REM This script is the default configurable script in Mbox Viewer.
+REM No need to update this script unless different target directory is needed for PDF files or 
+REM other options such as header and footer must be configured for wkhtmltopdf tool.
 
 REM This script is invoked by Mbox Viewer and the full path to HTML file is passed as the first argument.
 REM Path to script can be configured and enabled by selecting proper option in File -> Print Config.
@@ -42,6 +42,7 @@ REM echo File Name Ext is: %HTMLNameExt%
 REM Change the target directory for PDF files if needed.
 set PDFdir=%HTMLdir%
 
-"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
+"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
 
+REM Replace "REM pause" with "pause" for testing.
 REM pause
