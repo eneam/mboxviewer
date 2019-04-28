@@ -17,8 +17,23 @@ REM %~nx1       - expands %1 to a file name and extension only
 
 REM This script is working example script to render all HTML files in the current directory to PDF using headless Chrome Browser.
 
-
 setlocal enabledelayedexpansion
+
+REM Update path if needed
+set ProgName=chrome.exe
+set ProgDirectoryPath=C:\Program Files (x86)\Google\Chrome\Application
+set CmdPath=%ProgDirectoryPath%\%ProgName%
+
+if NOT exist "%CmdPath%" (
+
+echo.
+echo Invalid path to "%CmdPath%" executable file.
+echo Please install and/or update the path in the batch file and re-run the script again.
+echo.
+
+pause
+exit
+)
 
 set HTMLFileName=
 set HTMLFileNameBase=
@@ -26,7 +41,7 @@ set HTMLFileNameBase=
 set CURRENT_DIR=%cd%
 set PDFDir=%CURRENT_DIR%
 
-for /r %%A in (*.htm) do (
+for %%A in ("*.htm") do (
 
 Set HTMLFileName=%%A
 Set HTMLFileNameBase=%%~nA
@@ -34,8 +49,10 @@ Set HTMLFileNameBase=%%~nA
 REM echo HTMLFileName=!HTMLFileName!
 REM echo HTMLFileNameBase=!HTMLFileNameBase!
 
-echo "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"  --headless --disable-gpu --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "!HTMLFileName!"
-"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"  --headless --disable-gpu --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "!HTMLFileName!"
+echo "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
+call "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
+
+echo.
 
 )
 

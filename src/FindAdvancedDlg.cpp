@@ -34,26 +34,34 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EDIT_FROM_CHECKED, m_params.m_bEditChecked[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_CHECKED, m_params.m_bEditChecked[1]);
 	DDX_Check(pDX, IDC_EDIT_SUBJECT_CHECKED, m_params.m_bEditChecked[2]);
-	DDX_Check(pDX, IDC_EDIT_MESSAGE_CHECKED, m_params.m_bEditChecked[3]);
-	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CHECKED, m_params.m_bEditChecked[4]);
+	DDX_Check(pDX, IDC_EDIT_CC_CHECKED, m_params.m_bEditChecked[3]);
+	DDX_Check(pDX, IDC_EDIT_BCC_CHECKED, m_params.m_bEditChecked[4]);
+	DDX_Check(pDX, IDC_EDIT_MESSAGE_CHECKED, m_params.m_bEditChecked[5]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CHECKED, m_params.m_bEditChecked[6]);
 
 	DDX_Text(pDX, IDC_EDIT_FROM, m_params.m_string[0]);
 	DDX_Text(pDX, IDC_EDIT_TO, m_params.m_string[1]);
 	DDX_Text(pDX, IDC_EDIT_SUBJECT, m_params.m_string[2]);
-	DDX_Text(pDX, IDC_EDIT_MESSAGE, m_params.m_string[3]);
-	DDX_Text(pDX, IDC_EDIT_ATTACHMENT, m_params.m_string[4]);
+	DDX_Text(pDX, IDC_EDIT_CC, m_params.m_string[3]);
+	DDX_Text(pDX, IDC_EDIT_BCC, m_params.m_string[4]);
+	DDX_Text(pDX, IDC_EDIT_MESSAGE, m_params.m_string[5]);
+	DDX_Text(pDX, IDC_EDIT_ATTACHMENT, m_params.m_string[6]);
 
 	DDX_Check(pDX, IDC_EDIT_FROM_WHOLE, m_params.m_bWholeWord[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_WHOLE, m_params.m_bWholeWord[1]);
 	DDX_Check(pDX, IDC_EDIT_SUBJECT_WHOLE, m_params.m_bWholeWord[2]);
-	DDX_Check(pDX, IDC_EDIT_MESSAGE_WHOLE, m_params.m_bWholeWord[3]);
-	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_WHOLE, m_params.m_bWholeWord[4]);
+	DDX_Check(pDX, IDC_EDIT_CC_WHOLE, m_params.m_bWholeWord[3]);
+	DDX_Check(pDX, IDC_EDIT_BCC_WHOLE, m_params.m_bWholeWord[4]);
+	DDX_Check(pDX, IDC_EDIT_MESSAGE_WHOLE, m_params.m_bWholeWord[5]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_WHOLE, m_params.m_bWholeWord[6]);
 
 	DDX_Check(pDX, IDC_EDIT_FROM_CASE, m_params.m_bCaseSensitive[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_CASE, m_params.m_bCaseSensitive[1]);
 	DDX_Check(pDX, IDC_EDIT_SUBJECT_CASE, m_params.m_bCaseSensitive[2]);
-	DDX_Check(pDX, IDC_EDIT_MESSAGE_CASE, m_params.m_bCaseSensitive[3]);
-	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CASE, m_params.m_bCaseSensitive[4]);
+	DDX_Check(pDX, IDC_EDIT_CC_CASE, m_params.m_bCaseSensitive[3]);
+	DDX_Check(pDX, IDC_EDIT_BCC_CASE, m_params.m_bCaseSensitive[4]);
+	DDX_Check(pDX, IDC_EDIT_MESSAGE_CASE, m_params.m_bCaseSensitive[5]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CASE, m_params.m_bCaseSensitive[6]);
 	//}}AFX_DATA_MAP
 
 	DDX_Check(pDX, IDC_EDIT_SET_ALL_WHOLE, m_params.m_bSetAllWholeWords);
@@ -79,6 +87,7 @@ BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK1, &CFindAdvancedDlg::OnBnClickedFilterDates)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_WHOLE, &CFindAdvancedDlg::OnBnClickedEditSetAllWhole)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_CASE, &CFindAdvancedDlg::OnBnClickedEditSetAllCase)
+	ON_BN_CLICKED(IDC_EDIT_RESET, &CFindAdvancedDlg::OnBnClickedEditReset)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -92,12 +101,12 @@ void CFindAdvancedDlg::OnOK()
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
 
 	int i;
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < 7; i++)
 	{
 		if (m_params.m_bEditChecked[i] == TRUE)
 			break;
 	}
-	if (i == 5)
+	if (i == 7)
 	{
 		CString txt;
 		txt.Format("No filter fields are checked!");
@@ -105,7 +114,7 @@ void CFindAdvancedDlg::OnOK()
 		return;
 	}
 
-	for (int i = 0; i < 5; i++) 
+	for (int i = 0; i < 7; i++) 
 	{
 		
 		m_params.m_string[i].TrimRight();
@@ -177,6 +186,14 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllWhole()
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
 	}
+	p = GetDlgItem(IDC_EDIT_CC_WHOLE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
+	p = GetDlgItem(IDC_EDIT_BCC_WHOLE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
 	p = GetDlgItem(IDC_EDIT_MESSAGE_WHOLE);
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
@@ -214,6 +231,14 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllCase()
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
 	}
+	p = GetDlgItem(IDC_EDIT_CC_CASE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
+	p = GetDlgItem(IDC_EDIT_BCC_CASE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
 	p = GetDlgItem(IDC_EDIT_MESSAGE_CASE);
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
@@ -226,15 +251,15 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllCase()
 
 void CFindAdvancedParams::SetDflts()
 {
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 7; i++) {
 		m_string[i] = _T("");
 		m_bWholeWord[i] = FALSE;
-		m_bCaseSensitive[i] = TRUE;
+		m_bCaseSensitive[i] = FALSE;
 		m_bEditChecked[i] = FALSE;
 	}
 
 	m_bSetAllWholeWords = FALSE;
-	m_bSetAllCaseSensitive = TRUE;
+	m_bSetAllCaseSensitive = FALSE;
 
 	m_startDate = COleDateTime::GetCurrentTime();
 	m_endDate = COleDateTime::GetCurrentTime();
@@ -251,7 +276,7 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	if (this == &src)
 		return;
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 7; i++)
 	{
 		m_string[i] = src.m_string[i];
 		m_bWholeWord[i] = src.m_bWholeWord[i];
@@ -271,3 +296,14 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_bBiderectionalMatch = src.m_bBiderectionalMatch;
 
 };
+
+
+void CFindAdvancedDlg::OnBnClickedEditReset()
+{
+	// TODO: Add your control notification handler code here
+
+	m_params.SetDflts();
+
+	UpdateData(FALSE);
+
+}

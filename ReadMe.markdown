@@ -27,12 +27,14 @@ Features
 Changes
 ---
 
-v 1.0.3.1 - work in progress
+v 1.0.3.1 - work in progress - near completion
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
  - Added capability to merge/concatanate multiple archive files and remove duplicate mails;
  - Added option to print directly to PDF without user interaction by leveragin external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
  - Added option to print each mail to a seprate PDF file;
+ - Added scripts to merge per mail PDF files to support printing large number of mails to a single PDF file;
+ - Added verical bar in the first column to mark mails that are on the User Selected mails list;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.0

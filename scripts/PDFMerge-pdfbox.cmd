@@ -1,4 +1,5 @@
 @echo off
+
 REM dos tips :)
 REM %~1         - expands %1 removing any surrounding quotes (")
 REM %~f1        - expands %1 to a fully qualified path name
@@ -28,15 +29,34 @@ set coptions=
 set /A totalCount=0
 set /A formattedTotalCount=0
 set /A count=0
-set /A maxPDFCount=50
+set /A maxPDFCount=300
 set /A firstIndex=0
 set /A listLength=0
+
+REM install java 8 or higher
+REM Update path to PDFBox jar file if needed
+set PDFBox=pdfbox-app-2.0.14.jar
+set PDFBoxDirectoryPath=C:/Users/tata/Downloads
+set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
+
+if NOT exist "%PDFBoxJarFilePath%" (
+
+echo.
+echo Invalid path to %PDFBoxJarFilePath% jar file.
+echo Please install and/or update the path in the batch file and re-run the script again.
+echo.
+
+pause
+exit
+)
 
 set PDF_MERGE_DIR=PDF_MERGE
 
 if NOT exist %PDF_MERGE_DIR% mkdir %PDF_MERGE_DIR%
 
-for %%A in (*.pdf) do (
+del "%PDF_MERGE_DIR%\*.pdf"
+
+for %%A in ("*.pdf") do (
 
 	if !count!==%firstIndex% set list="%%A"
 	if NOT !count!==%firstIndex% set list=!list! "%%~nxA"
@@ -60,9 +80,9 @@ REM Max string length seem to be limited to 8191, MAX_FILE_PATH ~ 260
 		echo COUNT=!count!
 		echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-		set coptions=C:/Users/tata/Downloads/pdfbox-app-2.0.14.jar PDFMerger !list!  %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-		@echo java -jar !coptions!
-		java -jar !coptions!
+		set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+		@echo java -jar "%PDFBoxJarFilePath%" !coptions!
+		java -jar  "%PDFBoxJarFilePath%" !coptions!
 
 		set /A count=0
 		set list=
@@ -74,23 +94,24 @@ REM Replace next 3 lines with another HTML to PDF converion tool if desired
 			echo COUNT=!count!
 			echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-			set coptions=C:/Users/tata/Downloads/pdfbox-app-2.0.14.jar PDFMerger !list!  %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-			@echo java -jar !coptions!
-			java -jar !coptions!
+			set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+			@echo java -jar "%PDFBoxJarFilePath%" !coptions!
+			java -jar "%PDFBoxJarFilePath%" !coptions!
 
 			set /A count=0
 			set list=
 		)
 	)
+echo.
 )
 
 if NOT %count%==0 (
 	echo COUNT=!count!
 	echo TOTAL_COUNT=%totalCount%
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-	set coptions=C:/Users/tata/Downloads/pdfbox-app-2.0.14.jar PDFMerger !list!  %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-	@echo java -jar !coptions!
-	java -jar !coptions!
+	set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+	@echo java -jar "%PDFBoxJarFilePath%" !coptions!
+	java -jar "%PDFBoxJarFilePath%" !coptions!
 )
 if %count%==0 (
 	echo COUNT=!count!
@@ -99,5 +120,7 @@ if %count%==0 (
 )
 
 if exist TempFileToDeterineStringLen DEL  TempFileToDeterineStringLen
+
+echo.
 
 pause

@@ -22,6 +22,7 @@ void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr);
 BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result);
 int findNoCase(const char *input, int count, void const* Str, int  Size);
+void ShowMemStatus();
 
 class MboxMail;
 struct NamePatternParams;
@@ -53,9 +54,11 @@ public:
 	//BOOL m_bIsDirty;  // content from s_mails was touched and needs to be copied to this mail list
 };
 
-typedef struct _CSVFileConfig
+struct CSVFILE_CONFIG
 {
 public:
+	void Copy(CSVFILE_CONFIG &src);
+
 	BOOL m_bFrom;
 	BOOL m_bTo;
 	BOOL m_bSubject;
@@ -66,9 +69,9 @@ public:
 	int m_bGMTTime;
 	int m_nCodePageId;
 	CString m_separator;
-} CSVFILE_CONFIG;
+} ;
 
-typedef struct _TextFileConfig
+struct TEXTFILE_CONFIG
 {
 public:
 	BOOL m_bFrom;
@@ -81,9 +84,9 @@ public:
 	int m_nCodePageId;
 	CString m_separator;
 	CString errorText;
-} TEXTFILE_CONFIG;
+};
 
-typedef struct _PrintMailArchiveArgs
+struct PRINT_MAIL_ARCHIVE_ARGS
 {
 	TEXTFILE_CONFIG textConfig;
 	CString textFile;
@@ -93,18 +96,19 @@ typedef struct _PrintMailArchiveArgs
 	BOOL terminated;
 	BOOL exitted;
 	CString errorText;
-} PRINT_MAIL_ARCHIVE_ARGS;
+};
 
-typedef struct _PrintMailArchiveToCSVArgs
+struct PRINT_MAIL_ARCHIVE_TO_CSV_ARGS
 {
 	CSVFILE_CONFIG csvConfig;
 	CString csvFile;
 	int firstMail;
 	int lastMail;
+	MailIndexList *selectedMailIndexList;
 	BOOL terminated;
 	BOOL exitted;
 	CString errorText;
-} PRINT_MAIL_ARCHIVE_TO_CSV_ARGS;
+};
 
 class MboxCMimeHelper
 {
@@ -301,6 +305,7 @@ public:
 		m_groupColor = 0;
 		m_index = -1;
 		m_headLength = 0;
+		m_isOnUserSelectedMailList = false;
 		//m_crc32 = 0xffffffff;
 	}
 
@@ -327,6 +332,7 @@ public:
 	bool m_duplicateId;
 	bool m_done;
 	int m_index; // servers as unique id == index
+	bool m_isOnUserSelectedMailList;
 
 	BOOL GetBody(CString &str);
 	BOOL GetBody(SimpleString *str);
@@ -369,10 +375,11 @@ public:
 
 	// TODO:  need to rewrite, encapsulate in objects, etc
 	static MailArray s_mails_ref;  // original cache
-	static MailArray s_mails;  // other lists need to be copied here since that is how initial implementation works, need to change in many places
+	static MailArray s_mails;  // other lists need to be copied here since that is how initial implementation works, would need to change in too many places
 	static MailArray s_mails_all;
 	static MailArray s_mails_find;
-	static MailArray s_mails_edit;
+	static MailArray s_mails_edit;  // TODO: rename to User Selected List
+	//
 	static MailArray s_mails_selected;
 	static MailArray s_mails_merged;
 	static int nWhichMailList;
@@ -389,6 +396,9 @@ public:
 	static int FindMailsSelectedId();
 	static int UserMailsSelectedId();
 
+	static bool b_mails_sorted;
+	static int b_mails_which_sorted;
+
 	static void SortByDate(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByFrom(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByTo(MailArray *s_mails = 0, bool bDesc = false);
@@ -400,8 +410,6 @@ public:
 	static void SortByIndex(MailArray *s_mails = 0, bool bDesc = false);
 	static void assignColor2ConvesationGroups();
 	static void assignColor2ConvesationGroups(MailArray *mails);
-	static bool b_mails_sorted;
-	static int b_mails_which_sorted;
 	static void Destroy();
 	static bool preprocessConversations();
 	static bool sortConversations();
@@ -418,11 +426,21 @@ public:
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
+	//
 	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
 	static int printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig);
-	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, int firstMail, int lastMail, BOOL progressBar);
+	static int exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, int firstMail, int lastMail, MailIndexList *selectedMailsIndexList, BOOL progressBar);
 	static int printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig, bool firstMail);
-	static int exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig);
+	static int exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig);  // NOT used currently
+	//
+	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
+	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, BOOL progressBar, CString &errorText);
+	//
+	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString errorText);
+	static int PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString errorText);
+	//
+	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
+	//
 	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
 	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
 	static int GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, SimpleString *outbuf, UINT &pageCode);
@@ -432,8 +450,6 @@ public:
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
 	static int DumpMailStatsToFile(MailArray *mailsArray, int mailArrayCount);
-	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
-	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, BOOL progressBar, CString &errorText);
 	static int DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit);
 	static int MergeTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
 	static BOOL VerifyMergeOfTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
@@ -446,8 +462,16 @@ public:
 	static BOOL GetPrintCachePath(CString &printCachePath);
 	static int RemoveDuplicateMails();
 	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
+	static int MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
+	static BOOL CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static void UpdateFileExtension(CString &fileName, CString &newSuffix);
+	//
+	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	
 
 	static void ReleaseResources();
+	static void assert_unexpected();
 };
 
 #define SZBUFFSIZE 1024*1024

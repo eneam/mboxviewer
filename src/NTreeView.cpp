@@ -275,6 +275,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
 
 	pFrame->UpdateFilePrintconfig();
+
+	ShowMemStatus();
 }
 
 void NTreeView::ForceParseMailFile(HTREEITEM hItem)
@@ -419,6 +421,7 @@ void NTreeView::SaveData()
 		fp.Close();
 	}
 #if 0
+	// Test
 	TRACE("SaveData: Hash Table fileSizes Count=%d\n", fileSizes.GetCount());
 	_int64 fSize = 0;
 	POSITION pos = fileSizes.GetStartPosition();
@@ -616,7 +619,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-			CheckShellExecuteResult(result, h);
+			CMainFrame::CheckShellExecuteResult(result, h);
 		}
 	}
 	break;
@@ -659,31 +662,27 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_TEXT_Id: {
-		if (pFrame) {
-			pFrame->OnPrinttoTextFile(0);
+		if (pFrame) 
+		{
+			pFrame->PrintMailArchiveToTEXT();
 		}
 
 		int deb = 1;
 	}
 	break;
 	case S_HTML_Id: {
-		if (pFrame) {
-			pFrame->OnPrinttoTextFile(1);
+		if (pFrame) 
+		{
+			pFrame->PrintMailArchiveToHTML();
 		}
 
 		int deb = 1;
 	}
 	break;
 	case S_PDF_Id: {
-		if (pFrame) {
-			NListView *pListView = pFrame->GetListView();
-			if (pListView) {
-				BOOL multipleSelectedMails = FALSE;
-				int nItem = -1;
-				int firstMail = 0;
-				int lastMail = MboxMail::s_mails.GetCount() - 1;
-				pListView->ExportMailGroupToSeparatePDF(firstMail, lastMail, multipleSelectedMails, nItem);
-			}
+		if (pFrame) 
+		{
+			pFrame->PrintMailArchiveToPDF();
 		}
 		int deb = 1;
 	}

@@ -16,10 +16,10 @@
 
 struct CFindAdvancedParams
 {
-	CString	m_string[5];
-	BOOL	m_bWholeWord[5];
-	BOOL	m_bCaseSensitive[5];
-	BOOL	m_bEditChecked[5];
+	CString	m_string[7];
+	BOOL	m_bWholeWord[7];
+	BOOL	m_bCaseSensitive[7];
+	BOOL	m_bEditChecked[7];
 
 	BOOL	m_bSetAllWholeWords;
 	BOOL	m_bSetAllCaseSensitive;
@@ -74,6 +74,7 @@ public:
 	afx_msg BOOL OnInitDialog();
 	afx_msg void OnBnClickedEditSetAllWhole();
 	afx_msg void OnBnClickedEditSetAllCase();
+	afx_msg void OnBnClickedEditReset();
 };
 
 //{{AFX_INSERT_LOCATION}}

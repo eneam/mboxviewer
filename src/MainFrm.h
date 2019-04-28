@@ -36,13 +36,15 @@ public:
 
 // Implementation
 public:
+	virtual ~CMainFrame();
+
 	NMsgView * GetMsgView();
 	NListView * GetListView();
 	NTreeView * GetTreeView();
 	NMsgView * DetMsgView();
 	NListView * DetListView();
 	NTreeView * DetTreeView();
-	virtual ~CMainFrame();
+
 	void DoOpen(CString& path);
 	void SetMailList(int nID);
 	void EnableMailList(int nId, BOOL enable);
@@ -51,8 +53,29 @@ public:
 	BOOL IsUserMailsListEnabled();
 	void ConfigMessagewindowPosition(int msgViewPosition);
 	int GetMessageWindowPosition() { return m_msgViewPosition; }
-
 	void CreateMailListsInfoText(CFile &fp);
+	void UpdateFilePrintconfig();
+	int MergeArchiveFiles();
+	BOOL SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
+	void NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult);
+	//
+	int OnPrintSingleMailtoText(int mailPosition, int textType, CString &createdTextFileName, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
+	void OnPrinttoTextFile(int textType);
+	int PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString &errorText);
+	int PrintSingleMailtoHTML(int iItem, CString &targetPrintSubFolderName, CString &errorText);
+	//
+	static int ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText);
+	int VerifyPathToHTML2PDFExecutable(CString &errorText);
+
+	void PrintMailArchiveToHTML();
+	void PrintMailArchiveToTEXT();
+	void PrintMailArchiveToPDF();
+
+	void PrintMailsToCSV(int firstMail, int lastMail, BOOL selecteMails);
+
+	static int CheckShellExecuteResult(HINSTANCE  result, HWND h);
+	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -90,16 +113,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-	void NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult);
-
-
 public:
-	void OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly= FALSE);
-	void OnPrinttoTextFile(int textType);
-	void PrintSingleMailtoPDF(int iItem);
-	void UpdateFilePrintconfig();
-	int MergeArchiveFiles();
-	BOOL SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
 
 	afx_msg void OnFileExportToCsv();
 	afx_msg void OnViewCodepageids();
@@ -139,6 +153,7 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnUpdateFilePrintconfig(CCmdUI *pCmdUI);
 	afx_msg void OnFileMergearchivefiles();
+	afx_msg void OnPrinttoPdf();
 };
 
 /////////////////////////////////////////////////////////////////////////////

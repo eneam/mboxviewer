@@ -35,6 +35,7 @@
 #define IDC_BUTTON1                     1001
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
+#define IDC_EDIT_RESET                  1001
 #define IDC_BUTTON2                     1002
 #define IDC_BUTTON_NEXT                 1002
 #define IDC_BUTTON3                     1003
@@ -94,6 +95,7 @@
 #define IDC_CHECK_CONTENT               1079
 #define IDC_CHECK6                      1080
 #define IDC_CHECK_ATTACHMENT            1080
+#define IDC_EDIT_CC_CASE                1080
 #define IDC_SEARCH_NEXT                 1081
 #define IDC_BUTTON_ZOOM                 1083
 #define IDC_CHECK3                      1085
@@ -181,6 +183,16 @@
 #define IDC_PRT_PRINT_DIALOG            1163
 #define IDC_HTML2PDF_SCRIPT_TYPE        1164
 #define IDC_RADIO3                      1165
+#define IDC_EDIT_CC_CHECKED             1169
+#define IDC_EDIT_CC                     1170
+#define IDC_EDIT_CC_WHOLE               1171
+#define IDC_EDIT_BCC_CHECKED            1172
+#define IDC_EDIT_BCC                    1173
+#define IDC_EDIT_BCC_WHOLE              1174
+#define IDC_EDIT_BCC_CASE               1175
+#define IDC_PRINT_TO_SEPARATE_FILES     1176
+#define IDC_SEPARATE_PDF                1177
+#define IDC_SEPARATE_HTML               1178
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -212,6 +224,7 @@
 #define ID_MESSAGEWINDOW_LEFT           32884
 #define ID_FILE_PRINTCONFIG             32885
 #define ID_FILE_MERGEARCHIVEFILES       32886
+#define ID_PRINTTO_PDF                  32887
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -221,8 +234,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        200
-#define _APS_NEXT_COMMAND_VALUE         32887
-#define _APS_NEXT_CONTROL_VALUE         1166
+#define _APS_NEXT_COMMAND_VALUE         32888
+#define _APS_NEXT_CONTROL_VALUE         1179
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

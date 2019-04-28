@@ -42,6 +42,7 @@ public:
 public:
 	CString m_format;
 	void ResetSize();
+	void SetSetFocus();
 // Operations
 public:
 
@@ -54,7 +55,6 @@ public:
 
 // Implementation
 public:
-	static const CUPDUPDATA * pCUPDUPData; 
 
 	//CImageList m_ImageList;
 	MailIndexList m_selectedMailsList;
@@ -128,7 +128,7 @@ public:
 
 	//struct CFindDlgParams m_findParams;  // TODO: review later, requires too many chnages for now
 	struct CFindAdvancedParams m_advancedParams;
-	CString m_stringWithCase[5];
+	CString m_stringWithCase[7];
 	BOOL m_advancedFind;
 
 	void ClearDescView();
@@ -156,8 +156,6 @@ public:
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
 	void MarkColumns();
-	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
-	void PrintMailGroupToPDF(BOOL multipleSelectedMails, int iItem);
 	int MailsWhichColumnSorted() const;
 	void SetLabelOwnership();
 	void ItemState2Str(UINT uState, CString &strState);
@@ -178,10 +176,75 @@ public:
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int RemoveDuplicateMails();
+
+	MailIndexList * PopulateSelectedMailsList();
+	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
+	int RefreshMailsOnUserSelectsMailListMark();
+	int VerifyMailsOnUserSelectsMailListMarkCounts();
+	//
 	int ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem);
-	static int PrintMailGroupToSeparatePDF(int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int nItem);
+	int ExportMailGroupToSeparateHTML(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem);
+	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
+	int PrintMailRangeToSingleCSV_Thread(int iItem);
+	//
+	//////////////////////////////////////////////////////
+	////////////  PDF
+	//////////////////////////////////////////////////////
+	int PrintMailConversationToSeparatePDF_Thread(int mailIndex, CString &errorText);
+	int PrintMailConversationToSinglePDF_Thread(int mailIndex, CString &errorText);
+	//
+	// Range to Separate PDF
+	int PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	int PrintMailRangeToSeparatePDF_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Range to Single PDF
+	int PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	int PrintMailRangeToSinglePDF_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Selected to Separate PDF
+	int PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Selected to Single PDF
+	int PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	//////////////////////////////////////////////////////
+	////////////  PDF  END
+	//////////////////////////////////////////////////////
+	//
+	//////////////////////////////////////////////////////
+	////////////  HTML
+	//////////////////////////////////////////////////////
+	//
+	int PrintMailArchiveToSeparateHTML_Thread(CString &errorText);
+		//
+	int PrintMailConversationToSeparateHTML_Thread(int mailIndex, CString &errorText);
+	int PrintMailConversationToSingleHTML_Thread(int mailIndex, CString &errorText);
+	//
+	// Range to Separate HTML
+	int PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	int PrintMailRangeToSeparateHTML_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Range to Single HTML
+	int PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	int PrintMailRangeToSingleHTML_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Selected to Separate HTML
+	int PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	// Selected to Single HTML
+	int PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSingleHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	//////////////////////////////////////////////////////
+	////////////  HTML  END
+	//////////////////////////////////////////////////////
+	//
 
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
+	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
 
 	// Generated message map functions
 protected:
@@ -212,31 +275,42 @@ public:
 	afx_msg void OnUpdateEditVieweml(CCmdUI *pCmdUI);
 	afx_msg void OnEditFindadvanced();
 	afx_msg void OnUpdateEditFindadvanced(CCmdUI *pCmdUI);
+	//virtual BOOL PreTranslateMessage(MSG* pMsg);
+	//afx_msg void OnSetFocus(CWnd* pOldWnd);
+	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 };
 
-typedef struct _ParseArgs {
+struct PARSE_ARGS
+{
 	CString path;
 	BOOL exitted;
-} PARSE_ARGS;
+};
 
-typedef struct _FindArgs {
+struct FIND_ARGS
+{
 	BOOL findAll;
 	int searchstart;
 	int retpos;
 	BOOL exitted;
 	NListView *lview;
-} FIND_ARGS;
+};
 
-typedef struct _PrintMailGroupToSeparatePDFArgs 
+struct PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS
 {
+	BOOL separatePDFs;
+	CString errorText;
+	CString targetPrintFolderPath;
+	CString targetPrintSubFolderName;
 	int firstMail;
 	int lastMail;
 	MailIndexList *selectedMailIndexList;
 	int nItem;
-	int retpos;
 	BOOL exitted;
+	int ret;
 	NListView *lview;
-} PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS;
+};
+
+typedef PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS PRINT_MAIL_GROUP_TO_SEPARATE_HTML_ARGS;
 
 
 /////////////////////////////////////////////////////////////////////////////

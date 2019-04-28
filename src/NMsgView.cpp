@@ -514,7 +514,7 @@ void NMsgView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		// Buils in Picture Viewer is set as deafault
 		HWND h = GetSafeHwnd();
 		HINSTANCE result = ShellExecute(h, _T("open"), attachmentName, NULL, path, SW_SHOWNORMAL);
-		CheckShellExecuteResult(result, h);
+		CMainFrame::CheckShellExecuteResult(result, h);
 
 	}
 
@@ -625,7 +625,7 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		HWND h = GetSafeHwnd();
 		result = ShellExecute(h, "open", attachmentName, NULL, path, SW_SHOWNORMAL);
-		CheckShellExecuteResult(result, h);
+		CMainFrame::CheckShellExecuteResult(result, h);
 
 		int deb = 1;
 	}
@@ -637,7 +637,7 @@ void NMsgView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (BrowseToFile(fullName) == FALSE) {
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-			CheckShellExecuteResult(result, h);
+			CMainFrame::CheckShellExecuteResult(result, h);
 		}
 
 		int deb = 1;

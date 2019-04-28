@@ -32,6 +32,9 @@ BEGIN_MESSAGE_MAP(CWheelListCtrl, CListCtrl)
 	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
 	ON_WM_DRAWITEM()
+	//ON_WM_MOUSEHOVER()
+	//ON_WM_SETFOCUS()
+	//ON_WM_MOUSEACTIVATE()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -138,3 +141,42 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	int deb = 1;
 }
+
+
+#if 0
+// Didn't work., more to investiagte
+void CWheelListCtrl::OnMouseHover(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CWnd *wnd = WindowFromPoint(point);
+	if (wnd == NULL)
+		return;
+	if (wnd == this) {
+		return CListCtrl::OnMouseHover(nFlags, point);
+	}
+	if ((GetKeyState(VK_CONTROL) & 0x80) == 0) { // if CTRL key not Down; Do we need to post msg further anyway
+		// Commented out, it freezes mbox viewer and and even IE for few seconds when CTRL/SHIFT/etc key are kept down
+		; // return wnd->PostMessage(WM_MOUSEWHEEL, MAKELPARAM(nFlags, zDelta), MAKELPARAM(pt.x, pt.y));
+	}
+
+	CListCtrl::OnMouseHover(nFlags, point);
+}
+
+
+void CWheelListCtrl::OnSetFocus(CWnd* pOldWnd)
+{
+	CListCtrl::OnSetFocus(pOldWnd);
+
+	// TODO: Add your message handler code here
+}
+
+
+int CWheelListCtrl::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	return CListCtrl::OnMouseActivate(pDesktopWnd, nHitTest, message);
+}
+
+#endif

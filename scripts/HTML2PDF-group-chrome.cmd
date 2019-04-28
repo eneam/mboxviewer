@@ -15,13 +15,14 @@ REM The modifiers can be combined to get compound results:
 REM %~dp1       - expands %1 to a drive letter and path only
 REM %~nx1       - expands %1 to a file name and extension only
 
-REM This script is working example script to render all HTML files in the current directory to PDF using wkhtmltopdf tool.
+REM This script is working example script to render subset of HTML files listed in the text file to PDF using headless Chrome Browser tool.
+
 
 setlocal enabledelayedexpansion
 
 REM Update path if needed
-set ProgName=wkhtmltopdf.exe
-set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
+set ProgName=chrome.exe
+set ProgDirectoryPath=C:\Program Files (x86)\Google\Chrome\Application
 set CmdPath=%ProgDirectoryPath%\%ProgName%
 
 if NOT exist "%CmdPath%" (
@@ -37,20 +38,30 @@ exit
 
 set HTMLFileName=
 set HTMLFileNameBase=
+set PDF_GROUP_DIR=
 
 set CURRENT_DIR=%cd%
-set PDFDir=%CURRENT_DIR%
+set PDF_GROUP_DIR=%CURRENT_DIR%
+if NOT exist !PDF_GROUP_DIR! mkdir !PDF_GROUP_DIR!
 
-for %%A in ("*.htm") do (
+REM Full path to HTML file must be listed in the HTMLListFile otherwise Chrome will break !!!
+set HTMLListFile=%CURRENT_DIR%\GroupHTMLFileList.txt
+
+for /F "usebackq tokens=*" %%A in ("%HTMLListFile%") do (
 
 Set HTMLFileName=%%A
 Set HTMLFileNameBase=%%~nA
 
+REM Create PDF_GROUP_DIR based on file name path
+REM set PDF_GROUP_DIR=%%~pA\PDF_GROUP
+REM if NOT exist !PDF_GROUP_DIR! mkdir !PDF_GROUP_DIR!
+
 REM echo HTMLFileName=!HTMLFileName!
 REM echo HTMLFileNameBase=!HTMLFileNameBase!
+REM echo PDF_GROUP_DIR=!PDF_GROUP_DIR!
 
-echo "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%CURRENT_DIR%\!HTMLFileName!" "%PDFdir%\!HTMLFileNameBase!.pdf" 
-call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%CURRENT_DIR%\!HTMLFileName!" "%PDFdir%\!HTMLFileNameBase!.pdf" 
+echo "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
+call "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
 
 echo.
 

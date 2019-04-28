@@ -37,6 +37,8 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_HTML2PDF_SCRIPT_TYPE, m_NamePatternParams.m_bScriptType);
 	DDX_Text(pDX, IDC_CHROME_EXE_PATH, m_NamePatternParams.m_ChromeBrowserPath);
 	DDX_Text(pDX, IDC_HTML2PDF_SCRIPT_PATH, m_NamePatternParams.m_UserDefinedScriptPath);
+	DDX_Check(pDX, IDC_SEPARATE_PDF, m_NamePatternParams.m_bPrintToSeparatePDFFiles);
+	DDX_Check(pDX, IDC_SEPARATE_HTML, m_NamePatternParams.m_bPrintToSeparateHTMLFiles);
 	int deb = 1;
 }
 
@@ -156,6 +158,9 @@ void NamePatternParams::SetDflts()
 	m_bPrintDialog = 1;
 	m_bScriptType = 0;
 	m_ChromeBrowserPath = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
+	m_bPrintToSeparatePDFFiles = FALSE;
+	m_bPrintToSeparateHTMLFiles = FALSE;
+	m_bPrintToSeparateTEXTFiles = FALSE;
 	
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);
@@ -195,6 +200,9 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bScriptType = src.m_bScriptType;
 	m_ChromeBrowserPath = src.m_ChromeBrowserPath;
 	m_UserDefinedScriptPath = src.m_UserDefinedScriptPath;
+	m_bPrintToSeparatePDFFiles = src.m_bPrintToSeparatePDFFiles;
+	m_bPrintToSeparateHTMLFiles = src.m_bPrintToSeparateHTMLFiles;
+	m_bPrintToSeparateTEXTFiles = src.m_bPrintToSeparateTEXTFiles;
 }
 
 void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternParams &updated)
@@ -268,7 +276,7 @@ void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatt
 {
 	CString printCacheName;
 	MboxMail::GetPrintCachePath(printCacheName);
-	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 2; // -1 for flder separatorr, -4 for suffix, -2 for fudge factor
+	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HHML_GROUP and PDF_GROUP)
 	if (maxFileSize < 0)
 		maxFileSize = 0;
 

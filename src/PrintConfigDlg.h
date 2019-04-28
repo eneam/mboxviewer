@@ -25,6 +25,9 @@ struct NamePatternParams
 	int m_bScriptType;
 	CString	m_ChromeBrowserPath;
 	CString	m_UserDefinedScriptPath;
+	int m_bPrintToSeparatePDFFiles;
+	int m_bPrintToSeparateHTMLFiles;
+	int m_bPrintToSeparateTEXTFiles;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);

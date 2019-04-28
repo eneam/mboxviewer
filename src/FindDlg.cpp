@@ -105,7 +105,7 @@ void CFindDlgParams::SetDflts()
 
 	m_string = _T("");
 	m_bWholeWord = FALSE;
-	m_bCaseSensitive = TRUE;
+	m_bCaseSensitive = FALSE;
 
 	m_bFrom = TRUE;
 	m_bTo = TRUE;

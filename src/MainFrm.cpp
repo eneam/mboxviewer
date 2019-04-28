@@ -18,6 +18,11 @@
 #define new DEBUG_NEW
 #endif
 
+///////
+// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
+// Postponed to the next relase 1.0.3.3 since larger effort is needed
+///////
+
 BOOL BrowseToFile(LPCTSTR filename)
 {
 	BOOL retval = TRUE;
@@ -38,13 +43,24 @@ BOOL BrowseToFile(LPCTSTR filename)
 }
 
 #define MaxShellExecuteErrorCode 32
-void CheckShellExecuteResult(HINSTANCE  result, HWND h)
+int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h)
 {
 	if ((UINT)result <= MaxShellExecuteErrorCode) {
 		CString errorText;
 		ShellExecuteError2Text((UINT)result, errorText);
 		int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
 	}
+	return 1;
+}
+
+int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, CString &errorText)
+{
+	if ((UINT)result <= MaxShellExecuteErrorCode) {
+		ShellExecuteError2Text((UINT)result, errorText);
+		return -1;
+	}
+	return 1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -100,6 +116,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//ON_WM_SIZE()
 	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
 	ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
+	ON_COMMAND(ID_PRINTTO_PDF, &CMainFrame::OnPrinttoPdf)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -465,10 +482,20 @@ BOOL PathFileExist(LPCSTR path);
 void CMainFrame::OnFileExportToCsv()
 {
 	// TODO: Add your command handler code here
+	int firstMail = 0;
+	int lastMail = MboxMail::s_mails.GetCount() - 1;
+	BOOL selectedMails = FALSE;
+	PrintMailsToCSV(firstMail, lastMail, selectedMails);
+}
+
+void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails)
+{
+	// TODO: Add your command handler code here
 	ExportToCSVDlg d;
 	if (d.DoModal() == IDOK) 
 	{
 		CSVFILE_CONFIG csvConfig;
+
 		csvConfig.m_bFrom = d.m_bFrom;
 		csvConfig.m_bTo = d.m_bTo;
 		csvConfig.m_bSubject = d.m_bSubject;
@@ -489,20 +516,32 @@ void CMainFrame::OnFileExportToCsv()
 			csvConfig.m_nCodePageId = d.m_nCodePageId;
 		}
 
-
 		CString csvFileName;
-		int firstMail = 0;
-		int lastMail = MboxMail::s_mails.GetCount() - 1;
+		//int firstMail = 0;
+		//int lastMail = MboxMail::s_mails.GetCount() - 1;
 		BOOL progressBar = TRUE;
 
-		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName, firstMail, lastMail, progressBar);
-		if (ret > 0) {
+		NListView * pListView = GetListView();
+
+		MailIndexList *selectedMailsIndexList = 0;
+		if (selectedMails && pListView)
+		{
+			if ((selectedMailsIndexList = pListView->PopulateSelectedMailsList()) > 0) {
+				//selectedMailsIndexList = &m_selectedMailsList;
+				firstMail = 0;
+				lastMail = 0;
+			}
+		}
+
+		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName, firstMail, lastMail, selectedMailsIndexList, progressBar);
+		if (ret > 0) 
+		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString text = "Created file\n\n" + csvFileName;
-					OpenContainingFolderDlg dlg(text, 0);
+					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -559,15 +598,16 @@ void CMainFrame::OnPrinttoCsv()
 // File->"Print To"->Text -> OnPrinttoText() -> OnPrinttoTextFile() -> exportToTextFile() for firstMail;lastMail -> printSingleMailToTextFile(index)
 void CMainFrame::OnPrinttoText()
 {
-	OnPrinttoTextFile(0);
+	PrintMailArchiveToTEXT();
 }
 
 void CMainFrame::OnPrinttoTextFile(int textType)
 {
 	// TODO: Add your command handler code here
-	if (MboxMail::s_mails.GetSize() == 0) {
+	if (MboxMail::s_mails.GetSize() == 0) 
+	{
 		CString txt = _T("Please open mail file first.");
-		HWND h = GetSafeHwnd(); // we don't have any window yet
+		HWND h = GetSafeHwnd(); 
 		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
@@ -604,17 +644,18 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 		CString textFileName;
 		int firstMail = 0;
 		int lastMail = MboxMail::s_mails.GetCount() - 1;
-		BOOL progressBar = TRUE;
+		BOOL progressBar = TRUE;  // run in worker thread 
 		MailIndexList *selectedMailsIndexList = 0;
 		int ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, selectedMailsIndexList, textType, progressBar);
 
-		if (ret > 0) {
+		if (ret > 0) 
+		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (PathFileExist(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
-					OpenContainingFolderDlg dlg(txt, 0);
+					OpenContainingFolderDlg dlg(txt);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -648,14 +689,14 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 }
 
 // called by NListView::OnRClick
-void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL forceOpen, BOOL printToPrinter, BOOL createFileOnly)  // textType 0==Plain, 1==Html
+int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString &createdTextFileName, BOOL forceOpen, BOOL printToPrinter, BOOL createFileOnly)  // textType 0==Plain, 1==Html
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = _T("Please open mail file first.");
-		HWND h = GetSafeHwnd(); // we don't have any window yet
+		HWND h = GetSafeHwnd(); 
 		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-		return;
+		return -1;
 	}
 
 	// Do we need extra dialog? Bypass for now
@@ -689,15 +730,17 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 #if 1
 
 		int ret = 0;
-		BOOL progressBar = FALSE;
+		BOOL progressBar = FALSE;  // no worker thread
 		CString textFileName;
 		MailIndexList *selectedMailsIndexList = 0;
 		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, selectedMailsIndexList, textType, progressBar);
-		if (ret > 0) {
+		if (ret > 0)
+		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
-				if (PathFileExist(path)) { // likely :) 
+				if (PathFileExist(path))
+				{ // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
 					if (createFileOnly) {
 						int deb = 1;
@@ -726,7 +769,7 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 					}
 					else if (forceOpen == FALSE)
 					{
-						OpenContainingFolderDlg dlg(txt, 0);
+						OpenContainingFolderDlg dlg(txt);
 						INT_PTR nResponse = dlg.DoModal();
 						if (nResponse == IDOK)
 						{
@@ -761,190 +804,122 @@ void CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, BOOL fo
 					;
 			}
 			else
-				; // TODO: 
+				; // TODO:
+
+			createdTextFileName.Append(textFileName);
+			return 1;
+		}
+		else
+		{
+			createdTextFileName.Empty();
+			return -1;
 		}
 	}
 #endif
 }
 
-void CMainFrame::PrintSingleMailtoPDF(int iItem)
+int  CMainFrame::PrintSingleMailtoHTML(int iItem, CString &targetPrintSubFolderName, CString &errorText)
 {
-#if 0
-	CFileDialog dlgFile(TRUE);
-	INT_PTR res = dlgFile.DoModal();
-	CString filePath;
-	if (res == IDOK)
-		filePath = dlgFile.GetPathName();
+	CString textFileName;
 
-	CString initialFolder = "C:\\Program Files (x86)";
-	CFolderPickerDialog dlgFolder(initialFolder, OFN_FILEMUSTEXIST | OFN_ENABLESIZING, this, sizeof(OPENFILENAME));
+	TEXTFILE_CONFIG textConfig;
+	NListView * pListView = CMainFrame::GetListView();
+	if (pListView)
+	{
+		textConfig.m_dateFormat = pListView->m_format;
+		textConfig.m_bGMTTime = pListView->m_gmtTime;
+	}
+	else
+	{
+		textConfig.m_dateFormat = MboxMail::GetDateFormat(0);
+		textConfig.m_bGMTTime = 0;
+	}
+	textConfig.m_nCodePageId = CP_UTF8;
 
-	res = dlgFolder.DoModal();
-	CString folderPath;
-	if (res == IDOK)
-		folderPath = dlgFolder.GetPathName();
-#endif
-	BOOL createFileOnly = TRUE;
-	OnPrintSingleMailtoText(iItem, 1, FALSE, FALSE, createFileOnly);
+	int textType = 1;
+	int ret = MboxMail::PrintMailRangeToSingleTextFile(textConfig, textFileName, iItem, iItem, textType, targetPrintSubFolderName, errorText);
+
+	return 1;
+}
+
+int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString &errorText)
+{
+	CString textFileName;
+
+	TEXTFILE_CONFIG textConfig;
+	NListView * pListView = CMainFrame::GetListView();
+	if (pListView) 
+	{
+		textConfig.m_dateFormat = pListView->m_format;
+		textConfig.m_bGMTTime = pListView->m_gmtTime;
+	}
+	else
+	{
+		textConfig.m_dateFormat = MboxMail::GetDateFormat(0);
+		textConfig.m_bGMTTime = 0;
+	}
+	textConfig.m_nCodePageId = CP_UTF8;
+
+	int textType = 1;
+	int ret = MboxMail::PrintMailRangeToSingleTextFile(textConfig, textFileName, iItem, iItem, textType, targetPrintSubFolderName, errorText);
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	CString fileName;
-	CString printCachePath;
-	CString fn;
-	MboxMail *m = MboxMail::s_mails[iItem];
+	
+	fileName.Append(textFileName);
+	CString newSuffix;
+	newSuffix.Append(".pdf");
+	MboxMail::UpdateFileExtension(fileName, newSuffix);
 
+	CString htmFileName;
+	htmFileName.Append(textFileName);
 
-	BOOL ret = MboxMail::GetPrintCachePath(printCachePath);
-	if (ret == TRUE) {
-		MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, fn);
-		fileName = printCachePath + "\\" + fn + ".pdf";
-	}
-
-	CString htmFileName = printCachePath + "\\" + fn + ".htm";
-
-	BOOL delStatus = DeleteFile(fileName);
-	if (delStatus == FALSE) {
-		DWORD error = GetLastError();
-	}
-
-	int bScriptType = 0;
-	CString path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-	CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
-	if (pFrame)
-	{
-		bScriptType = pFrame->m_NamePatternParams.m_bScriptType;
-		if (pFrame->m_NamePatternParams.m_bScriptType == 0) {
-			path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
-			// args no change
-		}
-		else 
-		{
-			path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
-			args = "\"" + htmFileName + "\"";
-		}
-
-	}
-	else
-		int deb = 1;
-
-	//path = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe";
-	//path = "C:\\Users\\tata\\Documents\\GIT\\Scripts\\HTML2PDFsample-chrome.cmd";
-
-	if (bScriptType == 0)
-	{
-		if (!PathFileExist(path)) {
-			CString txt = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update setup.");
-			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
-			int deb = 1;
-			return;
-		}
-	}
-	else
-	{
-		if (!PathFileExist(path)) {
-			CString txt = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
-			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
-			int deb = 1;
-			return;
-		}
-	}
-
-	HWND h = GetSafeHwnd();
-	//CString path = "C:\\Users\\tata\\Documents\\GIT1.0.2.8.rebar\\go.cmd";
-	//CString args = "--headless --disable-gpu --print-to-pdf=\"" + fileName + "\" \"" + htmFileName + "\"";
-	//CString args = "--log-level none --no-background --footer-right \"Page [page] of [toPage]\" " + CString("\"") + htmFileName + "\" \"" + fileName + "\"";
-	// CString args = "\"" + htmFileName + "\"";
-#if 0
-	HINSTANCE result = ShellExecute(h, NULL, path, args, NULL, SW_HIDE);
-	CheckShellExecuteResult(result, h);
-#else
-	HINSTANCE result = S_OK;
-	SHELLEXECUTEINFO ShExecInfo = { 0 };
-	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
-	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-	ShExecInfo.hwnd = NULL;
-	ShExecInfo.lpVerb = NULL;
-	ShExecInfo.lpFile = path;
-	ShExecInfo.lpParameters = args;
-	ShExecInfo.lpDirectory = NULL;
-	ShExecInfo.nShow = SW_HIDE;
-	ShExecInfo.hInstApp = result;
-	BOOL retval = ShellExecuteEx(&ShExecInfo);
-	if (retval == FALSE) {
-		DWORD err = GetLastError();
-		return;
-	}
-	CheckShellExecuteResult(ShExecInfo.hInstApp, h);
-	DWORD msec = 100;
-	BOOL signaled = FALSE;
-	BOOL failed = FALSE;
-	for (;;)
-	{
-		msec = 100;
-		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
-		switch (ret)
-		{
-		case WAIT_ABANDONED: {
-			failed = TRUE;
-			int deb = 1;
-			break;
-		}
-		case WAIT_OBJECT_0: {
-			signaled = TRUE;
-			int deb = 1;
-			break;
-		}
-		case WAIT_FAILED: {
-			failed = TRUE;
-			int deb = 1;
-			break;
-		}
-		case WAIT_TIMEOUT: {
-#if 0
-			BOOL ret = PathFileExist(fileName);
-			if (ret) {
-				CFile fp;
-				if (!fp.Open(fileName, CFile::modeWrite | CFile::shareExclusive)) {
-					int deb = 1;
-				}
-				else
-				{
-					fp.Close();
-					int deb = 1;
-				}
-				int deb = 1;
-			}
-			else
-			{
-				TRACE(_T("No pdf file yet=%s\n"), fileName);
-			}
-			//signaled = TRUE;
-			int deb = 1;
-#endif
-			break;
-		}
-		default: {
-			int deb = 1;
-			break;
-		}
-		}
-		if (signaled || failed)
-			break;
-	}
-	CloseHandle(ShExecInfo.hProcess);
-
-#endif
-	int deb = 1;
-	return;
+	CString progressText;
+	ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText);
+	return ret;
 }
 
-// File->"Print To"->Text->OnPrinttoHtml()->OnPrinttoTextFile()->exportToTextFile() for firstMail; lastMail->printSingleMailToTextFile(index)
+// File->"Print To"->HTML->OnPrinttoHtml()->OnPrinttoTextFile()->exportToTextFile() for firstMail; lastMail->printSingleMailToTextFile(index)
 void CMainFrame::OnPrinttoHtml()
 {
 	// TODO: Add your command handler code here
-	OnPrinttoTextFile(1);
+	PrintMailArchiveToHTML();
 }
+
+void CMainFrame::PrintMailArchiveToHTML()
+{
+	CString errorText;
+	if (m_NamePatternParams.m_bPrintToSeparateHTMLFiles)
+	{
+		int firstMail = 0;
+		int lastMail = MboxMail::s_mails.GetCount() - 1;
+
+		NListView * pListView = GetListView();
+
+		if (pListView)
+		{
+			int ret = pListView->PrintMailArchiveToSeparateHTML_Thread(errorText);
+		}
+		int deb = 1;
+	}
+	else
+	{
+		OnPrinttoTextFile(1);
+	}
+}
+
+void CMainFrame::PrintMailArchiveToTEXT()
+{
+	if (m_NamePatternParams.m_bPrintToSeparateTEXTFiles)
+	{
+		OnPrinttoTextFile(0);
+	}
+	else
+	{
+		OnPrinttoTextFile(0);
+	}
+}
+
 
 // Called when View->"Sort by"->Date
 void CMainFrame::OnBydate()
@@ -1388,6 +1363,8 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
 	htmlHdr += "<br><font size=\"+2\"><b>Mail List Dialog Bar</b></font><br><br>";
 
+	htmlHdr += "<u>NOTE: Please review also important help information under \"View -> Mboxview Help\" option</u></font><br><br>";
+
 	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
 
 	CString text;
@@ -1416,10 +1393,17 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"All Mails list content persists until new mail archive is selected.<br>"
 		"<br>"
-		"Find Mails list content persists until new search or when All Mails list is invalidated.<br>"
+		"Find Mails list content persists until new search or when new mail archive is selected.<br>"
 		"<br>"
-		"User Selected Mails list content persists until cleared by the user or when All Mails list is invalidated.<br>"
+		"User Selected Mails list content persists until cleared by the user or when new mail archive is selected.<br>"
 		"<br>"
+		"<u>NOTE</u> that mails in the All Mails and Find Mails list will be marked with the vertical bar in the first column to indicate that the same mail is present in the User Selected Mails list.<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
 		"<font size=\"+1\"><b>Mail List Archiving</b></font><br>"
 		"<br>"
 		"Find Mails list and User Selected Mails list content can be saved to new mbox archive files.<br>"
@@ -1440,6 +1424,12 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"When User Selected Mails list is active, it can be reloaded when List is not empty.<br>"
 		"<br>"
+	);
+
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
 		"<font size=\"+1\"><b>Managing Multiple Archives</b></font><br>"
 		"<br>"
 		"Mutiple archives can be created from the the same single main archive. However, before you create new content and new archive from User Selected List, the last archive with hard-coded name must be renamed first.<br>"
@@ -1458,9 +1448,43 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"Future releases may address the issue better, implement subfolder for each archives<br>"
 		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Merging Multiple Archives</b></font><br>"
+		"<br>"
+		"Mutiple archives can be concatenated into a single archive using \"File -> Merge Archive Files\" option.<br>"
+		"<br>"
+		"This is useful if you need to analyze multiple mail views, provided as separate archive files, derived from the same archive file.<br>"
+		"<br>"
+		"After merging is completed, select \"File -> Refresh\" to discover new archive by the mbox viewer.<br>"
+		"<br>"
+		"In order to remove duplicate mails from the concatenated file:"
+		"<br>"
+		"<ol>"
+		"<li>Select the created archive.</li>"
+		"<br>"
+		"<li>Select \"View -> User Selected Mails\" to enable User Select Mails list.</li>"
+		"<br>"
+		"<li>Right click on any mail to select \"Copy All into User Selected Mails\" option to copy all mails into User Select Mails list.</li>"
+		"<br>"
+		"<li>Click on the  \"User Selected Mails\" button to select User Select Mails list.</li>"
+		"<br>"
+		"<li>Right click on any mail to select \"Remove Duplicate Mails\" option to remove duplicate  mails from User Select Mails list.</li>"
+		"<br>"
+		"<li>Mails are considered duplicate if the Data, From, To header fields and unique message ID generated by the mail provider match.</li>"
+		"<br>"
+		"<li>Select \"Save as Mail Archive file\" option to save mails in the User Selecected Mails list.</li>"
+		"<br>"
+		"<li>Select \"File -> Refresh\" to discover new no duplicate mails archive file by the mbox viewer.</li>"
+		"<br>"
+		"<li>You may want to rename the default name assigned to the archive file before the above step.</li>"
+		"</ol>"
+		"<br>"
 		"<br>"
 	);
-
 	fp.Write((LPCSTR)text, text.GetLength());
 
 	CString htmlEnd = "\r\n</body></html>";
@@ -1539,21 +1563,241 @@ void CMainFrame::OnHelpMboxviewhelp()
 
 	CString htmlHdr;
 
-	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
+	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body style=\'margin-left:0.5cm\'>";
 	htmlHdr += "<br><font size=\"+2\"><b>Mbox Viewer Help</b></font><br><br>";
 
 	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
 
 	CString text;
+
+	text.Empty();
 	text.Append(
-		"Please review the User Guide provided with the package and/or<br>"
-		"<br>"
+		"Please review the User Guide provided with the package and/or "
 		"right/left single and double click on any item within the Mbox Viewer window and try all presented options.<br>"
 		"<br>"
-		"To get started, please install the mbox mail archive in the local folder and then select File->Select Folder menu option to open that folder.<br>"
+		"To get started, please install the mbox mail archive in the local folder,"
+		" install and left double click on the mboxview executable and then select File->Select Folder menu option to open that folder.<br>"
 		"<br>"
 	);
+	fp.Write((LPCSTR)text, text.GetLength());
 
+	text.Empty();
+	text.Append(
+		"<font size=\"+2\"><u><b>Mail Printing Overview</b></u></font><br>"
+		"<br>"
+		"Mbox Viewer supports direct printing of all, single or multiple mails to CSV, Text, HTML, PDF files and to PDF printer.<br>"
+		"<br>"
+		"Mails can also be printed to PDF from any Web Browser by opening mails printed to HTML files within the Browser.<br>"
+		"<br>"
+		"By deafult all, single or multiple mails are printed to single CSV, Text, HTML and PDF files without any additional configuration or manual steps.<br>"
+		"<br>"
+		"However there is a limit how many mails can effectively be printed to a single file in the default mode.<br>"
+		"<br>"
+		"The next sections below will cover these limitations and alternate solutions.<br>"
+		"<br><br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to CSV Spreasheet file</b></font><br>"
+		"<br>"
+		"Mbox Viewer supports direct printing of all mails or selected group of mails to single CSV file only.<br>"
+		"<br>"
+		"All mails can be printed to single CSV file but a particular Spreadsheet tool may limit the maximum supported size of the spreadsheet file.<br>"
+		"<br>"
+		"User can print groups of mails to separate CVS files as a work around.<br>"
+		"<br>"
+		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate CSV files<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to TEXT file</b></font><br>"
+		"<br>"
+		"Mbox Viewer supports direct printing of all mail, single or selected group of mails to single Text file only.<br>"
+		"<br>"
+		"All mails can be printed to single TEXT file but a particular Text viewer tool may limit the maximum supported size of the text file.<br>"
+		"<br>"
+		"User can print groups of mails to separate Text files as a work around.<br>"
+		"<br>"
+		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate Text files<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to HTML file</b></font><br>"
+		"<br>"
+		"Mbox Viewer supports direct printing of all mails, single or selected group of mails to single HTML file or to separate per mail HTML file.<br>"
+		"<br>"
+		"All archive mails can be printed to single HTML file but HTML viewer tools/Web Browsers are not able to process large HTML files, become very slow or completely overloaded.<br>"
+		"<br>"
+		"User can print groups of mails to separate HTML files as a work around.<br>"
+		"<br>"
+		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate HTML files<br>"
+		"<br>"
+		"There is no hard rule how many mails can be printed to a single HTML file and viewed by a Web Browser.<br>"
+		"<br>"
+		"It depends on the size and content (such as heavy graphics) of mails. It should be doable to print up to a couple of thousands small to medium size text mails to a single HTML file.<br>"
+		"<br>"
+		"Mails can be printed to a separate per mail HTML file for further processing as described in Mail Printing to PDF section.<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to PDF printer</b></font><br>"
+		"<br>"
+		"Mbox Viewer supports direct printing of all mails, single or selected group of mails to PDF printer.<br>"
+		"<br>"
+		"Printing to PDF printer relies on Microsoft HTML Document object to print its content.<br>"
+		"<br>"
+		"Mails are first printed to a single HTML file,  then the file is loaded into HTML Document object created by the Mbox Viewer and send to PDF printer.<br>"
+		"<br>"
+		"The limitations as far as the maximum number of mails that can be printed are described in the \"Printing Mails to HTML file\" section above.<br>"
+		"<br>"
+		"The \"File -> Print Config -> Page Setup\" dialog option allows users to control <u>the page title, header, footer and background color</u>.<br>"
+		"<br>"
+		"By default user is prompted to select PDF printer for printing mails.<br>"
+		"<br>"
+		"If the PDF printer is configured as the default printer, user can set \"File -> Print Config -> Do Not Prompt\" dialog option to skip the printer prompt.<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to PDF files</b></font><br>"
+		"<br>"
+		"Mbox Viewer supports multiple ways to print all, single or multiple mails to PDF files.<br>"
+		"<br>"
+		"All methods convert  HTML files created from mails by the Mbox Viewer to PDF format.<br>"
+		"<br>"
+		"By default all, single or selected mails are printed to a single HTML file and then converted to PDF format.<br>"
+		"<br>"
+		"HTML file can be open within a Browser and printed to PDF file or printed directly to PDF without any user interaction.<br>"
+		"<br>"
+		"The default method limits the number of mails that can be effectively printed to single HTML file as noted in previous sections.<br>"
+		"<br>"
+		"Direct printing to PDF file invokes external application to convert HTML files to PDF.<br>"
+		"<br>"
+		"By default so called headless Google Chrome browser is invoked to perform conversion.<br>"
+		"<br>"
+		"However, Chrome doesn't support options to control <u>the page title, header and footer and the background color</u>.<br>"
+		"<br>"
+		"The second option is provided to leverage free wkhtmltopdf application to covert HTML to PDF.<br>"
+		"<br>"
+		"User can set \"File -> Print Config -> Path To User Defined Script\" to invoke HTML2PDF-single-wkhtmltopdf.cmd script included in the release package.<br>"
+		"<br>"
+		"HTML2PDF-single-wkhtmltopdf.cmd script creates PDF files with <u>the right footer \"Page Number of Total Pages\" and no page Title and Header</u>.<br>"
+		"<br>"
+		"User can replicate HTML2PDF-single-wkhtmltopdf.cmd to new file and update to leverage different converter possibly commercial.<br>"
+		"<br>"
+		"Also, user needs to update \"Path To User Defined Script\" in \"File -> Print Config\" dialog to point to new script location.<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+1\"><b>Mail Printing to PDF files by Power Users</b></font><br>"
+		"<br>"
+		"Some users may need to print larger number of mails to a single PDF file.<br>"
+		"<br>"
+		"This is supported by Mbox Viewer but manual steps are required.<br>"
+		"<br>"
+		"User must first print all mails to separate PDF files and then merge them into a single PDF file.<br>"
+		"<br>"
+		"In order to print mails to separate files, user must first set \"File -> Print Config -> Print mails to separate files -> PDF\" option.<br>"
+		"<br>"
+		"After that, using standard mail print options, user can print all or large subset of mails to separate PDF files into sub-folder PDF_GROUP created by Mbox Viewer.<br>"
+		"<br>"
+		"Printing large number of mails to separate PDF files is time consuming.<br>"
+		"<br>"
+		"Depending on the size and content of a mail, it may take fraction of a second to create single PDF file or a couple of seconds.<br>"
+		"<br>"
+		"PDFMerge-pdfbox.cmd script included in the release package can then be used to merge PDF files.<br>"
+		"<br>"
+		"PDFMerge-pdfbox.cmd script invokes free PDFBox java tool to merge PDF files.<br>"
+		"<br>"
+		"PDFMerge-pdfbox.cmd script must be copied into the directory housing all per mail PDF files and executed.<br>"
+		"<br>"
+		"PDFMerge-pdfbox.cmd script will create one or more merged PDF files in the PDF_MERGE sub-folder.<br>"
+		"<br>"
+		"If more than one merged PDF file is created in the PDF_MERGE sub-folder, PDFMerge-pdfbox.cmd script needs to be copied to that sub-folder and script executed again.<br>"
+		"<br>"
+		"The above steps need to be repeated until PDFMerge-pdfbox.cmd script creates single script only.<br>"
+		"<br>"
+		"Printing mails to separate PDF files can also be done offline. User must first set \"File -> Print Config -> Print mails to separate files -> HTML\" option.<br>"
+		"<br>"
+		"After that, using standard mail print options, user can print all or large subset of mails to separate HTML files into sub-folder HTML_GROUP created by Mbox Viewer.<br>"
+		"<br>"
+		"HTML2PDF-all-chrome.cmd or HTML2PDF-all-wkhtmltopdf.cmd script included in the release package can then be used to convert HTML files to PDF files.<br>"
+		"<br>"
+		"One of these scripts must be copied into the directory housing all per mail HTML files, i.e. HTML_GROUP, and executed.<br>"
+		"<br>"
+		"Created PDF files can then be merged into a single PDF file using PDFMerge-pdfbox.cmd script as described above.<br>"
+		"<br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+2\"><u><b>Advanced Find Overview</b></u></font><br>"
+		"<br>"
+		"Advanced Find dialog allows users to use multiple fields to compose more complex search criteria.<br>"
+		"<br>"
+		"The search criteria is basically ANDing all checked fields or pairs of fields such as (From and To) and (Message and Attachment).<br>"
+		"<br>"
+		"Find Advanced dialog allows users to specify relation between From and To as biderectional or unidirectional and the result is ANDed with other checked fields.<br>"
+		"<br>"
+		"The Message and Attachment are handled as OR expression and the result is ANDed with other checked fields.<br>"
+		"<br>"
+		"More complex search criteria can be accomplished by leveraging User Selected Mails list.<br>"
+		"<br>"
+		"User can run Advanced Find multiple times and merge results into User Selected Mails list.<br>"
+		"<br><br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<font size=\"+2\"><u><b>Directory Structure</b></u></font><br>"
+		"<br>"
+		"Mbox Viewer creates and manages several sub-directories in the directory that houses one or more mail archive files.<br>"
+		"<br>"
+		"ROOT_MAIL_DIRECTORY<br>"
+		"ROOT_MAIL_DIRECTORY\\MailArchiveFile1.mbox<br>"
+		"ROOT_MAIL_DIRECTORY\\MailArchiveFile2.mbox<br>"
+		"ROOT_MAIL_DIRECTORY\\ImageCache<br>"
+		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile1-  <font color=red>target directory for image files, such as png,jpg,etc, embeded into mails</font><br>"
+		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile2<br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache<br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1  -  <font color=red>target directory for printing to single CSV,TEXT,HTML and PDF files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP  -  <font color=red>target directory for printing to separate PDF files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP\\PDF_MERGE  -  <font color=red>target directory for merged PDF files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP\\PDF_MERGE\\PDF_MERGE  -  <font color=red>target directory for merged PDF files if multiple merge steps are needed</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP  -  <font color=red>target directory for printing to separate HTML files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP\\PDF_MERGE  -  <font color=red>target directory for merged PDF files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP\\PDF_MERGE\\PDF_MERGE  -  <font color=red>target directory for merged PDF files if multiple merge steps are needed</font><br>"
+		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile2<br>"
+		"<br>"
+		"<br>"
+		"Mbox Viewer also creates and manages temporary directory C:\\Users\\UserName\\AppData\\Local\\Temp\\mboxview directory to store temporary files (attachments, eml and htm) created when a mail is selected by the user.<br>"
+		"<br><br>"
+	);
+	fp.Write((LPCSTR)text, text.GetLength());
+
+	text.Empty();
+	text.Append(
+		"<br><br>"
+		"<br><br>"
+	);
 	fp.Write((LPCSTR)text, text.GetLength());
 
 	CString htmlEnd = "\r\n</body></html>";
@@ -1871,4 +2115,216 @@ void CMainFrame::OnFileMergearchivefiles()
 {
 	// TODO: Add your command handler code here
 	MergeArchiveFiles();
+}
+
+
+void CMainFrame::OnPrinttoPdf()
+{
+	// TODO: Add your command handler code here
+	if (MboxMail::s_mails.GetSize() == 0) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+
+	NListView *pListView = GetListView();
+	int firstMail = 0;
+	int lastMail = MboxMail::s_mails.GetCount() - 1;
+	if (m_NamePatternParams.m_bPrintToSeparatePDFFiles)
+	{
+		if (pListView)
+		{
+			CString targetPrintSubFolderName = "PDF_GROUP";
+			pListView->PrintMailRangeToSeparatePDF_Thread(firstMail, lastMail, targetPrintSubFolderName);
+		}
+	}
+	else
+	{
+		CString targetPrintSubFolderName;
+		pListView->PrintMailRangeToSinglePDF_Thread(firstMail, lastMail, targetPrintSubFolderName);
+	}
+
+	int deb = 1;
+}
+
+void CMainFrame::PrintMailArchiveToPDF()
+{
+	OnPrinttoPdf();
+}
+
+int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
+{
+	CString path;
+	if (m_NamePatternParams.m_bScriptType == 0)
+	{
+		path = m_NamePatternParams.m_ChromeBrowserPath;
+		if (!PathFileExist(path))
+		{
+			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update the setup.");
+			return -1;
+		}
+	}
+	else
+	{
+		path = m_NamePatternParams.m_UserDefinedScriptPath;
+		if (!PathFileExist(path))
+		{
+			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update the setup.");
+			return -1;
+		}
+	}
+	return 1;
+}
+
+int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	// TODO: Duplicate check, done already in _Thread function calls 
+	if (pFrame)
+	{
+		int ret = pFrame->VerifyPathToHTML2PDFExecutable(errorText);
+		if (ret < 0)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		errorText.Append("Internal error. Try again.");
+		return -1;
+	}
+
+	CString pdfFileName;
+	pdfFileName.Append(htmFileName);
+
+	CString newSuffix;
+	newSuffix.Append(".pdf");
+	MboxMail::UpdateFileExtension(pdfFileName, newSuffix);
+
+	BOOL delStatus = DeleteFile(pdfFileName);
+	if (delStatus == FALSE) {
+		DWORD error = GetLastError();
+	}
+
+	int bScriptType = 0;
+	CString path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
+	CString args = "--headless --disable-gpu --print-to-pdf=\"" + pdfFileName + "\" \"" + htmFileName + "\"";
+
+	if (pFrame->m_NamePatternParams.m_bScriptType == 0)
+	{
+		// args no change
+		path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
+		if (!PathFileExist(path)) {
+			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update setup.");
+			int deb = 1;
+			return -1;
+		}
+	}
+	else
+	{
+		args = "\"" + htmFileName + "\"";
+		path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
+		if (!PathFileExist(path)) {
+			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
+			int deb = 1;
+			return -1;
+		}
+	}
+
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = path;
+	ShExecInfo.lpParameters = args;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE)
+	{
+		DWORD err = GetLastError();
+		int ret = CMainFrame::CheckShellExecuteResult(ShExecInfo.hInstApp, errorText);
+		return -1;
+	}
+
+	int step = 10;
+	int stepCnt = 0;
+	int nSeconds = 0;
+	CString secondsBar;
+
+	DWORD msec = 100;
+	BOOL signaled = FALSE;
+	BOOL failed = FALSE;
+	for (;;)
+	{
+		msec = 100;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_ABANDONED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_OBJECT_0: {
+			signaled = TRUE;
+			break;
+		}
+		case WAIT_FAILED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_TIMEOUT: {
+			if (MboxMail::pCUPDUPData)
+			{
+
+				if (MboxMail::pCUPDUPData->ShouldTerminate())
+				{
+					if (ShExecInfo.hProcess)
+					{
+						TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+						CloseHandle(ShExecInfo.hProcess);
+					}
+					return 2;
+				}
+				if (progressBar)
+				{
+					if (stepCnt % 10 == 0)
+					{
+						nSeconds++;
+						if (progressText.IsEmpty())
+							MboxMail::pCUPDUPData->SetProgress(step);
+						else {
+							secondsBar.Format(_T("%s  %d seconds"), progressText, nSeconds);
+							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
+						}
+						step += 10;
+						if (step > 100)
+							step = 10;
+					}
+					stepCnt++;
+				}
+			}
+			break;
+		}
+		default: {
+			failed = TRUE;
+			break;
+		}
+		}
+		if (signaled || failed)
+		{
+			// ???
+			break;
+		}
+	}
+	if (ShExecInfo.hProcess)
+		CloseHandle(ShExecInfo.hProcess);
+
+	return 1;
 }

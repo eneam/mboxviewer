@@ -19,19 +19,31 @@ REM This is a working example script to leverage open source (LGPLv3) wkhtmltopd
 REM This script is the default configurable script in Mbox Viewer.
 REM No need to update this script unless different target directory is needed for PDF files or 
 REM other options such as header and footer must be configured for wkhtmltopdf tool.
+REM NOTE: Using wkhtmltopdf, page header and footer can be controlled but not when using Chrome.
+REM NOTE: Language and font support seem to be limited so make sure conversion works in your case.
+REM NOTE: Not clear whether in all cases HTML is fully render/loaded before printing to PDF
 
 REM This script is invoked by Mbox Viewer and the full path to HTML file is passed as the first argument.
 REM Path to script can be configured and enabled by selecting proper option in File -> Print Config.
 REM To avoid suprises, script needs to be tested outside of the Mbox Viewer to make sure it works.
 
-set HTMLFilePath=%1
+set FilePath=%1
+set HTMLFilePath=%~1
 Set HTMLdir=%~dp1
 Set HTMLfile=%~nx1
 
+REM Update path if needed
+set ProgName=wkhtmltopdf.exe
+set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
+set CmdPath=%ProgDirectoryPath%\%ProgName%
+
+REM Change the target directory for PDF files if needed.
+set PDFdir=%HTMLdir%
+
 REM echo Folder is: %HTMLdir%
 REM echo Name is: %HTMLfile%
+REM echo Path %HTMLFilePath%
 
-echo Path %HTMLFilePath% 
 For %%A in ("%HTMLfile%") do (
     Set HTMLNameBase=%%~nA
     Set HTMLNameExt=%%~xA
@@ -39,10 +51,9 @@ For %%A in ("%HTMLfile%") do (
 REM echo File Name Base is: %HTMLNameBase%
 REM echo File Name Ext is: %HTMLNameExt%
 
-REM Change the target directory for PDF files if needed.
-set PDFdir=%HTMLdir%
+del "%PDFdir%\%HTMLNameBase%.pdf"
 
-"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
+call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
 
 REM Replace "REM pause" with "pause" for testing.
 REM pause

@@ -13,6 +13,7 @@
 #endif
 
 #include "resource.h"       // main symbols
+#include <string>
 #include "mainfrm.h"       // main symbols
 #include "TextUtilities.h"
 
