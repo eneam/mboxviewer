@@ -28,6 +28,8 @@ struct NamePatternParams
 	int m_bPrintToSeparatePDFFiles;
 	int m_bPrintToSeparateHTMLFiles;
 	int m_bPrintToSeparateTEXTFiles;
+	int m_bAddBackgroundColorToMailHeader;
+	int m_bAddBreakPageAfterEachMailInPDF;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);

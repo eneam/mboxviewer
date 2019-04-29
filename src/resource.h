@@ -193,6 +193,10 @@
 #define IDC_PRINT_TO_SEPARATE_FILES     1176
 #define IDC_SEPARATE_PDF                1177
 #define IDC_SEPARATE_HTML               1178
+#define IDC_STATIC_PDF_OPTIONS          1179
+#define IDC_ADD_HDR_COLOR               1180
+#define IDC_PAGE_BREAK                  1181
+#define IDC_STATIC_PDF_OPTIONS2         1182
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -235,7 +239,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        200
 #define _APS_NEXT_COMMAND_VALUE         32888
-#define _APS_NEXT_CONTROL_VALUE         1179
+#define _APS_NEXT_CONTROL_VALUE         1182
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

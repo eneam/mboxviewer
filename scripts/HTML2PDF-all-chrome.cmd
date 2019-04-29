@@ -28,7 +28,7 @@ if NOT exist "%CmdPath%" (
 
 echo.
 echo Invalid path to "%CmdPath%" executable file.
-echo Please install and/or update the path in the batch file and re-run the script again.
+echo Please install and/or update the Chrome path in the batch file and re-run the script again.
 echo.
 
 pause

@@ -39,6 +39,8 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_HTML2PDF_SCRIPT_PATH, m_NamePatternParams.m_UserDefinedScriptPath);
 	DDX_Check(pDX, IDC_SEPARATE_PDF, m_NamePatternParams.m_bPrintToSeparatePDFFiles);
 	DDX_Check(pDX, IDC_SEPARATE_HTML, m_NamePatternParams.m_bPrintToSeparateHTMLFiles);
+	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
+	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
 	int deb = 1;
 }
 
@@ -161,6 +163,9 @@ void NamePatternParams::SetDflts()
 	m_bPrintToSeparatePDFFiles = FALSE;
 	m_bPrintToSeparateHTMLFiles = FALSE;
 	m_bPrintToSeparateTEXTFiles = FALSE;
+
+	m_bAddBackgroundColorToMailHeader = TRUE;
+	m_bAddBreakPageAfterEachMailInPDF = FALSE;
 	
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);
@@ -203,6 +208,8 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bPrintToSeparatePDFFiles = src.m_bPrintToSeparatePDFFiles;
 	m_bPrintToSeparateHTMLFiles = src.m_bPrintToSeparateHTMLFiles;
 	m_bPrintToSeparateTEXTFiles = src.m_bPrintToSeparateTEXTFiles;
+	m_bAddBackgroundColorToMailHeader = src.m_bAddBackgroundColorToMailHeader;
+	m_bAddBreakPageAfterEachMailInPDF = src.m_bAddBreakPageAfterEachMailInPDF;
 }
 
 void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternParams &updated)
@@ -240,6 +247,12 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	if (updated.m_UserDefinedScriptPath != current.m_UserDefinedScriptPath) {
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printUserDefinedScriptPath", updated.m_UserDefinedScriptPath);
 	}
+	if (updated.m_bAddBackgroundColorToMailHeader != current.m_bAddBackgroundColorToMailHeader) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailHdrBackgroundColor", updated.m_bAddBackgroundColorToMailHeader);
+	}
+	if (updated.m_bAddBreakPageAfterEachMailInPDF != current.m_bAddBreakPageAfterEachMailInPDF) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMail", updated.m_bAddBreakPageAfterEachMailInPDF);
+	}
 }
 
 
@@ -247,6 +260,7 @@ void NamePatternParams::LoadFromRegistry()
 {
 	BOOL retval;
 	DWORD bDate, bTime, bFrom, bTo, bSubject, bPrintDialog, bScriptType, nWantedFileNameFormatSizeLimit;
+	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF;
 	CString chromeBrowserPath;
 	CString userDefinedScriptPath;
 
@@ -270,6 +284,10 @@ void NamePatternParams::LoadFromRegistry()
 		m_ChromeBrowserPath = chromeBrowserPath;
 	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printUserDefinedScriptPath"), userDefinedScriptPath))
 		m_UserDefinedScriptPath = userDefinedScriptPath;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailHdrBackgroundColor"), bAddBackgroundColorToMailHeader))
+		m_bAddBackgroundColorToMailHeader = bAddBackgroundColorToMailHeader;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPDFPageBreakAfterEachMail"), bAddBreakPageAfterEachMailInPDF))
+		m_bAddBreakPageAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
 }
 
 void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)

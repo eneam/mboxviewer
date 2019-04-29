@@ -21,6 +21,8 @@ REM This script is working example script to render subset of HTML files listed 
 setlocal enabledelayedexpansion
 
 REM Update path if needed
+REM Download wkhtmltopdf from https://wkhtmltopdf.org/downloads.html
+REM Usage link on how to control header and footer https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
 set ProgName=wkhtmltopdf.exe
 set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
 set CmdPath=%ProgDirectoryPath%\%ProgName%
@@ -29,7 +31,7 @@ if NOT exist "%CmdPath%" (
 
 echo.
 echo Invalid path to %CmdPath% executable file.
-echo Please install and/or update the path in the batch file and re-run the script again.
+echo Please install and/or update the wkhtmltopdf path in the batch file and re-run the script again.
 echo.
 
 pause

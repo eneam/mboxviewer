@@ -3469,9 +3469,16 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			NMsgView::GetTextFromIHTMLDocument(inbuf, outbuf, pageCode, outPageCode);
 			fp.Write(outbuf->Data(), outbuf->Count());
 
-			//TODO:
-			//bdy = "<div class=\"pagebreak\"></div>";
-			//fp.Write(bdy, bdy.GetLength());
+			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+			if (pFrame)
+			{
+				if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
+				{
+					//bdy = "<div class=\"pagebreak\"></div>";
+					bdy = "<div style=\"page-break-before:always\"></div>";
+					fp.Write(bdy, bdy.GetLength());
+				}
+			}
 		}
 	}
 
@@ -3536,6 +3543,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	if (textlen != outbuflarge->Count())
 		int deb = 1;
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
 	if (outbuflarge->Count() != 0)
 	{
 		CString bdycharset = "UTF-8";
@@ -3547,15 +3556,26 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
 
-		// TODO: Tried to inject Page Break but scenarios I tried don't seem to work
-		//bdy = "<div><html><head><style> p {page-break-before:always;} </style></head><body><p></p></body></html></div>";
-		//fp.Write(bdy, bdy.GetLength());
-
 		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
-		fp.Write(bdy, bdy.GetLength());
+		if (pFrame)
+		{
+			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
+			{
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			}
+			else
+			{
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"font-weight:normal;font-size:larger\">";
+			}
+			fp.Write(bdy, bdy.GetLength());
+		}
+		else
+		{
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			fp.Write(bdy, bdy.GetLength());
+		}
 
 		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
@@ -3619,9 +3639,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			fp.Write(bdy, bdy.GetLength());
 		}
 
-		//TODO: 
-		bdy = "<div class=\"pagebreak\"></div>";
-		fp.Write(bdy, bdy.GetLength());
+		if (pFrame)
+		{
+			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
+			{
+				//bdy = "<div class=\"pagebreak\"></div>";
+				bdy = "<div style=\"page-break-before:always\"></div>";
+				fp.Write(bdy, bdy.GetLength());
+			}
+		}
 	}
 	else
 	{
@@ -3636,8 +3662,23 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		CString bdycharset = "UTF-8";
 
-		bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
-		fp.Write(bdy, bdy.GetLength());
+		if (pFrame)
+		{
+			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
+			{
+				bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			}
+			else
+			{
+				bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:larger\">";
+			}
+			fp.Write(bdy, bdy.GetLength());
+		}
+		else
+		{
+			bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			fp.Write(bdy, bdy.GetLength());
+		}
 
 		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
@@ -3686,9 +3727,16 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		//TODO:
-		//bdy = "<div class=\"pagebreak\"></div>";
-		//fp.Write(bdy, bdy.GetLength());
+
+		if (pFrame)
+		{
+			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
+			{
+				//bdy = "<div class=\"pagebreak\"></div>";
+				bdy = "<div style=\"page-break-before:always\"></div>";
+				fp.Write(bdy, bdy.GetLength());
+			}
+		}
 	}
 
 	return 1;

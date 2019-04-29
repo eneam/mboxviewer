@@ -34,8 +34,11 @@ set /A firstIndex=0
 set /A listLength=0
 
 REM install java 8 or higher
+REM Download java from  https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 REM Update path to PDFBox jar file if needed
-set PDFBox=pdfbox-app-2.0.14.jar
+REM Download PDFBox from https://pdfbox.apache.org/
+REM Command tools example https://pdfbox.apache.org/2.0/commandline.html
+set PDFBox=pdfbox-app-2.0.15.jar
 set PDFBoxDirectoryPath=C:/Users/tata/Downloads
 set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
 
@@ -43,7 +46,7 @@ if NOT exist "%PDFBoxJarFilePath%" (
 
 echo.
 echo Invalid path to %PDFBoxJarFilePath% jar file.
-echo Please install and/or update the path in the batch file and re-run the script again.
+echo Please install and/or update the PDFBox path in the batch file and re-run the script again.
 echo.
 
 pause
@@ -66,7 +69,7 @@ for %%A in ("*.pdf") do (
 
 REM use temporarty file to determine string length, dos doesn't have a built in command
 	echo.!list!>TempFileToDeterineStringLen
-	for %%a in (TempFileToDeterineStringLen) do set /a TempFileToDeterineStringLen=%%~za -2
+	for %%a in (TempFileToDeterineStringLen) do set /a listLength=%%~za -2
 
 
 Set formattedTotalCount=0000000!totalCount!
@@ -75,7 +78,7 @@ Set formattedTotalCount=!formattedTotalCount:~-6%!
 REM Duplicated code, no OR in DOS and using goto seem to break for loop
 REM Max string length seem to be limited to 8191, MAX_FILE_PATH ~ 260
 	set doPDF=n
-	if !len! gtr 7700 (
+	if !listLength! gtr 7700 (
 
 		echo COUNT=!count!
 		echo TOTAL_COUNT=!totalCount!
@@ -102,7 +105,6 @@ REM Replace next 3 lines with another HTML to PDF converion tool if desired
 			set list=
 		)
 	)
-echo.
 )
 
 if NOT %count%==0 (

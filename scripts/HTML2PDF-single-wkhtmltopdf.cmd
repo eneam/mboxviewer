@@ -33,6 +33,8 @@ Set HTMLdir=%~dp1
 Set HTMLfile=%~nx1
 
 REM Update path if needed
+REM Download wkhtmltopdf from https://wkhtmltopdf.org/downloads.html
+REM Usage link on how to control header and footer https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
 set ProgName=wkhtmltopdf.exe
 set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
 set CmdPath=%ProgDirectoryPath%\%ProgName%
