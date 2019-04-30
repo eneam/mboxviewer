@@ -2583,6 +2583,20 @@ int MboxMail::exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile 
 		separatorNeeded = true;
 	}
 
+	if (csvConfig.m_bCC) {
+		if (separatorNeeded)
+			colLabels += csvConfig.m_separator;
+		colLabels += "CC";
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bBCC) {
+		if (separatorNeeded)
+			colLabels += csvConfig.m_separator;
+		colLabels += "BCC";
+		separatorNeeded = true;
+	}
+
 	if (csvConfig.m_bContent) {
 		if (separatorNeeded)
 			colLabels += csvConfig.m_separator;
@@ -2851,6 +2865,136 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		else
 			outbuf.Append(tmpbuf);
 
+		outbuf.Append('"');
+
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bCC)
+	{
+		int tolen = m->m_cc.GetLength();
+		memcpy(buff, m->m_cc, tolen);
+		buff[tolen] = 0;
+
+		last = &buff[tolen];
+
+		if (separatorNeeded)
+			outbuf.Append(sepchar);
+
+		outbuf.Append('"');
+
+		token = buff;
+		atpos = _tcschr(token, '@');
+		while (atpos != 0)
+		{
+			seppos = _tcschr(atpos, sepchar);
+			if (seppos == 0)
+			{
+				tokenlen = last - token;
+				name.ClearAndResize(tokenlen);
+				addr.ClearAndResize(tokenlen);
+				splitMailAddress(token, tokenlen, &name, &addr);
+				atpos = 0;
+			}
+			else
+			{
+				*seppos = 0;
+				tokenlen = seppos - token;
+
+				name.ClearAndResize(tokenlen);
+				addr.ClearAndResize(tokenlen);
+				splitMailAddress(token, tokenlen, &name, &addr);
+
+				token = seppos + 1;
+				atpos = _tcschr(token, '@');
+			}
+
+			int addrlen = addr.Count();
+
+			tmpbuf.ClearAndResize(2 * addrlen);
+			int ret_addrlen = escapeSeparators(tmpbuf.Data(), addr.Data(), addrlen, '"');
+			tmpbuf.SetCount(ret_addrlen);
+
+			UINT pageCode = m->m_to_charsetId;
+			if (csvConfig.m_nCodePageId && (pageCode != 0) && (pageCode != csvConfig.m_nCodePageId))
+			{
+				BOOL ret = Str2CodePage(&tmpbuf, pageCode, csvConfig.m_nCodePageId, inbuf, workbuf);
+				if (ret)
+					outbuf.Append(*inbuf);
+				else
+					outbuf.Append(tmpbuf);
+			}
+			else
+				outbuf.Append(tmpbuf);
+
+			if (atpos)
+				outbuf.Append(sepchar);
+		}
+		outbuf.Append('"');
+
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bBCC)
+	{
+		int tolen = m->m_bcc.GetLength();
+		memcpy(buff, m->m_bcc, tolen);
+		buff[tolen] = 0;
+
+		last = &buff[tolen];
+
+		if (separatorNeeded)
+			outbuf.Append(sepchar);
+
+		outbuf.Append('"');
+
+		token = buff;
+		atpos = _tcschr(token, '@');
+		while (atpos != 0)
+		{
+			seppos = _tcschr(atpos, sepchar);
+			if (seppos == 0)
+			{
+				tokenlen = last - token;
+				name.ClearAndResize(tokenlen);
+				addr.ClearAndResize(tokenlen);
+				splitMailAddress(token, tokenlen, &name, &addr);
+				atpos = 0;
+			}
+			else
+			{
+				*seppos = 0;
+				tokenlen = seppos - token;
+
+				name.ClearAndResize(tokenlen);
+				addr.ClearAndResize(tokenlen);
+				splitMailAddress(token, tokenlen, &name, &addr);
+
+				token = seppos + 1;
+				atpos = _tcschr(token, '@');
+			}
+
+			int addrlen = addr.Count();
+
+			tmpbuf.ClearAndResize(2 * addrlen);
+			int ret_addrlen = escapeSeparators(tmpbuf.Data(), addr.Data(), addrlen, '"');
+			tmpbuf.SetCount(ret_addrlen);
+
+			UINT pageCode = m->m_to_charsetId;
+			if (csvConfig.m_nCodePageId && (pageCode != 0) && (pageCode != csvConfig.m_nCodePageId))
+			{
+				BOOL ret = Str2CodePage(&tmpbuf, pageCode, csvConfig.m_nCodePageId, inbuf, workbuf);
+				if (ret)
+					outbuf.Append(*inbuf);
+				else
+					outbuf.Append(tmpbuf);
+			}
+			else
+				outbuf.Append(tmpbuf);
+
+			if (atpos)
+				outbuf.Append(sepchar);
+		}
 		outbuf.Append('"');
 
 		separatorNeeded = true;
@@ -3468,24 +3612,24 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			// Below Relies on IHTMLDocument2
 			NMsgView::GetTextFromIHTMLDocument(inbuf, outbuf, pageCode, outPageCode);
 			fp.Write(outbuf->Data(), outbuf->Count());
-
-			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-			if (pFrame)
-			{
-				if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
-				{
-					//bdy = "<div class=\"pagebreak\"></div>";
-					bdy = "<div style=\"page-break-before:always\"></div>";
-					fp.Write(bdy, bdy.GetLength());
-				}
-			}
 		}
 	}
 
 	outbuf->Clear();
 	outbuf->Append("\r\n");
-
 	fp.Write(outbuf->Data(), outbuf->Count());
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF)
+		{
+			char formFeed = 12;
+			outbuf->Clear();
+			outbuf->Append(formFeed);
+			fp.Write(outbuf->Data(), outbuf->Count());
+		}
+	}
 
 	return 1;
 }
@@ -3629,7 +3773,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 #endif
 
 		if (extraHtmlHdr) {
-			bdy = "<br></body></html>";
+			bdy = "</body></html>";
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -3643,7 +3787,6 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
-				//bdy = "<div class=\"pagebreak\"></div>";
 				bdy = "<div style=\"page-break-before:always\"></div>";
 				fp.Write(bdy, bdy.GetLength());
 			}
@@ -3732,12 +3875,14 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
-				//bdy = "<div class=\"pagebreak\"></div>";
 				bdy = "<div style=\"page-break-before:always\"></div>";
 				fp.Write(bdy, bdy.GetLength());
 			}
 		}
 	}
+
+	CString bdy = "<div><br></div>";
+	fp.Write(bdy, bdy.GetLength());
 
 	return 1;
 }
@@ -7399,6 +7544,8 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 	m_bTo = src.m_bTo;
 	m_bSubject = src.m_bSubject;
 	m_bDate = src.m_bDate;
+	m_bCC = src.m_bCC;
+	m_bBCC = src.m_bBCC;
 	m_bContent = src.m_bContent;
 	m_dateFormat = src.m_dateFormat;
 	m_bGMTTime = src.m_bGMTTime;

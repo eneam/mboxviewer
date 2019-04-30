@@ -12,18 +12,18 @@ Features
 * quick access to attachments;
 * preview picture attachments;
 * export of single mail in Eml;
-* print all mails to CSV or Text or HTML or PDF files;
-* print single mail to Text or HTML file or to printer;
+* print all or multiple selected mails to CSV or Text or HTML or PDF file;
+* print single mail to Text or HTML or PDF file or to send to PDF printer;
 * group all related mails as conversations in the summary window;
-* print related mails/mail group to Text or HTML or PDF or CSV files;
-* open a single or group of related mails in external browser;
+* print related mails/mail group to Text or HTML or PDF or CSV files or send to PDF printer;
+* open a single or multiple selected mails or group of related mails in external browser;
 * sort emails by date, from, subject and conversation columns;
 * find user defined text in the message and highlight all occurrences;
 * search mails by user defined date range and text in the subject, sender, recepient, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
 * support for composing mail list from single or multiple search results and archiving if desired;
 * support for setting Message Window position to Bottom, Right or Left;
-* ability to merge/concatenate  multiple archive files and remove duplicate mails;
+* ability to merge/concatenate multiple archive files and remove duplicate mails;
 
 Changes
 ---
@@ -32,10 +32,10 @@ v 1.0.3.1 - work in progress - near completion
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
  - Added capability to merge/concatenate  multiple archive files and remove duplicate mails;
- - Added option to print directly to PDF without user interaction by leveragin external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
+ - Added option to print directly to PDF without user interaction by leveraging external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
  - Added option to print each mail to a separate PDF file;
  - Added scripts to merge per mail PDF files to support printing large number of mails to a single PDF file;
- - Added verical bar in the first column to mark mails that are also on the User Selected Mails list;
+ - Added vertical bar in the first column to mark mails that are also on the User Selected Mails list;
  - Added handling of CTRL-A to select all mails in the Summary Window. Windows must be selected first;
  - Updated Help options;
  - Updated User Manual to describe new and updated features;

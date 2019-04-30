@@ -6043,6 +6043,10 @@ int NListView::RefreshMailsOnUserSelectsMailListMark()
 
 int NListView::VerifyMailsOnUserSelectsMailListMarkCounts()
 {
+#ifndef _DEBUG
+	return 1;
+#endif
+
 	MboxMail *m;
 	int markCnt = 0;
 	int errorCnt = 0;
@@ -6062,8 +6066,12 @@ int NListView::VerifyMailsOnUserSelectsMailListMarkCounts()
 	{
 		errorCnt = MboxMail::s_mails_edit.GetCount() - markCnt;
 	}
-	if (errorCnt != 0)
+	if (errorCnt != 0) {
+#ifdef _DEBUG
+		ASSERT(0);
+#endif
 		int deb = 1;
+	}
 	return errorCnt;
 }
 

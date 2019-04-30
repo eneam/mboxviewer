@@ -500,6 +500,8 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		csvConfig.m_bTo = d.m_bTo;
 		csvConfig.m_bSubject = d.m_bSubject;
 		csvConfig.m_bDate = d.m_bDate;
+		csvConfig.m_bCC = d.m_bCC;
+		csvConfig.m_bBCC = d.m_bBCC;
 		csvConfig.m_bContent = d.m_bContent;
 		csvConfig.m_dateFormat = d.m_dateFormat;
 		csvConfig.m_bGMTTime = d.m_bGMTTime;
@@ -1453,9 +1455,9 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 
 	text.Empty();
 	text.Append(
-		"<font size=\"+1\"><b>Merging Multiple Archives</b></font><br>"
+		"<font size=\"+1\"><b>Merging Multiple Mail Archives</b></font><br>"
 		"<br>"
-		"Mutiple archives can be concatenated into a single archive using \"File -> Merge Archive Files\" option.<br>"
+		"Multiple archives can be concatenated into a single archive using \"File -> Merge Archive Files\" option.<br>"
 		"<br>"
 		"This is useful if you need to analyze multiple mail views, provided as separate archive files, derived from the same archive file.<br>"
 		"<br>"

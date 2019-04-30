@@ -63,6 +63,8 @@ public:
 	BOOL m_bTo;
 	BOOL m_bSubject;
 	BOOL m_bDate;
+	BOOL m_bCC;
+	BOOL m_bBCC;
 	BOOL m_bContent;
 	CString m_MessageLimitString;
 	int m_dateFormat;

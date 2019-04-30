@@ -9,7 +9,7 @@ v 1.0.3.1 - work in progress
  - Added option to print directly to PDF without user interaction by leveraging external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
  - Added option to print each mail to a separate PDF file;
  - Added scripts to merge per mail PDF files to support printing large number of mails to a single PDF file;
- - Added verical bar in the first column to mark mails that are also on the User Selected Mails list;
+ - Added vertical bar in the first column to mark mails that are also on the User Selected Mails list;
  - Added handling of CTRL-A to select all mails in the Summary Window. Windows must be selected first;
  - Updated Help options;
  - Updated User Manual to describe new and updated features;
