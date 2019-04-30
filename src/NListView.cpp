@@ -4994,6 +4994,19 @@ void NListView::PrintSelected()
 	TRACE(_T("%s\n"), (LPCSTR)msg);
 }
 
+BOOL NListView::IsUserSelectedMailListEmpty()
+{
+	int nWhichMailList = MboxMail::nWhichMailList;
+	if (nWhichMailList == IDC_EDIT_LIST) 
+	{
+		return(MboxMail::s_mails.IsEmpty());
+	}
+	else
+	{
+		return(MboxMail::s_mails_edit.IsEmpty());
+	}
+}
+
 void NListView::SwitchToMailList(int nID, BOOL force)
 {
 	// TODO: there is more optimization/simplication/cleanup when force is set to TRUE

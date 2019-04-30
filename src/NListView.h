@@ -176,6 +176,7 @@ public:
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int RemoveDuplicateMails();
+	BOOL IsUserSelectedMailListEmpty();
 
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);

@@ -247,6 +247,16 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	if( ! pListView )
 		return;
 
+	if (!pListView->IsUserSelectedMailListEmpty())
+	{
+		CString txt = _T("User Select Mails list is not empty.\n"
+			"Content will be lost if you switch to new mail archive.\n"
+			"Do you want to continue?");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return;
+	}
+
 	pListView->CloseMailFile();
 
 	if( ! pNm->itemNew.hItem ) {
