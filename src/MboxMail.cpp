@@ -4472,6 +4472,14 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	if (progressBar && MboxMail::pCUPDUPData)
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
+	if (1) 
+	{
+		if (csvConfig.m_nCodePageId == CP_UTF8) {
+			const char *BOM_UTF8 = "\xEF\xBB\xBF";
+			fp.Write(BOM_UTF8, 3);
+		}
+	}
+
 	bool first = true;
 	if (selectedMailIndexList == 0)
 	{
