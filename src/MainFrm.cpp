@@ -137,6 +137,7 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	// TODO: add member initialization code here
 
 	m_NamePatternParams.SetDflts();
+	m_csvConfig.SetDflts();
 
 	m_msgViewPosition = msgViewPosition; // bottom=1
 	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
@@ -492,30 +493,45 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 {
 	// TODO: Add your command handler code here
 	ExportToCSVDlg d;
+
+	d.m_bFrom = m_csvConfig.m_bFrom;
+	d.m_bTo = m_csvConfig.m_bTo;
+	d.m_bSubject = m_csvConfig.m_bSubject;
+	d.m_bDate = m_csvConfig.m_bDate;
+	d.m_bCC = m_csvConfig.m_bCC;
+	d.m_bBCC = m_csvConfig.m_bBCC;
+	d.m_bContent = m_csvConfig.m_bContent;
+	d.m_dateFormat = m_csvConfig.m_dateFormat;
+	d.m_bGMTTime = m_csvConfig.m_bGMTTime;
+	d.m_MessageLimitString = m_csvConfig.m_MessageLimitString;
+	d.m_MessageLimitCharsString = m_csvConfig.m_MessageLimitCharsString;
+	d.m_nCodePageId = m_csvConfig.m_nCodePageId;
+
 	if (d.DoModal() == IDOK) 
 	{
-		CSVFILE_CONFIG csvConfig;
+		//CSVFILE_CONFIG csvConfig;
 
-		csvConfig.m_bFrom = d.m_bFrom;
-		csvConfig.m_bTo = d.m_bTo;
-		csvConfig.m_bSubject = d.m_bSubject;
-		csvConfig.m_bDate = d.m_bDate;
-		csvConfig.m_bCC = d.m_bCC;
-		csvConfig.m_bBCC = d.m_bBCC;
-		csvConfig.m_bContent = d.m_bContent;
-		csvConfig.m_dateFormat = d.m_dateFormat;
-		csvConfig.m_bGMTTime = d.m_bGMTTime;
-		csvConfig.m_MessageLimitString = d.m_MessageLimitString;
+		m_csvConfig.m_bFrom = d.m_bFrom;
+		m_csvConfig.m_bTo = d.m_bTo;
+		m_csvConfig.m_bSubject = d.m_bSubject;
+		m_csvConfig.m_bDate = d.m_bDate;
+		m_csvConfig.m_bCC = d.m_bCC;
+		m_csvConfig.m_bBCC = d.m_bBCC;
+		m_csvConfig.m_bContent = d.m_bContent;
+		m_csvConfig.m_dateFormat = d.m_dateFormat;
+		m_csvConfig.m_bGMTTime = d.m_bGMTTime;
+		m_csvConfig.m_MessageLimitString = d.m_MessageLimitString;
+		m_csvConfig.m_MessageLimitCharsString = d.m_MessageLimitCharsString;
 	
 		//csvConfig.m_separator = d.m_separator;
 		// Hardcoded for now.
-		csvConfig.m_separator = ",";
+		m_csvConfig.m_separator = ",";
 
-		csvConfig.m_nCodePageId = 0;
+		m_csvConfig.m_nCodePageId = 0;
 		if (d.m_bEncodingType == 1)
-			csvConfig.m_nCodePageId = CP_UTF8;
+			m_csvConfig.m_nCodePageId = CP_UTF8;
 		else if (d.m_bEncodingType == 2) {
-			csvConfig.m_nCodePageId = d.m_nCodePageId;
+			m_csvConfig.m_nCodePageId = d.m_nCodePageId;
 		}
 
 		CString csvFileName;
@@ -535,7 +551,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 			}
 		}
 
-		int ret = MboxMail::exportToCSVFile(csvConfig, csvFileName, firstMail, lastMail, selectedMailsIndexList, progressBar);
+		int ret = MboxMail::exportToCSVFile(m_csvConfig, csvFileName, firstMail, lastMail, selectedMailsIndexList, progressBar);
 		if (ret > 0) 
 		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
@@ -2343,4 +2359,63 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		CloseHandle(ShExecInfo.hProcess);
 
 	return 1;
+}
+
+void CSVFILE_CONFIG::SetDflts()
+{
+	// This duplicate alsoe set in ExportToCSVDlg
+	m_bFrom = TRUE;
+	m_bTo = TRUE;
+	m_bSubject = TRUE;
+	m_bDate = TRUE;
+	m_bCC = FALSE;
+	m_bBCC = FALSE;
+	m_bContent = FALSE;
+	//m_MessageLimitString;
+	m_MessageLimitCharsString.Append("32500");
+	m_dateFormat = 0;
+	m_bGMTTime = 0;
+	m_nCodePageId = CP_UTF8;
+	//CString m_separator;
+
+	//m_bEncodingType = 1;  // UTF8  ??
+
+#if 0
+	//ExportToCSVDlg::
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bDate;
+	BOOL m_bCC;
+	BOOL m_bBCC;
+	BOOL m_bContent;
+	CString m_MessageLimitString;
+	CString m_MessageLimitCharsString;
+	int m_dateFormat;
+	int m_bGMTTime;
+	int m_bEncodingType;
+	int m_nCodePageId;
+#endif
+}
+
+void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
+{
+	if (this == &src)
+		return;
+
+	m_bFrom = src.m_bFrom;
+	m_bTo = src.m_bTo;
+	m_bSubject = src.m_bSubject;
+	m_bDate = src.m_bDate;
+	m_bCC = src.m_bCC;
+	m_bBCC = src.m_bBCC;
+	m_bContent = src.m_bContent;
+	m_dateFormat = src.m_dateFormat;
+	m_bGMTTime = src.m_bGMTTime;
+	m_MessageLimitString = src.m_MessageLimitString;
+	//
+	m_nCodePageId = src.m_nCodePageId;
+	m_separator = src.m_separator;
+
+	int deb = 1;
 }

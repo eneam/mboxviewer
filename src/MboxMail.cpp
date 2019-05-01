@@ -3225,8 +3225,10 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 				int needLength = MboxMail::m_outbuf->Count() * 2 + 10; // worst case scenario or get '"' count first
 				inbuf->ClearAndResize(needLength);  // escapeSeparators terminates result with null
 
-				if (MboxMail::m_outbuf->Data()[0] != '\n')
-					inbuf->Append("\n");  // insert empty line at the beginning
+				if ((MboxMail::m_outbuf->Data()[0] == '\n') || ((MboxMail::m_outbuf->Data()[0] == '\r') && (MboxMail::m_outbuf->Data()[1] == '\n')))
+					; // do noting
+				else
+					inbuf->Append("\r\n");  // insert empty line at the beginning
 
 				int cnt_sv = inbuf->Count();
 				int retcnt = escapeSeparators(inbuf->Data(cnt_sv), MboxMail::m_outbuf->Data(), MboxMail::m_outbuf->Count(), '"');
@@ -3236,14 +3238,18 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 				{
 					BOOL ret = Str2CodePage(inbuf, pageCode, csvConfig.m_nCodePageId, MboxMail::m_outbuf, workbuf);
 					if (ret) {
+						EnforceCharacterLimit(MboxMail::m_outbuf, csvConfig.m_MessageLimitCharsString);
 						fp.Write(MboxMail::m_outbuf->Data(), MboxMail::m_outbuf->Count());
 					}
 					else {
+						EnforceCharacterLimit(inbuf, csvConfig.m_MessageLimitCharsString);
 						fp.Write(inbuf->Data(), inbuf->Count());
 					}
 				}
-				else
+				else {
+					EnforceCharacterLimit(inbuf, csvConfig.m_MessageLimitCharsString);
 					fp.Write(inbuf->Data(), inbuf->Count());
+				}
 			}
 		}
 		else
@@ -3308,8 +3314,10 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 				int needLength = outbuf->Count() * 2 + 10; // worst case scenario or get '"' count first
 				inbuf->ClearAndResize(needLength);  // escapeSeparators terminates result with null
 
-				if (outbuf->Data()[0] != '\n')
-					inbuf->Append("\n");
+				if ((outbuf->Data()[0] == '\n') || ((outbuf->Data()[0] == '\r') && (outbuf->Data()[1] == '\n')))
+					; // do nothing
+				else
+					inbuf->Append("\r\n");
 
 				int cnt_sv = inbuf->Count();
 				int retcnt = escapeSeparators(/*out*/inbuf->Data(cnt_sv), /*in*/outbuf->Data(), /*in*/outbuf->Count(), '"');
@@ -3323,6 +3331,7 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 					NMsgView::MergeWhiteLines(outbuf, lineLimit);
 				}
 
+				EnforceCharacterLimit(outbuf, csvConfig.m_MessageLimitCharsString);
 				fp.Write(outbuf->Data(), outbuf->Count());
 			}
 		}
@@ -7543,26 +7552,29 @@ void MboxMail::assert_unexpected()
 	int deb = 1;
 }
 
-void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
+int MboxMail::EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit)
 {
-	if (this == &src)
-		return;
-
-	m_bFrom = src.m_bFrom;
-	m_bTo = src.m_bTo;
-	m_bSubject = src.m_bSubject;
-	m_bDate = src.m_bDate;
-	m_bCC = src.m_bCC;
-	m_bBCC = src.m_bBCC;
-	m_bContent = src.m_bContent;
-	m_dateFormat = src.m_dateFormat;
-	m_bGMTTime = src.m_bGMTTime;
-	m_MessageLimitString = src.m_MessageLimitString;
-	//
-	m_nCodePageId = src.m_nCodePageId;
-	m_separator = src.m_separator;
-	
-	int deb = 1;
+	int limit = _ttoi(characterLimit);
+	if (limit > 0)
+	{
+		int bufferLength = buffer->Count();
+		if (bufferLength > limit)
+		{
+			//buffer->SetCount(limit - 16);
+			//buffer->Append("................");
+			// find last CR LF or LF and set Count
+			int i;
+			for (i = (limit-1); i >= 0; i--)
+			{
+				if (buffer->GetAt(i) == '\n')
+				{
+					buffer->SetCount(i+1);
+					break;
+				}
+			}
+		}
+	}
+	return 1;
 }
 
 

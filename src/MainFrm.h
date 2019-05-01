@@ -12,6 +12,27 @@
 #include "ChildView.h"
 #include "PrintConfigDlg.h"
 
+struct CSVFILE_CONFIG
+{
+public:
+	void Copy(CSVFILE_CONFIG &src);
+	void SetDflts();
+
+	BOOL m_bFrom;
+	BOOL m_bTo;
+	BOOL m_bSubject;
+	BOOL m_bDate;
+	BOOL m_bCC;
+	BOOL m_bBCC;
+	BOOL m_bContent;
+	CString m_MessageLimitString;
+	CString m_MessageLimitCharsString;
+	int m_dateFormat;
+	int m_bGMTTime;
+	int m_nCodePageId;
+	CString m_separator;
+};
+
 class CMainFrame : public CFrameWnd
 {
 	
@@ -98,6 +119,8 @@ protected:  // control bar embedded members
 	NListView *m_pListView;
 	NTreeView *m_pTreeView;
 	NMsgView *m_pMsgView;
+	CSVFILE_CONFIG m_csvConfig;
+
 public:
 	struct NamePatternParams m_NamePatternParams;
 

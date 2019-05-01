@@ -135,6 +135,7 @@
 #define IDC_EDIT_FROM                   1110
 #define IDC_FILE_NAME_FORMAT            1110
 #define IDC_FILE_NAME_ADJUSTED_MAX_SIZE 1110
+#define IDC_EXPORT_MESSAGE_LIMIT_CHARS  1110
 #define IDC_MATCH_WORD                  1111
 #define IDC_EDIT_FROM_WHOLE             1111
 #define IDC_REGULAR_EXPR                1112
@@ -197,7 +198,6 @@
 #define IDC_ADD_HDR_COLOR               1180
 #define IDC_PAGE_BREAK                  1181
 #define IDC_EXPORT_CC                   1182
-#define IDC_CHECK4                      1183
 #define IDC_EXPORT_BCC                  1183
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839

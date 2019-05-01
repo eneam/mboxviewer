@@ -54,25 +54,6 @@ public:
 	//BOOL m_bIsDirty;  // content from s_mails was touched and needs to be copied to this mail list
 };
 
-struct CSVFILE_CONFIG
-{
-public:
-	void Copy(CSVFILE_CONFIG &src);
-
-	BOOL m_bFrom;
-	BOOL m_bTo;
-	BOOL m_bSubject;
-	BOOL m_bDate;
-	BOOL m_bCC;
-	BOOL m_bBCC;
-	BOOL m_bContent;
-	CString m_MessageLimitString;
-	int m_dateFormat;
-	int m_bGMTTime;
-	int m_nCodePageId;
-	CString m_separator;
-} ;
-
 struct TEXTFILE_CONFIG
 {
 public:
@@ -422,6 +403,7 @@ public:
 	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
 	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
 	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
+	static int EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit);
 	//
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
