@@ -2,15 +2,20 @@
 Changes
 ---
 
-v 1.0.3.1 - work in progress
+v 1.0.3.1
 
- - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
- - Added capability to merge/concatenate  multiple archive files and remove duplicate mails;
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added capability to merge/concatenate multiple archive files and remove duplicate mails;
  - Added option to print directly to PDF without user interaction by leveraging external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
  - Added option to print each mail to a separate PDF file;
  - Added scripts to merge per mail PDF files to support printing large number of mails to a single PDF file;
  - Added vertical bar in the first column to mark mails that are also on the User Selected Mails list;
  - Added handling of CTRL-A to select all mails in the Summary Window. Windows must be selected first;
+ - Added option to insert Page Break after each mail when printing multiple mails to single Text or PDF file;
+ - Added option to remove/add the background color to the mail header;
+ - Added options to export CC and BCC header fields to CSV spreadsheet file;
+ - Added CC and BCC fields to a search criteria in Advanced Find dialog;
+ - Added option to limit the maximum text length when printing mail text to CSV;
  - Updated Help options;
  - Updated User Manual to describe new and updated features;
 
