@@ -36,6 +36,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_COMMAND(ID_FILE_REFRESH, OnFileRefresh)
 	//}}AFX_MSG_MAP
 	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE, OnSelchanged)
+	ON_NOTIFY(TVN_SELCHANGING, IDC_TREE, OnSelchanging)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE, OnRClick)  // Right Click Menu
 END_MESSAGE_MAP()
 
@@ -246,16 +247,6 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	NListView *pListView = pFrame->GetListView();
 	if( ! pListView )
 		return;
-
-	if (!pListView->IsUserSelectedMailListEmpty())
-	{
-		CString txt = _T("User Select Mails list is not empty.\n"
-			"Content will be lost if you switch to new mail archive.\n"
-			"Do you want to continue?");
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDNO)
-			return;
-	}
 
 	pListView->CloseMailFile();
 
@@ -756,3 +747,47 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 }
+
+void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMTREEVIEW *pNm = (LPNMTREEVIEW)pNMHDR;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == NULL)
+		return;
+	NListView *pListView = pFrame->GetListView();
+	if (!pListView)
+		return;
+	if (!pListView->IsUserSelectedMailListEmpty())
+	{
+		CString txt = _T("User Select Mails list is not empty.\n"
+			"Content will be lost if you switch to new mail archive.\n"
+			"Do you want to continue?");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+		{
+			*pResult = TRUE;
+		}
+	}
+}
+
+HTREEITEM NTreeView::FindItem(HTREEITEM hItem, CString &mailFileName)
+{
+	CString path;
+	while (hItem != NULL)
+	{
+		path = m_tree.GetItemText(hItem);
+		if (path.Compare(mailFileName) == 0)
+			return hItem;
+		if (m_tree.ItemHasChildren(hItem))
+		{
+			HTREEITEM hChild = m_tree.GetChildItem(hItem);
+			HTREEITEM hFound = FindItem(hChild, mailFileName);
+			if (hFound)
+				return hFound;
+		}
+		hItem = m_tree.GetNextSiblingItem(hItem);
+	}
+	return 0;
+}
+
+
