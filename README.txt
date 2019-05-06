@@ -14,7 +14,7 @@ v 1.0.3.1
  - Added option to insert Page Break after each mail when printing multiple mails to single Text or PDF file;
  - Added option to remove/add the background color to the mail header;
  - Added options to export CC and BCC header fields to CSV spreadsheet file;
- - Added CC and BCC fields to a search criteria in Advanced Find dialog;
+ - Added CC and BCC fields to a search criteria in Find Advanced and Find dialog;
  - Added option to limit the maximum text length when printing mail text to CSV;
  - Updated Help options;
  - Updated User Manual to describe new and updated features;

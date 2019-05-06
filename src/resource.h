@@ -104,6 +104,7 @@
 #define IDC_MATCH_CASE                  1085
 #define IDC_EDIT_FROM_CASE              1085
 #define IDC_FILE_FROM                   1085
+#define IDC_CHECK_BCC                   1085
 #define IDC_TIME_TYPE                   1086
 #define IDC_MATCH_CASE2                 1086
 #define IDC_EDIT_TO_CASE                1086
@@ -199,6 +200,8 @@
 #define IDC_PAGE_BREAK                  1181
 #define IDC_EXPORT_CC                   1182
 #define IDC_EXPORT_BCC                  1183
+#define IDC_CHECK2                      1184
+#define IDC_CHECK_CC                    1184
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -241,7 +244,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        200
 #define _APS_NEXT_COMMAND_VALUE         32888
-#define _APS_NEXT_CONTROL_VALUE         1184
+#define _APS_NEXT_CONTROL_VALUE         1185
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

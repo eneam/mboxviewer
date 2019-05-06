@@ -327,6 +327,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_FINDADVANCED, &NListView::OnUpdateEditFindadvanced)
 	//ON_WM_SETFOCUS()
 	//ON_WM_MOUSEHOVER()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -705,7 +706,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_SAVE_AS_Id: {
-		SaveAsMboxFile();
+		SaveAsMboxAndAsMboxlistFile();
 	}
 	break;
 	case S_COPY_SELECTED_Id: {
@@ -1307,6 +1308,10 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Take ownership of header draw
 	SetLabelOwnership();
+
+	m_nIDEvent = 1;
+	m_nElapse = 1000;
+	//this->SetTimer(m_nIDEvent, m_nElapse, NULL);
 
 #if 0
 	// Create and attach image list
@@ -2425,7 +2430,7 @@ void NListView::FillCtrl()
 		args.exitted = FALSE;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
 		INT_PTR nResult = Dlg.DoModal();
-		MboxMail::pCUPDUPData = NULL;
+
 		if (!nResult)  // should never be true ?
 		{
 			MboxMail::assert_unexpected();
@@ -2449,6 +2454,8 @@ void NListView::FillCtrl()
 			DWORD delta = tc_end - tc_start;
 			TRACE("(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
+
+		MboxMail::pCUPDUPData = NULL;
 
 		// s_mails will be sorted by date, and all related mails are lined by indexing
 		bool ret = MboxMail::preprocessConversations();
@@ -3385,6 +3392,8 @@ void NListView::OnEditFind()
 	dlg.m_params.m_bTo = m_bTo;
 	dlg.m_params.m_bSubject = m_bSubject;
 	dlg.m_params.m_bContent = m_bContent;
+	dlg.m_params.m_bCC = m_bCC;
+	dlg.m_params.m_bBCC = m_bBCC;
 	dlg.m_params.m_bAttachments = m_bAttachments;
 	dlg.m_params.m_bHighlightAll = m_bHighlightAll;
 	dlg.m_params.m_bFindAll = m_bFindAll;
@@ -3404,6 +3413,8 @@ void NListView::OnEditFind()
 		m_bTo = dlg.m_params.m_bTo;
 		m_bSubject = dlg.m_params.m_bSubject;
 		m_bContent = dlg.m_params.m_bContent;
+		m_bCC = dlg.m_params.m_bCC;
+		m_bBCC = dlg.m_params.m_bBCC;
 		m_bAttachments = dlg.m_params.m_bAttachments;
 		m_bHighlightAll = dlg.m_params.m_bHighlightAll;
 		m_bFindAll = dlg.m_params.m_bFindAll;
@@ -3477,7 +3488,7 @@ void NListView::OnEditFind()
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
 
 				INT_PTR nResult = Dlg.DoModal();
-				MboxMail::pCUPDUPData = NULL;
+
 				if (!nResult) { // should never be true ?
 					m_bInFind = false;
 					MboxMail::assert_unexpected();
@@ -3502,6 +3513,7 @@ void NListView::OnEditFind()
 					TRACE("(OnEditFind)Waited %ld milliseconds for thread to exist.\n", delta);
 				}
 				w = args.retpos;
+				MboxMail::pCUPDUPData = NULL;
 			}
 			if (m_bFindAll) 
 			{
@@ -3583,6 +3595,27 @@ int NListView::CheckMatch(int i, CString &searchString)
 			return w;
 		}
 	}
+	if (m_bCC) {
+		if (m_bWholeWord)
+			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+		else
+			pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+		if (pos >= 0) {
+			w = i;
+			return w;
+		}
+	}
+	if (m_bBCC) {
+		if (m_bWholeWord)
+			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+		else
+			pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
+		if (pos >= 0) {
+			w = i;
+			return w;
+		}
+	}
+
 	if (m_bContent || m_bAttachments) {
 		if (FindInMailContent(i, m_bContent, m_bAttachments)) {
 			w = i;
@@ -3612,13 +3645,106 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 				}
 			}
 		}
-	}
-	else if (m_bCaseSens == 0)
-		searchString.MakeLower();
 
-	if (MboxMail::pCUPDUPData && !mainThreadContext) {
-		CString searchText = _T("Searching file for \"") + searchString + _T("\" ...");
-		MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+		if (MboxMail::pCUPDUPData && !mainThreadContext)
+		{
+			CString key1;
+			CString key2;
+
+			if (m_advancedParams.m_bEditChecked[2]) 
+				key1.Append(m_stringWithCase[2]);
+
+			if (m_advancedParams.m_bEditChecked[5])
+				key2.Append(m_stringWithCase[5]);
+
+			if (key1.IsEmpty() && !key2.IsEmpty())
+			{
+				if (key1.IsEmpty())
+				{
+					if (m_advancedParams.m_bEditChecked[0])
+						key1.Append(m_stringWithCase[0]);
+				}
+				if (key1.IsEmpty())
+				{
+					if (m_advancedParams.m_bEditChecked[1])
+						key1.Append(m_stringWithCase[1]);
+				}
+			}
+			else if (key2.IsEmpty() && !key1.IsEmpty())
+			{
+				key2 = key1;
+				key1.Empty();
+
+				if (key1.IsEmpty())
+				{
+					if (m_advancedParams.m_bEditChecked[0])
+						key1.Append(m_stringWithCase[0]);
+				}
+				if (key1.IsEmpty())
+				{
+					if (m_advancedParams.m_bEditChecked[1])
+						key1.Append(m_stringWithCase[1]);
+				}
+			}
+			else
+			{
+				if (m_advancedParams.m_bEditChecked[0])
+					key1.Append(m_stringWithCase[0]);
+
+				if (m_advancedParams.m_bEditChecked[1])
+					key2.Append(m_stringWithCase[1]);
+			}
+
+			int availableSpace = 24;
+			CString keyword1;
+			CString keyword2;
+
+			if (!key1.IsEmpty() && !key2.IsEmpty())
+			{
+				if (key1.GetLength() > 10) 
+					keyword1 = key1.Left(10);
+				else
+					keyword1 = key1;
+
+				if (key2.GetLength() > 10)
+					keyword2 = key2.Left(10);
+				else
+					keyword2 = key2;
+
+				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" and \"") + keyword2 + _T("\" ...");
+				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+			}
+			else if (!key1.IsEmpty())
+			{
+				if (key1.GetLength() > 28)
+					keyword1 = key1.Left(28);
+				else
+					keyword1 = key1;
+
+				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" ...");
+				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+			}
+			else if (!key2.IsEmpty())
+			{
+				if (key2.GetLength() > 28)
+					keyword1 = key2.Left(28);
+				else
+					keyword1 = key2;
+
+				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" ...");
+				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+			}
+		}
+	}
+	else 
+	{
+		if (m_bCaseSens == 0)
+			searchString.MakeLower();
+
+		if (MboxMail::pCUPDUPData && !mainThreadContext) {
+			CString searchText = _T("Searching file for \"") + searchString + _T("\" ...");
+			MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+		}
 	}
 
 	DWORD myThreadId = GetCurrentThreadId();
@@ -3849,7 +3975,7 @@ void NListView::OnEditFindAgain()
 		CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
 
 		INT_PTR nResult = Dlg.DoModal();
-		MboxMail::pCUPDUPData = NULL;
+
 		if (!nResult) { // should never be true ?
 			m_bInFind = false;
 			MboxMail::assert_unexpected();
@@ -3874,6 +4000,7 @@ void NListView::OnEditFindAgain()
 			TRACE("(OnEditFindAgain)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
 		w = args.retpos;
+		MboxMail::pCUPDUPData = NULL;
 	}
 	if (w >= 0) {
 		m_bHighlightAllSet = m_bHighlightAll;
@@ -5316,7 +5443,7 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
 
 				INT_PTR nResult = Dlg.DoModal();
-				MboxMail::pCUPDUPData = NULL;
+
 				if (!nResult) { // should never be true ? 
 					m_bInFind = false;
 					MboxMail::assert_unexpected();
@@ -5341,6 +5468,7 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 					TRACE("(EditFindAdvanced)Waited %ld milliseconds for thread to exist.\n", delta);
 				}
 				w = args.retpos;
+				MboxMail::pCUPDUPData = NULL;
 			}
 			if (MboxMail::s_mails_find.GetCount() > 0)
 				MboxMail::m_findMails.m_lastSel = 0;
@@ -5609,7 +5737,7 @@ void NListView::RunFindAdvancedOnSelectedMail(int iItem)
 #define MAIL_LIST_VERSION_BASE  0x73215500
 #define MAIL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+1)
 
-int NListView::SaveAsMboxFile()
+int NListView::SaveAsMboxAndAsMboxlistFile()
 {
 	MailArray *mailsArray = &MboxMail::s_mails;
 
@@ -5711,6 +5839,153 @@ int NListView::SaveAsMboxFile()
 
 	return 1;
 }
+
+int NListView::SaveAsMboxlistFile()
+{
+	BOOL ret;
+
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+	CString mboxFileSuffix;
+	if (MboxMail::IsUserMailsSelected())
+		mboxFileSuffix = "_USER.mbox";
+	else if (MboxMail::IsFindMailsSelected())
+		mboxFileSuffix = "_FIND.mbox";
+	else
+	{
+		// We should never be here
+		return -1;
+	}
+
+	MboxMail *m;
+
+	CString mailFile = MboxMail::s_path;
+
+	if (MboxMail::s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path wil fail first
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	MboxMail::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
+
+	CFile fp;
+	CString mboxFile = path + "\\" + fileNameBase + mboxFileSuffix;
+
+	CString mboxviewFile = mboxFile + ".mboxview";
+	ret = DeleteFile(mboxviewFile);
+
+	CString mboxFileListSuffix = ".mboxlist";
+	CString mboxListFile = mboxFile + mboxFileListSuffix;
+
+	SerializerHelper sz(mboxListFile);
+	if (!sz.open(TRUE)) {
+		CString txt = _T("Could not create \"") + mboxListFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	// Create mboxlist file to allow reload of archive file
+
+	sz.writeInt(MAIL_LIST_VERSION);			// version
+	sz.writeInt64(MboxMail::s_fSize = FileSize(MboxMail::s_path));	// file size
+	_int64 mailFileSize = FileSize(mboxFile);
+	sz.writeInt64(mailFileSize);	// file size
+	sz.writeInt(mailsArray->GetSize());
+
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		sz.writeInt64(m->m_startOff);
+		sz.writeInt(m->m_length);
+		sz.writeInt(m->m_index);
+		sz.writeInt(m->m_ContentDetailsArray.size());
+	}
+	sz.close();
+
+	return 1;
+}
+
+int NListView::SaveAsMboxFile()
+{
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+	CString mboxFileSuffix;
+	if (MboxMail::IsUserMailsSelected())
+		mboxFileSuffix = "_USER.mbox";
+	else if (MboxMail::IsFindMailsSelected())
+		mboxFileSuffix = "_FIND.mbox";
+	else
+	{
+		// We should never be here
+		return -1;
+	}
+
+	MboxMail *m;
+
+	CString mailFile = MboxMail::s_path;
+
+	if (MboxMail::s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path wil fail first
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	MboxMail::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
+
+	CFile fp;
+	CString mboxFile = path + "\\" + fileNameBase + mboxFileSuffix;
+
+	if (PathFileExist(mboxFile))
+	{
+		CString txt = _T("File \"") + mboxFile;
+		txt += _T("\" exists.\nOverwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+
+	if (!fp.Open(mboxFile, CFile::modeWrite | CFile::modeCreate)) {
+		CString txt = _T("Could not create \"") + mboxFile;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
+	BOOL ret;
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		outbuf->Clear();
+		ret = m->GetBody(outbuf);
+		fp.Write(outbuf->Data(), outbuf->Count());
+	}
+	fp.Close();
+
+	return 1;
+} 
 
 int NListView::ReloadMboxFile()
 {
@@ -6168,7 +6443,7 @@ int NListView::PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, C
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparatePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		// TODO: errorText ??
 		MboxMail::assert_unexpected();
@@ -6196,6 +6471,8 @@ int NListView::PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, C
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -6292,7 +6569,7 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSinglePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -6319,6 +6596,8 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -6541,7 +6820,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparatePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -6568,6 +6847,8 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -6669,7 +6950,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSinglePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -6696,6 +6977,8 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -6939,7 +7222,7 @@ int NListView::ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL mu
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparatePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -6963,6 +7246,7 @@ int NListView::ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL mu
 		TRACE("(ExportMailGroupToSeparatePDF)Waited %ld milliseconds for thread to exist.\n", delta);
 	}
 	int w = args.ret;
+	MboxMail::pCUPDUPData = NULL;
 	return 1;
 }
 
@@ -6990,7 +7274,7 @@ int NListView::ExportMailGroupToSeparateHTML(int firstMail, int lastMail, BOOL m
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparateHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -7014,6 +7298,7 @@ int NListView::ExportMailGroupToSeparateHTML(int firstMail, int lastMail, BOOL m
 		TRACE("(ExportMailGroupToSeparateHTML)Waited %ld milliseconds for thread to exist.\n", delta);
 	}
 	int w = args.ret;
+	MboxMail::pCUPDUPData = NULL;
 	return 1;
 }
 
@@ -7208,7 +7493,7 @@ int NListView::PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, 
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparateHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		// TODO: errorText ??
 		MboxMail::assert_unexpected();
@@ -7236,6 +7521,8 @@ int NListView::PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, 
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -7332,7 +7619,7 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSingleHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -7359,6 +7646,8 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -7566,7 +7855,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFol
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparateHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -7593,6 +7882,8 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFol
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -7694,7 +7985,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSingleHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
 
 	INT_PTR nResult = Dlg.DoModal();
-	MboxMail::pCUPDUPData = NULL;
+
 	if (!nResult) { // should never be true ?
 		MboxMail::assert_unexpected();
 		return -1;
@@ -7721,6 +8012,8 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 	}
 	else
 		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
 
 	if (ret > 0)
 	{
@@ -7908,3 +8201,12 @@ int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 
 
 // End of  ADDED in 1.0.3.1
+
+
+void NListView::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: Add your message handler code here and/or call default
+	Sleep(10000);
+
+	CWnd::OnTimer(nIDEvent);
+}

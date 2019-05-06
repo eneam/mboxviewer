@@ -1095,6 +1095,8 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 		pCmdUI->Enable(0);
 		return;
 	}
+	// Just test of large mailCount
+	//mailCnt = 173245;
 
 	pCmdUI->Enable();
 	CString strMailIndex;
@@ -1390,8 +1392,8 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"Mbox Viewer maintains 3 internal mail lists:<br>"
 		"<ul>"
 		"<li>All Mails list is populated from the selected archive file under Mail Tree.</li>"
-		"<li>Find Mails list is populated by the search results. User can run Find Advanced dialog or set the Find All option in the Find dialog.</li>"
-		"<li>User Selected Mails list is composed by a user from the mails in the All Mails and Find Mails lists. Mails on All Mails and Find Mails lists are marked by the red vertical bar in the first column if they are also on User Selected Mails list.</li>"
+		"<li>Found Mails list is populated by the search results. User can run Find Advanced dialog or set the Find All option in the Find dialog.</li>"
+		"<li>User Selected Mails list is composed by a user from the mails in the All Mails and Found Mails lists. Mails on All Mails and Found Mails lists are marked by the red vertical bar in the first column if they are also on User Selected Mails list.</li>"
 		"</ul>"
 		"Each internal mail list has associated button in the dialog bar located next to the tool bar. When a particular mail list is shown in the Mail Summary Window, associated button is highlighted.<br>"
 		"<br>"
@@ -1411,11 +1413,11 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"All Mails list content persists until new mail archive is selected.<br>"
 		"<br>"
-		"Find Mails list content persists until new search or when new mail archive is selected.<br>"
+		"Found Mails list content persists until new search or when new mail archive is selected.<br>"
 		"<br>"
 		"User Selected Mails list content persists until cleared by the user or when new mail archive is selected.<br>"
 		"<br>"
-		"<u>NOTE</u> that mails in the All Mails and Find Mails list will be marked with the vertical bar in the first column to indicate that the same mail is present in the User Selected Mails list.<br>"
+		"<u>NOTE</u> that mails in the All Mails and Found Mails list will be marked with the vertical bar in the first column to indicate that the same mail is present in the User Selected Mails list.<br>"
 		"<br>"
 	);
 	fp.Write((LPCSTR)text, text.GetLength());
@@ -1424,11 +1426,11 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 	text.Append(
 		"<font size=\"+1\"><b>Mail List Archiving</b></font><br>"
 		"<br>"
-		"Find Mails list and User Selected Mails list content can be saved to new mbox archive files.<br>"
+		"Found Mails list and User Selected Mails list content can be saved to new mbox archive files.<br>"
 		"<br>"
 		"Archive file will be created in the the same folder as the All Mails main archive.<br>"
 		"<br>"
-		"Archive file created from the Find Mails list will be created by appending _FIND suffix to the base name of the main archive file name.<br>"
+		"Archive file created from the Found Mails list will be created by appending _FIND suffix to the base name of the main archive file name.<br>"
 		"<br>"
 		"The _USER suffix will be appended when creating archive file from the User Selected Mails list.<br>"
 		"<br>"

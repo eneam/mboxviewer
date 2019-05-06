@@ -3138,7 +3138,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcPrintMailArchiveToCSV, (LPVOID)(PRINT_MAIL_ARCHIVE_TO_CSV_ARGS*)&args);
 
 		INT_PTR nResult = Dlg.DoModal();
-		MboxMail::pCUPDUPData = NULL;
+
 		if (!nResult) // should never be true ?
 		{
 			MboxMail::assert_unexpected();
@@ -3164,6 +3164,8 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			DWORD delta = tc_end - tc_start;
 			TRACE("(exportToCSVFile)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
+
+		MboxMail::pCUPDUPData = NULL;
 
 		if (!args.errorText.IsEmpty()) 
 		{
@@ -4297,7 +4299,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcPrintMailArchive, (LPVOID)(PRINT_MAIL_ARCHIVE_ARGS*)&args);
 
 		INT_PTR nResult = Dlg.DoModal();
-		MboxMail::pCUPDUPData = NULL;
+
 		if (!nResult) // should never be true ?
 		{
 			MboxMail::assert_unexpected();
@@ -4323,6 +4325,8 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			DWORD delta = tc_end - tc_start;
 			TRACE("(exportToTextFile)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
+
+		MboxMail::pCUPDUPData = NULL;
 
 		if (!args.errorText.IsEmpty()) {
 			HWND h = NULL; // we don't have any window yet

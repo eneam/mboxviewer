@@ -39,6 +39,8 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_TO, m_params.m_bTo);
 	DDX_Check(pDX, IDC_CHECK_SUBJECT, m_params.m_bSubject);
 	DDX_Check(pDX, IDC_CHECK_CONTENT, m_params.m_bContent);
+	DDX_Check(pDX, IDC_CHECK_CC, m_params.m_bCC);
+	DDX_Check(pDX, IDC_CHECK_BCC, m_params.m_bBCC);
 	DDX_Check(pDX, IDC_CHECK_ATTACHMENT, m_params.m_bAttachments);
 	DDX_Check(pDX, IDC_CHECK_HIGHLIGHT_ALL, m_params.m_bHighlightAll);
 	DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
@@ -111,6 +113,8 @@ void CFindDlgParams::SetDflts()
 	m_bTo = TRUE;
 	m_bSubject = TRUE;
 	m_bContent = FALSE;
+	m_bCC = FALSE;
+	m_bBCC = FALSE;
 	m_bAttachments = FALSE;
 	m_bHighlightAll = FALSE;
 	m_bFindAll = FALSE;
@@ -134,6 +138,8 @@ void CFindDlgParams::Copy(CFindDlgParams &src)
 	m_bTo = src.m_bTo;
 	m_bSubject = src.m_bSubject;
 	m_bContent = src.m_bContent;
+	m_bCC = src.m_bCC;
+	m_bBCC = src.m_bBCC;
 	m_bAttachments = src.m_bAttachments;
 	m_bHighlightAll = src.m_bHighlightAll;
 	m_bFindAll = src.m_bFindAll;

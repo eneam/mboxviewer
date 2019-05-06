@@ -14,7 +14,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
-const char *FindFields[] = { "From", "To", "Subject", "Message", "Attachments" };
+const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments"};
 
 
 CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)

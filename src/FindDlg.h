@@ -27,6 +27,8 @@ struct CFindDlgParams
 	BOOL m_bTo;
 	BOOL m_bSubject;
 	BOOL m_bContent;
+	BOOL m_bCC;
+	BOOL m_bBCC;
 	BOOL m_bAttachments;
 	BOOL m_bHighlightAll;
 	BOOL m_bFindAll;

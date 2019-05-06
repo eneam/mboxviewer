@@ -121,6 +121,8 @@ public:
 	BOOL m_bTo;
 	BOOL m_bSubject;
 	BOOL m_bContent;
+	BOOL m_bCC;
+	BOOL m_bBCC;
 	BOOL m_bAttachments;
 	BOOL m_bHighlightAll;
 	BOOL m_bFindAll;
@@ -142,6 +144,9 @@ public:
 	SimpleString *m_name;
 	SimpleString *m_addr;
 	BOOL m_bLongMailAddress;
+	// timer
+	UINT_PTR m_nIDEvent;
+	UINT m_nElapse;
 	//
 	void FillCtrl();
 	virtual ~NListView();
@@ -172,6 +177,8 @@ public:
 	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
 	int SaveAsMboxFile();
+	int SaveAsMboxlistFile();
+	int SaveAsMboxAndAsMboxlistFile();
 	int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
@@ -279,6 +286,7 @@ public:
 	//virtual BOOL PreTranslateMessage(MSG* pMsg);
 	//afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
 
 struct PARSE_ARGS
