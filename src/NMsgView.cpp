@@ -665,9 +665,11 @@ char *EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; }
 char *SkipEmptyLine(char* p, char* e)
 {
 	char *p_save = p;
-	while ((p < e) && ((*p == '\r') || (*p == ' ') || (*p == '\t')))  // eat empty lines
+	while ((p < e) && ((*p == ' ') || (*p == '\t')))  // eat empty lines
 		p++;
-	if (*p == '\n')
+	if ((*p == '\r') && (*p == '\n'))
+		p += 2;
+	else if ((*p == '\r') || (*p == '\n'))
 		p++;
 	else
 		p = p_save;

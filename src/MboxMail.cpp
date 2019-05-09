@@ -7581,6 +7581,170 @@ int MboxMail::EnforceCharacterLimit(SimpleString *buffer, CString &characterLimi
 	return 1;
 }
 
+void  MboxMail::MakeValidFileName(CString &name)
+{
+	CString validName;
+	int csLen = name.GetLength();
+	LPCSTR str = name;
+	int i;
+	char c;
+	for (i = 0; i < csLen; i++)
+	{
+		c = str[i];
+		if (
+			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\')
+			)
+		{
+			validName.AppendChar('_');
+		}
+		else
+			validName.AppendChar(c);
+	}
+	name = validName;
+}
+
+void  MboxMail::MakeValidFileName(SimpleString &name)
+{
+	int csLen = name.Count();
+	char* str = name.Data();
+	int i;
+	char c;
+	for (i = 0; i < csLen; i++)
+	{
+		c = str[i];
+		if (
+			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\')
+			)
+		{
+			str[i] = '_';
+		}
+	}
+}
+
+BOOL SerializerHelper::writeString(LPCSTR val)
+{
+	int l = strlen(val);
+	if (!writeInt(l))
+		return FALSE;
+	DWORD written = 0;
+	return writeN((void*)val, l);
+}
+BOOL SerializerHelper::readString(CString &val)
+{
+	int l = 0;
+	if (!readInt(&l))
+		return false;
+	LPSTR buf = val.GetBufferSetLength(l);
+	DWORD nRead = 0;
+	return readN(buf, l);
+}
+
+const _int64 maxLargeLen = 100000;
+
+BOOL MailBody::AssertData(MboxMail *mail)
+{
+	MboxMail *m = mail;
+
+	AssertHdr();
+
+	// Iterate all the descendant body parts
+	MailBody::MailBodyList bodies;
+
+	int nCount = GetBodyPartList(bodies);
+	MailBody::MailBodyList::const_iterator it;
+
+	for (it = bodies.begin(); it != bodies.end(); it++)
+	{
+		MailBody* pBP = *it;
+
+		pBP->AssertHdr();
+
+		int bodyLength = pBP->m_bodyDataLength;
+		//char *bodyBegin = m->m_startOff + pBP->m_bodyDataOffset;
+
+		if (pBP->m_bodyDataLength < 0)
+			MboxMail::assert_unexpected();
+
+		if (pBP->m_bodyDataLength > 0)
+		{
+			if (pBP->m_bodyDataOffset < 0)
+				MboxMail::assert_unexpected();
+
+			if (pBP->m_ContentType.GetLength() > maxLargeLen)
+				MboxMail::assert_unexpected();
+
+			if (pBP->m_Disposition.GetLength() > maxLargeLen)
+				MboxMail::assert_unexpected();
+
+			if (pBP->m_ContentId.GetLength() > maxLargeLen)
+				MboxMail::assert_unexpected();
+
+			if (pBP->m_TransferEncoding.GetLength() > maxLargeLen)
+				MboxMail::assert_unexpected();
+
+			if (pBP->m_AttachmentName.GetLength() > maxLargeLen)
+				MboxMail::assert_unexpected();
+		}
+	}
+
+	return TRUE;
+}
+
+bool MailHeader::AssertHdr()
+{
+	//bool m_IsText;
+	//bool m_IsTextPlain;
+	//bool m_IsTextHtml;
+	//bool m_IsMessage;
+	//bool m_IsAttachment;
+	//bool m_IsMultiPart;
+
+
+	if (m_Charset.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	//UINT m_PageCode;
+
+	if (m_Description.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_Disposition.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_TransferEncoding.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_SubType.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_MainType.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_Boundary.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_ContentType.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_ContentId.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	//CMimeHeader::MediaType m_MediaType;
+
+	if (m_AttachmentName.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_MessageId.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	if (m_ReplyId.GetLength() > maxLargeLen)
+		MboxMail::assert_unexpected();
+
+	return TRUE;
+}
+
 
 #include <windows.h>
 #include <stdio.h>

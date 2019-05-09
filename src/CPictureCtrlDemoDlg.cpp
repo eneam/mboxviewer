@@ -305,7 +305,9 @@ BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
 	CString cext = ext;
 	if ((cext.CompareNoCase(".png") == 0) ||
 		(cext.CompareNoCase(".jpg") == 0) ||
+		(cext.CompareNoCase(".pjpg") == 0) ||
 		(cext.CompareNoCase(".jpeg") == 0) ||
+		(cext.CompareNoCase(".pjpeg") == 0) ||
 		(cext.CompareNoCase(".jpe") == 0) ||
 		(cext.CompareNoCase(".bmp") == 0) ||
 		(cext.CompareNoCase(".tif") == 0) ||

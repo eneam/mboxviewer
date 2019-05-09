@@ -452,13 +452,15 @@ public:
 	static void UpdateFileExtension(CString &fileName, CString &newSuffix);
 	//
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static void MakeValidFileName(CString &name);
+	static void MakeValidFileName(SimpleString &name);
 	
 
 	static void ReleaseResources();
 	static void assert_unexpected();
 };
 
-#define SZBUFFSIZE 1024*1024
+#define SZBUFFSIZE 1024*1024*100
 
 class SerializerHelper
 {
@@ -484,6 +486,9 @@ public:
 	BOOL SetReadPointer(int pos);
 	BOOL readN(void *v, int sz);
 	BOOL writeN(void *v, int sz);
+	BOOL writeString(LPCSTR val);
+	BOOL readString(CString &val);
+
 	BOOL writeInt(int val) {
 		return writeN(&val, sizeof(int));
 	}
@@ -499,21 +504,6 @@ public:
 	BOOL readInt64(_int64 *val) {
 		return readN(val, sizeof(_int64));
 	}
-	BOOL writeString(LPCSTR val) {
-		int l = strlen(val);
-		if (!writeInt(l))
-			return FALSE;
-		DWORD written = 0;
-		return writeN((void*)val, l);
-	}
-	BOOL readString(CString &val) {
-		int l = 0;
-		if (!readInt(&l))
-			return false;
-		LPSTR buf = val.GetBufferSetLength(l);
-		DWORD nRead = 0;
-		return readN(buf, l);
-	}
 };
 
 
@@ -528,6 +518,7 @@ public:
 	
 	int Load(const char* pszData, int nDataSize);
 	bool IsMultiPart() { return m_IsMultiPart; }
+	bool AssertHdr();
 
 	bool m_IsText;
 	bool m_IsTextPlain;
@@ -561,6 +552,8 @@ public:
 	~MailBody() { DeleteAll(); };
 
 	int Load(char *& pszDatabase, const char* pszData, int nDataSize);
+	BOOL AssertData(MboxMail *mail);
+
 	typedef list<MailBody*> MailBodyList;
 	int GetBodyPartList(MailBodyList& rList);
 	int m_bodyDataOffset;
