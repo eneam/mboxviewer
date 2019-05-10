@@ -6920,6 +6920,10 @@ int MboxMail::RemoveDuplicateMails()
 	if (s_mails.GetCount() > s_mails_edit.GetCount())
 		s_mails_edit.SetSizeKeepData(s_mails.GetCount());
 
+	if ((s_mails.GetCount()/2+1) > s_mails_find.GetCount())
+		s_mails_find.SetSizeKeepData(s_mails.GetCount()/2 + 1);
+
+	int to_dup_i = 0;
 	int to_i = 0;
 	for (int i = 0; i < s_mails.GetSize(); i++)
 	{
@@ -6947,7 +6951,11 @@ int MboxMail::RemoveDuplicateMails()
 					m->m_duplicateId = false;
 				}
 				else
+				{
+					s_mails_find[to_dup_i] = s_mails[i];
+					to_dup_i++;
 					m->m_duplicateId = true;
+				}
 			}
 		}
 		else 
@@ -6958,6 +6966,10 @@ int MboxMail::RemoveDuplicateMails()
 		}
 	}
 	s_mails_edit.SetSizeKeepData(to_i);
+
+	s_mails_find.SetSizeKeepData(to_dup_i);
+	MboxMail::m_findMails.m_lastSel = -1;
+	MboxMail::m_findMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
 
 	int dupCnt = s_mails.GetSize() - s_mails_edit.GetSize();
 

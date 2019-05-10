@@ -153,7 +153,15 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	
 	if( !m_browser.Create(NULL, NULL, WS_CHILD|WS_VISIBLE, CRect(), this, IDC_BROWSER) )
 		return -1;
+
+
+
+	CRect r;
+	//GetClientRect(r);
+	//r.top = 300;
+	// TODO: increase hight of attachments
 	if( !m_attachments.Create(WS_CHILD|WS_VISIBLE|LVS_SINGLESEL|LVS_SMALLICON|LVS_SHOWSELALWAYS, CRect(), this, IDC_ATTACHMENTS) )
+	//if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS, r, this, IDC_ATTACHMENTS))
 		return -1;
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);
 	m_attachments.SetTextColor (RGB(0,0,0));
@@ -1598,6 +1606,17 @@ void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 		}
 	}
 	lpAllElements->Release();
+}
+
+int NMsgView::FindAttachmentByName(CString &name)
+{
+	LVFINDINFOA finfo;
+
+	finfo.flags = LVFI_STRING;
+	finfo.psz = name;
+
+	int pos = m_attachments.FindItem(&finfo);
+	return  pos;
 }
 
 

@@ -22,6 +22,9 @@ class MyMailArray;
 class SerializerHelper;
 class SimpleString;
 
+BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText);
+int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+
 
 typedef CArray<int, int> MailIndexList;
 
@@ -320,6 +323,14 @@ struct PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS
 };
 
 typedef PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS PRINT_MAIL_GROUP_TO_SEPARATE_HTML_ARGS;
+
+struct WRITE_INDEX_FILE_ARGS
+{
+	CString cache;
+	CString errorText;
+	BOOL exitted;
+	int ret;
+};
 
 
 /////////////////////////////////////////////////////////////////////////////

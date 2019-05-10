@@ -23,6 +23,28 @@
 // Postponed to the next relase 1.0.3.3 since larger effort is needed
 ///////
 
+bool ALongRightProcessProcWriteIndexFile(const CUPDUPDATA* pCUPDUPData)
+{
+	WRITE_INDEX_FILE_ARGS *args = (WRITE_INDEX_FILE_ARGS*)pCUPDUPData->GetAppData();
+	MboxMail::pCUPDUPData = pCUPDUPData;
+
+	HANDLE h = GetCurrentThread();
+	BOOL prio = SetThreadPriority(h, THREAD_PRIORITY_ABOVE_NORMAL);
+	DWORD myThreadId = GetCurrentThreadId();
+	DWORD myThreadPri = GetThreadPriority(h);
+	TRACE(_T("(ALongRightProcessProcWriteIndexFile) threadId=%ld threadPriority=%ld\n"), myThreadId, myThreadPri);
+
+	Com_Initialize();
+
+	// TODO: CUPDUPDATA* pCUPDUPData is global set as  MboxMail::pCUPDUPData = pCUPDUPData; Should conider to pass as param to printMailArchiveToTextFile
+
+	BOOL mainThread = FALSE;
+	args->ret = SaveMails(args->cache, mainThread, args->errorText);
+
+	args->exitted = TRUE;
+	return true;
+}
+
 bool ALongRightProcessProcPrintMailGroupToSeparatePDF(const CUPDUPDATA* pCUPDUPData)
 {
 	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS *args = (PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)pCUPDUPData->GetAppData();
@@ -1919,11 +1941,11 @@ BOOL CPathGetPath(const char *path, CString &filePath)
 	return ret;
 }
 
-BOOL SaveMails(LPCSTR cache) 
+BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText) 
 {
 	CFile fpm;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		// Not critical failure
+		// TODO: Not critical failure
 		; // return FALSE;
 	}
 
@@ -1957,10 +1979,33 @@ BOOL SaveMails(LPCSTR cache)
 	if (!PathFileExist(imageCachePath))
 		createDirOk = CreateDirectory(imageCachePath, NULL);
 
+	if (!mainThread)
+	{
+		if (MboxMail::pCUPDUPData)
+		{
+			MboxMail::pCUPDUPData->SetProgress(_T("Creating index file and image files ..."), 0);
+		}
+	}
+
+	double delta = (double)ni;
+	if (delta <= 0) delta = 1;
+	double step = delta / 100;
+	double curstep = 1;
+	double newstep = 0;
+	CString fileNum;
+	int nFileNum = 0;
+
+	if (!mainThread && MboxMail::pCUPDUPData)
+		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
+
 	sz.writeInt(CACHE_VERSION);			// version
 	sz.writeInt64(MboxMail::s_fSize = FileSize(MboxMail::s_path));	// file size
 	sz.writeInt(ni);					// number of elements
 	_int64 lastoff = 0;
+	BOOL terminated = FALSE;
+	CString itemNumberStr;
+	std::vector <MailBodyContent*>::iterator it;
+
 	for (int i = 0; i < ni; i++) 
 	{
 		MboxMail *m = MboxMail::s_mails[i];
@@ -1996,7 +2041,7 @@ BOOL SaveMails(LPCSTR cache)
 
 		int count = m->m_ContentDetailsArray.size();
 		sz.writeInt(count);
-		std::vector <MailBodyContent*>::iterator it;
+
 		MailBodyContent *body;
 		for (it = m->m_ContentDetailsArray.begin(); it != m->m_ContentDetailsArray.end(); it++)
 		{
@@ -2010,7 +2055,16 @@ BOOL SaveMails(LPCSTR cache)
 				CString mailIndex;
 				mailIndex.Format("%d_", m->m_index);
 
-				if (!body->m_attachmentName.IsEmpty())
+				CString contentTypeExtension;
+				CString contentTypeMain;
+				int pos = body->m_contentType.ReverseFind('/');
+				if (pos > 0)
+				{
+					contentTypeExtension = body->m_contentType.Mid(pos + 1);
+					contentTypeMain = body->m_contentType.Left(pos);
+				}
+
+				if (contentTypeMain.CompareNoCase("image") == 0)
 				{
 					SimpleString*outbuf = MboxMail::m_outbuf;
 					outbuf->ClearAndResize(body->m_contentLength * 2);
@@ -2018,93 +2072,89 @@ BOOL SaveMails(LPCSTR cache)
 					if (outbuf->Count() > 1500000)
 						int deb = 1;
 
-					if ((body->m_contentDisposition.CompareNoCase("inline") == 0))
+					if (!body->m_contentId.IsEmpty())
 					{
-						if (!body->m_contentId.IsEmpty())
+						CString attachmentName = mailIndex + body->m_contentId;
+
+						if (!contentTypeExtension.IsEmpty())
 						{
-							CString attachmentName = mailIndex + body->m_contentId;
+							attachmentName += "." + contentTypeExtension;
+						}
+						else
+						{
 							int pos = body->m_attachmentName.ReverseFind('.');
-							CString imageExtension = body->m_attachmentName.Mid(pos);
-							attachmentName += imageExtension;
-							
-							MboxMail::MakeValidFileName(attachmentName);
-							CString imgFile = targerFolder + attachmentName;
-
-							body->m_attachmentName = attachmentName;
-
-							if (outbuf->Count() > 1500000)
-								int deb = 1;
-
-							const char *fileName = (LPCSTR)imgFile;
-
-							CFileException ex;
-							CFile fp;
-							if (!fp.Open(imgFile, CFile::modeWrite | CFile::modeCreate, &ex))
+							if (pos >= 0) 
 							{
-								TCHAR szError[1024];
-								ex.GetErrorMessage(szError, 1024);
-								CFileStatus rStatus;
-								BOOL ret = fp.GetStatus(rStatus);
-								CString errorText(szError);
-
-								HWND h = NULL;
-								// Ignore for now
-								//int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+								CString imageExtension = body->m_attachmentName.Mid(pos);
+								attachmentName += imageExtension;
 							}
-							else {
-								fp.Write(outbuf->Data(), outbuf->Count());
-								fp.Close();
-							}
-
-							int deb = 1;
 						}
+
+						MboxMail::MakeValidFileName(attachmentName);
+						CString imgFile = targerFolder + attachmentName;
+
+						if (outbuf->Count() > 1500000)
+							int deb = 1;
+
+						const char *fileName = (LPCSTR)imgFile;
+
+						CFileException ex;
+						CFile fp;
+						if (!fp.Open(imgFile, CFile::modeWrite | CFile::modeCreate, &ex))
+						{
+							TCHAR szError[1024];
+							ex.GetErrorMessage(szError, 1024);
+							CFileStatus rStatus;
+							BOOL ret = fp.GetStatus(rStatus);
+							CString errorText(szError);
+
+							HWND h = NULL;
+							// Ignore for now
+							//int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+						}
+						else {
+							fp.Write(outbuf->Data(), outbuf->Count());
+							fp.Close();
+						}
+
+						int deb = 1;
 					}
-					else
+
+					if (!body->m_attachmentName.IsEmpty())
 					{
-						CString contentTypeExtension;
-						CString contentTypeMain;
-						int pos = body->m_contentType.ReverseFind('/');
-						if (pos > 0)
+						CString attachmentName = body->m_attachmentName;
+						int posAt = attachmentName.ReverseFind('@');
+						if (posAt >= 0)
+							attachmentName.Left(posAt);
+
+						MboxMail::MakeValidFileName(attachmentName);
+
+						CString imgFile = targerFolder + mailIndex + attachmentName;
+
+						CFileException ex;
+						CFile fp;
+						if (!fp.Open(imgFile, CFile::modeWrite | CFile::modeCreate, &ex))
 						{
-							contentTypeExtension = body->m_contentType.Mid(pos + 1);
-							contentTypeMain = body->m_contentType.Left(pos);
+							TCHAR szError[1024];
+							ex.GetErrorMessage(szError, 1024);
+							CFileStatus rStatus;
+							BOOL ret = fp.GetStatus(rStatus);
+							CString errorText(szError);
+
+							HWND h = NULL;
+							// Ignore for now
+							//int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+						}
+						else {
+							fp.Write(outbuf->Data(), outbuf->Count());
+							fp.Close();
 						}
 
-						if (contentTypeMain.CompareNoCase("image") == 0)
-						{
-							CString attachmentName = body->m_attachmentName;
-							MboxMail::MakeValidFileName(attachmentName);
-
-							CString imgFile = targerFolder + mailIndex + attachmentName + "." + contentTypeExtension;
-
-							CFileException ex;
-							CFile fp;
-							if (!fp.Open(imgFile, CFile::modeWrite | CFile::modeCreate, &ex))
-							{
-								TCHAR szError[1024];
-								ex.GetErrorMessage(szError, 1024);
-								CFileStatus rStatus;
-								BOOL ret = fp.GetStatus(rStatus);
-								CString errorText(szError);
-
-								HWND h = NULL;
-								// Ignore for now
-								//int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-							}
-							else {
-								fp.Write(outbuf->Data(), outbuf->Count());
-								fp.Close();
-							}
-
-							int deb = 1;
-						}
 						int deb = 1;
 					}
 				}
-				else
-				{
-					int deb = 1;
-				}
+
+
 			}
 
 			sz.writeInt(body->m_contentOffset);
@@ -2115,6 +2165,27 @@ BOOL SaveMails(LPCSTR cache)
 			sz.writeString(body->m_attachmentName);
 			sz.writeString(body->m_contentDisposition);
 			sz.writeInt(body->m_pageCode);
+
+			if (!mainThread && MboxMail::pCUPDUPData)
+			{
+				if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
+					terminated = TRUE;
+					break;
+				}
+
+				newstep = ((double)(i - 0 + 1)) / step;
+				if (newstep >= curstep)
+				{
+					curstep = newstep;
+				}
+
+				int nItem = (i + 1);
+				if ((nItem % 100) == 0) {
+					itemNumberStr.Format(_T("Creating index file and image files ... %d of %d"), nItem, ni);
+					if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(curstep));
+				}
+			}
+
 		}
 
 
@@ -2124,6 +2195,17 @@ BOOL SaveMails(LPCSTR cache)
 	TRACE("lastoff=%lld\n", lastoff);
 	sz.close();
 	fpm.Close();
+
+	if (terminated)
+	{
+		errorText = "Index file will be deleted. Image files wil remain.";
+		BOOL ret = DeleteFile(cache);
+		if (ret == FALSE)
+		{
+			errorText.Format("Failed to delete file %s. Please remove manually.");
+			int deb = 1;
+		}
+	}
 	return TRUE;
 }
 
@@ -2527,12 +2609,61 @@ void NListView::FillCtrl()
 		ret = MboxMail::sortConversations();
 		//MboxMail::assignColor2ConvesationGroups();
 
+#if 0
 		// creates to index/mboxview file from s_mails
 		if( SaveMails(cache) ) {
 			ni = MboxMail::s_mails.GetSize();
 			m_list.SetItemCount(ni);
 			//Cache2Text(cache, m_format);
 		}
+
+#else
+		WRITE_INDEX_FILE_ARGS wargs;
+		wargs.cache = cache;
+		wargs.exitted = FALSE;
+		wargs.ret = TRUE;
+		CUPDialog	WDlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcWriteIndexFile, (LPVOID)(PARSE_ARGS*)&wargs);
+		nResult = WDlg.DoModal();
+
+		if (!nResult)  // should never be true ?
+		{
+			MboxMail::assert_unexpected();
+			return;
+		}
+
+		cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+		retResult = LOWORD(nResult);
+
+		if (retResult != IDOK)
+		{  // IDOK==1, IDCANCEL==2
+			// We should be here when user selects Cancel button
+			//ASSERT(cancelledbyUser == TRUE);
+			int loopCnt = 20;
+			DWORD tc_start = GetTickCount();
+			while ((loopCnt-- > 0) && (args.exitted == FALSE))
+			{
+				Sleep(25);
+			}
+			DWORD tc_end = GetTickCount();
+			DWORD delta = tc_end - tc_start;
+			TRACE("(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
+		}
+
+		if (!wargs.errorText.IsEmpty())
+		{
+
+			int answer = MessageBox(wargs.errorText, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+		}
+
+		if (wargs.ret)
+		{
+			ni = MboxMail::s_mails.GetSize();
+			m_list.SetItemCount(ni);
+			//Cache2Text(cache, m_format);
+		}
+
+		MboxMail::pCUPDUPData = NULL;
+#endif
 
 		MboxMail::clearMessageIdTable();
 	}
@@ -2643,14 +2774,20 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 		cidEnd = pos;
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
-		MboxMail::MakeValidFileName(cid);
+
+		CString cidName;
+		cidName.Append(cid.Data(), cid.Count());
 
 		pos++; // jump over \"
 		cidEnd = pos;
 		fromBegin = pos;
 
 		CString nameExtension;
-		if (m == 0) {
+		if (m == 0) 
+		{
+			MboxMail::MakeValidFileName(cidName);
+			MboxMail::MakeValidFileName(cid);
+
 			for (int row = 0; row < attachments->GetItemCount(); ++row)
 			{
 				CString name = attachments->GetItemText(row, 0);
@@ -2661,7 +2798,7 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 					break;
 				}
 			}
-			imgFile = GetmboxviewTempPath() + CString(cid.Data()) + nameExtension;
+			imgFile = GetmboxviewTempPath() + cidName + nameExtension;
 		}
 		else
 		{
@@ -2669,32 +2806,132 @@ int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CLis
 			for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 			{
 				body = m->m_ContentDetailsArray[j];
-				if (!body->m_attachmentName.IsEmpty())
+
+				CString mailIndex;
+				mailIndex.Format("%d_", m->m_index);
+
+				CString contentTypeExtension;
+				CString contentTypeMain;
+				int pos = body->m_contentType.ReverseFind('/');
+				if (pos > 0)
 				{
-					if ((body->m_contentDisposition.CompareNoCase("inline") == 0) && !body->m_contentId.IsEmpty())
+					contentTypeExtension = body->m_contentType.Mid(pos + 1);
+					contentTypeMain = body->m_contentType.Left(pos);
+				}
+
+				if (contentTypeMain.CompareNoCase("image") == 0)
+				{
+					if (!body->m_contentId.IsEmpty())
 					{
-						if (outbuf->Count() > 1500000)
-							int deb = 1;
+						CString attachmentName = body->m_contentId;
 
-						int pos = body->m_attachmentName.ReverseFind('.');
-						CString cidPart = body->m_attachmentName.Mid(0, pos);
+						//MboxMail::MakeValidFileName(cid);
+						//MboxMail::MakeValidFileName(cidName);
 
-						CString extendedCid;
-						extendedCid.Format("%d_%s", m->m_index, cid.Data());
+						if (attachmentName.Compare(cidName) == 0)
+						{
+							if (!contentTypeExtension.IsEmpty())
+							{
+								nameExtension = contentTypeExtension;
+								MboxMail::MakeValidFileName(attachmentName);
+								imgFile = imageCachePath + mailIndex + attachmentName + "." + nameExtension;
+								break;
+							}
+							else
+							{
+								int pos = attachmentName.ReverseFind('.');
+								if (pos >= 0)
+									nameExtension = attachmentName.Mid(pos);
 
-						if (cidPart.Compare(extendedCid) == 0) {
-							nameExtension = body->m_attachmentName.Mid(pos);
-							break;
+								MboxMail::MakeValidFileName(attachmentName);
+								imgFile = imageCachePath + mailIndex + attachmentName + nameExtension;
+								break;
+							}
 						}
+					}
 
-						if (outbuf->Count() > 1500000)
-							int deb = 1;
+					if (!body->m_attachmentName.IsEmpty())
+					{
+						if ((body->m_contentDisposition.CompareNoCase("inline") == 0))
+						{
+							if (!body->m_contentId.IsEmpty())
+							{
+								CString cidPart;
+								int pos = body->m_attachmentName.ReverseFind('.');
+								if (pos >= 0)
+									cidPart = body->m_attachmentName.Mid(0, pos);
 
-						int deb = 1;
+								CString extendedCid;
+								extendedCid.Format("%d_%s", m->m_index, cid.Data());
+
+								if (cidPart.Compare(extendedCid) == 0) {
+									nameExtension = body->m_attachmentName.Mid(pos);
+									imgFile = imageCachePath + nameExtension;
+									break;
+								}
+								int deb = 1;
+							}
+						}
 					}
 				}
 			}
-			imgFile = imageCachePath + body->m_attachmentName;
+
+
+			if (!nameExtension.IsEmpty())
+			{
+				; // imgFile = imageCachePath + body->m_attachmentName;
+			}
+			else
+			{
+				CString cidAttachmentName;
+				imgFile.Empty();
+				nameExtension.Empty();
+				for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+				{
+					body = m->m_ContentDetailsArray[j];
+					if (!body->m_attachmentName.IsEmpty())
+					{
+						if ((body->m_contentDisposition.CompareNoCase("inline") == 0))
+						{
+							CString attachmentName;
+							int posAt = body->m_attachmentName.ReverseFind('@');
+							if (posAt >= 0)
+							{
+								attachmentName = body->m_attachmentName.Mid(0, posAt);
+							}
+							else
+								attachmentName = body->m_attachmentName;
+
+							posAt = cidName.ReverseFind('@');
+							if (posAt >= 0)
+							{
+								cidAttachmentName = cidName.Mid(0, posAt);
+							}
+							else
+								cidAttachmentName = cidName;
+
+							{
+
+
+								if (attachmentName.CompareNoCase(cidAttachmentName) == 0)
+								{
+									int pos = attachmentName.ReverseFind('.');
+									if (pos >= 0)
+										nameExtension = attachmentName.Mid(pos);
+								}
+								int deb = 1;
+							}
+							if (!nameExtension.IsEmpty())
+							{
+								CString extendedCid;
+								extendedCid.Format("%d_%s", m->m_index, cidAttachmentName);
+								imgFile = imageCachePath + extendedCid;
+								break;
+							}
+						}
+					}
+				}
+			}
 		}
 
 		if (nameExtension.IsEmpty()) {
@@ -2907,6 +3144,22 @@ void NListView::SelectItem(int iItem)
 			CString contentType;
 			MboxCMimeHelper::GetContentType(pBP, contentType);
 
+			CString contentTypeExtension;
+			CString contentTypeMain;
+			int pos = contentType.ReverseFind('/');
+			if (pos > 0)
+			{
+				contentTypeExtension = contentType.Mid(pos + 1);
+				contentTypeMain = contentType.Left(pos);
+			}
+
+			CString cStrName = strName.c_str();
+			pos = cStrName.ReverseFind('.');
+			if (pos < 0)
+			{
+				cStrName += "." + contentTypeExtension;
+			}
+
 			contentType.MakeLower();
 			if (contentType.Find("image/") >= 0) 
 			{
@@ -2930,27 +3183,60 @@ void NListView::SelectItem(int iItem)
 
 				if (!contentId.IsEmpty()) 
 				{
-					CString cStrName = strName.c_str();
+					//CString cStrName = strName.c_str();
 					int pos = cStrName.ReverseFind('.');
-					CString nameExtension = cStrName.Mid(pos);
+					CString nameExtension;
+					if (pos >= 0)
+						nameExtension = cStrName.Mid(pos);
+					else
+						nameExtension = "." + contentTypeExtension;
 					CString ext = PathFindExtension(cStrName);
-					CString newStrName = contentId + nameExtension;
+					cStrName = contentId + nameExtension;
 
-					strName.assign(newStrName);
+					strName.assign(cStrName);
 
 					int deb = 1;
 				}
 				int deb = 1;
 			}
 
-			
-
             //printf("File name: %s\r\n", strName.c_str());
             //printf("File size: %d\r\n", pBP->GetContentLength());
 
-			CString cStrName = strName.c_str();
+			//CString cStrName = strName.c_str();
 			MboxMail::MakeValidFileName(cStrName);
 			strName.assign((LPCSTR)cStrName);
+
+			if ((disposition.CompareNoCase("inline") != 0) && (contentTypeMain.CompareNoCase("image") == 0))
+			{
+				int pos = pMsgView->FindAttachmentByName(cStrName);
+				if (pos >= 0)
+				{
+					contentId.Trim();
+					contentId.Trim("<>");
+
+					if (!contentId.IsEmpty())
+					{
+						//CString cStrName = strName.c_str();
+						int pos = cStrName.ReverseFind('.');
+						CString nameExtension;
+						if (pos >= 0)
+							nameExtension = cStrName.Mid(pos);
+						else
+							nameExtension = "." + contentTypeExtension;
+
+						CString ext = PathFindExtension(cStrName);
+						cStrName = contentId + nameExtension;
+
+						strName.assign(cStrName);
+						MboxMail::MakeValidFileName(cStrName);
+						strName.assign((LPCSTR)cStrName);
+
+						int deb = 1;
+					}
+					int deb = 1;
+				}
+			}
 
 			string name = strName;
 
@@ -5458,8 +5744,10 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 		time_t min = time(NULL);
 		time_t max = 0;
 		int sz = MboxMail::s_mails.GetSize();
-		for (int i = 0; i < sz; i++) {
-			time_t t = MboxMail::s_mails[i]->m_timeDate;
+		for (int i = 0; i < sz; i++) 
+		{
+			MboxMail *m = MboxMail::s_mails[i];
+			time_t t = m->m_timeDate;
 			if (t < min && t > 0)
 				min = t;
 			if (t > max)
