@@ -120,6 +120,7 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	//ON_WM_WINDOWPOSCHANGED()
 	//ON_WM_WINDOWPOSCHANGING()
 	//ON_WM_SIZING()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 CString GetmboxviewTempPath(char *name = 0);
@@ -1650,4 +1651,12 @@ void NMsgView::OnSizing(UINT fwSide, LPRECT pRect)
 	CWnd::OnSizing(fwSide, pRect);
 
 	// TODO: Add your message handler code here
+}
+
+
+void NMsgView::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CWnd::OnClose();
 }

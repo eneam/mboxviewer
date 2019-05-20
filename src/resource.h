@@ -72,6 +72,7 @@
 #define IDC_EXPORT_FROM                 1059
 #define IDC_CHECK_FROM_A                1059
 #define IDC_FILE_DATE                   1059
+#define IDC_ENHANCED_SELECT_FOLDER      1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_CHECK_SUBJECT_A             1061
@@ -242,7 +243,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        200
+#define _APS_NEXT_RESOURCE_VALUE        201
 #define _APS_NEXT_COMMAND_VALUE         32888
 #define _APS_NEXT_CONTROL_VALUE         1185
 #define _APS_NEXT_SYMED_VALUE           110

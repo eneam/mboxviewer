@@ -117,6 +117,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
 	ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
 	ON_COMMAND(ID_PRINTTO_PDF, &CMainFrame::OnPrinttoPdf)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -144,6 +145,8 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_bSelectMailFileDone = FALSE;
 	m_MailIndex = -1;  // Not used ??
 	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
+	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
+
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -338,7 +341,11 @@ void CMainFrame::OnFileOptions()
 {
 	bool needRedraw = false;
 	COptionsDlg d;
-	if (d.DoModal() == IDOK) {
+	d.m_bEnhancedSelectFolderDlg = m_bEnhancedSelectFolderDlg;
+	if (d.DoModal() == IDOK) 
+	{
+		m_bEnhancedSelectFolderDlg = d.m_bEnhancedSelectFolderDlg;
+
 		CString format = MboxMail::GetDateFormat(d.m_format);
 		if (GetListView()->m_format.Compare(format) != 0) {
 			GetListView()->m_format = MboxMail::GetDateFormat(d.m_format);
@@ -409,17 +416,57 @@ void CMainFrame::OnFileOptions()
 }
 void CMainFrame::OnFileOpen() 
 {
+
+	if (m_bEnhancedSelectFolderDlg == FALSE)
+	{
+		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
+		if (!path.IsEmpty())
+			bff.SetDefaultFolder(path);
+		bff.SetFlags(BIF_RETURNONLYFSDIRS);
+		if (bff.SelectFolder()) {
+			path = bff.GetSelectedFolder();
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+			GetTreeView()->FillCtrl();
+			AfxGetApp()->AddToRecentFileList(path);
+		}
+	}
+	else
+	{
+		CString path;
+		INT_PTR ret = SelectFolder(path);
+		if (ret == IDOK)
+		{
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+			GetTreeView()->FillCtrl();
+			AfxGetApp()->AddToRecentFileList(path);
+		}
+		else
+		{
+			int deb = 1;
+		}
+	}
+
+#if 0
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
-	if( ! path.IsEmpty() )
-		bff.SetDefaultFolder(path);
-	bff.SetFlags(BIF_RETURNONLYFSDIRS);
-	if( bff.SelectFolder() ) {
-		path = bff.GetSelectedFolder();
+
+	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	CFolderPickerDialog fdlg(path);
+
+	INT_PTR ret = fdlg.DoModal();
+	if (ret == IDOK)
+	{
+		CString path = fdlg.GetPathName();
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 		GetTreeView()->FillCtrl();
-		AfxGetApp()-> AddToRecentFileList(path);
+		AfxGetApp()->AddToRecentFileList(path);
+		int deb = 1;
 	}
+	else
+	{
+		int deb = 1;
+	}
+#endif
 }
 
 void CMainFrame::DoOpen(CString& path) 
@@ -1426,9 +1473,9 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 	text.Append(
 		"<font size=\"+1\"><b>Mail List Archiving</b></font><br>"
 		"<br>"
-		"Found Mails list and User Selected Mails list content can be saved to new mbox archive files.<br>"
+		"Found Mails list and User Selected Mails list content can be saved to mbox archive files and to mboxlist mail list files.<br>"
 		"<br>"
-		"Archive file will be created in the the same folder as the All Mails main archive.<br>"
+		"Archive file will be created in the ROOT_MAIL_DIRECTORY\\ArchiveCache\\MailArchiveFileX directory.<br>"
 		"<br>"
 		"Archive file created from the Found Mails list will be created by appending _FIND suffix to the base name of the main archive file name.<br>"
 		"<br>"
@@ -1436,7 +1483,11 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<br>"
 		"For example, if the root mbox archive file from gmail is called \"All mail Including Spam and Trash.11.09.2018.mbox\", then created archive file will be named \"All mail Including Spam and Trash.11.09.2018_USER.mbox.\"<br>"
 		"<br>"
-		"When creating archive file for User Selected Mails list, the mbox viewer will also create file with the list of all mails for that archive, for example \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist.\"<br>"
+		"Separately, user can save mails in User Select Mails list to .mboxlist file, for example \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\".<br>"
+		"<br>"
+		"The .mboxlist files are much smaller than the mail archive files. The final .mboxlist file can be reloaded at any time and then the archive file can be created.\"<br>"
+		"<br>"
+		"WARNING: The .mboxlist file will no longer be valid if the master mail archive is changed.<br>"
 		"<br>"
 		"The mail list file allows user to reload the last archived mail list into the User Select Mails. Reload can be requested at any time including after restart of the mbox viewer.<br>"
 		"<br>"
@@ -1452,21 +1503,19 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 	text.Append(
 		"<font size=\"+1\"><b>Managing Multiple Archives</b></font><br>"
 		"<br>"
-		"Mutiple archives can be created from the the same single main archive. However, before you create new content and new archive from User Selected List, the last archive with hard-coded name must be renamed first.<br>"
+		"Mutiple archives can be created from the the same single main (or master) mail archive. However, before you create new content and new archive from Found Mails or User Selected List, the last archive with hard-coded name must be renamed first.<br>"
 		"<br>"
-		"Click on Open Mail Archive Location and rename both hard-coded mail and mail list archives, for example:<br>"
+		"Click on Open Mail Archive Location and rename the last hard-coded mail archive, for example:<br>"
 		"<br>"
 		"\"All mail Including Spam and Trash.11.09.2018_USER.mbox.\" --> \"All mail from Amazon.11.09.2018_USER.mbox.\"<br>"
 		"<br>"
-		"\"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\" --> \"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"<br>"
+		"Not likely but if desired, multiple mboxlist files can be maintained by following similar steps.<br>"
 		"<br>"
-		"You must restore files to original names if you plan to continue to update these archives at later date. For example:<br>"
-		"<br>"
-		"\"All mail from Amazon.11.09.2018_USER.mbox.\" ---copy -->  \"All mail Including Spam and Trash.11.09.2018_USER.mbox.\"<br>"
+		"You must restore mboxlist file to original name if you plan to continue to update the mail list at later date. For example:<br>"
 		"<br>"
 		"\"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"  ---copy or --> \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\"<br>"
 		"<br>"
-		"Future releases may address the issue better, implement subfolder for each archives<br>"
+		"Future releases may address the issue better.<br>"
 		"<br>"
 	);
 	fp.Write((LPCSTR)text, text.GetLength());
@@ -1679,7 +1728,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"<br>"
 		"Printing to PDF printer relies on Microsoft HTML Document object to print its content.<br>"
 		"<br>"
-		"Fisrt, Mbox Viewer will print mails to a single HTML file, then it will load the file into HTML Document object and request the document object to print its content.<br>"
+		"First, Mbox Viewer will print mails to a single HTML file, then it will load the file into HTML Document object and request the document object to print its content.<br>"
 		"<br>"
 		"The limitations as far as the maximum number of mails that can be printed are described in the \"Printing Mails to HTML file\" section above.<br>"
 		"<br>"
@@ -1773,7 +1822,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"<br>"
 		"If more than one merged PDF file is created in the PDF_MERGE sub-folder, PDFMerge-pdfbox.cmd script needs to be copied to that sub-folder and script executed again.<br>"
 		"<br>"
-		"The above steps need to be repeated until PDFMerge-pdfbox.cmd script creates single script only.<br>"
+		"The above steps need to be repeated until PDFMerge-pdfbox.cmd script creates single PDF file only.<br>"
 		"<br>"
 		"Printing mails to separate PDF files can also be done offline. User must first set \"File -> Print Config -> Print mails to separate files -> HTML\" option.<br>"
 		"<br>"
@@ -1823,6 +1872,9 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"ROOT_MAIL_DIRECTORY\\ImageCache<br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile1-  <font color=red>target directory for image files, such as png,jpg,etc, embeded into mails</font><br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile2<br>"
+		"ROOT_MAIL_DIRECTORY\\ArchiveCache<br>"
+		"ROOT_MAIL_DIRECTORY\\ArchiveCache\\MailArchiveFile1-  <font color=red>target directory for saving Found Mails and User Selected Mails to mbox and mboxlist files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\ArchiveCache\\MailArchiveFile2<br>"
 		"ROOT_MAIL_DIRECTORY\\PrintCache<br>"
 		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1  -  <font color=red>target directory for printing to single CSV,TEXT,HTML and PDF files</font><br>"
 		"ROOT_MAIL_DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP  -  <font color=red>target directory for printing to separate PDF files</font><br>"
@@ -2394,22 +2446,6 @@ void CSVFILE_CONFIG::SetDflts()
 
 	//m_bEncodingType = 1;  // UTF8  ??
 
-#if 0
-	//ExportToCSVDlg::
-	BOOL m_bFrom;
-	BOOL m_bTo;
-	BOOL m_bSubject;
-	BOOL m_bDate;
-	BOOL m_bCC;
-	BOOL m_bBCC;
-	BOOL m_bContent;
-	CString m_MessageLimitString;
-	CString m_MessageLimitCharsString;
-	int m_dateFormat;
-	int m_bGMTTime;
-	int m_bEncodingType;
-	int m_nCodePageId;
-#endif
 }
 
 void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
@@ -2432,4 +2468,132 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 	m_separator = src.m_separator;
 
 	int deb = 1;
+}
+
+INT_PTR CMainFrame::SelectFolder(CString &folder)
+{
+	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
+#define MAX_CFileDialog_FCOUNT 10
+	int FILE_LIST_BUFFER_SIZE = (MAX_CFileDialog_FCOUNT * (MAX_PATH + 1)) + 1;
+
+	MboxMail::m_outbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
+	TCHAR *fileNameBuffer = MboxMail::m_outbuf->Data();
+
+	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
+
+	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	MySelectFolder dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
+
+	CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+
+	OPENFILENAME& ofn = dlgFile.GetOFN();
+	//ofn.Flags |= OFN_ALLOWMULTISELECT;
+	ofn.lpstrFile = fileNameBuffer;
+	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+	ofn.lpstrInitialDir = inFolderPath;
+	ofn.lpstrTitle = "Select Folder with Mail Archives";
+
+	INT_PTR ret = dlgFile.DoModal();
+	if (ret == IDOK)
+	{
+		folder = dlgFile.GetFolderPath();
+		TRACE("FOLDER=%s\n", folder);
+
+		int fileCount = 0;
+		CString strFilePath;
+		POSITION pos = dlgFile.GetStartPosition();
+		while (NULL != pos)
+		{
+			fileCount++;
+			strFilePath = dlgFile.GetNextPathName(pos);
+
+			TRACE("FILE=%s\n", strFilePath);
+
+			BOOL retval = CPathGetPath(strFilePath, folder);
+			break;
+		}
+	}
+	return ret;
+}
+
+MySelectFolder::MySelectFolder(
+		BOOL bOpenFileDialog, LPCTSTR lpszDefExt, LPCTSTR lpszFileName,
+		DWORD dwFlags, LPCTSTR lpszFilter, CWnd* pParentWnd, DWORD dwSize, BOOL bVistaStyle
+		) : CFileDialog(bOpenFileDialog, lpszDefExt, lpszFileName, dwFlags, lpszFilter, pParentWnd, dwSize, bVistaStyle)
+{
+	int deb = 1;
+
+}
+
+int CMainFrame::CountMailFilesInFolder(CString &folder, CString &extension)
+{
+	// Break id at least one file exists
+	CString filePath;
+	int fileCnt = 0;
+	CString fn;
+
+	CString fw = folder + extension;
+	WIN32_FIND_DATA	wf;
+	HANDLE f = FindFirstFile(fw, &wf);
+	if (f != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+				continue;
+			fileCnt++;
+			break;
+		} while (FindNextFile(f, &wf));
+		FindClose(f);
+	}
+	return fileCnt;
+}
+
+BOOL MySelectFolder::OnFileNameOK()
+{
+	CString folder = GetFolderPath();
+	TRACE("FOLDER=%s\n", folder);
+
+	int fileCount = 0;
+	CString strFilePath;
+	POSITION pos = GetStartPosition();
+	while (NULL != pos)
+	{
+		fileCount++;
+		strFilePath = GetNextPathName(pos);
+
+		TRACE("FILE=%s\n", strFilePath);
+
+		BOOL retval = CPathGetPath(strFilePath, folder);
+		break;
+	}
+
+	CString extension = "\\*.mbox";
+	int fcnt = CMainFrame::CountMailFilesInFolder(folder, extension);
+	if (fcnt == 0)
+	{
+		extension = "\\*.eml";
+		fcnt = CMainFrame::CountMailFilesInFolder(folder, extension);
+	}
+	if (fcnt > 0)
+		return FALSE;
+	else
+		return TRUE;
+}
+
+
+
+
+void CMainFrame::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+	if ((MboxMail::IsUserMailsSelected() && (MboxMail::s_mails.GetCount() > 0)) || (MboxMail::s_mails_edit.GetCount() > 0))
+	{
+		CString txt = _T("User Selelected Mails List not empty. Terminate program?");
+		int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+		if (answer == IDNO)
+			return;
+	}
+
+	CFrameWnd::OnClose();
 }

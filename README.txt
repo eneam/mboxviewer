@@ -22,6 +22,7 @@ v 1.0.3.1
  v 1.0.3.0
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - RESOLVED Out of Memory crash due to corrupted mboxview index file created during initial parsing of mail archive;
  - Added mail list editing capability to enable users to compose list as subset of mails from multiple searches;
  - Added capability to archive search results and/or mail list composed by users to file;
  - Added capability to reload mail list composed by users from archive;

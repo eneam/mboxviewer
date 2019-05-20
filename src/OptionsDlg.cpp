@@ -20,7 +20,7 @@ COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(COptionsDlg::IDD, pParent)
 	, m_format(0), m_barDelay(0)
 	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
-	, m_bImageViewer(1), m_bTimeType(0)
+	, m_bImageViewer(1), m_bTimeType(0), m_bEnhancedSelectFolderDlg(0)
 {
 
 }
@@ -40,6 +40,7 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SUBJ_ID, m_subj_charsetId);
 	DDX_Radio(pDX, IDC_SHOW_CHARSETS, m_show_charsets);
 	DDX_Check(pDX, IDC_IMAGE_VIEWER, m_bImageViewer);
+	DDX_Check(pDX, IDC_ENHANCED_SELECT_FOLDER, m_bEnhancedSelectFolderDlg);
 	DDX_Radio(pDX, IDC_TIME_LOCAL, m_bTimeType);
 }
 
@@ -69,6 +70,7 @@ void COptionsDlg::OnBnClickedOk()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), m_show_charsets);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), m_bImageViewer);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType", m_bTimeType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"), m_bEnhancedSelectFolderDlg);
 
 		CDialog::OnOK();
 	}
@@ -103,6 +105,7 @@ BOOL COptionsDlg::OnInitDialog()
 	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
 	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "imageViewer");
 	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType");
+	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control

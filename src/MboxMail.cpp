@@ -717,7 +717,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					rcved.Trim();
 					// find last ';' separator
 					int pos = rcved.ReverseFind(';');
-					date = rcved.Mid(pos + 1);
+					if (pos >= 0)
+						date = rcved.Mid(pos + 1);
+					else
+						date = rcved;
 					SYSTEMTIME tm;
 					if (DateParser::parseRFC822Date(date, &tm)) {
 						if (DateParser::validateSystemtime(&tm)) {
@@ -4143,8 +4146,13 @@ BOOL MboxMail::GetPrintCachePath(CString &prtCachePath)
 
 	CString mailArchiveFileName;
 	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
+
 	int position = mailArchiveFileName.ReverseFind('.');
-	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	CString baseFileArchiveName;
+	if (position >= 0)
+		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	else
+		baseFileArchiveName = mailArchiveFileName;
 
 	CString printCachePath;
 	BOOL ret = CPathGetPath(MboxMail::s_path, printCachePath);
@@ -7081,8 +7089,13 @@ BOOL MboxMail::CreatePrintCachePath(CString &rootPrintSubFolder, CString &target
 
 	CString mailArchiveFileName;
 	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
+
 	int position = mailArchiveFileName.ReverseFind('.');
-	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	CString baseFileArchiveName;
+	if (position >= 0)
+		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	else
+		baseFileArchiveName = mailArchiveFileName;
 
 	BOOL createDirOk = TRUE;
 	CString printCachePath;
@@ -7158,7 +7171,11 @@ bool MboxMail::GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPri
 	CString mailArchiveFileName;
 	CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
 	int position = mailArchiveFileName.ReverseFind('.');
-	CString baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	CString baseFileArchiveName;
+	if (position >= 0)
+		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	else
+		baseFileArchiveName = mailArchiveFileName;
 
 	CString printCachePath;
 	BOOL ret = CPathGetPath(MboxMail::s_path, printCachePath);

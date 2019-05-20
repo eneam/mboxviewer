@@ -33,6 +33,23 @@ public:
 	CString m_separator;
 };
 
+class MySelectFolder : public CFileDialog
+{
+public:
+	MySelectFolder(
+		BOOL bOpenFileDialog, // TRUE for FileOpen, FALSE for FileSaveAs
+		LPCTSTR lpszDefExt = NULL,
+		LPCTSTR lpszFileName = NULL,
+		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		LPCTSTR lpszFilter = NULL,
+		CWnd* pParentWnd = NULL,
+		DWORD dwSize = 0,
+		BOOL bVistaStyle = TRUE
+	);
+
+	virtual BOOL OnFileNameOK();
+};
+
 class CMainFrame : public CFrameWnd
 {
 	
@@ -97,6 +114,9 @@ public:
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h);
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 
+	INT_PTR SelectFolder(CString &folder);
+	static int CountMailFilesInFolder(CString &folder, CString &extension);
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -120,6 +140,7 @@ protected:  // control bar embedded members
 	NTreeView *m_pTreeView;
 	NMsgView *m_pMsgView;
 	CSVFILE_CONFIG m_csvConfig;
+	int m_bEnhancedSelectFolderDlg;
 
 public:
 	struct NamePatternParams m_NamePatternParams;
@@ -135,6 +156,7 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
 
 public:
 
@@ -177,6 +199,7 @@ public:
 	afx_msg void OnUpdateFilePrintconfig(CCmdUI *pCmdUI);
 	afx_msg void OnFileMergearchivefiles();
 	afx_msg void OnPrinttoPdf();
+	afx_msg void OnClose();
 };
 
 /////////////////////////////////////////////////////////////////////////////

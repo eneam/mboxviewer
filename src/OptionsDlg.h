@@ -33,6 +33,7 @@ public:
 	int m_show_charsets;
 	int m_bImageViewer;
 	int m_bTimeType;
+	int m_bEnhancedSelectFolderDlg;
 	afx_msg void OnBnClickedRadio2();
 };
 

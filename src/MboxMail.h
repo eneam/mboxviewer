@@ -24,7 +24,6 @@ BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *res
 int findNoCase(const char *input, int count, void const* Str, int  Size);
 void ShowMemStatus();
 
-
 class MboxMail;
 struct NamePatternParams;
 

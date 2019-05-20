@@ -262,6 +262,7 @@ public:
 	afx_msg void OnStnClickedDonation();
 	CLinkCursor m_link;
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnClose();
 };
 
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
@@ -283,6 +284,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_STN_CLICKED(IDC_DONATION, &CAboutDlg::OnStnClickedDonation)
 	ON_WM_CTLCOLOR()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 // App command to run the dialog
@@ -516,4 +518,12 @@ HBRUSH CAboutDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		pDC->SelectObject(&m_linkFont);
 	}
 	return hbr;
+}
+
+
+void CAboutDlg::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialog::OnClose();
 }

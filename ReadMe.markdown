@@ -31,6 +31,7 @@ Changes
 v 1.0.3.1
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - RESOLVED Out of Memory crash due to corrupted mboxview index file created during initial parsing of mail archive;
  - Added capability to merge/concatenate multiple archive files and remove duplicate mails;
  - Added option to print directly to PDF without user interaction by leveraging external HTML to PDF converter tools such as Chrome Browser or wkhtmltopdf;
  - Added option to print each mail to a separate PDF file;

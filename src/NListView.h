@@ -179,14 +179,19 @@ public:
 	void SwitchToMailList(int nID, BOOL force = FALSE);
 	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
-	int SaveAsMboxFile();
-	int SaveAsMboxlistFile();
-	int SaveAsMboxAndAsMboxlistFile();
-	int ReloadMboxFile();
+	//int SaveAsMboxFile();
+	//int SaveAsMboxlistFile();
+	//int SaveAsMboxAndAsMboxlistFile();
+	//int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
+	int OpenMailListFileLocation();
 	int RemoveDuplicateMails();
 	BOOL IsUserSelectedMailListEmpty();
+	int ReloadMboxListFile_v2(CString *mboxListFile=0);
+	int SaveAsMboxListFile_v2();
+	int SaveAsMboxArchiveFile_v2();
+	int FindMailListFileWithHighestNumber(CString &folder, CString &extension);
 
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
@@ -290,6 +295,7 @@ public:
 	//afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnClose();
 };
 
 struct PARSE_ARGS

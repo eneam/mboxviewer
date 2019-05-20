@@ -88,6 +88,7 @@ public:
 	afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
 	afx_msg void OnWindowPosChanging(WINDOWPOS* lpwndpos);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
+	afx_msg void OnClose();
 };
 
 /////////////////////////////////////////////////////////////////////////////
