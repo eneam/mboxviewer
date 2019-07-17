@@ -346,59 +346,62 @@ void CMainFrame::OnFileOptions()
 	{
 		m_bEnhancedSelectFolderDlg = d.m_bEnhancedSelectFolderDlg;
 
+		NListView *pListView = GetListView();
+		NMsgView *pMsgView = GetMsgView();
+
 		CString format = MboxMail::GetDateFormat(d.m_format);
-		if (GetListView()->m_format.Compare(format) != 0) {
-			GetListView()->m_format = MboxMail::GetDateFormat(d.m_format);
+		if (pListView->m_format.Compare(format) != 0) {
+			pListView->m_format = MboxMail::GetDateFormat(d.m_format);
 			needRedraw = true;
 		}
 
-		if (GetListView()->m_maxSearchDuration != d.m_barDelay) {
-			GetListView()->m_maxSearchDuration = d.m_barDelay;
+		if (pListView->m_maxSearchDuration != d.m_barDelay) {
+			pListView->m_maxSearchDuration = d.m_barDelay;
 			DWORD barDelay = d.m_barDelay;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
 		}
 
 		BOOL exportEml = (d.m_exportEML > 0) ? TRUE : FALSE;
-		if (GetListView()->m_bExportEml != exportEml) {
-			GetListView()->m_bExportEml = exportEml;
+		if (pListView->m_bExportEml != exportEml) {
+			pListView->m_bExportEml = exportEml;
 			CString str_exportEML = _T("n");
 			if (exportEml == TRUE)
 				str_exportEML = _T("y");
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), str_exportEML);
 		}
 
-		if (GetMsgView()->m_cnf_subj_charsetId != d.m_subj_charsetId) {
-			GetMsgView()->m_cnf_subj_charsetId = d.m_subj_charsetId;
+		if (pMsgView->m_cnf_subj_charsetId != d.m_subj_charsetId) {
+			pMsgView->m_cnf_subj_charsetId = d.m_subj_charsetId;
 			DWORD charsetId = d.m_subj_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), charsetId);
 			needRedraw = true;
 		}
-		if (GetMsgView()->m_cnf_from_charsetId != d.m_from_charsetId) {
-			GetMsgView()->m_cnf_from_charsetId = d.m_from_charsetId;
+		if (pMsgView->m_cnf_from_charsetId != d.m_from_charsetId) {
+			pMsgView->m_cnf_from_charsetId = d.m_from_charsetId;
 			DWORD charsetId = d.m_from_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), charsetId);
 			needRedraw = true;
 		}
-		if (GetMsgView()->m_cnf_to_charsetId != d.m_to_charsetId) {
-			GetMsgView()->m_cnf_to_charsetId = d.m_to_charsetId;
+		if (pMsgView->m_cnf_to_charsetId != d.m_to_charsetId) {
+			pMsgView->m_cnf_to_charsetId = d.m_to_charsetId;
 			DWORD charsetId = d.m_to_charsetId;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), charsetId);
 			needRedraw = true;
 		}
-		if (GetMsgView()->m_show_charsets != d.m_show_charsets) {
-			GetMsgView()->m_show_charsets = d.m_show_charsets;
+		if (pMsgView->m_show_charsets != d.m_show_charsets) {
+			pMsgView->m_show_charsets = d.m_show_charsets;
 			DWORD show_charsets = d.m_show_charsets;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), show_charsets);
 			needRedraw = true;
 		}
-		if (GetMsgView()->m_bImageViewer != d.m_bImageViewer) {
-			GetMsgView()->m_bImageViewer = d.m_bImageViewer;
+		if (pMsgView->m_bImageViewer != d.m_bImageViewer) {
+			pMsgView->m_bImageViewer = d.m_bImageViewer;
 			DWORD bImageViewer = d.m_bImageViewer;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), bImageViewer);
 		}
-		if (GetListView()->m_gmtTime != d.m_bTimeType)
+		if (pListView->m_gmtTime != d.m_bTimeType)
 		{
-			GetListView()->m_gmtTime = d.m_bTimeType;
+			pListView->m_gmtTime = d.m_bTimeType;
 			DWORD bTimeType = d.m_bTimeType;
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), bTimeType);
 			needRedraw = true;
@@ -406,10 +409,10 @@ void CMainFrame::OnFileOptions()
 		if (needRedraw) {
 			// TODO: Invalidate() below doesn't updates column labels, so call MarkColumns() directly
 			// mboxview is basically single threaded so it should be ok to do so
-			GetListView()->MarkColumns();  // Invalidate() below doesn't updates column labels
-			GetListView()->ClearDescView();
-			GetListView()->Invalidate();
-			GetMsgView()->Invalidate(); 
+			pListView->MarkColumns();  // Invalidate() below doesn't updates column labels
+			pListView->ClearDescView();
+			pListView->Invalidate();
+			pMsgView->Invalidate();
 			//GetMsgView()->m_browser.m_ie.Invalidate(); // TODO: changed to GetMsgView()->Invalidate();
 		}
 	}
@@ -1107,6 +1110,7 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 	}
 
 	pCmdUI->Enable();
+
 	CString strPage;
 	if (msgView->m_browser.m_bNavigateComplete)
 		m_bMailDownloadComplete = TRUE;
@@ -2596,4 +2600,15 @@ void CMainFrame::OnClose()
 	}
 
 	CFrameWnd::OnClose();
+}
+
+void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText)
+{
+	//f (m_wndStatusBar.)
+	if (this->GetSafeHwnd())
+	{
+		if (m_wndStatusBar.GetSafeHwnd())
+			m_wndStatusBar.SetPaneText(paneId, sText);
+	}
+	return;
 }

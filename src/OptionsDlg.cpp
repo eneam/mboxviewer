@@ -22,7 +22,9 @@ COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
 	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
 	, m_bImageViewer(1), m_bTimeType(0), m_bEnhancedSelectFolderDlg(0)
 {
-
+	//m_from_charsetId = GetACP();
+	//m_to_charsetId = GetACP();
+	//m_subj_charsetId = GetACP();
 }
 
 COptionsDlg::~COptionsDlg()

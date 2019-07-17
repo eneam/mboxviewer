@@ -117,6 +117,8 @@ public:
 	INT_PTR SelectFolder(CString &folder);
 	static int CountMailFilesInFolder(CString &folder, CString &extension);
 
+	void SetStatusBarPaneText(int paneId, CString &sText);
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;

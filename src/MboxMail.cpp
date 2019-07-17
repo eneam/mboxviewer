@@ -6754,7 +6754,28 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	BOOL separatorNeeded = FALSE;
 	char sepchar = '-';
 
-	if (namePatternParams->m_bDate) 
+	if (m->m_timeDate == 0)
+	{
+		CString m_strDate;
+		if (namePatternParams->m_bDate)
+		{
+			if (namePatternParams->m_bTime)
+				//m_strDate = ltt.Format("%Y%m%d-%H%M%S");
+				m_strDate = "000000000-000000";
+			else
+				//m_strDate = ltt.Format("%H%M%S");
+				m_strDate = "000000";
+
+			fileName.Append(m_strDate);
+		}
+		else if (namePatternParams->m_bTime)
+		{
+			m_strDate = "000000";
+			fileName.Append(m_strDate);
+		}
+		separatorNeeded = TRUE;
+	}
+	else if (namePatternParams->m_bDate) 
 	{
 		SYSTEMTIME st;
 		SYSTEMTIME lst;

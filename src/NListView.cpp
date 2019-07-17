@@ -1553,6 +1553,12 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	DWORD dwDrawStage = nmcd.dwDrawStage;
 	UINT uItemState = nmcd.uItemState;
 
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) {
+		pMsgView = pFrame->GetMsgView();
+	}
+
 	*pResult = 0;
 
 	switch (lplvcd->nmcd.dwDrawStage)
@@ -1650,7 +1656,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				FieldText = nul;
 
 			Charset = "UTF-8";
-			charsetId = 65001;
+			charsetId = CP_UTF8;
 
 			strW.Empty();
 			if (Str2Wide(FieldText, charsetId, strW)) {
@@ -1667,7 +1673,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					FieldText = nul;
 
 				Charset = "UTF-8";
-				charsetId = 65001;
+				charsetId = CP_UTF8;
 
 			}
 			else if (iSubItem == 1)
@@ -1692,12 +1698,22 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				}
 				FieldText = datebuff;
 				Charset = "UTF-8";
-				charsetId = 65001;
+				charsetId = CP_UTF8;
 			}
 			else if (iSubItem == 2) 
 			{
 				Charset = m->m_from_charset;
 				charsetId = m->m_from_charsetId;
+
+				if ((charsetId == 0) && pMsgView) {
+					if (pMsgView->m_cnf_from_charsetId)
+						charsetId = pMsgView->m_cnf_from_charsetId;
+					else
+						charsetId = CP_UTF8;
+
+					//Charset = Charset;
+				}
+
 				if (m_bLongMailAddress) {
 					FieldText = m->m_from;
 				}
@@ -1725,6 +1741,15 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				
 				Charset = m->m_to_charset;
 				charsetId = m->m_to_charsetId;
+
+				if ((charsetId == 0) && pMsgView) {
+					if (pMsgView->m_cnf_to_charsetId)
+						charsetId = pMsgView->m_cnf_to_charsetId;
+					else
+						charsetId = CP_UTF8;
+
+					//Charset = Charset;
+				}
 
 				if (m_bLongMailAddress) {
 					FieldText = m->m_to;
@@ -1765,6 +1790,15 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				FieldText = m->m_subj;
 				Charset = m->m_subj_charset;
 				charsetId = m->m_subj_charsetId;
+
+				if ((charsetId == 0) && pMsgView) {
+					if (pMsgView->m_cnf_subj_charsetId)
+						charsetId = pMsgView->m_cnf_subj_charsetId;
+					else
+						charsetId = CP_UTF8;
+
+					//Charset = Charset;
+				}
 			}
 			else if (iSubItem == 5)
 			{
@@ -1779,7 +1813,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 				FieldText = sizebuff;
 				Charset = "UTF-8";
-				charsetId = 65001;
+				charsetId = CP_UTF8;
 			}
 
 			DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
@@ -3022,6 +3056,13 @@ void NListView::SelectItem(int iItem)
 		//ClearDescView();
 		return;
 	}
+
+	if (pFrame) {
+		CString sText = _T("Mail Retrieval In Progress ...");
+		int paneId = 1;
+		pFrame->SetStatusBarPaneText(paneId, sText);
+	}
+
 	m_lastSel = iItem;
 	// Erase any files previously saved
 	RemoveDir(GetmboxviewTempPath());
@@ -3147,7 +3188,8 @@ void NListView::SelectItem(int iItem)
 			pBP->GetText(strText);
 			bdy = strText.c_str();
 			ext = curExt;
-			bdycharset = charset;
+			if (!charset.IsEmpty())
+				bdycharset = charset;
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);
         }
         else if (pBP->IsAttachment())

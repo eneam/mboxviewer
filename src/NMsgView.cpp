@@ -75,6 +75,8 @@ NMsgView::NMsgView()
 	m_strTitleTo.LoadString(IDS_TITLE_TO);
 	m_strTo.LoadString(IDS_DESC_NONE);
 	m_strTitleBody.LoadString(IDS_TITLE_BODY);
+
+	// set by SelectItem in NListView
 	m_subj_charsetId = 0;
 	m_from_charsetId = 0;
 	m_date_charsetId = 0;
@@ -86,6 +88,17 @@ NMsgView::NMsgView()
 	m_cnf_date_charsetId = 0;
 	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
 	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
+
+#if 0
+	if (m_cnf_from_charsetId == 0)
+		m_cnf_from_charsetId = GetACP();
+
+	if (m_cnf_to_charsetId == 0)
+		m_cnf_to_charsetId = GetACP();
+
+	if (m_cnf_subj_charsetId == 0)
+		m_cnf_subj_charsetId = GetACP();
+#endif
 
 	DWORD bImageViewer;
 	BOOL retval;
@@ -380,6 +393,15 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 
 	xpos += TEXT_BOLD_LEFT;
 	BOOL done = FALSE;
+
+	if (CharsetId == 0)
+	{
+		if (CnfCharsetId)
+			charsetId = CnfCharsetId;
+		else
+			charsetId = CP_UTF8;
+	}
+
 	if (charsetId) {
 		CStringW strW;
 		if (Str2Wide(FieldText, charsetId, strW)) {
