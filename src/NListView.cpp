@@ -1301,7 +1301,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (!m_list.Create(WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDATA, CRect(), this, IDC_LIST))
 		return -1;
 
-	m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT);	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0);
+	m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT);	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0); // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
 	ResetFont();
 

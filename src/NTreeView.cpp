@@ -272,10 +272,20 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pListView->m_path = path + "\\" + str;
 	pListView->m_which = pNm->itemNew.hItem;
 	pListView->ResetSize();
+
+	int paneId = 0;
+	CString sText;
+	//sText.Format("Opening %s ..", pListView->m_path);
+	sText.Format("Opening %s ...", str);
+	pFrame->SetStatusBarPaneText(paneId, sText);
+
 	pListView->FillCtrl();
 	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
 
 	pFrame->UpdateFilePrintconfig();
+
+	sText.Format("Ready");
+	pFrame->SetStatusBarPaneText(paneId, sText);
 
 	ShowMemStatus();
 }
