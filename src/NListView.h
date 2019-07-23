@@ -7,10 +7,14 @@
 // NListView.h : header file
 //
 
+#include <vector>
+#include "Mime.h"
+#include "MimeCode.h"
 #include "WheelListCtrl.h"
 #include "UPDialog.h"
 #include "FindAdvancedDlg.h"
 #include "FindDlg.h"
+#include "TextUtilities.h"
 
 __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
 void CPathStripPath(const char *path, CString &fileName);
@@ -21,15 +25,29 @@ class MboxMail;
 class MyMailArray;
 class SerializerHelper;
 class SimpleString;
+class NMsgView;
 
 BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText);
-int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+//int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 
 
 typedef CArray<int, int> MailIndexList;
+class MailBodyContent;
 
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
+
+class MailBodyInfo
+{
+public:
+	MailBodyInfo() { m_index = 0; };
+	~MailBodyInfo() {};
+	CString m_CID;
+	CString m_imgFileName;
+	int m_index;
+};
+
+typedef MyCArray<MailBodyInfo*> MailBodyInfoArray;
 
 class NListView : public CWnd
 {
@@ -151,6 +169,9 @@ public:
 	UINT_PTR m_nIDEvent;
 	UINT m_nElapse;
 	//
+	std::vector <MailBodyInfo*> m_BodyInfoArray;
+	void FindImageFileName(CString &cid);
+	//
 	void FillCtrl();
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
@@ -261,6 +282,16 @@ public:
 
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
+	//
+	static int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath);
+	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody);
+	//
+	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray);
+	static int UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray);
+	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray);
+	static int GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody** pBP);  // return body text type or 0-plain, 1-html, -1-not found
 
 	// Generated message map functions
 protected:

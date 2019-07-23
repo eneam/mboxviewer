@@ -6,13 +6,21 @@
 #ifdef _MSC_VER
 #include <afxtempl.h>
 #pragma warning (disable : 4018)
-#else#include "CString.h"
+#else
+#include "CString.h"
 #endif
 
 
 #ifndef _VECTOR_
 #include <vector>
 #endif
+
+template<class T> class MyCArray : public CArray<T, T>
+{
+public:
+	void SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
+	void CopyKeepData(const MyCArray<T>& src);
+};
 
 class TextUtilities
 {

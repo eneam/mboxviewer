@@ -31,8 +31,11 @@ Changes
 v 1.0.3.2
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
- - Improved handling of missing character set in the raw email that could result in improper text display;
- - Improved handling of Mail Retrieval Status Text in the Status Bar to reliably display Mail Retrival In Progress Status text;
+ - Enhanced handling of missing character set in the raw email that could result in improper text display;
+ - Added Mail Retrival In Progress Status text in the Status Bar;
+ - Added Mail Archive Open in Progress Status text in the Status Bar;
+ - Added Sort Column in Progress Status text in the Status Bar;
+ - Enhanced handling of inline images;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.1

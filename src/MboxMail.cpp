@@ -56,7 +56,7 @@ int MboxMail::nWhichMailList = -1;
 
 BOOL PathFileExist(LPCSTR path);
 BOOL RemoveDir(CString & dir, bool recursive = false);
-int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
+//int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
 ///////
@@ -3711,7 +3711,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		SimpleString *workbuf = MboxMail::m_workbuf;
 		workbuf->ClearAndResize(outbuflarge->Count() * 2);
 		bool useMailPosition = true;
-		fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
+		//fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
+		NListView::UpdateInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
 
 		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
@@ -4693,6 +4694,8 @@ int MboxMail::DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, Si
 	if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
 		// something is not consistent
 		bodyLength = m->m_length - body->m_contentOffset;
+		if (bodyLength < 0)
+			bodyLength = 0;
 	}
 
 	fileOffset = m->m_startOff + body->m_contentOffset;
@@ -4791,6 +4794,8 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 		if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
 			// something is not consistent
 			bodyLength = m->m_length - body->m_contentOffset;
+			if (bodyLength < 0)
+				bodyLength = 0;
 		}
 		
 		fileOffset = m->m_startOff + body->m_contentOffset;

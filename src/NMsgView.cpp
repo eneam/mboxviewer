@@ -168,8 +168,6 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if( !m_browser.Create(NULL, NULL, WS_CHILD|WS_VISIBLE, CRect(), this, IDC_BROWSER) )
 		return -1;
 
-
-
 	CRect r;
 	//GetClientRect(r);
 	//r.top = 300;
@@ -177,7 +175,7 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if( !m_attachments.Create(WS_CHILD|WS_VISIBLE|LVS_SINGLESEL|LVS_SMALLICON|LVS_SHOWSELALWAYS, CRect(), this, IDC_ATTACHMENTS) )
 	//if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS, r, this, IDC_ATTACHMENTS))
 		return -1;
-	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);
+	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_attachments.SetTextColor (RGB(0,0,0));
 	if( ! m_font.CreatePointFont (85, _T("Tahoma")) )
 		if( ! m_font.CreatePointFont (85, _T("Verdana")) )

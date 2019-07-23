@@ -563,3 +563,20 @@ bool TextUtilities::TestAll()
 	int deb = 1;
 	return true;
 }
+
+// class MyCArray
+template<class T> void MyCArray<T>::SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy)
+{
+	if (nNewSize == 0)
+		m_nSize = 0;
+	else
+		SetSize(nNewSize, nGrowBy);
+}
+
+template<class T> void MyCArray<T>::CopyKeepData(const MyCArray<T>& src)
+{
+	if (src.GetSize() == 0)
+		m_nSize = 0;
+	else
+		Copy(src);
+}

@@ -325,6 +325,14 @@ BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
 		return FALSE;
 }
 
+int __cdecl FooPred(void const * first, void const * second)
+{
+	CString *f = *((CString**)first);
+	CString *s = *((CString**)second);
+	int ret = strcmp(f->operator LPCSTR(), s->operator LPCSTR());
+	return ret;
+}
+
 BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
 {
 	WIN32_FIND_DATA FileData;
@@ -356,6 +364,8 @@ BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
 			bFinished = TRUE;
 	}
 	FindClose(hSearch);
+
+	qsort(m_ImageFileNameArray.GetData(), m_ImageFileNameArray.GetCount(), sizeof(void*), FooPred);
 	return TRUE;
 }
 

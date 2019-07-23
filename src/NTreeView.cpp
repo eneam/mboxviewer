@@ -275,7 +275,6 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	int paneId = 0;
 	CString sText;
-	//sText.Format("Opening %s ..", pListView->m_path);
 	sText.Format("Opening %s ...", str);
 	pFrame->SetStatusBarPaneText(paneId, sText);
 

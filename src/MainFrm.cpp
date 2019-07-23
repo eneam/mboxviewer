@@ -2585,9 +2585,6 @@ BOOL MySelectFolder::OnFileNameOK()
 		return TRUE;
 }
 
-
-
-
 void CMainFrame::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
