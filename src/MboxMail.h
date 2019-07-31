@@ -340,6 +340,8 @@ public:
 	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :)
 	static SimpleString *m_outbuf;
 	static SimpleString *m_inbuf;
+	static SimpleString *m_outdata;
+	static SimpleString *m_indata;
 	static SimpleString *m_workbuf;
 	static SimpleString *m_tmpbuf;
 
@@ -454,8 +456,9 @@ public:
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 	static void MakeValidFileName(CString &name);
 	static void MakeValidFileName(SimpleString &name);
-	
 
+	//
+	
 	static void ReleaseResources();
 	static void assert_unexpected();
 };

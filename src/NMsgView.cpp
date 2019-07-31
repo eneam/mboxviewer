@@ -403,7 +403,7 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 	if (charsetId) {
 		CStringW strW;
 		if (Str2Wide(FieldText, charsetId, strW)) {
-			::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCWSTR)strW, strW.GetLength(), NULL);
+			BOOL retval = ::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCWSTR)strW, strW.GetLength(), NULL);
 			done = TRUE;
 		}
 	}

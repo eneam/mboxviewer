@@ -184,11 +184,12 @@ class CMimeCodeQP : public CMimeCodeBase
 {
 public:
 	CMimeCodeQP() :
-		m_bQuoteLineBreak(false) {}
+		m_bQuoteLineBreak(false), m_bEncodedWord(false) {}
 
 public:
 	DECLARE_MIMECODER(CMimeCodeQP)
 	void QuoteLineBreak(bool bQuote=true) { m_bQuoteLineBreak = bQuote; }
+	void SetEncodedWord(bool bEncodedWord = true) { m_bEncodedWord = bEncodedWord; }
 
 protected:
 	virtual int GetEncodeLength() const;
@@ -198,6 +199,7 @@ protected:
 
 private:
 	bool m_bQuoteLineBreak;
+	bool m_bEncodedWord;
 };
 
 //////////////////////////////////////////////////////////////////////

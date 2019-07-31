@@ -118,6 +118,7 @@ public:
 	static int CountMailFilesInFolder(CString &folder, CString &extension);
 
 	void SetStatusBarPaneText(int paneId, CString &sText);
+	void SortByColumn(int column);
 
 #ifdef _DEBUG
 	virtual void AssertValid() const;

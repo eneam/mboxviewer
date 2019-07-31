@@ -419,6 +419,10 @@ void CMainFrame::OnFileOptions()
 }
 void CMainFrame::OnFileOpen() 
 {
+	int paneId = 0;
+	CString sText;
+	sText.Format("Opening new folder with mails ...");
+	SetStatusBarPaneText(paneId, sText);
 
 	if (m_bEnhancedSelectFolderDlg == FALSE)
 	{
@@ -470,6 +474,9 @@ void CMainFrame::OnFileOpen()
 		int deb = 1;
 	}
 #endif
+
+	sText.Format("Ready");
+	SetStatusBarPaneText(paneId, sText);
 }
 
 void CMainFrame::DoOpen(CString& path) 
@@ -1006,14 +1013,21 @@ void CMainFrame::OnUpdateBydate(CCmdUI *pCmdUI)
 	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
 }
 
+void CMainFrame::SortByColumn(int column)
+{
+	NListView *pListView = 0;
+	pListView = GetListView();
+	if (pListView)
+	{
+		pListView->SortByColumn(column);
+	}
+}
+
 
 void CMainFrame::OnByfrom()
 {
 	// TODO: Add your command handler code here
-	NListView *pListView = 0;
-	pListView = GetListView();
-	if (pListView)
-		pListView->SortByColumn(2);
+	SortByColumn(2);
 }
 
 
@@ -1027,10 +1041,7 @@ void CMainFrame::OnUpdateByfrom(CCmdUI *pCmdUI)
 void CMainFrame::OnByto()
 {
 	// TODO: Add your command handler code here
-	NListView *pListView = 0;
-	pListView = GetListView();
-	if (pListView)
-		pListView->SortByColumn(3);
+	SortByColumn(3);
 }
 
 
@@ -1044,10 +1055,7 @@ void CMainFrame::OnUpdateByto(CCmdUI *pCmdUI)
 void CMainFrame::OnBysubject()
 {
 	// TODO: Add your command handler code here
-	NListView *pListView = 0;
-	pListView = GetListView();
-	if (pListView)
-		pListView->SortByColumn(4);
+	SortByColumn(4);
 }
 
 
@@ -1061,10 +1069,7 @@ void CMainFrame::OnUpdateBysubject(CCmdUI *pCmdUI)
 void CMainFrame::OnBysize()
 {
 	// TODO: Add your command handler code here
-	NListView *pListView = 0;
-	pListView = GetListView();
-	if (pListView)
-		pListView->SortByColumn(5);
+	SortByColumn(5);
 }
 
 
@@ -1078,10 +1083,7 @@ void CMainFrame::OnUpdateBysize(CCmdUI *pCmdUI)
 void CMainFrame::OnByconversation()
 {
 	// TODO: Add your command handler code here
-	NListView *pListView = 0;
-	pListView = GetListView();
-	if (pListView)
-		pListView->SortByColumn(0);
+	SortByColumn(0);
 }
 
 

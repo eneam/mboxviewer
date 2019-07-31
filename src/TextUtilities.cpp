@@ -580,3 +580,154 @@ template<class T> void MyCArray<T>::CopyKeepData(const MyCArray<T>& src)
 	else
 		Copy(src);
 }
+
+#if 0
+////////////////////
+extern "C"
+{
+	typedef char gchar;
+	typedef uint32_t guint32;
+
+	//GLIB_VAR const guint16 * const g_ascii_table;
+
+	//#define g_ascii_islower(c) ((g_ascii_table[(guchar) (c)] & G_ASCII_LOWER) != 0)
+
+
+
+	gchar
+		g_ascii_toupper(gchar c)
+	{
+		//return g_ascii_islower(c) ? c - 'a' + 'A' : c;
+		return  g_tu.ToUpper(c);
+	}
+
+
+	gchar
+		g_ascii_tolower(gchar c)
+	{
+		//return g_ascii_isupper(c) ? c - 'A' + 'a' : c;
+		return  g_tu.ToLower(c);
+	}
+
+
+
+	/* this decodes rfc2047's version of quoted-printable */
+	static size_t
+		quoted_decode(const unsigned char *in, size_t len, unsigned char *out, int *state, guint32 *save)
+	{
+		register const unsigned char *inptr;
+		register unsigned char *outptr;
+		const unsigned char *inend;
+		unsigned char c, c1;
+		guint32 saved;
+		int need;
+
+		if (len == 0)
+			return 0;
+
+		inend = in + len;
+		outptr = out;
+		inptr = in;
+
+		need = *state;
+		saved = *save;
+
+		if (need > 0) {
+			if (isxdigit((int)*inptr)) {
+				if (need == 1) {
+					c = g_ascii_toupper((int)(saved & 0xff));
+					c1 = g_ascii_toupper((int)*inptr++);
+					saved = 0;
+					need = 0;
+
+					goto decode;
+				}
+
+				saved = 0;
+				need = 0;
+
+				goto equals;
+			}
+
+			/* last encoded-word ended in a malformed quoted-printable sequence */
+			*outptr++ = '=';
+
+			if (need == 1)
+				*outptr++ = (char)(saved & 0xff);
+
+			saved = 0;
+			need = 0;
+		}
+
+		while (inptr < inend) {
+			c = *inptr++;
+			if (c == '=') {
+			equals:
+				if (inend - inptr >= 2) {
+					if (isxdigit((int)inptr[0]) && isxdigit((int)inptr[1])) {
+						c = g_ascii_toupper(*inptr++);
+						c1 = g_ascii_toupper(*inptr++);
+					decode:
+						*outptr++ = (((c >= 'A' ? c - 'A' + 10 : c - '0') & 0x0f) << 4)
+							| ((c1 >= 'A' ? c1 - 'A' + 10 : c1 - '0') & 0x0f);
+					}
+					else {
+						/* malformed quoted-printable sequence? */
+						*outptr++ = '=';
+					}
+				}
+				else {
+					/* truncated payload, maybe it was split across encoded-words? */
+					if (inptr < inend) {
+						if (isxdigit((int)*inptr)) {
+							saved = *inptr;
+							need = 1;
+							break;
+						}
+						else {
+							/* malformed quoted-printable sequence? */
+							*outptr++ = '=';
+						}
+					}
+					else {
+						saved = 0;
+						need = 2;
+						break;
+					}
+				}
+			}
+			else if (c == '_') {
+				/* _'s are an rfc2047 shortcut for encoding spaces */
+				*outptr++ = ' ';
+			}
+			else {
+				*outptr++ = c;
+			}
+		}
+
+		*state = need;
+		*save = saved;
+
+		return (size_t)(outptr - out);
+	}
+}
+
+int test_enc()
+{
+	//char *word = "=?UTF-8?Q?St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
+	char *word = "St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
+	const unsigned char *in = (const unsigned char*)word;
+
+	guint32 save = 0;
+	int state = 0;
+	unsigned char buff[10000];
+	unsigned char *out = buff;
+	size_t len = strlen((char*)in);
+
+
+	size_t ret = quoted_decode(in, len, out, &state, &save);
+
+	return 1;
+}
+
+#endif

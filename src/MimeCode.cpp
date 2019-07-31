@@ -354,7 +354,42 @@ int CMimeCodeQP::Decode(unsigned char* pbOutput, int nMaxSize)
 	unsigned char* pbOutStart = pbOutput;
 	unsigned char* pbOutEnd = pbOutput + nMaxSize;
 
-	while (pbData < pbEnd)
+	if (m_bEncodedWord == false)
+	{
+		while (pbData < pbEnd)
+		{
+			if (pbOutput >= pbOutEnd)
+				break;
+
+			unsigned char ch = *pbData++;
+			if (ch == '=')
+			{
+				if (pbData + 2 > pbEnd)
+					break;				// invalid endcoding
+				ch = *pbData++;
+				//if (CMimeChar::IsHexDigit(toupper(ch)) && !CMimeChar::IsHexDigit(ch))
+					//int deb = 1;
+				// Mime protocol says as below but Thunderbird relax the rule to if (CMimeChar::IsHexDigit(toupper(ch)))
+				if (CMimeChar::IsHexDigit(ch))
+				{
+					ch -= ch > '9' ? 0x37 : '0';
+					*pbOutput = ch << 4;
+					ch = *pbData++;
+					ch -= ch > '9' ? 0x37 : '0';
+					*pbOutput++ |= ch & 0x0f;
+				}
+				else if (ch == '\r' && *pbData == '\n')
+					pbData++;			// Soft Line Break, eat it
+				else if (ch == '\n')
+					int deb = 1; // Soft Line Break
+				else					// invalid endcoding, let it go
+					*pbOutput++ = ch;
+			}
+			else// if (ch != '\r' && ch != '\n')
+				*pbOutput++ = ch;
+		}
+	}
+	else while (pbData < pbEnd)
 	{
 		if (pbOutput >= pbOutEnd)
 			break;
@@ -362,10 +397,10 @@ int CMimeCodeQP::Decode(unsigned char* pbOutput, int nMaxSize)
 		unsigned char ch = *pbData++;
 		if (ch == '=')
 		{
-			if (pbData+2 > pbEnd)
+			if (pbData + 2 > pbEnd)
 				break;				// invalid endcoding
 			ch = *pbData++;
-			if (CMimeChar::IsHexDigit(ch))
+			if (CMimeChar::IsHexDigit(toupper(ch)))
 			{
 				ch -= ch > '9' ? 0x37 : '0';
 				*pbOutput = ch << 4;
@@ -379,6 +414,10 @@ int CMimeCodeQP::Decode(unsigned char* pbOutput, int nMaxSize)
 				int deb = 1; // Soft Line Break
 			else					// invalid endcoding, let it go
 				*pbOutput++ = ch;
+		}
+		else if (ch == '_')
+		{
+			*pbOutput++ = ' ';
 		}
 		else// if (ch != '\r' && ch != '\n')
 			*pbOutput++ = ch;
@@ -533,6 +572,7 @@ int CMimeEncodedWord::GetEncodeLength() const
 		CMimeCodeQP qp;
 		qp.SetInput((const char*)m_pbInput, m_nInputSize, true);
 		qp.QuoteLineBreak(false);
+		qp.SetEncodedWord(true);
 		nLength = qp.GetOutputLength();
 	}
 
@@ -595,6 +635,7 @@ int CMimeEncodedWord::Decode(unsigned char* pbOutput, int nMaxSize)
 		{
 			CMimeCodeQP qp;
 			qp.SetInput(pszHeaderEnd, nCodeLen, false);
+			qp.SetEncodedWord(true);
 			nDecoded = qp.GetOutput(pbOutput, nMaxSize);
 		}
 		else

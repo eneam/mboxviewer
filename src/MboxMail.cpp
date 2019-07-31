@@ -21,6 +21,8 @@ int MboxMail::m_nextGroupId = 0;
 
 SimpleString* MboxMail::m_outbuf = new SimpleString(10000);
 SimpleString* MboxMail::m_inbuf = new SimpleString(10000);
+SimpleString* MboxMail::m_outdata = new SimpleString(10000);
+SimpleString* MboxMail::m_indata = new SimpleString(10000);
 SimpleString* MboxMail::m_workbuf = new SimpleString(10000);
 SimpleString* MboxMail::m_tmpbuf = new SimpleString(10000);
 
@@ -1854,11 +1856,20 @@ int GetParamValue(CString &fieldLine, int startPos, const char *param, int param
 	return 1;
 }
 
+char *strchar(char *beg, char *end, char c)
+{
+	while ((beg < end) && (*beg != c)) { beg++; };
+	if (beg < end)
+		return beg;
+	else
+		return 0;
+}
+
 char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength)
 {
 	// TODO: not very efficient; optimize
 	char *p;
-	for (p = any; p < (end - lowerlength) ; p++)
+	for (p = any; p <= (end - lowerlength) ; p++)
 	{
 		if (strncmpUpper2Lower(p, end, lower, lowerlength) == 0)
 			return p;
@@ -4404,6 +4415,9 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	if (progressBar && MboxMail::pCUPDUPData)
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
+	int cnt = lastMail - firstMail;
+	if (cnt <= 0)
+		cnt = 1;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
 		if (textType == 0) {
@@ -4431,6 +4445,20 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
 				int deb = 1;
 				break;
+			}
+
+			CString fileNum;
+			int nFileNum = (i + 1);
+			int stepSize = 100;
+			if (textType == 0)
+				stepSize = 1000;
+
+			if ((nFileNum % stepSize) == 0) {
+				if (textType == 0)
+					fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
+				else
+					fileNum.Format(_T("Printing mails to single HTML file ... %d of %d"), nFileNum, cnt);
+				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 			}
 		}
 	}
@@ -4682,8 +4710,8 @@ int MboxMail::DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, Si
 	MboxMail *m = MboxMail::s_mails[mailPosition];
 
 	// We are using global buffers so check and assert if we collide. 
-	SimpleString *inbuf = MboxMail::m_inbuf;
-	SimpleString *workbuf = MboxMail::m_workbuf;
+	SimpleString *inbuf = MboxMail::m_indata;
+	SimpleString *workbuf = MboxMail::m_outdata;
 	ASSERT(outbuf != inbuf);
 	ASSERT(outbuf != workbuf);
 
@@ -6120,6 +6148,8 @@ void MboxMail::ReleaseResources()
 	delete MboxMail::m_outbuf;
 	delete MboxMail::m_workbuf;
 	delete MboxMail::m_tmpbuf;
+	delete MboxMail::m_indata;
+	delete MboxMail::m_outdata;
 	delete MailBody::m_mpool;
 	delete m_pMessageIdTable;
 	delete m_pMboxMailTable;
@@ -7434,6 +7464,10 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 		}
 	}
 
+	int cnt = lastMail - firstMail;
+	if (cnt <= 0)
+		cnt = 0;
+
 	for (int i = firstMail; i <= lastMail; i++)
 	{
 		if (textType == 0)
@@ -7462,15 +7496,19 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 				curstep = newstep;
 			}
 
-#if 0
 			CString fileNum;
 			int nFileNum = (i + 1);
+			int stepSize = 100;
 			if (textType == 0)
-				fileNum.Format(_T("Printing mails to TEXT file ... %d"), nFileNum);
-			else
-				fileNum.Format(_T("Printing mails to HTML file ... %d"), nFileNum);
-			if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
-#endif
+				stepSize = 1000;
+
+			if ((nFileNum % stepSize) == 0) {
+				if (textType == 0)
+					fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
+				else
+					fileNum.Format(_T("Printing mails to single HTML file ... %d of %d"), nFileNum, cnt);
+				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
+			}
 		}
 	}
 
@@ -7571,9 +7609,9 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress((UINT_PTR)(newstep));
 				curstep = newstep;
 			}
-#if 0
+#if 1
 			int nFileNum = (j + 1);
-			if ((nFileNum % 10) == 0) {
+			if ((nFileNum % 100) == 0) {
 				if (textType == 0)
 					fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
 				else
@@ -7586,7 +7624,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	
 	newstep = 100;
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress((UINT_PTR)(newstep));
-#if 0
+#if 1
 	int nFileNum = cnt;
 	if (textType == 0)
 		fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
@@ -7841,6 +7879,7 @@ void ShowMemStatus()
 	TRACE(TEXT("There are %*I64d free  KB of extended memory.\n"),
 		WIDTH, statex.ullAvailExtendedVirtual / DIV);
 }
+
 
 
 

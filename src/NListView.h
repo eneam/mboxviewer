@@ -219,8 +219,6 @@ public:
 	int RefreshMailsOnUserSelectsMailListMark();
 	int VerifyMailsOnUserSelectsMailListMarkCounts();
 	//
-	int ExportMailGroupToSeparatePDF(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem);
-	int ExportMailGroupToSeparateHTML(int firstMail, int lastMail, BOOL multipleSelectedMails, int nItem);
 	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
 	int PrintMailRangeToSingleCSV_Thread(int iItem);
 	//
@@ -279,9 +277,27 @@ public:
 	////////////  HTML  END
 	//////////////////////////////////////////////////////
 	//
+		//
+	//////////////////////////////////////////////////////
+	////////////  TEXT
+	//////////////////////////////////////////////////////
+	//
+		// Selected to Separate TEXT
+	//int PrintMailSelectedToSeparateTEXT_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	//int PrintMailSelectedToSeparateTEXT_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+
+	// Selected to Single HTML
+	int PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	///
+
+	int CreateInlineImageCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	//int CreateInlineImageCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+
 
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
+	//static int DeleteAllHtmFiles(CString &targetFolder);
 	//
 	static int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath);
@@ -362,6 +378,14 @@ struct PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS
 typedef PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS PRINT_MAIL_GROUP_TO_SEPARATE_HTML_ARGS;
 
 struct WRITE_INDEX_FILE_ARGS
+{
+	CString cache;
+	CString errorText;
+	BOOL exitted;
+	int ret;
+};
+
+struct WRITE_IMAGE_FILE_ARGS
 {
 	CString cache;
 	CString errorText;

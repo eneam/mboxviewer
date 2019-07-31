@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.3
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added an option to create inline image cache on the fly to reduce initial startup time;
+ - Enhanced mail header field decoder according to RFC 2047 to resolve occasional text display issues;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.2
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

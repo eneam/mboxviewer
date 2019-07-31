@@ -145,6 +145,9 @@ CmboxviewApp::CmboxviewApp()
 
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
 	//SetNoOaCache();
+
+	//int test_enc();
+	//test_enc();
 }
 
 /////////////////////////////////////////////////////////////////////////////
