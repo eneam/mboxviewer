@@ -241,6 +241,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="README.txt" />
+    <Text Include="LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\print.bmp" />

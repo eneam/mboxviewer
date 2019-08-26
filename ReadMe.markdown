@@ -25,6 +25,11 @@ Features
 * support for setting Message Window position to Bottom, Right or Left;
 * ability to merge/concatenate multiple archive files and remove duplicate mails;
 
+License
+-----
+Mbox viewer is a free software. Most of it is licensed under GPLv2. Small pats are licenced under CPOL 1.02.
+See th LICENCE.txt file included in the distribution for further details. 
+
 Changes
 ---
 

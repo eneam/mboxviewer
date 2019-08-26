@@ -1,0 +1,16 @@
+
+The mbox viewer source code created by authors of the mbox viewer project is licensed under GPLv2 which permits free use of the code by individuals or organizations. 
+Small portion of the source code is from Code Project site and licensed under the Code Project Open License (CPOL) 1.02 which basically permits free use of the that code 
+but doesn't allow to use the code in limited cases such as for example the immoral usage.
+
+The mbox viewer executable doesn't link any non-free usage library and it can be freely used by individuals or organizations.
+
+Please check the below links for the detailed information on GPL and CPOL license terms.
+
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+https://www.codeproject.com/info/cpol10.aspx
+
+
+The mbox viewer software is provided "as-is". No claim of suitability, guarantee, or any warranty whatsoever is provided. 
+

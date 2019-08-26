@@ -530,6 +530,7 @@
     <None Include="src\xptheme.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="LICENSE.txt" />
     <Text Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
