@@ -17,7 +17,7 @@ Features
 * group all related mails as conversations in the summary window;
 * print related mails/mail group to Text or HTML or PDF or CSV files or send to PDF printer;
 * open a single or multiple selected mails or group of related mails in external browser;
-* sort emails by date, from, cc, bcc, subject and conversation columns;
+* sort emails by date, from, to, subject and conversation columns;
 * find user defined text in the message and highlight all occurrences;
 * search mails by user defined date range and text in the subject, sender, recepient, cc, bcc, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
@@ -27,8 +27,8 @@ Features
 
 License
 -----
-Mbox viewer is a free software. Most of it is licensed under GPLv2. Small pats are licenced under CPOL 1.02.
-See th LICENCE.txt file included in the distribution for further details. 
+Mbox viewer is a free software. Most of it is licensed under GPLv2. Small parts are licenced under CPOL 1.02.
+See the LICENCE.txt file included in the distribution for further details. 
 
 Changes
 ---
