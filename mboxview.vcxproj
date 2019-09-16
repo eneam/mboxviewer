@@ -345,6 +345,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\InputBox.cpp" />
     <ClCompile Include="src\LinkCursor.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -496,6 +497,7 @@
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
     <ClInclude Include="src\InitCommonControls.h" />
+    <ClInclude Include="src\InputBox.h" />
     <ClInclude Include="src\LinkCursor.h" />
     <ClInclude Include="src\MainFrm.h" />
     <ClInclude Include="src\MboxMail.h" />

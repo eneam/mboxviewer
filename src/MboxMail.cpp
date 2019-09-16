@@ -1400,6 +1400,7 @@ static myMap *cids = 0;
 void delete_charset2Id() 
 {
 	delete cids;
+	cids = 0;
 }
 
 UINT charset2Id(const char *char_set)
@@ -1456,6 +1457,7 @@ static myIdMap *ids = 0;
 void delete_id2charset() 
 {
 	delete ids;
+	ids = 0;
 }
 
 BOOL id2charset(UINT id, std::string &charset)
@@ -2081,6 +2083,7 @@ void MboxMail::Destroy()
 			s_mails_ref[i]->m_ContentDetailsArray[j] = 0;
 		}
 		delete s_mails_ref[i];
+		s_mails_ref[i] = 0;
 	}
 	// TODO:  CString is not most efficient class.
 	// Below will release memory, need to invent work around to keep memeory around
@@ -2165,6 +2168,7 @@ void MboxMail::clearMessageIdTable()
 	if (m_pMessageIdTable) {
 		for (it = m_pMessageIdTable->begin(); it != m_pMessageIdTable->end(); it++) {
 			delete it->first;
+			//it->first = 0;
 		}
 		m_pMessageIdTable->clear();
 	}
@@ -6145,14 +6149,23 @@ void MboxMail::ReleaseResources()
 	delete_charset2Id();
 	delete_id2charset();
 	delete MboxMail::m_inbuf;
+	MboxMail::m_inbuf = 0;
 	delete MboxMail::m_outbuf;
+	MboxMail::m_outbuf = 0;
 	delete MboxMail::m_workbuf;
+	MboxMail::m_workbuf = 0;
 	delete MboxMail::m_tmpbuf;
+	MboxMail::m_tmpbuf = 0;
 	delete MboxMail::m_indata;
+	MboxMail::m_indata = 0;
 	delete MboxMail::m_outdata;
+	MboxMail::m_outdata = 0;
 	delete MailBody::m_mpool;
+	MailBody::m_mpool = 0;
 	delete m_pMessageIdTable;
+	m_pMessageIdTable = 0;
 	delete m_pMboxMailTable;
+	m_pMboxMailTable = 0;
 }
 
 // search for string2 in string1 (strstr)
@@ -6825,7 +6838,7 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 		if (namePatternParams->m_bTime)
 			m_strDate = ltt.Format("%Y%m%d-%H%M%S");
 		else
-			m_strDate = ltt.Format("%H%M%S");
+			m_strDate = ltt.Format("%Y%m%d");
 		fileName.Append(m_strDate);
 
 		separatorNeeded = TRUE;
@@ -7082,6 +7095,7 @@ void MboxMail::clearMboxMailTable()
 	if (m_pMboxMailTable) {
 		for (it = m_pMboxMailTable->begin(); it != m_pMboxMailTable->end(); it++) {
 			delete it->first;
+			//it->first = 0;
 		}
 		m_pMboxMailTable->clear();
 	}

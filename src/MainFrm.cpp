@@ -243,8 +243,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	EnableAllMailLists(FALSE);
 
-
-
 	NListView *pListView = GetListView();
 	if (pListView) {
 		if (m_msgViewPosition == 1)
@@ -312,13 +310,16 @@ void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
 	// let the view have first crack at the command
-	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo)) {
+	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo)) 
+	{
 		// Hope all objects should be initialized by now
 		if (m_bSelectMailFileDone == FALSE) {
 			m_bSelectMailFileDone = TRUE;
 			NTreeView *pTreeView = GetTreeView();
 			if (pTreeView)
-				pTreeView->SelectMailFile();
+				pTreeView->StartTimer();
+			else
+				int deb = 1;
 		}
 		return TRUE;
 	}
@@ -2597,6 +2598,8 @@ void CMainFrame::OnClose()
 		if (answer == IDNO)
 			return;
 	}
+
+	MboxMail::ReleaseResources();
 
 	CFrameWnd::OnClose();
 }

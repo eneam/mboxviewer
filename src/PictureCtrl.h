@@ -66,6 +66,8 @@ protected:
 	Gdiplus::RotateFlipType DetermineNewOrientation(Gdiplus::Image &image);
 
 	void GetStringProperty(PROPID propid, Gdiplus::Image &image, CString &str);
+	BOOL GetIntProperty(PROPID propid, Gdiplus::Image &image, long &integer);
+
 	void GetPropertyEquipMake(Gdiplus::Image &image, CString &equipMake);
 	void GetPropertyEquipModel(Gdiplus::Image &image, CString &equipModel);
 	void GetPropertyDateTime(Gdiplus::Image &image, CString &imageDataTime);

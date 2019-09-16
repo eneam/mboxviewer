@@ -9,6 +9,7 @@
 #include "LinkCursor.h"
 
 #include "MainFrm.h"
+#include "MboxMail.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -429,7 +430,10 @@ BOOL CmboxviewApp::InitInstance()
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "mailFile", mailFile);
 	ParseCommandLine(cmdInfo);
 	if (cmdInfo.m_bError)
+	{
+		MboxMail::ReleaseResources();
 		return FALSE;
+	}
 	AfxEnableControlContainer();
 
 	// Standard initialization

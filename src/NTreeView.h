@@ -22,6 +22,11 @@ public:
 	DECLARE_DYNCREATE(NTreeView)
 	CWheelTreeCtrl	m_tree;
 	CMap<CString, LPCSTR, _int64, _int64>	fileSizes;
+	BOOL m_bSelectMailFileDone;
+	int m_timerTickCnt;
+	// timer
+	UINT_PTR m_nIDEvent;
+	UINT m_nElapse;
 
 // Attributes
 public:
@@ -46,6 +51,7 @@ public:
 	void UpdateFileSizesTable(CString &path, _int64 fSize);
 	virtual ~NTreeView();
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
+	void StartTimer();
 
 	// Generated message map functions
 protected:
@@ -61,6 +67,7 @@ protected:
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 public:
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
 
 /////////////////////////////////////////////////////////////////////////////

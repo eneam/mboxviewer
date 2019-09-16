@@ -417,10 +417,43 @@ void CPictureCtrl::GetStringProperty(PROPID propid, Gdiplus::Image &image, CStri
 		if (valueLength <= 0)
 			return;
 		LPCSTR buf = str.GetBuffer(valueLength);
+
 		memcpy((char*)buf, (LPCSTR)item->value, valueLength); // to porotect if not NULL terminated
 		str.ReleaseBuffer(valueLength);
 		int deb = 1;
 	}
+}
+
+BOOL CPictureCtrl::GetIntProperty(PROPID propid, Gdiplus::Image &image, long &integer)
+{
+	long data[128];
+	Gdiplus::PropertyItem* item = (Gdiplus::PropertyItem*)&data;
+
+	UINT propSize;
+	Gdiplus::GpStatus stst;
+
+	integer = 0;
+
+	propSize = image.GetPropertyItemSize(propid);
+	stst = Gdiplus::PropertyNotFound;
+	stst = image.GetPropertyItem(propid, propSize, item);
+
+	if (stst == Gdiplus::Status::Ok)
+	{
+		if (item->type == PropertyTagTypeByte)
+			integer = *((BYTE*)item->value);
+		else if (item->type == PropertyTagTypeShort)
+			integer = *((SHORT*)item->value);
+		else if (item->type == PropertyTagTypeLong)
+			integer = *((LONG*)item->value);
+		else
+			return FALSE;
+
+		int deb = 1;
+		return TRUE;
+	}
+	else
+		return FALSE;
 }
 
 void CPictureCtrl::GetPropertyEquipMake(Gdiplus::Image &image, CString &equipMake)

@@ -19,6 +19,10 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
 NTreeView::NTreeView()
 {
+	m_bSelectMailFileDone = FALSE;
+	m_timerTickCnt = 0;
+	m_nIDEvent = 1;
+	m_nElapse = 1;
 }
 
 NTreeView::~NTreeView()
@@ -38,6 +42,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE, OnSelchanged)
 	ON_NOTIFY(TVN_SELCHANGING, IDC_TREE, OnSelchanging)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE, OnRClick)  // Right Click Menu
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -265,6 +270,16 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		pListView->FillCtrl();
 		return;
 	}
+
+	HTREEITEM hItem = pNm->itemNew.hItem;
+	HTREEITEM hParent = m_tree.GetParentItem(hItem);
+
+	if (hParent != hRoot)
+	{
+		return;
+	}
+
+
 	CString str = m_tree.GetItemText(pNm->itemNew.hItem);
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if( str.IsEmpty() || path.IsEmpty() )
@@ -363,9 +378,9 @@ void NTreeView::SelectMailFile()
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
 	}
 	else {
-		pListView->m_which = NULL;
-		pListView->ResetSize();
-		pListView->FillCtrl();
+		HTREEITEM hItem = NTreeView::FindItem(0, str);
+		UINT nCode = TVGN_CARET;
+		BOOL retval = m_tree.Select(hItem, nCode);
 	}
 }
 
@@ -609,6 +624,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_Reload_Id = 13;
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
+	const UINT M_CreateFolder_Id = 14;
+	// AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -745,6 +763,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
+	case M_CreateFolder_Id: {
+		CString txt = _T("Do you want to create new folder?");
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+			m_tree.InsertItem(_T("Pittsburgh"), hItem, TVI_SORT);
+	}
+	break;
+
 	default: {
 		int deb = 1;
 	}
@@ -782,6 +809,9 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 HTREEITEM NTreeView::FindItem(HTREEITEM hItem, CString &mailFileName)
 {
 	CString path;
+	if (hItem == 0)
+		hItem = m_tree.GetRootItem();
+
 	while (hItem != NULL)
 	{
 		path = m_tree.GetItemText(hItem);
@@ -799,4 +829,25 @@ HTREEITEM NTreeView::FindItem(HTREEITEM hItem, CString &mailFileName)
 	return 0;
 }
 
+void NTreeView::StartTimer()
+{
+	SetTimer(m_nIDEvent, m_nElapse, NULL);
+}
 
+
+void NTreeView::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if (m_timerTickCnt == 0)
+		SelectMailFile();  // will trigger NTreeView::OnSelchanged
+	m_timerTickCnt++;
+
+	// Need just one shot timer
+	// Is killing timer from the timer callback ok ? Seem to work -:)
+	// May need to move to FillCtrl() to be safe
+	KillTimer(nIDEvent);
+
+	// But dont send msg after KillTimer
+	//CWnd::OnTimer(nIDEvent);
+}

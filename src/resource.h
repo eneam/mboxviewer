@@ -21,6 +21,7 @@
 #define IDD_FIND_IN_MAIL                180
 #define IDD_EDITOR                      194
 #define IDD_PRINT_DLG                   195
+#define IDD_INPUT_BOX_DLG               201
 #define IDS_DESC_TITLE                  202
 #define IDS_TITLE_SUBJECT               202
 #define IDS_DESC_TITLE1                 203
@@ -203,6 +204,8 @@
 #define IDC_EXPORT_BCC                  1183
 #define IDC_CHECK2                      1184
 #define IDC_CHECK_CC                    1184
+#define IDC_INPUT_LABEL                 1186
+#define IDC_LIST2                       1187
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -243,9 +246,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        201
+#define _APS_NEXT_RESOURCE_VALUE        203
 #define _APS_NEXT_COMMAND_VALUE         32888
-#define _APS_NEXT_CONTROL_VALUE         1185
+#define _APS_NEXT_CONTROL_VALUE         1188
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
