@@ -906,6 +906,7 @@ void MboxMail::Parse(LPCSTR path)
 	_int64 aligned_offset = 0;
 	_int64 delta = 0;
 
+	// TODO:  Need to consider to redo reading and create  Character Stream for reading
 	_int64 lastStartOffset = 0;
 	while  ((lastView == false) && !pCUPDUPData->ShouldTerminate()) 
 	{

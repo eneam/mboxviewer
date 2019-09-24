@@ -423,7 +423,7 @@ void CMainFrame::OnFileOpen()
 	int paneId = 0;
 	CString sText;
 	sText.Format("Opening new folder with mails ...");
-	SetStatusBarPaneText(paneId, sText);
+	SetStatusBarPaneText(paneId, sText, TRUE);
 
 	if (m_bEnhancedSelectFolderDlg == FALSE)
 	{
@@ -477,7 +477,7 @@ void CMainFrame::OnFileOpen()
 #endif
 
 	sText.Format("Ready");
-	SetStatusBarPaneText(paneId, sText);
+	SetStatusBarPaneText(paneId, sText, FALSE);
 }
 
 void CMainFrame::DoOpen(CString& path) 
@@ -2604,13 +2604,56 @@ void CMainFrame::OnClose()
 	CFrameWnd::OnClose();
 }
 
-void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText)
+void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 {
-	//f (m_wndStatusBar.)
+	// Implements synchrous Set Text capability to make sure Text is set and 
+	// visible before long function is called (such as sort column)
+	// Command UI may not work in this case. TODO: verify
 	if (this->GetSafeHwnd())
 	{
 		if (m_wndStatusBar.GetSafeHwnd())
-			m_wndStatusBar.SetPaneText(paneId, sText);
+		{
+			if (setColor == FALSE) 
+			{
+				m_wndStatusBar.GetStatusBarCtrl().SetText(sText, paneId, 0);
+			}
+			else
+			{
+				// Is below a hack ?, not sure -:) seems to work
+				CClientDC dc(&m_wndStatusBar);
+
+				CRect r;
+				m_wndStatusBar.GetItemRect(0, &r);
+
+				COLORREF bgRet;
+				bgRet = dc.SetBkColor(::GetSysColor(COLOR_3DFACE));
+
+				COLORREF newBgCol = dc.GetBkColor();
+				dc.FillSolidRect(r, newBgCol);
+
+				r.DeflateRect(4, 1);
+
+				COLORREF bgColo = dc.GetBkColor();
+				COLORREF txtColo = dc.GetTextColor();
+				CFont *curFont = dc.GetCurrentFont();
+				CFont newFont;
+				newFont.CreatePointFont(85, _T("Tahoma"));
+
+				COLORREF crRet = 0;
+				if (setColor)
+					crRet = dc.SetTextColor(RGB(0, 0, 200));
+
+				// Set new font
+				CFont  *pOldFont = dc.SelectObject(&newFont);
+
+				UINT nFormat = DT_EXTERNALLEADING | DT_SINGLELINE | DT_VCENTER;
+				int retVal = dc.DrawText(sText, &r, nFormat);
+
+				// Restore oldFont
+				if (pOldFont) CFont *pRetFornt = dc.SelectObject(pOldFont);
+			}
+			int deb = 1;
+		}
 	}
 	return;
 }

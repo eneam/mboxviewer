@@ -1084,7 +1084,7 @@ void NListView::SortByColumn(int colNumber, BOOL sortByPosition) // use sortByPo
 			colStr = "Size";
 
 		sText.Format("Sorting by %s ...", colStr);
-		pFrame->SetStatusBarPaneText(paneId, sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
 	m_bInFind = true;
@@ -1182,7 +1182,7 @@ void NListView::SortByColumn(int colNumber, BOOL sortByPosition) // use sortByPo
 		int paneId = 0;
 		CString sText;
 		sText.Format("Ready");
-		pFrame->SetStatusBarPaneText(paneId, sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 }
 
@@ -1224,7 +1224,7 @@ void NListView::RefreshSortByColumn()
 			colStr = "Size";
 
 		sText.Format("Sorting by %s ...", colStr);
-		pFrame->SetStatusBarPaneText(paneId, sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
 	switch (colNumber) {
@@ -1282,7 +1282,7 @@ void NListView::RefreshSortByColumn()
 		int paneId = 0;
 		CString sText;
 		sText.Format("Ready");
-		pFrame->SetStatusBarPaneText(paneId, sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 }
 
@@ -3106,12 +3106,14 @@ void NListView::SelectItem(int iItem)
 		//ClearDescView();
 		return;
 	}
-
+#if 0
+	// Already set for ID_INDICATOR_MAIL
 	if (pFrame) {
 		CString sText = _T("Mail Retrieval In Progress ...");
-		int paneId = 1;
-		pFrame->SetStatusBarPaneText(paneId, sText);
+		int paneId = 0;
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
+#endif
 
 	m_lastSel = iItem;
 	// Erase any files previously saved

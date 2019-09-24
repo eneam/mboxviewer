@@ -291,7 +291,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	int paneId = 0;
 	CString sText;
 	sText.Format("Opening %s ...", str);
-	pFrame->SetStatusBarPaneText(paneId, sText);
+	pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	pListView->FillCtrl();
 	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
@@ -299,7 +299,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pFrame->UpdateFilePrintconfig();
 
 	sText.Format("Ready");
-	pFrame->SetStatusBarPaneText(paneId, sText);
+	pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
 	ShowMemStatus();
 }

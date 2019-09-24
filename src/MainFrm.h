@@ -117,7 +117,7 @@ public:
 	INT_PTR SelectFolder(CString &folder);
 	static int CountMailFilesInFolder(CString &folder, CString &extension);
 
-	void SetStatusBarPaneText(int paneId, CString &sText);
+	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);
 	void SortByColumn(int column);
 
 #ifdef _DEBUG

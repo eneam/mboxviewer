@@ -148,6 +148,14 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		pMsgView->FindStringInIHTMLDocument(pListView->m_searchString, pListView->m_bWholeWord, pListView->m_bCaseSens);
 	}
 	pListView->m_bHighlightAllSet = FALSE;
+#if 0
+	// Already set by Command UI in void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
+	if (pFrame) {
+		CString sText = _T("Ready");
+		int paneId = 0;
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	}
+#endif
 }
 
 #include <atlconv.h>
@@ -181,6 +189,7 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		*Cancel = FALSE;
 
 #if 1
+	// Open link clicked by a user in the external browser
 	// TODO: Best effort. Microsoft recommded solution not clear.
 	// May need to intercept mouse click, update doc to attach action events to all links ?
 	if (strURL.CompareNoCase("about:blank") && !_PathFileExist(strURL)) {
