@@ -25,6 +25,7 @@ SimpleString* MboxMail::m_outdata = new SimpleString(10000);
 SimpleString* MboxMail::m_indata = new SimpleString(10000);
 SimpleString* MboxMail::m_workbuf = new SimpleString(10000);
 SimpleString* MboxMail::m_tmpbuf = new SimpleString(10000);
+SimpleString* MboxMail::m_largebuf = new SimpleString(10000);
 
 int MboxMail::m_Html2TextCount = 0;
 
@@ -2616,6 +2617,13 @@ int MboxMail::exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile 
 		separatorNeeded = true;
 	}
 
+	if (csvConfig.m_bAttachmentNames) {
+		if (separatorNeeded)
+			colLabels += csvConfig.m_separator;
+		colLabels += "AttachmentNames";
+		separatorNeeded = true;
+	}
+
 	if (csvConfig.m_bContent) {
 		if (separatorNeeded)
 			colLabels += csvConfig.m_separator;
@@ -2652,8 +2660,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	CString colLabels;
 	CString separator;
 	bool separatorNeeded;
-
-	char buff[10000];
+#define BUFFLEN 10000
+	char *buff = 0;
 	char *token = 0;
 	char *seppos;
 	char *atpos;
@@ -2796,6 +2804,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bTo)
 	{
 		int tolen = m->m_to.GetLength();
+		if ((tolen*1.5) > MboxMail::m_largebuf->Capacity()) 
+		{
+			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
+		}
+		buff = MboxMail::m_largebuf->Data();
 		memcpy(buff, m->m_to, tolen);
 		buff[tolen] = 0;
 
@@ -2805,6 +2818,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			outbuf.Append(sepchar);
 
 		outbuf.Append('"');
+
+		int begCount = outbuf.Count();
 
 		token = buff;
 		atpos = _tcschr(token, '@');
@@ -2852,6 +2867,9 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 			if (atpos)
 				outbuf.Append(sepchar);
+
+			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
+				break;
 		}
 		outbuf.Append('"');
 
@@ -2892,6 +2910,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bCC)
 	{
 		int tolen = m->m_cc.GetLength();
+		if ((tolen*1.5) > MboxMail::m_largebuf->Capacity())
+		{
+			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
+		}
+		buff = MboxMail::m_largebuf->Data();
 		memcpy(buff, m->m_cc, tolen);
 		buff[tolen] = 0;
 
@@ -2902,6 +2925,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		outbuf.Append('"');
 
+		int begCount = outbuf.Count();
+
 		token = buff;
 		atpos = _tcschr(token, '@');
 		while (atpos != 0)
@@ -2948,6 +2973,9 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 			if (atpos)
 				outbuf.Append(sepchar);
+
+			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
+				break;
 		}
 		outbuf.Append('"');
 
@@ -2957,6 +2985,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bBCC)
 	{
 		int tolen = m->m_bcc.GetLength();
+		if ((tolen*1.5) > MboxMail::m_largebuf->Capacity())
+		{
+			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
+		}
+		buff = MboxMail::m_largebuf->Data();
 		memcpy(buff, m->m_bcc, tolen);
 		buff[tolen] = 0;
 
@@ -2967,6 +3000,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		outbuf.Append('"');
 
+		int begCount = outbuf.Count();
+
 		token = buff;
 		atpos = _tcschr(token, '@');
 		while (atpos != 0)
@@ -3013,8 +3048,21 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 			if (atpos)
 				outbuf.Append(sepchar);
+
+			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
+				break;
 		}
 		outbuf.Append('"');
+
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bAttachmentNames)
+	{
+		if (separatorNeeded)
+			outbuf.Append(sepchar);
+
+		NListView::PrintAttachmentNames(m, &outbuf);
 
 		separatorNeeded = true;
 	}
@@ -3349,11 +3397,11 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 					lineLimit = _ttoi(csvConfig.m_MessageLimitString);
 
 				if (lineLimit > 0) {
-					NMsgView::MergeWhiteLines(outbuf, lineLimit);
+					NMsgView::MergeWhiteLines(inbuf, lineLimit);
 				}
 
 				EnforceCharacterLimit(outbuf, csvConfig.m_MessageLimitCharsString);
-				fp.Write(outbuf->Data(), outbuf->Count());
+				fp.Write(inbuf->Data(), inbuf->Count());
 			}
 		}
 
@@ -4569,6 +4617,12 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	{
 		int i;
 		int cnt = selectedMailIndexList->GetCount();
+
+		double delta = (double)(cnt);
+		if (delta <= 0) delta = 1;
+		double step = delta / 100;
+		double curstep = 1;
+
 		for (int j = 0; j < cnt; j++)
 		{
 			i = (*selectedMailIndexList)[j];
@@ -4692,10 +4746,11 @@ int MboxMail::charCount(char *fld, char c)
 int MboxMail::escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar)
 {
 	int outcnt = 0;
+	char c;
 	for (int i = 0; i < fldlen; i++)
 	{
-		
-		if (fldstr[i] == sepchar) {
+		c = fldstr[i];
+		if (c == sepchar) {
 			workbuff[outcnt++] = sepchar;
 			workbuff[outcnt++] = sepchar;
 		}
@@ -5198,7 +5253,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 
 	exportHeaderFieldLabelsToCSVFile(csvConfig, fp);
 
-	char buff[10000];
+	char buff[10000];  // TODO:
 	char *token = 0;
 	char *seppos;
 	char *atpos;
@@ -6157,6 +6212,8 @@ void MboxMail::ReleaseResources()
 	MboxMail::m_workbuf = 0;
 	delete MboxMail::m_tmpbuf;
 	MboxMail::m_tmpbuf = 0;
+	delete MboxMail::m_largebuf;
+	MboxMail::m_largebuf = 0;
 	delete MboxMail::m_indata;
 	MboxMail::m_indata = 0;
 	delete MboxMail::m_outdata;

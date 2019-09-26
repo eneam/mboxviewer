@@ -204,6 +204,7 @@
 #define IDC_EXPORT_BCC                  1183
 #define IDC_CHECK2                      1184
 #define IDC_CHECK_CC                    1184
+#define IDC_EXPORT_ATTACHMENT_NAMES     1184
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
 #define ID_VIEW_TOOLBARS                32771

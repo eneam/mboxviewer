@@ -344,6 +344,7 @@ public:
 	static SimpleString *m_indata;
 	static SimpleString *m_workbuf;
 	static SimpleString *m_tmpbuf;
+	static SimpleString *m_largebuf;
 
 	static int m_Html2TextCount;
 

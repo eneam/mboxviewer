@@ -21,8 +21,8 @@ Features
 * find user defined text in the message and highlight all occurrences;
 * search mails by user defined date range and text in the subject, sender, recepient, cc, bcc, message text and text attachments; 
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
-* support for composing mail list from single or multiple search results and archiving if desired;
-* support for setting Message Window position to Bottom, Right or Left;
+* ability to compose mail list from single or multiple search results and archiving if desired;
+* ability to set Message Window position to Bottom, Right or Left;
 * ability to merge/concatenate multiple archive files and remove duplicate mails;
 
 License
@@ -32,6 +32,16 @@ See the LICENCE.txt file included in the distribution for further details.
 
 Changes
 ---
+
+v 1.0.3.4
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added LICENSE.txt file;
+ - Enhanced handling of MAIL_FILE command line option;
+ - Fixed printing of Message Text column in the CSV file for emails with Html TEXT block only and no plain TEXT block;
+ - Fixed crash due to very large to, cc, bcc header fields greater than 10000 characters when printing to CSV file;
+ - Added new column to CSV file to export Attachment Names;
+ - Updated User Manual to describe new and updated features;
 
 v 1.0.3.3
 

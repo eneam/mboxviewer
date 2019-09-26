@@ -25,6 +25,7 @@ public:
 	BOOL m_bCC;
 	BOOL m_bBCC;
 	BOOL m_bContent;
+	BOOL m_bAttachmentNames;
 	CString m_MessageLimitString;
 	CString m_MessageLimitCharsString;
 	int m_dateFormat;

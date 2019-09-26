@@ -222,6 +222,8 @@ public:
 	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
 	int PrintMailRangeToSingleCSV_Thread(int iItem);
 	//
+	static int PrintAttachmentNames(MboxMail *m, SimpleString *outbuf);
+	//
 	//////////////////////////////////////////////////////
 	////////////  PDF
 	//////////////////////////////////////////////////////

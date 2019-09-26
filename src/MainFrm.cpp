@@ -559,6 +559,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 	d.m_bCC = m_csvConfig.m_bCC;
 	d.m_bBCC = m_csvConfig.m_bBCC;
 	d.m_bContent = m_csvConfig.m_bContent;
+	d.m_bAttachmentNames = m_csvConfig.m_bAttachmentNames;
 	d.m_dateFormat = m_csvConfig.m_dateFormat;
 	d.m_bGMTTime = m_csvConfig.m_bGMTTime;
 	d.m_MessageLimitString = m_csvConfig.m_MessageLimitString;
@@ -576,6 +577,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		m_csvConfig.m_bCC = d.m_bCC;
 		m_csvConfig.m_bBCC = d.m_bBCC;
 		m_csvConfig.m_bContent = d.m_bContent;
+		m_csvConfig.m_bAttachmentNames = d.m_bAttachmentNames;
 		m_csvConfig.m_dateFormat = d.m_dateFormat;
 		m_csvConfig.m_bGMTTime = d.m_bGMTTime;
 		m_csvConfig.m_MessageLimitString = d.m_MessageLimitString;
@@ -1124,8 +1126,19 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 		strPage.Format("%s", _T("Mail Retrieval Complete"));
 	else
 		strPage.Format("%s", _T("Mail Retrieval In Progress ..."));
-
+#if 0
+	// Doesn't always work
 	pCmdUI->SetText(strPage);
+#else
+	CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+	if (pFrame)
+	{
+		if (pFrame) {
+			int paneId = 1;
+			pFrame->SetStatusBarPaneText(paneId, strPage, FALSE);
+		}
+	}
+#endif
 }
 
 
@@ -2444,6 +2457,8 @@ void CSVFILE_CONFIG::SetDflts()
 	m_bCC = FALSE;
 	m_bBCC = FALSE;
 	m_bContent = FALSE;
+	m_bAttachmentNames = FALSE;
+	//m_bAttachmentNames = TRUE;
 	//m_MessageLimitString;
 	m_MessageLimitCharsString.Append("32500");
 	m_dateFormat = 0;
@@ -2467,6 +2482,7 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 	m_bCC = src.m_bCC;
 	m_bBCC = src.m_bBCC;
 	m_bContent = src.m_bContent;
+	m_bAttachmentNames = src.m_bAttachmentNames;
 	m_dateFormat = src.m_dateFormat;
 	m_bGMTTime = src.m_bGMTTime;
 	m_MessageLimitString = src.m_MessageLimitString;

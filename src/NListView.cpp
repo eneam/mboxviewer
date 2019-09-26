@@ -3106,12 +3106,12 @@ void NListView::SelectItem(int iItem)
 		//ClearDescView();
 		return;
 	}
-#if 0
+#if 1
 	// Already set for ID_INDICATOR_MAIL
 	if (pFrame) {
 		CString sText = _T("Mail Retrieval In Progress ...");
-		int paneId = 0;
-		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+		int paneId = 1;
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 #endif
 
@@ -4758,6 +4758,7 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 		if (m_hMailFile == INVALID_HANDLE_VALUE) {
 			DWORD err = GetLastError();
 			TRACE(_T("(SetFileMapView)CreateFile failed: INVALID_HANDLE_VALUE error= %ld\n"), err);
+			CloseMailFile();
 			m_bMappingError = TRUE;
 			return FALSE;
 		}
@@ -4769,6 +4770,7 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 			m_hMailFile = INVALID_HANDLE_VALUE;
 			TRACE(_T("(SetFileMapView)GetFileSizeEx: Mail file size too small= %lld\n"), m_MailFileSize);
 			m_MailFileSize = 0;
+			CloseMailFile();
 			m_bMappingError = TRUE;
 			return FALSE;
 		}
@@ -4780,6 +4782,7 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 			m_hMailFile = INVALID_HANDLE_VALUE;
 			DWORD err = GetLastError();
 			TRACE(_T("(SetFileMapView)CreateFileMapping failed: INVALID_HANDLE_VALUE error= %ld\n"), err);
+			CloseMailFile();
 			m_bMappingError = TRUE;
 			return FALSE;
 		}
@@ -4872,12 +4875,15 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 
 void NListView::CloseMailFile()
 {
+	BOOL unmapRet = TRUE;
+	BOOL closeMailFileMapHandle = TRUE;
+	BOOL closeMailFileHandle = TRUE;
 	if (m_pMapViewBegin) 
-		UnmapViewOfFile(m_pMapViewBegin);
+		unmapRet = UnmapViewOfFile(m_pMapViewBegin);
 	if (m_hMailFileMap != INVALID_HANDLE_VALUE)
-		CloseHandle(m_hMailFileMap);
+		closeMailFileMapHandle = CloseHandle(m_hMailFileMap);
 	if (m_hMailFile != INVALID_HANDLE_VALUE)
-		CloseHandle(m_hMailFile);
+		closeMailFileHandle = CloseHandle(m_hMailFile);
 
 	ResetFileMapView();
 }
@@ -10724,6 +10730,67 @@ int NListView::PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selecte
 	textConfig.m_nCodePageId = CP_UTF8;
 
 	int ret = MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(textConfig, textFileName, selectedMailIndexList, textType, errorText);
+
+	return 1;
+}
+
+int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
+{
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	SimpleString tmpbuf(1024, 256);
+	SimpleString tmpbuf2(1024, 256);
+
+	MailBodyContent *body;
+
+	CString contentTypeExtension;
+	CString contentTypeMain;
+
+	outbuf->Append('"');
+
+	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+	{
+		body = m->m_ContentDetailsArray[j];
+
+		contentTypeExtension.Empty();
+		contentTypeMain.Empty();
+
+		int pos = body->m_contentType.ReverseFind('/');
+		if (pos > 0)
+		{
+			contentTypeExtension = body->m_contentType.Mid(pos + 1);
+			contentTypeMain = body->m_contentType.Left(pos);
+		}
+
+		if (!body->m_attachmentName.IsEmpty())
+		{
+			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0))
+			{
+				int namelen = body->m_attachmentName.GetLength();
+
+				tmpbuf2.ClearAndResize(3 * namelen);
+
+				tmpbuf2.Append('"');
+				tmpbuf2.Append((LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength());
+				tmpbuf2.Append('"');
+				tmpbuf2.Append(' ');
+
+				tmpbuf.ClearAndResize(2 * tmpbuf.Count());
+				int ret_addrlen = MboxMail::escapeSeparators(tmpbuf.Data(), tmpbuf2.Data(), tmpbuf2.Count(), '"');
+				tmpbuf.SetCount(ret_addrlen);
+
+				outbuf->Append(tmpbuf);
+			}
+		}
+
+		//if ((contentTypeMain.CompareNoCase("image") == 0) || (body->m_contentDisposition.CompareNoCase("inline") == 0))
+	}
+
+	outbuf->Append('"');
 
 	return 1;
 }
