@@ -10,6 +10,7 @@ v 1.0.3.4
  - Fixed printing of Message Text column in the CSV file for emails with Html TEXT block only and no plain TEXT block;
  - Fixed crash due to very large to, cc, bcc header fields greater than 10000 characters when printing to CSV file;
  - Added new column to CSV file to export Attachment Names;
+ - Resolved Date format in the filename when printing to PDF file;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.3

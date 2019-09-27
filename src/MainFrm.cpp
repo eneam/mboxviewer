@@ -2639,7 +2639,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				CClientDC dc(&m_wndStatusBar);
 
 				CRect r;
-				m_wndStatusBar.GetItemRect(0, &r);
+				m_wndStatusBar.GetItemRect(paneId, &r);
 
 				COLORREF bgRet;
 				bgRet = dc.SetBkColor(::GetSysColor(COLOR_3DFACE));
