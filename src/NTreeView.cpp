@@ -301,6 +301,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	sText.Format("Ready");
 	pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
+	MboxMail::ShowHint(HintConfig::MsgWindowPlacementHint);
+
 	ShowMemStatus();
 }
 
@@ -625,7 +627,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
 	const UINT M_CreateFolder_Id = 14;
-	// AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
+	//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -710,6 +712,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_PDF_Id: {
 		if (pFrame) 
 		{
+			MboxMail::ShowHint(HintConfig::PrintToPDFHint);
 			pFrame->PrintMailArchiveToPDF();
 		}
 		int deb = 1;
@@ -769,6 +772,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 			m_tree.InsertItem(_T("Pittsburgh"), hItem, TVI_SORT);
+
+		CString fileDirPath;
+		BOOL ret = CPathGetPath(MboxMail::s_path, fileDirPath);
+		fileDirPath += "\\Folders";
+		FindAllDirs(fileDirPath);
+		int deb = 1;
 	}
 	break;
 
@@ -850,4 +859,39 @@ void NTreeView::OnTimer(UINT_PTR nIDEvent)
 
 	// But dont send msg after KillTimer
 	//CWnd::OnTimer(nIDEvent);
+}
+
+
+void NTreeView::FindAllDirs(LPCTSTR pstr)
+{
+	CFileFind finder;
+
+	// build a string with wildcards
+	CString strWildcard(pstr);
+	strWildcard += _T("\\*.*");
+
+	// start working for files
+	BOOL bWorking = finder.FindFile(strWildcard);
+
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+
+		// skip . and .. files; otherwise, we'd
+		// recur infinitely!
+
+		if (finder.IsDots())
+			continue;
+
+		// if it's a directory, recursively search it
+
+		if (finder.IsDirectory())
+		{
+			CString str = finder.GetFilePath();
+			TRACE("%s\n", (LPCTSTR)str);
+			NTreeView::FindAllDirs(str);
+		}
+	}
+
+	finder.Close();
 }

@@ -40,6 +40,31 @@ public:
 
 typedef MyMailArray MailArray;
 
+class HintConfig
+{
+public:
+	HintConfig();
+	~HintConfig();
+
+	DWORD m_nHintBitmap;
+
+	void LoadHintBitmap();
+	void SaveToRegistry();
+
+	BOOL IsHintSet(int nintNumber);
+	void ClearHint(int nintNumber);
+
+	enum {
+		GeneralUsageHint = 1,
+		MsgWindowPlacementHint = 2,
+		PrintToPDFHint = 3,
+		PrintToPrinterHint = 4,
+		MailSelectionHint = 5,
+		FindDialogHint,
+		AdvancedFindDialogHint
+	};
+};
+
 class MailList
 {
 public:
@@ -407,6 +432,7 @@ public:
 	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
 	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
 	static int EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit);
+	static int EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CString &characterLimit);
 	//
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
@@ -462,6 +488,11 @@ public:
 	
 	static void ReleaseResources();
 	static void assert_unexpected();
+
+
+	static HintConfig m_HintConfig;
+	static void ShowHint(BOOL hintNumber);
+	static void LoadHintBitmap();
 };
 
 #define SZBUFFSIZE 1024*1024*100

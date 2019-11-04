@@ -296,6 +296,8 @@ void CmboxviewApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
+
+	MboxMail::ShowHint(HintConfig::GeneralUsageHint);
 }
 
 
@@ -498,6 +500,8 @@ BOOL CmboxviewApp::InitInstance()
 			pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
 		}
 	}
+
+	MboxMail::LoadHintBitmap();
 	
 	return TRUE;
 }

@@ -84,6 +84,7 @@
 #define IDC_CHECK_ATTACHMENTS_A         1063
 #define IDC_EDIT_ATTACHMENT_CHECKED     1063
 #define IDC_FILTERDATES_A               1064
+#define IDC_EDIT_ATTACHMENT_NAME_CHECKED 1064
 #define IDC_PROGRESS_BAR_DELAY          1065
 #define IDC_SUBJ_ID                     1070
 #define IDC_FROM_ID                     1071
@@ -120,6 +121,7 @@
 #define IDC_MATCH_CASE5                 1089
 #define IDC_EDIT_ATTACHMENT_CASE        1089
 #define IDC_GROUP_EML                   1090
+#define IDC_EDIT_ATTACHMENT_NAME_CASE   1090
 #define IDC_GROUP_SET_IDS               1091
 #define IDC_GROUP_SHOW_CHARSETS         1092
 #define IDC_GROUP_FROM_TO_SUBJ          1093
@@ -165,7 +167,9 @@
 #define IDC_MATCH_WORD5                 1123
 #define IDC_EDIT_ATTACHMENT_WHOLE       1123
 #define IDC_REGULAR_EXPR5               1124
+#define IDC_EDIT_ATTACHMENT_NAME        1124
 #define IDC_SEARCH_BACKWARDS_A          1125
+#define IDC_EDIT_ATTACHMENT_NAME_WHOLE  1125
 #define IDC_MATCH_WORDS_ALL_A           1142
 #define IDC_EDIT_SET_ALL_WHOLE          1142
 #define IDC_MATCH_CASE_ALL_A            1143
@@ -205,8 +209,12 @@
 #define IDC_CHECK2                      1184
 #define IDC_CHECK_CC                    1184
 #define IDC_EXPORT_ATTACHMENT_NAMES     1184
+#define IDC_CHECK_NEGATE_FIND_CRITERIA  1184
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
+#define IDC_CHECK_ATTACHMENT_NAME       1188
+#define IDC_CHECK5                      1189
+#define IDC_CHECK_NEGATE_SEARCH_CRITERIA 1189
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -249,7 +257,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        203
 #define _APS_NEXT_COMMAND_VALUE         32888
-#define _APS_NEXT_CONTROL_VALUE         1188
+#define _APS_NEXT_CONTROL_VALUE         1190
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -206,6 +206,9 @@ BEGIN
     CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,171,77,10
     CONTROL         "CC",IDC_CHECK_CC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,74,19,10
     CONTROL         "BCC",IDC_CHECK_BCC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,194,74,25,10
+    CONTROL         "Attachment Name",IDC_CHECK_ATTACHMENT_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,78,92,73,10
+    CONTROL         "Find mails that don't match",IDC_CHECK_NEGATE_SEARCH_CRITERIA,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,171,99,10
 END
 
 IDD_OPTIONS DIALOGEX 0, 0, 167, 222
@@ -311,13 +314,13 @@ BEGIN
     PUSHBUTTON      "Open File",IDYES,383,66,56,14
 END
 
-IDD_FIND_ADVANCED DIALOGEX 0, 0, 359, 381
+IDD_FIND_ADVANCED DIALOGEX 0, 0, 359, 405
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find Advanced"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,234,355,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,297,355,50,14
+    DEFPUSHBUTTON   "OK",IDOK,234,378,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,297,378,50,14
     CONTROL         "From",IDC_EDIT_FROM_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,27,51,10
     EDITTEXT        IDC_EDIT_FROM,77,27,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_FROM_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,27,12,10
@@ -341,24 +344,24 @@ BEGIN
     EDITTEXT        IDC_EDIT_ATTACHMENT,77,151,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,151,12,10
     CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,151,19,10
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,306,100,15
-    LTEXT           "start date:",IDC_STATIC,64,309,32,8
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,325,100,15
-    LTEXT           "end date:",IDC_STATIC,65,328,31,8
-    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,293,50,10
-    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,355,76,10
-    CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,168,35,10
-    CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,168,35,10
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,332,100,15
+    LTEXT           "start date:",IDC_STATIC,64,335,32,8
+    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,351,100,15
+    LTEXT           "end date:",IDC_STATIC,65,354,31,8
+    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,319,50,10
+    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,381,76,10
+    CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,193,35,10
+    CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,193,35,10
     CONTROL         "  (From <-- --> To) and (Subject or Message or Attachments)",IDC_FILTER1,
-                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,16,249,318,10
-    GROUPBOX        "Select filter rule",IDC_STATIC,7,186,347,98
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,16,275,318,10
+    GROUPBOX        "Select filter rule",IDC_STATIC,7,212,347,98
     CONTROL         "  (From  --> To) and (Subject or Message or Attachments)",IDC_RADIO2,
-                    "Button",BS_AUTORADIOBUTTON,16,269,315,10
-    GROUPBOX        "Filter",IDC_STATIC,7,7,347,175
-    GROUPBOX        "",IDC_STATIC,7,285,347,64
-    LTEXT           "If some fields are not checked, for example From, then filter rule wil be reduced as follow:",IDC_STATIC,14,215,301,10
-    LTEXT           "<-- --> To and (Subject or Message or Attachments), i.e. ((Any -> Bob) or (Bob -> Any)) and ...",IDC_STATIC,21,228,333,8
-    LTEXT           "(From <-- --> To) attempts to match  (John->Bob) and (Bob->John) mails",IDC_STATIC,14,200,340,8
+                    "Button",BS_AUTORADIOBUTTON,16,295,315,10
+    GROUPBOX        "Filter",IDC_STATIC,7,7,347,203
+    GROUPBOX        "",IDC_STATIC,7,311,347,64
+    LTEXT           "If some fields are not checked, for example From, then filter rule wil be reduced as follow:",IDC_STATIC,14,241,301,10
+    LTEXT           "<-- --> To and (Subject or Message or Attachments), i.e. ((Any -> Bob) or (Bob -> Any)) and ...",IDC_STATIC,21,254,333,8
+    LTEXT           "(From <-- --> To) attempts to match  (John->Bob) and (Bob->John) mails",IDC_STATIC,14,226,340,8
     CONTROL         "CC",IDC_EDIT_CC_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,88,25,10
     EDITTEXT        IDC_EDIT_CC,77,88,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_CC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,88,22,10
@@ -367,7 +370,14 @@ BEGIN
     EDITTEXT        IDC_EDIT_BCC,77,109,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_BCC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,109,16,10
     CONTROL         "",IDC_EDIT_BCC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,109,16,10
-    PUSHBUTTON      "Reset All",IDC_EDIT_RESET,20,167,50,9
+    PUSHBUTTON      "Reset All",IDC_EDIT_RESET,20,192,50,9
+    CONTROL         "Attachment",IDC_EDIT_ATTACHMENT_NAME_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,171,51,10
+    EDITTEXT        IDC_EDIT_ATTACHMENT_NAME,77,171,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,241,171,12,10
+    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,281,171,19,10
+    LTEXT           "Name",IDC_STATIC,35,179,34,8
+    CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,98,381,110,10
 END
 
 IDD_FIND_IN_MAIL DIALOGEX 0, 0, 309, 45
@@ -453,7 +463,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,4
+ FILEVERSION 1,0,3,5
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -470,7 +480,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.4"
+            VALUE "FileVersion", "1.0.3.5"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -552,7 +562,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 354
         TOPMARGIN, 7
-        BOTTOMMARGIN, 374
+        BOTTOMMARGIN, 398
     END
 
     IDD_FIND_IN_MAIL, DIALOG

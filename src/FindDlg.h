@@ -30,8 +30,10 @@ struct CFindDlgParams
 	BOOL m_bCC;
 	BOOL m_bBCC;
 	BOOL m_bAttachments;
+	BOOL m_bAttachmentName;
 	BOOL m_bHighlightAll;
 	BOOL m_bFindAll;
+	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
 	void SetDflts();
 	void Copy(CFindDlgParams &src);

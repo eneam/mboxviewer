@@ -14,7 +14,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
-const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments"};
+const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments", "Attachment Name" };
 
 
 CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
@@ -38,6 +38,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EDIT_BCC_CHECKED, m_params.m_bEditChecked[4]);
 	DDX_Check(pDX, IDC_EDIT_MESSAGE_CHECKED, m_params.m_bEditChecked[5]);
 	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CHECKED, m_params.m_bEditChecked[6]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_NAME_CHECKED, m_params.m_bEditChecked[7]);
 
 	DDX_Text(pDX, IDC_EDIT_FROM, m_params.m_string[0]);
 	DDX_Text(pDX, IDC_EDIT_TO, m_params.m_string[1]);
@@ -46,6 +47,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_BCC, m_params.m_string[4]);
 	DDX_Text(pDX, IDC_EDIT_MESSAGE, m_params.m_string[5]);
 	DDX_Text(pDX, IDC_EDIT_ATTACHMENT, m_params.m_string[6]);
+	DDX_Text(pDX, IDC_EDIT_ATTACHMENT_NAME, m_params.m_string[7]);
 
 	DDX_Check(pDX, IDC_EDIT_FROM_WHOLE, m_params.m_bWholeWord[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_WHOLE, m_params.m_bWholeWord[1]);
@@ -54,6 +56,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EDIT_BCC_WHOLE, m_params.m_bWholeWord[4]);
 	DDX_Check(pDX, IDC_EDIT_MESSAGE_WHOLE, m_params.m_bWholeWord[5]);
 	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_WHOLE, m_params.m_bWholeWord[6]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_NAME_WHOLE, m_params.m_bWholeWord[7]);
 
 	DDX_Check(pDX, IDC_EDIT_FROM_CASE, m_params.m_bCaseSensitive[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_CASE, m_params.m_bCaseSensitive[1]);
@@ -62,6 +65,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EDIT_BCC_CASE, m_params.m_bCaseSensitive[4]);
 	DDX_Check(pDX, IDC_EDIT_MESSAGE_CASE, m_params.m_bCaseSensitive[5]);
 	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_CASE, m_params.m_bCaseSensitive[6]);
+	DDX_Check(pDX, IDC_EDIT_ATTACHMENT_NAME_CASE, m_params.m_bCaseSensitive[7]);
 	//}}AFX_DATA_MAP
 
 	DDX_Check(pDX, IDC_EDIT_SET_ALL_WHOLE, m_params.m_bSetAllWholeWords);
@@ -72,6 +76,8 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 
 	//DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
 	DDX_Radio(pDX, IDC_FILTER1, m_params.m_filterNumb);
+
+	DDX_Check(pDX, IDC_CHECK_NEGATE_FIND_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 
 	DDX_Check(pDX, IDC_FILTERDATES, m_params.m_filterDates);
 	if (pDX->m_bSaveAndValidate) {
@@ -101,12 +107,12 @@ void CFindAdvancedDlg::OnOK()
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
 
 	int i;
-	for (i = 0; i < 7; i++)
+	for (i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		if (m_params.m_bEditChecked[i] == TRUE)
 			break;
 	}
-	if (i == 7)
+	if (i == FILTER_FIELDS_NUMB)
 	{
 		CString txt;
 		txt.Format("No filter fields are checked!");
@@ -114,7 +120,7 @@ void CFindAdvancedDlg::OnOK()
 		return;
 	}
 
-	for (int i = 0; i < 7; i++) 
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		
 		m_params.m_string[i].TrimRight();
@@ -202,6 +208,10 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllWhole()
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
 	}
+	p = GetDlgItem(IDC_EDIT_ATTACHMENT_NAME_WHOLE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
 }
 
 
@@ -247,11 +257,15 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllCase()
 	if (p) {
 		((CButton*)p)->SetCheck(nFlags);
 	}
+	p = GetDlgItem(IDC_EDIT_ATTACHMENT_NAME_CASE);
+	if (p) {
+		((CButton*)p)->SetCheck(nFlags);
+	}
 }
 
 void CFindAdvancedParams::SetDflts()
 {
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++) {
 		m_string[i] = _T("");
 		m_bWholeWord[i] = FALSE;
 		m_bCaseSensitive[i] = FALSE;
@@ -269,6 +283,7 @@ void CFindAdvancedParams::SetDflts()
 	m_filterNumb = 0;
 
 	m_bBiderectionalMatch = FALSE;
+	m_bFindAllMailsThatDontMatch = FALSE;
 }
 
 void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
@@ -276,7 +291,7 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	if (this == &src)
 		return;
 
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		m_string[i] = src.m_string[i];
 		m_bWholeWord[i] = src.m_bWholeWord[i];
@@ -294,7 +309,7 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_filterNumb = src.m_filterNumb;
 
 	m_bBiderectionalMatch = src.m_bBiderectionalMatch;
-
+	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 };
 
 

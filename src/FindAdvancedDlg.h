@@ -14,12 +14,14 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
+#define FILTER_FIELDS_NUMB 8
+
 struct CFindAdvancedParams
 {
-	CString	m_string[7];
-	BOOL	m_bWholeWord[7];
-	BOOL	m_bCaseSensitive[7];
-	BOOL	m_bEditChecked[7];
+	CString	m_string[FILTER_FIELDS_NUMB];
+	BOOL	m_bWholeWord[FILTER_FIELDS_NUMB];
+	BOOL	m_bCaseSensitive[FILTER_FIELDS_NUMB];
+	BOOL	m_bEditChecked[FILTER_FIELDS_NUMB];
 
 	BOOL	m_bSetAllWholeWords;
 	BOOL	m_bSetAllCaseSensitive;
@@ -32,6 +34,7 @@ struct CFindAdvancedParams
 	BOOL m_bFindAll;
 
 	BOOL m_bBiderectionalMatch;
+	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
 	void SetDflts();
 	void Copy(CFindAdvancedParams &src);

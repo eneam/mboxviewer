@@ -317,6 +317,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bStartSearchAtSelectedItem = 0; // FALSE; TODO: is this desired feature ?
 	m_bFindNext = TRUE;
 	m_bFindAll = FALSE;
+	m_bFindAllMailsThatDontMatch = FALSE;
 	m_findAllCount = 0;
 	m_bEditFindFirst = FALSE;  // must call OnEditFind() first and not OnEditFindAgain()
 	m_lastFindPos = -1;  // last find position, start for the next find again
@@ -325,9 +326,12 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_bWholeWord = FALSE;
 	m_bFrom = TRUE;
 	m_bTo = TRUE;
+	m_bCC = FALSE;
+	m_bBCC = FALSE;
 	m_bSubject = TRUE;
 	m_bContent = FALSE;
 	m_bAttachments = FALSE;
+	m_bAttachmentName = FALSE;
 	m_bHighlightAll = FALSE;
 	m_bHighlightAllSet = FALSE;
 	m_filterDates = FALSE;
@@ -640,12 +644,14 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_PRINTER_Id: {
 		CString fileName;
 		if (pFrame) {
+			MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
 			pFrame->OnPrintSingleMailtoText(iItem, 1, fileName, FALSE, TRUE);
 		}
 		int deb = 1;
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
+		MboxMail::ShowHint(HintConfig::PrintToPDFHint);
 		CString errorText;
 		CString targetPrintSubFolderName;
 		CString targetPrintFolderPath;
@@ -657,7 +663,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		int ret = PrintMailRangeToSingleCSV_Thread(iItem);
 		int deb = 1;
 	}
-						  break;
+	break;
 	case S_HTML_GROUP_Id: {
 		CString fileName;
 		if (pFrame)
@@ -694,12 +700,14 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PRINTER_GROUP_Id: {
+		MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
 		PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 	}
 	break;
 	case S_PDF_DIRECT_GROUP_Id: {
 		if (pFrame)
 		{
+			MboxMail::ShowHint(HintConfig::PrintToPDFHint);
 			if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
 				CString errorText;
@@ -797,6 +805,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	case S_ADVANCED_FIND_Id: {
 		RunFindAdvancedOnSelectedMail(iItem);
+		MboxMail::ShowHint(HintConfig::AdvancedFindDialogHint);
 	}
 	break;
 	case S_RELOAD_LIST_Id: {
@@ -975,12 +984,14 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PRINTER_GROUP_Id: {
+		MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
 		PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
 		if (pFrame)
 		{
+			MboxMail::ShowHint(HintConfig::PrintToPDFHint);
 			if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
 				CString targetPrintSubFolderName = "PDF_GROUP";
@@ -1032,7 +1043,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		int deb = 1;
 	}
-				   break;
+	break;
 
 	default: {
 		int deb = 1;
@@ -2094,7 +2105,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	14
+#define CACHE_VERSION	15
 
 void CPathStripPath(const char *path, CString &fileName)
 {
@@ -3194,6 +3205,8 @@ void NListView::SelectItem(int iItem)
 	int bodyIndex = 0;
 	CMimeBody::CBodyList::const_iterator it;
 	bdy = "";
+	bool alreadyFoundHTML = false;  // prefer HTML Text over Plain Text
+
 	CString ext = "";
 	if (bodies.begin() == bodies.end())
 	{  // should never be true
@@ -3208,6 +3221,7 @@ void NListView::SelectItem(int iItem)
 	{
 		CMimeBody* pBP = *it;
 		CString curExt = "txt";
+		bool isPlainText = true;
 
 		bool imgFileDone = false;
 		int count = fileImgAlreadyCreatedArray.GetCount();
@@ -3223,24 +3237,29 @@ void NListView::SelectItem(int iItem)
 		CMimeHeader::CFieldList& fds = pBP->Fields();
 		CMimeHeader::CFieldList::const_iterator itfd;
 		CString charset;
+
 		for (itfd = fds.begin(); itfd != fds.end(); itfd++)
 		{
 			const CMimeField& fd = *itfd;
 			const char *fname = fd.GetName();
 			const char *fval = fd.GetValue();
 			// Check content type to get mail extension TODO: encapsulate in function
-			if (_stricmp(fname, "Content-Type") == 0 && _strnicmp(fval, "text/", 5) == 0) {
+			if (_stricmp(fname, "Content-Type") == 0 && _strnicmp(fval, "text/", 5) == 0) 
+			{
 				const char *p = fd.GetValue() + 5;
 				if (_strnicmp(p, "plain", 5) == 0)
 					curExt = "txt";
+				else  if (_strnicmp(p, "htm", 3) == 0) {
+					curExt = "htm";
+					isPlainText = false;
+				}
+				else  if (_strnicmp(p, "xml", 3) == 0) {
+					curExt = "xml";
+					isPlainText = false;
+				}
 				else
-					if (_strnicmp(p, "htm", 3) == 0)
-						curExt = "htm";
-					else
-						if (_strnicmp(p, "xml", 3) == 0)
-							curExt = "xml";
-						else
-							curExt = "txt";
+					curExt = "txt";
+
 				int pc = CString(fval).Find("charset=");
 				if (pc != -1) {
 					int charsetLength = CString(fval + pc + 8).FindOneOf(";\n\r");
@@ -3254,7 +3273,7 @@ void NListView::SelectItem(int iItem)
 
 		// TODO: inefficient when we have both text and html parts. 
 		// We read and initialize bdy as text and later override with html.
-		// Need to redo.
+		// Need to redo, all is too confusing !!!!!!
 
 		CString contentType;
 		MboxCMimeHelper::GetContentType(pBP, contentType);
@@ -3262,16 +3281,56 @@ void NListView::SelectItem(int iItem)
 		bool isText = pBP->IsText();
 		bool isMessage = pBP->IsMessage();
 		bool isAttachment = pBP->IsAttachment();
-		if ((isText || isMessage) && (bdy.IsEmpty() || !isAttachment))
+		bool IsBodyEmpty = bdy.IsEmpty();
+
+		if (isText && isPlainText && !IsBodyEmpty)
+			int deb = 1;
+		if (isMessage)
+			int deb = 1;
+
+		if ((isText || isMessage) && (IsBodyEmpty || !isAttachment))
 		{
-			// if message contains alternate parts display last one
+			// concatanate text blocks of the same type, prefer Html
+			// Apple mail may have multiple Plain and Html text blocks;
+			// No checks are done to verify Html blocks are formatted correctly
 			char *contentData = (char*)pBP->GetContent();
 			int contentDataLength = pBP->GetContentLength();
-			LPCSTR buff = bdy.GetBufferSetLength(contentDataLength);
-			memcpy((char*)buff, contentData, contentDataLength);
-			bdy.ReleaseBuffer();
+
+			if (isPlainText)
+			{
+				if (!alreadyFoundHTML)
+				{
+					if (IsBodyEmpty)
+					{
+						LPCSTR buff = bdy.GetBufferSetLength(contentDataLength);
+						memcpy((char*)buff, contentData, contentDataLength);
+						bdy.ReleaseBuffer();
+					}
+					else
+						bdy.Append(contentData, contentDataLength);
+				}
+			}
+			else
+			{
+				if (alreadyFoundHTML == FALSE) {
+					bdy.Empty();
+					IsBodyEmpty = TRUE;
+				}
+
+				if (IsBodyEmpty)
+				{
+					LPCSTR buff = bdy.GetBufferSetLength(contentDataLength);
+					memcpy((char*)buff, contentData, contentDataLength);
+					bdy.ReleaseBuffer();
+				}
+				else
+					bdy.Append(contentData, contentDataLength);
+
+				alreadyFoundHTML = true;
+			}
+
 			ext = curExt;
-			bdycharset = charset;
+			//bdycharset = charset;  // Commented out, don't remember why is was not commented out
 			if (!charset.IsEmpty())
 				bdycharset = charset;
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);
@@ -3566,6 +3625,8 @@ void NListView::SelectItem(int iItem)
 		info = cidArray[i];
 		delete info;
 	}
+
+	MboxMail::ShowHint(HintConfig::MailSelectionHint);
 	return;
 }
 
@@ -3918,8 +3979,10 @@ void NListView::OnEditFind()
 	dlg.m_params.m_bCC = m_bCC;
 	dlg.m_params.m_bBCC = m_bBCC;
 	dlg.m_params.m_bAttachments = m_bAttachments;
+	dlg.m_params.m_bAttachmentName = m_bAttachmentName;
 	dlg.m_params.m_bHighlightAll = m_bHighlightAll;
 	dlg.m_params.m_bFindAll = m_bFindAll;
+	dlg.m_params.m_bFindAllMailsThatDontMatch = m_bFindAllMailsThatDontMatch;
 	dlg.m_params.m_filterDates = m_filterDates;
 
 
@@ -3939,8 +4002,13 @@ void NListView::OnEditFind()
 		m_bCC = dlg.m_params.m_bCC;
 		m_bBCC = dlg.m_params.m_bBCC;
 		m_bAttachments = dlg.m_params.m_bAttachments;
+		m_bAttachmentName = dlg.m_params.m_bAttachmentName;
 		m_bHighlightAll = dlg.m_params.m_bHighlightAll;
+		m_bFindAllMailsThatDontMatch = dlg.m_params.m_bFindAllMailsThatDontMatch;
 		m_bFindAll = dlg.m_params.m_bFindAll;
+
+		if (m_bFindAll && !m_bFindNext)  // not implemented and it makes no difference if we set m_bFindNext to TRUE
+			m_bFindNext = TRUE;
 
 		m_lastFindPos = -1;
 
@@ -4056,6 +4124,7 @@ void NListView::OnEditFind()
 					SwitchToMailList(IDC_FIND_LIST, FALSE);
 				}
 				m_bInFind = false;
+				MboxMail::ShowHint(HintConfig::FindDialogHint);
 				return;
 			}
 			else if (w >= 0) {
@@ -4074,6 +4143,8 @@ void NListView::OnEditFind()
 		}
 	}
 	m_bInFind = false;
+
+	MboxMail::ShowHint(HintConfig::FindDialogHint);
 }
 
 int NListView::CheckMatch(int i, CString &searchString)
@@ -4082,12 +4153,12 @@ int NListView::CheckMatch(int i, CString &searchString)
 	int w = -1;
 	MboxMail *m = MboxMail::s_mails[i];
 
-	if (searchString.GetLength() == 1 && searchString[0] == '*') {
-		w = i;
-		return w;
-	}
 	pos = -1;
 	if (m_bSubject) {
+		if (searchString.GetLength() == 1 && searchString[0] == '*') {
+			w = i;
+			return w;
+		}
 		if (m_bWholeWord)
 			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
@@ -4099,6 +4170,10 @@ int NListView::CheckMatch(int i, CString &searchString)
 	}
 	pos = -1;
 	if (m_bFrom) {
+		if (searchString.GetLength() == 1 && searchString[0] == '*') {
+			w = i;
+			return w;
+		}
 		if (m_bWholeWord)
 			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
@@ -4109,6 +4184,10 @@ int NListView::CheckMatch(int i, CString &searchString)
 		}
 	}
 	if (m_bTo) {
+		if (searchString.GetLength() == 1 && searchString[0] == '*') {
+			w = i;
+			return w;
+		}
 		if (m_bWholeWord)
 			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
@@ -4119,6 +4198,12 @@ int NListView::CheckMatch(int i, CString &searchString)
 		}
 	}
 	if (m_bCC) {
+		if (!m->m_cc.IsEmpty()) {
+			if (searchString.GetLength() == 1 && searchString[0] == '*') {
+				w = i;
+				return w;
+			}
+		}
 		if (m_bWholeWord)
 			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
@@ -4129,6 +4214,12 @@ int NListView::CheckMatch(int i, CString &searchString)
 		}
 	}
 	if (m_bBCC) {
+		if (!m->m_bcc.IsEmpty()) {
+			if (searchString.GetLength() == 1 && searchString[0] == '*') {
+				w = i;
+				return w;
+			}
+		}
 		if (m_bWholeWord)
 			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(), (unsigned char *)(LPCSTR)searchString, searchString.GetLength(), m_bCaseSens);
 		else
@@ -4139,7 +4230,18 @@ int NListView::CheckMatch(int i, CString &searchString)
 		}
 	}
 
+	if (m_bAttachmentName) {
+		if (FindAttachmentName(m, searchString, m_bWholeWord, m_bCaseSens) == TRUE) {
+			w = i;
+			return w;
+		}
+	}
+
 	if (m_bContent || m_bAttachments) {
+		if (searchString.GetLength() == 1 && searchString[0] == '*') {
+			w = i;
+			return w;
+		}
 		if (FindInMailContent(i, m_bContent, m_bAttachments)) {
 			w = i;
 			return w;
@@ -4149,6 +4251,97 @@ int NListView::CheckMatch(int i, CString &searchString)
 }
 
 
+//typedef int(__cdecl* _CoreCrtNonSecureSearchSortCompareFunction)(void const*, void const*);
+int __cdecl CompPriority(void const* p1, void const* p2)
+{
+	int pr1 = *((int*)p1);
+	int pr2 = *((int*)p2);
+	if (pr1 < pr2)
+		return -1;
+	else if (pr1 > pr2)
+		return 1;
+	else
+		return 0;
+}
+
+void NListView::DetermineKeywordsForProgresBar(CString *stringWithCase, CString &keyword1, CString &keyword2)
+{
+	// Assign priority to each field from 0 to FILTER_FIELDS_NUMB, 0 is highest
+	// FindFields[] = { "From" (0->0), "To" (1->5), "Subject" (2->1), "CC" (3->6), "BCC" (4->7), "Message" (5->2), "Attachments" (6->3), "Attachment Name" (7->4) };
+	int FldIndx2PriorityMap[FILTER_FIELDS_NUMB] = { 0, 5, 1, 6, 7, 2, 3, 4 };
+	int FldPriority2Indx2PriorityMap[FILTER_FIELDS_NUMB] = { 0 };
+
+	int CheckedList_FieldsPriority[FILTER_FIELDS_NUMB] = { -1 };
+
+	int checkedFieldCnt = 0;
+	int i;
+	for (i = 0; i < FILTER_FIELDS_NUMB; i++)
+	{
+		if (m_advancedParams.m_bEditChecked[i])
+			CheckedList_FieldsPriority[checkedFieldCnt++] = FldIndx2PriorityMap[i];
+	}
+
+	qsort(CheckedList_FieldsPriority, checkedFieldCnt, sizeof(int), CompPriority);
+
+	for (i = 0; i < FILTER_FIELDS_NUMB; i++)
+	{
+		FldPriority2Indx2PriorityMap[FldIndx2PriorityMap[i]] = i;
+	}
+
+	CString key1;
+	CString key2;
+
+	if (checkedFieldCnt >= 2)
+	{
+		int pr1 = CheckedList_FieldsPriority[0];
+		int indx1 = FldPriority2Indx2PriorityMap[pr1];
+		key1.Append(stringWithCase[indx1]);
+
+		int pr2 = CheckedList_FieldsPriority[1];
+		int indx2 = FldPriority2Indx2PriorityMap[pr2];
+		key2.Append(stringWithCase[indx2]);
+	}
+	else if (checkedFieldCnt == 1)
+	{
+		int pr1 = CheckedList_FieldsPriority[0];
+		int indx1 = FldPriority2Indx2PriorityMap[pr1];
+		key1.Append(stringWithCase[indx1]);
+
+		key2.Empty();
+	}
+
+	int availableSpace = 28;
+	if (!key1.IsEmpty() && !key2.IsEmpty())
+	{
+		int addSpace =  18 - key2.GetLength();
+		if (addSpace < 0)
+			addSpace = 0;
+		if (key1.GetLength() > (10 + addSpace))
+			keyword1 = key1.Left(10 + addSpace);
+		else
+			keyword1 = key1;
+
+		if (key2.GetLength() > 18)
+			keyword2 = key2.Left(18);
+		else
+			keyword2 = key2;
+	}
+	else if (!key1.IsEmpty())
+	{
+		if (key1.GetLength() > availableSpace)
+			keyword1 = key1.Left(availableSpace);
+		else
+			keyword1 = key1;
+	}
+	else if (!key2.IsEmpty())
+	{
+		if (key2.GetLength() > availableSpace)
+			keyword1 = key2.Left(availableSpace);
+		else
+			keyword1 = key2;
+	}
+}
+
 int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll)
 {
 	int w = -1;
@@ -4157,7 +4350,7 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 	CString searchString(m_searchString);
 	if (m_advancedFind) 
 	{
-		for (int i = 0; i < 7; i++)
+		for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 		{
 			m_stringWithCase[i] = m_advancedParams.m_string[i];
 			if (m_advancedParams.m_bEditChecked[i])
@@ -4171,92 +4364,27 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 
 		if (MboxMail::pCUPDUPData && !mainThreadContext)
 		{
-			CString key1;
-			CString key2;
-
-			if (m_advancedParams.m_bEditChecked[2]) 
-				key1.Append(m_stringWithCase[2]);
-
-			if (m_advancedParams.m_bEditChecked[5])
-				key2.Append(m_stringWithCase[5]);
-
-			if (key1.IsEmpty() && !key2.IsEmpty())
-			{
-				if (key1.IsEmpty())
-				{
-					if (m_advancedParams.m_bEditChecked[0])
-						key1.Append(m_stringWithCase[0]);
-				}
-				if (key1.IsEmpty())
-				{
-					if (m_advancedParams.m_bEditChecked[1])
-						key1.Append(m_stringWithCase[1]);
-				}
-			}
-			else if (key2.IsEmpty() && !key1.IsEmpty())
-			{
-				key2 = key1;
-				key1.Empty();
-
-				if (key1.IsEmpty())
-				{
-					if (m_advancedParams.m_bEditChecked[0])
-						key1.Append(m_stringWithCase[0]);
-				}
-				if (key1.IsEmpty())
-				{
-					if (m_advancedParams.m_bEditChecked[1])
-						key1.Append(m_stringWithCase[1]);
-				}
-			}
-			else
-			{
-				if (m_advancedParams.m_bEditChecked[0])
-					key1.Append(m_stringWithCase[0]);
-
-				if (m_advancedParams.m_bEditChecked[1])
-					key2.Append(m_stringWithCase[1]);
-			}
-
-			int availableSpace = 24;
 			CString keyword1;
 			CString keyword2;
+			DetermineKeywordsForProgresBar(m_stringWithCase, keyword1, keyword2);
 
-			if (!key1.IsEmpty() && !key2.IsEmpty())
+			CString searchText;
+			if (!keyword1.IsEmpty() && !keyword2.IsEmpty())
 			{
-				if (key1.GetLength() > 10) 
-					keyword1 = key1.Left(10);
-				else
-					keyword1 = key1;
-
-				if (key2.GetLength() > 10)
-					keyword2 = key2.Left(10);
-				else
-					keyword2 = key2;
-
-				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" and \"") + keyword2 + _T("\" ...");
-				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+				searchText.Append(_T("Searching for \"") + keyword1 + _T("\" && \"") + keyword2 + _T("\" ..."));
 			}
-			else if (!key1.IsEmpty())
+			else if (!keyword1.IsEmpty())
 			{
-				if (key1.GetLength() > 28)
-					keyword1 = key1.Left(28);
-				else
-					keyword1 = key1;
-
-				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" ...");
-				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+				searchText.Append(_T("Searching for \"") + keyword1 + _T("\" ..."));
 			}
-			else if (!key2.IsEmpty())
+			else if (!keyword2.IsEmpty())
 			{
-				if (key2.GetLength() > 28)
-					keyword1 = key2.Left(28);
-				else
-					keyword1 = key2;
-
-				CString searchText = _T("Searching mails for \"") + keyword1 + _T("\" ...");
-				MboxMail::pCUPDUPData->SetProgress(searchText, 0);
+				searchText.Append(_T("Searching for \"") + keyword2 + _T("\" ..."));
 			}
+			else
+				searchText.Append(_T("Searching for \"\""));
+
+			MboxMail::pCUPDUPData->SetProgress(searchText, 0);
 		}
 	}
 	else 
@@ -4265,10 +4393,18 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 			searchString.MakeLower();
 
 		if (MboxMail::pCUPDUPData && !mainThreadContext) {
-			CString searchText = _T("Searching file for \"") + searchString + _T("\" ...");
+			int availableSpace = 30;
+			CString keyword = searchString.Left(availableSpace);
+			CString searchText = _T("Searching for \"") + keyword + _T("\" ...");
 			MboxMail::pCUPDUPData->SetProgress(searchText, 0);
 		}
 	}
+
+	BOOL bFindAllMailsThatDontMatch = FALSE;
+	if (m_advancedFind)
+		bFindAllMailsThatDontMatch = m_advancedParams.m_bFindAllMailsThatDontMatch;
+	else
+		bFindAllMailsThatDontMatch = m_bFindAllMailsThatDontMatch;
 
 	DWORD myThreadId = GetCurrentThreadId();
 	DWORD tc_start = GetTickCount();
@@ -4292,20 +4428,47 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 			{
 				if (m_advancedFind) {
 					if (CheckMatchAdvanced(i, m_advancedParams) >= 0) {
-						if (findAll) {  
+						if (findAll) {
+							if (!bFindAllMailsThatDontMatch) {
+								MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
+								m_findAllCount++;
+							}
+						}
+					}
+					else if (bFindAllMailsThatDontMatch)
+					{
+						if (findAll) {
 							MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
 							m_findAllCount++;
 						}
 					}
 				}
-				else if (CheckMatch(i, searchString) >= 0) {
-					if (findAll) {
-						MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
-						m_findAllCount++;
+				else
+				{
+					if (CheckMatch(i, searchString) >= 0) {
+						if (findAll) {
+							if (!bFindAllMailsThatDontMatch)
+							{
+								MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
+								m_findAllCount++;
+							}
+						}
+						else {
+							w = i;
+							break;
+						}
 					}
-					else {
-						w = i;
-						break;
+					else if (bFindAllMailsThatDontMatch)
+					{
+						// found mail matching negative search criteria
+						if (findAll) {
+							MboxMail::s_mails_find[m_findAllCount] = MboxMail::s_mails[i];
+							m_findAllCount++;
+						}
+						else {
+							w = i;
+							break;
+						}
 					}
 				}
 
@@ -4358,6 +4521,15 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 			if (process) 
 			{
 				if (CheckMatch(i, searchString) >= 0) {
+					if (!bFindAllMailsThatDontMatch)
+					{
+						w = i;
+						break;
+					}
+				}
+				else if (bFindAllMailsThatDontMatch)
+				{
+					// found mail matching negative search criteria
 					w = i;
 					break;
 				}
@@ -5829,7 +6001,7 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 		CString tmp;
 
 
-		for (int i = 3; i < 7; i++)
+		for (int i = 3; i < FILTER_FIELDS_NUMB; i++)
 		{
 			m_advancedParams.m_string[i].Empty();
 			m_advancedParams.m_bEditChecked[i] = FALSE;
@@ -6045,7 +6217,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	if (params.m_bEditChecked[fldIndx])
 	{
 		fromChecked = TRUE;
-		if (params.m_bWholeWord[fldIndx]) {
+		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
+			fromPos = 1;
+
+		else if (params.m_bWholeWord[fldIndx]) {
 			fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
 				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 		}
@@ -6064,7 +6239,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	if (params.m_bEditChecked[fldIndx])
 	{
 		toChecked = TRUE;
-		if (params.m_bWholeWord[fldIndx]) {
+		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
+			toPos = 1;
+
+		else if (params.m_bWholeWord[fldIndx]) {
 			toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
 				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 		}
@@ -6120,7 +6298,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 		if (params.m_bEditChecked[fldIndx])
 		{
 			fromChecked = TRUE;
-			if (params.m_bWholeWord[fldIndx]) {
+			if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
+				fromPos = 1;
+
+			else if (params.m_bWholeWord[fldIndx]) {
 				fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
 					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 			}
@@ -6136,7 +6317,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 		if (params.m_bEditChecked[fldIndx])
 		{
 			toChecked = TRUE;
-			if (params.m_bWholeWord[fldIndx]) {
+			if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
+				toPos = 1;
+
+			else if (params.m_bWholeWord[fldIndx]) {
 				toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
 					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 			}
@@ -6169,7 +6353,7 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 
 	if (params.m_bEditChecked[0] || params.m_bEditChecked[1]) 
 	{
-		if (params.m_bEditChecked[2] || params.m_bEditChecked[3] || params.m_bEditChecked[4] || params.m_bEditChecked[5] || params.m_bEditChecked[6]) {
+		if (params.m_bEditChecked[2] || params.m_bEditChecked[3] || params.m_bEditChecked[4] || params.m_bEditChecked[5] || params.m_bEditChecked[6] || params.m_bEditChecked[7]) {
 			; // more to match, continue. If any of remaining checks fail, report match failure
 		}
 		else
@@ -6191,7 +6375,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	fldIndx = 3; // CC
 	if (params.m_bEditChecked[fldIndx])
 	{
-		if (params.m_bWholeWord[fldIndx]) {
+		if (!m->m_cc.IsEmpty() && (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*'))
+			ccPos = 1;
+
+		else if (params.m_bWholeWord[fldIndx]) {
 			ccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
 				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 		}
@@ -6207,7 +6394,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	fldIndx = 4; // BCC
 	if (params.m_bEditChecked[fldIndx])
 	{
-		if (params.m_bWholeWord[fldIndx]) {
+		if (!m->m_bcc.IsEmpty() && (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*'))
+			bccPos = 1;
+
+		else if (params.m_bWholeWord[fldIndx]) {
 			bccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
 				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 		}
@@ -6223,7 +6413,10 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	fldIndx = 2; // subject
 	if (params.m_bEditChecked[fldIndx])
 	{
-		if (params.m_bWholeWord[fldIndx]) {
+		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
+			subjectPos = 1;
+
+		else if (params.m_bWholeWord[fldIndx]) {
 			subjectPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(),
 				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
 		}
@@ -6236,9 +6429,22 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 		}
 	}
 
+	fldIndx = 7; // attachment name
+	if (params.m_bEditChecked[fldIndx])
+	{
+		if (FindAttachmentName(m, m_stringWithCase[fldIndx], params.m_bWholeWord[fldIndx], params.m_bCaseSensitive[fldIndx]) == FALSE) {
+			return -1;
+		}
+	}
+
 	if (params.m_bEditChecked[5] || params.m_bEditChecked[6])   // 5==message 6=content
 	{
-		if (AdvancedFindInMailContent(i, params.m_bEditChecked[5], params.m_bEditChecked[6], params) == FALSE) {
+		if ((m_stringWithCase[5].GetLength() == 1 && m_stringWithCase[5][0] == '*') ||
+			(m_stringWithCase[6].GetLength() == 1 && m_stringWithCase[6][0] == '*'))
+		{
+			;
+		}
+		else if (AdvancedFindInMailContent(i, params.m_bEditChecked[5], params.m_bEditChecked[6], params) == FALSE) {
 			return -1;
 		}
 	}
@@ -10734,13 +10940,26 @@ int NListView::PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selecte
 	return 1;
 }
 
-int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
+int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf, CString &characterLimit)
 {
 	if (m == 0)
 	{
 		// TODO: Assert ??
 		return 1;
 	}
+
+	// characterLimit is not yet configurable
+#if 0
+	if (characterLimit.IsEmpty())
+	{
+		outbuf->Append('"');
+		outbuf->Append('"');
+		return 1;
+	}
+#endif
+
+	int limit = _ttoi(characterLimit);
+	limit = 32500;  // hardcode for now  (2^^15 - 1)  is (32768 - 1) is supported max by Excel
 
 	SimpleString tmpbuf(1024, 256);
 	SimpleString tmpbuf2(1024, 256);
@@ -10750,7 +10969,11 @@ int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
 	CString contentTypeExtension;
 	CString contentTypeMain;
 
+	int begCount = outbuf->Count();
+
 	outbuf->Append('"');
+
+	limit -= 2; // two " enclosing chracters
 
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
@@ -10774,6 +10997,8 @@ int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
 
 				tmpbuf2.ClearAndResize(3 * namelen);
 
+				begCount = outbuf->Count();
+
 				tmpbuf2.Append('"');
 				tmpbuf2.Append((LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength());
 				tmpbuf2.Append('"');
@@ -10784,6 +11009,13 @@ int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
 				tmpbuf.SetCount(ret_addrlen);
 
 				outbuf->Append(tmpbuf);
+
+
+				if (outbuf->Count() > limit)
+				{
+					outbuf->SetCount(begCount); // reverse count and return
+					break;
+				}
 			}
 		}
 
@@ -10793,4 +11025,58 @@ int NListView::PrintAttachmentNames(MboxMail *m, SimpleString *outbuf)
 	outbuf->Append('"');
 
 	return 1;
+}
+
+int NListView::FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive)
+{
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 0;
+	}
+
+	MailBodyContent *body;
+
+	CString contentTypeExtension;
+	CString contentTypeMain;
+
+	int searchStringPos = 0;
+
+	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+	{
+		body = m->m_ContentDetailsArray[j];
+
+		contentTypeExtension.Empty();
+		contentTypeMain.Empty();
+
+		int pos = body->m_contentType.ReverseFind('/');
+		if (pos > 0)
+		{
+			contentTypeExtension = body->m_contentType.Mid(pos + 1);
+			contentTypeMain = body->m_contentType.Left(pos);
+		}
+
+		if (!body->m_attachmentName.IsEmpty())
+		{
+			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0))
+			{
+				if (searchString.GetLength() == 1 && searchString[0] == '*')
+					return 1;
+
+				if (bWholeWord) {
+					searchStringPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength(),
+						(unsigned char *)(LPCSTR)searchString, searchString.GetLength(), bCaseSensitive);
+				}
+				else {
+					searchStringPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength(),
+						(unsigned char *)(LPCSTR)searchString, searchString.GetLength(), bCaseSensitive);
+				}
+				if (searchStringPos >= 0) {
+					return 1;
+				}
+			}
+		}
+		//if ((contentTypeMain.CompareNoCase("image") == 0) || (body->m_contentDisposition.CompareNoCase("inline") == 0))
+	}
+	return 0;
 }

@@ -42,8 +42,10 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_CC, m_params.m_bCC);
 	DDX_Check(pDX, IDC_CHECK_BCC, m_params.m_bBCC);
 	DDX_Check(pDX, IDC_CHECK_ATTACHMENT, m_params.m_bAttachments);
+	DDX_Check(pDX, IDC_CHECK_ATTACHMENT_NAME, m_params.m_bAttachmentName);
 	DDX_Check(pDX, IDC_CHECK_HIGHLIGHT_ALL, m_params.m_bHighlightAll);
 	DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
+	DDX_Check(pDX, IDC_CHECK_NEGATE_SEARCH_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 	DDX_Check(pDX, IDC_FILTERDATES, m_params.m_filterDates);
 	if (pDX->m_bSaveAndValidate) {
 		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
@@ -116,8 +118,10 @@ void CFindDlgParams::SetDflts()
 	m_bCC = FALSE;
 	m_bBCC = FALSE;
 	m_bAttachments = FALSE;
+	m_bAttachmentName = FALSE;
 	m_bHighlightAll = FALSE;
 	m_bFindAll = FALSE;
+	m_bFindAllMailsThatDontMatch = FALSE;
 }
 
 void CFindDlgParams::Copy(CFindDlgParams &src)
@@ -141,8 +145,10 @@ void CFindDlgParams::Copy(CFindDlgParams &src)
 	m_bCC = src.m_bCC;
 	m_bBCC = src.m_bBCC;
 	m_bAttachments = src.m_bAttachments;
+	m_bAttachmentName = src.m_bAttachmentName;
 	m_bHighlightAll = src.m_bHighlightAll;
 	m_bFindAll = src.m_bFindAll;
+	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 }
 
 
@@ -163,8 +169,9 @@ void CFindDlg::OnBnClickedCheckFindAll()
 	if (nFlags) {
 		CWnd *p = GetDlgItem(IDC_SEARCH_PREV);
 		if (p) {
-			p->EnableWindow(FALSE);
+			p->EnableWindow(TRUE);
 			((CButton*)p)->SetCheck(0);
+			p->EnableWindow(FALSE);
 		}
 		p = GetDlgItem(IDC_SEARCH_NEXT);
 		if (p) {

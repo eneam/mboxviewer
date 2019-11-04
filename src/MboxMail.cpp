@@ -10,6 +10,8 @@
 #define new DEBUG_NEW
 #endif
 
+HintConfig MboxMail::m_HintConfig;
+
 MailBodyPool *MailBody::m_mpool = new MailBodyPool;
 
 UINT charset2Id(const char *char_set);
@@ -168,12 +170,28 @@ inline char *EatNewLine(char* p, char*e) {
 
 BOOL isEmptyLine(const char* p, const char* e)
 {
-	while ((p < e) && ((*p == '\r') || (*p == ' ') || (*p == '\t')))  // eat white
+	while ((p < e) && ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t')))  // eat white
 		p++;
 	if (p == e)
 		return TRUE;
 	else
 		return FALSE;
+}
+
+char *EatNewLine(char* p, const char* e, BOOL &isEmpty)
+{
+	isEmpty = TRUE;
+	while ((p < e) && (*p++ != '\n'))
+	{
+		if (isEmpty)
+		{
+			if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
+				;
+			else
+				isEmpty = FALSE;
+		}
+	}
+	return p;
 }
 
 void MboxMail::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
@@ -572,6 +590,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	static const int cDateLen = strlen(cDate);
 	static const char *cReceived = "received:";
 	static const int cReceivedLen = strlen(cReceived);
+	static const char *cContentType = "content-type:";  // some mails such as from Apple don't seem to have blank line to separate header from body
+	static const int cContentTypeLen = strlen(cContentType);
 
 	char *orig = p;
 	register char *e = p + bufSize - 1;
@@ -597,12 +617,14 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 		p += 5;
 		bEml = false;  // not used below and not needed :)
 	}
+	BOOL headerDone = FALSE;
 	while (p < e - 4)   // TODO: why (e - 4) ??
 	{
 		try {
 			if ((*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') && IsFromValidDelimiter(p,e)) // "From "  marks beginning of the next mail
 			{
-				if (msgStart == NULL)
+				headerDone = FALSE;
+				if (msgStart == NULL)  // keep parsing header until next "From" or the end file
 					msgStart = p;
 				else {
 					if ((bTo == false) || (bFrom == false) ||  (bSubject == false)) 
@@ -675,7 +697,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				p += 5;
 				p = EatNewLine(p, e);
 			}
-			else
+			else if (msgStart && !headerDone)
 			{
 				if (bFrom && strncmpUpper2Lower(p, e, cFrom, cFromLen) == 0)
 				{
@@ -751,10 +773,47 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 						}
 					}
 				}
+#if 0
+				// doesn't quite work; looking for empty lines seem to work best
+				else if (strncmpUpper2Lower(p, e, cContentType, cContentTypeLen) == 0)
+				{
+					// 
+					p = GetMultiLine(p, e, line);
+					CString contTypeVal = line.Mid(cContentTypeLen);
+					contTypeVal.Trim();
+					// find first ';' separator
+					int pos = contTypeVal.Find(';');
+					CString contType;
+					if (pos >= 0)
+						contType = contTypeVal.Mid(0, pos);
+					else
+						contType = contTypeVal;
+					contType.Trim();
+
+					CString contentTypeMain = contType.Left(4);  // we are interested in "text" type
+					if (contentTypeMain.CompareNoCase("text") == 0)
+						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 
+				}
+#endif
 				else
 				{
-					p = EatNewLine(p, e);
+					BOOL isEmpty = FALSE;
+					p = EatNewLine(p, e, isEmpty);
+					// TODO:  This check may not completely reliable and may need better check and likley more expensive check
+					// Without the end of header check, we could pickup CC and BCC fiekds from mail text
+					// but it could be worst if we stop looking for headear fields prematuraly
+					if (isEmpty)
+					{
+						if (from.IsEmpty() || to.IsEmpty() || date.IsEmpty())
+							int deb = 1;
+
+						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 
+					}
 				}
+			}
+			else
+			{
+				p = EatNewLine(p, e);
 			}
 		}
 		catch (CMemoryException *) {
@@ -763,7 +822,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	}
 
 	// should save state for cross boundary emails - resolved 2018
-	if (msgStart != NULL && msgStart != p) {
+	if (msgStart != NULL && msgStart != p) 
+	{
 		if (!bLastView) {
 			lastStartOffset = startOffset + (_int64)(msgStart - orig);
 		}
@@ -2718,6 +2778,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		outbuf.Append('"');
 
+		int begCount = outbuf.Count();
+
 		int datelen = strlen(datebuff);
 		if (charCount(datebuff, '"') > 0)
 		{
@@ -2727,6 +2789,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		}
 		else
 			outbuf.Append(datebuff, datelen);
+
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
 
 		outbuf.Append('"');
 
@@ -2745,6 +2812,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		outbuf.Append('"');
 
+		int begCount = outbuf.Count();
 
 		// disable to support investigation of group Ids
 #if 1
@@ -2773,11 +2841,18 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		strGroupId.Format("%d", m->m_groupId);
 		outbuf.Append((LPCSTR)strGroupId, strGroupId.GetLength());
 #endif
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
 
 		outbuf.Append('"');
 		outbuf.Append(sepchar);
 
 		outbuf.Append('"');
+
+		begCount = outbuf.Count();
+
 		int addrlen = addr.Count();
 
 		tmpbuf.ClearAndResize(2 * addrlen);
@@ -2795,6 +2870,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		}
 		else
 			outbuf.Append(tmpbuf);
+
+		data = outbuf.Data(begCount);
+		dataLength = outbuf.Count() - begCount;
+		retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
 
 		outbuf.Append('"');
 
@@ -2868,9 +2948,13 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			if (atpos)
 				outbuf.Append(sepchar);
 
-			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
-				break;
 		}
+
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
+
 		outbuf.Append('"');
 
 		separatorNeeded = true;
@@ -2882,6 +2966,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			outbuf.Append(sepchar);
 
 		outbuf.Append('"');
+
+		int begCount = outbuf.Count();
 
 		int subjlen = m->m_subj.GetLength();
 		char *subjstr = (char *)(LPCSTR)m->m_subj;
@@ -2901,6 +2987,11 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		}
 		else
 			outbuf.Append(tmpbuf);
+
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
 
 		outbuf.Append('"');
 
@@ -2974,9 +3065,13 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			if (atpos)
 				outbuf.Append(sepchar);
 
-			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
-				break;
 		}
+
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
+
 		outbuf.Append('"');
 
 		separatorNeeded = true;
@@ -3048,10 +3143,13 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 			if (atpos)
 				outbuf.Append(sepchar);
-
-			if ((outbuf.Count() - begCount) > 32000)  // TODO: Fix this make configurable
-				break;
 		}
+
+		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
+
 		outbuf.Append('"');
 
 		separatorNeeded = true;
@@ -3062,7 +3160,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		if (separatorNeeded)
 			outbuf.Append(sepchar);
 
-		NListView::PrintAttachmentNames(m, &outbuf);
+		NListView::PrintAttachmentNames(m, &outbuf, csvConfig.m_MessageLimitCharsString);
 
 		separatorNeeded = true;
 	}
@@ -3294,9 +3392,10 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 				int needLength = MboxMail::m_outbuf->Count() * 2 + 10; // worst case scenario or get '"' count first
 				inbuf->ClearAndResize(needLength);  // escapeSeparators terminates result with null
 
+				BOOL insertEmptyLine = FALSE;   // make this configurable one day -:)
 				if ((MboxMail::m_outbuf->Data()[0] == '\n') || ((MboxMail::m_outbuf->Data()[0] == '\r') && (MboxMail::m_outbuf->Data()[1] == '\n')))
 					; // do noting
-				else
+				else if (insertEmptyLine)
 					inbuf->Append("\r\n");  // insert empty line at the beginning
 
 				int cnt_sv = inbuf->Count();
@@ -3400,7 +3499,7 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 					NMsgView::MergeWhiteLines(inbuf, lineLimit);
 				}
 
-				EnforceCharacterLimit(outbuf, csvConfig.m_MessageLimitCharsString);
+				EnforceCharacterLimit(inbuf, csvConfig.m_MessageLimitCharsString);
 				fp.Write(inbuf->Data(), inbuf->Count());
 			}
 		}
@@ -4468,6 +4567,8 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	if (progressBar && MboxMail::pCUPDUPData)
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
+	CString fileNum;
+
 	int cnt = lastMail - firstMail;
 	if (cnt <= 0)
 		cnt = 1;
@@ -4500,17 +4601,18 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 				break;
 			}
 
-			CString fileNum;
-			int nFileNum = (i + 1);
+			int nFileNum = (i - firstMail  + 1);
 			int stepSize = 100;
 			if (textType == 0)
 				stepSize = 1000;
 
-			if ((nFileNum % stepSize) == 0) {
+			if ((nFileNum % stepSize) == 0) 
+			{
 				if (textType == 0)
 					fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
 				else
 					fileNum.Format(_T("Printing mails to single HTML file ... %d of %d"), nFileNum, cnt);
+
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 			}
 		}
@@ -4583,9 +4685,13 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		}
 	}
 
+	CString fileNum;
 	bool first = true;
 	if (selectedMailIndexList == 0)
 	{
+		int cnt = lastMail - firstMail;
+		if (cnt <= 0)
+			cnt = 1;
 		for (int i = firstMail; i <= lastMail; i++)
 		{
 			retval = printSingleMailToCSVFile(fp, i, fpm, csvConfig, first);
@@ -4610,6 +4716,16 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 					int deb = 1;
 					break;
 				}
+
+				int nFileNum = (i - firstMail + 1);
+				int stepSize = 100;
+
+				if ((nFileNum % stepSize) == 0)
+				{
+					fileNum.Format(_T("Printing mails to CSV file ... %d of %d"), nFileNum, cnt);
+
+					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
+				}
 			}
 		}
 	}
@@ -4631,7 +4747,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 
 			if (progressBar && MboxMail::pCUPDUPData)
 			{
-				double newstep = (double)(i - firstMail) / step + 1;
+				double newstep = (double)(j - 0 + 1) / step + 1;
 				if (newstep > curstep)
 				{
 					if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
@@ -4647,6 +4763,16 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 				if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
 					int deb = 1;
 					break;
+				}
+
+				int nFileNum = (j + 1);
+				int stepSize = 100;
+
+				if ((nFileNum % stepSize) == 0)
+				{
+					fileNum.Format(_T("Printing mails to CSV file ... %d of %d"), nFileNum, cnt);
+
+					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 				}
 			}
 		}
@@ -6224,6 +6350,8 @@ void MboxMail::ReleaseResources()
 	m_pMessageIdTable = 0;
 	delete m_pMboxMailTable;
 	m_pMboxMailTable = 0;
+
+	MboxMail::m_HintConfig.SaveToRegistry();
 }
 
 // search for string2 in string1 (strstr)
@@ -7536,6 +7664,8 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 		}
 	}
 
+	CString fileNum;
+
 	int cnt = lastMail - firstMail;
 	if (cnt <= 0)
 		cnt = 0;
@@ -7568,13 +7698,13 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 				curstep = newstep;
 			}
 
-			CString fileNum;
 			int nFileNum = (i + 1);
 			int stepSize = 100;
 			if (textType == 0)
 				stepSize = 1000;
 
-			if ((nFileNum % stepSize) == 0) {
+			if ((nFileNum % stepSize) == 0) 
+			{
 				if (textType == 0)
 					fileNum.Format(_T("Printing mails to single TEXT file ... %d of %d"), nFileNum, cnt);
 				else
@@ -7723,27 +7853,99 @@ void MboxMail::assert_unexpected()
 
 int MboxMail::EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit)
 {
+	if (characterLimit.IsEmpty())
+		return 1;
+
 	int limit = _ttoi(characterLimit);
+	int adjustedLimit = limit;
 	if (limit > 0)
 	{
 		int bufferLength = buffer->Count();
-		if (bufferLength > limit)
+		adjustedLimit = limit - 10;  // headroom
+		if (adjustedLimit < 0)
+			adjustedLimit = 11;
+		if (bufferLength > adjustedLimit)
 		{
-			//buffer->SetCount(limit - 16);
-			//buffer->Append("................");
-			// find last CR LF or LF and set Count
+			// Below doesn't quite work in rare cases if adjustedLimit index splits text between double quotation
+			// such as abc "de fg hi"  , "de fg hi" represents single token, -> 'abc "de fg '  ; now de and fg are separate token
+			// May need to implement better algo, however none is perfect
 			int i;
-			for (i = (limit-1); i >= 0; i--)
+			for (i = (adjustedLimit -1); i >= 0; i--)
 			{
-				if (buffer->GetAt(i) == '\n')
+				// if (buffer->GetAt(i) == '\n') preferable ? but will not work if no '\n' in text
+				if (buffer->GetAt(i) == ' ')  // likely works better
 				{
-					buffer->SetCount(i+1);
 					break;
 				}
 			}
+			int newBufferLength = i + 1;
+			buffer->SetCount(newBufferLength);
+		}
+		else // no change
+		{
+			int deb = 1;
 		}
 	}
+	else
+		buffer->SetCount(0);
+
+	if ((buffer->Count() > limit)  && (buffer->Count() > adjustedLimit))
+		int deb = 1;
+
 	return 1;
+}
+
+int MboxMail::EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CString &characterLimit)
+{
+#if 0
+	// characterLimit is not configurable yet
+	if (characterLimit.IsEmpty())
+		return bufferLength;
+#endif
+
+	int newBufferLength = bufferLength;
+	int limit = _ttoi(characterLimit);
+	limit = 32500;  // hardcode for now  (2^^15 -1) is (32768 - 1) is supported max by Excel
+
+	int adjustedLimit = limit;
+	if (limit > 0)
+	{
+		adjustedLimit = limit - 10;  // headroom
+		if (adjustedLimit < 0)
+			adjustedLimit = 11;
+		if (bufferLength > adjustedLimit)
+		{
+			// find last non '"' character and return Count
+			int i;
+			for (i = (adjustedLimit - 1); i >= 0; i--)
+			{
+				// Below doesn't quite work if adjustedLimit index splits text between double quotation
+				// such as abc "de fg hi"  , "de fg hi" represents single token, -> 'abc "de fg ' ; now de and fg are separate token
+				// May need to better algo, however none is perfect
+				if (buffer[i] != '"')
+				{
+					break;
+				}
+			}
+			newBufferLength = i + 1;
+			if (i < 0)
+			{
+				int deb = 1;
+			}
+		}
+		else  // no change
+		{
+			int deb = 1;
+		}
+
+	}
+	else
+		newBufferLength = 0;
+
+	if ((newBufferLength > limit) && (newBufferLength > adjustedLimit))
+		int deb = 1;
+
+	return newBufferLength;
 }
 
 void  MboxMail::MakeValidFileName(CString &name)
@@ -7950,6 +8152,155 @@ void ShowMemStatus()
 
 	TRACE(TEXT("There are %*I64d free  KB of extended memory.\n"),
 		WIDTH, statex.ullAvailExtendedVirtual / DIV);
+}
+
+HintConfig::HintConfig()
+{
+	m_nHintBitmap = 0;
+	BOOL retval;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("hintBitmap"), m_nHintBitmap))
+	{
+		; // all done
+	}
+	else
+	{
+		m_nHintBitmap = 0xFFFFFFFF;
+
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "hintBitmap", m_nHintBitmap);
+	}
+}
+
+HintConfig::~HintConfig()
+{
+	int deb = 1;
+}
+
+BOOL HintConfig::IsHintSet(int hintNumber)
+{
+	DWORD position = 1 << hintNumber;
+	if (m_nHintBitmap & position)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+void HintConfig::ClearHint(int hintNumber)
+{
+	DWORD position = 1 << hintNumber;
+	m_nHintBitmap &= ~position;
+}
+
+
+void HintConfig::LoadHintBitmap()
+{
+	BOOL retval;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("hintBitmap"), m_nHintBitmap))
+	{
+		; //all done
+	}
+	else
+	{
+		m_nHintBitmap = 0xFFFFFFFF;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "hintBitmap", m_nHintBitmap);
+	}
+}
+
+
+void HintConfig::SaveToRegistry()
+{
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "hintBitmap", m_nHintBitmap);
+}
+
+
+void MboxMail::LoadHintBitmap()
+{
+	MboxMail::m_HintConfig.LoadHintBitmap();
+}
+
+void MboxMail::ShowHint(int hintNumber)
+{
+	// Or should I create table with all Hints to support potentially large number of hints ?
+	CString hintText;
+	BOOL isHintSet = MboxMail::m_HintConfig.IsHintSet(hintNumber);
+	if (isHintSet)
+	{
+		if (hintNumber == HintConfig::GeneralUsageHint)
+		{
+			hintText.Append(
+				"To get started, please install one or more mbox files in\n"
+				"the local folder and then select \"File->Select Folder...\"\n"
+				"menu option to open that folder.\n"
+				"\n"
+				"Left click on one of the loaded mbox file to view all associated mails.\n"
+				"\n"
+				"Please review the User Guide provided with the package\n"
+				"and/or right/left single and double click on any item\n"
+				"within the Mbox Viewer window and try all presented options."
+			);
+		}
+		else if (hintNumber == HintConfig::MsgWindowPlacementHint)
+		{
+			hintText.Append(
+				"You can place  Message Window at Bottom (default), Left or Right.\n"
+				"\n"
+				"Select \"View->Message Window...\" to configure."
+			);
+		}
+		else if (hintNumber == HintConfig::PrintToPDFHint)
+		{
+			hintText.Append(
+				"Chrome Browser is used by deafult to print to PDF file.\n"
+				"However, the header and footer are always printed.\n "
+				"\n"
+				"Select \"File->Print Config->Path to User Defined Script\" to \n"
+				"use free wkhtmltopdf tool to remove header and footer\n"
+				"and evalute if wkhtmltopdf works for you."
+			);
+		}
+		else if (hintNumber == HintConfig::PrintToPrinterHint)
+		{
+			hintText.Append(
+				"Select \"File->Print Config->Page Setup\" to configure\n"
+				"page header, footer, etc via Windows standard setup.\n"
+			);
+		}
+		else if (hintNumber == HintConfig::MailSelectionHint)
+		{
+			hintText.Append(
+				"You can select multiple mails using standard Windows methods: "
+				"\"Shift-Left Click\", \"Ctrl-Left Click\" and \"Ctrl-A\".\n"
+			);
+		}
+		else if (hintNumber == HintConfig::FindDialogHint)
+		{
+			hintText.Append(
+				"You can specify single ‘*’ character as the search string to FIND dialog to find or traverse subset of mails:\n"
+				"\n"
+				"1. Find mails that have CC header field by checking out CC check box only.\n"
+				"2. Find mails that have BCC header field by checking out BCC check box only.\n"
+				"3. Find mails that have at least one attachment by checking out Attachment Name check box only.\n"
+				"4. Match all mails by checking out any of others check boxes only.\n"
+			);
+		}
+		else if (hintNumber == HintConfig::AdvancedFindDialogHint)
+		{
+			hintText.Append(
+				"You can specify single ‘*’ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
+				"\n"
+				"1. Find all mails that have CC header field by checking out CC check box only.\n"
+				"2. Find all mails that have BCC header field by checking out BCC check box only.\n"
+				"3. Find all mails that have at least one attachment by checking out Attachment Name check box only.\n"
+				"4. Match all mails by checking out any of others check boxes only.\n"
+			);
+		}
+
+		if (!hintText.IsEmpty())
+		{
+			HWND h = NULL;
+			::MessageBox(h, hintText, _T("Did you know?"), MB_OK | MB_ICONEXCLAMATION);
+			MboxMail::m_HintConfig.ClearHint(hintNumber);
+		}
+	}
 }
 
 

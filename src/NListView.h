@@ -109,6 +109,7 @@ public:
 	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
 	int CheckMatch(int which, CString &searchString);
 	int CheckMatchAdvanced(int i, CFindAdvancedParams &params);
+	void DetermineKeywordsForProgresBar(CString *stringWithCase, CString &keyword1, CString &keyword2);  // for Advanced Find
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
 	BOOL AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams &params);
 	void CloseMailFile();
@@ -145,13 +146,15 @@ public:
 	BOOL m_bCC;
 	BOOL m_bBCC;
 	BOOL m_bAttachments;
+	BOOL m_bAttachmentName;
 	BOOL m_bHighlightAll;
 	BOOL m_bFindAll;
+	BOOL m_bFindAllMailsThatDontMatch;
 	BOOL m_bHighlightAllSet;
 
 	//struct CFindDlgParams m_findParams;  // TODO: review later, requires too many chnages for now
 	struct CFindAdvancedParams m_advancedParams;
-	CString m_stringWithCase[7];
+	CString m_stringWithCase[FILTER_FIELDS_NUMB];
 	BOOL m_advancedFind;
 
 	void ClearDescView();
@@ -222,7 +225,8 @@ public:
 	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
 	int PrintMailRangeToSingleCSV_Thread(int iItem);
 	//
-	static int PrintAttachmentNames(MboxMail *m, SimpleString *outbuf);
+	static int PrintAttachmentNames(MboxMail *m, SimpleString *outbuf, CString &characterLimit);
+	static int FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
 	//
 	//////////////////////////////////////////////////////
 	////////////  PDF

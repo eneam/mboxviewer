@@ -33,6 +33,17 @@ See the LICENCE.txt file included in the distribution for further details.
 Changes
 ---
 
+v 1.0.3.5
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Fix to limit the text length when printing of Message Text column in the CSV file for emails with Html TEXT block only and no plain TEXT block;
+ - Added context level hints on how to use mbox viewer;
+ - Added Attachment Name field to Find and Advanced Find filters;
+ - Added option to Find and Advanced Find dialogs to find mails that don't much search criteria;
+ - Enhanced handling of '*' search string in Find and Advanced Find dialogs to be able to find subset of mails that have CC, BCC and mails with attachments;
+ - Updated mbox file parsing and bumped CACHE_VERSION to 15;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.4
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

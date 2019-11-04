@@ -53,6 +53,8 @@ public:
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	void StartTimer();
 
+	static void FindAllDirs(LPCTSTR pstr);
+
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(NTreeView)
