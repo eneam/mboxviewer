@@ -6,6 +6,7 @@
 //
 // Adapted for Windows MBox Viewer by the mboxview development
 // Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
+// Significant portion of the code likely more than 80% is custom
 //
 // E-Mail: tobias.eiseler@sisternicky.com
 // 

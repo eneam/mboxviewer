@@ -1412,11 +1412,12 @@ cleanup:
 		lpCh->Release();
 }
 
-
 void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase)
 {
 	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
-	// Did resolve some code issues, enhanced and optimized
+	// without explicit license
+	//  https://www.codeproject.com/Articles/832/Adding-a-custom-search-feature-to-CHtmlViews
+	// // mboxview development team did resolve some code issues, enhanced and optimized
 
 	// <span id='mboxview_Search' style='color: white; background-color: darkblue'>pa</span>
 
@@ -1556,7 +1557,9 @@ void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BO
 void NMsgView::ClearSearchResultsInIHTMLDocument(CString searchID)
 {
 	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
-	// Did resolve some code issues, enhanced and optimized
+	// without explicit license
+	//  https://www.codeproject.com/Articles/832/Adding-a-custom-search-feature-to-CHtmlViews
+	// mboxview development team did resolve some code issues, enhanced and optimized
 
 	CComBSTR testid(searchID.GetLength() + 1, searchID);
 	CComBSTR testtag(5, "SPAN");

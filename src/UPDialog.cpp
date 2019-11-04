@@ -31,6 +31,12 @@
 //		LTEXT           "Static",IDC_PROGRESS_TEXT,7,7,172,8,SS_CENTERIMAGE
 //	END
 //
+
+//   The code for Universal Progress Dialog was published by Gopalakrishna Palem on the codeproject under CPOL license
+//   https://www.codeproject.com/articles/7700/universal-progress-dialog
+//
+
+
 static const unsigned char dlg_145[] = 
 {
 	0xc8,0x08,0xc8,0x82,0x00,0x00,0x00,0x00,0x03,0x00,0x00,0x00,0x00,0x00,0xbb,0x00,0x46,

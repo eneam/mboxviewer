@@ -6,6 +6,19 @@
 // Dec 11, 2000
 //
 //////////////////////////////////////////////////////////////////////
+
+//   One of the versions of the code for MIME parser was published by nickadams (possibly Jeff Lee?) as
+//    MIME Message Composer/Analyser on the codeproject without explicit licence
+//   
+//   https://www.codeproject.com/Articles/5759/MIME-Message-Composer-Analyser
+//
+// The mime code seem to be posted on many sites including github copyrighted by Jeff Lee but can be used freely.
+//   https://github.com/hmailserver/hmailserver/tree/master/hmailserver/source/Server/Common/Mime
+//
+//  In othetr cases the code is posted on github but copyrighted by authors other than Jeff Lee which seem to be suspect.
+//
+//  Original posting of the mime code is not known to us
+
 #include "stdafx.h"
 #include <stdlib.h>
 #include <time.h>
