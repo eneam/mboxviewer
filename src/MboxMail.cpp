@@ -3912,17 +3912,23 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
+					//"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
+					"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
 			}
 			else
 			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"font-weight:normal;font-size:larger\">";
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
+					//"\"></head><body><div style=\"font-weight:normal;font-size:larger\">";  // larger doesn't always work
+					"\"></head><body><div style=\"font-weight:normal;font-size:16px\">";
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
+				//"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
+				"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">"; 
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -4014,17 +4020,20 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
-				bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+				//bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
+				bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
 			}
 			else
 			{
-				bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:larger\">";
+				//bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:larger\">";  // larger doesn't always work
+				bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:16px\">";
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
-			bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";
+			//bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
+			bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
 			fp.Write(bdy, bdy.GetLength());
 		}
 

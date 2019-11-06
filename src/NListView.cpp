@@ -3234,6 +3234,7 @@ void NListView::SelectItem(int iItem)
 	CMimeBody::CBodyList::const_iterator it;
 	bdy = "";
 	bool alreadyFoundHTML = false;  // prefer HTML Text over Plain Text
+	int partsCnt = 0;
 
 	CString ext = "";
 	if (bodies.begin() == bodies.end())
@@ -3336,6 +3337,10 @@ void NListView::SelectItem(int iItem)
 					}
 					else
 						bdy.Append(contentData, contentDataLength);
+
+					partsCnt++;
+					if (partsCnt > 1)
+						int deb = 1;
 				}
 			}
 			else
@@ -3343,6 +3348,7 @@ void NListView::SelectItem(int iItem)
 				if (alreadyFoundHTML == FALSE) {
 					bdy.Empty();
 					IsBodyEmpty = TRUE;
+					partsCnt = 0;
 				}
 
 				if (IsBodyEmpty)
@@ -3355,6 +3361,9 @@ void NListView::SelectItem(int iItem)
 					bdy.Append(contentData, contentDataLength);
 
 				alreadyFoundHTML = true;
+				partsCnt++;
+				if (partsCnt > 1)
+					int deb = 1;
 			}
 
 			ext = curExt;
@@ -3501,6 +3510,9 @@ void NListView::SelectItem(int iItem)
 	}
 
 	pMsgView->m_attachments.SortItemsEx(MyCompareProc, (LPARAM)&pMsgView->m_attachments);
+
+	if (bdy.IsEmpty())
+		ext = "txt";
 
 	// Save mail
 	if (ext.Compare("txt") == 0)
