@@ -19,7 +19,8 @@ Features
 * open a single or multiple selected mails or group of related mails in external browser;
 * sort emails by date, from, to, subject and conversation columns;
 * find user defined text in the message and highlight all occurrences;
-* search mails by user defined date range and text in the subject, sender, recepient, cc, bcc, message text and text attachments; 
+* search mails by user defined date range and text in the subject, sender, recepient, cc, bcc, message text, attachments text and attachment names;
+* search for mails that didn't match the search criteria specified by a user;
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
 * ability to compose mail list from single or multiple search results and archiving if desired;
 * ability to set Message Window position to Bottom, Right or Left;
@@ -27,7 +28,7 @@ Features
 
 License
 -----
-Mbox viewer is a free software. Most of it is licensed under GPLv2. Small parts are licenced under CPOL 1.02.
+Mbox viewer is a free software. Most of it is licensed under AGPLv3. Small parts are licenced under CPOL 1.02.
 See the LICENCE.txt file included in the distribution for further details. 
 
 Changes
