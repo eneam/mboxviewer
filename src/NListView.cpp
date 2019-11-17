@@ -2279,6 +2279,7 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 			sz.writeString(body->m_contentId);
 			sz.writeString(body->m_attachmentName);
 			sz.writeString(body->m_contentDisposition);
+			sz.writeString(body->m_contentLocation);
 			sz.writeInt(body->m_pageCode);
 		}
 
@@ -2325,7 +2326,7 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 }
 
 
-int LoadMails(LPCSTR cache, MailArray *mails = 0)
+int NListView::LoadMails(LPCSTR cache, MailArray *mails)
 {
 	SerializerHelper sz(cache);
 	if (!sz.open(FALSE))
@@ -2351,8 +2352,8 @@ int LoadMails(LPCSTR cache, MailArray *mails = 0)
 		txt += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
 		strVersion.Format(_T("%d"), CACHE_VERSION);
 		txt += strVersion + "\".\nWill remove\n\"" + cacheName + "\"\nand recreate from the mail archive file.";
-		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		sz.close();
 		return -1;
@@ -2454,6 +2455,8 @@ int LoadMails(LPCSTR cache, MailArray *mails = 0)
 				if (!sz.readString(body->m_attachmentName))
 					break;
 				if (!sz.readString(body->m_contentDisposition))
+					break;
+				if (!sz.readString(body->m_contentLocation))
 					break;
 				if (!sz.readUInt(&body->m_pageCode))
 					break;
@@ -2828,6 +2831,7 @@ void NListView::FillCtrl()
 		pFrame->SetupMailListsToInitialState();
 }
 
+// TODO: Not used anymore. To be removed at some point.
 int NListView::fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition)
 {
 	static char * img_pattern = "<img";
@@ -3226,6 +3230,7 @@ void NListView::SelectItem(int iItem)
 	MailBodyInfoArray cidArray;
 	MyCArray<bool> fileImgAlreadyCreatedArray;
 
+	// CreateInlineImageFiles_SelectedItem will create files for embeded images and mark each body as embeded or not in cidArray
 	int ret = NListView::CreateInlineImageFiles_SelectedItem(bodies, pMsgView, mailPosition, cidArray, fileImgAlreadyCreatedArray);
 	if (cidArray.GetCount())
 		hasInlineAttachments = true;
@@ -3259,8 +3264,12 @@ void NListView::SelectItem(int iItem)
 			imgFileDone = fileImgAlreadyCreatedArray.GetAt(bodyIndex);
 		}
 
-		if (imgFileDone)
+		if (imgFileDone) {
+			// embedded image, already processed in CreateInlineImageFiles_SelectedItem above so continue
 			continue;
+		}
+
+		// process bodies that are not embedded images
 
 		// Iterate all the header fields of this body part:
 		CMimeHeader::CFieldList& fds = pBP->Fields();
@@ -3374,10 +3383,10 @@ void NListView::SelectItem(int iItem)
 		}
 		else if (pBP->IsAttachment() || (contentType.Find("image/") >= 0))
 		{
-			// Save all attachments
-			string strName = pBP->GetName();
+			// prefer GetFilename
+			string strName = pBP->GetFilename();
 			if (strName.empty())
-				strName = pBP->GetFilename();
+				strName = pBP->GetName();
 
 			CString disposition;
 			MboxCMimeHelper::GetContentDisposition(pBP, disposition);
@@ -3421,6 +3430,9 @@ void NListView::SelectItem(int iItem)
 				}
 			}
 
+			if (strName.length() > 0)
+				;
+			else
 			if (disposition.CompareNoCase("inline") == 0)
 			{
 				isAttachmentInline = true;
@@ -3452,6 +3464,9 @@ void NListView::SelectItem(int iItem)
 			MboxMail::MakeValidFileName(cStrName);
 			strName.assign((LPCSTR)cStrName);
 
+			if (strName.length() > 0)
+				;
+			else
 			if ((disposition.CompareNoCase("inline") != 0) && (contentTypeMain.CompareNoCase("image") == 0))
 			{
 				int pos = pMsgView->FindAttachmentByName(cStrName);
@@ -3481,6 +3496,23 @@ void NListView::SelectItem(int iItem)
 					}
 					int deb = 1;
 				}
+			}
+
+			// Check for duplicate names. Sometimes two or mor names can represent diffrent content
+			pos = pMsgView->FindAttachmentByName(cStrName);
+			if (pos >= 0)
+			{
+				CString fileExtension = ::PathFindExtension(cStrName);
+				CString fileName = ::PathFindFileName(cStrName);
+
+				int pos2 = fileName.ReverseFind('.');
+				CString fileNameBase = fileName;
+				if (pos2 >= 0) {
+					fileNameBase = fileName.Mid(0, pos2);
+				}
+				cStrName.Format("%s%s%d%s", fileNameBase, "_", bodyIndex, fileExtension);
+				strName.assign((LPCSTR)cStrName);
+				int deb = 1;
 			}
 
 			string name = strName;
@@ -9369,6 +9401,23 @@ BOOL IsSupportedPictureFileExtension(CString &cext)
 		return FALSE;
 }
 
+
+int NListView::FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CString &fileName)
+{
+	int fileCnt = 0;
+	MailBodyContent *body;
+	for (int j = 0; j < contentDetailsArray.size(); j++)
+	{
+		body = contentDetailsArray[j];
+
+		if (fileName.Compare(body->m_attachmentName) == 0)
+		{
+			fileCnt++;
+		}
+	}
+	return fileCnt;
+}
+
 int NListView::DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody)
 {
 	if (m == 0)
@@ -9378,10 +9427,11 @@ int NListView::DetermineImageFileName(MboxMail *m, CString &cidName, CString &im
 	}
 
 	SimpleString cid;
-	CString imageCachePath;
+	//CString imageCachePath;
 	CString imageFileName;
 	CString nameExtension;
 	CString idExtension;
+	CString locationExtension;
 	MailBodyContent *body;
 
 	CString contentTypeExtension;
@@ -9400,67 +9450,149 @@ int NListView::DetermineImageFileName(MboxMail *m, CString &cidName, CString &im
 		contentTypeMain.Empty();
 		nameExtension.Empty();
 		idExtension.Empty();
+		locationExtension.Empty();
 
+
+		BOOL isValidContentTypeExtension = FALSE;
 		int pos = body->m_contentType.ReverseFind('/');
 		if (pos > 0)
 		{
 			contentTypeExtension = body->m_contentType.Mid(pos + 1);
 			contentTypeMain = body->m_contentType.Left(pos);
+			CString contentTypeExt = "." + contentTypeExtension;
+			isValidContentTypeExtension = IsSupportedPictureFileExtension(contentTypeExt);
 		}
 
-		if ((contentTypeMain.CompareNoCase("image") == 0) || (body->m_contentDisposition.CompareNoCase("inline") == 0))
+		if ((contentTypeMain.CompareNoCase("image") == 0) || 
+			(body->m_contentDisposition.CompareNoCase("inline") == 0) ||
+			(contentTypeExtension.CompareNoCase("octet-stream") == 0))
 		{
+			BOOL isValidAttachmentNameExtension = FALSE;
+			int pos = body->m_attachmentName.ReverseFind('.');
+			if (pos >= 0)
+			{
+				nameExtension = body->m_attachmentName.Mid(pos);
+				isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
+			}
+
+			BOOL isValidContentIdExtension = FALSE;
+			pos = body->m_contentId.ReverseFind('.');
+			if (pos >= 0)
+			{
+				idExtension = body->m_contentId.Mid(pos);
+				isValidContentIdExtension = IsSupportedPictureFileExtension(idExtension);
+			}
+
+			BOOL isValidContentLocationExtension = FALSE;
+			pos = body->m_contentLocation.ReverseFind('.');
+			if (pos >= 0)
+			{
+				locationExtension = body->m_contentLocation.Mid(pos);
+				isValidContentLocationExtension = IsSupportedPictureFileExtension(idExtension);
+			}
+
+			CString attachmentName = body->m_attachmentName;
+
 			if (!body->m_contentId.IsEmpty())
 			{
 				CString contentId = body->m_contentId;
-
-				BOOL isValidContentIdExtension = FALSE;
-				BOOL isValidAttachmentNameExtension = FALSE;
-
-				int pos = body->m_attachmentName.ReverseFind('.');
-				if (pos >= 0)
-				{
-					nameExtension = body->m_attachmentName.Mid(pos);
-					isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
-				}
-
-				pos = contentId.ReverseFind('.');
-				if (pos >= 0)
-				{
-					idExtension = contentId.Mid(pos);
-					isValidContentIdExtension = IsSupportedPictureFileExtension(idExtension);
-				}
-
 				if (contentId.Compare(cidName) == 0)
 				{
-					if (isValidContentIdExtension)
+					// TODO: we assume all contentIds are unique which may not be always true
+					int fileCnt = 0;
+					if (!attachmentName.IsEmpty())
+						fileCnt = FindFilenameCount(m->m_ContentDetailsArray, attachmentName);
+
+					if (!attachmentName.IsEmpty() && (fileCnt < 2))
+					{
+						if (isValidAttachmentNameExtension)
+							imageFileName = mailIndex + attachmentName;
+						else if (isValidContentIdExtension)
+							imageFileName = mailIndex + attachmentName + idExtension;
+						else if (isValidContentLocationExtension)
+							imageFileName = mailIndex + attachmentName + "." + locationExtension;
+						else
+						{
+							// Should try to determine if that is an image and what type
+							// Would need to LoadImage from file and check
+							// Add .jpg for now; don't tink browsers care about suffix
+							imageFileName = mailIndex + attachmentName + ".jpg";
+						}
+					}
+					else if (isValidContentIdExtension)
 					{
 						imageFileName = mailIndex + contentId;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
 					else if (isValidAttachmentNameExtension)
 					{
 						imageFileName = mailIndex + contentId + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
-					else if (!contentTypeExtension.IsEmpty())
+					else if (isValidContentTypeExtension)
 					{
 						imageFileName = mailIndex + contentId + "." + contentTypeExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
 					else
 					{
-						imageFileName = mailIndex + contentId + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
+						imageFileName = mailIndex + contentId + ".jpg";
 					}
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
+					break;
+				}
+				else
+				{
+					int deb = 1;
+				}
+			}
+
+			if ((*foundBody == 0) && !body->m_contentLocation.IsEmpty())
+			{
+				CString contentLocation = body->m_contentLocation;
+				if (contentLocation.Compare(cidName) == 0)
+				{
+					// TODO: we assume all contentLocations are unique which may not be always true
+					int fileCnt = 0;
+					if (!attachmentName.IsEmpty())
+						fileCnt = FindFilenameCount(m->m_ContentDetailsArray, attachmentName);
+
+					if (!attachmentName.IsEmpty() && (fileCnt < 2))
+					{
+						if (isValidAttachmentNameExtension)
+							imageFileName = mailIndex + attachmentName;
+						else if (isValidContentIdExtension)
+							imageFileName = mailIndex + attachmentName + idExtension;
+						else if (isValidContentLocationExtension)
+							imageFileName = mailIndex + attachmentName + "." + locationExtension;
+						else
+						{
+							// Should try to determine if that is an image and what type
+							// Would need to LoadImage from file and check
+							// Add .jpg for now; don't tink browsers care about suffix
+							imageFileName = mailIndex + attachmentName + ".jpg";
+						}
+					}
+					else if (isValidContentLocationExtension)
+					{
+						imageFileName = mailIndex + contentLocation;
+					}
+					else if (isValidAttachmentNameExtension)
+					{
+						imageFileName = mailIndex + contentLocation + nameExtension;
+					}
+					else if (isValidContentTypeExtension)
+					{
+						imageFileName = mailIndex + contentLocation + "." + contentTypeExtension;
+					}
+					else
+					{
+						// Should try to detrmine if that is an image and what type
+						// Would need to LoadImage from file and check
+						// Add .jpg for now; don't tink browsers care about suffix
+						imageFileName = mailIndex + contentLocation + ".jpg";
+					}
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
+					break;
 				}
 				else
 				{
@@ -9470,39 +9602,23 @@ int NListView::DetermineImageFileName(MboxMail *m, CString &cidName, CString &im
 
 			if ((*foundBody == 0) && !body->m_attachmentName.IsEmpty())
 			{
-				CString attachmentName = body->m_attachmentName;
-
-				BOOL isValidAttachmentNameExtension = FALSE;
-				int pos = attachmentName.ReverseFind('.');
-				if (pos >= 0)
-				{
-					nameExtension = attachmentName.Mid(pos);
-					isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
-				}
-
 				if (attachmentName.Compare(cidName) == 0)
 				{
 					if (isValidAttachmentNameExtension)
 					{
-						imageFileName = mailIndex + attachmentName;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
+						imageFileName = mailIndex + attachmentName;;
 					}
-					else if (!contentTypeExtension.IsEmpty())
+					else if (isValidContentTypeExtension)
 					{
 						imageFileName = mailIndex + attachmentName + "." + contentTypeExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
 					else
 					{
-						imageFileName = mailIndex + attachmentName + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
+						imageFileName = mailIndex + attachmentName + ".jpg";
 					}
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
+					break;
 				}
 				else
 				{
@@ -9542,6 +9658,18 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 
 	static char * cid_pattern = "cid:";
 	static int cid_patternLen = strlen(cid_pattern);
+
+	static char * http_pattern = "http:";
+	static int http_patternLen = strlen(http_pattern);
+
+	static char * https_pattern = "https:";
+	static int https_patternLen = strlen(https_pattern);
+
+	static char * mhtml_pattern = "mhtml:";
+	static int mhtml_patternLen = strlen(mhtml_pattern);
+
+	static char * data_pattern = "data:";
+	static int data_patternLen = strlen(data_pattern);
 
 	MboxMail *m = 0;
 	if (mailPosition < MboxMail::s_mails.GetCount())
@@ -9637,44 +9765,86 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 
 		pos += src_patternLen;
 
-		//pos = strnstrUpper2Lower(pos, srcImgEnd, cid_pattern, cid_patternLen);
+		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
 		pos = strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
-		if (pos == 0)
-		{
-			// find end of cid token
-			pos = strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
-			if (pos != 0)
-			{
-				cidEnd = pos;
-				// check if any of http: , https: , data: , etc
-				char *p = strchar(cidBegin, cidEnd, ':');
-				if (p)
-					pos = 0;
-			}
-
-			if (pos == 0)
-			{
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-				continue;
-			}
-		}
-		else
+		if (pos != 0)
 		{
 			pos += cid_patternLen;
 			cidBegin = pos;
+		}
 
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + mhtml_patternLen, mhtml_pattern, mhtml_patternLen);
+			if (pos) {
+				pos = strchar(pos, srcImgEnd, '!');
+				if (pos) {
+					cidBegin = pos + 1;
+					pos = 0;
+					foundHTTP = true;
+				}
+				int deb = 1;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + http_patternLen, http_pattern, http_patternLen);
+			if (pos) {
+				pos += 0;  // include http:
+				cidBegin = pos;
+				foundHTTP = true;
+			}
+		}
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + https_patternLen, https_pattern, https_patternLen);
+			if (pos) { 
+				pos += 0;  // include https:
+				cidBegin = pos;
+				foundHTTP = true;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
+			if (pos) { // not implemented ; implemented by broesers, etc
+				//pos += 0;  // include https:
+				//cidBegin = pos;
+
+				// set pos = 0 since src=data: case is not handled
+				pos = 0;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+			continue;
+		}
+		else
+		{
 			// find end of cid token
 			pos = strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
 			if (pos == 0)
 			{
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				pos = srcImgEnd;  // jump over this <img .. > since no cid:
 				continue;
 			}
 			cidEnd = pos;
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
+		if (foundHTTP) {
+			int retLen = DecodeURL(cid.Data(), cid.Count());
+			cid.SetCount(retLen);
+		}
 
 		// Enable if needed
 		//CString *cidName = new CString(cid.Data(), cid.Count());
@@ -9744,6 +9914,18 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	static char * cid_pattern = "cid:";
 	static int cid_patternLen = strlen(cid_pattern);
 
+	static char * http_pattern = "http:";
+	static int http_patternLen = strlen(http_pattern);
+
+	static char * https_pattern = "https:";
+	static int https_patternLen = strlen(https_pattern);
+
+	static char * mhtml_pattern = "mhtml:";
+	static int mhtml_patternLen = strlen(mhtml_pattern);
+
+	static char * data_pattern = "data:";
+	static int data_patternLen = strlen(data_pattern);
+
 	char *input = inData;
 	int inputLength = indDataLen;
 	char *inputEnd = input + inputLength;
@@ -9756,6 +9938,10 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 	char *fromBegin = input;
 	char *alt_pos;
+	int patternLen = cid_patternLen;
+	int mhtmlIntroLen = 0;
+	char *srcBegin;
+	char *srcValueBegin;
 
 	MboxMail *m = 0;
 	if (useMailPosition)
@@ -9821,58 +10007,107 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 		pos = strnstrUpper2Lower(pos, srcImgEnd, src_pattern, src_patternLen);
 		if (pos == 0) {
 			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+			pos = srcImgEnd;  // jump over this <img .. > since no cid:
 			fromBegin = pos;
 			continue;
 		}
 
+		patternLen = cid_patternLen;
+		srcBegin = pos;
 		pos += src_patternLen;
+		srcValueBegin = pos;
 
-		//pos = strnstrUpper2Lower(pos, srcImgEnd, cid_pattern, cid_patternLen);
+		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
 		pos = strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
+		if (pos != 0)
+		{
+			patternLen = cid_patternLen;
+			pos += cid_patternLen;
+			cidBegin = pos;
+		}
+
+		mhtmlIntroLen = 0;
 		if (pos == 0)
 		{
-			// find end of cid token
-			pos = strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
-			if (pos != 0)
-			{
-				cidEnd = pos;
-				// check if any of http: , https: , data: , etc
-				char *p = strchar(cidBegin, cidEnd, ':');
-				if (p) 
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + mhtml_patternLen, mhtml_pattern, mhtml_patternLen);
+			if (pos) {
+				pos = strchar(pos, srcImgEnd, '!');
+				if (pos) {
+					mhtmlIntroLen = pos - cidBegin + 1;
+					cidBegin = pos + 1;
 					pos = 0;
-				else
-					outbuf->Append(fromBegin, cidBegin -1 - fromBegin);
+					foundHTTP = TRUE;
+				}
+				int deb = 1;
 			}
+		}
 
-			if (pos == 0)
-			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-				fromBegin = pos;
-				continue;
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + http_patternLen, http_pattern, http_patternLen);
+			if (pos) {
+				patternLen = 0;
+				pos += patternLen;  // include http:
+				cidBegin = pos;
+				foundHTTP = true;
 			}
+		}
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + https_patternLen, https_pattern, https_patternLen);
+			if (pos) {
+				patternLen = 0;
+				pos += patternLen;  // include https:
+				cidBegin = pos;
+				foundHTTP = true;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
+			if (pos) { // not implemented ; implemented by browser, etrc
+				//patternLen = 0;
+				//pos += patternLen;  // include data:
+				//cidBegin = pos;
+
+				// set pos = 0 since src=data: case is not handled
+				pos = 0;
+			}
+		}
+
+		if (pos == 0)
+		{
+			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
+			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+			fromBegin = pos;
+			continue;
 		}
 		else
 		{
-			pos += cid_patternLen;
-			cidBegin = pos;
-
 			// find end of cid token
 			pos = strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
 			if (pos == 0)
 			{
 				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				pos = srcImgEnd;  // jump over this <img .. > since no cid:
 				fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
-			outbuf->Append(fromBegin, cidBegin -1 - cid_patternLen - fromBegin);
+			outbuf->Append(fromBegin, cidBegin - 1 - patternLen - fromBegin - mhtmlIntroLen);
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
+		if (foundHTTP) {
+			int retLen = DecodeURL(cid.Data(), cid.Count());
+			cid.SetCount(retLen);
+		}
 
 		cidName.Empty();
 		cidName.Append(cid.Data(), cid.Count());
@@ -9951,15 +10186,15 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 		}
 		else
 		{
-			outbuf->Append("\"cid:");
-			outbuf->Append(cid);
-			outbuf->Append("\"");
+			outbuf->Append('\"');
+			outbuf->Append(srcValueBegin, cidEnd - srcValueBegin);
+			//outbuf->Append(srcBegin, cidEnd - srcBegin);
+			int deb = 1;
 		}
-
+#if 0
 		SimpleString alt;
 		if (alt_pos == 0) {
 			alt.Append("alt=\"image");
-			//alt.Append((char*)(LPCSTR)nameExtension);
 			alt.Append("\" ");
 		}
 
@@ -9967,13 +10202,36 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			outbuf->Append(" ");
 			outbuf->Append(alt);
 		}
-
+#endif
 		pos = srcImgEnd;
 		int deb = 1;
 	}
 
 	fpm.Close();
 	return -1;
+}
+
+int NListView::FindFilenameCount(CMimeBody::CBodyList &bodies,  CString &fileName)
+{
+	CMimeBody* pBP;
+	string strName;
+	strName.resize(128);
+	int fileCnt = 0;
+	CMimeBody::CBodyList::const_iterator it;
+	for (it = bodies.begin(); it != bodies.end(); it++)
+	{
+		pBP = *it;
+
+		string strName = pBP->GetFilename();  // prefer GetFilename
+		if (strName.empty())
+			strName = pBP->GetName();
+
+		if (fileName.Compare(strName.c_str()) == 0)
+		{
+			fileCnt++;
+		}
+	}
+	return fileCnt;
 }
 
 int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray)
@@ -9985,16 +10243,15 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 	}
 
 	SimpleString cid;
-	CString imageCachePath;
 	CString imageFileName;
-	CString imgFile;
 	CString nameExtension;
 	CString idExtension;
+	CString locationExtension;
 	CMimeBody *body;
 
 	*foundBody = 0;
 
-	CString mailIndex;  // not needed anymore
+	CString mailIndex;  // not needed anymore here
 
 	CMimeBody::CBodyList::const_iterator it;
 	CString bdy = "";
@@ -10041,9 +10298,9 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 		// We read and initialize bdy as text and later override with html.
 		// Need to redo.
 
-		string strName = pBP->GetName();
+		string strName = pBP->GetFilename();  // prefer GetFilename
 		if (strName.empty())
-			strName = pBP->GetFilename();
+			strName = pBP->GetName();
 
 		CString cStrName = strName.c_str();
 		CString attachmentName = strName.c_str();
@@ -10061,13 +10318,19 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 		CString contentType;
 		MboxCMimeHelper::GetContentType(pBP, contentType);
 
+		CString contentLocation;
+		MboxCMimeHelper::GetContentLocation(pBP, contentLocation);
+
 		CString contentTypeExtension;
 		CString contentTypeMain;
+		BOOL isValidContentTypeExtension = FALSE;
 		int pos = contentType.ReverseFind('/');
 		if (pos > 0)
 		{
 			contentTypeExtension = contentType.Mid(pos + 1);
 			contentTypeMain = contentType.Left(pos);
+			CString contentTypeExt = "." + contentTypeExtension;
+			isValidContentTypeExtension = IsSupportedPictureFileExtension(contentTypeExt);
 		}
 
 		contentType.MakeLower();
@@ -10080,6 +10343,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					disposition = "inline";
 				else if (disposition.IsEmpty() && !contentId.IsEmpty())
 					disposition = "inline";
+
 			}
 		}
 
@@ -10088,57 +10352,146 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 			continue;
 		}
 
-		if ((contentTypeMain.CompareNoCase("image") == 0) || (disposition.CompareNoCase("inline") == 0))
+		BOOL  isOctetStream = FALSE;
+		if (contentTypeExtension.CompareNoCase("octet-stream") == 0)
+			isOctetStream = TRUE;
+
+		BOOL isValidAttachmentNameExtension = FALSE;
+		if (!attachmentName.IsEmpty())
+		{
+			pos = attachmentName.ReverseFind('.');
+			if (pos >= 0)
+			{
+				nameExtension = attachmentName.Mid(pos);
+				isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
+			}
+		}
+		
+		BOOL isValidContentIdExtension = FALSE;
+		if (!contentId.IsEmpty())
+		{
+			pos = contentId.ReverseFind('.');
+			if (pos >= 0)
+			{
+				idExtension = contentId.Mid(pos);
+				isValidContentIdExtension = IsSupportedPictureFileExtension(idExtension);
+			}
+		}
+
+		BOOL isValidContentLocationExtension = FALSE;
+		if (!contentLocation.IsEmpty()) 
+		{
+			pos = contentLocation.ReverseFind('.');
+			if (pos >= 0)
+			{
+				locationExtension = contentLocation.Mid(pos);
+				isValidContentLocationExtension = IsSupportedPictureFileExtension(locationExtension);
+			}
+		}
+
+		if ((contentTypeMain.CompareNoCase("image") == 0) || (disposition.CompareNoCase("inline") == 0) || isOctetStream)
 		{
 			if (!contentId.IsEmpty())
 			{
-				BOOL isValidContentIdExtension = FALSE;
-				BOOL isValidAttachmentNameExtension = FALSE;
-
-				int pos = attachmentName.ReverseFind('.');
-				if (pos >= 0)
-				{
-					nameExtension = attachmentName.Mid(pos);
-					isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
-				}
-
-				pos = contentId.ReverseFind('.');
-				if (pos >= 0)
-				{
-					idExtension = contentId.Mid(pos);
-					isValidContentIdExtension = IsSupportedPictureFileExtension(idExtension);
-				}
-
 				if (contentId.Compare(cidName) == 0)
 				{
-					if (isValidContentIdExtension)
+					// TODO: we assume all contentIds are unique which may not be always true
+					int fileCnt = 0;
+					if (!attachmentName.IsEmpty())
+						fileCnt = FindFilenameCount(bodies, attachmentName);
+
+					if (!attachmentName.IsEmpty() && (fileCnt < 2))  // if no duplicate file names
+					{
+						if (isValidAttachmentNameExtension)
+							imageFileName = mailIndex + attachmentName;
+						else if (isValidContentTypeExtension)
+							imageFileName = mailIndex + attachmentName + nameExtension;
+						else if (isValidContentIdExtension)
+							imageFileName = mailIndex + attachmentName + "." + idExtension;
+						else
+						{
+							// Should try to detrmine if that is an image and what type
+							// Would need to LoadImage from file and check
+							// Add .jpg for now; don't tink browsers care about suffix
+							imageFileName = mailIndex + attachmentName + ".jpg";
+						}
+					}
+					else if (isValidContentIdExtension)
 					{
 						imageFileName = mailIndex + contentId;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
 					else if (isValidAttachmentNameExtension)
 					{
 						imageFileName = mailIndex + contentId + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
-					else if (!contentTypeExtension.IsEmpty())
+					else if (isValidContentTypeExtension)
 					{
 						imageFileName = mailIndex + contentId + "." + contentTypeExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
 					}
 					else
 					{
-						imageFileName = mailIndex + contentId + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						*foundBody = body;
-						break;
+						// Should try to detrmine if that is an image and what type
+						// Would need to LoadImage from file and check
+						// Add .jpg for now; don't tink browsers care about suffix
+						imageFileName = mailIndex + contentId + ".jpg";
 					}
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
+					break;
+				}
+				else
+				{
+					int deb = 1;
+				}
+			}
+
+			if ((*foundBody == 0) && !contentLocation.IsEmpty())
+			{
+				if (contentLocation.Compare(cidName) == 0)
+				{
+					// TODO: we assume all contentLocations are unique which may not be always true
+					int fileCnt = 0;
+					if (!attachmentName.IsEmpty())
+						fileCnt = FindFilenameCount(bodies, attachmentName);
+
+					if (!attachmentName.IsEmpty() && (fileCnt < 2))
+					{
+						if (isValidAttachmentNameExtension)
+							imageFileName = mailIndex + attachmentName;
+						else if (isValidContentIdExtension)
+							imageFileName = mailIndex + attachmentName + idExtension;
+						else if (isValidContentLocationExtension)
+							imageFileName = mailIndex + attachmentName + "." + locationExtension;
+						else
+						{
+							// Should try to determine if that is an image and what type
+							// Would need to LoadImage from file and check
+							// Add .jpg for now; don't tink browsers care about suffix
+							imageFileName = mailIndex + attachmentName + ".jpg";
+						}
+					}
+					else if (isValidContentLocationExtension)
+					{
+						imageFileName = mailIndex + contentLocation;
+					}
+					else if (isValidAttachmentNameExtension)
+					{
+						imageFileName = mailIndex + contentLocation + nameExtension;
+					}
+					else if (isValidContentTypeExtension)
+					{
+						imageFileName = mailIndex + contentLocation + "." + contentTypeExtension;
+					}
+					else
+					{
+						// Should try to detrmine if that is an image and what type
+						// Would need to LoadImage from file and check
+						// Add .jpg for now; don't tink browsers care about suffix
+						imageFileName = mailIndex + contentLocation + ".jpg";
+					}
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
+					break;
 				}
 				else
 				{
@@ -10148,40 +10501,35 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 
 			if ((*foundBody == 0) && !attachmentName.IsEmpty())
 			{
-				BOOL isValidAttachmentNameExtension = FALSE;
-				int pos = attachmentName.ReverseFind('.');
-				if (pos >= 0)
-				{
-					nameExtension = attachmentName.Mid(pos);
-					isValidAttachmentNameExtension = IsSupportedPictureFileExtension(nameExtension);
-				}
-
 				if (attachmentName.Compare(cidName) == 0)
 				{
+					int fileCnt = FindFilenameCount(bodies, attachmentName);
+
+					if (fileCnt > 1)
+					{
+						// There are duplicate attachment names in bodies but may not be in
+						// attachments array. TODO: Better solution is still needed
+						int deb = 1;
+					}
+
 					if (isValidAttachmentNameExtension)
 					{
 						imageFileName = mailIndex + attachmentName;
-						MboxMail::MakeValidFileName(imageFileName);
-						imgFile = imageCachePath + imageFileName;
-						*foundBody = body;
-						break;
 					}
-					else if (!contentTypeExtension.IsEmpty())
+					else if (isValidContentIdExtension)
 					{
 						imageFileName = mailIndex + attachmentName + "." + contentTypeExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						imgFile = imageCachePath + imageFileName;
-						*foundBody = body;
-						break;
 					}
 					else
 					{
-						imageFileName = mailIndex + attachmentName + nameExtension;
-						MboxMail::MakeValidFileName(imageFileName);
-						imgFile = imageCachePath + imageFileName;
-						*foundBody = body;
-						break;
+						// Should try to detrmine if that is an image and what type
+						// Would need to LoadImage from file and check
+						// Add .jpg for now; don't tink browsers care about suffix
+						imageFileName = mailIndex + attachmentName + ".jpg";
 					}
+
+					MboxMail::MakeValidFileName(imageFileName);
+					*foundBody = body;
 				}
 				else
 				{
@@ -10200,6 +10548,8 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 		else
 			fileImgAlreadyCreatedArray.SetAt(bodyIndex, true);
 	}
+	//else ; // src=value didn't match contentId, contentLocation and attachmentName, i.e it is not embedded
+
 	imageFilePath = imageFileName;
 
 #if 0
@@ -10283,6 +10633,9 @@ int NListView::GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody*
 	return -1;
 }
 
+
+// NListView::CreateInlineImageFiles_SelectedItem and UpdateInlineSrcImgPath_SelectedItem have a lot of common code
+// Abstract and support callback/client callback to process separate  functionality
 int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray)
 {
 	static char * img_pattern = "<img";
@@ -10293,6 +10646,18 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 
 	static char * cid_pattern = "cid:";
 	static int cid_patternLen = strlen(cid_pattern);
+
+	static char * http_pattern = "http:";
+	static int http_patternLen = strlen(http_pattern);
+
+	static char * https_pattern = "https:";
+	static int https_patternLen = strlen(https_pattern);
+
+	static char * mhtml_pattern = "mhtml:";
+	static int mhtml_patternLen = strlen(mhtml_pattern);
+
+	static char * data_pattern = "data:";
+	static int data_patternLen = strlen(data_pattern);
 
 	MboxMail *m = 0;
 	if (mailPosition < MboxMail::s_mails.GetCount())
@@ -10369,35 +10734,72 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 		}
 
 		pos += src_patternLen;
-
-		//pos = strnstrUpper2Lower(pos, srcImgEnd, cid_pattern, cid_patternLen);
+		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
 		pos = strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
-		if (pos == 0)
-		{
-			// find end of cid token
-			pos = strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
-			if (pos != 0)
-			{
-				cidEnd = pos;
-				// check if any of http: , https: , data: , etc
-				char *p = strchar(cidBegin, cidEnd, ':');
-				if (p) 
-					pos = 0;
-			}
-
-			if (pos == 0)
-			{
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-				continue;
-			}
-		}
-		else
+		if (pos != 0)
 		{
 			pos += cid_patternLen;
 			cidBegin = pos;
+		}
 
-			// find end of cid token
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + mhtml_patternLen, mhtml_pattern, mhtml_patternLen);
+			if (pos) {
+				pos = strchar(pos, srcImgEnd, '!');
+				if (pos) {
+					cidBegin = pos + 1;
+					pos = 0;
+					foundHTTP = true;
+				}
+				int deb = 1;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + http_patternLen, http_pattern, http_patternLen);
+			if (pos) {
+				pos += 0;  // include http:
+				cidBegin = pos;
+				foundHTTP = true;
+			}
+		}
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + https_patternLen, https_pattern, https_patternLen);
+			if (pos) {
+				pos += 0;  // include https:
+				cidBegin = pos;
+				foundHTTP = true;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
+			if (pos) { // not implemented ; implemented by browsers, etc
+				//pos += 0;  // include data:
+				//cidBegin = pos;
+
+				// set pos = 0 since src=data: case is not handled
+				pos = 0;
+			}
+		}
+
+		if (pos == 0)
+		{
+				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				continue;
+		}
+		else
+		{
+			// find end of cid token (or http or https)
 			pos = strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
 			if (pos == 0)
 			{
@@ -10408,17 +10810,27 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
-
+		if (foundHTTP) {
+			int retLen = DecodeURL(cid.Data(), cid.Count());
+			cid.SetCount(retLen);
+		}
+		
 		cidName = cid.Data();
 
 		CMimeBody *pBodyFound = 0;
 		int retval = NListView::DetermineImageFileName_SelectedItem(bodies, m, cidName, imageFileName, &pBodyFound, fileImgAlreadyCreatedArray);
 		if (pBodyFound && (retval > 0))
 		{
+			CString imgFile = GetmboxviewTempPath() + imageFileName;
+			MailBodyInfo* info = new MailBodyInfo;
+			info->m_CID.Append(cidName);
+			info->m_imgFileName.Append(imgFile);
+
+			cidArray.Add(info);
+
 			int pos = pMsgView->FindAttachmentByName(imageFileName);
 			if (pos < 0)
 			{
-				CString imgFile = GetmboxviewTempPath() + imageFileName;
 				pBodyFound->WriteToFile(imgFile);
 				// Set item icon and insert in attachment list
 				int iIcon = 0;
@@ -10439,12 +10851,6 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 				}
 				pMsgView->m_bAttach = TRUE;
 				pMsgView->m_attachments.InsertItem(pMsgView->m_attachments.GetItemCount(), imageFileName, iIcon);
-
-				MailBodyInfo* info = new MailBodyInfo;
-				info->m_CID.Append(cidName);
-				info->m_imgFileName.Append(imgFile);
-
-				cidArray.Add(info);
 			}
 		}
 
@@ -10472,6 +10878,79 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 	return 1;
 }
 
+
+int NListView::DecodeURL(char *URL, int urlLen)
+{
+	int retLen = urlLen;
+#if 0
+//	< to   &lt;
+//	> to   &gt;
+//	& to   &amp;
+//	" to   &quote;
+//	' to   &apos;
+#endif
+	int outLen = 0;
+	int escapedCharLen = 0;
+	char *p_out = URL;
+	char *p_beg = URL;
+	char *p = URL;
+	int i = 0;
+	for (i = 0; i < urlLen; i++)
+	{
+		escapedCharLen = 0;
+		p = &URL[i];
+		if (*p == '&')
+		{
+			char *val = p + 1;
+			if (strncmp(val, "amp;", 4) == 0) {
+				*p = '&';
+				escapedCharLen = 4;
+			}
+			else if (strncmp(val, "lt;", 3) == 0) {
+				*p = '<';
+				escapedCharLen = 3;
+			}
+			else if (strncmp(val, "gt;", 3) == 0) {
+				*p = '>';
+				escapedCharLen = 3;
+			}
+			else if (strncmp(val, "quote;", 6) == 0) {
+				*p = '"';
+				escapedCharLen = 6;
+			}
+			else if (strncmp(val, "apos;", 5) == 0) {
+				*p = '\'';
+				escapedCharLen = 5;
+			}
+
+			if (escapedCharLen > 0) 
+			{
+				int blockLen = p - p_beg + 1;
+				memcpy(p_out, p_beg, blockLen);
+				p_out += blockLen;
+				outLen += blockLen;
+				p += escapedCharLen+1;
+				p_beg = p;
+			}
+		}
+	}
+
+	if (p != p_beg)
+	{
+		int blockLen = p - p_beg + 1;
+		memcpy(p_out, p_beg, blockLen);
+		outLen += blockLen;
+		p_out += blockLen;
+
+	}
+
+	retLen = p_out - URL;
+	if (outLen != retLen)
+		int deb = 1;
+
+	return retLen;
+}
+
 int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray)
 {
 	static char * img_pattern = "<img";
@@ -10482,6 +10961,18 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 
 	static char * cid_pattern = "cid:";
 	static int cid_patternLen = strlen(cid_pattern);
+
+	static char * http_pattern = "http:";
+	static int http_patternLen = strlen(http_pattern);
+
+	static char * https_pattern = "https:";
+	static int https_patternLen = strlen(https_pattern);
+
+	static char * mhtml_pattern = "mhtml:";
+	static int mhtml_patternLen = strlen(mhtml_pattern);
+
+	static char * data_pattern = "data:";
+	static int data_patternLen = strlen(data_pattern);
 
 	char *input = inData;
 	int inputLength = indDataLen;
@@ -10495,6 +10986,10 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 
 	char *fromBegin = input;
 	char *alt_pos;
+	int patternLen = cid_patternLen;
+	int mhtmlIntroLen = 0;
+	char *srcBegin;
+	char *srcValueBegin;
 
 	MboxMail *m = 0;
 	if (useMailPosition)
@@ -10542,52 +11037,102 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 			continue;
 		}
 
+		patternLen = cid_patternLen;
+		srcBegin = pos;
 		pos += src_patternLen;
+		srcValueBegin = pos;
 
+		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
-		pos = strnstrUpper2Lower(pos, pos+cid_patternLen, cid_pattern, cid_patternLen);
-		if (pos == 0) 
+		pos = strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
+		if (pos != 0)
 		{
-			// find end of cid token
-			pos = strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
-			if (pos != 0)
-			{
-				cidEnd = pos;
-				// check if any of http: , https: , data: , etc
-				char *p = strchar(cidBegin, cidEnd, ':');
-				if (p)
-					pos = 0;
-				else
-					outbuf->Append(fromBegin, cidBegin -1 - fromBegin);
-			}
+			patternLen = cid_patternLen;
+			pos += cid_patternLen;
+			cidBegin = pos;
+		}
 
-			if (pos == 0)
-			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-				fromBegin = pos;
-				continue;
+		mhtmlIntroLen = 0;
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + mhtml_patternLen, mhtml_pattern, mhtml_patternLen);
+			if (pos) { 
+				pos = strchar(pos, srcImgEnd, '!');
+				if (pos) {
+					mhtmlIntroLen = pos - cidBegin + 1;
+					cidBegin = pos + 1;
+					pos = 0;
+					foundHTTP = TRUE;
+				}
+				int deb = 1;
 			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + http_patternLen, http_pattern, http_patternLen);
+			if (pos) {
+				patternLen = 0;
+				pos += patternLen;  // include http:
+				cidBegin = pos;
+				foundHTTP = TRUE;
+			}
+		}
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + https_patternLen, https_pattern, https_patternLen);
+			if (pos) {
+				patternLen = 0;
+				pos += patternLen;  // include https:
+				cidBegin = pos;
+				foundHTTP = TRUE;
+			}
+		}
+
+		if (pos == 0)
+		{
+			pos = cidBegin;
+			pos = strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
+			if (pos) { // not implemented ; implemented by browsers, etc
+				//patternLen = 0;
+				//pos += patternLen;  // include data:
+				//cidBegin = pos;
+
+				// set pos = 0 since src=data: case is not handled
+				pos = 0;
+			}
+		}
+
+		if (pos == 0)
+		{
+			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
+			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+			fromBegin = pos;
+			continue;
 		}
 		else
 		{
-			pos += cid_patternLen;
-			cidBegin = pos;
-
 			// find end of cid token
 			pos = strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
 			if (pos == 0)
 			{
 				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				pos = srcImgEnd;  // jump over this <img .. > since no cid:
 				fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
-			outbuf->Append(fromBegin, cidBegin - 1 - cid_patternLen - fromBegin);
+			outbuf->Append(fromBegin, cidBegin - 1 - patternLen - fromBegin - mhtmlIntroLen);
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
+		if (foundHTTP) {
+			int retLen = DecodeURL(cid.Data(), cid.Count());
+			cid.SetCount(retLen);
+		}
 
 		cidName.Empty();
 		cidName.Append(cid.Data(), cid.Count());
@@ -10619,15 +11164,14 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 		}
 		else
 		{
-			outbuf->Append("\"cid:");
-			outbuf->Append(cid);
-			outbuf->Append("\"");
+			outbuf->Append('\"');
+			outbuf->Append(srcValueBegin, cidEnd - srcValueBegin);
+			int deb = 1;
 		}
-
+#if 0
 		SimpleString alt;
 		if (alt_pos == 0) {
 			alt.Append("alt=\"image");
-			//alt.Append((char*)(LPCSTR)nameExtension);
 			alt.Append("\" ");
 		}
 
@@ -10635,6 +11179,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 			outbuf->Append(" ");
 			outbuf->Append(alt);
 		}
+#endif
 
 		pos = srcImgEnd;
 	}

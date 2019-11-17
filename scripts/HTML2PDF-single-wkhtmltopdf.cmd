@@ -55,6 +55,10 @@ REM echo File Name Ext is: %HTMLNameExt%
 
 del "%PDFdir%\%HTMLNameBase%.pdf"
 
+REM The --no-background option, if present, will remove background color in the target PDF. 
+REM Remove/add REM at the begining of the line to select proper command line.
+
+REM call "%CmdPath%" --log-level none --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
 call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
 
 REM Replace "REM pause" with "pause" for testing.

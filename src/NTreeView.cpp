@@ -48,6 +48,7 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 NTreeView::NTreeView()
 {
 	m_bSelectMailFileDone = FALSE;
+	m_bSelectMailFilePostMsgDone = FALSE;
 	m_timerTickCnt = 0;
 	m_nIDEvent = 1;
 	m_nElapse = 1;
@@ -71,6 +72,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_NOTIFY(TVN_SELCHANGING, IDC_TREE, OnSelchanging)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE, OnRClick)  // Right Click Menu
 	ON_WM_TIMER()
+	ON_MESSAGE(WM_CMD_PARAM_FILE_NAME_MESSAGE, OnCmdParam_FileName)
 END_MESSAGE_MAP()
 
 
@@ -922,4 +924,19 @@ void NTreeView::FindAllDirs(LPCTSTR pstr)
 	}
 
 	finder.Close();
+}
+
+void NTreeView::PostMsgCmdParamFileName()
+{
+	if (GetSafeHwnd() && !m_bSelectMailFilePostMsgDone)
+	{
+		BOOL res = PostMessage(WM_CMD_PARAM_FILE_NAME_MESSAGE, 0, 0);
+		m_bSelectMailFilePostMsgDone = TRUE;
+	}
+}
+
+LRESULT NTreeView::OnCmdParam_FileName(WPARAM wParam, LPARAM lParam)
+{
+	SelectMailFile();
+	return 0;
 }

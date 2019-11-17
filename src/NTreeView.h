@@ -37,6 +37,9 @@
 
 #include "WheelTreeCtrl.h"
 
+// Define below in single location if more user messages are implemented
+#define WM_CMD_PARAM_FILE_NAME_MESSAGE  (WM_APP + 1)
+
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView window
 
@@ -51,6 +54,7 @@ public:
 	CWheelTreeCtrl	m_tree;
 	CMap<CString, LPCSTR, _int64, _int64>	fileSizes;
 	BOOL m_bSelectMailFileDone;
+	BOOL m_bSelectMailFilePostMsgDone;
 	int m_timerTickCnt;
 	// timer
 	UINT_PTR m_nIDEvent;
@@ -80,6 +84,7 @@ public:
 	virtual ~NTreeView();
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	void StartTimer();
+	void PostMsgCmdParamFileName();
 
 	static void FindAllDirs(LPCTSTR pstr);
 
@@ -95,6 +100,7 @@ protected:
 	afx_msg void OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg LRESULT OnCmdParam_FileName(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

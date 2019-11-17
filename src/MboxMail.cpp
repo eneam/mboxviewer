@@ -938,6 +938,30 @@ bool cmpMbox(MboxMail* a, MboxMail *b) {
 void MboxMail::Parse(LPCSTR path)
 {
 	Destroy();
+
+	// Delete all files in print and image cache directories
+	CString cpath = path;
+	CString rootPrintSubFolder = "PrintCache";;
+	CString targetPrintSubFolder;
+	CString prtCachePath;
+	CString errorText;
+#if 0
+	// Removing Printcache not critical I think
+	bool ret1 = MboxMail::GetArchiveSpecificCachePath(cpath, rootPrintSubFolder, targetPrintSubFolder, prtCachePath, errorText);
+	if (errorText.IsEmpty() && PathFileExist(prtCachePath)) {
+		pCUPDUPData->SetProgress(_T("Deleting all files in the PrintCache directory ..."), 0);
+		RemoveDir(prtCachePath, true);
+	}
+#endif
+
+	rootPrintSubFolder = "ImageCache";
+	errorText.Empty();
+	bool ret2 = MboxMail::GetArchiveSpecificCachePath(cpath, rootPrintSubFolder, targetPrintSubFolder, prtCachePath, errorText);
+	if (errorText.IsEmpty() && PathFileExist(prtCachePath)) {
+		pCUPDUPData->SetProgress(_T("Deleting all files in the ImageCache directory ..."), 0);
+		RemoveDir(prtCachePath, true);
+	}
+
 	MboxMail::s_path = path;
 	bool	bEml = false;
 	int l = strlen(path);
@@ -1814,64 +1838,61 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 	return 1;
 }
 
+#if 0
+
+August 13, 1982 - 5 - RFC #822
+
+UNFOLDING Long Lines
+
+The process of moving  from  this  folded   multiple - line
+representation  of a header field to its single line represen -
+tation is called "unfolding".Unfolding  is  accomplished  by
+regarding   CRLF   immediately  followed  by  a  LWSP-char  as
+equivalent to the LWSP-char.
+
+Note:  While the standard  permits  folding  wherever  linear -
+	white - space is permitted, it is recommended that struc -
+	tured fields, such as those containing addresses, limit
+	folding  to higher - level syntactic breaks.For address
+	fields, it  is  recommended  that  such  folding  occur
+	between addresses, after the separating comma.
+#endif
+
 char * GetMultiLine(char *p, char *e, CString &line)
 {
-#if 1
-	// Implementation according to spec and preserves the number of "spaces" in the mail file
-	// I have impression that the "incorrect" version below may work better in practice
 	// TODO: not the most efficient implementation
 	char *p_beg = p;
 	p = EatNewLine(p, e);
 
 	char *ss = line.GetBufferSetLength(p - p_beg);
 	::memcpy(ss, p_beg, p - p_beg);
-	line.TrimLeft("\r\n");
+
+	line.TrimLeft();
 	line.TrimRight("\r\n");
 
 	if (line.IsEmpty())
 		return p;
 
+	char c = line.GetAt(line.GetLength() - 1);
 	while ((p < e) && ((*p == ' ') || (*p == '\t')))
 	{
+		if ((c == ' ') || (c == '\t'))
+			int deb = 1;
+
 		char *p_next_beg = p;
 		p = EatNewLine(p, e);
 
 		CString nextLine;
 		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
 		::memcpy(ss, p_next_beg, p - p_next_beg);
-		line.TrimLeft("\r\n");
+		nextLine.TrimLeft();
 		nextLine.TrimRight("\r\n");
 
-		line += nextLine;  
+		//line += " " + nextLine;  // this is according to spec but it doesn't work in many cases
+		line += nextLine;
 	}
+	line.Trim();
 	return p;
-#else
-	// Implementation not according to spec but reduces number of "spaces"
-	// TODO: not the most efficient implementation
-	char *p_beg = p;
-	p = EatNewLine(p, e);
-
-	char *ss = line.GetBufferSetLength(p - p_beg);
-	::memcpy(ss, p_beg, p - p_beg);
-	line.Trim(); 
-
-	if (line.IsEmpty())
-		return p;
-
-	while ((p < e) && ((*p == ' ') || (*p == '\t')))
-	{
-		char *p_next_beg = p;
-		p = EatNewLine(p, e);
-
-		CString nextLine;
-		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
-		::memcpy(ss, p_next_beg, p - p_next_beg);
-		nextLine.Trim();
-
-		line += " " + nextLine;
-	}
-	return p;
-#endif
 };
 
 int GetFieldValue(CString &fieldLine, int startPos, CString &value)
@@ -2146,6 +2167,7 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 			contentDetails->m_contentId = pBP->m_ContentId;
 			contentDetails->m_contentTransferEncoding = pBP->m_TransferEncoding;
 			contentDetails->m_attachmentName = pBP->m_AttachmentName;
+			contentDetails->m_contentLocation = pBP->m_ContentLocation;
 			contentDetails->m_pageCode = pBP->m_PageCode;
 
 			if ((pBP->m_PageCode == 0) && pBP->m_IsTextHtml)
@@ -3893,6 +3915,14 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
+	//CString marginLeft = "margin-left:5px;";
+	//CString backgroundColor = "background-color:transparent;";
+	//CString marginLeft = "margin-left:0px;";
+	//CString backgroundColor = "background-color:white;";
+
+	CString body = "\r\n\r\n<html><head></head><body style=\'background-color:white\'></body></html>\r\n";
+	fp.Write(body, body.GetLength());
+
 	if (outbuflarge->Count() != 0)
 	{
 		CString bdycharset = "UTF-8";
@@ -3901,11 +3931,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		SimpleString *workbuf = MboxMail::m_workbuf;
 		workbuf->ClearAndResize(outbuflarge->Count() * 2);
 		bool useMailPosition = true;
-		//fixInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		NListView::UpdateInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
 
-		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
+		bdy = "\r\n\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
 		if (pFrame)
@@ -3913,22 +3942,19 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-					//"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
-					"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
+					"\"></head>\r\n<body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
 			}
 			else
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-					//"\"></head><body><div style=\"font-weight:normal;font-size:larger\">";  // larger doesn't always work
-					"\"></head><body><div style=\"font-weight:normal;font-size:16px\">";
+					"\"></head>\r\n<body>\r\n<div style=\"font-weight:normal;font-size:16px\">\r\n";
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-				//"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
-				"\"></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">"; 
+				"\"></head>\r\n<body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n"; 
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -3937,27 +3963,31 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "</div></body></html>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "</div>";
+		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		// This seem to help when printing multiple mails
-		//if (!firstMail)  
-		{
-			bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'><br>";   // --------- Begin <div>
-			fp.Write(bdy, bdy.GetLength());
-		}
+
+		bdy = "\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
+		fp.Write(bdy, bdy.GetLength());
 
 		bool extraHtmlHdr = false;
-		if (outbuflarge->FindNoCase(0, "<body", 5) < 0) // didn't find if true
+		if (outbuflarge->FindNoCase(0, "<html", 5) < 0) // didn't find if true
 		{
-			extraHtmlHdr = true;
-			CString bdycharset = "UTF-8";
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
-			fp.Write(bdy, bdy.GetLength());
+			if (outbuflarge->FindNoCase(0, "<body", 5) < 0) // didn't find if true
+			{
+				extraHtmlHdr = true;
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>\r\n";
+				fp.Write(bdy, bdy.GetLength());
+			}
+			else
+			{
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html>\r\n";
+				fp.Write(bdy, bdy.GetLength());
+			}
 		}
 		else
 		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html>";
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html>\r\n";
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -3965,7 +3995,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		if (pageCode == 0) {
 			pageCode = getCodePageFromHtmlBody(outbuflarge, charSet);
 		}
-#if 1
+
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 		{
 			int needLength = outbuflarge->Count() * 2 + 1;
@@ -3981,24 +4011,20 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		}
 		else
 			fp.Write(outbuflarge->Data(), outbuflarge->Count());
-#endif
 
 		if (extraHtmlHdr) {
-			bdy = "</body></html>";
+			bdy = "\r\n</body></html>";
 			fp.Write(bdy, bdy.GetLength());
 		}
 
-		//if (!firstMail) 
-		{
-			bdy = "</div>";    // ----- Ending <div>
-			fp.Write(bdy, bdy.GetLength());
-		}
+		bdy = "\r\n</div>";
+		fp.Write(bdy, bdy.GetLength());
 
 		if (pFrame)
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
-				bdy = "<div style=\"page-break-before:always\"></div>";
+				bdy = "\r\n<div style=\"page-break-before:always\"></div>";
 				fp.Write(bdy, bdy.GetLength());
 			}
 		}
@@ -4016,36 +4042,39 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		CString bdycharset = "UTF-8";
 
+		bdy = "\r\n\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		fp.Write(bdy, bdy.GetLength());
+
 		if (pFrame)
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
-				//bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
-				bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
+				bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
 			}
 			else
 			{
-				//bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:larger\">";  // larger doesn't always work
-				bdy = "<html><head></head><body><div style=\"font-weight:normal;font-size:16px\">";
+				bdy = "<html><head></head><body>\r\n<div style=\"font-weight:normal;font-size:16px\">\r\n";
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
-			//bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:larger\">";  // larger doesn't always work
-			bdy = "<html><head></head><body><div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">";
+			bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
 			fp.Write(bdy, bdy.GetLength());
 		}
 
 		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
-		bdy = "</div><br></body></html>";
+		bdy = "</div></body></html>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>";
+		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+		bdy = "\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		fp.Write(bdy, bdy.GetLength());
+
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
 		char *inData = outbuflarge->Data();
@@ -4067,7 +4096,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			inbuf->ClearAndResize(needLength);
 
 			BOOL ret = Str2CodePage(outbuflarge, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
-			// TODO: replcae CR LF with <br> to enable line wrapping
+			// TODO: replace CR LF with <br> to enable line wrapping
 			if (ret) {
 				fp.Write(inbuf->Data(), inbuf->Count());
 			}
@@ -4081,7 +4110,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "</body></html>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "</div>";
+		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
 
@@ -4095,7 +4124,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		}
 	}
 
-	CString bdy = "<div><br></div>";
+	CString bdy = "\r\n<div><br></div>";
 	fp.Write(bdy, bdy.GetLength());
 
 	return 1;
@@ -5990,6 +6019,7 @@ void MailHeader::Clear()
 	m_Boundary.Empty();
 	m_ContentType.Empty();
 	m_ContentId.Empty();
+	m_ContentLocation.Empty();
 	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
 	m_MessageId.Empty();
@@ -6000,6 +6030,8 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 {
 	static const char *cType = "content-type:";
 	static const int cTypeLen = strlen(cType);
+	static const char *cContentLocation = "content-location:";
+	static const int cContentLocationLen = strlen(cContentLocation);
 	static const char *cContentId = "content-id:";
 	static const int cContentIdLen = strlen(cContentId);
 	static const char *cTransferEncoding = "content-transfer-encoding:";
@@ -6141,8 +6173,16 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 		}
 		else if (strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
-			p =  GetMultiLine(p, e, line);
+			p = GetMultiLine(p, e, line);
 			GetMessageId(line, cReplyIdLen, m_ReplyId);
+		}
+		else if (strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
+		{
+			char *p_save = p;
+			p = GetMultiLine(p, e, line);
+			GetFieldValue(line, cContentLocationLen, m_ContentLocation);
+			if (m_ContentLocation.GetLength() > 50)
+				int deb = 1;
 		}
 		else {
 			p = EatNLine(p, e);
@@ -6581,6 +6621,13 @@ void ShellExecuteError2Text(UINT errorCode, CString &errorText) {
 void MboxCMimeHelper::GetContentType(CMimeBody* pBP, CString &value)
 {
 	const char *fieldName = CMimeConst::ContentType();
+	MboxCMimeHelper::GetValue(pBP, fieldName, value);
+}
+
+void MboxCMimeHelper::GetContentLocation(CMimeBody* pBP, CString &value)
+{
+	//const char *fieldName = CMimeConst::ContentLocation();
+	const char *fieldName = "Content-Location";
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
 
@@ -7485,6 +7532,43 @@ bool MboxMail::GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPri
 	return TRUE;
 }
 
+bool MboxMail::GetArchiveSpecificCachePath(CString &path, CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText)
+{
+	prtCachePath.Empty();
+
+	CString mailArchiveFilePath = path;
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+	SplitFilePath(mailArchiveFilePath, driveName, directory, fileNameBase, fileNameExtention);
+
+	CString mailArchiveFileName;
+	CPathStripPath((char*)(LPCSTR)path, mailArchiveFileName);
+	int position = mailArchiveFileName.ReverseFind('.');
+	CString baseFileArchiveName;
+	if (position >= 0)
+		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
+	else
+		baseFileArchiveName = mailArchiveFileName;
+
+	CString printCachePath;
+	BOOL ret = CPathGetPath(path, printCachePath);
+	if (!rootPrintSubFolder.IsEmpty())
+	{
+		printCachePath.Append("\\");
+		printCachePath.Append(rootPrintSubFolder);
+	}
+
+	printCachePath.Append("\\");
+	printCachePath.Append(baseFileArchiveName);
+
+	prtCachePath.Append(printCachePath);
+
+	return TRUE;
+}
+
 int MboxMail::MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText)
 {
 	CString mailArchiveFileName = MboxMail::s_path;
@@ -7996,7 +8080,7 @@ void  MboxMail::MakeValidFileName(CString &name)
 		c = str[i];
 		if (
 			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||
-			(c == '*') || (c == '|') || (c == '"') || (c == '\\')
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\') || (c == '%')
 			)
 		{
 			validName.AppendChar('_');
@@ -8304,7 +8388,10 @@ void MboxMail::ShowHint(int hintNumber)
 		{
 			hintText.Append(
 				"You can select multiple mails using standard Windows methods: "
-				"\"Shift-Left Click\", \"Ctrl-Left Click\" and \"Ctrl-A\".\n"
+				"\"Shift-Left Click\", \"Ctrl-Left Click\" and \"Ctrl-A\".\n\n"
+				"Right click on a single or multiple selected mails to see all available options.\n\n"
+				"Right click on a mail attachment to see all available options.\n\n"
+				"Left double click on a mail to open folder with all associated files for that mail."
 			);
 		}
 		else if (hintNumber == HintConfig::FindDialogHint)
@@ -8312,10 +8399,10 @@ void MboxMail::ShowHint(int hintNumber)
 			hintText.Append(
 				"You can specify single ‘*’ character as the search string to FIND dialog to find or traverse subset of mails:\n"
 				"\n"
-				"1. Find mails that have CC header field by checking out CC check box only.\n"
-				"2. Find mails that have BCC header field by checking out BCC check box only.\n"
-				"3. Find mails that have at least one attachment by checking out Attachment Name check box only.\n"
-				"4. Match all mails by checking out any of others check boxes only.\n"
+				"1. Find mails that have CC header field by checking out CC check box only.\n\n"
+				"2. Find mails that have BCC header field by checking out BCC check box only.\n\n"
+				"3. Find mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
+				"4. Match all mails by checking out any of others check boxes only.\n\n"
 			);
 		}
 		else if (hintNumber == HintConfig::AdvancedFindDialogHint)
@@ -8323,10 +8410,18 @@ void MboxMail::ShowHint(int hintNumber)
 			hintText.Append(
 				"You can specify single ‘*’ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
 				"\n"
-				"1. Find all mails that have CC header field by checking out CC check box only.\n"
-				"2. Find all mails that have BCC header field by checking out BCC check box only.\n"
-				"3. Find all mails that have at least one attachment by checking out Attachment Name check box only.\n"
-				"4. Match all mails by checking out any of others check boxes only.\n"
+				"1. Find all mails that have CC header field by checking out CC check box only.\n\n"
+				"2. Find all mails that have BCC header field by checking out BCC check box only.\n\n"
+				"3. Find all mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
+				"4. Match all mails by checking out any of others check boxes only.\n\n"
+			);
+		}
+		else if (hintNumber == HintConfig::PrintToPDFScriptHint)
+		{
+			hintText.Append(
+				"By default the scripts\\HTML2PDF-single-wkhtmltopdf.cmd removes background color.\n\n"
+				"You can update the scripts\\HTML2PDF-single-wkhtmltopdf.cmd script to keep background color.\n\n"
+				"Open the scripts\\HTML2PDF-single-wkhtmltopdf.cmd for instructions.\n"
 			);
 		}
 
@@ -8339,6 +8434,25 @@ void MboxMail::ShowHint(int hintNumber)
 	}
 }
 
+// TODO: Need to add menu option to display Copyright/License information
+const char *LicensText =
+"  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives.\n"
+"\n"
+"  Copyright(C) 2019  Enea Mansutti, Zbigniew Minciel\n"
+"\n"
+"  This program is free software; you can redistribute it and/or modify\n"
+"  it under the terms of the version 3 of GNU Affero General Public License\n"
+"  as published by the Free Software Foundation.\n"
+"\n"
+"  This program is distributed in the hope that it will be useful,\n"
+"  but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU\n"
+"  Library General Public License for more details.\n"
+"\n"
+"  You should have received a copy of the GNU Library General Public\n"
+"  License along with this program; if not, write to the\n"
+"  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,\n"
+"  Boston, MA  02110 - 1301, USA.\n";
 
 
 

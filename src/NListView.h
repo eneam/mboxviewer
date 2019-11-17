@@ -61,6 +61,7 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText);
 
 typedef CArray<int, int> MailIndexList;
 class MailBodyContent;
+typedef MyMailArray MailArray;
 
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
@@ -203,6 +204,7 @@ public:
 	std::vector <MailBodyInfo*> m_BodyInfoArray;
 	void FindImageFileName(CString &cid);
 	//
+	int LoadMails(LPCSTR cache, MailArray *mails = 0);
 	void FillCtrl();
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
@@ -337,11 +339,14 @@ public:
 	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath);
 	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody);
+	static int FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CString &fileName);
 	//
 	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray);
 	static int UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray);
 	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray);
 	static int GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody** pBP);  // return body text type or 0-plain, 1-html, -1-not found
+	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
+	static int DecodeURL(char *URL, int urlLen);
 
 	// Generated message map functions
 protected:

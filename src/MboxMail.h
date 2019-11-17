@@ -89,8 +89,9 @@ public:
 		PrintToPDFHint = 3,
 		PrintToPrinterHint = 4,
 		MailSelectionHint = 5,
-		FindDialogHint,
-		AdvancedFindDialogHint
+		FindDialogHint = 6,
+		AdvancedFindDialogHint = 7,
+		PrintToPDFScriptHint = 8
 	};
 };
 
@@ -151,6 +152,7 @@ class MboxCMimeHelper
 {
 public:
 	static void GetContentType(CMimeBody* pBP, CString &value);
+	static void GetContentLocation(CMimeBody* pBP, CString &value);
 	static void GetTransferEncoding(CMimeBody* pBP, CString &value);
 	static void GetContentID(CMimeBody* pBP, CString &value);
 	static void GetContentDescription(CMimeBody* pBP, CString &value);
@@ -294,6 +296,7 @@ public:
 	CString m_contentDisposition;
 	CString m_contentId;
 	CString m_attachmentName;
+	CString m_contentLocation;
 	UINT m_pageCode;
 	int  m_contentOffset;
 	int m_contentLength;
@@ -513,14 +516,14 @@ public:
 	static void MakeValidFileName(CString &name);
 	static void MakeValidFileName(SimpleString &name);
 
+	static bool GetArchiveSpecificCachePath(CString &path, CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+
 	//
-	
 	static void ReleaseResources();
 	static void assert_unexpected();
 
-
 	static HintConfig m_HintConfig;
-	static void ShowHint(BOOL hintNumber);
+	static void ShowHint(int hintNumber);
 	static void LoadHintBitmap();
 };
 
@@ -600,6 +603,7 @@ public:
 	CString m_Boundary;
 	CString m_ContentType;
 	CString m_ContentId;
+	CString m_ContentLocation;
 	CMimeHeader::MediaType m_MediaType;
 	CString m_AttachmentName;
 	CString m_MessageId;

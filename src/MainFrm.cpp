@@ -344,8 +344,12 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 		if (m_bSelectMailFileDone == FALSE) {
 			m_bSelectMailFileDone = TRUE;
 			NTreeView *pTreeView = GetTreeView();
-			if (pTreeView)
-				pTreeView->StartTimer();
+			if (pTreeView) {
+				//pTreeView->StartTimer();
+				// Added application custom message to play with application level messages
+				// Sending message to append to msg queue works as well and it is cleaner I think
+				pTreeView->PostMsgCmdParamFileName();
+			}
 			else
 				int deb = 1;
 		}
@@ -2042,6 +2046,11 @@ void CMainFrame::OnFilePrintconfig()
 	{
 		m_NamePatternParams.UpdateRegistry(m_NamePatternParams, dlg.m_NamePatternParams);
 		m_NamePatternParams.Copy(dlg.m_NamePatternParams);
+	}
+
+	if (dlg.m_NamePatternParams.m_bScriptType != 0)
+	{
+		MboxMail::ShowHint(HintConfig::PrintToPDFScriptHint);
 	}
 }
 

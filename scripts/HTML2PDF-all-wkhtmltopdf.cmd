@@ -51,6 +51,8 @@ Set HTMLFileNameBase=%%~nA
 REM echo HTMLFileName=!HTMLFileName!
 REM echo HTMLFileNameBase=!HTMLFileNameBase!
 
+REM The --no-background option, if present, will remove background color in the target PDF. 
+
 echo "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%CURRENT_DIR%\!HTMLFileName!" "%PDFdir%\!HTMLFileNameBase!.pdf" 
 call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%CURRENT_DIR%\!HTMLFileName!" "%PDFdir%\!HTMLFileNameBase!.pdf" 
 

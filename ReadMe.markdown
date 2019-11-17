@@ -29,7 +29,12 @@ Features
 License
 -----
 Mbox viewer is a free software. Most of it is licensed under AGPLv3. Small parts are licenced under CPOL 1.02.
-See the LICENCE.txt file included in the distribution for further details. 
+See the LICENCE.txt file included in the distribution for further details.
+
+NOTE: The source code and executable were released under GPLv2 on Sourceforge since the project inception as shown on the Summary page.
+There was no explicit license information for the project on the Github. However, without a license, the default copyright laws apply, 
+meaning that authors retain all rights to the source code and no one may reproduce, distribute, or create derivative works from the work.
+The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to synchronize the License published on Sourceforge and Github.
 
 Changes
 ---

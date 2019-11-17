@@ -118,6 +118,9 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			m_cimage = Image::FromFile(f);
 		}
 
+		if (m_cimage == 0)
+			int deb = 1;
+
 		Image *image = m_cimage;
 
 		Bitmap bmp(rc.right, rc.bottom);
