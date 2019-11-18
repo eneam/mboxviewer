@@ -3920,8 +3920,13 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	//CString marginLeft = "margin-left:0px;";
 	//CString backgroundColor = "background-color:white;";
 
-	CString body = "\r\n\r\n<html><head></head><body style=\'background-color:white\'></body></html>\r\n";
-	fp.Write(body, body.GetLength());
+	if (!pFrame->m_NamePatternParams.m_bKeepMailBodyBackgroundColor)
+	{
+		CString body = "\r\n\r\n<html><head></head><body style=\'background-color:white\'></body></html>\r\n";
+		fp.Write(body, body.GetLength());
+		body = "\r\n\r\n<html><head></head><body bgColor=white></body></html>\r\n";
+		fp.Write(body, body.GetLength());
+	}
 
 	if (outbuflarge->Count() != 0)
 	{

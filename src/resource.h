@@ -210,6 +210,8 @@
 #define IDC_CHECK_CC                    1184
 #define IDC_EXPORT_ATTACHMENT_NAMES     1184
 #define IDC_CHECK_NEGATE_FIND_CRITERIA  1184
+#define IDC_REMOVE_BODY_BKGRND_COLOR    1184
+#define IDC_KEEP_BODY_BKGRND_COLOR      1184
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
 #define IDC_CHECK_ATTACHMENT_NAME       1188

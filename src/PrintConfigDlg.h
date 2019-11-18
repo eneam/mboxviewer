@@ -57,6 +57,7 @@ struct NamePatternParams
 	int m_bPrintToSeparateTEXTFiles;
 	int m_bAddBackgroundColorToMailHeader;
 	int m_bAddBreakPageAfterEachMailInPDF;
+	int m_bKeepMailBodyBackgroundColor;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);
