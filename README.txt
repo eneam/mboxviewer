@@ -11,6 +11,7 @@ v 1.0.3.5
  - Added option to Find and Advanced Find dialogs to find mails that don't much search criteria;
  - Enhanced handling of '*' search string in Find and Advanced Find dialogs to be able to find subset of mails that have CC, BCC and mails with attachments;
  - Updated mbox file parsing and bumped CACHE_VERSION to 15;
+ - Added option to Print Config dialog to control mail body background color with wkhtmltopdf tool;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.4

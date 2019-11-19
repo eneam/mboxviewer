@@ -348,6 +348,8 @@ public:
 	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
 	static int DecodeURL(char *URL, int urlLen);
 
+	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(NListView)

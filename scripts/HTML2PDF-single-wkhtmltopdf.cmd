@@ -32,6 +32,11 @@ set HTMLFilePath=%~1
 Set HTMLdir=%~dp1
 Set HTMLfile=%~nx1
 
+REM The second parameter controls whether background color is removed
+Set NoBackgroundColor=%2
+
+if "%NoBackgroundColor%"=="--no-background" Set NoBackgroundColorOption=--no-background
+
 REM Update path if needed
 REM Download wkhtmltopdf from https://wkhtmltopdf.org/downloads.html
 REM Usage link on how to control header and footer https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
@@ -53,13 +58,9 @@ For %%A in ("%HTMLfile%") do (
 REM echo File Name Base is: %HTMLNameBase%
 REM echo File Name Ext is: %HTMLNameExt%
 
-del "%PDFdir%\%HTMLNameBase%.pdf"
+del /Q "%PDFdir%\%HTMLNameBase%.pdf"
 
-REM The --no-background option, if present, will remove background color in the target PDF. 
-REM Remove/add REM at the begining of the line to select proper command line.
-
-REM call "%CmdPath%" --log-level none --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
-call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
+call "%CmdPath%" --log-level none %NoBackgroundColorOption% --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
 
 REM Replace "REM pause" with "pause" for testing.
 REM pause

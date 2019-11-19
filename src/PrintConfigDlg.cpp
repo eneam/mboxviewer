@@ -70,6 +70,7 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
 	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
 	DDX_Check(pDX, IDC_KEEP_BODY_BKGRND_COLOR, m_NamePatternParams.m_bKeepMailBodyBackgroundColor);
+
 	int deb = 1;
 }
 
@@ -78,6 +79,8 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &PrintConfigDlg::OnBnClickedOk)
 	ON_EN_CHANGE(IDC_FILE_NAME_MAX_SIZE, &PrintConfigDlg::OnEnChangeFileNameMaxSize)
 	ON_BN_CLICKED(IDC_PRT_PAGE_SETP, &PrintConfigDlg::OnBnClickedPrtPageSetp)
+	ON_BN_CLICKED(IDC_HTML2PDF_SCRIPT_TYPE, &PrintConfigDlg::OnBnClickedHtml2pdfScriptType)
+	ON_BN_CLICKED(IDC_RADIO3, &PrintConfigDlg::OnBnClickedRadio3)
 END_MESSAGE_MAP()
 
 
@@ -128,6 +131,17 @@ BOOL PrintConfigDlg::OnInitDialog()
 			adjustedMaxSize.Format("%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
 			((CButton*)p)->SetWindowText(adjustedMaxSize);
 			p->EnableWindow(FALSE);
+		}
+
+		p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			if (m_NamePatternParams.m_bScriptType == 0)
+			{
+				((CButton*)p)->SetCheck(1);
+				p->EnableWindow(FALSE);
+			}
+			else
+				p->EnableWindow(TRUE);
 		}
 	}
 
@@ -348,4 +362,33 @@ void PrintConfigDlg::OnBnClickedPrtPageSetp()
 {
 	// TODO: Add your control notification handler code here
 	NMsgView::PrintToPrinterPageSetup(this);
+}
+
+
+void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
+{
+	// TODO: Add your control notification handler code here
+	if (GetSafeHwnd())
+	{
+		CWnd *p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			((CButton*)p)->SetCheck(1);
+			p->EnableWindow(FALSE);
+		}
+	}
+	int deb = 1;
+}
+
+
+void PrintConfigDlg::OnBnClickedRadio3()
+{
+	// TODO: Add your control notification handler code here
+	if (GetSafeHwnd())
+	{
+		CWnd *p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			p->EnableWindow(TRUE);
+		}
+	}
+	int deb = 1;
 }

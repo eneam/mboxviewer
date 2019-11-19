@@ -11665,3 +11665,91 @@ int NListView::FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWhol
 	}
 	return 0;
 }
+
+// Below doesn't work in some cases when the text is white on non-withe background.
+// Fix is more complex and requires to build DOM, make chnages and get the HTML text back.\
+// Can't do this today -:), will reexamine later.
+// Removing backgroound color works  when printing to PDF printer and when using wkhtmltopdf tool to print to PDF file.
+// Headless Chrome doesn't support removing background color and below was an attempt to support Chrome.
+int NListView::RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition)
+{
+	static char *bgColorPat1 = "bgcolor=";
+	static int bgColorPat1_len = strlen(bgColorPat1);
+	static char *bgColorPat2 = "background-color:";
+	static int bgColorPat2_len = strlen(bgColorPat2);
+
+
+	char *input = inData;
+	int inputLength = indDataLen;
+	char *inputEnd = input + inputLength;
+
+	char *pos = input;
+	char c;
+	char *c_pos_last = pos;
+	while ((pos != 0) && (pos < inputEnd))
+	{
+		c = *pos;
+		if ((c == 'b') || (c == 'B'))
+		{
+			if (strncmpUpper2Lower(pos, inputEnd, bgColorPat1, bgColorPat1_len) == 0)
+			{
+				// find ending space or " character
+				char *c_pos_color = pos + bgColorPat1_len;
+				c_pos_color = SkipWhitePlus(c_pos_color);
+				char *c_pos_end = findOneOf(c_pos_color, inputEnd, " \"");
+				if (c_pos_end)
+				{
+					int lenData = c_pos_color - c_pos_last;
+					outbuf->Append(c_pos_last, lenData);
+
+					CString color;
+					int lenColor = c_pos_end - c_pos_color;
+					color.Append(c_pos_color, lenColor);
+					color.Trim();
+					color = "#FFFFFF";
+					outbuf->Append(color, color.GetLength());
+
+					c_pos_last = c_pos_end;
+					pos = c_pos_end;
+
+					int deb = 1;
+				}
+			}
+			else
+			{
+				if (strncmpUpper2Lower(pos, inputEnd, bgColorPat2, bgColorPat2_len) == 0)
+				{
+					// find ending ; or " character
+					char *c_pos_color = pos + bgColorPat2_len;
+					c_pos_color = SkipWhitePlus(c_pos_color);
+					char *c_pos_end = findOneOf(c_pos_color, inputEnd, ";\"");
+					if (c_pos_end)
+					{
+						int lenData = c_pos_color - c_pos_last;
+						outbuf->Append(c_pos_last, lenData);
+
+						CString color;
+						int lenColor = c_pos_end - c_pos_color;
+						color.Append(c_pos_color, lenColor);
+						color.Trim();
+						color = "#FFFFFF";
+						outbuf->Append(color, color.GetLength());
+
+						c_pos_last = c_pos_end;
+						pos = c_pos_end;
+
+						int deb = 1;
+					}
+				}
+			}
+			int deb = 1;
+		}
+		pos++;
+	}
+	if (c_pos_last != inputEnd)
+	{
+		int lenData = inputEnd - c_pos_last;
+		outbuf->Append(c_pos_last, lenData);
+	}
+	return 1;
+}

@@ -90,6 +90,8 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnEnChangeFileNameMaxSize();
 	afx_msg void OnBnClickedPrtPageSetp();
+	afx_msg void OnBnClickedHtml2pdfScriptType();
+	afx_msg void OnBnClickedRadio3();
 };
 
 #endif _PRINT_CONFIG_DLG_

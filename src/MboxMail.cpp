@@ -1977,6 +1977,31 @@ char *strchar(char *beg, char *end, char c)
 		return 0;
 }
 
+char *findOneOf(char *beg, char *end, char *charList)
+{
+	char oneOf;
+	while (beg < end)
+	{
+		char *p_charList = charList;
+		char c = *beg;
+		while (oneOf = *p_charList)
+		{
+			if (c == oneOf)
+			{
+				break;
+			}
+			p_charList++;
+		}
+		if (oneOf)
+			break;
+		beg++;
+	};
+	if (beg < end)
+		return beg;
+	else
+		return 0;
+}
+
 char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength)
 {
 	// TODO: not very efficient; optimize
@@ -3919,7 +3944,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	//CString backgroundColor = "background-color:transparent;";
 	//CString marginLeft = "margin-left:0px;";
 	//CString backgroundColor = "background-color:white;";
-
+#if 0
 	if (!pFrame->m_NamePatternParams.m_bKeepMailBodyBackgroundColor)
 	{
 		CString body = "\r\n\r\n<html><head></head><body style=\'background-color:white\'></body></html>\r\n";
@@ -3927,9 +3952,13 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		body = "\r\n\r\n<html><head></head><body bgColor=white></body></html>\r\n";
 		fp.Write(body, body.GetLength());
 	}
+#endif
 
 	if (outbuflarge->Count() != 0)
 	{
+		//int retBG = NListView::RemoveBackgroundColor(outbuflarge->Data(), outbuflarge->Count(), &tmpbuf, mailPosition);
+		//outbuflarge->Copy(tmpbuf);
+
 		CString bdycharset = "UTF-8";
 		CString bdy;
 

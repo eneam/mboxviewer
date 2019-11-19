@@ -2383,7 +2383,10 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	}
 	else
 	{
-		args = "\"" + htmFileName + "\"";
+		if (pFrame->m_NamePatternParams.m_bKeepMailBodyBackgroundColor)
+			args = "\"" + htmFileName + "\"";
+		else
+			args = "\"" + htmFileName + "\"" + " " + "--no-background";
 		path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
 		if (!PathFileExist(path)) {
 			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
