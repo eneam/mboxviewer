@@ -2048,10 +2048,7 @@ void CMainFrame::OnFilePrintconfig()
 		m_NamePatternParams.Copy(dlg.m_NamePatternParams);
 	}
 
-	if (dlg.m_NamePatternParams.m_bScriptType != 0)
-	{
-		MboxMail::ShowHint(HintConfig::PrintToPDFScriptHint);
-	}
+	MboxMail::ShowHint(HintConfig::PrintToPDFScriptHint);
 }
 
 

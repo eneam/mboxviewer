@@ -8453,9 +8453,17 @@ void MboxMail::ShowHint(int hintNumber)
 		else if (hintNumber == HintConfig::PrintToPDFScriptHint)
 		{
 			hintText.Append(
-				"By default the scripts\\HTML2PDF-single-wkhtmltopdf.cmd removes background color.\n\n"
-				"You can update the scripts\\HTML2PDF-single-wkhtmltopdf.cmd script to keep background color.\n\n"
-				"Open the scripts\\HTML2PDF-single-wkhtmltopdf.cmd for instructions.\n"
+				"If you need to remove the background color when printing to\n"
+				"PDF file directly you need to configure wkhtmltopdf for\n"
+				"printing. By default the Chrome browser is configured to\n"
+				"print to PDF file. However, Chrome browser doesn't support\n"
+				"removing the background color via the command line option\n\n"
+				"Select \"File->Print Config->Page Setup\" to configure\n"
+				"HTML2PDF-single-wkhtmltopdf.cmd script.\n\n"
+				"Note that the background color can be removed via\n"
+				"Page Setup when printing to PDF file\n"
+				"via Print to Printer option and by opening the mail\n"
+				"within a browser for printing.\n"
 			);
 		}
 
