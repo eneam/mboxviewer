@@ -3241,6 +3241,8 @@ void NListView::SelectItem(int iItem)
 	bool alreadyFoundHTML = false;  // prefer HTML Text over Plain Text
 	int partsCnt = 0;
 
+
+	// Please please find time and stop making small changes and rewrite.
 	CString ext = "";
 	if (bodies.begin() == bodies.end())
 	{  // should never be true
@@ -3411,10 +3413,14 @@ void NListView::SelectItem(int iItem)
 			}
 
 			CString cStrName = strName.c_str();
-			pos = cStrName.ReverseFind('.');
-			if (pos < 0)
+			if (strName.length() > 0)
 			{
-				cStrName += "." + contentTypeExtension;
+				pos = cStrName.ReverseFind('.');
+				if (pos < 0)
+				{
+					cStrName += "." + contentTypeExtension;
+					strName.assign((LPCSTR)cStrName);
+				}
 			}
 
 			contentType.MakeLower();
@@ -3440,7 +3446,6 @@ void NListView::SelectItem(int iItem)
 
 				if (!contentId.IsEmpty())
 				{
-					//CString cStrName = strName.c_str();
 					int pos = cStrName.ReverseFind('.');
 					CString nameExtension;
 					if (pos >= 0)
@@ -3449,20 +3454,12 @@ void NListView::SelectItem(int iItem)
 						nameExtension = "." + contentTypeExtension;
 					CString ext = PathFindExtension(cStrName);
 					cStrName = contentId + nameExtension;
-
-					strName.assign(cStrName);
+					strName.assign((LPCSTR)cStrName);
 
 					int deb = 1;
 				}
 				int deb = 1;
 			}
-
-			//printf("File name: %s\r\n", strName.c_str());
-			//printf("File size: %d\r\n", pBP->GetContentLength());
-
-			//CString cStrName = strName.c_str();
-			MboxMail::MakeValidFileName(cStrName);
-			strName.assign((LPCSTR)cStrName);
 
 			if (strName.length() > 0)
 				;
@@ -3477,7 +3474,6 @@ void NListView::SelectItem(int iItem)
 
 					if (!contentId.IsEmpty())
 					{
-						//CString cStrName = strName.c_str();
 						int pos = cStrName.ReverseFind('.');
 						CString nameExtension;
 						if (pos >= 0)
@@ -3487,9 +3483,6 @@ void NListView::SelectItem(int iItem)
 
 						CString ext = PathFindExtension(cStrName);
 						cStrName = contentId + nameExtension;
-
-						strName.assign(cStrName);
-						MboxMail::MakeValidFileName(cStrName);
 						strName.assign((LPCSTR)cStrName);
 
 						int deb = 1;
@@ -3497,6 +3490,11 @@ void NListView::SelectItem(int iItem)
 					int deb = 1;
 				}
 			}
+			if (cStrName.IsEmpty())
+				cStrName = "." + contentTypeExtension;
+
+			MboxMail::MakeValidFileName(cStrName);
+			strName.assign((LPCSTR)cStrName);
 
 			// Check for duplicate names. Sometimes two or mor names can represent diffrent content
 			pos = pMsgView->FindAttachmentByName(cStrName);
@@ -3558,8 +3556,6 @@ void NListView::SelectItem(int iItem)
 		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
-
-
 		char *inData = (char*)(LPCSTR)bdy;
 		int inDataLen = bdy.GetLength();
 		MboxMail::EncodeAsHtml(inData, inDataLen, MboxMail::m_tmpbuf);
@@ -3602,7 +3598,6 @@ void NListView::SelectItem(int iItem)
 			{
 				int mailPosition = 0; // not used anyway here
 				bool useMailPosition = false;
-				//fixInlineSrcImgPath(inData, inDataLen, outbuf, &pMsgView->m_attachments, mailPosition, useMailPosition);
 				UpdateInlineSrcImgPath_SelectedItem(inData, inDataLen, outbuf, mailPosition, useMailPosition, cidArray);
 			}
 			else
@@ -3655,7 +3650,6 @@ void NListView::SelectItem(int iItem)
 				{
 					int mailPosition = 0; // not used anyway here
 					bool useMailPosition = false;
-					//fixInlineSrcImgPath(inData, inDataLen, outbuf, &pMsgView->m_attachments, mailPosition, useMailPosition);
 					UpdateInlineSrcImgPath_SelectedItem(inData, inDataLen, outbuf, mailPosition, useMailPosition, cidArray);
 				}
 				else

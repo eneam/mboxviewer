@@ -316,13 +316,13 @@ BEGIN
     PUSHBUTTON      "Open File",IDYES,383,66,56,14
 END
 
-IDD_FIND_ADVANCED DIALOGEX 0, 0, 373, 406
+IDD_FIND_ADVANCED DIALOGEX 0, 0, 373, 382
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find Advanced"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,234,383,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,297,383,50,14
+    DEFPUSHBUTTON   "OK",IDOK,234,358,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,297,358,50,14
     CONTROL         "From",IDC_EDIT_FROM_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,27,51,10
     EDITTEXT        IDC_EDIT_FROM,77,27,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_FROM_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,27,12,10
@@ -346,21 +346,21 @@ BEGIN
     EDITTEXT        IDC_EDIT_ATTACHMENT,77,151,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,151,12,10
     CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,151,19,10
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,337,100,15
-    LTEXT           "start date:",IDC_STATIC,64,340,32,8
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,356,100,15
-    LTEXT           "end date:",IDC_STATIC,65,359,31,8
-    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,324,50,10
-    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,386,76,10
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,321,100,15
+    LTEXT           "start date:",IDC_STATIC,64,324,32,8
+    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,340,100,15
+    LTEXT           "end date:",IDC_STATIC,63,343,31,8
+    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,314,50,10
+    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,361,76,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,193,35,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,193,35,10
     CONTROL         "  (From <-- --> To)  and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_FILTER1,
                     "Button",BS_AUTORADIOBUTTON | WS_GROUP,18,279,346,10
-    GROUPBOX        "Select filter rule",IDC_STATIC,7,214,361,100
+    GROUPBOX        "Select filter rule",IDC_STATIC,7,214,361,93
     CONTROL         "  (From  --> To)  and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_RADIO2,
-                    "Button",BS_AUTORADIOBUTTON,18,299,338,10
+                    "Button",BS_AUTORADIOBUTTON,18,294,338,10
     GROUPBOX        "Filter",IDC_STATIC,7,7,361,203
-    GROUPBOX        "",IDC_STATIC,7,316,361,64
+    GROUPBOX        "",IDC_STATIC,7,308,361,51
     LTEXT           "If some fields are not checked, for example From, then filter rule wil be reduced as follow:",IDC_STATIC,14,241,332,10
     LTEXT           "<-- --> To and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_STATIC,21,254,324,8
     LTEXT           "(From <-- --> To) attempts to match  (John->Bob) and (Bob->John) mails",IDC_STATIC,28,226,340,8
@@ -379,7 +379,7 @@ BEGIN
     CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,281,171,19,10
     LTEXT           "Name",IDC_STATIC,35,179,34,8
     CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,98,386,110,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,98,361,110,10
     LTEXT           " i.e. ((Any -> Bob) or (Bob -> Any)) and ...",IDC_STATIC,22,265,325,8
 END
 
@@ -567,7 +567,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 368
         TOPMARGIN, 7
-        BOTTOMMARGIN, 399
+        BOTTOMMARGIN, 375
     END
 
     IDD_FIND_IN_MAIL, DIALOG

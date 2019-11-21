@@ -958,7 +958,7 @@ void MboxMail::Parse(LPCSTR path)
 	errorText.Empty();
 	bool ret2 = MboxMail::GetArchiveSpecificCachePath(cpath, rootPrintSubFolder, targetPrintSubFolder, prtCachePath, errorText);
 	if (errorText.IsEmpty() && PathFileExist(prtCachePath)) {
-		pCUPDUPData->SetProgress(_T("Deleting all files in the ImageCache directory ..."), 0);
+		pCUPDUPData->SetProgress(_T("Deleting all related files in the ImageCache directory ..."), 0);
 		RemoveDir(prtCachePath, true);
 	}
 
