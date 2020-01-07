@@ -2,6 +2,17 @@
 Changes
 ---
 
+v 1.0.3.6
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced the internal Picture Viewer to observe picture size as set in the meta data in the image file;
+ - Added Attachment Config dialog to configure attachment window size, content and attachment indicator criteria;
+ - Added startup check to warn user that the instance of mbox viewer might be running already;
+ - Fixed crash when parsing mbox with mails older than epoch time;
+ - Resolved some issues with Date Filter in search mode;
+ - Updated mbox file parsing and bumped CACHE_VERSION to 16;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.5
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

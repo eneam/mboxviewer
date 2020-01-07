@@ -464,6 +464,33 @@ BOOL CmboxviewApp::InitInstance()
 		MboxMail::ReleaseResources();
 		return FALSE;
 	}
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "processPath");
+	if (!processPath.IsEmpty())
+	{
+		CString txt = _T("Mbox viewer instance might be running already:\n\n") + processPath;
+		txt += _T("\n\n");
+		txt += _T("Only single instance should be running to avoid potential\n");
+		txt += _T("issues since all instances will share the same data in the registry.\n\n");
+		txt += _T("Do you want to continue?");
+		HWND h = NULL; // we don't have any window yet  
+		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+		{
+			MboxMail::ReleaseResources();
+			return FALSE;
+		}
+	}
+
+	char *pValue;
+	errno_t  er = _get_pgmptr(&pValue);
+	CString procFullPath;
+	if ((er == 0) && pValue)
+		procFullPath.Append(pValue);
+
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), procFullPath);
+
+
 	AfxEnableControlContainer();
 
 	// Standard initialization
@@ -485,7 +512,7 @@ BOOL CmboxviewApp::InitInstance()
 
 	m_pRecentFileList = new
 		CRecentFileList(0, "MRUs",
-		"Path %d", 8);
+		"Path %d", 16);
 	m_pRecentFileList->ReadList();
 	// Initialize all Managers for usage. They are automatically constructed
 	// if not yet present
@@ -566,3 +593,4 @@ void CAboutDlg::OnClose()
 
 	CDialog::OnClose();
 }
+

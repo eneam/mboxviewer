@@ -87,6 +87,8 @@ BEGIN_MESSAGE_MAP(CFindDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_CHECK1, &CFindDlg::OnBnClickedFilterDates)
 	ON_BN_CLICKED(IDC_CHECK_FIND_ALL, &CFindDlg::OnBnClickedCheckFindAll)
+	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER1, &CFindDlg::OnDtnDatetimechangeDatetimepicker1)
+	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindDlg::OnDtnDatetimechangeDatetimepicker2)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -95,6 +97,15 @@ END_MESSAGE_MAP()
 void CFindDlg::OnOK()
 {
 	UpdateData();
+
+	SYSTEMTIME endDateSysTime;
+	bool res1 = m_params.m_endDate.GetAsSystemTime(endDateSysTime);
+	SYSTEMTIME startDateSysTime;
+	bool res2 = m_params.m_startDate.GetAsSystemTime(startDateSysTime);
+
+	bool res3 = MyCTime::fixSystemtime(&startDateSysTime);
+	bool res4 = MyCTime::fixSystemtime(&endDateSysTime);
+
 
 	m_params.m_endDate.SetDate(m_params.m_endDate.GetYear(), m_params.m_endDate.GetMonth(), m_params.m_endDate.GetDay());
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
@@ -124,14 +135,15 @@ BOOL CFindDlg::OnInitDialog()
 
 void CFindDlg::OnBnClickedFilterDates()
 {
-	UpdateData(TRUE);
+	UpdateData(TRUE);  // from UI controls --> class memeber varuables
+	int deb = 1;
 }
 
 
 void CFindDlgParams::SetDflts()
 {
-	m_startDate = COleDateTime::GetCurrentTime();
-	m_endDate = COleDateTime::GetCurrentTime();
+	m_startDate.SetDate(1970,1,1);
+	m_endDate.SetDate(1970,1,1);
 	m_bFindNext = TRUE;
 	m_filterDates = FALSE;
 
@@ -221,3 +233,42 @@ void CFindDlg::OnBnClickedCheckFindAll()
 		}
 	}
 }
+
+
+void CFindDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+
+	SYSTEMTIME sysTime = pDTChange->st;
+	MyCTime::fixSystemtime(&sysTime);
+
+	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER1);
+	if (p) {
+		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
+		int deb = 1;
+	}
+
+	UpdateData(TRUE);
+	*pResult = 0;
+}
+
+
+void CFindDlg::OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+
+	SYSTEMTIME sysTime = pDTChange->st;
+	MyCTime::fixSystemtime(&sysTime);
+
+	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER2);
+	if (p) {
+		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
+		int deb = 1;
+	}
+
+	UpdateData(TRUE);
+	*pResult = 0;
+}
+

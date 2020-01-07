@@ -192,38 +192,33 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
-	
-	if( !m_browser.Create(NULL, NULL, WS_CHILD|WS_VISIBLE, CRect(), this, IDC_BROWSER) )
+
+	if (!m_browser.Create(NULL, NULL, WS_CHILD | WS_VISIBLE, CRect(), this, IDC_BROWSER))
 		return -1;
 
-	CRect r;
-	//GetClientRect(r);
-	//r.top = 300;
-	// TODO: increase hight of attachments
-	if( !m_attachments.Create(WS_CHILD|WS_VISIBLE|LVS_SINGLESEL|LVS_SMALLICON|LVS_SHOWSELALWAYS, CRect(), this, IDC_ATTACHMENTS) )
-	//if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS, r, this, IDC_ATTACHMENTS))
+	if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS | LVS_AUTOARRANGE, CRect(), this, IDC_ATTACHMENTS))
 		return -1;
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
-	m_attachments.SetTextColor (RGB(0,0,0));
-	if( ! m_font.CreatePointFont (85, _T("Tahoma")) )
-		if( ! m_font.CreatePointFont (85, _T("Verdana")) )
-			m_font.CreatePointFont (85, _T("Arial"));
+	m_attachments.SetTextColor(RGB(0, 0, 0));
+	if (!m_font.CreatePointFont(85, _T("Tahoma")))
+		if (!m_font.CreatePointFont(85, _T("Verdana")))
+			m_font.CreatePointFont(85, _T("Arial"));
 
-    m_attachments.SetFont (&m_font);
+	m_attachments.SetFont(&m_font);
 	CImageList sysImgList;
 	SHFILEINFO shFinfo;
-	
-	sysImgList.Attach((HIMAGELIST)SHGetFileInfo( _T("C:\\"),
-							  0,
-							  &shFinfo,
-							  sizeof( shFinfo ),
-							  SHGFI_SYSICONINDEX |
-							  SHGFI_SMALLICON ));
-	
-	m_attachments.SetImageList( &sysImgList, LVSIL_SMALL );
+
+	sysImgList.Attach((HIMAGELIST)SHGetFileInfo(_T("C:\\"),
+		0,
+		&shFinfo,
+		sizeof(shFinfo),
+		SHGFI_SYSICONINDEX |
+		SHGFI_SMALLICON));
+
+	m_attachments.SetImageList(&sysImgList, LVSIL_SMALL);
 	sysImgList.Detach();
-//	m_attachments.SetExtendedStyle(WS_EX_STATICEDGE);
-	
+	//	m_attachments.SetExtendedStyle(WS_EX_STATICEDGE);
+
 	return 0;
 }
 
@@ -264,10 +259,96 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
+	int m_attachmentWindowMaxSize = 25;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		m_attachmentWindowMaxSize = attachmentConfigParams->m_attachmentWindowMaxSize;
+	}
+	if (m_attachmentWindowMaxSize > 0)
+	{
+
+		// BEST effort to calculate size of attachment rectangle
+		//int scrollVwidth = GetSystemMetrics(SM_CXVSCROLL);
+		//int scrollHwidth = GetSystemMetrics(SM_CXHSCROLL);
+
+		int aCnt = m_attachments.GetItemCount();
+		int hS = 0;
+		int vS = 0;
+		m_attachments.GetItemSpacing(TRUE, &hS, &vS);
+
+		RECT irc;
+		int rectLen = 0;
+		for (int ii = 0; ii < aCnt; ii++)
+		{
+			m_attachments.GetItemRect(ii, &irc, LVIR_BOUNDS);
+			int w = irc.right - irc.left;
+			if (w < hS)
+				rectLen += hS;
+			else
+				rectLen += w;
+		}
+
+		int m_nAttachLines = 1;
+		if (cx > 19)
+			m_nAttachLines = rectLen / (cx - 19) + 1;
+		else if (cx > 0)
+			m_nAttachLines = rectLen / cx + 1;
+
+		m_nAttachSize = m_nAttachLines * 19;
+		if (m_nAttachLines > aCnt)
+			m_nAttachSize = aCnt * 19;
+
+		if ((m_nAttachSize < 44) && (aCnt > 2))
+			m_nAttachSize = 44;
+		else if (m_nAttachSize < 23)
+			m_nAttachSize = 23;
+
+		if ((cx > 0) && (rectLen > cx))
+		{
+			m_nAttachSize += 22;
+		}
+
+		int nMaxAttachSize = (int)((double)cy * m_attachmentWindowMaxSize / 100);
+		if (nMaxAttachSize < 23)
+			nMaxAttachSize = 23;
+
+		if (m_nAttachSize > nMaxAttachSize)
+		{
+			int lines = (nMaxAttachSize - 23) / 17;
+			if (lines < 1)
+				lines = 1;
+			int nEstimatedAttachSize = 23 + lines * 17;
+
+			if ((cx > 0) && (rectLen > cx))
+			{
+				m_nAttachSize += 22;
+			}
+
+			if (nEstimatedAttachSize < m_nAttachSize)
+				m_nAttachSize = nEstimatedAttachSize;
+		}
+}
+	else
+		m_nAttachSize = 0;
+
 	int acy = m_bAttach ? m_nAttachSize : 0;
-	
-	m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
-	m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
+
+	int browserX = BSIZE;
+	int browserY = BSIZE + nOffset;
+	int browserWidth = cx;
+	int browserHight = cy - acy - nOffset;
+	m_browser.MoveWindow(browserX, browserY, browserWidth, browserHight);
+
+	int attachmentX = BSIZE;
+	int attachmentY = cy - acy + BSIZE;
+	int attachmentWidth = cx;
+	int attachmentHight = acy;
+	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
+
+	//int acy = m_bAttach ? m_nAttachSize : 0;
+	//m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
+	//m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
 
 	// TODO: seem to fix resizing issue; it should not be needed by iy seem to work
 	Invalidate();
@@ -285,10 +366,62 @@ void NMsgView::UpdateLayout()
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
-	int acy = m_bAttach ? m_nAttachSize : 0;
-	
-	m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
-	m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
+	//int acy = m_bAttach ? m_nAttachSize : 0;
+	//m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
+	//m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
+
+	// BEST effort to calculate size of attachment rectangle
+	RECT rc;
+	m_attachments.GetViewRect(&rc);
+	m_nAttachSize = rc.bottom - rc.top;
+
+	int m_attachmentWindowMaxSize = 25;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		m_attachmentWindowMaxSize = attachmentConfigParams->m_attachmentWindowMaxSize;
+	}
+	if (m_attachmentWindowMaxSize > 0)
+	{
+		if (m_nAttachSize < 23)
+			m_nAttachSize = 23;
+
+		if ((rc.right + 19) > r.Width())
+			m_nAttachSize += 22;
+
+		int nMaxAttachSize = (int)((double)cy * m_attachmentWindowMaxSize / 100);
+		if (nMaxAttachSize < 23)
+			nMaxAttachSize = 23;
+
+		if (m_nAttachSize > nMaxAttachSize)
+		{
+			int lines = (nMaxAttachSize - 23) / 17;
+			if (lines < 1)
+				lines = 1;
+			int nEstimatedAttachSize = 23 + lines * 17;
+			if ((rc.right + 19) > r.Width())
+				nEstimatedAttachSize += 22;
+
+			if (nEstimatedAttachSize < m_nAttachSize)
+				m_nAttachSize = nEstimatedAttachSize;
+		}
+	}
+	else
+		m_nAttachSize = 0;
+
+	int acy = m_bAttach ? (m_nAttachSize) : 0;
+
+	int browserX = BSIZE;
+	int browserY = BSIZE + nOffset;
+	int browserWidth = cx;
+	int browserHight = cy - acy - nOffset;
+	m_browser.MoveWindow(browserX, browserY, browserWidth, browserHight);
+
+	int attachmentX = BSIZE;
+	int attachmentY = cy - acy + BSIZE;
+	int attachmentWidth = cx;
+	int attachmentHight = acy;
+	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
 
 	Invalidate();
 	UpdateWindow();

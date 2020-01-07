@@ -725,12 +725,14 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 			string thisCharset = this->GetCharset();
 			thisMediaType = this->GetMediaType();
 #endif
+#if 0
 			// TODO: need better solution, i.e. decode archive and detrmine all relations
 			string strSubType = GetSubType();
 			transform(strSubType.begin(), strSubType.end(), strSubType.begin(), ::tolower);
 			if (strSubType.compare("related") == 0) 
 			{
-				if (pBP->IsAttachment()) 
+				//if (pBP->IsAttachment()) 
+				if ((GetName().size() > 0) || (GetFilename().size() > 0))
 				{
 					string strDisposition;
 					const CMimeField *pFld = pBP->CMimeHeader::GetField(CMimeConst::ContentDisposition());
@@ -746,6 +748,7 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 						pBP->m_bIsRelated = true;
 				}
 			}
+#endif
 			ASSERT(pBP != NULL);
 			nCount += pBP->GetBodyPartList(rList);
 		}

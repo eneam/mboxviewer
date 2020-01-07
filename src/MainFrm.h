@@ -40,6 +40,7 @@
 
 #include "ChildView.h"
 #include "PrintConfigDlg.h"
+#include "AttachmentsConfig.h"
 
 struct CSVFILE_CONFIG
 {
@@ -150,6 +151,8 @@ public:
 	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);
 	void SortByColumn(int column);
 
+	static AttachmentConfigParams *GetAttachmentConfigParams();
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -176,7 +179,8 @@ protected:  // control bar embedded members
 	int m_bEnhancedSelectFolderDlg;
 
 public:
-	struct NamePatternParams m_NamePatternParams;
+	NamePatternParams m_NamePatternParams;
+	AttachmentConfigParams m_attachmentConfigParams;
 
 // Generated message map functions
 protected:
@@ -233,6 +237,8 @@ public:
 	afx_msg void OnFileMergearchivefiles();
 	afx_msg void OnPrinttoPdf();
 	afx_msg void OnClose();
+	//afx_msg void OnBnClickedFolderList();
+	afx_msg void OnFileAttachmentsconfig();
 };
 
 /////////////////////////////////////////////////////////////////////////////

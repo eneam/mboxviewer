@@ -43,7 +43,7 @@ class DateParser
 	DateParser();
 	virtual ~DateParser();
 
-	static bool parseRFC822Date(const char *str, SYSTEMTIME *sysTime);
+	static bool parseRFC822Date(const char *str, SYSTEMTIME *sysTime, int dateFormatType = 1);
 
 	static bool validateSystemtime(const SYSTEMTIME *sysTime);
 

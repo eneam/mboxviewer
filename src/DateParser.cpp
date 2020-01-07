@@ -105,7 +105,7 @@ static char *months[] = { "jan","feb","mar","apr","may","jun","jul","aug","sep",
 #define SKIP_NON_WHITESPACE() while (*s != ' ' && *s != '\t' && *s != '\0') s++
 #define CHECK_PREMATURE_END()	 if (*s == '\0') return false
  
-bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime)
+bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int dateFormatType)
 {
 	if (!sysTime || !str1)
 		return false;
@@ -153,47 +153,102 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime)
 	char monthStr[20];
 	int month;
 	int year;
+	int hour, minute, seconds;
  
-	if (sscanf(s,"%d%s%d",&day,monthStr,&year) != 3)
-		return false;
-	SKIP_NON_WHITESPACE();
-	SKIP_WHITESPACE();
-	SKIP_NON_WHITESPACE();
-	SKIP_WHITESPACE();
-	SKIP_NON_WHITESPACE();
-	SKIP_WHITESPACE();
- 
-	for (j=0; j<12; j++)
+	if (dateFormatType == 1)
 	{
-		if (strncmp(monthStr,months[j],3) == 0)
+		// Parse Date field
+		// Date: Sun, 5 Nov 2017 22:42:43 -0600 (CST)
+
+		if (sscanf(s, "%d%s%d", &day, monthStr, &year) != 3)
+			return false;
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+
+		for (j = 0; j < 12; j++)
 		{
-			break;
+			if (strncmp(monthStr, months[j], 3) == 0)
+			{
+				break;
+			}
 		}
+		if (j == 12)
+			return false;
+		month = j;
+
+		if (year < 1900)
+		{
+			if (year < 50)
+			{
+				year += 2000;
+			}
+			else
+			{
+				year += 1900;
+			}
+		}
+
+		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
+			return false;
+
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
 	}
-	if (j == 12)
-		return false;
-	month = j;
- 
-	if (year < 1900)
+	else
 	{
-		if (year < 50)
+		// Parse the From field
+		// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
+		if (sscanf(s, "%s%d", monthStr, &day) != 2)
+			return false;
+
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+
+		for (j = 0; j < 12; j++)
 		{
-			year += 2000;
+			if (strncmp(monthStr, months[j], 3) == 0)
+			{
+				break;
+			}
 		}
-		else
+		if (j == 12)
+			return false;
+		month = j;
+
+		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
+			return false;
+
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+
+		char *s_save = s;  // pointer to zone
+
+		SKIP_NON_WHITESPACE();
+		SKIP_WHITESPACE();
+
+		if (sscanf(s, "%d", &year) != 1)
+			return false;
+
+		if (year < 1900)
 		{
-			year += 1900;
+			if (year < 50)
+			{
+				year += 2000;
+			}
+			else
+			{
+				year += 1900;
+			}
 		}
+
+		s = s_save;
 	}
- 
- 
-	int hour,minute,seconds;
- 
-	if (sscanf(s,"%d:%d:%d",&hour,&minute,&seconds) != 3)
-		return false;
- 
-	SKIP_NON_WHITESPACE();
-	SKIP_WHITESPACE();
  
 	if (*s == '+') s++;
 	char zoneStr[20];

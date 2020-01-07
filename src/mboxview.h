@@ -82,10 +82,13 @@ public:
 
 extern CmboxviewApp theApp;
 
+bool PathExists(LPCSTR file);
+BOOL PathFileExist(LPCSTR path);
 char *findOneOf(char *beg, char *end, char *charList);
 BOOL isEmptyLine(const char* p, const char* e);
+int strncmpExact(char *any, char *end, const char *lower, int lowerlength);
 char* strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
+int   strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 char *strchar(char *beg, char *end, char c);
 BOOL isNumeric(CString &str);
 BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW);

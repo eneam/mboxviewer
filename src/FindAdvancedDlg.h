@@ -105,6 +105,8 @@ public:
 	afx_msg void OnBnClickedEditSetAllWhole();
 	afx_msg void OnBnClickedEditSetAllCase();
 	afx_msg void OnBnClickedEditReset();
+	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
 };
 
 //{{AFX_INSERT_LOCATION}}

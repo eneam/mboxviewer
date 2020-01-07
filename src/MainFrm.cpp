@@ -146,6 +146,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
 	ON_COMMAND(ID_PRINTTO_PDF, &CMainFrame::OnPrinttoPdf)
 	ON_WM_CLOSE()
+	//ON_BN_CLICKED(IDC_FOLDER_LIST, &CMainFrame::OnBnClickedFolderList)
+	ON_COMMAND(ID_FILE_ATTACHMENTSCONFIG, &CMainFrame::OnFileAttachmentsconfig)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -289,6 +291,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 #endif
 
 	m_NamePatternParams.LoadFromRegistry();
+	m_attachmentConfigParams.LoadFromRegistry();
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
@@ -454,7 +457,7 @@ void CMainFrame::OnFileOpen()
 {
 	int paneId = 0;
 	CString sText;
-	sText.Format("Opening new folder with mails ...");
+	sText.Format("Opening new mail folder ...");
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
 	if (m_bEnhancedSelectFolderDlg == FALSE)
@@ -514,8 +517,16 @@ void CMainFrame::OnFileOpen()
 
 void CMainFrame::DoOpen(CString& path) 
 {
+	int paneId = 0;
+	CString sText;
+	sText.Format("Opening new mail folder ...");
+	SetStatusBarPaneText(paneId, sText, TRUE);
+
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 	GetTreeView()->FillCtrl();
+
+	sText.Format("Ready");
+	SetStatusBarPaneText(paneId, sText, FALSE);
 }
 
 NTreeView * CMainFrame::DetTreeView()
@@ -1214,6 +1225,7 @@ void CMainFrame::SetupMailListsToInitialState()
 	MboxMail::s_mails_all.SetSizeKeepData(0);
 	MboxMail::s_mails_find.SetSizeKeepData(0);
 	MboxMail::s_mails_edit.SetSizeKeepData(0);
+	MboxMail::s_mails_folder.SetSizeKeepData(0);
 
 
 	if (MboxMail::b_mails_which_sorted != 1)
@@ -1223,9 +1235,11 @@ void CMainFrame::SetupMailListsToInitialState()
 	MboxMail::m_allMails.m_lastSel = -1;
 	MboxMail::m_allMails.b_mails_which_sorted = 1; // by date
 	MboxMail::m_findMails.m_lastSel = -1;
-	MboxMail::m_findMails.b_mails_which_sorted = 1; // not really, shpuld be unknown yet
+	MboxMail::m_findMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
 	MboxMail::m_editMails.m_lastSel = -1;
-	MboxMail::m_editMails.b_mails_which_sorted = 1; // not really, shpuld be unknown yet
+	MboxMail::m_editMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
+	MboxMail::m_folderMails.m_lastSel = -1;
+	MboxMail::m_folderMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
 
 	CMenu *menu = this->GetMenu();
 	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
@@ -1281,6 +1295,12 @@ void CMainFrame::EnableAllMailLists(BOOL enable)  // enable/disable
 			((CButton*)p)->SetCheck(0);
 			if (enable == FALSE)
 				p->EnableWindow(enable);
+		}
+
+		p = m_wndDlgBar.GetDlgItem(IDC_FOLDER_LIST);
+		if (p) {
+			((CButton*)p)->SetCheck(0);
+			p->EnableWindow(enable);
 		}
 	}
 }
@@ -2713,4 +2733,52 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 		}
 	}
 	return;
+}
+
+#if 0
+void CMainFrame::OnBnClickedFolderList()
+{
+	// TODO: Add your control notification handler code here
+	int nID = IDC_FOLDER_LIST;
+	if (MboxMail::nWhichMailList == nID)
+		return; // do nothing
+
+	NListView * pListView = GetListView();
+	if (pListView) {
+		pListView->SwitchToMailList(nID);
+	}
+
+	CWnd *p = m_wndDlgBar.GetDlgItem(IDC_FOLDER_LIST);
+	if (p) {
+		((CButton*)p)->SetCheck(1);
+		((CButton*)p)->SetWindowText("Folder XXX Mails");
+	}
+
+	int deb = 1;
+}
+#endif
+
+
+void CMainFrame::OnFileAttachmentsconfig()
+{
+	// TODO: Add your command handler code here
+
+	AttachmentsConfig dlg;
+
+	dlg.m_attachmentConfigParams.Copy(m_attachmentConfigParams);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		m_attachmentConfigParams.UpdateRegistry(m_attachmentConfigParams, dlg.m_attachmentConfigParams);
+		m_attachmentConfigParams.Copy(dlg.m_attachmentConfigParams);
+	}
+}
+
+AttachmentConfigParams *CMainFrame::GetAttachmentConfigParams()
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+		return &pFrame->m_attachmentConfigParams;
+	else
+		return 0;
 }

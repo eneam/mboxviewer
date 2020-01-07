@@ -46,6 +46,8 @@
 #define new DEBUG_NEW
 #endif
 
+class SimpleString;
+
 _int64 FileSize(LPCSTR fileName);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr);
@@ -91,7 +93,8 @@ public:
 		MailSelectionHint = 5,
 		FindDialogHint = 6,
 		AdvancedFindDialogHint = 7,
-		PrintToPDFScriptHint = 8
+		PrintToPDFScriptHint = 8,
+		AttachmentConfigHint = 9
 	};
 };
 
@@ -102,6 +105,11 @@ public:
 	MailList();
 	~MailList();
 
+	DLLIST_NODE(MailList) m_listLink;
+	//DLLIST(MailBody, m_freeList_link) m_listBodies;
+
+	CString m_path;
+	CString m_folderName;
 	int m_nId;
 	//MailArray s_mails;
 	int b_mails_which_sorted;  // column to sort
@@ -160,6 +168,8 @@ public:
 	static void GetCharset(CMimeBody* pBP, CString &value);
 	static void Name(CMimeBody* pBP, CString &value);
 	static void Filename(CMimeBody* pBP, CString &value);
+	//
+	static bool IsAttachment(CMimeBody* pBP);  
 protected:
 	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
 };
@@ -296,6 +306,7 @@ public:
 	CString m_contentDisposition;
 	CString m_contentId;
 	CString m_attachmentName;
+	//CString m_Name;  // TODO: do we need both name and filename/attachment name
 	CString m_contentLocation;
 	UINT m_pageCode;
 	int  m_contentOffset;
@@ -335,7 +346,7 @@ public:
 		m_startOff = m_length = m_hasAttachments = m_headLength = 0;
 		m_from_charsetId = m_to_charsetId = m_subj_charsetId = 0;
 		m_cc_charsetId = m_bcc_charsetId = 0;
-		m_timeDate = 0;
+		m_timeDate = -1;
 		m_recv = 0;
 		m_groupId = -1;
 		m_nextMail = -1;
@@ -422,6 +433,7 @@ public:
 	static MailArray s_mails_all;
 	static MailArray s_mails_find;
 	static MailArray s_mails_edit;  // TODO: rename to User Selected List
+	static MailArray s_mails_folder;
 	//
 	static MailArray s_mails_selected;
 	static MailArray s_mails_merged;
@@ -431,6 +443,9 @@ public:
 	static MailList m_allMails;
 	static MailList m_findMails;
 	static MailList m_editMails;
+	static MailList m_folderMails;
+
+	static DLLIST(MailList, m_listLink) m_folderList;
 
 	static BOOL IsAllMailsSelected();
 	static BOOL IsFindMailsSelected();
@@ -441,6 +456,30 @@ public:
 
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;
+
+	static int m_EmbededImagesNoMatch;
+
+	static int m_EmbededImagesFoundMHtml;
+	static int m_EmbededImagesFoundMHtmlHtml;
+	static int m_EmbededImagesFoundUnexpectedMHtml;
+
+	static int m_EmbededImagesFound;
+	static int m_EmbededImagesFoundCid;
+	static int m_EmbededImagesFoundHttp;
+	static int m_EmbededImagesFoundHttps;
+	static int m_EmbededImagesFoundMHtmlHttp;
+	static int m_EmbededImagesFoundMHtmlHttps;
+	static int m_EmbededImagesFoundData;
+	static int m_EmbededImagesFoundLocalFile;
+	//
+	static int m_EmbededImagesNotFound;
+	static int m_EmbededImagesNotFoundCid;
+	static int m_EmbededImagesNotFoundHttp;
+	static int m_EmbededImagesNotFoundHttps;
+	static int m_EmbededImagesNotFoundMHtmlHttp;
+	static int m_EmbededImagesNotFoundMHtmlHttps;
+	static int m_EmbededImagesNotFoundData;
+	static int m_EmbededImagesNotFoundLocalFile;
 
 	static void SortByDate(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByFrom(MailArray *s_mails = 0, bool bDesc = false);
@@ -525,6 +564,8 @@ public:
 	static HintConfig m_HintConfig;
 	static void ShowHint(int hintNumber);
 	static void LoadHintBitmap();
+
+	static BOOL ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime);
 };
 
 #define SZBUFFSIZE 1024*1024*100
@@ -605,7 +646,8 @@ public:
 	CString m_ContentId;
 	CString m_ContentLocation;
 	CMimeHeader::MediaType m_MediaType;
-	CString m_AttachmentName;
+	CString m_Name;   // from Content-Type
+	CString m_AttachmentName;  // filename From Content-Disposition
 	CString m_MessageId;
 	CString m_ReplyId;
 };

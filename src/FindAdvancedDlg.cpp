@@ -122,6 +122,8 @@ BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_WHOLE, &CFindAdvancedDlg::OnBnClickedEditSetAllWhole)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_CASE, &CFindAdvancedDlg::OnBnClickedEditSetAllCase)
 	ON_BN_CLICKED(IDC_EDIT_RESET, &CFindAdvancedDlg::OnBnClickedEditReset)
+	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER1, &CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker1)
+	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker2)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -150,7 +152,6 @@ void CFindAdvancedDlg::OnOK()
 
 	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
-		
 		m_params.m_string[i].TrimRight();
 		g_tu.MakeLower(m_params.m_string[i]);
 		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty()) {
@@ -303,8 +304,8 @@ void CFindAdvancedParams::SetDflts()
 	m_bSetAllWholeWords = FALSE;
 	m_bSetAllCaseSensitive = FALSE;
 
-	m_startDate = COleDateTime::GetCurrentTime();
-	m_endDate = COleDateTime::GetCurrentTime();
+	m_startDate.SetDate(1970, 1, 1);
+	m_endDate.SetDate(1970, 1, 1);
 	m_filterDates = FALSE;
 
 	m_bFindAll = TRUE;
@@ -349,4 +350,42 @@ void CFindAdvancedDlg::OnBnClickedEditReset()
 
 	UpdateData(FALSE);
 
+}
+
+
+void CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+
+	SYSTEMTIME sysTime = pDTChange->st;
+	MyCTime::fixSystemtime(&sysTime);
+
+	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER1);
+	if (p) {
+		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
+		int deb = 1;
+	}
+
+	UpdateData(TRUE);
+	*pResult = 0;
+}
+
+
+void CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
+	// TODO: Add your control notification handler code here
+
+	SYSTEMTIME sysTime = pDTChange->st;
+	MyCTime::fixSystemtime(&sysTime);
+
+	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER2);
+	if (p) {
+		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
+		int deb = 1;
+	}
+
+	UpdateData(TRUE);
+	*pResult = 0;
 }

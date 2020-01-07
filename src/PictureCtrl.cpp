@@ -8,7 +8,7 @@
 //
 // Adapted for Windows MBox Viewer by the mboxview development
 // Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
-// Significant portion of the code likely more than 80% is custom
+// Significant portion of the code likely more than 80% is now custom
 // 
 // Function: A MFC Picture Control to display
 //           an image on a Dialog, etc.
@@ -108,6 +108,20 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	{
 		CRect rc;
 		this->GetClientRect(&rc);
+		if ((rc.Width() <= 0) || (rc.Height() <= 0))
+			return;
+#if 0
+		if (rc.Width() <= 0)
+		{
+			CPoint bottomRight(rc.right+1, rc.bottom);
+			rc.SetRect(rc.TopLeft(), bottomRight);
+		}
+		if (rc.Height() <= 0)
+		{
+			CPoint bottomRight(rc.right, rc.bottom+1);
+			rc.SetRect(rc.TopLeft(), bottomRight);
+		}
+#endif
 
 		Gdiplus::Graphics graphicsDev(lpDrawItemStruct->hDC);
 		Gdiplus::Graphics *graphics = &graphicsDev;
@@ -127,7 +141,7 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		Gdiplus::Graphics gr(&bmp);
 		Gdiplus::Graphics *graph = &gr;
 
-		// rectangle fro graphics graph
+		// rectangle for graphics graph
 		Gdiplus::Rect rC((int)rc.left, (int)rc.top, (int)rc.Width(), (int)rc.Height());
 		
 		CString equipMake;
@@ -171,11 +185,14 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		INT h;
 		INT w;
 
-		INT ww = rc.right - rc.left;
-		INT hh = rc.bottom - rc.top;
+		INT ww = rc.right - rc.left; // rc.Width()
+		INT hh = rc.bottom - rc.top; // rc.Height()
 
 		INT iw = image->GetWidth();  // iw - image width
 		INT ih = image->GetHeight();  // ih - image hight
+
+		if ((iw <= 0) || (ih <= 0))
+			return;
 
 		INT posLeft = 0;
 		INT posTop = 0;
@@ -188,6 +205,13 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			DOUBLE wratio = (DOUBLE)ww / iw;
 			h = (int)(wratio * ih);
 			w = (int)(wratio * iw);
+		}
+
+		// Keep original dimensions if possible
+		if ((iw <= ww) && (ih <= hh))
+		{
+			w = iw;
+			h = ih;
 		}
 
 		if (m_Zoom == 1)
@@ -623,6 +647,7 @@ void CPictureCtrl::ResetDrag()
 {
 	m_deltaDragX = 0;
 	m_deltaDragY = 0;
+	m_rect.SetRectEmpty();
 }
 
 BOOL CPictureCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)

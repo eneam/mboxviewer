@@ -38,10 +38,10 @@
 
 IMPLEMENT_DYNAMIC(InputBox, CDialogEx)
 
-InputBox::InputBox(CWnd* pParent /*=nullptr*/)
+InputBox::InputBox(CString &parentFolder, CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_INPUT_BOX_DLG, pParent)
 {
-
+	m_parentFolder = parentFolder;
 }
 
 InputBox::~InputBox()
@@ -51,11 +51,12 @@ InputBox::~InputBox()
 void InputBox::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_STRING, m_input);
+	DDX_Text(pDX, IDC_EDIT1, m_input);
 }
 
 
 BEGIN_MESSAGE_MAP(InputBox, CDialogEx)
+	ON_BN_CLICKED(IDOK, &InputBox::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -69,12 +70,29 @@ BOOL InputBox::OnInitDialog()
 	// TODO:  Add extra initialization here
 
 	if (GetSafeHwnd()) {
-		CWnd *p = GetDlgItem(IDYES);
+		CWnd *p = GetDlgItem(IDC_EDIT2);
 		if (p) {
-			GetDlgItem(IDC_STATIC)->SetWindowText(m_input);
+			p->SetWindowText(m_parentFolder);
+			p->EnableWindow(FALSE);
 		}
 	}
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+
+void InputBox::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
+	UpdateData();
+
+	m_input.TrimRight();
+	if (m_input.IsEmpty()) {
+		AfxMessageBox("Folder name can't be empty!", MB_OK | MB_ICONHAND);
+		return;
+
+	}
+
+	CDialogEx::OnOK();
 }

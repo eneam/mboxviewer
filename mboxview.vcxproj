@@ -296,6 +296,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AttachmentsConfig.cpp" />
     <ClCompile Include="src\BrowseForFolder.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -394,6 +395,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\MyCTime.cpp" />
     <ClCompile Include="src\NListView.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -486,6 +488,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\AttachmentsConfig.h" />
     <ClInclude Include="src\BrowseForFolder.h" />
     <ClInclude Include="src\Browser.h" />
     <ClInclude Include="src\ChildView.h" />
@@ -505,6 +508,7 @@
     <ClInclude Include="src\Mime.h" />
     <ClInclude Include="src\MimeChar.h" />
     <ClInclude Include="src\MimeCode.h" />
+    <ClInclude Include="src\MyCTime.h" />
     <ClInclude Include="src\NListView.h" />
     <ClInclude Include="src\NMsgView.h" />
     <ClInclude Include="src\NSplit.h" />

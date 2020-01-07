@@ -1,7 +1,7 @@
 //
 //////////////////////////////////////////////////////////////////
 //
-//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives.
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives..
 //
 // Source code and executable can be downloaded from
 //  https://sourceforge.net/projects/mbox-viewer/  and
@@ -29,29 +29,43 @@
 #pragma once
 
 
-// InputBox dialog
+// AttachmentsConfig dialog
 
-class InputBox : public CDialogEx
+class AttachmentConfigParams
 {
-	DECLARE_DYNAMIC(InputBox)
+public:
+	AttachmentConfigParams();
+
+	int m_attachmentWindowMaxSize;
+
+	int m_bShowAllAttachments_Window;
+	int m_bAnyAttachment_Indicator;
+
+	void SetDflts();
+	void Copy(AttachmentConfigParams &src);
+	void UpdateRegistry(AttachmentConfigParams &current, AttachmentConfigParams &updated);
+	void LoadFromRegistry();
+};
+
+class AttachmentsConfig : public CDialogEx
+{
+	DECLARE_DYNAMIC(AttachmentsConfig)
 
 public:
-	InputBox(CString &parentFolder, CWnd* pParent = nullptr);   // standard constructor
-	virtual ~InputBox();
+	AttachmentsConfig(CWnd* pParent = nullptr);   // standard constructor
+	virtual ~AttachmentsConfig();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_INPUT_BOX_DLG };
+	enum { IDD = IDD_ATTACHMENTS_CONFIG };
 #endif
-
-	CString m_input;
-	CString m_parentFolder;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	DECLARE_MESSAGE_MAP()
 public:
-	virtual BOOL OnInitDialog();
+
+	AttachmentConfigParams m_attachmentConfigParams;
 	afx_msg void OnBnClickedOk();
 };

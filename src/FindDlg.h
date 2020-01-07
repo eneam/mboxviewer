@@ -102,6 +102,8 @@ public:
 	afx_msg void OnBnClickedFilterDates();
 	afx_msg BOOL OnInitDialog();
 	afx_msg void OnBnClickedCheckFindAll();
+	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
 };
 
 //{{AFX_INSERT_LOCATION}}

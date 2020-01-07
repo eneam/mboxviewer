@@ -43,6 +43,9 @@
 #include "FindAdvancedDlg.h"
 #include "FindDlg.h"
 #include "TextUtilities.h"
+#include "AttachmentsConfig.h"
+#include "MyCTime.h"
+
 
 __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
 void CPathStripPath(const char *path, CString &fileName);
@@ -145,6 +148,7 @@ public:
 	void ResetFileMapView();
 	void SortByColumn(int colNumber, BOOL sortByPosition = FALSE);
 	void RefreshSortByColumn();
+	BOOL HasAnyAttachment(MboxMail *m);
 	// end of vars
 
 	// For single Mail. TODO: Should consider to define structure to avoid confusing var names
@@ -163,11 +167,16 @@ public:
 	int m_maxSearchDuration;
 	BOOL m_bEditFindFirst;
 
+	BOOL m_bNeedToFindMailMinMaxTime;
+	MyCTime m_mboxMailStartDate;
+	MyCTime m_mboxMailEndDate;
+	BOOL m_needToRestoreArchiveListDateTime;
+
 	BOOL	m_filterDates;
 	BOOL	m_bCaseSens;
 	BOOL	m_bWholeWord;
-	CTime m_lastStartDate;
-	CTime m_lastEndDate;
+	MyCTime m_lastStartDate;
+	MyCTime m_lastEndDate;
 	BOOL m_bFrom;
 	BOOL m_bTo;
 	BOOL m_bSubject;
@@ -233,10 +242,6 @@ public:
 	void SwitchToMailList(int nID, BOOL force = FALSE);
 	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
-	//int SaveAsMboxFile();
-	//int SaveAsMboxlistFile();
-	//int SaveAsMboxAndAsMboxlistFile();
-	//int ReloadMboxFile();
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int OpenMailListFileLocation();
@@ -246,6 +251,9 @@ public:
 	int SaveAsMboxListFile_v2();
 	int SaveAsMboxArchiveFile_v2();
 	int FindMailListFileWithHighestNumber(CString &folder, CString &extension);
+	// Folder related
+	int CreateEmptyFolder(CString &drivename, CString &mboxDirectory, CString &mboxFolderName, CString &parentSubFolderPath, CString &newFolderName);
+	int CreateEmptyFolderListFile(CString &path, CString &folderListFile);
 
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
@@ -254,6 +262,18 @@ public:
 	//
 	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
 	int PrintMailRangeToSingleCSV_Thread(int iItem);
+	// Debug Helpers
+	int ScanAllMailsInMbox();
+	int ScanAllMailsInMbox_NewParser();
+	//
+	static BOOL MyCTimeToOleTime(MyCTime &ctimeDateTime, COleDateTime &coleDateTime);
+	static BOOL OleTime2MyCTime(COleDateTime &coleDateTime, MyCTime &ctimeDateTime, BOOL roundUP);
+
+	BOOL PrepopulateAdvancedSearchParams(CString *from, CString *to, CString *subject);
+	void FindMinMaxTime(MyCTime &minTime, MyCTime &maxTime);
+	void ResetFilterDates();
+
+	void PostMsgCmdParamAttachmentHint();
 	//
 	static int PrintAttachmentNames(MboxMail *m, SimpleString *outbuf, CString &characterLimit);
 	static int FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
@@ -336,14 +356,14 @@ public:
 	//static int DeleteAllHtmFiles(CString &targetFolder);
 	//
 	static int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
-	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath);
-	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
-	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody);
+	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath, bool runInvestigation = false);
+	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition, bool runInvestigation = false);
+	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition);
 	static int FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CString &fileName);
 	//
-	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray);
+	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray, bool runInvestigation = false);
 	static int UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray);
-	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray);
+	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray, int mailPosition);
 	static int GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody** pBP);  // return body text type or 0-plain, 1-html, -1-not found
 	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
 	static int DecodeURL(char *URL, int urlLen);
@@ -383,6 +403,7 @@ public:
 	//afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg LRESULT OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnClose();
 };
 

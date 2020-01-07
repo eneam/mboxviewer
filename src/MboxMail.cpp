@@ -30,6 +30,8 @@
 #include <afxtempl.h>
 #include "mboxview.h"
 #include "MboxMail.h"
+#include "AttachmentsConfig.h"
+#include "MyCTime.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -70,12 +72,16 @@ MailArray MboxMail::s_mails;
 MailArray MboxMail::s_mails_all;
 MailArray MboxMail::s_mails_find;
 MailArray MboxMail::s_mails_edit;
+MailArray MboxMail::s_mails_folder;
 
 MailList *MboxMail::m_mailList = &MboxMail::m_allMails;
+
+DLLIST(MailList, m_listLink) MboxMail::m_folderList;
 
 MailList MboxMail::m_allMails(IDC_ARCHIVE_LIST);
 MailList MboxMail::m_findMails(IDC_FIND_LIST);
 MailList MboxMail::m_editMails(IDC_EDIT_LIST);
+MailList MboxMail::m_folderMails(IDC_FOLDER_LIST);
 
 MailArray MboxMail::s_mails_selected;
 MailArray MboxMail::s_mails_merged;
@@ -85,6 +91,29 @@ _int64 MboxMail::s_oSize = 0;
 CString MboxMail::s_path;
 int MboxMail::nWhichMailList = -1;
 
+int MboxMail::m_EmbededImagesNoMatch = 0;
+
+int MboxMail::m_EmbededImagesFoundMHtml = 0;
+int MboxMail::m_EmbededImagesFoundMHtmlHtml = 0;
+int MboxMail::m_EmbededImagesFoundUnexpectedMHtml = 0;
+
+int MboxMail::m_EmbededImagesFound = 0;
+int MboxMail::m_EmbededImagesFoundCid = 0;
+int MboxMail::m_EmbededImagesFoundHttp = 0;
+int MboxMail::m_EmbededImagesFoundHttps = 0;
+int MboxMail::m_EmbededImagesFoundMHtmlHttp = 0;
+int MboxMail::m_EmbededImagesFoundMHtmlHttps = 0;
+int MboxMail::m_EmbededImagesFoundData = 0;
+int MboxMail::m_EmbededImagesFoundLocalFile = 0;
+//
+int MboxMail::m_EmbededImagesNotFound = 0;
+int MboxMail::m_EmbededImagesNotFoundCid = 0;
+int MboxMail::m_EmbededImagesNotFoundHttp = 0;
+int MboxMail::m_EmbededImagesNotFoundHttps = 0;
+int MboxMail::m_EmbededImagesNotFoundMHtmlHttp = 0;
+int MboxMail::m_EmbededImagesNotFoundMHtmlHttps = 0;
+int MboxMail::m_EmbededImagesNotFoundData = 0;
+int MboxMail::m_EmbededImagesNotFoundLocalFile = 0;
 
 BOOL PathFileExist(LPCSTR path);
 BOOL RemoveDir(CString & dir, bool recursive = false);
@@ -513,7 +542,7 @@ BOOL MboxMail::GetBody(CString &res)
 	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
 	{
 		char *p = res.GetBufferSetLength(m_length);
-		TRACE("offset = %lld\n", m_startOff);
+		//TRACE("offset = %lld\n", m_startOff);
 		fp.Seek(m_startOff, SEEK_SET);
 		fp.Read(p, m_length);
 		char *ms = strchr(p, '\n'); //"-Version: 1.0");
@@ -581,16 +610,20 @@ bool IsFromValidDelimiter(char *p, char *e)
 	// From 1572544789079124110@xxx Mon Jul 10 14:06:16 +0000 2017
 	int digitCount = 0;
 	int colonCount = 0;
+	int atCount = 0;
 	char c;
 	while ( (p < e) && ((c = (*p++)) != '\n'))
 	{
 		if (c == ':')
 			colonCount++;
-		else if (isdigit(c))
+		else if ((c > 47) && (c < 58))
+			//else if (isdigit(c))
 			digitCount++;
+		else  if (c == '@')
+			atCount++;
 	}
 
-	if ((colonCount >= 2) && (digitCount >= 6))
+	if ((colonCount >= 2) && (digitCount >= 6) && (atCount > 0))
 		return true;
 	else
 		return false;
@@ -603,6 +636,8 @@ int		g_szFromLen;
 
 bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml)
 {
+	static const char *cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
 	static const char *cFrom = "from:";
 	static const int cFromLen = strlen(cFrom);
 	static const char *cTo = "to:";
@@ -629,8 +664,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	CString format = MboxMail::GetDateFormat(iFormat);
 	CString to, from, subject, date;
+	CString date_fromField;
 	CString cc, bcc;
-	time_t tdate = 0;
+	time_t tdate = -1;
+	time_t tdate_fromField = 1;
 	bool	bTo = true, bFrom = true, bSubject = true, bDate = true, bRcvDate = true; // indicates not found, false means found 
 	bool bCC = true, bBCC = true;
 	char *msgStart = NULL;
@@ -647,15 +684,64 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	BOOL headerDone = FALSE;
 	while (p < e - 4)   // TODO: why (e - 4) ??
 	{
-		try {
-			if ((*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') && IsFromValidDelimiter(p,e)) // "From "  marks beginning of the next mail
+		try 
+		{
+			// IsFromValidDelimiter() may need to be stronger to avoid false positive detection of the mail beginning
+			//if ((*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') && IsFromValidDelimiter(p, e)) // "From "  marks beginning of the next mail
+			if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p,e)) // "From "  marks beginning of the next mail
 			{
 				headerDone = FALSE;
 				if (msgStart == NULL)  // keep parsing header until next "From" or the end file
+				{
+					time_t tdate_fromField = 1;
+					date_fromField.Empty();
+					SYSTEMTIME tm;
+					if (ParseDateInFromField(p, e, &tm))
+					{
+						MyCTime::fixSystemtime(&tm);
+						if (DateParser::validateSystemtime(&tm))
+						{
+							MyCTime tt(tm);
+							date_fromField = tt.FormatGmtTm(format);
+							if (date_fromField.IsEmpty())
+								date_fromField = tt.FormatLocalTm(format);
+							if (date_fromField.IsEmpty())
+								int deb = 1;
+							tdate_fromField = tt.GetTime();
+						}
+					}
+
 					msgStart = p;
-				else {
+				}
+				else 
+				{
 					if ((bTo == false) || (bFrom == false) ||  (bSubject == false)) 
 					{
+						if ((tdate < 0) && (tdate_fromField >= 0))
+						{
+							date = date_fromField;
+							tdate = tdate_fromField;
+						}
+
+						time_t tdate_fromField = 1;
+						date_fromField.Empty();
+
+						SYSTEMTIME tm;
+						if (ParseDateInFromField(p, e, &tm))
+						{
+							MyCTime::fixSystemtime(&tm);
+							if (DateParser::validateSystemtime(&tm))
+							{
+								MyCTime tt(tm);
+								date_fromField = tt.FormatGmtTm(format);
+								if (date_fromField.IsEmpty())
+									date_fromField = tt.FormatLocalTm(format);
+								if (date_fromField.IsEmpty())
+									int deb = 1;
+								tdate_fromField = tt.GetTime();
+							}
+						}
+
 						if (!from.IsEmpty() || !to.IsEmpty() ||  !subject.IsEmpty() ||  !date.IsEmpty())
 						{
 							MboxMail *m = new MboxMail();
@@ -718,7 +804,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					date.Empty();
 					cc.Empty();
 					bcc.Empty();
-					tdate = 0;
+					tdate = -1;
 					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
 				}
 				p += 5;
@@ -774,15 +860,24 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					else
 						date = rcved;
 					SYSTEMTIME tm;
-					if (DateParser::parseRFC822Date(date, &tm)) {
-						if (DateParser::validateSystemtime(&tm)) {
-							CTime tt(tm);
-							date = tt.Format(format);
+					if (DateParser::parseRFC822Date(date, &tm)) 
+					{
+						MyCTime::fixSystemtime(&tm);
+						if (DateParser::validateSystemtime(&tm)) 
+						{
+							MyCTime tt(tm);
+							date = tt.FormatGmtTm(format);
+							if (date.IsEmpty())
+								date = tt.FormatLocalTm(format);
+							if (date.IsEmpty())
+								int deb = 1;
 							tdate = tt.GetTime();
 							bRcvDate = false;
 							recv = TRUE;
 						}
 					}
+					else
+						int deb = 1;
 				}
 				else if (bDate && strncmpUpper2Lower(p, e, cDate, cDateLen) == 0)
 				{
@@ -790,15 +885,24 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					date = line.Mid(cDateLen);
 					date.Trim();
 					SYSTEMTIME tm;
-					if (DateParser::parseRFC822Date(date, &tm)) {
-						if (DateParser::validateSystemtime(&tm)) {
-							CTime tt(tm);
-							date = tt.Format(format);
+					if (DateParser::parseRFC822Date(date, &tm)) 
+					{
+						MyCTime::fixSystemtime(&tm);
+						if (DateParser::validateSystemtime(&tm)) 
+						{
+							MyCTime tt(tm);
+							date = tt.FormatGmtTm(format);
+							if (date.IsEmpty())
+								date = tt.FormatLocalTm(format);
+							if (date.IsEmpty())
+								int deb = 1;
 							tdate = tt.GetTime();
 							bDate = false;
 							recv = FALSE;
 						}
 					}
+					else
+						int deb = 1;
 				}
 #if 0
 				// doesn't quite work; looking for empty lines seem to work best
@@ -843,8 +947,17 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				p = EatNewLine(p, e);
 			}
 		}
-		catch (CMemoryException *) {
+		catch (CMemoryException * e) {
 			// catch when buffer ends
+			e->Delete();
+		}
+		catch (CFileException * e) {
+			// catch when buffer ends
+			e->Delete();
+		}
+		catch (CException* e)
+		{
+			e->Delete();
 		}
 	}
 
@@ -1679,9 +1792,10 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 
 	CString format;
 	datebuff[0] = 0;
-	if (m->m_timeDate > 0) {
-		CTime tt(m->m_timeDate);
-		strcpy(datebuff, (LPCSTR)tt.Format(format));
+	if (m->m_timeDate >= 0) {
+		MyCTime tt(m->m_timeDate);
+		CString lDateTime = tt.FormatGmtTm(format);
+		strcpy(datebuff, (LPCSTR)lDateTime);
 	}
 
 	count = sprintf_s(buff, "INDX=%d first=%lld len=%d last=%lld att=%d hlen=%d rcv=%d date=\"%s\" from=\"%s\" to=\"%s\" subj=\"%s\"\n",
@@ -2191,7 +2305,12 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 			contentDetails->m_contentDisposition = pBP->m_Disposition;
 			contentDetails->m_contentId = pBP->m_ContentId;
 			contentDetails->m_contentTransferEncoding = pBP->m_TransferEncoding;
-			contentDetails->m_attachmentName = pBP->m_AttachmentName;
+
+			if (!pBP->m_Name.IsEmpty())
+				contentDetails->m_attachmentName = pBP->m_Name;
+			else if (!pBP->m_AttachmentName.IsEmpty())
+				contentDetails->m_attachmentName = pBP->m_AttachmentName;
+
 			contentDetails->m_contentLocation = pBP->m_ContentLocation;
 			contentDetails->m_pageCode = pBP->m_PageCode;
 
@@ -2221,15 +2340,14 @@ void MboxMail::Destroy()
 		delete s_mails_ref[i];
 		s_mails_ref[i] = 0;
 	}
-	// TODO:  CString is not most efficient class.
-	// Below will release memory, need to invent work around to keep memeory around
-	// Long term need differnt solution anyway to help to scale mboxview to larger mailk sets
+
 	s_mails.SetSizeKeepData(0);
 	s_mails_ref.SetSizeKeepData(0);
 	s_mails_find.SetSizeKeepData(0);
 	s_mails_edit.SetSizeKeepData(0);
 	s_mails_selected.SetSizeKeepData(0);
 	s_mails_merged.SetSizeKeepData(0);
+	s_mails_folder.SetSizeKeepData(0);
 
 	b_mails_sorted = false;
 	MboxMail::s_path = "";
@@ -2826,24 +2944,21 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 	if (csvConfig.m_bDate)
 	{
-		SYSTEMTIME st;
-		SYSTEMTIME lst;
 		char datebuff[32];
-
 		CString format = MboxMail::GetDateFormat(csvConfig.m_dateFormat);
 
 		datebuff[0] = 0;
-		if (m->m_timeDate > 0)
+		if (m->m_timeDate >= 0)
 		{
-			CTime tt(m->m_timeDate);
-			if (!csvConfig.m_bGMTTime) {
-				bool ret = tt.GetAsSystemTime(st);
-				SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-				CTime ltt(lst);
-				strcpy(datebuff, (LPCSTR)ltt.Format(format));
+			MyCTime tt(m->m_timeDate);
+			if (!csvConfig.m_bGMTTime) 
+			{
+				CString lDateTime = tt.FormatLocalTm(format);
+				strcpy(datebuff, (LPCSTR)lDateTime);
 			}
 			else {
-				strcpy(datebuff, (LPCSTR)tt.Format(format));
+				CString lDateTime = tt.FormatGmtTm(format);
+				strcpy(datebuff, (LPCSTR)lDateTime);
 			}
 		}
 
@@ -3725,24 +3840,22 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 		outbuf->Append("\r\n");
 		////
 	}
-	SYSTEMTIME st;
-	SYSTEMTIME lst;
 	char datebuff[32];
 
 	CString format = textConfig.m_dateFormat;
 
 	datebuff[0] = 0;
-	if (m->m_timeDate > 0)
+	if (m->m_timeDate >= 0)
 	{
-		CTime tt(m->m_timeDate);
-		if (!textConfig.m_bGMTTime) {
-			bool ret = tt.GetAsSystemTime(st);
-			SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-			CTime ltt(lst);
-			strcpy(datebuff, (LPCSTR)ltt.Format(format));
+		MyCTime tt(m->m_timeDate);
+		if (!textConfig.m_bGMTTime) 
+		{
+			CString lDateTime = tt.FormatLocalTm(format);
+			strcpy(datebuff, (LPCSTR)lDateTime);
 		}
 		else {
-			strcpy(datebuff, (LPCSTR)tt.Format(format));
+			CString lDateTime = tt.FormatGmtTm(format);
+			strcpy(datebuff, (LPCSTR)lDateTime);
 		}
 	}
 
@@ -4323,24 +4436,22 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	}
 
 	//
-	SYSTEMTIME st;
-	SYSTEMTIME lst;
 	char datebuff[32];
 
 	CString format = textConfig.m_dateFormat;
 
 	datebuff[0] = 0;
-	if (m->m_timeDate > 0)
+	if (m->m_timeDate >= 0)
 	{
-		CTime tt(m->m_timeDate);
-		if (!textConfig.m_bGMTTime) {
-			bool ret = tt.GetAsSystemTime(st);
-			SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-			CTime ltt(lst);
-			strcpy(datebuff, (LPCSTR)ltt.Format(format));
+		MyCTime tt(m->m_timeDate);
+		if (!textConfig.m_bGMTTime) 
+		{
+			CString lDateTime = tt.FormatLocalTm(format);
+			strcpy(datebuff, (LPCSTR)lDateTime);
 		}
 		else {
-			strcpy(datebuff, (LPCSTR)tt.Format(format));
+			CString lDateTime = tt.FormatGmtTm(format);
+			strcpy(datebuff, (LPCSTR)lDateTime);
 		}
 	}
 
@@ -4703,7 +4814,7 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 			int nFileNum = (i - firstMail  + 1);
 			int stepSize = 100;
 			if (textType == 0)
-				stepSize = 1000;
+				stepSize = 100;  // 1000 ??
 
 			if ((nFileNum % stepSize) == 0) 
 			{
@@ -5083,16 +5194,22 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 	{
 		body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty()) {
+		if ((!body->m_attachmentName.IsEmpty()) || 
+			(body->m_contentDisposition.CompareNoCase("attachment") == 0)) 
+		{
 				continue;
 		}
 		if (textType == 0) {
 			if (body->m_contentType.CompareNoCase("text/plain") != 0)
+			{
 				continue;
+			}
 		} 
 		else if (textType == 1) {
 			if (body->m_contentType.CompareNoCase("text/html") != 0)
+			{
 				continue;
+			}
 		}
 
 		bodyCnt++;
@@ -5368,7 +5485,8 @@ void MboxMail::getCMimeBodyHeader(CMimeMessage *mail, CMimeBody* pBP, CMBodyHdr 
 	pHdr->Mail = mail;
 	pHdr->IsText = pBP->IsText();
 	pHdr->IsMessage = pBP->IsMessage();
-	pHdr->IsAttachement = pBP->IsAttachment();
+	//pHdr->IsAttachement = pBP->IsAttachment();
+	pHdr->IsAttachement = MboxCMimeHelper::IsAttachment(pBP);  // this differs from the attachment attribute as in Content-Disposition
 	pHdr->IsMultiPart = pBP->IsMultiPart();
 	pHdr->Content = FixIfNull((char*)pBP->GetContent());
 	pHdr->ContentLength = pBP->GetContentLength();
@@ -5575,9 +5693,11 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 			else if (cstr.CompareNoCase("date") == 0) 
 			{
 				SYSTEMTIME tm;
-				if (DateParser::parseRFC822Date(fval, &tm)) {
-					if (DateParser::validateSystemtime(&tm)) {
-						CTime tt(tm);
+				if (DateParser::parseRFC822Date(fval, &tm)) 
+				{
+					if (DateParser::validateSystemtime(&tm)) 
+					{
+						MyCTime tt(tm);
 						m->m_timeDate = tt.GetTime();
 					}
 				}
@@ -5592,24 +5712,21 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 
 		if (csvConfig.m_bDate)
 		{
-			SYSTEMTIME st;
-			SYSTEMTIME lst;
 			char datebuff[32];
-
 			CString format = MboxMail::GetDateFormat(csvConfig.m_dateFormat);
 
 			datebuff[0] = 0;
-			if (m->m_timeDate > 0)
+			if (m->m_timeDate >= 0)
 			{
-				CTime tt(m->m_timeDate);
-				if (!csvConfig.m_bGMTTime) {
-					bool ret = tt.GetAsSystemTime(st);
-					SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-					CTime ltt(lst);
-					strcpy(datebuff, (LPCSTR)ltt.Format(format));
+				MyCTime tt(m->m_timeDate);
+				if (!csvConfig.m_bGMTTime) 
+				{
+					CString lDateTime = tt.FormatLocalTm(format);
+					strcpy(datebuff, (LPCSTR)lDateTime);
 				}
 				else {
-					strcpy(datebuff, (LPCSTR)tt.Format(format));
+					CString lDateTime = tt.FormatGmtTm(format);
+					strcpy(datebuff, (LPCSTR)lDateTime);
 				}
 			}
 
@@ -5893,7 +6010,8 @@ int MboxMail::GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, Sim
 
 			//getCMimeBodyHeader(0, pBP, &cmh);
 
-			if (pBP->IsText() && !pBP->IsAttachment()) 
+			bool isAttachment = MboxCMimeHelper::IsAttachment(pBP);
+			if (pBP->IsText() && !isAttachment)
 			{
 				if (strcmp(pBP->GetSubType().c_str(), "plain") == 0) {
 
@@ -6056,6 +6174,7 @@ void MailHeader::Clear()
 	m_ContentLocation.Empty();
 	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
+	m_Name.Empty();
 	m_MessageId.Empty();
 	m_ReplyId.Empty();
 }
@@ -6155,17 +6274,27 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 					if ((m_PageCode == 0) && m_IsTextHtml)
 						int deb = 1;
 				}
-				int deb = 1;
-			}
-			else {
-				int ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_AttachmentName);
-				if (!m_AttachmentName.IsEmpty()) {
+				ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
+				if (!m_Name.IsEmpty()) {
 					CString charset;
 					UINT charsetId = 0;
-					CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
+					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
 					// TODO: what about charset and charsetId :)
-					m_AttachmentName = attachmentName;
-					m_IsAttachment = true;
+					m_Name = Name;
+					//m_IsAttachment = true;  // TODO: Caller need to decide
+				}
+				int deb = 1;
+			}
+			else 
+			{
+				int ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
+				if (!m_Name.IsEmpty()) {
+					CString charset;
+					UINT charsetId = 0;
+					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
+					// TODO: what about charset and charsetId :)
+					m_Name = Name;
+					//m_IsAttachment = true;  // TODO: Caller need to decide
 				}
 			}
 		}
@@ -6179,20 +6308,20 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			p = GetMultiLine(p, e, line);
 			GetFieldValue(line, cDispositionLen, m_Disposition);
 
-			if (strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0) {
+			if (strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0)
+			{
+				// TODO:  Maybe. There are plenty of irregular mails and they can be considered as inline and 
+				// possibly both inline and attachment
 				m_IsAttachment = true;
-				int ret = GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
-				if (m_AttachmentName.IsEmpty())
-					ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_AttachmentName);
-
-				if (!m_AttachmentName.IsEmpty()) {
-					CString charset;
-					UINT charsetId = 0;
-					CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
-					// TODO: what about charset and charsetId :)
-					m_AttachmentName = attachmentName;
-					m_IsAttachment = true;
-				}
+			}
+			// attachment type or not, get the filename/attachment name 
+			int ret = GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
+			if (!m_AttachmentName.IsEmpty()) {
+				CString charset;
+				UINT charsetId = 0;
+				CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
+				// TODO: what about charset and charsetId :)
+				m_AttachmentName = attachmentName;
 			}
 		}
 		else if (strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
@@ -6325,24 +6454,6 @@ int MailBody::GetBodyPartList(MailBodyList& rList)
 		MailBody *iter;
 		for (iter = m_listBodies.head(); iter != 0; iter = m_listBodies.next(iter))
 		{
-			// TODO: decode fully emial parts and save into enhanced database.
-			// This woill allow to reliably determine embeded images.
-			// Below is the best effort
-			if (m_ContentType.CompareNoCase("multipart/related") == 0) 
-			{
-				if (iter->m_ContentType.MakeLower().Find("image/") >= 0)
-				{
-					if ((!iter->m_ContentId.IsEmpty()) &&
-						(iter->m_Disposition.CompareNoCase("attachment") == 0))
-					{
-						iter->m_Disposition = "inline";
-					}
-					else if ((!iter->m_ContentId.IsEmpty()) && iter->m_Disposition.IsEmpty())
-					{
-						iter->m_Disposition = "inline";
-					}
-				}
-			}
 			nCount += iter->GetBodyPartList(rList);
 		}
 	}
@@ -6462,6 +6573,9 @@ void MboxMail::ReleaseResources()
 	m_pMboxMailTable = 0;
 
 	MboxMail::m_HintConfig.SaveToRegistry();
+
+	CString processpath = "";
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), processpath);
 }
 
 // search for string2 in string1 (strstr)
@@ -6711,6 +6825,21 @@ void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &v
 	}
 	else
 		value.Empty();
+}
+
+bool MboxCMimeHelper::IsAttachment(CMimeBody* pBP)
+{
+	CString name;
+	CString fileName;
+	CString disposition;
+
+	Name(pBP, name);
+	Filename(pBP, fileName);
+	GetContentDisposition(pBP, disposition);
+	if ((disposition.CompareNoCase("attachment") == 0) || (!name.IsEmpty()) || (!fileName.IsEmpty()))
+		return true;
+	else
+		return false;
 }
 
 // Debug support functions
@@ -7105,7 +7234,7 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	BOOL separatorNeeded = FALSE;
 	char sepchar = '-';
 
-	if (m->m_timeDate == 0)
+	if (m->m_timeDate < 0)
 	{
 		CString m_strDate;
 		if (namePatternParams->m_bDate)
@@ -7128,37 +7257,32 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	}
 	else if (namePatternParams->m_bDate) 
 	{
-		SYSTEMTIME st;
-		SYSTEMTIME lst;
-		CTime tt(m->m_timeDate);
+		MyCTime tt(m->m_timeDate);
 
 		CString m_strDate;
 
-		bool ret = tt.GetAsSystemTime(st);
-		SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-		CTime ltt(lst);
-
+		CString format;
 		if (namePatternParams->m_bTime)
-			m_strDate = ltt.Format("%Y%m%d-%H%M%S");
+		{
+			format = "%Y%m%d-%H%M%S";
+		}
 		else
-			m_strDate = ltt.Format("%Y%m%d");
+		{
+			format = "%Y%m%d";
+		}
+
+		m_strDate = tt.FormatLocalTm(format);
 		fileName.Append(m_strDate);
 
 		separatorNeeded = TRUE;
 	}
 	else if (namePatternParams->m_bTime) 
 	{
-		SYSTEMTIME st;
-		SYSTEMTIME lst;
-		CTime tt(m->m_timeDate);
-
+		MyCTime tt(m->m_timeDate);
+		CString format = "%H%M%S";
 		CString m_strDate;
+		m_strDate = tt.FormatLocalTm(format);
 
-		bool ret = tt.GetAsSystemTime(st);
-		SystemTimeToTzSpecificLocalTime(0, &st, &lst);
-		CTime ltt(lst);
-
-		m_strDate = ltt.Format("%H%M%S");
 		fileName.Append(m_strDate);
 
 		separatorNeeded = TRUE;
@@ -8113,9 +8237,13 @@ void  MboxMail::MakeValidFileName(CString &name)
 	{
 		c = str[i];
 		if (
-			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||
+			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') || (c == ',') || (c == ';') ||
 			(c == '*') || (c == '|') || (c == '"') || (c == '\\') || (c == '%')
 			)
+		{
+			validName.AppendChar('_');
+		}
+		else if ((c < 32))
 		{
 			validName.AppendChar('_');
 		}
@@ -8135,9 +8263,13 @@ void  MboxMail::MakeValidFileName(SimpleString &name)
 	{
 		c = str[i];
 		if (
-			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||
-			(c == '*') || (c == '|') || (c == '"') || (c == '\\')
+			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') || (c == ',') || (c == ';') ||
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\') || (c == '%')
 			)
+		{
+			str[i] = '_';
+		}
+		else if ((c < 32))
 		{
 			str[i] = '_';
 		}
@@ -8371,6 +8503,63 @@ void MboxMail::LoadHintBitmap()
 	MboxMail::m_HintConfig.LoadHintBitmap();
 }
 
+BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
+{
+	static char *tm = "Thu Oct 27 09:02:59 +0000 2011";
+	static int tmlen = strlen(tm);
+
+	time_t timeDT = -1;
+	char *e = end - tmlen;
+	char c;
+	while (p < e)
+	{
+		c = tolower(*p);
+		if ((c == '\n') || (c == '\r'))
+			return FALSE;
+
+		if (c == 'm')
+		{
+			if (strncmpUpper2Lower(p, end, "mon", 3) == 0)
+				break;
+		}
+		else if (c == 't')
+		{
+			if (strncmpUpper2Lower(p, end, "tue", 3) == 0)
+				break;
+			else if (strncmpUpper2Lower(p, end, "thu", 3) == 0)
+				break;
+		}
+		else if (c == 'w')
+		{
+			if (strncmpUpper2Lower(p, end, "wed", 3) == 0)
+				break;
+		}
+		else if (c == 'f')
+		{
+			if (strncmpUpper2Lower(p, end, "fri", 3) == 0)
+				break;
+		}
+		else if (c == 's')
+		{
+			if (strncmpUpper2Lower(p, end, "sat", 3) == 0)
+				break;
+			else if (strncmpUpper2Lower(p, end, "sun", 3) == 0)
+				break;
+		}
+		p++;
+	}
+	if (p < e)
+	{
+		char *date = p;
+		if (DateParser::parseRFC822Date(date, sysTime, 2))
+			return TRUE;
+		else
+			return FALSE;
+	}
+	else
+		return FALSE;
+}
+
 void MboxMail::ShowHint(int hintNumber)
 {
 	// Or should I create table with all Hints to support potentially large number of hints ?
@@ -8464,6 +8653,16 @@ void MboxMail::ShowHint(int hintNumber)
 				"Page Setup when printing to PDF file\n"
 				"via Print to Printer option and by opening the mail\n"
 				"within a browser for printing.\n"
+			);
+		}
+		else if (hintNumber == HintConfig::AttachmentConfigHint)
+		{
+			hintText.Append(
+				"By default attachments other than those embeded into mail\n"
+				"are shownin the attachment window.\n\n"
+				"You can configure to shown all attachments, both inline and\n"
+				"non-inline, by selecting\n"
+				"\"File->Attachments Config->Attachment Window\" dialog\n"
 			);
 		}
 

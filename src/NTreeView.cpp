@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "MboxMail.h"
 #include "NTreeView.h"
+#include "InputBox.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -304,8 +305,37 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	HTREEITEM hItem = pNm->itemNew.hItem;
 	HTREEITEM hParent = m_tree.GetParentItem(hItem);
 
+	// FOLDER??
 	if (hParent != hRoot)
 	{
+		CString mboxFileNamePath = MboxMail::s_path;
+		CString driveName;
+		CString mboxFileDirectory;
+		CString mboxFileNameBase;
+		CString mboxFileNameExtention;
+
+		MboxMail::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+
+		CString mboxFileName = mboxFileNameBase + mboxFileNameExtention;
+
+		CString folderPath; // path up to mboxFolderName
+		int retpath = GetFolderPath(hItem, mboxFileName, folderPath);
+		if (!retpath)
+		{
+			return;
+		}
+
+		CString folderCompletePath = driveName + mboxFileDirectory + "\\" + "Folders" + "\\" + folderPath;
+
+		if (!PathExists(folderCompletePath))
+			int deb = 1;
+
+		CString folderName = m_tree.GetItemText(hItem);
+		CString folderNameCompletePath = folderCompletePath + "\\" + folderName + ".mbox.mboxlist";
+
+		if (!PathFileExists(folderNameCompletePath))
+			int deb = 1;
+
 		return;
 	}
 
@@ -316,7 +346,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	pListView->m_path = path + "\\" + str;
 	pListView->m_which = pNm->itemNew.hItem;
+
 	pListView->ResetSize();
+
+	pListView->ResetFilterDates();
 
 	int paneId = 0;
 	CString sText;
@@ -332,6 +365,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
 	MboxMail::ShowHint(HintConfig::MsgWindowPlacementHint);
+
+	//pListView->ScanAllMailsInMbox();
+	//pListView->ScanAllMailsInMbox_NewParser();
 
 	ShowMemStatus();
 }
@@ -638,10 +674,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
 
 	const UINT S_SORT_BY_POSITION_Id = 10;
-#if 0
 	// Sort by position in the archive file. Enabled for debugging only
-	AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Position"));
-#endif
+	// AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Position"));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -675,6 +709,10 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	switch (command)
 	{
 	case M_FileLocation_Id: {
+		UINT nFlags = MF_BYCOMMAND;
+		CString Label;
+		int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
+
 		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 		if (BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
 			HWND h = GetSafeHwnd();
@@ -722,6 +760,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_TEXT_Id: {
+		UINT nFlags = MF_BYCOMMAND;
+		CString Label;
+		int retLabel = menu.GetMenuString(S_TEXT_Id, Label, nFlags);
 		if (pFrame) 
 		{
 			pFrame->PrintMailArchiveToTEXT();
@@ -796,17 +837,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case M_CreateFolder_Id: {
-		CString txt = _T("Do you want to create new folder?");
-		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDYES)
-			m_tree.InsertItem(_T("Pittsburgh"), hItem, TVI_SORT);
-
-		CString fileDirPath;
-		BOOL ret = CPathGetPath(MboxMail::s_path, fileDirPath);
-		fileDirPath += "\\Folders";
-		FindAllDirs(fileDirPath);
+	case M_CreateFolder_Id: 
+	{
+		CreateEmptyFolder(hItem);
+		CMenu menu;
+		CString mboxFilePath = MboxMail::s_path;
+		CString mboxFileName = ::PathFindFileName(mboxFilePath);
+		HTREEITEM hItem = NTreeView::FindItem(0, mboxFileName);
+		TRACE(_T("CreateFlatFolderListMenu\n"));
+		CreateFolderListFlatMenu(hItem, menu);
 		int deb = 1;
 	}
 	break;
@@ -940,3 +979,162 @@ LRESULT NTreeView::OnCmdParam_FileName(WPARAM wParam, LPARAM lParam)
 	SelectMailFile();
 	return 0;
 }
+
+int NTreeView::GetFolderPath(HTREEITEM hItem, CString &mboxName, CString &parentPath)
+{
+	CString parentName = m_tree.GetItemText(hItem);
+	//if (parentName.Compare(mboxName) == 0) return 1;
+	parentPath.Append(parentName);
+	HTREEITEM hParent = m_tree.GetParentItem(hItem);
+	HTREEITEM hNextParent;
+	while (hParent)
+	{
+		hNextParent = m_tree.GetParentItem(hParent);
+		if (hNextParent == 0) // root
+			break;
+		parentName = m_tree.GetItemText(hParent);
+		//if (parentName.Compare(mboxName) == 0) break;
+		parentPath.Insert(0,"\\");
+		parentPath.Insert(0, parentName);
+		hParent = hNextParent;
+	}
+	return 1;
+}
+
+int NTreeView::CreateEmptyFolder(HTREEITEM hItem)
+{
+	CString mboxFileNamePath = MboxMail::s_path;
+	CString driveName;
+	CString mboxFileDirectory;
+	CString mboxFileNameBase;
+	CString mboxFileNameExtention;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NListView *pListView = 0;
+	if (pFrame == 0) {
+		return 0;
+	}
+
+	pListView = pFrame->GetListView();
+
+	MboxMail::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+
+	CString mboxFolderName = mboxFileNameBase + mboxFileNameExtention;
+	InputBox dlg(mboxFolderName);
+
+	INT_PTR answer = dlg.DoModal();
+	if (answer != IDOK)
+	{
+		return 0;
+	}
+
+	CString newFolderName = dlg.m_input;
+	CString subFolderPath;  // path up to mboxFolderName
+	int retpath = GetFolderPath(hItem, newFolderName, subFolderPath);
+	if (!retpath)
+	{
+		return 1;
+	}
+
+	int retfolder = pListView->CreateEmptyFolder(driveName, mboxFileDirectory, mboxFolderName, subFolderPath, newFolderName);
+	if (retfolder != ERROR_SUCCESS)
+	{
+		return 0;
+	}
+		
+
+	HTREEITEM newItem = m_tree.InsertItem(newFolderName, hItem, TVI_SORT);
+	if (newItem == 0) 
+	{
+		return 0;
+	}
+
+	m_tree.Expand(hItem, TVE_EXPAND);
+
+	CString fileDirPath;
+	BOOL ret = CPathGetPath(MboxMail::s_path, fileDirPath);
+	fileDirPath += "\\Folders";
+	FindAllDirs(fileDirPath);
+
+	return 1;
+}
+
+int NTreeView::GetFolderPath(HTREEITEM hItem, CString &folderPath)
+{
+	HTREEITEM hNextParent = 0;
+	HTREEITEM hNextNextParent = 0;
+	HTREEITEM hParent = 0;
+
+	while (hItem)
+	{
+		hParent = m_tree.GetParentItem(hItem);
+		CString parentName;
+		if (hParent) {
+			parentName = m_tree.GetItemText(hParent);
+			hNextParent = m_tree.GetParentItem(hParent);
+		}
+
+		CString nextParentName;
+		if (hNextParent) {
+			nextParentName = m_tree.GetItemText(hNextParent);
+			hNextNextParent = m_tree.GetParentItem(hNextParent);
+		}
+
+		CString nextNextParentName;
+		if (hNextNextParent) {
+			nextNextParentName = m_tree.GetItemText(hNextNextParent);
+		}
+
+		CString itemName = m_tree.GetItemText(hItem);
+
+		if (!folderPath.IsEmpty())
+			folderPath.Insert(0, "\\");
+		folderPath.Insert(0, itemName);
+
+		if (hNextNextParent == 0)
+			break;
+
+		hItem = hParent;
+	}
+	return 1;
+}
+
+
+int NTreeView::CreateFolderListFlatMenu(HTREEITEM hItem, CMenu &menu)
+{
+	CString path;
+	CString itemName;
+	HTREEITEM hLeaveItem = 0;
+	//TRACE(_T("ItemTree!!\n"));
+	if (hItem == 0)
+	{
+		hItem = m_tree.GetRootItem();
+	}
+
+	CString rootName = m_tree.GetItemText(hItem);
+	if (!m_tree.ItemHasChildren(hItem))
+		return 1;
+
+	hItem = m_tree.GetChildItem(hItem);
+	CString firstChildName = m_tree.GetItemText(hItem);
+
+	while (hItem != NULL)
+	{
+		CString folderPath;
+		int ret = GetFolderPath(hItem, folderPath);
+		TRACE(_T("TreeFolderPath=%s\n"), folderPath);
+
+		if (m_tree.ItemHasChildren(hItem))
+		{
+			HTREEITEM hChild = m_tree.GetChildItem(hItem);
+			CString childName = m_tree.GetItemText(hChild);
+			CString parentName = m_tree.GetItemText(hItem);
+			CreateFolderListFlatMenu(hItem, menu);
+		}
+		hItem = m_tree.GetNextSiblingItem(hItem);
+		CString nextChildName = m_tree.GetItemText(hItem);
+	}
+
+	return 1;
+}
+

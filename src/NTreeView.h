@@ -39,6 +39,7 @@
 
 // Define below in single location if more user messages are implemented
 #define WM_CMD_PARAM_FILE_NAME_MESSAGE  (WM_APP + 1)
+#define WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE  (WM_APP + 2)
 
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView window
@@ -85,6 +86,13 @@ public:
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	void StartTimer();
 	void PostMsgCmdParamFileName();
+
+	// Folder related
+	int CreateEmptyFolder(HTREEITEM hItem);
+	int GetFolderPath(HTREEITEM hItem, CString &mboxName, CString &parentPath);
+	int GetFolderPath(HTREEITEM hItem, CString &folderPath);
+
+	int CreateFolderListFlatMenu(HTREEITEM hItem, CMenu &menu);
 
 	static void FindAllDirs(LPCTSTR pstr);
 

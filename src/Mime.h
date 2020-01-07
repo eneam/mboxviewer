@@ -41,6 +41,7 @@ public:
 	static inline const char* Name() { return "name"; }
 	static inline const char* Filename() { return "filename"; }
 	static inline const char* Boundary() { return "boundary"; }
+	static inline const char* Attachment() { return "attachment"; }
 
 	// parameter values
 	static inline const char* Encoding7Bit() { return "7bit"; }
@@ -359,7 +360,7 @@ public:
 	void GetMessage(CMimeMessage* pMM) const;
 
 	// operations for 'image/audio/vedio/application' (attachment) media
-	bool IsAttachment() const;
+	//bool IsAttachment() const;
 	bool ReadFromFile(const char* pszFilename);
 	bool WriteToFile(const char* pszFilename);
 
@@ -415,8 +416,10 @@ inline bool CMimeBody::IsText() const
 inline bool CMimeBody::IsMessage() const
 { return GetMediaType() == MEDIA_MESSAGE; }
 
+#if 0
 inline bool CMimeBody::IsAttachment() const
 { return ((GetName().size() > 0) || (GetFilename().size() > 0)); }
+#endif
 
 inline bool CMimeBody::IsMultiPart() const
 { return GetMediaType() == MEDIA_MULTIPART; }

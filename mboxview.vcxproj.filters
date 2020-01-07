@@ -100,6 +100,12 @@
     <ClCompile Include="src\InputBox.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\AttachmentsConfig.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MyCTime.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -205,6 +211,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\InputBox.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\AttachmentsConfig.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyCTime.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
