@@ -49,6 +49,7 @@ v 1.0.3.7
  - Enhanced performance of internal Picture Viewer when resizing images;
  - Replaced the star * character as the attachment indicator with the industry standard paper clip;
  - Enhanced to assure that the Hint Message Box always stays on top of the main window;
+ - Enhanced Print Config Dialog to allow users to customize file name template;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.6
