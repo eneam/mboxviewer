@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "dllist.h"
+#include "SimpleString.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -191,111 +192,6 @@ public:
 	}
 };
 
-// Investigate and use standard CString instead  ?
-class SimpleString
-{
-public:
-#define DFLT_GROW_SIZE 16
-	SimpleString() { Initialize(0, DFLT_GROW_SIZE);  }
-	SimpleString(int capacity) { Initialize(capacity, DFLT_GROW_SIZE); }
-	SimpleString(int capacity, int grow_size) { Initialize(capacity, grow_size); }
-
-	void Initialize(int capacity, int grow_size) {
-		m_data = 0;  m_count = 0;  m_grow_size = grow_size;
-		m_capacity = capacity;
-		if (m_capacity < DFLT_GROW_SIZE)
-			m_capacity = DFLT_GROW_SIZE;
-		m_data = new char[m_capacity + 1];  // extra byte for NULL
-		if (m_data)
-			m_data[0] = 0;
-		else
-			m_capacity = 0;  // this would be a problem. introduce m_error ?
-	};
-	~SimpleString() { delete[] m_data; m_data = 0; m_count = 0; m_capacity = 0; };
-	void Release() { delete[] m_data; m_data = 0; m_count = 0;  m_capacity = 0; };
-
-	char *m_data;
-	int m_capacity;
-	int m_count;
-	int m_grow_size;
-
-	char *Data() { return m_data;  }
-	char *Data(int pos) { return &m_data[pos]; }  // zero based pos
-	int Capacity() { return m_capacity; }
-	int Count() { return m_count; }
-	void SetCount(int count) {
-		ASSERT(count <= m_capacity); ASSERT(m_data);
-		m_count = count; m_data[count] = 0;
-	}
-	void Clear() {
-		SetCount(0);
-	}
-	bool CanAdd(int characters) {
-		if ((m_count + characters) <= m_capacity) 
-			return true; else  return false;
-	}
-	int Resize(int size);
-
-	int ClearAndResize(int size) {
-		int new_size = Resize(size);
-		SetCount(0);
-		return new_size;
-	}
-
-	void Copy(char c) {
-		if (1 > m_capacity) // should never be true
-			Resize(1);
-		m_data[0] = c;
-		SetCount(1);
-	}
-
-	void Append(char c) {
-		if (!CanAdd(1)) Resize(m_capacity + 1);
-		m_data[m_count++] = c;
-		m_data[m_count] = 0;
-	}
-
-	void Copy(void const* Src, size_t  Size) {
-		if (Size > m_capacity) Resize(Size);
-		::memcpy(m_data, Src, Size);
-		SetCount(Size);
-	}
-
-	void append_internal(void const* Src, size_t  Size);
-
-	void Append(void const* Src, size_t  Size) {
-		if (!CanAdd(Size))
-			Resize(m_count + Size);
-		append_internal(Src, Size);
-	}
-
-	void Copy(register char *src) {
-		int slen = strlen(src);
-		SimpleString::Copy(src, slen);
-	}
-
-	void Append(register char *src) {
-		int slen = strlen(src);
-		SimpleString::Append(src, slen);
-	}
-
-	void Copy(SimpleString &str) { 
-		Copy(str.Data(), str.Count());
-	}
-
-	void Append(SimpleString &str) {
-		Append(str.Data(), str.Count());
-	}
-
-	int FindNoCase(int offset, void const* Src, int  Size);
-	int FindAny(int offset, void const * Src);
-	int Find(int offset, char const c);
-
-	char GetAt(int pos) {
-		return m_data[pos];
-	}
-};
-
 class MailBodyContent
 {
 public:
@@ -425,6 +321,9 @@ public:
 	static UINT Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml = false);
+
+	static BOOL m_seExceptionMsgBox;
+	static BOOL m_cppExceptionMsgBox;
 	
 
 	// TODO:  need to rewrite, encapsulate in objects, etc
@@ -450,9 +349,12 @@ public:
 	static BOOL IsAllMailsSelected();
 	static BOOL IsFindMailsSelected();
 	static BOOL IsUserMailsSelected();
+	static BOOL IsFolderMailsSelected();
+
 	static int AllMailsSelectedId();
 	static int FindMailsSelectedId();
 	static int UserMailsSelectedId();
+	static int FolderMailsSelectedId();
 
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;
@@ -542,6 +444,11 @@ public:
 	static BOOL VerifyMerge(MailArray *mails, int *carray, int carrayCnt);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
 	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName);
+	static int MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf, CString &fileName, int maxFileNameLength);
+	static CString MatchFldLabel(char *p, char *e);
+	static BOOL ParseTemplateFormat(CString &templateFormat, CArray<CString> &labelArray);
+	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
+	//
 	static CString GetDateFormat(int i);
 	static BOOL GetPrintCachePath(CString &printCachePath);
 	static int RemoveDuplicateMails();
@@ -552,8 +459,8 @@ public:
 	static void UpdateFileExtension(CString &fileName, CString &newSuffix);
 	//
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
-	static void MakeValidFileName(CString &name);
-	static void MakeValidFileName(SimpleString &name);
+	static void MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
+	static void MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 
 	static bool GetArchiveSpecificCachePath(CString &path, CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 
@@ -562,142 +469,10 @@ public:
 	static void assert_unexpected();
 
 	static HintConfig m_HintConfig;
-	static void ShowHint(int hintNumber);
+	static void ShowHint(int hintNumber, HWND h = NULL);
 	static void LoadHintBitmap();
 
 	static BOOL ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime);
-};
-
-#define SZBUFFSIZE 1024*1024*100
-
-class SerializerHelper
-{
-private:
-	BOOL m_writing;
-	CString m_path;
-	HANDLE m_hFile;
-	int m_offset;
-	char * m_buff;
-	int m_buffSize;
-public:
-	SerializerHelper(LPCSTR fn) {
-		m_path = fn;
-		m_offset = 0;
-		m_buff = NULL;
-	}
-	~SerializerHelper() {
-		close();
-	}
-	void close();
-	BOOL open(BOOL bWrite);
-	int GetReadPointer();
-	BOOL SetReadPointer(int pos);
-	BOOL readN(void *v, int sz);
-	BOOL writeN(void *v, int sz);
-	BOOL writeString(LPCSTR val);
-	BOOL readString(CString &val);
-
-	BOOL writeInt(int val) {
-		return writeN(&val, sizeof(int));
-	}
-	BOOL readInt(int *val) {
-		return readN(val, sizeof(int));
-	}
-	BOOL readUInt(unsigned int *val) {
-		return readN(val, sizeof(int));
-	}
-	BOOL writeInt64(_int64 value) {
-		return writeN(&value, sizeof(_int64));
-	}
-	BOOL readInt64(_int64 *val) {
-		return readN(val, sizeof(_int64));
-	}
-};
-
-
-class MailHeader
-{
-public:
-	MailHeader() { Clear(); }
-	~MailHeader() { }
-public:
-	void Clear();
-	char *EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p;  }
-	
-	int Load(const char* pszData, int nDataSize);
-	bool IsMultiPart() { return m_IsMultiPart; }
-	bool AssertHdr();
-
-	bool m_IsText;
-	bool m_IsTextPlain;
-	bool m_IsTextHtml;
-	bool m_IsMessage;
-	bool m_IsAttachment;
-	bool m_IsMultiPart;
-	CString m_Charset;
-	UINT m_PageCode;
-	CString m_Description;
-	CString m_Disposition;
-	CString m_TransferEncoding;
-	CString m_SubType;
-	CString m_MainType;
-	CString m_Boundary;
-	CString m_ContentType;
-	CString m_ContentId;
-	CString m_ContentLocation;
-	CMimeHeader::MediaType m_MediaType;
-	CString m_Name;   // from Content-Type
-	CString m_AttachmentName;  // filename From Content-Disposition
-	CString m_MessageId;
-	CString m_ReplyId;
-};
-
-class MailBodyPool;
-
-class MailBody:public MailHeader
-{
-	friend class MailBodyPool;
-public:
-	MailBody() { m_bodyDataOffset = 0; };
-	~MailBody() { DeleteAll(); };
-
-	int Load(char *& pszDatabase, const char* pszData, int nDataSize);
-	BOOL AssertData(MboxMail *mail);
-
-	typedef list<MailBody*> MailBodyList;
-	int GetBodyPartList(MailBodyList& rList);
-	int m_bodyDataOffset;
-	int m_bodyDataLength;
-
-protected:
-	char* FindBoundary(const char* pszData, const char* pszDataEnd, const char* boundary, int boundaryLength);
-	const char* FindString(const char* pszStr1, const char* pszStr2, const char* pszEnd);
-
-	DLLIST_NODE(MailBody) m_freeList_link;
-	DLLIST(MailBody, m_freeList_link) m_listBodies;
-
-	void DeleteAllParts();
-	void DeleteAll();
-	
-	static MailBody *CreatePart();
-	static void ErasePart(MailBody* body);
-
-public:
-	static MailBody *CreateMailBody();
-	static void FreeMailBody(MailBody* body);
-	static MailBodyPool *m_mpool;
-};
-
-class MailBodyPool
-{
-public:
-	MailBodyPool() {};
-	~MailBodyPool();
-
-	MailBody *AllocPart();
-	void FreePart(MailBody* body);
-
-	DLLIST(MailBody, m_freeList_link) m_freeMailBodyList;
 };
 
 inline char* FixIfNull(const char* ptr)

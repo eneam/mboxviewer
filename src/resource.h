@@ -30,14 +30,18 @@
 #define IDS_DESC_NONE                   204
 #define IDS_DESC_TITLE3                 205
 #define IDS_TITLE_TO                    205
+#define IDD_CHECK_LIST_BOX_DLG          205
 #define IDS_DESC_TITLE2                 206
 #define IDS_TITLE_DATE                  206
 #define IDS_DESC_BODY                   207
 #define IDS_TITLE_BODY                  207
+#define IDB_PAPER_CLIP                  207
+#define IDD_NAME_TEMPL_DLG              208
 #define IDC_BUTTON1                     1001
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
+#define IDC_SRCFTIME                    1001
 #define IDC_BUTTON2                     1002
 #define IDC_BUTTON_NEXT                 1002
 #define IDC_BUTTON3                     1003
@@ -111,10 +115,12 @@
 #define IDC_EDIT_FROM_CASE              1085
 #define IDC_FILE_FROM                   1085
 #define IDC_CHECK_BCC                   1085
+#define IDC_TEMPL_FROM_DOMAIN_NAME      1085
 #define IDC_TIME_TYPE                   1086
 #define IDC_MATCH_CASE2                 1086
 #define IDC_EDIT_TO_CASE                1086
 #define IDC_ATTACHMENT_TYPE_INDICATOR   1086
+#define IDC_TEMPL_TO_DOMAIN_NAME        1086
 #define IDC_TIME_LOCAL                  1087
 #define IDC_MATCH_CASE3                 1087
 #define IDC_EDIT_SUBJECT_CASE           1087
@@ -215,6 +221,8 @@
 #define IDC_EXPORT_ATTACHMENT_NAMES     1184
 #define IDC_CHECK_NEGATE_FIND_CRITERIA  1184
 #define IDC_KEEP_BODY_BKGRND_COLOR      1184
+#define IDC_TEMPL_FROM_USERNAME         1184
+#define IDC_TEMPL_TO_USERNAME           1185
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
 #define IDC_CHECK_ATTACHMENT_NAME       1188
@@ -223,6 +231,15 @@
 #define IDC_FOLDER_LIST                 1191
 #define IDC_ATTACHMENT_WNDW_CFG         1192
 #define IDC_ATTACHMENT_MAX_SIZE         1193
+#define IDC_LIST1                       1194
+#define IDC_CUSTOM_TEMPLATE             1195
+#define IDC_SET_CUSTOM_TEMPLATE         1196
+#define IDC_EDIT_TEMPL_FMT              1199
+#define IDC_EDIT_DATE_FMT               1200
+#define IDC_SRCFTIME_LINK               1201
+#define IDC_TEMPL_FROM_ADDRESS_TEXT     1206
+#define IDC_TEMPL_WHITE_TO_UNDERSCORE   1207
+#define IDC_TEMPL_TO_ADDRESS_TEXT       1208
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -264,9 +281,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        205
+#define _APS_NEXT_RESOURCE_VALUE        213
 #define _APS_NEXT_COMMAND_VALUE         32889
-#define _APS_NEXT_CONTROL_VALUE         1194
+#define _APS_NEXT_CONTROL_VALUE         1208
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

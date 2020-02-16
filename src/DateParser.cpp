@@ -104,7 +104,8 @@ static char *months[] = { "jan","feb","mar","apr","may","jun","jul","aug","sep",
 #define SKIP_WHITESPACE() while (*s == ' ' || *s == '\t') s++
 #define SKIP_NON_WHITESPACE() while (*s != ' ' && *s != '\t' && *s != '\0') s++
 #define CHECK_PREMATURE_END()	 if (*s == '\0') return false
- 
+
+
 bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int dateFormatType)
 {
 	if (!sysTime || !str1)
@@ -112,11 +113,12 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
  
 	int dayOfWeek = 0;
  
-	char str[200],*s;
+	char str[300],*s,*s_end;
 	s = &str[0];
-	strncpy(&str[0],str1,199);
-	str[199] = '\0';
- 
+	s_end = &str[300];
+	strncpy(&str[0],str1,299);
+	str[299] = '\0';
+
 	// Convert to lowercase.
 	int j;
 	int i = 0;
@@ -128,6 +130,14 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
  
 	SKIP_WHITESPACE();
 	CHECK_PREMATURE_END();
+
+	// dateFormatType == 1
+	// Date: Sun, 5 Nov 2017 22:42:43 -0600 (CST)
+	// dateFormatType == 2
+	// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
+
+	if ((s_end - s) < 100) 
+		return false;
  
 	for (j=0; j<7; j++)
 	{
@@ -143,6 +153,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		dayOfWeek = j;
 		SKIP_WHITESPACE();
 		CHECK_PREMATURE_END();
+
 		if (*s == ',') s++;
 		SKIP_WHITESPACE();
 		CHECK_PREMATURE_END();
@@ -150,7 +161,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
  
 	// Get the day, month, and year.
 	int day;
-	char monthStr[20];
+	char monthStr[300];
 	int month;
 	int year;
 	int hour, minute, seconds;
@@ -160,12 +171,18 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		// Parse Date field
 		// Date: Sun, 5 Nov 2017 22:42:43 -0600 (CST)
 
+		if ((s_end - s) < 100) // needs better check
+			return false;
+
 		if (sscanf(s, "%d%s%d", &day, monthStr, &year) != 3)
 			return false;
+
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
+
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
+
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
@@ -192,6 +209,9 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 			}
 		}
 
+		if ((s_end - s) < 100) // needs better check
+			return false;
+
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
 			return false;
 
@@ -202,11 +222,16 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	{
 		// Parse the From field
 		// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
+
+		if ((s_end - s) < 100) // needs better check
+			return false;
+
 		if (sscanf(s, "%s%d", monthStr, &day) != 2)
 			return false;
 
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
+
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
@@ -221,6 +246,9 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 			return false;
 		month = j;
 
+		if ((s_end - s) < 100) // needs better check
+			return false;
+
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
 			return false;
 
@@ -231,6 +259,9 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
+
+		if ((s_end - s) < 100) // needs better check
+			return false;
 
 		if (sscanf(s, "%d", &year) != 1)
 			return false;
@@ -249,9 +280,12 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 
 		s = s_save;
 	}
+
+	if ((s_end - s) < 100) // needs better check
+		return false;
  
 	if (*s == '+') s++;
-	char zoneStr[20];
+	char zoneStr[300];
 	if (sscanf(s,"%s",zoneStr) != 1)
 	{
 		strcpy(zoneStr,"GMT");
@@ -328,6 +362,9 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	}
  
 	// Convert zoneStr from (-)hhmm to minutes.
+	if ((s_end - s) < 100) // needs better check
+		return false;
+
 	int hh,mm;
 	int sign = 1;
 	s = zoneStr;
@@ -336,6 +373,9 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		sign = -1;
 		s++;
 	}
+	if ((s_end - s) < 100) // needs better check
+		return false;
+
 	if (sscanf(s,"%02d%02d",&hh,&mm) != 2)
 	{
 		return false;

@@ -106,6 +106,30 @@
     <ClCompile Include="src\MyCTime.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\CheckListBoxDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CustomCheckListBox.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ExceptionUtil.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimpleString.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\StackWalker.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MimeParser.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializationHelper.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CustomNameTemplDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -219,6 +243,30 @@
     <ClInclude Include="src\MyCTime.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\CheckListBoxDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CustomCheckListBox.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ExceptionUtil.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimpleString.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StackWalker.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MimeParser.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SerializationHelper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CustomNameTemplDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.markdown" />
@@ -260,9 +308,6 @@
   <ItemGroup>
     <Text Include="README.txt" />
     <Text Include="LICENSE.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="res\print.bmp" />
-    <Image Include="res\select_folder.bmp" />
+    <Text Include="HELP.txt" />
   </ItemGroup>
 </Project>

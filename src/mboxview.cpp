@@ -35,9 +35,16 @@
 #include "mboxview.h"
 #include "profile.h"
 #include "LinkCursor.h"
-
 #include "MainFrm.h"
 #include "MboxMail.h"
+
+#include <afxadv.h> //Has CRecentFileList class definition.
+#include "afxlinkctrl.h"
+#include "afxwin.h"
+
+#include "ExceptionUtil.h"
+
+//#include "afxglobals.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -48,12 +55,44 @@
 //#include <crtdbg.h> 
 #endif
 
+// UpdateData(FALSE) from Dialog members to UI controls 
+// UpdateData(TRUE) from UI controls to Dialog members -  be carefull if you call TRUE in dialog followed by CANCEL
+
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
 	// Do something, for example generate error report
 	//..
+
+	UINT seNumb = 0;
+	if (pExceptionPtrs->ExceptionRecord)
+		seNumb = pExceptionPtrs->ExceptionRecord->ExceptionCode;
+
+	char const*  szCause = seDescription(seNumb);
+
+	char *stackDumpFileName = "UnhandledException_StackDump.txt";
+	BOOL ret = DumpStack(stackDumpFileName, (TCHAR*)szCause, seNumb, pExceptionPtrs->ContextRecord);
+
+	CString progDir;
+	BOOL retDir = GetProgramDir(progDir);
+
+	char *exceptionName = "UnhandledException";
+
+	CString errorTxt;
+#ifdef USE_STACK_WALKER
+	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
+		"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
+		"Please provide the files to the development team.\n\n"),
+		exceptionName, seNumb, szCause, stackDumpFileName, progDir);
+#else
+	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"), exceptionName, seNumb, szCause);
+#endif
+
+	AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+
 	// Execute default exception handler next
-	return EXCEPTION_EXECUTE_HANDLER;
+	//return EXCEPTION_EXECUTE_HANDLER;
+	//return EXCEPTION_CONTINUE_EXECUTION;
+	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
@@ -125,10 +164,6 @@ BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW)
 	return TRUE;
 }
 
-#include <afxadv.h> //Has CRecentFileList class definition.
-#include "afxlinkctrl.h"
-#include "afxwin.h"
-
 void Com_Initialize()
 {
 	//DWORD dwCoInit = COINIT_MULTITHREADED;
@@ -177,6 +212,10 @@ CmboxviewApp::CmboxviewApp()
 
 	//int test_enc();
 	//test_enc();
+
+
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -324,8 +363,6 @@ void CmboxviewApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
-
-	MboxMail::ShowHint(HintConfig::GeneralUsageHint);
 }
 
 
@@ -453,7 +490,9 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 
 BOOL CmboxviewApp::InitInstance()
 {
-	//SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+#ifdef USE_STACK_WALKER
+	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+#endif
 
 	CCmdLine cmdInfo;
 	CString mailFile;
@@ -466,12 +505,16 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "processPath");
+#if 0
+	// Commented out for now since it seem to confuse users. Need to find better solution.
 	if (!processPath.IsEmpty())
 	{
 		CString txt = _T("Mbox viewer instance might be running already:\n\n") + processPath;
 		txt += _T("\n\n");
 		txt += _T("Only single instance should be running to avoid potential\n");
 		txt += _T("issues since all instances will share the same data in the registry.\n\n");
+		txt += _T("In most cases this warning can be ignored.\n"
+			"It will be generated if program crashes or it is killed from Task Manager.\n\n");
 		txt += _T("Do you want to continue?");
 		HWND h = NULL; // we don't have any window yet  
 		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
@@ -481,6 +524,7 @@ BOOL CmboxviewApp::InitInstance()
 			return FALSE;
 		}
 	}
+#endif
 
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);

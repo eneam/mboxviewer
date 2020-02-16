@@ -1257,6 +1257,7 @@ void CMainFrame::SetMailList(int nID)
 	// clear check marks from all buttons and set nID button
 	int nIDFirstButton = IDC_ARCHIVE_LIST;
 	int nIDLastButton = IDC_EDIT_LIST;
+	//int nIDLastButton = IDC_FOLDER_LIST;
 	m_wndDlgBar.CheckRadioButton(nIDFirstButton, nIDLastButton, nID);
 }
 
@@ -2068,7 +2069,7 @@ void CMainFrame::OnFilePrintconfig()
 		m_NamePatternParams.Copy(dlg.m_NamePatternParams);
 	}
 
-	MboxMail::ShowHint(HintConfig::PrintToPDFScriptHint);
+	MboxMail::ShowHint(HintConfig::PrintToPDFScriptHint, GetSafeHwnd());
 }
 
 

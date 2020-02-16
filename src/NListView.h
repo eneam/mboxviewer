@@ -109,6 +109,10 @@ public:
 // Implementation
 public:
 
+	BOOL m_showAsPaperClip; // Show attachment indicataor as paper Clip, otherwise as star character
+	CBitmap m_paperClip;
+	CImageList m_imgList;
+
 	//CImageList m_ImageList;
 	MailIndexList m_selectedMailsList;
 
@@ -243,6 +247,7 @@ public:
 	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
+	int PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int OpenMailListFileLocation();
 	int RemoveDuplicateMails();
@@ -254,6 +259,8 @@ public:
 	// Folder related
 	int CreateEmptyFolder(CString &drivename, CString &mboxDirectory, CString &mboxFolderName, CString &parentSubFolderPath, CString &newFolderName);
 	int CreateEmptyFolderListFile(CString &path, CString &folderListFile);
+	int LoadFolderListFile_v2(CString &folderPath, CString &folderName);
+	int CopyMailsToFolders();
 
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
@@ -352,6 +359,7 @@ public:
 
 
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
+	static void TrimToName(CString *to, CString &toName, int maxNumbOfAddr);
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
 	//static int DeleteAllHtmFiles(CString &targetFolder);
 	//

@@ -32,6 +32,8 @@ IDB_PRINT               BITMAP                  "..\\res\\print.bmp"
 
 IDB_FOLDER              BITMAP                  "..\\res\\select_folder.bmp"
 
+IDB_PAPER_CLIP          BITMAP                  "..\\res\\PaperClip.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -402,26 +404,26 @@ BEGIN
     LTEXT           "&Find what:",IDC_STATIC,7,8,34,8
 END
 
-IDD_EDITOR DIALOGEX 0, 0, 334, 14
+IDD_EDITOR DIALOGEX 0, 0, 332, 14
 STYLE DS_SETFONT | WS_CHILD
 FONT 8, "MS Sans Serif", 400, 0, 0x0
 BEGIN
     CONTROL         "All Mails",IDC_ARCHIVE_LIST,"Button",BS_AUTORADIOBUTTON | WS_GROUP,5,0,39,13
     CONTROL         "Found Mails",IDC_FIND_LIST,"Button",BS_AUTORADIOBUTTON,88,0,49,13
     CONTROL         "User Selected Mails",IDC_EDIT_LIST,"Button",BS_AUTORADIOBUTTON,169,0,79,13
-    PUSHBUTTON      "Help",IDC_BUTTON2,275,0,50,14
+    PUSHBUTTON      "Help",IDC_BUTTON2,276,0,50,14
 END
 
-IDD_PRINT_DLG DIALOGEX 0, 0, 243, 323
+IDD_PRINT_DLG DIALOGEX 0, 0, 243, 339
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Print Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,123,304,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,178,304,50,14
-    GROUPBOX        "File Name Configuration",IDC_STATIC,7,7,224,89
+    DEFPUSHBUTTON   "OK",IDOK,123,321,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,178,321,50,14
+    GROUPBOX        "File Name Configuration",IDC_STATIC,7,7,224,105
     EDITTEXT        IDC_FILE_NAME_MAX_SIZE,127,59,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Compose File Name Pattern From",IDC_STATIC,17,18,124,8
+    LTEXT           "Compose File Name Template From",IDC_STATIC,17,18,124,8
     LTEXT           "Wanted Max File Name Length",IDC_STATIC,14,64,102,8
     CONTROL         "Date",IDC_FILE_DATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,33,31,10
     CONTROL         "Time",IDC_FILE_TIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,48,33,31,10
@@ -432,26 +434,28 @@ BEGIN
     EDITTEXT        IDC_FILE_NAME_ADJUSTED_MAX_SIZE,127,76,40,14,ES_AUTOHSCROLL
     LTEXT           "Adjusted Max File Name Length",IDC_STATIC,14,81,101,8
     LTEXT           "Max file path length supported by Windows is 260 characters",IDC_STATIC,15,48,208,8
-    GROUPBOX        "Print to .. Printer Menu Option Setup",IDC_STATIC,7,99,224,47
-    PUSHBUTTON      "Page Setup",IDC_PRT_PAGE_SETP,15,127,50,14
-    CONTROL         "DO NOT PROMPT",IDC_PRT_DO_NOT_PROMPT,"Button",BS_AUTORADIOBUTTON | WS_GROUP,14,114,69,10
-    CONTROL         "PRINT PROMPT",IDC_PRT_PRINT_DIALOG,"Button",BS_AUTORADIOBUTTON,87,114,65,10
-    CONTROL         "PRINT PREVIEW",IDC_PRT_PREVIEW_DIALOG,"Button",BS_AUTORADIOBUTTON,156,114,68,10
-    GROUPBOX        "Print to .. PDF Menu Option Setup",IDC_STATIC,7,148,224,89
-    EDITTEXT        IDC_CHROME_EXE_PATH,15,184,211,14,ES_AUTOHSCROLL
-    LTEXT           "Path to Chrome Browser executable",IDC_STATIC,15,173,193,8
-    CONTROL         "Chrome Browser",IDC_HTML2PDF_SCRIPT_TYPE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,17,160,69,10
-    CONTROL         "Path To User Defined Script",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,100,160,104,10
-    LTEXT           "Path To User Defined Script",IDC_STATIC,15,205,122,8
-    EDITTEXT        IDC_HTML2PDF_SCRIPT_PATH,15,216,211,14,ES_AUTOHSCROLL
-    GROUPBOX        "Print mails to separate files",IDC_PRINT_TO_SEPARATE_FILES,7,239,227,24
-    CONTROL         "PDF",IDC_SEPARATE_PDF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,250,29,10
-    CONTROL         "HTML",IDC_SEPARATE_HTML,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,58,250,33,10
-    GROUPBOX        "PDF document options",IDC_STATIC_PDF_OPTIONS,7,265,224,36
-    CONTROL         "Mail Hdr Background Color",IDC_ADD_HDR_COLOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,277,99,10
-    CONTROL         "Page Break After Each Mail",IDC_PAGE_BREAK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,289,102,10
+    GROUPBOX        "Print to .. Printer Menu Option Setup",IDC_STATIC,7,116,224,47
+    PUSHBUTTON      "Page Setup",IDC_PRT_PAGE_SETP,15,144,50,14
+    CONTROL         "DO NOT PROMPT",IDC_PRT_DO_NOT_PROMPT,"Button",BS_AUTORADIOBUTTON | WS_GROUP,14,131,69,10
+    CONTROL         "PRINT PROMPT",IDC_PRT_PRINT_DIALOG,"Button",BS_AUTORADIOBUTTON,87,131,65,10
+    CONTROL         "PRINT PREVIEW",IDC_PRT_PREVIEW_DIALOG,"Button",BS_AUTORADIOBUTTON,156,131,68,10
+    GROUPBOX        "Print to .. PDF Menu Option Setup",IDC_STATIC,7,165,224,89
+    EDITTEXT        IDC_CHROME_EXE_PATH,15,201,211,14,ES_AUTOHSCROLL
+    LTEXT           "Path to Chrome Browser executable",IDC_STATIC,15,190,193,8
+    CONTROL         "Chrome Browser",IDC_HTML2PDF_SCRIPT_TYPE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,17,177,69,10
+    CONTROL         "Path To User Defined Script",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,100,177,104,10
+    LTEXT           "Path To User Defined Script",IDC_STATIC,15,222,122,8
+    EDITTEXT        IDC_HTML2PDF_SCRIPT_PATH,15,233,211,14,ES_AUTOHSCROLL
+    GROUPBOX        "Print selected mails to separate files",IDC_PRINT_TO_SEPARATE_FILES,7,256,227,24
+    CONTROL         "PDF",IDC_SEPARATE_PDF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,267,29,10
+    CONTROL         "HTML",IDC_SEPARATE_HTML,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,58,267,33,10
+    GROUPBOX        "PDF document options",IDC_STATIC_PDF_OPTIONS,7,282,224,36
+    CONTROL         "Mail Hdr Background Color",IDC_ADD_HDR_COLOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,294,99,10
+    CONTROL         "Page Break After Each Mail",IDC_PAGE_BREAK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,306,102,10
     CONTROL         "Mail Body Background Color",IDC_KEEP_BODY_BKGRND_COLOR,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,121,277,104,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,121,294,104,10
+    PUSHBUTTON      "Compose Custom Template",IDC_SET_CUSTOM_TEMPLATE,95,94,98,14
+    CONTROL         "CUSTOM TEMPLATE",IDC_CUSTOM_TEMPLATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,97,75,10
 END
 
 IDD_INPUT_BOX_DLG DIALOGEX 0, 0, 369, 97
@@ -485,6 +489,44 @@ BEGIN
     LTEXT           "By default attachments other than those embeded into mail message are shown in the attachment window",IDC_STATIC,20,46,269,16,NOT WS_GROUP
 END
 
+IDD_CHECK_LIST_BOX_DLG DIALOGEX 0, 0, 117, 45
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,7,23,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,60,23,50,14
+    LISTBOX         IDC_LIST1,8,6,102,13,LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+END
+
+IDD_NAME_TEMPL_DLG DIALOGEX 0, 0, 533, 201
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Template Configuration"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,422,180,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,476,180,50,14
+    LTEXT           "Template Format",IDC_STATIC,13,12,105,8
+    EDITTEXT        IDC_EDIT_TEMPL_FMT,12,25,505,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_DATE_FMT,12,45,147,14,ES_AUTOHSCROLL
+    LTEXT           "Date and Time Format",IDC_STATIC,167,49,85,8
+    LTEXT           "Valid template format keywords that will be replaced by values from mail. UNIQUE_ID is generated by the mbox viewer to eliminate name clashes.",IDC_STATIC,12,108,505,8
+    LTEXT           "%DATE_TIME%   %FROM_NAME%   %FROM_ADDR%   %TO_NAME%   %TO_ADDR%   %SUBJECT%  %UNIQUE_ID%",IDC_STATIC,19,123,399,8
+    LTEXT           "Date and Time Format follows format accepted by the  standard ",IDC_STATIC,14,157,207,8
+    LTEXT           "%Y-%m-%d %H:%M:%S  will  expand to for example  2020-1-31  16:59:59",IDC_STATIC,23,170,302,8
+    LTEXT           "function. For example:",IDC_STATIC,265,157,74,8
+    CONTROL         "User Account Name  @",IDC_TEMPL_FROM_USERNAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,65,71,85,10
+    CONTROL         "Domain Name",IDC_TEMPL_FROM_DOMAIN_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,153,71,59,10
+    LTEXT           "From Address:",IDC_TEMPL_FROM_ADDRESS_TEXT,13,71,48,8
+    CONTROL         "User Account Name  @",IDC_TEMPL_TO_USERNAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,284,71,84,10
+    CONTROL         "Domain Name",IDC_TEMPL_TO_DOMAIN_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,372,71,59,10
+    LTEXT           "To Address:",IDC_TEMPL_TO_ADDRESS_TEXT,238,71,40,8
+    LTEXT           "Keywords can be specified in any order. Any text can be specified between keywords.",IDC_STATIC,13,137,416,8
+    CONTROL         "Replace white spaces with underscore",IDC_TEMPL_WHITE_TO_UNDERSCORE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,87,138,10
+    PUSHBUTTON      "srcftime",IDC_SRCFTIME,223,157,35,9
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -492,7 +534,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,6
+ FILEVERSION 1,0,3,7
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -509,7 +551,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.6"
+            VALUE "FileVersion", "1.0.3.7"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -604,7 +646,7 @@ BEGIN
 
     IDD_EDITOR, DIALOG
     BEGIN
-        RIGHTMARGIN, 331
+        RIGHTMARGIN, 330
         BOTTOMMARGIN, 13
     END
 
@@ -613,7 +655,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 234
         TOPMARGIN, 7
-        BOTTOMMARGIN, 322
+        BOTTOMMARGIN, 338
     END
 
     IDD_INPUT_BOX_DLG, DIALOG
@@ -630,6 +672,22 @@ BEGIN
         RIGHTMARGIN, 302
         TOPMARGIN, 7
         BOTTOMMARGIN, 159
+    END
+
+    IDD_CHECK_LIST_BOX_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 110
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 38
+    END
+
+    IDD_NAME_TEMPL_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 526
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 194
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -719,6 +777,19 @@ BEGIN
 END
 
 IDD_ATTACHMENTS_CONFIG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CHECK_LIST_BOX_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 100, 0, 0,
+    0, 100, 0, 0,
+    0, 0, 100, 100
+END
+
+IDD_NAME_TEMPL_DLG AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

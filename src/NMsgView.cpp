@@ -684,7 +684,7 @@ void NMsgView::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		isSupportedPictureFile = true;
 	}
 
-	if (m_bImageViewer && isSupportedPictureFile)
+	if ((nItem >= 0) && m_bImageViewer && isSupportedPictureFile)
 	{
 		CCPictureCtrlDemoDlg dlg(&attachmentName);
 		INT_PTR nResponse = dlg.DoModal();

@@ -376,11 +376,15 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 
 	if (m_picCtrl.GetSafeHwnd())
 	{
+		// Changed repaint and commented out Invalidate to reduce flicker
 		m_bDrawOnce = TRUE;
-		BOOL repaint = FALSE;
+		//BOOL repaint = FALSE;
+		BOOL repaint = TRUE;
 		m_picCtrl.MoveWindow(20, 40, cx - 40, cy - 60, repaint);
 	}
-	Invalidate();
+	else
+		Invalidate();
+	;;// Invalidate();
 }
 
 

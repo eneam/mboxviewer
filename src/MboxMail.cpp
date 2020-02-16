@@ -32,12 +32,18 @@
 #include "MboxMail.h"
 #include "AttachmentsConfig.h"
 #include "MyCTime.h"
+#include "ExceptionUtil.h"
+#include "MimeParser.h"
+#include "SerializationHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
 #define THIS_FILE __FILE__
 #define new DEBUG_NEW
 #endif
+
+BOOL MboxMail::m_seExceptionMsgBox = TRUE;
+BOOL MboxMail::m_cppExceptionMsgBox = FALSE;
 
 HintConfig MboxMail::m_HintConfig;
 
@@ -597,12 +603,23 @@ BOOL MboxMail::GetBody(SimpleString *res)
 	return ret;
 };
 
-int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 char * GetMultiLine(char *p, char *e, CString &line);
 int GetFieldValue(CString &fieldLine, int startPos, CString &value);
 
 bool IsFromValidDelimiter(char *p, char *e)
 {
+	static int cnt = 0;
+
+	// EX_TEST
+#if 0
+	volatile char *badPtr = 0;
+	if (cnt == 200)
+	{
+		*badPtr = 'a';
+	}
+	cnt++;
+#endif
+
 	// make sure it is not user typed "^From" in the message text
 	// We expect certain number of digit and colon charcaters if valid "From " mail delimiter
 	// There is no inexpensive and sinple method to determine that "^From  points to the begining of the mail
@@ -621,6 +638,13 @@ bool IsFromValidDelimiter(char *p, char *e)
 			digitCount++;
 		else  if (c == '@')
 			atCount++;
+#if 1
+		else if (c == ' ')
+		{
+			if (strncmpUpper2Lower(p, e, "at ", 3) == 0)
+				atCount++;
+		}
+#endif
 	}
 
 	if ((colonCount >= 2) && (digitCount >= 6) && (atCount > 0))
@@ -676,16 +700,66 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	CString line;
 	CString rcved;
 
+	char *badPtr = 0;
+
 	if (bEml && bFirstView) {
 		msgStart = p;
 		p += 5;
 		bEml = false;  // not used below and not needed :)
 	}
+
+	CString progDir;
+	BOOL retDir = GetProgramDir(progDir);
+
+	BOOL mustAbort = FALSE;
+	TCHAR szCauseBuffer[256];
+
+	char *stackDumpFileName = "Exception_StackTrace.txt";
+	char *mailDumpFileName = "Exception_MailDump.txt";
+	char *exceptionName = "UnknownException";
+	UINT seNumb = 0;
+	char *szCause = "Unknown";
+	BOOL exceptionThrown = FALSE;
+	BOOL exceptionDone = FALSE;
+
+	char *pat = "From: Anu Garg";
+	int patLen = strlen(pat);
+
 	BOOL headerDone = FALSE;
-	while (p < e - 4)   // TODO: why (e - 4) ??
+	while (p < (e - 4))   // TODO: why (e - 4) ?? chaneg 4 -> 5
 	{
 		try 
 		{
+			// EX_TEST
+#if 0
+			if ((s_mails.GetCount() == 200) && (exceptionDone == FALSE))
+			{
+				//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
+				char* szTemp = (char*)1;
+				//strcpy_s(szTemp, 1000, "A");
+				*badPtr = 'a';
+				SCODE sc = 99;
+				//AfxThrowOleException(sc);
+			}
+#endif
+
+			mustAbort = FALSE;
+
+			exceptionThrown = FALSE;
+			seNumb = 0;
+			szCause = "Unknown";
+			stackDumpFileName = "Exception_StackTrace.txt";
+			mailDumpFileName = "Exception_MailDump.txt";
+			exceptionName = "UnknownException";
+
+#if 0
+			if (strncmpExact(p, e, pat, patLen) == 0)
+			{
+				char *pmsg = p - 10000;
+				int deb = 1;
+			}
+#endif
+
 			// IsFromValidDelimiter() may need to be stronger to avoid false positive detection of the mail beginning
 			//if ((*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') && IsFromValidDelimiter(p, e)) // "From "  marks beginning of the next mail
 			if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p,e)) // "From "  marks beginning of the next mail
@@ -785,12 +859,15 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							if (s_mails.GetCount() == 1098)
 								int deb = 1;
 
-							_int64 curOff = startOffset + (p - orig);
-							if ((int)(curOff / s_step) > curstep) {
-								if (pCUPDUPData->ShouldTerminate())
-									break;
+							if ((s_mails.GetCount() % 100) == 0)
+							{
+								CString mailNum;
+								mailNum.Format(_T("Parsing archive file to create index file ... %d"), s_mails.GetCount());
+
+								_int64 curOff = startOffset + (p - orig);
 								int step = (int)(curOff / s_step);
-								pCUPDUPData->SetProgress(step);
+
+								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(step));
 							}
 
 							if (pCUPDUPData->ShouldTerminate())
@@ -947,64 +1024,385 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				p = EatNewLine(p, e);
 			}
 		}
-		catch (CMemoryException * e) {
-			// catch when buffer ends
-			e->Delete();
-		}
-		catch (CFileException * e) {
-			// catch when buffer ends
-			e->Delete();
+
+		//   Other supported exceptions. At the moment we are file using 
+		//catch (CMemoryException * e)
+		//catch (CFileException * e)
+		//catch (COleException * e)
+		//catch (CUserException* e)
+		//catch (CResourceException * e)
+		//catch CSimpleException
+		//catch CInvalidArgException
+		//catch CNotSupportedException
+		//catch CArchiveException
+		//catch CDBException
+		//catch COleDispatchException
+		//catch CDaoException
+		//catch CInternetException
+
+		catch (const SE_Exception& ex)
+		{
+			// TODO: this is very long catch  !!!
+			//exceptionThrown = TRUE;
+			exceptionDone = TRUE;
+			seNumb = ex.getSeNumber();
+			szCause = (char*)seDescription(seNumb);
+
+			int mailPosition = s_mails.GetCount();
+			char *se_stackDumpFileName = "SystemE_StackTrace.txt";
+			BOOL ret = DumpStack(se_stackDumpFileName, szCause, seNumb, 0, mailPosition);
+
+			int datalen = 0;
+			char *data = p;
+			char *msgEnd = p;
+			char *p_save = p;
+
+			while (p < e)
+			{
+				//if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
+				if (strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+					msgEnd = p;
+					break;
+				}
+				p = EatNewLine(p, e);
+				msgEnd = p;
+			}
+			// or update above -:)
+			p = EatNewLine(p, e);
+			msgEnd = p;
+			while (p < e)
+			{
+				//if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
+				if (strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+					msgEnd = p;
+					break;
+				}
+				p = EatNewLine(p, e);
+				msgEnd = p;
+			}
+
+			if (msgStart)
+			{
+				data = msgStart;
+				datalen = msgEnd - msgStart;
+			}
+			else
+			{
+				data = orig;
+				datalen = msgEnd - orig;
+			}
+			if (datalen < 0)
+				datalen = 0;
+
+			char *se_mailDumpFileName = "SystemE_MailDump.txt";
+			BOOL retW = DumpMailData(se_mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
+
+			char *se_translation_stackDumpFileName = "TranslationSystemE_StackTrace.txt";
+
+			CString errorTxt;
+#ifdef USE_STACK_WALKER
+			errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
+				"To help to diagnose the problem, created files\n\n%s , %s and %s\n\nin\n\n%s directory.\n\n"
+				"Please provide the files to the development team.\n\n"
+				"%s file contains mail data so please review the content before forwarding to the development."),
+				seNumb, szCause, se_stackDumpFileName, se_mailDumpFileName, se_translation_stackDumpFileName, progDir, se_mailDumpFileName);
+#else
+			errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
+				"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
+				"Please provide the files to the development team.\n\n"
+				"%s file contains mail data so please review the content before forwarding to the development."
+				"Please run mboxview residing in DEBUG directory to generate additional information."),
+				seNumb, szCause, se_mailDumpFileName, progDir, se_mailDumpFileName);
+#endif
+
+			if (m_seExceptionMsgBox)
+			{
+				// Documents say it is not safe to call AfxMessageBox from separate thread but it seem to kind of work
+				// May need to return info to the main thread and create MessageBox
+				AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+				AfxAbort();
+			}
 		}
 		catch (CException* e)
 		{
+			exceptionName = "Exception";
+
+			seNumb = 0;
+			e->GetErrorMessage(szCauseBuffer, 255, &seNumb);
+			szCause = &szCauseBuffer[0];
+
+			stackDumpFileName = "E_StackTrace.txt";
+			mailDumpFileName = "E_MailDump.txt";
+
 			e->Delete();
+			exceptionThrown = TRUE;
+			exceptionDone = TRUE;
+		}
+		catch (...)  // memory leak ??
+		{
+			exceptionName = "AnyException";
+			seNumb = 0;
+			szCause = "Unknown";
+
+			stackDumpFileName = "AnyE_StackTrace.txt";
+			mailDumpFileName = "AnyE_MailDump.txt";
+
+			exceptionThrown = TRUE;
+			mustAbort = TRUE;
+			exceptionDone = TRUE;
+		}
+
+		if (exceptionThrown)
+		{
+			// TODO: this is very long catch  !!!
+			int mailPosition = s_mails.GetCount();
+			BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
+
+			int datalen = 0;
+			char *data = p;
+			char *msgEnd = p;
+			char *p_save = p;
+
+			while (p < e)
+			{
+				//if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
+				if (strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+					msgEnd = p;
+					break;
+				}
+				p = EatNewLine(p, e);
+				msgEnd = p;
+			}
+			// or update above -:)
+			p = EatNewLine(p, e);
+			msgEnd = p;
+			while (p < e)
+			{
+				//if ((strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
+				if (strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+					msgEnd = p;
+					break;
+				}
+				p = EatNewLine(p, e);
+				msgEnd = p;
+			}
+
+			if (msgStart)
+			{
+				data = msgStart;
+				datalen = msgEnd - msgStart;
+			}
+			else
+			{
+				data = orig;
+				datalen = msgEnd - orig;
+			}
+			if (datalen < 0)
+				datalen = 0;
+
+			BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
+
+			CString errorTxt;
+#ifdef USE_STACK_WALKER
+			errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
+				"To help to diagnose the problem, created files\n\n%s and %s\n\nin\n\n%s directory.\n\n"
+				"Please provide the files to the development team.\n\n"
+				"%s file contains mail data so please review the content before forwarding to the development."),
+				exceptionName, seNumb, szCause, stackDumpFileName, mailDumpFileName, progDir, mailDumpFileName);
+#else
+			errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
+				"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
+				"Please provide the files to the development team.\n\n"
+				"%s file contains mail data so please review the content before forwarding to the development.\n\n"
+				"Please run mboxview residing in DEBUG directory to generate additional information."),
+				exceptionName, seNumb, szCause, mailDumpFileName, progDir, mailDumpFileName);
+#endif
+
+			if (m_cppExceptionMsgBox || mustAbort)
+			{
+				// Documents say it is not safe to call AfxMessageBox from separate thread but it seem to kind of work
+				// May need to return info to the main thread and create MessageBox
+				AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+				AfxAbort();
+			}
+			// To attempt to continue, reset the below
+			p = p_save;
+			p = EatNewLine(p, e);
+
+			msgStart = NULL; tdate = -1; headerDone = FALSE;
+			to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
+			bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
 		}
 	}
-
+	
 	// should save state for cross boundary emails - resolved 2018
-	if (msgStart != NULL && msgStart != p) 
+	if (msgStart != NULL && msgStart != p)
 	{
 		if (!bLastView) {
 			lastStartOffset = startOffset + (_int64)(msgStart - orig);
 		}
 		else if ((bTo == false) || (bFrom == false) || (bSubject == false))
 		{
-			if (!from.IsEmpty() || !to.IsEmpty() || !subject.IsEmpty() || !date.IsEmpty())
+			mustAbort = FALSE;
+
+			exceptionThrown = FALSE;
+			seNumb = 0;
+			szCause = "Unknown";
+			stackDumpFileName = "Exception_StackTrace.txt";
+			mailDumpFileName = "Exception_MailDump.txt";
+			exceptionName = "UnknownException";
+
+			//  TODO: Handling of exception - lots of duplications FIXME
+			try
 			{
-				MboxMail *m = new MboxMail();
-				//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
-				m->m_startOff = startOffset + (_int64)(msgStart - orig);
-				m->m_length = p - msgStart;
-				m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
-				m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
-				m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
-				m->m_cc = DecodeString(cc, m->m_cc_charset, m->m_cc_charsetId);
-				m->m_bcc = DecodeString(bcc, m->m_bcc_charset, m->m_bcc_charsetId);
-				if (!bcc.IsEmpty())
-					int deb = 1;
-				if (!cc.IsEmpty())
-					int deb = 1;
-				m->m_subj.Replace("\r", "");
-				m->m_subj.Replace("\n", "");
-				m->m_recv = recv;
-				m->m_timeDate = tdate;
-				m->m_headLength = 0; // set in ParseContent()
+				// EX_TEST
+#if 0
+				//if (s_mails.GetCount() == 200)
+				{
+					//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
+					char* szTemp = (char*)1;
+					//strcpy_s(szTemp, 1000, "A");
+					//*badPtr = 'a';
+					SCODE sc = 99;
+					//AfxThrowOleException(sc);
+				}
+#endif
+				if (!from.IsEmpty() || !to.IsEmpty() || !subject.IsEmpty() || !date.IsEmpty())
+				{
+					MboxMail *m = new MboxMail();
+					//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
+					m->m_startOff = startOffset + (_int64)(msgStart - orig);
+					m->m_length = p - msgStart;
+					m->m_to = DecodeString(to, m->m_to_charset, m->m_to_charsetId);
+					m->m_from = DecodeString(from, m->m_from_charset, m->m_from_charsetId);
+					m->m_subj = DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
+					m->m_cc = DecodeString(cc, m->m_cc_charset, m->m_cc_charsetId);
+					m->m_bcc = DecodeString(bcc, m->m_bcc_charset, m->m_bcc_charsetId);
+					if (!bcc.IsEmpty())
+						int deb = 1;
+					if (!cc.IsEmpty())
+						int deb = 1;
+					m->m_subj.Replace("\r", "");
+					m->m_subj.Replace("\n", "");
+					m->m_recv = recv;
+					m->m_timeDate = tdate;
+					m->m_headLength = 0; // set in ParseContent()
 
-				//m->m_crc32 = TextUtilities::CalcCRC32(msgStart, m->m_length);
+					//m->m_crc32 = TextUtilities::CalcCRC32(msgStart, m->m_length);
 
-				MailBodyContent body;
-				char *bodyStart = msgStart;
-				char *bodyEnd = msgStart + m->m_length;
-				char *nextStart = ParseContent(m, bodyStart, bodyEnd);
+					MailBodyContent body;
+					char *bodyStart = msgStart;
+					char *bodyEnd = msgStart + m->m_length;
+					char *nextStart = ParseContent(m, bodyStart, bodyEnd);
 
-				s_mails.Add(m);
+					s_mails.Add(m);
 
-				int index = s_mails.GetCount() - 1;
-				//m->DumpMailBox(m, index);
-				//NListView::DumpItemDetails(index);
+					int index = s_mails.GetCount() - 1;
+					//m->DumpMailBox(m, index);
+					//NListView::DumpItemDetails(index);
 
-				if (s_mails.GetCount() == 1098)
-					int deb = 1;
+					if (s_mails.GetCount() == 1098)
+						int deb = 1;
+				}
+			}
+			catch (const SE_Exception& ex)
+			{
+				//exceptionThrown = TRUE;
+				exceptionDone = TRUE;
+				seNumb = ex.getSeNumber();
+				szCause = (char*)seDescription(seNumb);
+
+				int mailPosition = s_mails.GetCount();
+				char *se_stackDumpFileName = "SystemE_StackTrace.txt";
+				BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
+
+				
+				int datalen = p - msgStart;
+				char *msgEnd = p + datalen;
+
+				char *se_mailDumpFileName = "SystemE_MailDump.txt";
+				BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, msgStart, datalen);
+
+				char *se_translation_stackDumpFileName = "TranslationSystemE_StackTrace.txt";
+
+				CString errorTxt;
+				errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
+					"To help to diagnose the problem, files:\n\n%s and %s and %s were created in:\n\n%s directory.\n\n"
+					"Please provide the files to the development team.\n\n"
+					"%s file contains mail data so please review the content before forwarding to the development."),
+					seNumb, szCause, se_stackDumpFileName, se_mailDumpFileName, se_translation_stackDumpFileName, progDir, mailDumpFileName);
+
+				if (m_seExceptionMsgBox)
+				{
+					AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+					AfxAbort();
+				}
+
+				// To attempt to continue, reset the below
+				msgStart = NULL; tdate = -1; headerDone = FALSE;
+				to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
+				bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
+			}
+			catch (CException* e)
+			{
+				exceptionThrown = TRUE;
+				exceptionDone = TRUE;
+
+				exceptionName = "Exception";
+
+				seNumb = 0;
+				e->GetErrorMessage(szCauseBuffer, 255, &seNumb);
+				szCause = &szCauseBuffer[0];
+
+				stackDumpFileName = "E_StackTrace.txt";
+				mailDumpFileName = "E_MailDump.txt";
+
+				e->Delete();
+			}
+			catch (...)  // memory leak ??
+			{
+				exceptionThrown = TRUE;
+				exceptionDone = TRUE;
+
+				exceptionName = "AnyException";
+				seNumb = 0;
+				szCause = "Unknown";
+
+				stackDumpFileName = "AnyE_StackTrace.txt";
+				mailDumpFileName = "AnyE_MailDump.txt";
+
+				mustAbort = TRUE;
+			}
+
+			if (exceptionThrown)
+			{
+				int mailPosition = s_mails.GetCount();
+				BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
+
+				int datalen = p - msgStart;
+				char *msgEnd = p + datalen;
+				char *p_save = p;
+
+				BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, msgStart, datalen);
+
+				CString errorTxt;
+				errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
+					"To help to diagnose the problem, files:\n\n%s and %s were created in:\n\n%s directory.\n\n"
+					"Please provide the files to the development team.\n\n"
+					"%s file contains mail data so please review the content before forwarding to the development."),
+					exceptionName, seNumb, szCause, stackDumpFileName, mailDumpFileName, progDir, mailDumpFileName);
+
+				if (m_cppExceptionMsgBox || mustAbort)
+				{
+					AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+					AfxAbort();
+				}
+				// To attempt to continue, reset the below
+				p = p_save;
+				p = EatNewLine(p, e);
+				msgStart = NULL; tdate = -1; headerDone = FALSE;
+				to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
+				bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
 			}
 		}
 	}
@@ -1130,6 +1528,25 @@ void MboxMail::Parse(LPCSTR path)
 	DWORD bufSize = 0;
 	_int64 aligned_offset = 0;
 	_int64 delta = 0;
+
+
+#if 0
+	//set_terminate(term_func);
+	char *dllList[] = { "msvcrt.dll" , "msvcr80.dll", "msvcr90.dll", "msvcr100.dll" };
+	HMODULE hDLL = 0;
+	for (int ii = 0; ii < sizeof(dllList); ii++)
+	{
+		hDLL = LoadLibrary(dllList[ii]);
+		if (hDLL != NULL)
+			break;
+	}
+	if (hDLL)
+		Scoped_SE_Translator scoped_se_translator(trans_func);
+#endif
+
+#ifdef USE_STACK_WALKER
+	Scoped_SE_Translator scoped_se_translator(trans_func);
+#endif
 
 	// TODO:  Need to consider to redo reading and create  Character Stream for reading
 	_int64 lastStartOffset = 0;
@@ -5387,72 +5804,6 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 	return outbuf->Count();
 }
 
-int SimpleString::FindNoCase(int offset, void const* Src, int  Size)
-{
-	int i;
-	char *p;
-	int count = m_count - offset;
-	for (i = offset; i < (count - Size); i++)
-	{
-		p = &m_data[i];
-		if (strncmpUpper2Lower(p, (m_count - i), (char*)Src, Size) == 0)
-			return i;
-	}
-	return -1;
-}
-
-int SimpleString::FindAny(int offset, void const* Src)
-{
-	int i;
-	const char *p = m_data;
-	int c;
-	for (i = offset; i < m_count; i++)
-	{
-		c = m_data[i];
-		p = ::strchr((const char*)Src, c);
-		if (p)
-			return i;
-	}
-	return -1;
-}
-
-int SimpleString::Find(int offset, char const c)
-{
-	const char *p = ::strchr((const char*)(m_data+offset), c);
-	if (p)
-		return(p - m_data);
-	else
-		return -1;
-}
-
-int SimpleString::Resize(int size)
-{
-	if (size > m_capacity)
-	{
-		int new_capacity = size + m_grow_size; // fudge factor ?
-		char *new_data = new char[new_capacity + 1]; // one extra to set NULL
-		if (new_data) {
-			if (m_count > 0)
-				::memcpy(new_data, m_data, m_count);
-			delete[] m_data;
-			m_data = new_data;
-			m_data[m_count] = 0;
-			m_capacity = new_capacity;
-		}
-		else
-			; // trouble :) caller needs to handle this ?
-	}
-	return m_capacity;
-}
-
-void SimpleString::append_internal(void const* Src, size_t  Size) {
-	int spaceNeeded = m_count + Size;
-	if (spaceNeeded > m_capacity)
-		Resize(spaceNeeded);
-	::memcpy(&m_data[m_count], Src, Size);
-	SetCount(spaceNeeded);
-}
-
 class CMBodyHdr
 {
 public:
@@ -6153,400 +6504,6 @@ int MboxMail::LoadMail(const char* pszData, int nDataSize)
 	return 1;
 }
 
-void MailHeader::Clear()
-{
-	m_IsText = false;
-	m_IsTextPlain = false;
-	m_IsTextHtml = false;
-	m_IsMessage = false;
-	m_IsAttachment = false;
-	m_IsMultiPart = false;
-	m_Charset.Empty();
-	m_PageCode = 0;
-	m_Description.Empty();
-	m_Disposition.Empty();
-	m_TransferEncoding.Empty();
-	m_SubType.Empty();
-	m_MainType.Empty();
-	m_Boundary.Empty();
-	m_ContentType.Empty();
-	m_ContentId.Empty();
-	m_ContentLocation.Empty();
-	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
-	m_AttachmentName.Empty();
-	m_Name.Empty();
-	m_MessageId.Empty();
-	m_ReplyId.Empty();
-}
-
-int MailHeader::Load(const char* pszData, int nDataSize)
-{
-	static const char *cType = "content-type:";
-	static const int cTypeLen = strlen(cType);
-	static const char *cContentLocation = "content-location:";
-	static const int cContentLocationLen = strlen(cContentLocation);
-	static const char *cContentId = "content-id:";
-	static const int cContentIdLen = strlen(cContentId);
-	static const char *cTransferEncoding = "content-transfer-encoding:";
-	static const int cTransferEncodingLen = strlen(cTransferEncoding);
-	static const char *cDisposition = "content-disposition:";
-	static const int cDispositionLen = strlen(cDisposition);
-	static const char *cAttachment = "attachment";
-	static const int cAttachmentLen = strlen(cAttachment);
-	static const char *cName = "name";
-	static const int cNameLen = strlen(cName);
-	static const char *cFileName = "filename";
-	static const int cFileNameLen = strlen(cFileName);
-
-	static const char *cMsgId = "message-id:";
-	static const int cMsgIdLen = strlen(cMsgId);
-	static const char *cReplyId = "in-reply-to:";
-	static const int cReplyIdLen = strlen(cReplyId);
-
-	static const char *cAlternative = "alternative";
-	static const int cAlternativeLen = strlen(cAlternative);
-
-	static const char *cMultipart = "multipart";
-	static const int cMultipartLen = strlen(cMultipart);
-
-	static const char *cBoundary = "boundary";
-	static const int cBoundaryLen = strlen(cBoundary);
-
-	static const char *cText = "text";
-	static const int cTextLen = strlen(cText);
-
-	static const char *cCharset = "charset";
-	static const int cCharsetLen = strlen(cCharset);
-
-	int contentIndex = 0;
-	int contentLength = 0;
-
-	CString line;
-	char *p = (char*)pszData;
-	char *e = (char*)pszData + nDataSize;
-
-	while ((p < e) && ((*p == ' ') || (*p == '\t'))) // eat lines starting with ' ' or '\t'
-		p = EatNLine(p, e);
-
-
-	while ((p < e) && ((*p == '\r') || (*p == '\n')))  // eat empty lines
-		p++;
-
-	// make sure p is incremented within a loop or break
-	while (p < e)
-	{
-		if (((*p == '\r') && (*(p + 1) == '\n')) || (*p == '\n')) {
-			
-			p = EatNLine(p, e);
-			int headLength = p - pszData;
-			return headLength;
-			break;  // end of header
-		}
-		else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0) 
-		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cTypeLen, m_ContentType);
-
-			if (strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cMultipart, cMultipartLen) == 0)
-			{
-				m_IsMultiPart = true;
-				int ret = GetParamValue(line, cTypeLen, cBoundary, cBoundaryLen, m_Boundary);
-
-			}
-			else if (strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cText, cTextLen) == 0)
-			{
-				m_IsText = true;
-				if (m_ContentType.Compare("text") == 0)
-					m_ContentType += "/plain";
-				if (m_ContentType.Compare("text/plain") == 0) {
-					m_IsTextPlain = true;
-					m_IsTextHtml = false;
-				}
-				else if (m_ContentType.Compare("text/html") == 0) {
-					m_IsTextHtml = true;
-					m_IsTextPlain = false;
-				}
-				int ret = GetParamValue(line, cTypeLen, cCharset, cCharsetLen, m_Charset);
-				if (!m_Charset.IsEmpty()) {
-					m_PageCode = MboxMail::Str2PageCode(m_Charset);
-					if (m_PageCode > CP_UTF8)
-						int deb = 1;
-					if ((m_PageCode == 0) && m_IsTextHtml)
-						int deb = 1;
-				}
-				ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
-				if (!m_Name.IsEmpty()) {
-					CString charset;
-					UINT charsetId = 0;
-					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
-					// TODO: what about charset and charsetId :)
-					m_Name = Name;
-					//m_IsAttachment = true;  // TODO: Caller need to decide
-				}
-				int deb = 1;
-			}
-			else 
-			{
-				int ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
-				if (!m_Name.IsEmpty()) {
-					CString charset;
-					UINT charsetId = 0;
-					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
-					// TODO: what about charset and charsetId :)
-					m_Name = Name;
-					//m_IsAttachment = true;  // TODO: Caller need to decide
-				}
-			}
-		}
-		else if (strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
-		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cTransferEncodingLen, m_TransferEncoding);
-		}
-		else if (strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
-		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cDispositionLen, m_Disposition);
-
-			if (strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0)
-			{
-				// TODO:  Maybe. There are plenty of irregular mails and they can be considered as inline and 
-				// possibly both inline and attachment
-				m_IsAttachment = true;
-			}
-			// attachment type or not, get the filename/attachment name 
-			int ret = GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
-			if (!m_AttachmentName.IsEmpty()) {
-				CString charset;
-				UINT charsetId = 0;
-				CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
-				// TODO: what about charset and charsetId :)
-				m_AttachmentName = attachmentName;
-			}
-		}
-		else if (strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cMsgIdLen, m_MessageId);
-		}
-		else if (strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cMsgIdLen, m_ContentId);
-			m_ContentId.Trim();
-			m_ContentId.Trim("<>");
-
-		}
-		else if (strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cReplyIdLen, m_ReplyId);
-		}
-		else if (strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
-		{
-			char *p_save = p;
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cContentLocationLen, m_ContentLocation);
-			if (m_ContentLocation.GetLength() > 50)
-				int deb = 1;
-		}
-		else {
-			p = EatNLine(p, e);
-		}
-	}
-	if ((m_PageCode == 0) && m_IsTextHtml)
-		int deb = 1;
-	int headLength = p - pszData;
-	return headLength;
-}
-
-// Followed the design of CMimeBody::Load in mime.cpp, so ite should be reliable :)
-// This parser doesn't decode body parts. It only determines length and offsets to the body parts.
-int MailBody::Load(char *& pszDataBase, const char* pszData, int nDataSize)
-{
-	//
-	int nSize = MailHeader::Load(pszData, nDataSize);
-	if (nSize <= 0)
-		return nSize;
-
-	const char* pszDataBegin = pszData;	// preserve start position
-	pszData += nSize;
-	nDataSize -= nSize;
-
-	// determine the length of the content
-	const char* pszEnd = pszData + nDataSize;
-
-	if (IsMultiPart())
-	{
-		// find the begin boundary
-		if (!m_Boundary.IsEmpty())
-		{
-			// Should match against "\--" or just "--"
-			pszEnd = FindBoundary(pszData, pszEnd, m_Boundary, m_Boundary.GetLength());
-			if (!pszEnd)
-				pszEnd = pszData + nDataSize;
-		}
-	}
-
-	// load content
-	nSize = (int)(pszEnd - pszData);
-	if (nSize > 0)
-	{
-		// save offset and length of body data
-		m_bodyDataOffset = pszData - pszDataBase;
-		m_bodyDataLength = nSize;
-		pszData += nSize;
-		nDataSize -= nSize;
-
-		if (m_ContentType.IsEmpty()) {
-			m_ContentType = "text/plain";
-			m_IsText = true;
-			m_IsTextPlain = true;
-			m_IsTextHtml = false;
-		}
-	}
-	if (nDataSize <= 0)
-		return (int)(pszData - pszDataBegin);
-
-	// load child body parts
-	ASSERT(m_Boundary.GetLength() > 0);
-
-	pszEnd = pszData + nDataSize;
-	const char* pszBound1 = FindBoundary(pszData, pszEnd, m_Boundary, m_Boundary.GetLength());
-
-	while (pszBound1 != NULL && pszBound1 < pszEnd)
-	{
-		const char* pszStart = EatNLine((char*)pszBound1, (char*)pszEnd);
-		if (!pszStart)
-			break;
-		if (pszBound1[m_Boundary.GetLength()+2] == '-' && pszBound1[m_Boundary.GetLength() +2 + 1] == '-')
-			return (int)(pszStart - pszDataBegin);	// reach the closing boundary
-
-													// look for the next boundary
-		const char* pszBound2 = FindBoundary(pszStart, pszEnd, m_Boundary, m_Boundary.GetLength());
-		if (!pszBound2)				// overflow, boundary may be truncated
-			pszBound2 = pszEnd;
-		int nEntitySize = (int)(pszBound2 - pszStart);
-
-		MailBody* pBP = CreatePart();
-		m_listBodies.insert_tail(pBP);
-
-		int nInputSize = pBP->Load(pszDataBase, pszStart, nEntitySize);
-		if (nInputSize < 0)
-		{
-			ErasePart(pBP);
-			return nInputSize;
-		}
-		pszBound1 = pszBound2;
-	}
-	return (int)(pszEnd - pszDataBegin);
-}
-
-// return a list of all child body parts belong to this body part
-int MailBody::GetBodyPartList(MailBodyList& rList)
-{
-	int nCount = 0;
-
-	if (!m_IsMultiPart)
-	{
-		rList.push_back(this);
-		nCount++;
-	}
-	else
-	{
-		MailBody *iter;
-		for (iter = m_listBodies.head(); iter != 0; iter = m_listBodies.next(iter))
-		{
-			nCount += iter->GetBodyPartList(rList);
-		}
-	}
-	return nCount;
-}
-
-char* MailBody::FindBoundary(const char* pszBegin, const char* pszEnd, const char* boundary, int boundaryLength)
-{
-	static char *bPrefix = "--";
-	register char *p = (char*)pszBegin;
-	register char *e = (char*)pszEnd;
-	while (p < e)
-	{
-		if (strncmpExact(p, e, bPrefix, 2) == 0)
-		{
-			if (strncmpExact(&p[2], e, boundary, boundaryLength) == 0)
-				return  p;
-		}
-		p = EatNLine(p, e);
-	}
-	return 0;
-}
-
-MailBody* MailBody::CreatePart()
-{
-	MailBody* mbody = m_mpool->AllocPart();
-	return mbody;
-}
-
-
-void MailBody::ErasePart(MailBody* mbody)
-{
-	mbody->DeleteAll();
-	m_mpool->FreePart(mbody);
-}
-
-// public static
-MailBody* MailBody::CreateMailBody()
-{
-	MailBody* mbody = m_mpool->AllocPart();
-	return mbody;
-}
-
-// public static
-void MailBody::FreeMailBody(MailBody* mbody)
-{
-	mbody->DeleteAll();
-	m_mpool->FreePart(mbody);
-}
-
-MailBodyPool::~MailBodyPool()
-{
-	MailBody *body;
-	while ((body = m_freeMailBodyList.remove_head()) != 0)
-		delete body;
-}
-
-MailBody* MailBodyPool::AllocPart()
-{
-	MailBody* mbody;
-	mbody = m_freeMailBodyList.remove_head();
-	if (mbody)
-		return mbody;
-	else
-		return new MailBody;
-}
-
-
-void MailBodyPool::FreePart(MailBody* mbody)
-{
-	m_freeMailBodyList.insert_head(mbody);
-	int deb = 1;
-}
-
-// delete all child body parts
-void MailBody::DeleteAllParts()
-{
-	MailBody *body;
-	while ((body = m_listBodies.remove_head()) != 0)
-	{
-		body->DeleteAll();
-		m_mpool->FreePart(body);
-	}
-}
-
-void MailBody::DeleteAll()
-{
-	DeleteAllParts();
-	MailHeader::Clear();
-	m_bodyDataOffset = 0;
-	m_bodyDataLength = 0;
-}
-
 void MboxMail::ReleaseResources()
 {
 	delete_charset2Id();
@@ -6577,112 +6534,6 @@ void MboxMail::ReleaseResources()
 	CString processpath = "";
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), processpath);
 }
-
-// search for string2 in string1 (strstr)
-const char* MailBody::FindString(const char* pszStr1, const char* pszStr2, const char* pszEnd)
-{
-	pszEnd -= ::strlen(pszStr2);
-	const char *s1, *s2;
-	while (pszStr1 <= pszEnd)
-	{
-		s1 = pszStr1;
-		s2 = pszStr2;
-		while (*s1 == *s2 && *s2)
-			s1++, s2++;
-		if (!*s2)
-			return pszStr1;
-		pszStr1++;
-	}
-	return NULL;
-}
-
-void SerializerHelper::close() {
-	if (m_buff != NULL) {
-		if (m_writing) {
-			m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (m_hFile != INVALID_HANDLE_VALUE) {
-				DWORD nwritten = 0;
-				WriteFile(m_hFile, m_buff, m_offset, &nwritten, NULL);
-				CloseHandle(m_hFile);
-			}
-		}
-		free(m_buff);
-	}
-	m_buff = NULL;
-}
-
-BOOL SerializerHelper::open(BOOL bWrite) {
-	m_writing = bWrite;
-	if (bWrite) {
-		m_buff = (char *)malloc(m_buffSize = SZBUFFSIZE);
-		if (m_buff == NULL)
-			return false;
-		return TRUE;
-		//m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	}
-	else {
-		m_buffSize = (int)FileSize(m_path);
-		m_buff = (char *)malloc(m_buffSize);
-		if (m_buff == NULL)
-			return false;
-		m_hFile = CreateFile(m_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-		DWORD nread;
-		BOOL res = ReadFile(m_hFile, m_buff, m_buffSize, &nread, NULL);
-		CloseHandle(m_hFile);
-		m_hFile = INVALID_HANDLE_VALUE;
-		return res;
-	}
-	return m_hFile != INVALID_HANDLE_VALUE;
-}
-
-int SerializerHelper::GetReadPointer()
-{
-	if (m_writing == TRUE)
-		return -1;
-	return m_offset;
-}
-
-BOOL SerializerHelper::SetReadPointer(int pos) 
-{
-	if (m_writing == TRUE)
-		return FALSE;
-
-	m_offset = pos;
-	return TRUE;
-#if 0
-	DWORD pos = SetFilePointer(myFile, iBytePos, NULL, FILE_BEGIN);
-
-	if (pos == INVALID_SET_FILE_POINTER)
-		return FALSE;
-#endif
-}
-
-
-
-BOOL SerializerHelper::readN(void *v, int sz) {
-	if (m_buff == 0)
-		return FALSE;
-	if (m_offset + sz > m_buffSize)
-		return FALSE;
-	memcpy(v, m_buff + m_offset, sz);
-	m_offset += sz;
-	return TRUE;
-}
-
-BOOL SerializerHelper::writeN(void *v, int sz) {
-	if (m_buff == 0)
-		return FALSE;
-	if (m_offset + sz > m_buffSize) {
-		m_buff = (char *)realloc(m_buff, m_buffSize += SZBUFFSIZE);
-		if (m_buff == NULL)
-			return FALSE;
-	}
-	memcpy(m_buff + m_offset, v, sz);
-	m_offset += sz;
-	return TRUE;
-}
-
-
 
 int showCodePageTable()
 {
@@ -7164,7 +7015,9 @@ BOOL MboxMail::IsFindMailsSelected() {
 }
 BOOL MboxMail::IsUserMailsSelected() {
 	return (nWhichMailList == IDC_EDIT_LIST);
-
+}
+BOOL MboxMail::IsFolderMailsSelected() {
+	return (nWhichMailList == IDC_FOLDER_LIST);
 }
 
 int MboxMail::AllMailsSelectedId() {
@@ -7175,7 +7028,9 @@ int MboxMail::FindMailsSelectedId() {
 }
 int MboxMail::UserMailsSelectedId() {
 	return (IDC_EDIT_LIST);
-
+}
+int MboxMail::FolderMailsSelectedId() {
+	return (IDC_FOLDER_LIST);
 }
 
 //void *bsearch(const void *key, const void *base, size_t num, size_t width, int(__cdecl *compare) (const void *key, const void *datum));
@@ -7358,7 +7213,6 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	{
 		if (separatorNeeded) {
 			fileName.AppendChar(sepchar);
-			subjLengthAllowed--;
 			int deb = 1;
 		}
 		// TODO: create function
@@ -7407,11 +7261,427 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 
 	fileName.Append((LPCSTR)crc32, crc32.GetLength());
 
+	if (fileName.GetLength() > namePatternParams->m_nFileNameFormatSizeLimit)
+	{
+		fileName.Truncate(namePatternParams->m_nFileNameFormatSizeLimit);
+	}
+
 	int fileNameLen = fileName.GetLength();
 	return 1;
 
 }
 
+int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf, CString &fileName, int maxFileNameLength)
+{
+	SimpleString name;
+	SimpleString addr;
+	CString cname;
+	CString caddr;
+
+	CString username;
+	CString domain;
+
+	CString fromAddr;
+	CString fromName;
+	SimpleString addrTo;
+
+	CString toAddr;
+	CString toName;
+	SimpleString nameTo;
+
+	CString subjAddr;
+	CString subj;
+	CString tmp;
+	CString FieldText;
+	BOOL allowUnderscore = FALSE;
+	char sepchar = '-';
+	int needLength;
+
+	// make room for extension - actually caller should do this
+	maxFileNameLength -= 6; 
+	int maxNonAdjustedFileNameLength = maxFileNameLength;
+
+	CArray<CString> labelArray;
+	BOOL ret = MboxMail::ParseTemplateFormat(nameTemplateCnf.m_TemplateFormat, labelArray);
+
+	// make room for UNIQUE_ID
+	CString idLabel = "%UNIQUE_ID%";
+	CString uID;
+	uID.Format("%d", m->m_index);
+	if (TemplateFormatHasLabel(idLabel, labelArray) == TRUE)
+	{
+		maxFileNameLength -= uID.GetLength() + 6;
+	}
+	if (maxFileNameLength < 0)
+		maxFileNameLength = 0;
+
+	int i = 0;
+	for (i = 0; i < labelArray.GetCount(); i++)
+	{
+		CString label = labelArray[i];
+		if (labelArray[i].CompareNoCase("%DATE_TIME%") == 0)
+		{
+			CString strDate;
+			if (m->m_timeDate < 0)
+			{
+				strDate = "0000-00-00";
+			}
+			else
+			{
+				MyCTime tm(m->m_timeDate);
+				strDate = tm.FormatLocalTm(nameTemplateCnf.m_DateFormat);
+
+			}
+			needLength = fileName.GetLength() + strDate.GetLength();
+			if (needLength < maxFileNameLength)
+				fileName.Append(strDate);
+			int deb = 1;
+		}
+		else if (labelArray[i].CompareNoCase("%FROM_NAME%") == 0)
+		{
+			CString addrLabel = "%FROM_ADDR%";
+
+			int fromlen = m->m_from.GetLength();
+			name.ClearAndResize(fromlen);
+			addr.ClearAndResize(fromlen);
+			username.Empty();
+			domain.Empty();
+
+			MboxMail::splitMailAddress(m->m_from, fromlen, &name, &addr);
+			MakeValidFileName(name, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+			if ((name.Count() > 0) && !((name.Count() == 1) && (name.GetAt(0) == '_')))
+			{
+				fromName.Empty();
+				fromName.Append(name.Data(), name.Count());
+				fromName.Trim(" \t\"<>:;,()");  // may need to remove more not only aphanumerics
+				needLength = fileName.GetLength() + fromName.GetLength();
+				if (needLength < maxFileNameLength)
+					fileName.Append(fromName);
+				;
+			}
+			else if (TemplateFormatHasLabel(addrLabel, labelArray) == FALSE)
+			{
+				int pos = addr.Find(0, '@');
+				if (pos >= 0)
+				{
+					username.Append(addr.Data(), pos);
+					domain.Append(addr.Data(pos + 1), addr.Count() - (pos + 1));
+				}
+				else
+					username.Append(addr.Data(), addr.Count());
+
+				fromAddr.Empty();
+				if (nameTemplateCnf.m_bFromUsername && nameTemplateCnf.m_bFromDomain)
+					fromAddr.Append(addr.Data(), addr.Count());
+				else if (nameTemplateCnf.m_bFromUsername)
+					fromAddr.Append(username);
+				else
+					fromAddr.Append(domain);
+
+				fromAddr.Trim(" \t\"<>:;,()");  // may need to remove more not only aphanumerics
+				needLength = fileName.GetLength() + fromAddr.GetLength();
+				if (needLength < maxFileNameLength)
+					fileName.Append(fromAddr);
+			}
+		}
+		else if (labelArray[i].CompareNoCase("%FROM_ADDR%") == 0)
+		{
+			int fromlen = m->m_from.GetLength();
+			name.ClearAndResize(fromlen);
+			addr.ClearAndResize(fromlen);
+			username.Empty();
+			domain.Empty();
+
+			MboxMail::splitMailAddress(m->m_from, fromlen, &name, &addr);
+			int pos = addr.Find(0, '@');
+			if (pos >= 0)
+			{
+				username.Append(addr.Data(), pos);
+				domain.Append(addr.Data(pos+1), addr.Count() - (pos+1));
+			}
+			else
+				username.Append(addr.Data(), addr.Count());
+
+			fromAddr.Empty();
+			if (nameTemplateCnf.m_bFromUsername && nameTemplateCnf.m_bFromDomain)
+				fromAddr.Append(addr.Data(), addr.Count());
+			else if (nameTemplateCnf.m_bFromUsername)
+				fromAddr.Append(username);
+			else
+				fromAddr.Append(domain);
+
+			fromAddr.Trim(" \t\"<>:;,");  // may need to remove more not only aphanumerics
+			needLength = fileName.GetLength() + fromAddr.GetLength();
+			if (needLength < maxFileNameLength)
+				fileName.Append(fromAddr);
+
+			int deb = 1;
+		}
+
+		//
+		else if (labelArray[i].CompareNoCase("%TO_NAME%") == 0)
+		{
+			CString addrLabel = "%TO_ADDR%";
+
+			int tolen = m->m_to.GetLength();
+			name.ClearAndResize(tolen);
+			addr.ClearAndResize(tolen);
+			username.Empty();
+			domain.Empty();
+
+			MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
+			MakeValidFileName(name, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+			if ((name.Count() > 0) && !((name.Count() == 1) && (name.GetAt(0) == '_')))
+			{
+				toName.Empty();
+				toName.Append(name.Data(), name.Count());
+				toName.Trim(" \t\"<>:;,()");  // may need to remove more not only aphanumerics
+				needLength = fileName.GetLength() + toName.GetLength();
+				if (needLength < maxFileNameLength)
+					fileName.Append(toName);
+				;
+			}
+			else if (TemplateFormatHasLabel(addrLabel, labelArray) == FALSE)
+			{
+				int pos = addr.Find(0, '@');
+				if (pos >= 0)
+				{
+					username.Append(addr.Data(), pos);
+					domain.Append(addr.Data(pos + 1), addr.Count() - (pos + 1));
+				}
+				else
+					username.Append(addr.Data(), addr.Count());
+
+				toAddr.Empty();
+				if (nameTemplateCnf.m_bToUsername && nameTemplateCnf.m_bToDomain)
+					toAddr.Append(addr.Data(), addr.Count());
+				else if (nameTemplateCnf.m_bToUsername)
+					toAddr.Append(username);
+				else
+					toAddr.Append(domain);
+
+				toAddr.Trim(" \t\"<>:;,()");  // may need to remove more not only aphanumerics
+				needLength = fileName.GetLength() + toAddr.GetLength();
+				if (needLength < maxFileNameLength)
+					fileName.Append(toAddr);
+			}
+		}
+		else if (labelArray[i].CompareNoCase("%TO_ADDR%") == 0)
+		{
+			int tolen = m->m_to.GetLength();
+			name.ClearAndResize(tolen);
+			addr.ClearAndResize(tolen);
+			username.Empty();
+			domain.Empty();
+
+			MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
+			int pos = addr.Find(0, '@');
+			if (pos >= 0)
+			{
+				username.Append(addr.Data(), pos);
+				domain.Append(addr.Data(pos + 1), addr.Count() - (pos + 1));
+			}
+			else
+				username.Append(addr.Data(), addr.Count());
+
+			toAddr.Empty();
+			if (nameTemplateCnf.m_bToUsername && nameTemplateCnf.m_bToDomain)
+				toAddr.Append(addr.Data(), addr.Count());
+			else if (nameTemplateCnf.m_bToUsername)
+				toAddr.Append(username);
+			else
+				toAddr.Append(domain);
+
+			toAddr.Trim(" \t\"<>:;,");  // may need to remove more not only aphanumerics
+			needLength = fileName.GetLength() + toAddr.GetLength();
+			if (needLength < maxFileNameLength)
+				fileName.Append(toAddr);
+
+			int deb = 1;
+		}
+		else if (labelArray[i].CompareNoCase("%SUBJECT%") == 0)
+		{
+#if 0
+			int subjLengthAllowed = maxFileNameLength - fileName.GetLength();  // 5 is 
+			CString idLabel = "%UNIQUE_ID%";
+			if (TemplateFormatHasLabel(idLabel, labelArray) == TRUE)
+			{
+				subjLengthAllowed -= uID.GetLength() + 6;
+			}
+			if (subjLengthAllowed < 0)
+				subjLengthAllowed = 0;
+
+			int subjLength = m->m_subj.GetLength();
+			if (subjLengthAllowed > subjLength)
+				subjLengthAllowed = subjLength;
+
+			if (subjLengthAllowed > 0)
+			{
+				// TODO: create function
+				int outCnt = 0;
+				int ignoreCnt = 0;
+				int i;
+				for (i = 0; i < subjLength; i++)
+				{
+					if (outCnt >= subjLengthAllowed)
+						break;
+
+					char c = m->m_subj.GetAt(i);
+					unsigned char cc = c;
+
+					if ((c >= 32) && (cc < 127) && isalnum(c))
+					//if (c >= 32) 
+					{
+						fileName.AppendChar(c);
+						allowUnderscore = TRUE;
+						outCnt++;
+					}
+					else if (allowUnderscore)
+					{
+						fileName.AppendChar('_');
+						allowUnderscore = FALSE;
+						outCnt++;
+					}
+					else
+						ignoreCnt++;
+				}
+			}
+#else
+		int lengthAvailable = maxFileNameLength - fileName.GetLength();
+		if (lengthAvailable < 0)
+			lengthAvailable = 0;
+		int subjectLength = m->m_subj.GetLength();
+		if (subjectLength > lengthAvailable)
+			subjectLength = lengthAvailable;
+
+		fileName.Append(m->m_subj, subjectLength);
+#endif
+		}
+		else if (labelArray[i].CompareNoCase("%UNIQUE_ID%") == 0)
+		{
+			needLength = fileName.GetLength() + uID.GetLength();
+			if (needLength < maxNonAdjustedFileNameLength)
+				fileName.Append(uID);
+		}
+		else
+		{
+			needLength = fileName.GetLength() + labelArray[i].GetLength();
+			if (needLength < maxFileNameLength)
+			{
+				fileName.Append(labelArray[i]);
+			}
+		}
+	}
+	fileName.TrimLeft();
+
+	if (fileName.GetLength() > maxFileNameLength)
+	{
+		fileName.Truncate(maxFileNameLength);
+	}
+
+	MakeValidFileName(fileName, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+
+	int fileNameLen = fileName.GetLength();
+	return 1;
+
+}
+
+static CArray<CString> FldLabelTable;
+static BOOL fldLabelsTableSet = FALSE;
+
+CString MboxMail::MatchFldLabel(char *p, char *e)
+{
+	CString empty;
+	if (fldLabelsTableSet == FALSE)
+	{
+		FldLabelTable.Add(_T("%DATE_TIME%"));
+		FldLabelTable.Add(_T("%FROM_NAME%"));
+		FldLabelTable.Add(_T("%FROM_ADDR%"));
+		FldLabelTable.Add(_T("%TO_NAME%"));
+		FldLabelTable.Add(_T("%TO_ADDR%"));
+		FldLabelTable.Add(_T("%SUBJECT%"));
+		FldLabelTable.Add(_T("%UNIQUE_ID%"));
+
+		fldLabelsTableSet = TRUE;
+	}
+
+
+	int left = e - p;
+	int fldCnt = FldLabelTable.GetCount();
+	int labelLength;
+	char *labelData;
+	int i;
+	for (i = 0; i < fldCnt; i++)
+	{
+		labelLength = FldLabelTable[i].GetLength();
+		labelData = (char*)((LPCSTR)FldLabelTable[i]);
+		if ((FldLabelTable[i].GetLength() <= left) && (strncmp(p, labelData, labelLength) == 0))
+			return FldLabelTable[i];
+	}
+	return empty;
+}
+
+BOOL MboxMail::ParseTemplateFormat(CString &templateFormat, CArray<CString> &labelArray)
+{
+	char *p = (char*)((LPCSTR)templateFormat);
+	char *e = p + templateFormat.GetLength();
+	CString label;
+	CString plainText;
+	char c;
+	while (p < e)
+	{
+		c = *p;
+		if (c == '%')
+		{
+			label = MatchFldLabel(p, e);
+		}
+		if (!label.IsEmpty())
+		{
+			if (!plainText.IsEmpty())
+			{
+				labelArray.Add(plainText);
+				plainText.Empty();
+			}
+
+			labelArray.Add(label);
+			p += label.GetLength();
+			label.Empty();
+		}
+		else
+		{
+			plainText.AppendChar(c);
+			p++;
+		}
+	}
+	if (!plainText.IsEmpty())
+	{
+		labelArray.Add(plainText);
+		plainText.Empty();
+	}
+	if (p != e)
+		int deb = 1;
+
+#if 0
+	TRACE(_T("LABEL ARRAY:\n\n"));
+	for (int ii = 0; ii < labelArray.GetCount(); ii++)
+	{
+		TRACE(_T("\"%s\"\n"), labelArray[ii]);
+	}
+
+#endif
+
+	return TRUE;
+}
+
+BOOL MboxMail::TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray)
+{
+	for (int ii = 0; ii < labelArray.GetCount(); ii++)
+	{
+		if (labelArray[ii].CompareNoCase(label) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
 
 int MboxMail::RemoveDuplicateMails()
 {
@@ -7794,9 +8064,26 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 #endif
 
 	CString mailFileNameBase;
+#if 0
+	// Just for investigation
+	mailFileNameBase.Preallocate(500);
+	int allocLen = mailFileNameBase.GetAllocLength();  // returns 500
+	mailFileNameBase.Append("zzz");
+	int strLen = mailFileNameBase.GetLength();  // returns 3
+	// Empty() seems to release the buffer !!!
+	// We could keep one character in the buffer but the next operation must be copy/replace. Not really friendly.
+	// mailFileNameBase.Empty();  
+	allocLen = mailFileNameBase.GetAllocLength(); // returns 0 if Empty() is called
+	//
+#endif
+
+
 	MboxMail *m = MboxMail::s_mails[mailIndex];
 
-	MakeFileName(m, &pFrame->m_NamePatternParams, mailFileNameBase);
+	if (!pFrame->m_NamePatternParams.m_bCustomFormat)
+		MakeFileName(m, &pFrame->m_NamePatternParams, mailFileNameBase);
+	else
+		MakeFileName(m, pFrame->m_NamePatternParams.m_nameTemplateCnf, mailFileNameBase, pFrame->m_NamePatternParams.m_nFileNameFormatSizeLimit);
 
 	if (fileType == 0)
 		fileName = printCachePath + "\\" + mailFileNameBase + ".txt";
@@ -8226,72 +8513,65 @@ int MboxMail::EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CSt
 	return newBufferLength;
 }
 
-void  MboxMail::MakeValidFileName(CString &name)
+void  MboxMail::MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore)
 {
-	CString validName;
-	int csLen = name.GetLength();
-	LPCSTR str = name;
-	int i;
-	char c;
-	for (i = 0; i < csLen; i++)
-	{
-		c = str[i];
-		if (
-			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') || (c == ',') || (c == ';') ||
-			(c == '*') || (c == '|') || (c == '"') || (c == '\\') || (c == '%')
-			)
-		{
-			validName.AppendChar('_');
-		}
-		else if ((c < 32))
-		{
-			validName.AppendChar('_');
-		}
-		else
-			validName.AppendChar(c);
-	}
-	name = validName;
+	SimpleString validName(name.GetLength());
+	validName.Append((LPCSTR)name, name.GetLength());
+	MakeValidFileName(validName, bReplaceWhiteWithUnderscore);
+	name.Empty();
+	name.Append(validName.Data(), validName.Count());
 }
 
-void  MboxMail::MakeValidFileName(SimpleString &name)
+void  MboxMail::MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore)
 {
+	// Always merge consecutive underscore characters
 	int csLen = name.Count();
 	char* str = name.Data();
 	int i;
+	int j = 0;
 	char c;
+	BOOL allowUnderscore = TRUE;
 	for (i = 0; i < csLen; i++)
 	{
 		c = str[i];
 		if (
-			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') || (c == ',') || (c == ';') ||
-			(c == '*') || (c == '|') || (c == '"') || (c == '\\') || (c == '%')
+			(c == '?') || (c == '/') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\')                  // not valid file name characters
+			// I seem to remember that browser would not open a file with name with these chars, 
+			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
+			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
+			|| (c == '%')
 			)
 		{
-			str[i] = '_';
+			if (allowUnderscore)
+			{
+				allowUnderscore = FALSE;
+				str[j++] = '_';
+			}
+		}
+		else if (bReplaceWhiteWithUnderscore && ((c == ' ') || (c == '\t')))
+		{
+			if (allowUnderscore)
+			{
+				str[j++] = '_';
+				allowUnderscore = FALSE;
+			}
 		}
 		else if ((c < 32))
 		{
-			str[i] = '_';
+			if (allowUnderscore)
+			{
+				str[j++] = '_';
+				allowUnderscore = FALSE;
+			}
+		}
+		else
+		{
+			str[j++] = c;
+			allowUnderscore = TRUE;
 		}
 	}
-}
-
-BOOL SerializerHelper::writeString(LPCSTR val)
-{
-	int l = strlen(val);
-	if (!writeInt(l))
-		return FALSE;
-	DWORD written = 0;
-	return writeN((void*)val, l);
-}
-BOOL SerializerHelper::readString(CString &val)
-{
-	int l = 0;
-	if (!readInt(&l))
-		return false;
-	LPSTR buf = val.GetBufferSetLength(l);
-	DWORD nRead = 0;
-	return readN(buf, l);
+	name.SetCount(j);
 }
 
 const _int64 maxLargeLen = 100000;
@@ -8560,7 +8840,7 @@ BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 		return FALSE;
 }
 
-void MboxMail::ShowHint(int hintNumber)
+void MboxMail::ShowHint(int hintNumber, HWND h)
 {
 	// Or should I create table with all Hints to support potentially large number of hints ?
 	CString hintText;
@@ -8666,10 +8946,24 @@ void MboxMail::ShowHint(int hintNumber)
 			);
 		}
 
+
 		if (!hintText.IsEmpty())
 		{
-			HWND h = NULL;
 			::MessageBox(h, hintText, _T("Did you know?"), MB_OK | MB_ICONEXCLAMATION);
+#if 0
+			// Right now wil not use this
+			MSGBOXPARAMSA mbp;
+			mbp.cbSize = 0;
+			mbp.hwndOwner = h;
+			mbp.hInstance = 0;
+			mbp.lpszText =  hintText;
+			mbp.lpszCaption = _T("Did you know?");
+			mbp.dwStyle = 0;
+			mbp.lpszIcon = "";
+			mbp.dwContextHelpId = 0;
+			mbp.dwLanguageId = 0;
+			int ret = MessageBoxIndirect(&mbp);
+#endif
 			MboxMail::m_HintConfig.ClearHint(hintNumber);
 		}
 	}

@@ -313,10 +313,31 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			}
 		}
 
+		// All below approches work.
+		// ExcludeClip would suggest better performance but no significant boost observed
+#if 1
+		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+		graphics->DrawImage(image, posLeft, posTop, w, h);
+		RectF excludeRect((REAL)posLeft, (REAL)posTop, (REAL)w, (REAL)h);
+		graphics->ExcludeClip(excludeRect);
+		graphics->FillRectangle(&bb, rC);
+#endif
+
+#if 0
+		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+		graph->DrawImage(image, posLeft, posTop, w, h);
+		RectF excludeRect((REAL)posLeft, (REAL)posTop, (REAL)w, (REAL)h);
+		graph->ExcludeClip(excludeRect);
+		graph->FillRectangle(&bb, rC);
+		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
+#endif
+
+#if 0
 		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
 		graph->FillRectangle(&bb, rC);
 		graph->DrawImage(image, posLeft, posTop, w, h);
 		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
+#endif
 	}
 }
 

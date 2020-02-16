@@ -1,0 +1,41 @@
+
+Starting with version 1.0.3.7, two versions of mboxview executable and associated pdb file are included into the release package:
+
+	mbox-viewer.exe-v1.0.3.7/mboxview.exe
+	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.exe
+	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.pdb
+
+Performance of both versions of the mboxview is identical.
+
+Both versions were enhanced to catch execution exeptions and dump suspect raw mail data to the text file.
+
+In addition, the mboxview.exe under the ReleasePlusStackTrace directory was enhanced to dump stack trace upon catching execution exception to help to diagnose the problem.
+
+The separate version of the mboxview is released in the ReleasePlusStackTrace directory since it is not clear the OS versions older than Windows 10 can support additional enhancements to dump the execution stack.
+This may change in the future releases subject to additional verifications and enhancements.
+
+In case the standard mbox viewer crashes, please change the directory to the ReleasePlusStackTrace directory and re-run the mbox viewer.
+
+If it crashes, the mbox viewer in ReleasePlusStackTrace directory will generate one of more text files that can help to diagnose the problem:
+
+mboxview_SystemE_MailDump.txt
+mboxview_SystemE_StackTrace.txt
+mboxview_TranslationSystemE_StackTrace.txt
+mboxview_E_MailDump.txt
+mboxview_E_StackTrace.txt
+mboxview_AnyE_StackTrace.txt
+mboxview_AnyE_MailDump.txt
+mboxview_UnhandledException_StackDump.txt
+
+Please raise the ticket on the sourceforge or github and attach the generated files.
+
+The *_MailDump.txt files should contain two raw user mails so please review these files to make sure they don't contain sensitive information.
+
+https://sourceforge.net/projects/mbox-viewer/
+
+https://github.com/eneam/mboxviewer
+
+
+
+
+

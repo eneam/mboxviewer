@@ -34,6 +34,7 @@
 #include "PrintConfigDlg.h"
 #include "afxdialogex.h"
 #include "MboxMail.h"
+#include "CustomNameTemplDlg.h"
 
 
 // PrintConfigDlg dialog
@@ -70,7 +71,7 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
 	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
 	DDX_Check(pDX, IDC_KEEP_BODY_BKGRND_COLOR, m_NamePatternParams.m_bKeepMailBodyBackgroundColor);
-
+	DDX_Check(pDX, IDC_CUSTOM_TEMPLATE, m_NamePatternParams.m_bCustomFormat);
 	int deb = 1;
 }
 
@@ -81,6 +82,8 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_PRT_PAGE_SETP, &PrintConfigDlg::OnBnClickedPrtPageSetp)
 	ON_BN_CLICKED(IDC_HTML2PDF_SCRIPT_TYPE, &PrintConfigDlg::OnBnClickedHtml2pdfScriptType)
 	ON_BN_CLICKED(IDC_RADIO3, &PrintConfigDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedCustomTemplate)
+	ON_BN_CLICKED(IDC_SET_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedSetCustomTemplate)
 END_MESSAGE_MAP()
 
 
@@ -116,9 +119,8 @@ BOOL PrintConfigDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	UpdateData(TRUE);
-
-	if (GetSafeHwnd()) {
+	if (GetSafeHwnd()) 
+	{
 		CWnd *p = GetDlgItem(IDC_FILE_UNIQUE_ID);
 		if (p) {
 			((CButton*)p)->SetCheck(1);
@@ -143,9 +145,20 @@ BOOL PrintConfigDlg::OnInitDialog()
 			else
 				p->EnableWindow(TRUE);
 		}
-	}
 
-	//UpdateData(TRUE);
+		p = 0;
+		p = GetDlgItem(IDC_SET_CUSTOM_TEMPLATE);
+		if (p)
+		{
+			if (m_NamePatternParams.m_bCustomFormat)
+				p->EnableWindow(TRUE);
+			else
+				p->EnableWindow(FALSE);
+		}
+
+		if (m_NamePatternParams.m_bCustomFormat)
+			EnableNonCustomWindows(FALSE);
+	}
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -210,6 +223,12 @@ void NamePatternParams::SetDflts()
 	m_bAddBackgroundColorToMailHeader = TRUE;
 	m_bAddBreakPageAfterEachMailInPDF = FALSE;
 	m_bKeepMailBodyBackgroundColor = TRUE;
+	m_bCustomFormat = FALSE;
+
+	m_nameTemplateCnf.SetDflts();
+
+	AddressParts2Bitmap();
+
 	
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);
@@ -255,6 +274,9 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bAddBackgroundColorToMailHeader = src.m_bAddBackgroundColorToMailHeader;
 	m_bAddBreakPageAfterEachMailInPDF = src.m_bAddBreakPageAfterEachMailInPDF;
 	m_bKeepMailBodyBackgroundColor = src.m_bKeepMailBodyBackgroundColor;
+	m_bCustomFormat = src.m_bCustomFormat;
+
+	m_nameTemplateCnf.Copy(src.m_nameTemplateCnf);
 }
 
 void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternParams &updated)
@@ -301,16 +323,32 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	if (updated.m_bKeepMailBodyBackgroundColor != current.m_bKeepMailBodyBackgroundColor) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailBodyBackgroundColor", updated.m_bKeepMailBodyBackgroundColor);
 	}
+	if (updated.m_bCustomFormat != current.m_bCustomFormat) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplate", updated.m_bCustomFormat);
+	}
+	if (updated.m_nameTemplateCnf.m_TemplateFormat != current.m_nameTemplateCnf.m_TemplateFormat) {
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplateFormat", updated.m_nameTemplateCnf.m_TemplateFormat);
+	}
+	if (updated.m_nameTemplateCnf.m_DateFormat != current.m_nameTemplateCnf.m_DateFormat) {
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplateDateFormat", updated.m_nameTemplateCnf.m_DateFormat);
+	}
+	AddressParts2Bitmap();
+	if (updated.m_nAddressPartsBitmap != current.m_nAddressPartsBitmap) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printAddressPartsBitmap", updated.m_nAddressPartsBitmap);
+	}
 }
-
 
 void NamePatternParams::LoadFromRegistry()
 {
 	BOOL retval;
 	DWORD bDate, bTime, bFrom, bTo, bSubject, bPrintDialog, bScriptType, nWantedFileNameFormatSizeLimit;
 	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF, bKeepMailBodyBackgroundColor;
+	DWORD nAddressPartsBitmap;
 	CString chromeBrowserPath;
 	CString userDefinedScriptPath;
+	DWORD bCustomFormat;
+	CString templateFormat;
+	CString dateFormat;
 
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameDate"), bDate))
 		m_bDate = bDate;
@@ -338,13 +376,24 @@ void NamePatternParams::LoadFromRegistry()
 		m_bAddBreakPageAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailBodyBackgroundColor"), bKeepMailBodyBackgroundColor))
 		m_bKeepMailBodyBackgroundColor = bKeepMailBodyBackgroundColor;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplate"), bCustomFormat))
+		m_bCustomFormat = bCustomFormat;
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplateFormat"), templateFormat))
+		m_nameTemplateCnf.m_TemplateFormat = templateFormat;
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplateDateFormat"), dateFormat))
+		m_nameTemplateCnf.m_DateFormat = dateFormat;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printAddressPartsBitmap"), nAddressPartsBitmap))
+	{
+		m_nAddressPartsBitmap = nAddressPartsBitmap;
+		Bitmap2AddressParts();
+	}
 }
 
 void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)
 {
 	CString printCacheName;
 	MboxMail::GetPrintCachePath(printCacheName);
-	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HHML_GROUP and PDF_GROUP)
+	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
 	if (maxFileSize < 0)
 		maxFileSize = 0;
 
@@ -392,3 +441,125 @@ void PrintConfigDlg::OnBnClickedRadio3()
 	}
 	int deb = 1;
 }
+
+
+void PrintConfigDlg::OnBnClickedCustomTemplate()
+{
+	// TODO: Add your control notification handler code here
+
+	if (GetSafeHwnd())
+	{
+		int checked = BST_UNCHECKED;
+		CWnd *pRB = GetDlgItem(IDC_CUSTOM_TEMPLATE);
+		if (pRB)
+		{
+			checked = ((CButton*)pRB)->GetCheck();
+		}
+		else
+			return;
+
+		// checked = m_NamePatternParams.m_bCustomFormat;  // shows old state
+		CWnd *pB = GetDlgItem(IDC_SET_CUSTOM_TEMPLATE);
+		if (pB)
+		{
+			if (checked)
+			{
+				EnableNonCustomWindows(FALSE);
+				pB->EnableWindow(TRUE);
+				pB->SetFocus();
+
+				// SetFocus() doesn't seem to work and below doesn't seem to work
+#if 0
+				HWND hButtonBoxWnd = NULL;
+				HWND hDlg = GetSafeHwnd();
+				if((hButtonBoxWnd = ::GetDlgItem(hDlg, IDC_SET_CUSTOM_TEMPLATE)))
+					::PostMessage(hButtonBoxWnd, WM_SETFOCUS, 0, 0);
+#endif
+			}
+			else
+			{
+				EnableNonCustomWindows(TRUE);
+				pB->EnableWindow(FALSE);
+				pRB->SetFocus();
+			}
+		}
+	}
+	UpdateData(TRUE);
+}
+
+
+void PrintConfigDlg::OnBnClickedSetCustomTemplate()
+{
+	// TODO: Add your control notification handler code here
+
+	CustomNameTemplDlg m_NameTemplDlg;
+
+	m_NameTemplDlg.m_nameTemplateCnf.Copy(m_NamePatternParams.m_nameTemplateCnf);
+
+	INT_PTR ret = m_NameTemplDlg.DoModal();
+	if (ret == IDOK)
+	{
+		m_NamePatternParams.m_nameTemplateCnf.Copy(m_NameTemplDlg.m_nameTemplateCnf);
+		m_NamePatternParams.AddressParts2Bitmap();
+	}
+
+	int deb = 1;
+}
+
+
+void PrintConfigDlg::EnableNonCustomWindows(BOOL enable)
+{
+	CWnd *p = 0;
+	p = GetDlgItem(IDC_FILE_DATE);
+	if (p)
+		p->EnableWindow(enable);
+
+	p = GetDlgItem(IDC_FILE_TIME);
+	if (p)
+		p->EnableWindow(enable);
+
+	p = GetDlgItem(IDC_FILE_FROM);
+	if (p)
+		p->EnableWindow(enable);
+
+	p = GetDlgItem(IDC_FILE_TO);
+	if (p)
+		p->EnableWindow(enable);
+
+	p = GetDlgItem(IDC_FILE_SUBJECT);
+	if (p)
+		p->EnableWindow(enable);
+
+	p = GetDlgItem(IDC_FILE_UNIQUE_ID);
+	if (p)
+		p->EnableWindow(enable);
+}
+
+void NamePatternParams::AddressParts2Bitmap()
+{
+	m_nAddressPartsBitmap = 0;
+
+	if (m_nameTemplateCnf.m_bFromUsername)  m_nAddressPartsBitmap |= 1 << TemplFromUsername;
+	if (m_nameTemplateCnf.m_bFromDomain)  m_nAddressPartsBitmap |= 1 << TemplFromDomain;
+
+	if (m_nameTemplateCnf.m_bToUsername)  m_nAddressPartsBitmap |= 1 << TemplToUsername;
+	if (m_nameTemplateCnf.m_bToDomain)  m_nAddressPartsBitmap |= 1 << TemplToDomain;
+
+	if (m_nameTemplateCnf.m_bReplaceWhiteWithUnderscore)  m_nAddressPartsBitmap |= 1 << TemplReplaceWhiteWithUnderscore;
+}
+
+void NamePatternParams::Bitmap2AddressParts()
+{
+	m_nameTemplateCnf.ClearParts();
+
+
+	if (m_nAddressPartsBitmap & (1 << TemplFromUsername))  m_nameTemplateCnf.m_bFromUsername = TRUE;
+	if (m_nAddressPartsBitmap & (1 << TemplFromDomain))  m_nameTemplateCnf.m_bFromDomain = TRUE;
+
+	if (m_nAddressPartsBitmap & (1 << TemplToUsername))  m_nameTemplateCnf.m_bToUsername = TRUE;
+	if (m_nAddressPartsBitmap & (1 << TemplToDomain))  m_nameTemplateCnf.m_bToDomain = TRUE;
+
+	if (m_nAddressPartsBitmap & (1 << TemplReplaceWhiteWithUnderscore))  m_nameTemplateCnf.m_bReplaceWhiteWithUnderscore = TRUE;
+}
+
+

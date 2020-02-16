@@ -40,6 +40,9 @@
 #include "FindInMailDlg.h"
 #include "FindAdvancedDlg.h"
 #include "AttachmentsConfig.h"
+#include "CheckListBoxDlg.h"
+#include "ExceptionUtil.h"
+#include "SerializationHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -648,6 +651,12 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		AppendMenu(&menu, M_REMOVE_DUPLICATE_MAILS_Id, _T("Remove Duplicate Mails"));
 	}
 
+	const UINT M_COPY_MAILS_TO_FOLDERS_Id = 26;
+	if (pFrame && !MboxMail::IsFolderMailsSelected()) {
+		/////menu.AppendMenu(MF_SEPARATOR);
+		; // AppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
+	}
+
 
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -678,14 +687,14 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_PRINTER_Id: {
 		CString fileName;
 		if (pFrame) {
-			MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
+			MboxMail::ShowHint(HintConfig::PrintToPrinterHint, GetSafeHwnd());
 			pFrame->OnPrintSingleMailtoText(iItem, 1, fileName, FALSE, TRUE);
 		}
 		int deb = 1;
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
-		MboxMail::ShowHint(HintConfig::PrintToPDFHint);
+		MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());
 		CString errorText;
 		CString targetPrintSubFolderName;
 		CString targetPrintFolderPath;
@@ -734,14 +743,14 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PRINTER_GROUP_Id: {
-		MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
+		MboxMail::ShowHint(HintConfig::PrintToPrinterHint, GetSafeHwnd());
 		PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 	}
 	break;
 	case S_PDF_DIRECT_GROUP_Id: {
 		if (pFrame)
 		{
-			MboxMail::ShowHint(HintConfig::PrintToPDFHint);
+			MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());
 			if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
 				CString errorText;
@@ -839,7 +848,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	case S_ADVANCED_FIND_Id: {
 		RunFindAdvancedOnSelectedMail(iItem);
-		MboxMail::ShowHint(HintConfig::AdvancedFindDialogHint);
+		MboxMail::ShowHint(HintConfig::AdvancedFindDialogHint, GetSafeHwnd());
 	}
 	break;
 	case S_RELOAD_LIST_Id: {
@@ -865,12 +874,15 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		RefreshMailsOnUserSelectsMailListMark();
 	}
 	break;
+	case M_COPY_MAILS_TO_FOLDERS_Id: {
+		int retval = CopyMailsToFolders();
+	}
+	break;
 	default: {
 		int deb = 1;
 	}
 	break;
 	}
-
 
 	// TODO: review below check; set itemSelected to TRUE ??
 	if ((command == S_REMOVE_Id) || 
@@ -1018,14 +1030,14 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case S_PRINTER_GROUP_Id: {
-		MboxMail::ShowHint(HintConfig::PrintToPrinterHint);
+		MboxMail::ShowHint(HintConfig::PrintToPrinterHint, GetSafeHwnd());
 		PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 	}
 	break;
 	case S_PDF_DIRECT_Id: {
 		if (pFrame)
 		{
-			MboxMail::ShowHint(HintConfig::PrintToPDFHint);
+			MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());
 			if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
 			{
 				CString targetPrintSubFolderName = "PDF_GROUP";
@@ -1535,6 +1547,13 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_list.SetImageList(&m_ImageList, LVSIL_SMALL);
 #endif
 
+	m_showAsPaperClip = TRUE;
+	BOOL aRt = m_paperClip.LoadBitmap(IDB_PAPER_CLIP);
+#if 0
+	BOOL cr = m_imgList.Create(6, 10, ILC_COLOR4, 1, 1);
+	int ar = m_imgList.Add(&m_paperClip, RGB(0, 0, 0));
+#endif
+
 	return 0;
 }
 
@@ -1797,24 +1816,48 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		CString Charset;
 		UINT charsetId;
 
-		if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
+		BOOL hasAttachents = FALSE;
+		if (m->m_hasAttachments || HasAnyAttachment(m))
+			hasAttachents = TRUE;
+
+		DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
+		DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
+
+		//if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
+		if (iSubItem == 0)
 		{
 			if (dc.Attach(hDC))
 			{
-				//if ((m->m_groupId % 2) == 0)  // doesn't work with new mail list types 
-				// unless we don't support sorting by converstation of new (find & User Seected) mail lists
-				if (m->m_groupColor == 0)
-					dc.FillRect(&rect, &CBrush(PeachPuff1));
+				if (abs(MboxMail::b_mails_which_sorted) == 99)  // mails sorted by comnversations
+				{
+					if (m->m_groupColor == 0)
+						dc.FillRect(&rect, &CBrush(PeachPuff1));
+					else
+						dc.FillRect(&rect, &CBrush(AntiqueWhite3));
+
+					dc.SetBkMode(TRANSPARENT);
+					dc.SetTextColor(RGB(0, 0, 0));
+				}
 				else
-					dc.FillRect(&rect, &CBrush(AntiqueWhite3));
+				{
+					if (rItem.state & LVIS_SELECTED)
+					{
+						dc.FillRect(&rect, &CBrush(bkcolor));
+						dc.SetBkMode(TRANSPARENT);
+						dc.SetTextColor(txcolor);
+					}
+					else
+					{
+						dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+						dc.SetBkMode(TRANSPARENT);
+						dc.SetTextColor(RGB(0, 0, 0));
+					}
+				}
 
-				dc.SetBkMode(TRANSPARENT);
-				dc.SetTextColor(RGB(0, 0, 0));
-
-				if ((m->m_isOnUserSelectedMailList)  && !MboxMail::IsUserMailsSelected())
+				if ((m->m_isOnUserSelectedMailList) && !MboxMail::IsUserMailsSelected())
 				{
 					CPen penRed(PS_SOLID, 2, MarkColor);  // 
-					dc.SelectObject(&penRed);
+					CPen *oldPen = dc.SelectObject(&penRed);
 
 					int xfrom = rect.left + 2;
 					int yfrom = rect.top + 4;
@@ -1824,48 +1867,62 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 					dc.MoveTo(xfrom, yfrom);
 					dc.LineTo(xto, yto);
+
+					CPen *pen = dc.SelectObject(oldPen);
+				}
+
+				if (hasAttachents && m_showAsPaperClip)
+				{
+					BITMAP  bi;
+					BOOL gbr = m_paperClip.GetBitmap(&bi);
+
+					int x = rect.left + 8;
+					int y = rect.top + 4;
+					// both below solutions work fine
+#if 0
+					CPoint pt(x, y);
+					CSize sz(bi.bmWidth, bi.bmHeight);
+					UINT fStyle = ILD_NORMAL;
+					DWORD dwRop = SRCAND;
+					BOOL r = m_imgList.DrawIndirect(&dc, 0, pt, sz, ptOrigin, fStyle, dwRop);
+#else
+					CDC bmDC;
+					BOOL ccr = bmDC.CreateCompatibleDC(&dc);
+					CBitmap *pOldbmp = bmDC.SelectObject(&m_paperClip);
+					BOOL bbr = dc.BitBlt(x, y, bi.bmWidth, bi.bmHeight, &bmDC, 0, 0, SRCAND);
+					CBitmap *bmap = bmDC.SelectObject(pOldbmp);
+#endif
 				}
 				dc.Detach();
 			}
 
-			int x_offset = 4;
-			xpos = rect.left + x_offset;
-			ypos = rect.top + 3;
-
-			if (m->m_hasAttachments || HasAnyAttachment(m))
-				FieldText = ast;
-			else
-				FieldText = nul;
-
-			Charset = "UTF-8";
-			charsetId = CP_UTF8;
-
-			strW.Empty();
-			if (Str2Wide(FieldText, charsetId, strW)) {
-				::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)strW, strW.GetLength(), NULL);
-			}
-		}
-		else if ((iSubItem >= 0) && (iSubItem <= 5))
-		{
-			if (iSubItem == 0)
+			if (hasAttachents && !m_showAsPaperClip)
 			{
-				if (m->m_hasAttachments || HasAnyAttachment(m))
-					FieldText = ast;
-				else
-					FieldText = nul;
+				int x_offset = 4;
+				xpos = rect.left + x_offset;
+				ypos = rect.top + 3;
+
+				FieldText = ast;
 
 				Charset = "UTF-8";
 				charsetId = CP_UTF8;
 
+				strW.Empty();
+				if (Str2Wide(FieldText, charsetId, strW)) {
+					::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)strW, strW.GetLength(), NULL);
+				}
 			}
-			else if (iSubItem == 1)
+		}
+		else if ((iSubItem >= 1) && (iSubItem <= 5))
+		{
+			if (iSubItem == 1)
 			{
 				char datebuff[32];
 				datebuff[0] = 0;
 				if (m->m_timeDate >= 0)
 				{
 					MyCTime tt(m->m_timeDate);
-					if (!m_gmtTime) 
+					if (!m_gmtTime)
 					{
 						CString lDateTime = tt.FormatLocalTm(m_format);
 						strcpy(datebuff, (LPCSTR)lDateTime);
@@ -1879,7 +1936,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				Charset = "UTF-8";
 				charsetId = CP_UTF8;
 			}
-			else if (iSubItem == 2) 
+			else if (iSubItem == 2)
 			{
 				Charset = m->m_from_charset;
 				charsetId = m->m_from_charsetId;
@@ -1896,7 +1953,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				if (m_bLongMailAddress) {
 					FieldText = m->m_from;
 				}
-				else 
+				else
 				{
 					int fromlen = m->m_from.GetLength();
 					m_name->ClearAndResize(fromlen);
@@ -1915,9 +1972,9 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					}
 				}
 			}
-			else if (iSubItem == 3) 
+			else if (iSubItem == 3)
 			{
-				
+
 				Charset = m->m_to_charset;
 				charsetId = m->m_to_charsetId;
 
@@ -1995,9 +2052,6 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				charsetId = CP_UTF8;
 			}
 
-			DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
-			DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
-
 			if (dc.Attach(hDC))
 			{
 				if (rItem.state & LVIS_SELECTED)
@@ -2011,24 +2065,6 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
 					dc.SetBkMode(TRANSPARENT);
 					dc.SetTextColor(RGB(0, 0, 0));
-				}
-
-				if ((m->m_isOnUserSelectedMailList) && !MboxMail::IsUserMailsSelected())
-				{
-					if (iSubItem == 0)
-					{
-						CPen penRed(PS_SOLID, 2, MarkColor);  // 
-						dc.SelectObject(&penRed);
-
-						int xfrom = rect.left + 2;
-						int yfrom = rect.top + 4;
-
-						int xto = rect.left + 2;
-						int yto = rect.bottom - 6;
-
-						dc.MoveTo(xfrom, yfrom);
-						dc.LineTo(xto, yto);
-					}
 				}
 
 				dc.Detach();
@@ -3151,7 +3187,14 @@ MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 
 void NListView::SelectItem(int iItem)
 {
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CMainFrame *pFrame = 0;
+
+	//  EX_TEST 
+#if 0
+	*(char*)pFrame = 'a';
+#endif
+
+	pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (!pFrame)
 		return;
 	NMsgView *pMsgView = pFrame->GetMsgView();
@@ -3715,7 +3758,7 @@ void NListView::SelectItem(int iItem)
 	// Update layou to show/hide attachments
 	pMsgView->UpdateLayout();
 
-	MboxMail::ShowHint(HintConfig::MailSelectionHint);
+	MboxMail::ShowHint(HintConfig::MailSelectionHint, GetSafeHwnd());
 
 	if (cidArray.GetCount() || pMsgView->m_attachments.GetItemCount())
 		PostMsgCmdParamAttachmentHint();
@@ -4231,7 +4274,7 @@ void NListView::OnEditFind()
 					SwitchToMailList(IDC_FIND_LIST, FALSE);
 				}
 				m_bInFind = false;
-				MboxMail::ShowHint(HintConfig::FindDialogHint);
+				MboxMail::ShowHint(HintConfig::FindDialogHint, GetSafeHwnd());
 				return;
 			}
 			else if (w >= 0) {
@@ -4251,7 +4294,7 @@ void NListView::OnEditFind()
 	}
 	m_bInFind = false;
 
-	MboxMail::ShowHint(HintConfig::FindDialogHint);
+	MboxMail::ShowHint(HintConfig::FindDialogHint, GetSafeHwnd());
 }
 
 int NListView::CheckMatch(int i, CString &searchString)
@@ -6090,7 +6133,7 @@ void NListView::TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr)
 		addr.ClearAndResize(tolen);
 		MboxMail::splitMailAddress((LPCSTR)tmp, tolen, &name, &addr);
 		tmpAddr = addr.Data();
-		tmpAddr.Trim(" \t\"<>");
+		tmpAddr.Trim(" \t\"<>()");
 		toAddr.Append(tmpAddr);
 
 		if (posEnd < 0)
@@ -6099,6 +6142,44 @@ void NListView::TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr)
 		i++;
 		if (i < maxNumbOfAddr)
 			toAddr.Append(",");
+	}
+}
+
+void NListView::TrimToName(CString *to, CString &toName, int maxNumbOfAddr)
+{
+	SimpleString name;
+	SimpleString addr;
+	CString tmpName;
+	CString tmp;
+
+	int posBeg = 0;
+	int posEnd = 0;
+	for (int i = 0; i < maxNumbOfAddr; )
+	{
+		posEnd = to->Find("@", posBeg);
+		if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
+			posEnd = to->Find(",", posEnd + 1);
+
+		if (posEnd >= 0)
+			tmp = to->Mid(posBeg, posEnd - posBeg);
+		else
+			tmp = to->Mid(posBeg, to->GetLength());
+
+		int tolen = tmp.GetLength();
+		name.ClearAndResize(tolen);
+		addr.ClearAndResize(tolen);
+		MboxMail::splitMailAddress((LPCSTR)tmp, tolen, &name, &addr);
+
+		tmpName = name.Data();
+		tmpName.Trim(" \t\"<>()");
+		toName.Append(tmpName);
+
+		if (posEnd < 0)
+			break;
+		posBeg = posEnd + 1;
+		i++;
+		if (i < maxNumbOfAddr)
+			toName.Append(",");
 	}
 }
 
@@ -8593,6 +8674,7 @@ void NListView::OnTimer(UINT_PTR nIDEvent)
 
 #define MAIL_LIST_VERSION2  (MAIL_LIST_VERSION_BASE+2)
 
+// TODO: Please define the naming standard to end this name nightmare  !!!!!!
 int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 {
 	int ret = 1;  //OK
@@ -8648,8 +8730,8 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		return -1;
 	}
 
-	CString mboxFile = fileNameBase + fileNameExtention;
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
+	CString mboxFile = fileNameBase + fileNameExtention;  // main mbox file name
+	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;  // derived _USER.mbox mbox file name
 
 	CString mboxFileListSuffix = ".mboxlist";
 	CString mboxListFile;
@@ -8710,13 +8792,20 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		return -1;
 	}
 
-	if (!sz.readInt64(&mailFileSize)) {
+	// from SaveAsMboxListFile_v2()
+	//
+	// sz.writeInt64(MboxMail::s_fSize);
+	// _int64 mailFileSize = -1;  
+	// sz.writeInt64(mailFileSize);
+	// sz.writeInt(mailsArray->GetSize());
+
+	if (!sz.readInt64(&mailFileSize)) { // main mbox mail
 		sz.close();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
-	if (!sz.readInt64(&mboxFileSize)) {
+	if (!sz.readInt64(&mboxFileSize)) {  // derived mbox mail file
 		sz.close();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -8728,10 +8817,11 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		return -1;
 	}
 
-	_int64 nMailFileSize = FileSize(mailFile);
+	_int64 nMailFileSize = FileSize(mailFile);  // MboxMail::s_path; main mbox file
 	_int64 nMboxFileSize = -1;
+
 	if (PathFileExist(mboxFilePath))
-		nMboxFileSize = FileSize(mboxFilePath);
+		nMboxFileSize = FileSize(mboxFilePath);  // derived _USER.mbox mbox file name
 
 	// force nMboxFileSize = nMboxFileSize = -1;
 	nMboxFileSize = -1;
@@ -8883,8 +8973,11 @@ int NListView::SaveAsMboxListFile_v2()
 
 	sz.writeInt(MAIL_LIST_VERSION2);			// version
 	//sz.writeString(mboxFile);  // TODO: ??
-	sz.writeInt64(MboxMail::s_fSize);	// root mail file size
-	_int64 mailFileSize = -1;  //  FileSize(mboxFilePath);  // we don't always create new mail archive and mail list
+	// main mbox mail file size other mbox files are derived/contain subset
+	sz.writeInt64(MboxMail::s_fSize);	
+	// we don't always create new mail archive corresponding to mboxListFile/mail list
+	// mailFileSize is mboxMailFileSize corresponding to mboxListFile
+	_int64 mailFileSize = -1;  //  FileSize(mboxFilePath);  
 	sz.writeInt64(mailFileSize);	// file size
 	sz.writeInt(mailsArray->GetSize());
 
@@ -11932,7 +12025,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 	sz.writeInt(MAIL_LIST_VERSION2);			// version
 	//sz.writeString(mboxFile);  // TODO: ??
 	sz.writeInt64(MboxMail::s_fSize);	// root mail file size
-	_int64 mailFileSize = -1;  //  FileSize(mboxFilePath);  // we don't always create new mail archive and mail list
+	_int64 mailFileSize = 0; //  -1;  //  FileSize(mboxFilePath);  // we don't always create new mail archive and mail list
 	sz.writeInt64(mailFileSize);	// file size
 	sz.writeInt(0);
 
@@ -12278,6 +12371,284 @@ void NListView::PostMsgCmdParamAttachmentHint()
 
 LRESULT NListView::OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam)
 {
-	MboxMail::ShowHint(HintConfig::AttachmentConfigHint);
+	MboxMail::ShowHint(HintConfig::AttachmentConfigHint, GetSafeHwnd());
 	return 0;
+}
+
+int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
+{
+	int ret = 1;  //OK
+
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+#if 0
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		// should never be here
+		return -1;
+	}
+#endif
+
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		CString txt = _T("Folder Selected Mails List not empty. Overwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+
+	CString mboxFileNamePath = MboxMail::s_path;
+
+	if (mboxFileNamePath.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;  // Hopefully s_path will fail first
+
+
+	CString driveName;
+	CString mboxFileDirectory;
+	CString mboxFileNameBase;
+	CString mboxFileNameExtention;
+
+	MboxMail::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+
+	CString mboxFileName = mboxFileNameBase + mboxFileNameExtention;
+
+	CString folderCompletePath = driveName + mboxFileDirectory + "\\" + "Folders" + "\\" + folderPath;
+
+	CString folderNameCompletePath = folderCompletePath + "\\" + folderName + ".mbox.mboxlist";
+
+	if (!PathFileExist(folderNameCompletePath))
+	{
+		CString txt = _T("Mail List File \"") + folderNameCompletePath;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	SerializerHelper sz(folderNameCompletePath);
+	if (!sz.open(FALSE)) {
+		CString txt = _T("Could not open \"") + folderNameCompletePath;
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	int version;
+	_int64 mailFileSize;
+	_int64 mboxFileSize;
+	int mailListCnt;
+
+	CString txt = _T("Mail list file\n\"") + folderNameCompletePath;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease remove the file.");
+
+	if (!sz.readInt(&version)) {
+		sz.close();
+		return -1;
+	}
+
+	if (version != MAIL_LIST_VERSION2)
+	{
+		sz.close();
+
+		CString text = _T("Mail list file\n\"") + folderNameCompletePath;
+		CString strVersion;
+		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
+		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
+		text += strVersion + "\".\nCan't reload.\nPlease remove the file.";
+
+		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt64(&mailFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt64(&mboxFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	if (!sz.readInt(&mailListCnt)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	_int64 nMailFileSize = FileSize(mboxFileNamePath);
+
+
+	if ((mailListCnt < 0) || (mailListCnt > MboxMail::s_mails_ref.GetCount()) ||
+		(mailFileSize != nMailFileSize))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	BOOL errorDoNothing = FALSE;
+	BOOL verifyOnly = TRUE;
+	int pos = sz.GetReadPointer();
+	ret = PopulateFolderMailArray(sz, mailListCnt, verifyOnly);
+	if (ret > 0) {
+		verifyOnly = FALSE;
+		sz.SetReadPointer(pos);
+		ret = PopulateFolderMailArray(sz, mailListCnt, verifyOnly);
+	}
+	else
+	{
+		sz.close();
+		CString txt = _T("Mail list file\n\"") + folderNameCompletePath;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
+		return -1; // do nothing
+	}
+
+	sz.close();
+
+	if (ret < 0)
+	{
+		MboxMail::s_mails_folder.SetSizeKeepData(0);
+
+		CString txt = _T("Mail list file\n\"") + folderNameCompletePath;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+	else
+	{
+		MboxMail::SortByDate(&MboxMail::s_mails_folder);
+		if (MboxMail::s_mails_folder.GetCount() > 0)
+			MboxMail::m_folderMails.m_lastSel = 0;
+		else
+			MboxMail::m_folderMails.m_lastSel = -1;
+		MboxMail::m_folderMails.b_mails_which_sorted = 1;
+
+		if (MboxMail::IsFolderMailsSelected())
+		{
+			SwitchToMailList(IDC_FOLDER_LIST, TRUE);
+		}
+		else if (MboxMail::IsAllMailsSelected())
+		{
+			SwitchToMailList(IDC_FOLDER_LIST, FALSE);
+		}
+	}
+
+	return ret;
+}
+
+int NListView::PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly)
+{
+	int ret = 1;
+
+	MboxMail *m;
+
+	_int64 startOff;
+	int length;
+	int index;
+	int contentDetailsArrayCnt;
+
+	if (!verifyOnly)
+		MboxMail::s_mails_folder.SetSize(mailListCnt);
+
+	int i = 0;
+	for (i = 0; i < mailListCnt; i++)
+	{
+		if (!sz.readInt64(&startOff))
+			break;
+		if (!sz.readInt(&length))
+			break;
+		if (!sz.readInt(&index))
+			break;
+		if (!sz.readInt(&contentDetailsArrayCnt))
+			break;
+
+		if ((index < 0) || (index >= MboxMail::s_mails_ref.GetCount()))
+		{
+			ret = -1;
+			break;
+		}
+
+		m = MboxMail::s_mails_ref[index];
+		if ((m->m_startOff != startOff) ||
+			(m->m_length != length) ||
+			(m->m_index != index) ||
+			(m->m_ContentDetailsArray.size() != contentDetailsArrayCnt))
+		{
+			ret = -1;
+			break;
+		}
+
+		if (!verifyOnly)
+			MboxMail::s_mails_folder[i] = m;
+
+		int deb = 1;
+	}
+
+	if (!verifyOnly)
+	{
+		if (ret > 0)
+			MboxMail::s_mails_folder.SetSizeKeepData(i);
+		else
+			MboxMail::s_mails_folder.SetSizeKeepData(0);
+	}
+
+
+	return ret;
+}
+
+int NListView::CopyMailsToFolders()
+{
+	CCheckListBoxDlg dlg;
+	dlg.m_title = "Select Folders";
+	for (int ii = 0; ii < 100; ii++)
+	{
+		dlg.m_InList.Add("11111111111xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+	}
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	NTreeView *pTreeView = 0;
+	if (pFrame)
+		pTreeView = pFrame->GetTreeView();
+
+	CArray<CString> folderList;
+	if (pTreeView)
+	{
+		CString mboxFileName;
+
+		CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mboxFileName);
+
+		pTreeView->CreateFlatFolderList(mboxFileName, folderList);
+	}
+
+	dlg.m_InList.Copy(folderList);
+
+	int nResponse = dlg.DoModal();
+	if (nResponse == IDOK)
+	{
+		int i;
+		for (i = 0; i < dlg.m_OutList.GetCount(); i++)
+		{
+			CString &s = dlg.m_OutList[i];
+			int deb = 1;
+		}
+	}
+	else if (nResponse == IDCANCEL)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with Cancel
+	}
+	return 1;
 }

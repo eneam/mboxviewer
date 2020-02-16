@@ -31,6 +31,8 @@
 
 #pragma once
 
+#include "CustomNameTemplDlg.h"
+
 
 // PrintConfigDlg dialog
 
@@ -58,12 +60,28 @@ struct NamePatternParams
 	int m_bAddBackgroundColorToMailHeader;
 	int m_bAddBreakPageAfterEachMailInPDF;
 	int m_bKeepMailBodyBackgroundColor;
+	int m_bCustomFormat;
+
+	DWORD m_nAddressPartsBitmap;
+
+	struct NameTemplateCnf m_nameTemplateCnf;
 
 	void SetDflts();
 	void Copy(NamePatternParams &src);
 	void UpdateRegistry(NamePatternParams &current, NamePatternParams &updated);
 	void LoadFromRegistry();
+	void AddressParts2Bitmap();
+	void Bitmap2AddressParts();
+
 	static void UpdateFilePrintconfig(struct NamePatternParams &namePatternParams);
+
+	enum {
+		TemplFromUsername = 1,
+		TemplFromDomain = 2,
+		TemplToUsername = 3,
+		TemplToDomain = 4,
+		TemplReplaceWhiteWithUnderscore = 5
+	};
 };
 
 class PrintConfigDlg : public CDialogEx
@@ -82,6 +100,8 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
+
+	void EnableNonCustomWindows(BOOL enable);
 public:
 	struct NamePatternParams m_NamePatternParams;
 
@@ -92,6 +112,9 @@ public:
 	afx_msg void OnBnClickedPrtPageSetp();
 	afx_msg void OnBnClickedHtml2pdfScriptType();
 	afx_msg void OnBnClickedRadio3();
+
+	afx_msg void OnBnClickedCustomTemplate();
+	afx_msg void OnBnClickedSetCustomTemplate();
 };
 
 #endif _PRINT_CONFIG_DLG_

@@ -94,13 +94,12 @@ protected:
 	// Generated message map functions
 	//{{AFX_MSG(CFindDlg)
 	virtual void OnOK();
+	virtual BOOL OnInitDialog();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:
-	//virtual BOOL OnInitDialog();
 
 	afx_msg void OnBnClickedFilterDates();
-	afx_msg BOOL OnInitDialog();
 	afx_msg void OnBnClickedCheckFindAll();
 	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);

@@ -87,7 +87,7 @@ public:
 	//{{AFX_VIRTUAL(CFindAdvancedDlg)
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//virtual BOOL OnInitDialog();
+	virtual BOOL OnInitDialog();
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -101,7 +101,6 @@ protected:
 public:
 
 	afx_msg void OnBnClickedFilterDates();
-	afx_msg BOOL OnInitDialog();
 	afx_msg void OnBnClickedEditSetAllWhole();
 	afx_msg void OnBnClickedEditSetAllCase();
 	afx_msg void OnBnClickedEditReset();

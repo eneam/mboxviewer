@@ -2,6 +2,18 @@
 Changes
 ---
 
+v 1.0.3.7
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Submitted unverfied fix to hopefully resolve rare crash when parsing mbox file;
+ - Added logging to a file of two raw mails upon catching exception;
+ - Added logging of the stack trace upon catching exception by the separate instrumented version of the mbox viewer;
+ - Added HELP.txt to describe enhancements to help to speed up the resolution of execution exceptions;
+ - Enhanced performance of internal Picture Viewer when resizing images;
+ - Replaced the star * character as the attachment indicator with the industry standard paper clip;
+ - Enhanced to assure that the Hint Message Box always stays on top of the main window;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.6
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

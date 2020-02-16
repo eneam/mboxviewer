@@ -47,6 +47,11 @@
 
 extern const char *sz_Software_mboxview;
 
+// Define below in single location if more user messages are implemented
+#define WM_CMD_PARAM_FILE_NAME_MESSAGE  (WM_APP + 1)
+#define WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE  (WM_APP + 2)
+#define WM_CMD_PARAM_GENERAL_HINT_MESSAGE  (WM_APP + 3)
+
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:
 // See mboxview.cpp for the implementation of this class
