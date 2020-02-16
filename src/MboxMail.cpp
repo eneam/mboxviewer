@@ -638,13 +638,11 @@ bool IsFromValidDelimiter(char *p, char *e)
 			digitCount++;
 		else  if (c == '@')
 			atCount++;
-#if 1
 		else if (c == ' ')
 		{
 			if (strncmpUpper2Lower(p, e, "at ", 3) == 0)
 				atCount++;
 		}
-#endif
 	}
 
 	if ((colonCount >= 2) && (digitCount >= 6) && (atCount > 0))
@@ -7501,61 +7499,14 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 		}
 		else if (labelArray[i].CompareNoCase("%SUBJECT%") == 0)
 		{
-#if 0
-			int subjLengthAllowed = maxFileNameLength - fileName.GetLength();  // 5 is 
-			CString idLabel = "%UNIQUE_ID%";
-			if (TemplateFormatHasLabel(idLabel, labelArray) == TRUE)
-			{
-				subjLengthAllowed -= uID.GetLength() + 6;
-			}
-			if (subjLengthAllowed < 0)
-				subjLengthAllowed = 0;
+			int lengthAvailable = maxFileNameLength - fileName.GetLength();
+			if (lengthAvailable < 0)
+				lengthAvailable = 0;
+			int subjectLength = m->m_subj.GetLength();
+			if (subjectLength > lengthAvailable)
+				subjectLength = lengthAvailable;
 
-			int subjLength = m->m_subj.GetLength();
-			if (subjLengthAllowed > subjLength)
-				subjLengthAllowed = subjLength;
-
-			if (subjLengthAllowed > 0)
-			{
-				// TODO: create function
-				int outCnt = 0;
-				int ignoreCnt = 0;
-				int i;
-				for (i = 0; i < subjLength; i++)
-				{
-					if (outCnt >= subjLengthAllowed)
-						break;
-
-					char c = m->m_subj.GetAt(i);
-					unsigned char cc = c;
-
-					if ((c >= 32) && (cc < 127) && isalnum(c))
-					//if (c >= 32) 
-					{
-						fileName.AppendChar(c);
-						allowUnderscore = TRUE;
-						outCnt++;
-					}
-					else if (allowUnderscore)
-					{
-						fileName.AppendChar('_');
-						allowUnderscore = FALSE;
-						outCnt++;
-					}
-					else
-						ignoreCnt++;
-				}
-			}
-#else
-		int lengthAvailable = maxFileNameLength - fileName.GetLength();
-		if (lengthAvailable < 0)
-			lengthAvailable = 0;
-		int subjectLength = m->m_subj.GetLength();
-		if (subjectLength > lengthAvailable)
-			subjectLength = lengthAvailable;
-
-		fileName.Append(m->m_subj, subjectLength);
-#endif
+			fileName.Append(m->m_subj, subjectLength);
 		}
 		else if (labelArray[i].CompareNoCase("%UNIQUE_ID%") == 0)
 		{
