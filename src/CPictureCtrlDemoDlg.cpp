@@ -1,3 +1,31 @@
+//
+//////////////////////////////////////////////////////////////////
+//
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives..
+//
+// Source code and executable can be downloaded from
+//  https://sourceforge.net/projects/mbox-viewer/  and
+//  https://github.com/eneam/mboxviewer
+//
+//  Copyright(C) 2019  Enea Mansutti, Zbigniew Minciel
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the version 3 of GNU Affero General Public License
+//  as published by the Free Software Foundation; 
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU
+//  Library General Public License for more details.
+//
+//  You should have received a copy of the GNU Library General Public
+//  License along with this program; if not, write to the
+//  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+//  Boston, MA  02110 - 1301, USA.
+//
+//////////////////////////////////////////////////////////////////
+//
+
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////
 // CPictureCtrlDemoDlg.cpp
@@ -17,6 +45,8 @@
 
 #include "stdafx.h"
 #include "afxstr.h"
+#include "FileUtils.h"
+#include "TextUtilsEx.h"
 #include "mboxview.h"
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
@@ -27,30 +57,25 @@
 #define new DEBUG_NEW
 #endif
 
-CString GetmboxviewTempPath(char *name = 0);
-
 // CCPictureCtrlDemoDlg-Dialogfeld
 
-CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CString *attachmentName, CWnd* pParent /*=NULL*/)
+CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pParent /*=NULL*/)
 	: CDialogEx(CCPictureCtrlDemoDlg::IDD, pParent), m_picCtrl(this)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
-	CString fpath = GetmboxviewTempPath();
+	CStringW fpath = FileUtils::GetmboxviewTempPathW();
 	LoadImageFileNames(fpath);
 	for (int i = 0; i < m_ImageFileNameArray.GetSize(); i++)
 	{
-		const char *fullFilePath = m_ImageFileNameArray[i]->operator LPCSTR();
-		char *fileName = new char[m_ImageFileNameArray[i]->GetLength() + 1];
-		strcpy(fileName, fullFilePath);
-		PathStripPath(fileName);
+		const wchar_t *fullFilePath = m_ImageFileNameArray[i]->operator LPCWSTR();
+		CStringW fileName;
+		FileUtils::CPathStripPathW(fullFilePath, fileName);
 
 		if (attachmentName->Compare(fileName) == 0) {
 			m_ImageFileNameArrayPos = i;
-			delete[] fileName;
 			break;
 		}
-		delete[] fileName;
 	}
 
 	m_picCtrl.m_bFixOrientation = TRUE;
@@ -198,17 +223,20 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile()
 		(m_ImageFileNameArrayPos < 0))
 		return;
 
-	// fname != 0
-	CString *fname = m_ImageFileNameArray[m_ImageFileNameArrayPos];
+	// filePath != 0
+	CStringW *filePath = m_ImageFileNameArray[m_ImageFileNameArrayPos];
 
-	char *fileName = new char[fname->GetLength() + 1];
-	strcpy(fileName, fname->GetBuffer());
-	PathStripPath(fileName);
+	CStringW fileName;
+	LPCWSTR fPath = filePath->operator LPCWSTR();
+	FileUtils::CPathStripPathW((wchar_t*)fPath, fileName);
 
 	//Load an Image from File
-	SetWindowText(fileName);
-	delete[] fileName;
-	m_picCtrl.LoadFromFile(*fname, m_rotateType, m_Zoom);
+	CString fileNameA;
+	DWORD error;
+	BOOL retW2A = TextUtilsEx::Wide2Ansi(fileName, fileNameA, error);
+	SetWindowText(fileNameA);
+
+	m_picCtrl.LoadFromFile(*filePath, m_rotateType, m_Zoom);
 }
 
 void CCPictureCtrlDemoDlg::OnBnClickedPrev()
@@ -328,40 +356,42 @@ BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
 
 int __cdecl FooPred(void const * first, void const * second)
 {
-	CString *f = *((CString**)first);
-	CString *s = *((CString**)second);
-	int ret = strcmp(f->operator LPCSTR(), s->operator LPCSTR());
+	CStringW *f = *((CStringW**)first);
+	CStringW *s = *((CStringW**)second);
+	int ret = wcscmp(f->operator LPCWSTR(), s->operator LPCWSTR());
 	return ret;
 }
 
-BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CString & dir)
+BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CStringW & dir)
 {
-	WIN32_FIND_DATA FileData;
+	WIN32_FIND_DATAW FileData;
 	HANDLE hSearch;
-	CString	appPath;
+	CStringW	appPath;
 	BOOL	bFinished = FALSE;
 
 	// Start searching for all files in the current directory.
-	CString searchPath = dir + CString("*.*");
-	hSearch = FindFirstFile(searchPath, &FileData);
+	CStringW searchPath = dir + CStringW(L"*.*");
+	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE("No files found.");
+		TRACE(_T("No files found."));
 		return FALSE;
 	}
 	while (!bFinished) {
-		if (!(strcmp(&FileData.cFileName[0], ".") == 0 || strcmp(&FileData.cFileName[0], "..") == 0)) {
-			PTSTR ext = PathFindExtension(&FileData.cFileName[0]);
-			CString cext = ext;
-			if (isSupportedPictureFile(&FileData.cFileName[0]))
+		if (!(wcscmp(&FileData.cFileName[0], L".") == 0 || wcscmp(&FileData.cFileName[0], L"..") == 0)) {
+			CStringW ext = PathFindExtensionW(&FileData.cFileName[0]);
+			CString extA;
+			DWORD error;
+			BOOL retW2A = TextUtilsEx::Wide2Ansi(ext, extA, error);
+			if (isSupportedPictureFile(extA))
 			{
 				if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) {
-					CString	*fileFound = new CString;
-					*fileFound = dir + "\\" + &FileData.cFileName[0];
+					CStringW	*fileFound = new CStringW;
+					*fileFound = dir + &FileData.cFileName[0];
 					m_ImageFileNameArray.Add(fileFound);
 				}
 			}
 		}
-		if (!FindNextFile(hSearch, &FileData))
+		if (!FindNextFileW(hSearch, &FileData))
 			bFinished = TRUE;
 	}
 	FindClose(hSearch);
@@ -400,8 +430,8 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 
 	if ((m_ImageFileNameArrayPos >= 0) && (m_ImageFileNameArrayPos <= m_ImageFileNameArray.GetSize()))
 	{
-		const char *fullFilePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCSTR();
-		HINSTANCE result = ShellExecute(NULL, _T("print"), fullFilePath, NULL, NULL, SW_SHOWNORMAL);
+		const wchar_t *fullFilePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCWSTR();
+		HINSTANCE result = ShellExecuteW(NULL, L"print", fullFilePath, NULL, NULL, SW_SHOWNORMAL);
 		if ((UINT)result <= MaxShellExecuteErrorCode) {
 			CString errorText;
 			ShellExecuteError2Text((UINT)result, errorText);

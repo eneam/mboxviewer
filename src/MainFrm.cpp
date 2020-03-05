@@ -30,6 +30,9 @@
 //
 
 #include "stdafx.h"
+#include "FileUtils.h"
+#include "TextUtilsEx.h"
+#include "HtmlUtils.h"
 #include "Profile.h"
 #include "mboxview.h"
 
@@ -50,25 +53,6 @@
 // Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
 // Postponed to the next relase 1.0.3.3 since larger effort is needed
 ///////
-
-BOOL BrowseToFile(LPCTSTR filename)
-{
-	BOOL retval = TRUE;
-
-	// It appears m_ie.Create  in CBrowser::OnCreate calls CoInitilize
-	//Com_Initialize();
-
-	ITEMIDLIST *pidl = ILCreateFromPath(filename);
-	if (pidl) {
-		HRESULT  ret = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
-		if (ret != S_OK)
-			retval = FALSE;
-		ILFree(pidl);
-	}
-	else
-		retval = FALSE;
-	return retval;
-}
 
 #define MaxShellExecuteErrorCode 32
 int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h)
@@ -579,8 +563,6 @@ BOOL CMainFrame::OnEraseBkgnd(CDC* pDC)
 	return TRUE;
 }
 
-BOOL PathFileExist(LPCSTR path);
-
 void CMainFrame::OnFileExportToCsv()
 {
 	// TODO: Add your command handler code here
@@ -660,13 +642,13 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
-				if (PathFileExist(path)) { // likely :) 
+				if (FileUtils::PathDirExists(path)) { // likely :) 
 					CString text = "Created file\n\n" + csvFileName;
 					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
-						if (BrowseToFile(csvFileName) == FALSE) {
+						if (FileUtils::BrowseToFile(csvFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
 							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
@@ -697,8 +679,17 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 void CMainFrame::OnViewCodepageids()
 {
 	// TODO: Add your command handler code here
-	int showCodePageTable();
-	int ret = showCodePageTable();
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (!path.IsEmpty())
+	{
+		if (!FileUtils::PathDirExists(path)) {
+			return;
+		}
+	}
+	else
+		return;
+	int ret = TextUtilsEx::showCodePageTable(path);
 }
 
 // Called when File->"Print To"->CSV
@@ -774,13 +765,13 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
-				if (PathFileExist(path)) { // likely :) 
+				if (FileUtils::PathDirExists(path)) { // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
 					OpenContainingFolderDlg dlg(txt);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
-						if (BrowseToFile(textFileName) == FALSE) {
+						if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
 							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
@@ -860,7 +851,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
-				if (PathFileExist(path))
+				if (FileUtils::PathDirExists(path))
 				{ // likely :) 
 					CString txt = "Created file\n\n" + textFileName;
 					if (createFileOnly) {
@@ -894,7 +885,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						INT_PTR nResponse = dlg.DoModal();
 						if (nResponse == IDOK)
 						{
-							if (BrowseToFile(textFileName) == FALSE) {
+							if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 								HWND h = GetSafeHwnd();
 								HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 								CheckShellExecuteResult(result, h);
@@ -990,7 +981,7 @@ int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderNa
 	fileName.Append(textFileName);
 	CString newSuffix;
 	newSuffix.Append(".pdf");
-	MboxMail::UpdateFileExtension(fileName, newSuffix);
+	FileUtils::UpdateFileExtension(fileName, newSuffix);
 
 	CString htmFileName;
 	htmFileName.Append(textFileName);
@@ -1429,7 +1420,7 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if (!path.IsEmpty())
 	{
-		if (!PathFileExist(path)) {
+		if (!FileUtils::PathDirExists(path)) {
 			return;
 		}
 	}
@@ -1684,7 +1675,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if (!path.IsEmpty())
 	{
-		if (!PathFileExist(path)) {
+		if (!FileUtils::PathDirExists(path)) {
 			return;
 		}
 	}
@@ -2132,7 +2123,7 @@ int CMainFrame::MergeArchiveFiles()
 	// No need to enforce the below
 	if (!inFolderPath.IsEmpty())
 	{
-		if (!PathFileExist(inFolderPath)) {
+		if (!FileUtils::PathDirExists(inFolderPath)) {
 			return -1;
 		}
 	}
@@ -2162,7 +2153,7 @@ restart:
 		{
 			fileCount++;
 			strFilePath = dlgFile.GetNextPathName(pos);
-			if (!PathFileExist(strFilePath))
+			if (!FileUtils::PathFileExist(strFilePath))
 			{
 				CString txt = _T("File path invalid.\n");
 				txt.Append(strFilePath);
@@ -2188,7 +2179,7 @@ restart:
 		CString filePath = outFolderPath + "\\" + fileName;
 		CString fileExtension = ::PathFindExtension(fileName);
 		CString fileName2 = ::PathFindFileName(filePath);
-		//MboxMail::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+		//FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
 		if (ret == TRUE) 
 		{
 			CFile fp;
@@ -2205,7 +2196,7 @@ restart:
 			{
 				strFilePath = dlgFile.GetNextPathName(pos);
 				// Check again anyway
-				if (PathFileExist(strFilePath))
+				if (FileUtils::PathFileExist(strFilePath))
 				{
 					CFile fp_input;
 					if (!fp_input.Open(strFilePath, CFile::modeRead)) {
@@ -2336,7 +2327,7 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 	if (m_NamePatternParams.m_bScriptType == 0)
 	{
 		path = m_NamePatternParams.m_ChromeBrowserPath;
-		if (!PathFileExist(path))
+		if (!FileUtils::PathFileExist(path))
 		{
 			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update the setup.");
 			return -1;
@@ -2345,7 +2336,7 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 	else
 	{
 		path = m_NamePatternParams.m_UserDefinedScriptPath;
-		if (!PathFileExist(path))
+		if (!FileUtils::PathFileExist(path))
 		{
 			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update the setup.");
 			return -1;
@@ -2378,7 +2369,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 
 	CString newSuffix;
 	newSuffix.Append(".pdf");
-	MboxMail::UpdateFileExtension(pdfFileName, newSuffix);
+	FileUtils::UpdateFileExtension(pdfFileName, newSuffix);
 
 	BOOL delStatus = DeleteFile(pdfFileName);
 	if (delStatus == FALSE) {
@@ -2393,7 +2384,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		// args no change
 		path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
-		if (!PathFileExist(path)) {
+		if (!FileUtils::PathFileExist(path)) {
 			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update setup.");
 			int deb = 1;
 			return -1;
@@ -2406,7 +2397,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		else
 			args = "\"" + htmFileName + "\"" + " " + "--no-background";
 		path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
-		if (!PathFileExist(path)) {
+		if (!FileUtils::PathFileExist(path)) {
 			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
 			int deb = 1;
 			return -1;
@@ -2594,7 +2585,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 
 			TRACE("FILE=%s\n", strFilePath);
 
-			BOOL retval = CPathGetPath(strFilePath, folder);
+			BOOL retval = FileUtils::CPathGetPath(strFilePath, folder);
 			break;
 		}
 	}
@@ -2649,7 +2640,7 @@ BOOL MySelectFolder::OnFileNameOK()
 
 		TRACE("FILE=%s\n", strFilePath);
 
-		BOOL retval = CPathGetPath(strFilePath, folder);
+		BOOL retval = FileUtils::CPathGetPath(strFilePath, folder);
 		break;
 	}
 

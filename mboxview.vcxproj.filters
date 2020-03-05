@@ -130,6 +130,21 @@
     <ClCompile Include="src\CustomNameTemplDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\CAttachments.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FileUtils.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextUtilsEx.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HtmlUtils.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MimeHelper.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -267,6 +282,21 @@
     <ClInclude Include="src\CustomNameTemplDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\CAttachments.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileUtils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TextUtilsEx.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\HtmlUtils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MimeHelper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.markdown" />
@@ -309,5 +339,10 @@
     <Text Include="README.txt" />
     <Text Include="LICENSE.txt" />
     <Text Include="HELP.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\print.bmp" />
+    <Image Include="res\select_folder.bmp" />
+    <Image Include="res\PaperClip.bmp" />
   </ItemGroup>
 </Project>

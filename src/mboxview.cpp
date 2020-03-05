@@ -32,6 +32,8 @@
 #include "stdafx.h"
 #include "ctype.h"
 #include "locale.h"
+#include "FileUtils.h"
+#include "TextUtilsEx.h"
 #include "mboxview.h"
 #include "profile.h"
 #include "LinkCursor.h"
@@ -110,59 +112,6 @@ BEGIN_MESSAGE_MAP(CmboxviewApp, CWinApp)
 //	ON_UPDATE_COMMAND_UI(ID_FILE_MRU_FILE1, OnUpdateRecentFileMenu)
 END_MESSAGE_MAP()
 
-bool PathExists(LPCSTR file)
-{
-	WIN32_FIND_DATA fd;
-	ZeroMemory(&fd, sizeof(fd));
-	HANDLE h = FindFirstFile(file, &fd);
-	if( h == INVALID_HANDLE_VALUE )
-		return false;
-	bool bRes = false;
-	bRes = ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-	FindClose(h);
-	return bRes;
-}
-
-// duplicated from NListView.cpp , may need to generalize
-BOOL _PathFileExist(LPCSTR path)
-{
-	DWORD fa = GetFileAttributes(path);
-
-	if (fa != (DWORD)0xFFFFFFFF)
-		return TRUE;
-	return FALSE;
-}
-
-BOOL isNumeric(CString &str) {
-	int i = 0;
-	if (str[i] == '-')
-		i++;
-	if (i == str.GetLength())
-		return FALSE;
-	for (; i < str.GetLength(); i++) {
-		if (!_istdigit(str[i])) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW)
-{
-	int len = res.GetLength() * 4 + 2;
-	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
-	int len1 = MultiByteToWideChar(CodePage, 0, res, res.GetLength(), buff, len);
-	if (len1 == 0) {
-		free(buff);
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		return FALSE;
-	}
-	buff[len1] = 0;
-	m_strW = buff;
-	free(buff);
-	return TRUE;
-}
 
 void Com_Initialize()
 {
@@ -190,7 +139,7 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 
 	strName.Format("MRU: open file (%d) '%s'.\n", (nIndex) + 1,(LPCTSTR)(*m_pRecentFileList)[nIndex]);
 
-	if( ! PathExists((*m_pRecentFileList)[nIndex]) ) {
+	if( ! FileUtils::PathDirExists((*m_pRecentFileList)[nIndex]) ) {
 		m_pRecentFileList->Remove(nIndex);
 		return;
 	}
@@ -214,8 +163,7 @@ CmboxviewApp::CmboxviewApp()
 	//test_enc();
 
 
-
-
+	//FileUtils FU;  FU.UnitTest();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -418,7 +366,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			_tsplitpath(mailFile, drive, dir, fname, ext);
 			if (_tcslen(dir) != 0) {
 				CString txt;
-				if (!_PathFileExist(mailFile)) {
+				if (!FileUtils::PathFileExist(mailFile)) {
 					CString txt = _T("Nonexistent File \"") + mailFile;
 					txt += _T("\".\nDo you want to continue?");
 					HWND h = NULL; // we don't have any window yet  
@@ -458,7 +406,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) {
 			CString barDelay = lpszParam + 19;
 			// Validate
-			if (!isNumeric(barDelay))
+			if (!TextUtilsEx::isNumeric(barDelay))
 			{
 				CString txt = _T("Invalid Command Line Option Value \"");
 				CString opt = lpszParam;

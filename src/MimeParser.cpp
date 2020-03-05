@@ -38,21 +38,11 @@
 
 
 #include "stdafx.h"
+#include "TextUtilsEx.h"
 #include "MimeParser.h"
 
 #include "MainFrm.h"
 #include "MboxMail.h"
-
-
-int GetMessageId(CString &fieldLine, int startPos, CString &value);
-int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
-int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-int   strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-int strncmpUpper2Lower(char *any, int anyLength, const char *lower, int lowerlength);
-int strncmpExact(char *any, char *end, const char *lower, int lowerlength);
-char * GetMultiLine(char *p, char *e, CString &line);
-int GetFieldValue(CString &fieldLine, int startPos, CString &value);
-
 
 void MailHeader::Clear()
 {
@@ -143,18 +133,18 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			return headLength;
 			break;  // end of header
 		}
-		else if (strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
 		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cTypeLen, m_ContentType);
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cTypeLen, m_ContentType);
 
-			if (strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cMultipart, cMultipartLen) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cMultipart, cMultipartLen) == 0)
 			{
 				m_IsMultiPart = true;
-				int ret = GetParamValue(line, cTypeLen, cBoundary, cBoundaryLen, m_Boundary);
+				int ret = MimeParser::GetParamValue(line, cTypeLen, cBoundary, cBoundaryLen, m_Boundary);
 
 			}
-			else if (strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cText, cTextLen) == 0)
+			else if (TextUtilsEx::strncmpUpper2Lower((char*)(LPCSTR)m_ContentType, m_ContentType.GetLength(), cText, cTextLen) == 0)
 			{
 				m_IsText = true;
 				if (m_ContentType.Compare("text") == 0)
@@ -167,84 +157,88 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 					m_IsTextHtml = true;
 					m_IsTextPlain = false;
 				}
-				int ret = GetParamValue(line, cTypeLen, cCharset, cCharsetLen, m_Charset);
+				int ret = MimeParser::GetParamValue(line, cTypeLen, cCharset, cCharsetLen, m_Charset);
 				if (!m_Charset.IsEmpty()) {
-					m_PageCode = MboxMail::Str2PageCode(m_Charset);
+					m_PageCode = TextUtilsEx::Str2PageCode(m_Charset);
 					if (m_PageCode > CP_UTF8)
 						int deb = 1;
 					if ((m_PageCode == 0) && m_IsTextHtml)
 						int deb = 1;
 				}
-				ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
+				ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
 				if (!m_Name.IsEmpty()) {
 					CString charset;
 					UINT charsetId = 0;
-					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
+					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId);
 					// TODO: what about charset and charsetId :)
 					m_Name = Name;
+					m_NamePageCode = charsetId;
 					//m_IsAttachment = true;  // TODO: Caller need to decide
 				}
 				int deb = 1;
 			}
 			else
 			{
-				int ret = GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
+				int ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
 				if (!m_Name.IsEmpty()) {
 					CString charset;
 					UINT charsetId = 0;
-					CString Name = MboxMail::DecodeString(m_Name, charset, charsetId);
+					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId);
 					// TODO: what about charset and charsetId :)
 					m_Name = Name;
+					m_NamePageCode = charsetId;
 					//m_IsAttachment = true;  // TODO: Caller need to decide
 				}
 			}
 		}
-		else if (strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
 		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cTransferEncodingLen, m_TransferEncoding);
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cTransferEncodingLen, m_TransferEncoding);
 		}
-		else if (strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
 		{
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cDispositionLen, m_Disposition);
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cDispositionLen, m_Disposition);
 
-			if (strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0)
 			{
 				// TODO:  Maybe. There are plenty of irregular mails and they can be considered as inline and 
 				// possibly both inline and attachment
 				m_IsAttachment = true;
 			}
 			// attachment type or not, get the filename/attachment name 
-			int ret = GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
+			int ret = MimeParser::GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
 			if (!m_AttachmentName.IsEmpty()) {
 				CString charset;
 				UINT charsetId = 0;
-				CString attachmentName = MboxMail::DecodeString(m_AttachmentName, charset, charsetId);
+				CString attachmentName = TextUtilsEx::DecodeString(m_AttachmentName, charset, charsetId);
 				// TODO: what about charset and charsetId :)
+
+				m_AttachmentNamePageCode = charsetId;
 				m_AttachmentName = attachmentName;
 			}
 		}
-		else if (strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cMsgIdLen, m_MessageId);
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetMessageId(line, cMsgIdLen, m_MessageId);
 		}
-		else if (strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cMsgIdLen, m_ContentId);
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetMessageId(line, cMsgIdLen, m_ContentId);
 			m_ContentId.Trim();
 			m_ContentId.Trim("<>");
 
 		}
-		else if (strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
-			p = GetMultiLine(p, e, line);
-			GetMessageId(line, cReplyIdLen, m_ReplyId);
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetMessageId(line, cReplyIdLen, m_ReplyId);
 		}
-		else if (strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
 		{
 			char *p_save = p;
-			p = GetMultiLine(p, e, line);
-			GetFieldValue(line, cContentLocationLen, m_ContentLocation);
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cContentLocationLen, m_ContentLocation);
 			if (m_ContentLocation.GetLength() > 50)
 				int deb = 1;
 		}
@@ -368,9 +362,9 @@ char* MailBody::FindBoundary(const char* pszBegin, const char* pszEnd, const cha
 	register char *e = (char*)pszEnd;
 	while (p < e)
 	{
-		if (strncmpExact(p, e, bPrefix, 2) == 0)
+		if (TextUtilsEx::strncmpExact(p, e, bPrefix, 2) == 0)
 		{
-			if (strncmpExact(&p[2], e, boundary, boundaryLength) == 0)
+			if (TextUtilsEx::strncmpExact(&p[2], e, boundary, boundaryLength) == 0)
 				return  p;
 		}
 		p = EatNLine(p, e);
@@ -448,8 +442,6 @@ void MailBody::DeleteAll()
 	m_bodyDataLength = 0;
 }
 
-
-
 // search for string2 in string1 (strstr)
 const char* MailBody::FindString(const char* pszStr1, const char* pszStr2, const char* pszEnd)
 {
@@ -466,4 +458,168 @@ const char* MailBody::FindString(const char* pszStr1, const char* pszStr2, const
 		pszStr1++;
 	}
 	return NULL;
+}
+
+#if 0
+
+August 13, 1982 - 5 - RFC #822
+
+UNFOLDING Long Lines
+
+The process of moving  from  this  folded   multiple - line
+representation  of a header field to its single line represen -
+tation is called "unfolding".Unfolding  is  accomplished  by
+regarding   CRLF   immediately  followed  by  a  LWSP - char  as
+equivalent to the LWSP - char.
+
+Note:  While the standard  permits  folding  wherever  linear -
+	white - space is permitted, it is recommended that struc -
+	tured fields, such as those containing addresses, limit
+	folding  to higher - level syntactic breaks.For address
+	fields, it  is  recommended  that  such  folding  occur
+	between addresses, after the separating comma.
+#endif
+
+char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
+{
+	// TODO: not the most efficient implementation
+	char *p_beg = p;
+	p = EatNewLine(p, e);
+
+	char *ss = line.GetBufferSetLength(p - p_beg);
+	::memcpy(ss, p_beg, p - p_beg);
+
+	line.TrimLeft();
+	line.TrimRight("\r\n");
+
+	if (line.IsEmpty())
+		return p;
+
+	char c = line.GetAt(line.GetLength() - 1);
+	while ((p < e) && ((*p == ' ') || (*p == '\t')))
+	{
+		if ((c == ' ') || (c == '\t'))
+			int deb = 1;
+
+		char *p_next_beg = p;
+		p = EatNewLine(p, e);
+
+		CString nextLine;
+		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
+		::memcpy(ss, p_next_beg, p - p_next_beg);
+		nextLine.TrimLeft();
+		nextLine.TrimRight("\r\n");
+
+		//line += " " + nextLine;  // this is according to spec but it doesn't work in many cases
+		line += nextLine;
+	}
+	line.Trim();
+	return p;
+};
+
+int MimeParser::GetFieldValue(CString &fieldLine, int startPos, CString &value)
+{
+	int posEnd = fieldLine.FindOneOf(";\n\r");
+	if (posEnd < 0)
+		value = fieldLine.Mid(startPos);
+	else
+		value = fieldLine.Mid(startPos, posEnd - startPos);
+	value.Trim();
+	return 1;
+}
+
+int MimeParser::GetMessageId(CString &fieldLine, int startPos, CString &value)
+{
+	int posEnd = fieldLine.FindOneOf(">;\n\r");
+	if (posEnd < 0)  // indicates problem, '>' expected
+		value = fieldLine.Mid(startPos);
+	else if (fieldLine.GetAt(posEnd) == '>')
+		value = fieldLine.Mid(startPos, posEnd - startPos + 1);
+	else
+		value = fieldLine.Mid(startPos, posEnd - startPos);
+	value.Trim();
+	return 1;
+}
+
+int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value)
+{
+	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
+	value.Empty();
+
+	char *pbegin_sv = (char*)(LPCSTR)fieldLine;
+	char *pend_sv = pbegin_sv + fieldLine.GetLength();
+	char *p = pbegin_sv + startPos;
+
+	// or keep it simple and require that *p == '=' at this point ?
+	while (p < pend_sv)
+	{
+		//p = strstr(p, param);
+		p = TextUtilsEx::strnstrUpper2Lower(p, pend_sv, param, paramLen);
+		if (p == 0)
+			return 0;
+
+		p = p + paramLen;
+		char c = *p;
+		if (c == '=')
+			break;
+		else if ((c != ' ') && (c != '\t'))
+			continue;
+	}
+
+	char * pend = strchr(p, ';');
+	if (pend == 0)
+		pend = pend_sv;
+
+	while (p < pend)
+	{
+		if (*p == '=')
+			break;
+		else
+			p++;
+	}
+	if (p >= pend)
+		return 0;
+
+	char *posBegin = ++p;
+	char *posEnd = pend;
+
+	value = fieldLine.Mid(posBegin - pbegin_sv, posEnd - posBegin);
+
+	value.Trim("\"\t ");
+
+	return 1;
+}
+
+#if 0
+char *MimeParser::EatNewLine(char* p, char*e) 
+{
+	while ((p < e) && (*p++ != '\n'));
+	return p;
+}
+#endif
+
+BOOL MimeParser::isEmptyLine(const char* p, const char* e)
+{
+	while ((p < e) && ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t')))  // eat white
+		p++;
+	if (p == e)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+char *MimeParser::EatNewLine(char* p, const char* e, BOOL &isEmpty)
+{
+	isEmpty = TRUE;
+	while ((p < e) && (*p++ != '\n'))
+	{
+		if (isEmpty)
+		{
+			if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
+				;
+			else
+				isEmpty = FALSE;
+		}
+	}
+	return p;
 }

@@ -28,9 +28,8 @@
 
 
 #include "stdafx.h"
+#include "FileUtils.h"
 #include "SerializationHelper.h"
-
-_int64 FileSize(LPCSTR fileName);
 
 void SerializerHelper::close() 
 {
@@ -59,7 +58,7 @@ BOOL SerializerHelper::open(BOOL bWrite)
 		//m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	}
 	else {
-		m_buffSize = (int)FileSize(m_path);
+		m_buffSize = (int)FileUtils::FileSize(m_path);
 		m_buff = (char *)malloc(m_buffSize);
 		if (m_buff == NULL)
 			return false;

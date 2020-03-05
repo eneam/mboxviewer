@@ -30,6 +30,7 @@
 //
 
 #include "stdafx.h"
+#include "FileUtils.h"
 #include "mboxview.h"
 #include "MboxMail.h"
 #include "NTreeView.h"
@@ -155,32 +156,6 @@ BOOL ImboxviewFile(LPCSTR fileName)
 	return bRet;
 }
 
-BOOL PathFileExist(LPCSTR path);
-
-_int64 FileSize(LPCSTR fileName)
-{
-	LARGE_INTEGER li = { 0 };
-	HANDLE hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
-		DWORD err = GetLastError();
-		TRACE(_T("(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n"), err, fileName);
-		return li.QuadPart;
-	}
-	else {
-		BOOL retval = GetFileSizeEx(hFile, &li);
-		CloseHandle(hFile);
-		if (retval != TRUE) {
-			DWORD err = GetLastError();
-			TRACE(_T("(GetFileSizeEx)Failed with error=%ld file=%s\n"), err, fileName);
-		}
-		else {
-			long long fsize = li.QuadPart;
-			return li.QuadPart;
-		}
-	}
-	return li.QuadPart;
-}
-
 
 // Called on Startup, File open and All File Refresh
 // Items are inserted into CTree only by this function
@@ -188,7 +163,7 @@ void NTreeView::FillCtrl()
 {
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	m_tree.DeleteAllItems();
-	if (path.IsEmpty() || !PathFileExist(path))
+	if (path.IsEmpty() || !FileUtils::PathDirExists(path))
 		return;
 	CString root;
 	char *last_slash = (char*)strrchr(path, '\\');
@@ -231,7 +206,7 @@ void NTreeView::FillCtrl()
 					if (ImboxviewFile(fullPath)) {
 						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
 						_int64 fSize = 0;
-						_int64 realFSize = FileSize(fullPath);
+						_int64 realFSize = FileUtils::FileSize(fullPath);
 						found = fileSizes.Lookup(fn, fSize);
 						if (fSize != realFSize) 
 						{
@@ -318,7 +293,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		CString mboxFileNameBase;
 		CString mboxFileNameExtention;
 
-		MboxMail::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+		FileUtils::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
 
 		CString mboxFileName = mboxFileNameBase + mboxFileNameExtention;
 
@@ -336,7 +311,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		CString folderCompletePath = driveName + mboxFileDirectory + "\\" + "Folders" + "\\" + folderPath;
 
-		if (!PathExists(folderCompletePath))
+		if (!FileUtils::PathDirExists(folderCompletePath))
 			int deb = 1;
 
 		CString folderName = m_tree.GetItemText(hItem);
@@ -453,9 +428,9 @@ void NTreeView::SelectMailFile()
 	pListView->m_path = path + _T("\\") + str;
 
 	CString txt;
-	if (!PathFileExist(path))
+	if (!FileUtils::PathDirExists(path))
 		txt = _T("Nonexistent Directory \"") + path;
-	else if (!PathFileExist(pListView->m_path))
+	else if (!FileUtils::PathFileExist(pListView->m_path))
 		txt = _T("Nonexistent File \"") + pListView->m_path;
 
 	if (!txt.IsEmpty()) {
@@ -499,11 +474,11 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 		if( ! path.IsEmpty() && ! fpath.IsEmpty() ) {
 			CString fullPath = fpath + "\\" + path;
 			_int64 fSize = 0;
-			//_int64 realFSize = FileSize(fullPath);
+			//_int64 realFSize = FileUtils::FileSize(fullPath);
 			BOOL found = fileSizes.Lookup(path, fSize);
 			//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", path, realFSize, fSize);
 			if (!found) {
-				_int64 realFSize = FileSize(fullPath);
+				_int64 realFSize = FileUtils::FileSize(fullPath);
 				fileSizes[path] = fSize = realFSize;
 			}
 			line.Format("%s\t%lld\n", path, fSize);
@@ -584,7 +559,7 @@ void NTreeView::OnFileRefresh()
 			CString fullPath = fpath + "\\" + str;
 			_int64 fSize = 0;
 			fileSizes.Lookup(str, fSize);
-			if( fSize != FileSize(fullPath) ) {
+			if( fSize != FileUtils::FileSize(fullPath) ) {
 				CString cache= fullPath + ".mboxview";
 				DeleteFile(cache);
 				m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
@@ -733,7 +708,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
 
 		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-		if (BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+		if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 			CMainFrame::CheckShellExecuteResult(result, h);
@@ -747,7 +722,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString txt;
 		CString tmp;
 
-		_int64 fileSize = FileSize(MboxMail::s_path); // TODO: error checking ??
+		_int64 fileSize = FileUtils::FileSize(MboxMail::s_path); // TODO: error checking ??
 		LPCSTR fileSizeStr_inKB = StrFormatKBSize(fileSize, &sizeStr_inKB[0], sizeStrSize);
 		if (!fileSizeStr_inKB)
 			sizeStr_inKB[0] = 0;
@@ -1051,7 +1026,7 @@ int NTreeView::CreateEmptyFolder(HTREEITEM hItem)
 
 	pListView = pFrame->GetListView();
 
-	MboxMail::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+	FileUtils::SplitFilePath(mboxFileNamePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
 
 	CString mboxFolderName = mboxFileNameBase + mboxFileNameExtention;
 	InputBox dlg(mboxFolderName);
@@ -1086,7 +1061,7 @@ int NTreeView::CreateEmptyFolder(HTREEITEM hItem)
 	m_tree.Expand(hItem, TVE_EXPAND);
 
 	CString fileDirPath;
-	BOOL ret = CPathGetPath(MboxMail::s_path, fileDirPath);
+	BOOL ret = FileUtils::CPathGetPath(MboxMail::s_path, fileDirPath);
 	fileDirPath += "\\Folders";
 	FindAllDirs(fileDirPath);
 

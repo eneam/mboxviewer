@@ -49,11 +49,7 @@
 
 class SimpleString;
 
-_int64 FileSize(LPCSTR fileName);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
-BOOL CodePage2WStr(SimpleString *str, UINT inCodePage, SimpleString *wstr);
-BOOL WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result);
-int findNoCase(const char *input, int count, void const* Str, int  Size);
 void ShowMemStatus();
 
 class MboxMail;
@@ -157,51 +153,17 @@ struct PRINT_MAIL_ARCHIVE_TO_CSV_ARGS
 	CString errorText;
 };
 
-class MboxCMimeHelper
-{
-public:
-	static void GetContentType(CMimeBody* pBP, CString &value);
-	static void GetContentLocation(CMimeBody* pBP, CString &value);
-	static void GetTransferEncoding(CMimeBody* pBP, CString &value);
-	static void GetContentID(CMimeBody* pBP, CString &value);
-	static void GetContentDescription(CMimeBody* pBP, CString &value);
-	static void GetContentDisposition(CMimeBody* pBP, CString &value);
-	static void GetCharset(CMimeBody* pBP, CString &value);
-	static void Name(CMimeBody* pBP, CString &value);
-	static void Filename(CMimeBody* pBP, CString &value);
-	//
-	static bool IsAttachment(CMimeBody* pBP);  
-protected:
-	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
-};
-
-
-class MboxCMimeCodeBase64 : public CMimeCodeBase64
-{
-public:
-	MboxCMimeCodeBase64(const char* pbInput, int nInputSize) {
-		SetInput(pbInput, nInputSize, false);
-	}
-};
-
-class MboxCMimeCodeQP : public CMimeCodeQP
-{
-public:
-	MboxCMimeCodeQP(const char* pbInput, int nInputSize) {
-		SetInput(pbInput, nInputSize, false);
-	}
-};
-
 class MailBodyContent
 {
 public:
-	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0;  };
+	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0; m_attachmentNamePageCode = 0; };
 	~MailBodyContent() {};
 	CString m_contentType;
 	CString m_contentTransferEncoding;
 	CString m_contentDisposition;
 	CString m_contentId;
 	CString m_attachmentName;
+	UINT m_attachmentNamePageCode;
 	//CString m_Name;  // TODO: do we need both name and filename/attachment name
 	CString m_contentLocation;
 	UINT m_pageCode;
@@ -317,8 +279,6 @@ public:
 	static CString s_path;
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
-	static void Str2Ansi(CString &res, UINT CodePage);
-	static UINT Str2PageCode(const  char* PageCodeStr);
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml = false);
 
@@ -402,8 +362,6 @@ public:
 	static int nstrcpy(char *dst, char *src);
 	static int escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar);
 	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
-	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
-	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
 	static int EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit);
 	static int EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CString &characterLimit);
 	//
@@ -450,20 +408,16 @@ public:
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
 	static CString GetDateFormat(int i);
-	static BOOL GetPrintCachePath(CString &printCachePath);
+	
 	static int RemoveDuplicateMails();
-	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+
 	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
 	static int MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
-	static BOOL CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
-	static void UpdateFileExtension(CString &fileName, CString &newSuffix);
 	//
+	static BOOL CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static BOOL GetPrintCachePath(CString &printCachePath);
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
-	static void MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
-	static void MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
-
 	static bool GetArchiveSpecificCachePath(CString &path, CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
-
 	//
 	static void ReleaseResources();
 	static void assert_unexpected();

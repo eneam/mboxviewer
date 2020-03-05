@@ -1,7 +1,7 @@
 //
 //////////////////////////////////////////////////////////////////
 //
-//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives.
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives..
 //
 // Source code and executable can be downloaded from
 //  https://sourceforge.net/projects/mbox-viewer/  and
@@ -27,45 +27,40 @@
 //
 
 #pragma once
+#include <afxcmn.h>
 
-// CustomNameTemplDlg dialog
+class CMimeBody;
 
-
-struct NameTemplateCnf
+class AttachmentInfo
 {
-	CString	m_TemplateFormat;
-	CString	m_DateFormat;
-	int m_bFromUsername;
-	int m_bFromDomain;
-	int m_bToUsername;
-	int m_bToDomain;
-	int m_bReplaceWhiteWithUnderscore;
-
-	void ClearParts();
-	void SetDflts();
-	void Copy(NameTemplateCnf &src);
+public:
+	UINT m_charsetId;
+	CString m_name;
+	CStringW m_nameW;
 };
 
-class CustomNameTemplDlg : public CDialogEx
+class CAttachments :
+	public CListCtrl
 {
-	DECLARE_DYNAMIC(CustomNameTemplDlg)
-
 public:
-	CustomNameTemplDlg(CWnd* pParent = nullptr);   // standard constructor
-	virtual ~CustomNameTemplDlg();
 
-	struct NameTemplateCnf m_nameTemplateCnf;
+	~CAttachments();
 
-// Dialog Data
-#ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_NAME_TEMPL_DLG };
-#endif
+	void Reset();
+	void Complete();
+	void ReleaseResources();
 
-protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	BOOL FindAttachmentByNameW(CStringW &name);
+	BOOL FindAttachmentByName(CString &name);
+	BOOL AddInlineAttachment(CString &name);
+	BOOL InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP);
+
+	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;
 
 	DECLARE_MESSAGE_MAP()
-public:
-	afx_msg void OnBnClickedOk();
-	afx_msg void OnBnClickedSrcftime();
+	afx_msg void OnPaint();
+	afx_msg void OnActivating(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 };
+

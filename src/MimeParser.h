@@ -44,6 +44,22 @@
 
 class MboxMail;
 
+class MimeParser
+{
+public:
+	static char *GetMultiLine(char *p, char *e, CString &line);
+	static int GetFieldValue(CString &fieldLine, int startPos, CString &value);
+	static int GetMessageId(CString &fieldLine, int startPos, CString &value);
+	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
+	static BOOL isEmptyLine(const char* p, const char* e);
+	static char *EatNewLine(char* p, const char* e, BOOL &isEmpty);
+	inline static char *EatNewLine(char* p, char*e)
+	{
+		while ((p < e) && (*p++ != '\n'));
+		return p;
+	}
+};
+
 class MailHeader
 {
 public:
@@ -76,7 +92,9 @@ public:
 	CString m_ContentLocation;
 	CMimeHeader::MediaType m_MediaType;
 	CString m_Name;   // from Content-Type
+	UINT m_NamePageCode;
 	CString m_AttachmentName;  // filename From Content-Disposition
+	UINT m_AttachmentNamePageCode;
 	CString m_MessageId;
 	CString m_ReplyId;
 };

@@ -33,6 +33,9 @@
 #include "Browser.h"
 #include "mainfrm.h"
 #include "resource.h"
+#include "FileUtils.h"
+#include "HtmlUtils.h"
+#include <atlconv.h>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -186,9 +189,6 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 #endif
 }
 
-#include <atlconv.h>
-BOOL _PathFileExist(LPCSTR path);
-
 void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		VARIANT* Flags, VARIANT* TargetFrameName,
 		VARIANT* PostData, VARIANT* Headers, BOOL* Cancel)
@@ -220,7 +220,7 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 	// Open link clicked by a user in the external browser
 	// TODO: Best effort. Microsoft recommded solution not clear.
 	// May need to intercept mouse click, update doc to attach action events to all links ?
-	if (strURL.CompareNoCase("about:blank") && !_PathFileExist(strURL)) {
+	if (strURL.CompareNoCase("about:blank") && !FileUtils::PathFileExist(strURL)) {
 		if (Cancel)
 			*Cancel = TRUE;
 		//IDispatch *api = pDisp;

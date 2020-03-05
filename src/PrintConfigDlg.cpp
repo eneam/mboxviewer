@@ -35,6 +35,8 @@
 #include "afxdialogex.h"
 #include "MboxMail.h"
 #include "CustomNameTemplDlg.h"
+#include "FileUtils.h"
+#include "HtmlUtils.h"
 
 
 // PrintConfigDlg dialog
@@ -241,10 +243,10 @@ void NamePatternParams::SetDflts()
 	CString fileNameBase;
 	CString fileNameExtention;
 
-	MboxMail::SplitFilePath(procFullPath, driveName, directory, fileNameBase, fileNameExtention);
+	FileUtils::SplitFilePath(procFullPath, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString procPath;
-	BOOL ret = CPathGetPath(procFullPath, procPath);
+	BOOL ret = FileUtils::CPathGetPath(procFullPath, procPath);
 
 	m_UserDefinedScriptPath = procPath + "\\scripts\\HTML2PDF-single-wkhtmltopdf.cmd";
 
@@ -410,7 +412,7 @@ void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatt
 void PrintConfigDlg::OnBnClickedPrtPageSetp()
 {
 	// TODO: Add your control notification handler code here
-	NMsgView::PrintToPrinterPageSetup(this);
+	HtmlUtils::PrintToPrinterPageSetup(this);
 }
 
 

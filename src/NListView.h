@@ -38,6 +38,7 @@
 #include <vector>
 #include "Mime.h"
 #include "MimeCode.h"
+#include "FileUtils.h"
 #include "WheelListCtrl.h"
 #include "UPDialog.h"
 #include "FindAdvancedDlg.h"
@@ -46,10 +47,6 @@
 #include "AttachmentsConfig.h"
 #include "MyCTime.h"
 
-
-__int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
-void CPathStripPath(const char *path, CString &fileName);
-BOOL CPathGetPath(const char *path, CString &filePath);
 
 class CMimeMessage;
 class MboxMail;
@@ -374,9 +371,10 @@ public:
 	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray, int mailPosition);
 	static int GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody** pBP);  // return body text type or 0-plain, 1-html, -1-not found
 	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
-	static int DecodeURL(char *URL, int urlLen);
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+
+	BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extension);
 
 	// Generated message map functions
 protected:

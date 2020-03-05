@@ -164,6 +164,10 @@ public:
 	void SetDescription(const char* pszValue, const char* pszCharset=NULL);
 	const char* GetDescription() const;			// Content-Description: ...
 
+
+	string GetNameCharset() const;
+	string GetFilenameCharset() const;
+
 	typedef list<CMimeField> CFieldList;
 	CFieldList& Fields() { return m_listFields; }
 
@@ -299,6 +303,11 @@ inline string CMimeHeader::GetName() const
 {
 	return GetParameter(CMimeConst::ContentType(), CMimeConst::Name());
 }
+inline string CMimeHeader::GetNameCharset() const
+{
+	const CMimeField *pfd = GetField(CMimeConst::ContentType());
+	return (pfd != 0) ? pfd->GetCharset() : "";
+}
 
 inline string CMimeHeader::GetBoundary() const
 { return GetParameter(CMimeConst::ContentType(), CMimeConst::Boundary()); }
@@ -321,6 +330,12 @@ inline const char* CMimeHeader::GetDisposition() const
 
 inline string CMimeHeader::GetFilename() const
 { return GetParameter(CMimeConst::ContentDisposition(), CMimeConst::Filename()); }
+
+inline string CMimeHeader::GetFilenameCharset() const
+{
+	const CMimeField *pfd = GetField(CMimeConst::ContentDisposition());
+	return (pfd != 0) ? pfd->GetCharset() : "";
+}
 
 inline void CMimeHeader::SetDescription(const char* pszValue, const char* pszCharset)
 { SetFieldValue(CMimeConst::ContentDescription(), pszValue, pszCharset); }

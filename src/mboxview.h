@@ -87,34 +87,11 @@ public:
 
 extern CmboxviewApp theApp;
 
-bool PathExists(LPCSTR file);
-BOOL PathFileExist(LPCSTR path);
-char *findOneOf(char *beg, char *end, char *charList);
-BOOL isEmptyLine(const char* p, const char* e);
-int strncmpExact(char *any, char *end, const char *lower, int lowerlength);
-char* strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-int   strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-char *strchar(char *beg, char *end, char c);
-BOOL isNumeric(CString &str);
-BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW);
-UINT charset2Id(const char *char_set);
-BOOL id2charset(UINT id, std::string &charset);
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 void AppendMenu(CMenu *menu, int commandId, const char *commandName);
 int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
-BOOL BrowseToFile(LPCTSTR filename);
 void CheckShellExecuteResult(HINSTANCE  result, HWND h = 0);
 void Com_Initialize();
-
-inline char *SkipWhite(char *p) {
-	while ((*p == ' ') || (*p == '\t')) p++;
-	return p;
-}
-
-inline char *SkipWhitePlus(char *p) {
-	while ((*p == ' ') || (*p == '\t') || (*p == '"')) p++;
-	return p;
-}
 
 /////////////////////////////////////////////////////////////////////////////
 

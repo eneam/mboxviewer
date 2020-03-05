@@ -207,7 +207,7 @@
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NDEBUG;WCHAR_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -414,7 +414,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE ;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;_DEBUG;_WINDOWS;WCHAR_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -596,6 +596,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\CAttachments.cpp" />
     <ClCompile Include="src\CheckListBoxDlg.cpp" />
     <ClCompile Include="src\ChildView.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -640,6 +641,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\FileUtils.cpp" />
     <ClCompile Include="src\FindAdvancedDlg.cpp" />
     <ClCompile Include="src\FindDlg.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -661,6 +663,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\HtmlUtils.cpp" />
     <ClCompile Include="src\InputBox.cpp" />
     <ClCompile Include="src\LinkCursor.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -732,6 +735,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\MimeHelper.cpp" />
     <ClCompile Include="src\MimeParser.cpp" />
     <ClCompile Include="src\MimeType.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -852,6 +856,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\TextUtilsEx.cpp" />
     <ClCompile Include="src\UPDialog.cpp" />
     <ClCompile Include="src\webbrowser2.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -900,6 +905,7 @@
     <ClInclude Include="src\AttachmentsConfig.h" />
     <ClInclude Include="src\BrowseForFolder.h" />
     <ClInclude Include="src\Browser.h" />
+    <ClInclude Include="src\CAttachments.h" />
     <ClInclude Include="src\CheckListBoxDlg.h" />
     <ClInclude Include="src\ChildView.h" />
     <ClInclude Include="src\CPictureCtrlDemoDlg.h" />
@@ -909,9 +915,11 @@
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExceptionUtil.h" />
     <ClInclude Include="src\ExportToCSVDlg.h" />
+    <ClInclude Include="src\FileUtils.h" />
     <ClInclude Include="src\FindAdvancedDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
+    <ClInclude Include="src\HtmlUtils.h" />
     <ClInclude Include="src\InitCommonControls.h" />
     <ClInclude Include="src\InputBox.h" />
     <ClInclude Include="src\LinkCursor.h" />
@@ -921,6 +929,7 @@
     <ClInclude Include="src\Mime.h" />
     <ClInclude Include="src\MimeChar.h" />
     <ClInclude Include="src\MimeCode.h" />
+    <ClInclude Include="src\MimeHelper.h" />
     <ClInclude Include="src\MimeParser.h" />
     <ClInclude Include="src\MyCTime.h" />
     <ClInclude Include="src\NListView.h" />
@@ -938,6 +947,7 @@
     <ClInclude Include="src\StackWalker.h" />
     <ClInclude Include="src\StdAfx.h" />
     <ClInclude Include="src\TextUtilities.h" />
+    <ClInclude Include="src\TextUtilsEx.h" />
     <ClInclude Include="src\UPDialog.h" />
     <ClInclude Include="src\webbrowser2.h" />
     <ClInclude Include="src\WheelListCtrl.h" />
@@ -956,6 +966,11 @@
     <Text Include="HELP.txt" />
     <Text Include="LICENSE.txt" />
     <Text Include="README.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\PaperClip.bmp" />
+    <Image Include="res\print.bmp" />
+    <Image Include="res\select_folder.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

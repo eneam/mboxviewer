@@ -28,12 +28,11 @@
 
 #include "stdafx.h"
 #include "eh.h"
+#include "FileUtils.h"
 #include "SimpleString.h"
 #include <dbghelp.h>
 #include "StackWalker.h"
 #include "ExceptionUtil.h"
-
-BOOL CPathGetPath(const char *path, CString &filePath);
 
 
 void __cdecl trans_func(unsigned int u, EXCEPTION_POINTERS* ep)
@@ -86,7 +85,7 @@ BOOL GetProgramDir(CString &progDir)
 	errno_t  er = _get_pgmptr(&pProgPath);
 	if (pProgPath && (er == 0))
 	{
-		BOOL ret = CPathGetPath(pProgPath, progDir);
+		BOOL ret = FileUtils::CPathGetPath(pProgPath, progDir);
 		return ret;
 	}
 	else
@@ -102,7 +101,7 @@ BOOL CreateDumpFilePath(char *fileName, CString &filePath)
 	if (pProgPath && (er == 0))
 	{
 		CString fileDir;
-		//BOOL ret = CPathGetPath(pProgPath, fileDir);
+		//BOOL ret = FileUtils::CPathGetPath(pProgPath, fileDir);
 
 		char *noExtension_ProgPath = new char[strlen(pProgPath) + 1];
 		strcpy(noExtension_ProgPath, pProgPath);

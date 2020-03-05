@@ -594,6 +594,9 @@ bool CMimeBody::ReadFromFile(const char* pszFilename)
 // write the content (attachment) to a file
 bool CMimeBody::WriteToFile(const char* pszFilename)
 {
+	//errno_t _sopen_s(int* pfh, const char *filename, int oflag, int shflag, int pmode);
+	//errno_t _wsopen_s(int* pfh, const wchar_t *filename, int oflag, int shflag, int pmode);
+
 	if (!m_nTextSize)
 		return true;
 	int hFile = ::_open(pszFilename, O_CREAT | O_TRUNC | O_RDWR | O_BINARY, S_IREAD | S_IWRITE);

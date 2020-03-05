@@ -40,6 +40,8 @@
 // NMsgView window
 
 class SimpleString;
+#include "CAttachments.h"
+
 
 class NMsgView : public CWnd
 {
@@ -49,15 +51,14 @@ public:
 	NMsgView();
 	DECLARE_DYNCREATE(NMsgView)
 	CBrowser m_browser;
-	CListCtrl	m_attachments;
+	//CListCtrl	m_attachments;
+	CAttachments m_attachments;
 	CFont m_font;
 	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleBody;
 	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strBody;
 	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_body_charsetId;
 	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId;
 	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_body_charset;
-	BOOL FindAttachmentByName(CString &name);
-
 
 	int m_show_charsets;
 	int m_bImageViewer;
@@ -78,17 +79,10 @@ protected:
 
 // Implementation
 public:
+	void ClearSearchResultsInIHTMLDocument(CString &searchID);
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
-	void ClearSearchResultsInIHTMLDocument(CString searchID);
-	static void GetTextFromIHTMLDocument(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, UINT outCodePage);
-	static BOOL CreateHTMLDocument(struct IHTMLDocument2 **lpDocument, SimpleString *inbuf, SimpleString *workbuf, UINT inCodepage);
-	BOOL FindElementByTagInIHTMLDocument(struct IHTMLDocument2 *lpDocument, struct IHTMLElement **ppvEl, CString &tag);
-	void PrintIHTMLDocument(struct IHTMLDocument2 *lpDocument);
-	void PrintIHTMLElement(struct IHTMLElement *lpElm, CStringW &text);
-	static void RemoveStyleTagFromIHTMLDocument(struct IHTMLElement *lpElm);
-	static void MergeWhiteLines(SimpleString *inbuf, int maxoutLines);
 	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
-	static void PrintToPrinterPageSetup(CWnd *parent);
+
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();
@@ -107,9 +101,6 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	//}}AFX_MSG
-	afx_msg void OnActivating(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);

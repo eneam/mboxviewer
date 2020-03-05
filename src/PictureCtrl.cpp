@@ -1,3 +1,31 @@
+//
+//////////////////////////////////////////////////////////////////
+//
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives..
+//
+// Source code and executable can be downloaded from
+//  https://sourceforge.net/projects/mbox-viewer/  and
+//  https://github.com/eneam/mboxviewer
+//
+//  Copyright(C) 2019  Enea Mansutti, Zbigniew Minciel
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the version 3 of GNU Affero General Public License
+//  as published by the Free Software Foundation; 
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU
+//  Library General Public License for more details.
+//
+//  You should have received a copy of the GNU Library General Public
+//  License along with this program; if not, write to the
+//  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+//  Boston, MA  02110 - 1301, USA.
+//
+//////////////////////////////////////////////////////////////////
+//
+
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////
 // PictureCtrl.cpp
@@ -20,6 +48,8 @@
 #include "StdAfx.h"
 #include "resource.h"  
 #include "PictureCtrl.h"
+#include "FileUtils.h"
+#include "TextUtilsEx.h"
 #include "CPictureCtrlDemoDlg.h"
 #include <GdiPlus.h>
 #include <atlimage.h>
@@ -31,9 +61,6 @@
 #endif
 
 using namespace Gdiplus;
-
-bool PathExists(LPCSTR file);
-BOOL PathFileExist(LPCSTR path);
 
 CPictureCtrl::CPictureCtrl(void *pPictureCtrlOwner)
 	:CStatic()
@@ -65,7 +92,7 @@ CPictureCtrl::~CPictureCtrl(void)
 	GdiplusShutdown(m_gdiplusToken);
 }
 
-BOOL CPictureCtrl::LoadFromFile(CString &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom)
+BOOL CPictureCtrl::LoadFromFile(CStringW &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom)
 {
 	//Set success error state
 	SetLastError(ERROR_SUCCESS);
@@ -97,7 +124,7 @@ void CPictureCtrl::PreSubclassWindow()
 void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	//Check if pic data is loaded
-	if (!PathFileExist(m_szFilePath)) {
+	if (!PathFileExistsW(m_szFilePath)) {
 		m_bIsPicLoaded = FALSE;
 		return;
 	}
@@ -153,20 +180,35 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		CString pictureDateTime;
 		GetPropertyDateTime(*image, pictureDateTime);
 
-		char *fileName = new char[m_szFilePath.GetLength() + 1];
-		strcpy(fileName, (LPCSTR)m_szFilePath);
-		PathStripPath(fileName);
+		CStringW windowTextW;
+		FileUtils::CPathStripPathW(m_szFilePath, windowTextW);
+
+		CString windowText;
+		DWORD error;
+		TextUtilsEx::Wide2Ansi(windowTextW, windowText, error);
 
 		CString sep = " ";
 		CString largeSep = "   - ";
-
-		CString windowText = fileName;
-		delete[] fileName;
 
 		if (!(pictureDateTime.IsEmpty() && equipModel.IsEmpty() && equipMake.IsEmpty()))
 			windowText += largeSep + pictureDateTime + sep + equipModel + sep + equipMake;
 
 		m_pPictureCtrlOwner->SetWindowText(windowText);
+
+#if 0
+		// Doesn't work. Looks may need to handle WM_NCPAINT. Below seem to be overwritten by WM_NCPAINT event
+		// Revisit later
+		TITLEBARINFO ti;
+		memset(&ti, 0, sizeof(ti));
+		ti.cbSize = sizeof(ti);
+		m_pPictureCtrlOwner->GetTitleBarInfo(&ti);
+
+		int xpos = 5;
+		int ypos = 200;
+		HDC hDC = lpDrawItemStruct->hDC;
+		BOOL retW = ::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, &ti.rcTitleBar, (LPCWSTR)windowTextW, windowTextW.GetLength(), NULL);
+#endif
+
 
 		if (m_bFixOrientation)
 		{
@@ -693,3 +735,6 @@ void CPictureCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	CStatic::OnLButtonDblClk(nFlags, point);
 }
+
+
+
