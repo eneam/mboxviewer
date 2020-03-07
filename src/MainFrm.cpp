@@ -55,12 +55,37 @@
 ///////
 
 #define MaxShellExecuteErrorCode 32
+
 int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h)
 {
-	if ((UINT)result <= MaxShellExecuteErrorCode) {
-		CString errorText;
-		ShellExecuteError2Text((UINT)result, errorText);
-		int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int ret = CheckShellExecuteResult(result, h, NULL);
+	return ret;
+}
+
+int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename)
+{
+	if ((UINT)result <= MaxShellExecuteErrorCode) 
+	{
+		CString errText;
+		ShellExecuteError2Text((UINT)result, errText);
+		CStringW errTextW;
+		DWORD error;
+		TextUtilsEx::Ansi2Wide(errText, errTextW, error);
+		CStringW errorTextW;
+		errorTextW.Append(errTextW);
+		if (filename) 
+		{
+			if (FileUtils::PathFileExistW(*filename))
+			{
+				errorTextW += L"\n\nFile exists. Open the file location and check file properties.\n";
+				errorTextW += L"Make sure the default application is configured to open the file.\n";
+			}
+			else
+			{
+				errorTextW += L"\n\nFile doesn't exist.\n";
+			}
+		}
+		int answer = ::MessageBoxW(h, errorTextW, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 	return 1;

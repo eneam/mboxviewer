@@ -90,7 +90,6 @@ extern CmboxviewApp theApp;
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 void AppendMenu(CMenu *menu, int commandId, const char *commandName);
 int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
-void CheckShellExecuteResult(HINSTANCE  result, HWND h = 0);
 void Com_Initialize();
 
 /////////////////////////////////////////////////////////////////////////////

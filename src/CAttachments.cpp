@@ -318,6 +318,7 @@ BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
 
 BOOL CAttachments::AddInlineAttachment(CString &name)
 {
+	// name already validated in DetermineImageFileName_SelectedItem
 	AttachmentInfo *item = new AttachmentInfo;
 	item->m_name.Append(name);
 	DWORD error;
@@ -381,7 +382,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if (command == M_PRINT_Id)
 	{
 		CStringW path = FileUtils::GetmboxviewTempPathW();
-		CStringW fullName = path + attachmentName;
+		CStringW filePath = path + attachmentName;
 		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOWNORMAL);
 		if ((UINT)result <= MaxShellExecuteErrorCode) {
 			CString errorText;
@@ -397,23 +398,23 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if ((command == M_OPEN_Id) || forceOpen)
 	{
 		CStringW path = FileUtils::GetmboxviewTempPathW();
-		CStringW fullName = path + attachmentName;
+		CStringW filePath = path + attachmentName;
 
 		DWORD binaryType = 0;
-		BOOL isExe = GetBinaryTypeW(fullName, &binaryType);
+		BOOL isExe = GetBinaryTypeW(filePath, &binaryType);
 
 		HWND h = GetSafeHwnd();
 		result = ShellExecuteW(h, L"open", attachmentName, NULL, path, SW_SHOWNORMAL);
-		CMainFrame::CheckShellExecuteResult(result, h);
+		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
 
 		int deb = 1;
 	}
 	else if (command == M_OpenFileLocation_Id)
 	{
 		CStringW path = FileUtils::GetmboxviewTempPathW();
-		CStringW fullName = path + attachmentName;
+		CStringW filePath = path + attachmentName;
 
-		if (FileUtils::BrowseToFileW(fullName) == FALSE) {
+		if (FileUtils::BrowseToFileW(filePath) == FALSE) {
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecuteW(h, L"open", path, NULL, NULL, SW_SHOWNORMAL);
 			CMainFrame::CheckShellExecuteResult(result, h);

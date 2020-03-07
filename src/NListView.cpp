@@ -3405,59 +3405,64 @@ void NListView::SelectItem(int iItem)
 				nameCharsetId = CP_UTF8;
 
 			CString cStrName = strName.c_str();
+
+			CStringW contentTypeExtensionW;
+			DWORD error;
+			if (TextUtilsEx::Ansi2Wide(contentTypeExtension, contentTypeExtensionW, error))
+			{
+				int deb = 1;
+			}
+
+			CStringW contentTypeMainW;
+			if (TextUtilsEx::Ansi2Wide(contentTypeMain, contentTypeMainW, error))
+			{
+				int deb = 1;
+			}
 			// 
 			CStringW cStrNameW;
 			if (TextUtilsEx::Str2Wide(cStrName, nameCharsetId, cStrNameW))
 			{
-				CStringW contentTypeExtensionW;
-				if (TextUtilsEx::Str2Wide(contentTypeExtension, nameCharsetId, contentTypeExtensionW))
-				{
-					int deb = 1;
-				}
-
 				if (!cStrNameW.IsEmpty())
 				{
 					pos = cStrNameW.ReverseFind(L'.');
-					if (pos < 0)
+					if (pos < 0)  // no extension found
 					{
 						if (isOctetStream)
 						{
 							const unsigned char* data = pBP->GetContent();
 							int dataLength = pBP->GetContentLength();
 
-							CStringW extension;
-							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extension);
+							CStringW extensionW;
+							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
 
 							if (ret)
-								cStrNameW += extension; 
+								cStrNameW += extensionW; 
 						}
 						else
 							cStrNameW += L"." + contentTypeExtensionW;
-					}
+					}  // else extension found, all done
 				}
-				else
+				else // cStrNameW is empty
 				{
-					CStringW contentTypeMainW;
-					if (TextUtilsEx::Str2Wide(contentTypeMain, nameCharsetId, contentTypeMainW))
+					if (isOctetStream)
 					{
-						if (isOctetStream)
-						{
-							const unsigned char* data = pBP->GetContent();
-							int dataLength = pBP->GetContentLength();
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
 
-							CStringW extension;
-							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extension);
-							if (ret)
-								cStrNameW = contentTypeMainW + extension;
-						}
-						else
-							cStrNameW = contentTypeMainW + L"." + contentTypeExtensionW;
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+							cStrNameW = contentTypeMainW + extensionW;
 					}
+					else
+						cStrNameW = contentTypeMainW + L"." + contentTypeExtensionW;
+
 					int deb = 1;
 				}
 				int deb = 1;
 			}
-			if (cStrNameW.IsEmpty())  // Keep for now, remove later
+			//
+			if (cStrNameW.IsEmpty())
 			{
 				if (!cStrName.IsEmpty())
 				{
@@ -3465,27 +3470,55 @@ void NListView::SelectItem(int iItem)
 					if (pos < 0)
 					{
 						if (isOctetStream)
-							cStrName += ".jpg";  // optimistic -:)
+						{
+							const unsigned char* data = pBP->GetContent();
+							int dataLength = pBP->GetContentLength();
+
+							CStringW extensionW;
+							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+							if (ret)
+							{
+								CString extension;
+								DWORD error;
+								TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+								cStrName = contentTypeMain + extension;
+							}
+						}
 						else
 							cStrName += "." + contentTypeExtension;
-					}
+					}  // else extension found, all done
 				}
-				else
+				else // cStrName is empty
 				{
 					if (isOctetStream)
-						cStrName = contentTypeMain + "." + ".jpg";   // optimistic -:)
+					{
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
+
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+						{
+							CString extension;
+							DWORD error;
+							TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+							cStrName = contentTypeMain + extension;
+						}
+					}
 					else
 						cStrName = contentTypeMain + "." + contentTypeExtension;
+
 					int deb = 1;
 				}
-
-				FileUtils::MakeValidFileName(cStrName);
 
 				if (TextUtilsEx::Str2Wide(cStrName, nameCharsetId, cStrNameW))
 				{
 					int deb = 1;
 				}
+				// else TODO: errror, indicates bigger problem
 			}
+			if (cStrNameW.IsEmpty())
+				cStrNameW = contentTypeMainW + L"." + contentTypeExtensionW;
 
 			pMsgView->m_attachments.InsertItemW(cStrNameW, bodyIndex, pBP);
 			pMsgView->m_bAttach = TRUE;
@@ -10291,10 +10324,20 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 							imageFileName = mailIndex + attachmentName + "." + locationExtension;
 						else
 						{
-							// Should try to determine if that is an image and what type
-							// Would need to LoadImage from file and check
-							// Add .jpg for now; don't tink browsers care about suffix
-							imageFileName = mailIndex + attachmentName + ".jpg";
+							const unsigned char* data = pBP->GetContent();
+							int dataLength = pBP->GetContentLength();
+
+							CStringW extensionW;
+							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+							if (ret)
+							{
+								CString extension;
+								DWORD error;
+								TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+								imageFileName = mailIndex + attachmentName + extension;
+							}
+							else
+								imageFileName = mailIndex + attachmentName + ".jpg";
 						}
 					}
 					else if (isValidContentIdExtension)
@@ -10311,10 +10354,20 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					}
 					else
 					{
-						// Should try to detrmine if that is an image and what type
-						// Would need to LoadImage from file and check
-						// Add .jpg for now; don't tink browsers care about suffix
-						imageFileName = mailIndex + contentId + ".jpg";
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
+
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+						{
+							CString extension;
+							DWORD error;
+							TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+							imageFileName = mailIndex + contentId + extension;
+						}
+						else
+							imageFileName = mailIndex + contentId + ".jpg";
 					}
 					*foundBody = body;
 					break;
@@ -10346,10 +10399,20 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 							imageFileName = mailIndex + attachmentName + "." + locationExtension;
 						else
 						{
-							// Should try to determine if that is an image and what type
-							// Would need to LoadImage from file and check
-							// Add .jpg for now; don't tink browsers care about suffix
-							imageFileName = mailIndex + attachmentName + ".jpg";
+							const unsigned char* data = pBP->GetContent();
+							int dataLength = pBP->GetContentLength();
+
+							CStringW extensionW;
+							BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+							if (ret)
+							{
+								CString extension;
+								DWORD error;
+								TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+								imageFileName = mailIndex + attachmentName + extension;
+							}
+							else
+								imageFileName = mailIndex + attachmentName + ".jpg";
 						}
 					}
 					else if (isValidContentLocationExtension)
@@ -10366,10 +10429,20 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					}
 					else
 					{
-						// Should try to determine if that is an image and what type
-						// Would need to LoadImage from file and check
-						// Add .jpg for now; don't tink browsers care about suffix
-						imageFileName = mailIndex + contentLocation + ".jpg";
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
+
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+						{
+							CString extension;
+							DWORD error;
+							TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+							imageFileName = mailIndex + contentLocation + extension;
+						}
+						else
+							imageFileName = mailIndex + contentLocation + ".jpg";
 					}
 					*foundBody = body;
 					break;
@@ -10403,10 +10476,20 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 						imageFileName = mailIndex + attachmentName + "." + locationExtension;
 					else
 					{
-						// Should try to determine if that is an image and what type
-						// Would need to LoadImage from file and check
-						// Add .jpg for now; don't tink browsers care about suffix
-						imageFileName = mailIndex + attachmentName + ".jpg";
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
+
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+						{
+							CString extension;
+							DWORD error;
+							TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+							imageFileName = mailIndex + attachmentName + extension;
+						}
+						else
+							imageFileName = mailIndex + attachmentName + ".jpg";
 					}
 					*foundBody = body;
 				}

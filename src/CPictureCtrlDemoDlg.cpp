@@ -414,7 +414,7 @@ void CCPictureCtrlDemoDlg::OnSize(UINT nType, int cx, int cy)
 	}
 	else
 		Invalidate();
-	;;// Invalidate();
+	//Invalidate();
 }
 
 
@@ -430,8 +430,8 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 
 	if ((m_ImageFileNameArrayPos >= 0) && (m_ImageFileNameArrayPos <= m_ImageFileNameArray.GetSize()))
 	{
-		const wchar_t *fullFilePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCWSTR();
-		HINSTANCE result = ShellExecuteW(NULL, L"print", fullFilePath, NULL, NULL, SW_SHOWNORMAL);
+		const wchar_t *filePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCWSTR();
+		HINSTANCE result = ShellExecuteW(NULL, L"print", filePath, NULL, NULL, SW_SHOWNORMAL);
 		if ((UINT)result <= MaxShellExecuteErrorCode) {
 			CString errorText;
 			ShellExecuteError2Text((UINT)result, errorText);

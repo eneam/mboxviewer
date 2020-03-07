@@ -374,7 +374,7 @@ public:
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
 
-	BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extension);
+	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extension);
 
 	// Generated message map functions
 protected:

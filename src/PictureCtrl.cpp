@@ -357,7 +357,9 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		// All below approches work.
 		// ExcludeClip would suggest better performance but no significant boost observed
-#if 1
+		// TODO: Method 1 & 2 doesn't seem to work in all cases. Sometimnes new image overlapps old/previous image 
+#if 0
+		// Method 1
 		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
 		graphics->DrawImage(image, posLeft, posTop, w, h);
 		RectF excludeRect((REAL)posLeft, (REAL)posTop, (REAL)w, (REAL)h);
@@ -366,6 +368,7 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 #endif
 
 #if 0
+		// Method 2
 		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
 		graph->DrawImage(image, posLeft, posTop, w, h);
 		RectF excludeRect((REAL)posLeft, (REAL)posTop, (REAL)w, (REAL)h);
@@ -374,8 +377,10 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 #endif
 
-#if 0
-		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
+#if 2
+		// Method 3 - initial implementation
+		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));   // black
+		//Gdiplus::SolidBrush bb(Gdiplus::Color(255, 255, 255));   // white
 		graph->FillRectangle(&bb, rC);
 		graph->DrawImage(image, posLeft, posTop, w, h);
 		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
