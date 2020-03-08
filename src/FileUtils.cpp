@@ -117,6 +117,7 @@ __int64 FileUtils::FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
 CString FileUtils::GetmboxviewTempPath(char *name)
 {
 	char	buf[_MAX_PATH + 1];
+	buf[0] = 0;
 	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
 	if (!FileUtils::PathDirExists(buf))
 		strcpy(buf, "\\");
@@ -132,8 +133,8 @@ CString FileUtils::GetmboxviewTempPath(char *name)
 CStringW FileUtils::GetmboxviewTempPathW(wchar_t *name)
 {
 	wchar_t	buf[_MAX_PATH + 1];
+	buf[0] = 0;
 	DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
-
 	if (!PathIsDirectoryW(buf))
 		wcscpy(buf, L"\\");
 	wcscat(buf, L"mboxview\\");
@@ -594,14 +595,16 @@ BOOL FileUtils::Write2File(CStringW &cStrNamePath, const unsigned char *data, in
 int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten)
 {
 	DWORD bytesToWrite = nNumberOfBytesToWrite;
+	const unsigned char* pszData = (unsigned char*)lpBuffer;
 	DWORD nwritten = 0;
 	while (bytesToWrite > 0)
 	{
 		nwritten = 0;
-		if (!WriteFile(hFile, lpBuffer, bytesToWrite, &nwritten, NULL)) {
+		if (!WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL)) {
 			DWORD retval = GetLastError();
 			break;
 		}
+		pszData += nwritten;
 		bytesToWrite -= nwritten;
 	}
 	*lpNumberOfBytesWritten = nNumberOfBytesToWrite - bytesToWrite;

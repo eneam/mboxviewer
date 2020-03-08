@@ -351,10 +351,15 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 	if (bFlag) {
 		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) {
 			CString openFolder = lpszParam + 7;
-			if (openFolder.Right(1) != _T("\\"))
-				openFolder += _T("\\");
+			if (openFolder.GetLength() > 0)
+			{
+				if (openFolder.Right(1) != _T("\\"))
+					openFolder += _T("\\");
+			}
 			if (m_bLastPathSet == FALSE)
+			{
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), openFolder);
+			}
 		}
 		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) {
 			CString mailFile = lpszParam + 10;

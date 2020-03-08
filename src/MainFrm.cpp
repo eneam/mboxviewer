@@ -56,9 +56,19 @@
 
 #define MaxShellExecuteErrorCode 32
 
-int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h)
+int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CString *filePath)
 {
-	int ret = CheckShellExecuteResult(result, h, NULL);
+	int ret = 0;
+	CStringW filePathW;
+	if (filePath)
+	{
+		DWORD error;
+		TextUtilsEx::Ansi2Wide(*filePath, filePathW, error);
+		ret = CheckShellExecuteResult(result, h, &filePathW);
+	}
+	else
+		ret = CheckShellExecuteResult(result, h, (CStringW*)0);
+
 	return ret;
 }
 
@@ -68,11 +78,9 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 	{
 		CString errText;
 		ShellExecuteError2Text((UINT)result, errText);
-		CStringW errTextW;
-		DWORD error;
-		TextUtilsEx::Ansi2Wide(errText, errTextW, error);
 		CStringW errorTextW;
-		errorTextW.Append(errTextW);
+		DWORD error;
+		TextUtilsEx::Ansi2Wide(errText, errorTextW, error);
 		if (filename) 
 		{
 			if (FileUtils::PathFileExistW(*filename))
@@ -478,6 +486,11 @@ void CMainFrame::OnFileOpen()
 		bff.SetFlags(BIF_RETURNONLYFSDIRS);
 		if (bff.SelectFolder()) {
 			path = bff.GetSelectedFolder();
+			if (path.GetLength() > 0)
+			{
+				if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+					path.AppendChar(_T('\\'));
+			}
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 			GetTreeView()->FillCtrl();
 			AfxGetApp()->AddToRecentFileList(path);
@@ -489,6 +502,11 @@ void CMainFrame::OnFileOpen()
 		INT_PTR ret = SelectFolder(path);
 		if (ret == IDOK)
 		{
+			if (path.GetLength() > 0)
+			{
+				if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+					path.AppendChar(_T('\\'));
+			}
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 			GetTreeView()->FillCtrl();
 			AfxGetApp()->AddToRecentFileList(path);
@@ -509,6 +527,11 @@ void CMainFrame::OnFileOpen()
 	if (ret == IDOK)
 	{
 		CString path = fdlg.GetPathName();
+		if (path.GetLength() > 0)
+		{
+			if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+				path.AppendChar(_T('\\'));
+		}
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 		GetTreeView()->FillCtrl();
 		AfxGetApp()->AddToRecentFileList(path);
@@ -531,6 +554,11 @@ void CMainFrame::DoOpen(CString& path)
 	sText.Format("Opening new mail folder ...");
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
+	if (path.GetLength() > 0)
+	{
+		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+			path.AppendChar(_T('\\'));
+	}
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 	GetTreeView()->FillCtrl();
 
@@ -684,7 +712,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 					{
 						HWND h = GetSafeHwnd();
 						HINSTANCE result = ShellExecute(h, _T("open"), csvFileName, NULL, NULL, SW_SHOWNORMAL);
-						CheckShellExecuteResult(result, h);
+						CheckShellExecuteResult(result, h, &csvFileName);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)
@@ -807,7 +835,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 					{
 						HWND h = GetSafeHwnd();
 						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
-						CheckShellExecuteResult(result, h);
+						CheckShellExecuteResult(result, h, &textFileName);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)
@@ -921,7 +949,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						{
 							HWND h = GetSafeHwnd();
 							HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
-							CheckShellExecuteResult(result, h);
+							CheckShellExecuteResult(result, h, &textFileName);
 							int deb = 1;
 						}
 						else if (nResponse == IDCANCEL)
@@ -933,7 +961,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 					{
 						HWND h = GetSafeHwnd();
 						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
-						CheckShellExecuteResult(result, h);
+						CheckShellExecuteResult(result, h, &textFileName);
 						int deb = 1;
 					}
 				}
@@ -2788,6 +2816,21 @@ void CMainFrame::OnFileAttachmentsconfig()
 	{
 		m_attachmentConfigParams.UpdateRegistry(m_attachmentConfigParams, dlg.m_attachmentConfigParams);
 		m_attachmentConfigParams.Copy(dlg.m_attachmentConfigParams);
+
+		// TODO: Invalidate() below doesn't updates column labels, so call MarkColumns() directly
+		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+		if (pFrame)
+		{
+			NListView *pListView = pFrame->GetListView();
+			NMsgView *pMsgView = pFrame->GetMsgView();
+			if (pListView && pMsgView)
+			{
+				pListView->MarkColumns();  // Invalidate() below doesn't updates column labels
+				pListView->ClearDescView();
+				pListView->Invalidate();
+				pMsgView->Invalidate();
+			}
+		}
 	}
 }
 

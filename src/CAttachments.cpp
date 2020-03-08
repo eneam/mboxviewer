@@ -45,6 +45,13 @@ BEGIN_MESSAGE_MAP(CAttachments, CListCtrl)
 	ON_NOTIFY_REFLECT(NM_RCLICK, OnRClick)  // Right Click Menu
 END_MESSAGE_MAP()
 
+
+CAttachments::CAttachments(NMsgView *pMsgView)
+{
+	m_pMsgView = pMsgView;
+}
+
+
 CAttachments::~CAttachments()
 {
 	int deb = 1;
@@ -454,8 +461,7 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		isSupportedPictureFile = true;
 	}
 
-	BOOL m_bImageViewer = TRUE;
-	if ((nItem >= 0) && m_bImageViewer && isSupportedPictureFile)
+	if ((nItem >= 0) && (m_pMsgView && m_pMsgView->m_bImageViewer) && isSupportedPictureFile)
 	{
 		CCPictureCtrlDemoDlg dlg(&attachmentNameW);
 		INT_PTR nResponse = dlg.DoModal();
@@ -470,12 +476,12 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 	else
 	{
 		CStringW path = FileUtils::GetmboxviewTempPathW();
-		CStringW fullName = path + attachmentNameW;
+		CStringW filePath = path + attachmentNameW;
 		// Photos application doesn't show next/prev photo even with path specified
 		// Buils in Picture Viewer is set as deafault
 		HWND h = GetSafeHwnd();
 		HINSTANCE result = ShellExecuteW(h, L"open", attachmentNameW, NULL, path, SW_SHOWNORMAL);
-		CMainFrame::CheckShellExecuteResult(result, h);
+		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
 
 	}
 

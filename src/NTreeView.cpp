@@ -338,7 +338,16 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if( str.IsEmpty() || path.IsEmpty() )
 		return;
-	pListView->m_path = path + "\\" + str;
+	if (path.GetLength() > 0)
+	{
+		if (path.GetAt(path.GetLength()-1) != _T('\\'))
+			pListView->m_path = path + _T('\\') + str;
+		else
+			pListView->m_path = path + str;
+	}
+	else
+		pListView->m_path = path + _T('\\') + str;
+
 	pListView->m_which = pNm->itemNew.hItem;
 
 	pListView->ResetSize();
@@ -395,7 +404,15 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if (str.IsEmpty() || path.IsEmpty())
 		return;
-	pListView->m_path = path + "\\" + str;
+	if (path.GetLength() > 0)
+	{
+		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+			pListView->m_path = path + _T('\\') + str;
+		else
+			pListView->m_path = path + str;
+	}
+	else
+		pListView->m_path = path + _T('\\') + str;
 	CString cache = pListView->m_path + ".mboxview";
 	DeleteFile(cache);
 	pListView->m_which = hItem;
@@ -425,7 +442,15 @@ void NTreeView::SelectMailFile()
 
 	pListView->CloseMailFile();
 
-	pListView->m_path = path + _T("\\") + str;
+	if (path.GetLength() > 0)
+	{
+		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+			pListView->m_path = path + _T('\\') + str;
+		else
+			pListView->m_path = path + str;
+	}
+	else
+		pListView->m_path = path + _T('\\') + str;
 
 	CString txt;
 	if (!FileUtils::PathDirExists(path))

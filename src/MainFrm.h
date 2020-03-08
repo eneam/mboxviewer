@@ -142,7 +142,7 @@ public:
 
 	void PrintMailsToCSV(int firstMail, int lastMail, BOOL selecteMails);
 
-	static int CheckShellExecuteResult(HINSTANCE  result, HWND h);
+	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CString *filePath = 0);
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename);
 

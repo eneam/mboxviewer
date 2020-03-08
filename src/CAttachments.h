@@ -30,6 +30,7 @@
 #include <afxcmn.h>
 
 class CMimeBody;
+class NMsgView;
 
 class AttachmentInfo
 {
@@ -44,6 +45,8 @@ class CAttachments :
 {
 public:
 
+	CAttachments(NMsgView *pMsgView);
+
 	~CAttachments();
 
 	void Reset();
@@ -55,6 +58,8 @@ public:
 	BOOL AddInlineAttachment(CString &name);
 	BOOL InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP);
 
+
+	NMsgView *m_pMsgView;
 	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;
 
 	DECLARE_MESSAGE_MAP()

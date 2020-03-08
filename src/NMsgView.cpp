@@ -64,6 +64,7 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 // NMsgView
 
 NMsgView::NMsgView()
+	:m_attachments(this)
 {
 	m_bAttach = FALSE;
 	m_nAttachSize = 50;

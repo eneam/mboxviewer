@@ -5475,7 +5475,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					{
 						HWND h = GetSafeHwnd();
 						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
-						CMainFrame::CheckShellExecuteResult(result, h);
+						CMainFrame::CheckShellExecuteResult(result, h, &textFileName);
 						int deb = 1;
 					}
 					else if (nResponse == IDCANCEL)
@@ -5487,7 +5487,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 				{
 					HWND h = GetSafeHwnd();
 					HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
-					CMainFrame::CheckShellExecuteResult(result, h);
+					CMainFrame::CheckShellExecuteResult(result, h, &textFileName);
 					int deb = 1;
 				}
 			}
@@ -7207,7 +7207,7 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 			{
 				HWND h = GetSafeHwnd();
 				HINSTANCE result = ShellExecute(h, _T("open"), pdfFileName, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
+				CMainFrame::CheckShellExecuteResult(result, h, &pdfFileName);
 				int deb = 1;
 			}
 			else if (nResponse == IDCANCEL)
@@ -7585,7 +7585,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 			{
 				HWND h = GetSafeHwnd();
 				HINSTANCE result = ShellExecute(h, _T("open"), pdfFileName, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
+				CMainFrame::CheckShellExecuteResult(result, h, &pdfFileName);
 				int deb = 1;
 			}
 			else if (nResponse == IDCANCEL)
@@ -8112,7 +8112,7 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 			{
 				HWND h = GetSafeHwnd();
 				HINSTANCE result = ShellExecute(h, _T("open"), fileName, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
+				CMainFrame::CheckShellExecuteResult(result, h, &fileName);
 				int deb = 1;
 			}
 			else if (nResponse == IDCANCEL)
@@ -8435,7 +8435,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 			{
 				HWND h = GetSafeHwnd();
 				HINSTANCE result = ShellExecute(h, _T("open"), fileName, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
+				CMainFrame::CheckShellExecuteResult(result, h, &fileName);
 				int deb = 1;
 			}
 			else if (nResponse == IDCANCEL)
@@ -11499,7 +11499,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 			{
 				HWND h = GetSafeHwnd();
 				HINSTANCE result = ShellExecute(h, _T("open"), fileName, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
+				CMainFrame::CheckShellExecuteResult(result, h, &fileName);
 				int deb = 1;
 			}
 			else if (nResponse == IDCANCEL)
