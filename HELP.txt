@@ -5,18 +5,21 @@ Starting with version 1.0.3.7, two versions of mboxview executable and associate
 	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.exe
 	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.pdb
 
-Performance of both versions of the mboxview is identical.
+Performance of both versions of the mboxview is identical. It is recommended to run the mbox viewer under the ReleasePlusStackTrace directory one once you verify it runs under your version of Windows OS.
 
 Both versions were enhanced to catch execution exeptions and dump suspect raw mail data to the text file.
 
 In addition, the mboxview.exe under the ReleasePlusStackTrace directory was enhanced to dump stack trace upon catching execution exception to help to diagnose the problem.
 
+Windows XP is the oldest version of Windows OS supported by the mbox viewer.
+
 The separate version of the mboxview is released in the ReleasePlusStackTrace directory since it is not clear the OS versions older than Windows 10 can support additional enhancements to dump the execution stack.
 This may change in the future releases subject to additional verifications and enhancements.
 
 In case the standard mbox viewer crashes, please change the directory to the ReleasePlusStackTrace directory and re-run the mbox viewer.
+Alternatively, you can run the mbox viewer from the ReleasePlusStackTrace directory day one once you verify it can run under your version of Windows OS.
 
-If it crashes, the mbox viewer in ReleasePlusStackTrace directory will generate one of more text files that can help to diagnose the problem:
+If the mbox viewer in ReleasePlusStackTrace directory crashes it will generate one of more text files that can help to diagnose the problem:
 
 mboxview_SystemE_MailDump.txt
 mboxview_SystemE_StackTrace.txt

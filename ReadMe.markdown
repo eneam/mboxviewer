@@ -39,6 +39,14 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.8
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced attachment window to support Unicode UTF16 names of non-inline attachments;
+ - Implemented the number of small code fixes;
+ - Bumped CACHE_VERSION to 17;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.7
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
