@@ -10317,11 +10317,11 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 						if (isValidAttachmentNameExtension)
 							imageFileName = mailIndex + attachmentName;
 						else if (isValidContentTypeExtension)
-							imageFileName = mailIndex + attachmentName + "." + contentTypeExtension;
+							imageFileName = mailIndex + attachmentName + _T(".") + contentTypeExtension;
 						else if (isValidContentIdExtension)
-							imageFileName = mailIndex + attachmentName + "." + idExtension;
+							imageFileName = mailIndex + attachmentName + idExtension;
 						else if (isValidContentLocationExtension)
-							imageFileName = mailIndex + attachmentName + "." + locationExtension;
+							imageFileName = mailIndex + attachmentName + locationExtension;
 						else
 						{
 							const unsigned char* data = pBP->GetContent();
@@ -10346,7 +10346,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					}
 					else if (isValidAttachmentNameExtension)
 					{
-						imageFileName = mailIndex + contentId + "." + nameExtension;
+						imageFileName = mailIndex + contentId + nameExtension;
 					}
 					else if (isValidContentTypeExtension)
 					{
@@ -10394,9 +10394,9 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 						else if (isValidContentTypeExtension)
 							imageFileName = mailIndex + attachmentName + "." + contentTypeExtension;
 						else if (isValidContentIdExtension)
-							imageFileName = mailIndex + attachmentName + "." + idExtension;
+							imageFileName = mailIndex + attachmentName + idExtension;
 						else if (isValidContentLocationExtension)
-							imageFileName = mailIndex + attachmentName + "." + locationExtension;
+							imageFileName = mailIndex + attachmentName + locationExtension;
 						else
 						{
 							const unsigned char* data = pBP->GetContent();
@@ -10421,7 +10421,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					}
 					else if (isValidAttachmentNameExtension)
 					{
-						imageFileName = mailIndex + contentLocation + "." + nameExtension;
+						imageFileName = mailIndex + contentLocation + nameExtension;
 					}
 					else if (isValidContentTypeExtension)
 					{
@@ -10471,9 +10471,9 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 					else if (isValidContentIdExtension)
 						imageFileName = mailIndex + attachmentName + "." + contentTypeExtension;
 					else if (isValidContentIdExtension)
-						imageFileName = mailIndex + attachmentName + "." + idExtension;
+						imageFileName = mailIndex + attachmentName + idExtension;
 					else if (isValidContentLocationExtension)
-						imageFileName = mailIndex + attachmentName + "." + locationExtension;
+						imageFileName = mailIndex + attachmentName + locationExtension;
 					else
 					{
 						const unsigned char* data = pBP->GetContent();

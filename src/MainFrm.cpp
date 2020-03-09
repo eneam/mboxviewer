@@ -460,13 +460,22 @@ void CMainFrame::OnFileOptions()
 			needRedraw = true;
 		}
 		if (needRedraw) {
+#if 0
 			// TODO: Invalidate() below doesn't updates column labels, so call MarkColumns() directly
 			// mboxview is basically single threaded so it should be ok to do so
-			pListView->MarkColumns();  // Invalidate() below doesn't updates column labels
-			pListView->ClearDescView();
+			// MarkColumns() i no longr used
+			//pListView->MarkColumns();  // Invalidate() below doesn't updates column labels
+			//pListView->ClearDescView();
 			pListView->Invalidate();
 			pMsgView->Invalidate();
+			pMsgView->m_browser.m_ie.Invalidate();;
 			//GetMsgView()->m_browser.m_ie.Invalidate(); // TODO: changed to GetMsgView()->Invalidate();
+#else
+			// Will refresh summary, text and attachments
+			// Hope it is safe assuming no more code below this line
+			pListView->Invalidate();
+			pListView->SelectItem(pListView->m_lastSel);
+#endif
 		}
 	}
 }
@@ -2825,10 +2834,17 @@ void CMainFrame::OnFileAttachmentsconfig()
 			NMsgView *pMsgView = pFrame->GetMsgView();
 			if (pListView && pMsgView)
 			{
-				pListView->MarkColumns();  // Invalidate() below doesn't updates column labels
+#if 0
+				pListView->MarkColumns();  // Invalidate() below doesn't updates column labels - not used anymore
 				pListView->ClearDescView();
 				pListView->Invalidate();
 				pMsgView->Invalidate();
+#else
+				// Will refresh summary, text and attachments
+				// Hope it is safe assuming no more code below this line
+				pListView->Invalidate();
+				pListView->SelectItem(pListView->m_lastSel);
+#endif
 			}
 		}
 	}
