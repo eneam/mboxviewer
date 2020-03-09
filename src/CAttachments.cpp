@@ -87,6 +87,8 @@ void CAttachments::OnPaint()
 	for (int ii = 0; ii < iCnt; ii++)
 	{
 		GetItemRect(ii, &rect, LVIR_BOUNDS);
+		if (rect.IsRectNull())
+			continue;
 
 		int w = rect.right - rect.left;
 
@@ -119,6 +121,8 @@ void CAttachments::OnPaint()
 			SHGFI_ICON |
 			SHGFI_SMALLICON))
 		{
+			if (FileUtils::PathFileExistW(mboxFilePath))
+				int deb = 1;
 			TRACE("Error Gettting SystemFileInfo!\n");
 		}
 		else 
