@@ -44,6 +44,7 @@
 
 CWheelTreeCtrl::CWheelTreeCtrl()
 {
+	
 }
 
 CWheelTreeCtrl::~CWheelTreeCtrl()
@@ -56,6 +57,7 @@ BEGIN_MESSAGE_MAP(CWheelTreeCtrl, CTreeCtrl)
 	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
 	//ON_NOTIFY_REFLECT(NM_RCLICK, &CWheelTreeCtrl::OnNMRClick)
+	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -85,3 +87,10 @@ void CWheelTreeCtrl::OnNMRClick(NMHDR *pNMHDR, LRESULT *pResult)
 }
 #endif
 
+
+BOOL CWheelTreeCtrl::OnEraseBkgnd(CDC* pDC)
+{
+	//BOOL ret = CWnd::OnEraseBkgnd(pDC);
+
+	return FALSE;
+}

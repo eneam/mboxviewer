@@ -76,7 +76,8 @@ BOOL CBrowser::PreCreateWindow(CREATESTRUCT& cs)
 	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 	cs.style &= ~WS_BORDER;
 	cs.lpszClass = AfxRegisterWndClass(CS_HREDRAW|CS_VREDRAW|CS_DBLCLKS, //|CS_PARENTDC, 
-		::LoadCursor(NULL, IDC_ARROW), HBRUSH(COLOR_WINDOW+1), NULL);
+		//::LoadCursor(NULL, IDC_ARROW), HBRUSH(COLOR_WINDOW+1), NULL);
+		::LoadCursor(NULL, IDC_ARROW), NULL, NULL);
 
 	return TRUE;
 }
@@ -220,7 +221,21 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 	// Open link clicked by a user in the external browser
 	// TODO: Best effort. Microsoft recommded solution not clear.
 	// May need to intercept mouse click, update doc to attach action events to all links ?
-	if (strURL.CompareNoCase("about:blank") && !FileUtils::PathFileExist(strURL)) {
+
+	CString url = "about:blank";
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+
+	{
+		CString colorStr;
+		int retC2A = NListView::Color2Str(color, colorStr);
+
+		url = "about:<html><head><style>body{background-color: #";
+		url.Append(colorStr);
+		url.Append(";}</style></head><body></body><br>");
+	}
+
+	if ((strURL.CompareNoCase(url) != 0) 
+		&& !FileUtils::PathFileExist(strURL)) {
 		if (Cancel)
 			*Cancel = TRUE;
 		//IDispatch *api = pDisp;

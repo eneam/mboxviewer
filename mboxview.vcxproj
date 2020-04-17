@@ -608,6 +608,8 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\ColorPickerDlg.cpp" />
+    <ClCompile Include="src\ColorStyleConfigDlg.cpp" />
     <ClCompile Include="src\CPictureCtrlDemoDlg.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -908,6 +910,8 @@
     <ClInclude Include="src\CAttachments.h" />
     <ClInclude Include="src\CheckListBoxDlg.h" />
     <ClInclude Include="src\ChildView.h" />
+    <ClInclude Include="src\ColorPickerDlg.h" />
+    <ClInclude Include="src\ColorStyleConfigDlg.h" />
     <ClInclude Include="src\CPictureCtrlDemoDlg.h" />
     <ClInclude Include="src\CustomCheckListBox.h" />
     <ClInclude Include="src\CustomNameTemplDlg.h" />

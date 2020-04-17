@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.9
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Fixed the rare crash when parsing mbox file. Unverified fix submitted in the v1.0.3.8 was not fully reliable. Upgrade to v1.0.3.9 is recommended;
+ - Added capability to customize the background color of most of the display panes;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.8
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

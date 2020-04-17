@@ -786,26 +786,22 @@ char *TextUtilsEx::strchar(char *beg, char *end, char c)
 char *TextUtilsEx::findOneOf(char *beg, char *end, char *charList)
 {
 	char oneOf;
+	char *p_charList;
+	char c;
 	while (beg < end)
 	{
-		char *p_charList = charList;
-		char c = *beg;
+		p_charList = charList;
+		c = *beg;
 		while (oneOf = *p_charList)
 		{
 			if (c == oneOf)
-			{
-				break;
-			}
-			p_charList++;
+				return beg;
+			else
+				p_charList++;
 		}
-		if (oneOf)
-			break;
 		beg++;
 	};
-	if (beg < end)
-		return beg;
-	else
-		return 0;
+	return 0;
 }
 
 char *TextUtilsEx::strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength)
@@ -823,7 +819,7 @@ char *TextUtilsEx::strnstrUpper2Lower(char *any, char *end, const char *lower, i
 int TextUtilsEx::strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength) {
 	// any can be multi line
 	// lower is fixed length
-	while ((lowerlength > 0) && (any < end) && (*lower++ == tolower(*any++))) { lowerlength--; }
+	while ((any < end) && (lowerlength > 0) && (*lower++ == tolower(*any++))) { lowerlength--; }
 	return lowerlength;
 }
 
@@ -852,6 +848,19 @@ int TextUtilsEx::findNoCase(const char *input, int count, void const* Str, int  
 			return i;
 	}
 	return -1;
+}
+
+char *TextUtilsEx::findNoCaseP(const char *input, int count, void const* Str, int  Size)
+{
+	int i;
+	register char *p = (char*)input;
+	register int delta_count = count - Size;
+	for (i = 0; i < delta_count; i++, p++)
+	{
+		if (strncmpUpper2Lower(p, (count - i), (char*)Str, Size) == 0)
+			return p;
+	}
+	return 0;
 }
 
 int TextUtilsEx::DecodeURL(char *URL, int urlLen)

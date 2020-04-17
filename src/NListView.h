@@ -105,7 +105,8 @@ public:
 
 // Implementation
 public:
-
+	BOOL m_bApplyColorStyle;
+	BOOL m_bLastApplyColorStyle;
 	BOOL m_showAsPaperClip; // Show attachment indicataor as paper Clip, otherwise as star character
 	CBitmap m_paperClip;
 	CImageList m_imgList;
@@ -373,6 +374,8 @@ public:
 	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+	static int Color2Str(DWORD color, CString &colorStr);
 
 	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extension);
 
@@ -411,6 +414,7 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg LRESULT OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnClose();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 
 struct PARSE_ARGS

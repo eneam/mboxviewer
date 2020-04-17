@@ -62,6 +62,7 @@ public:
 
 	int m_show_charsets;
 	int m_bImageViewer;
+
 // Attributes
 public:
 
@@ -108,6 +109,7 @@ public:
 	afx_msg void OnWindowPosChanging(WINDOWPOS* lpwndpos);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnClose();
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 };
 
 /////////////////////////////////////////////////////////////////////////////

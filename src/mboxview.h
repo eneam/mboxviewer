@@ -51,6 +51,7 @@ extern const char *sz_Software_mboxview;
 #define WM_CMD_PARAM_FILE_NAME_MESSAGE  (WM_APP + 1)
 #define WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE  (WM_APP + 2)
 #define WM_CMD_PARAM_GENERAL_HINT_MESSAGE  (WM_APP + 3)
+#define WM_CMD_PARAM_NEW_COLOR_MESSAGE  (WM_APP + 4)
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:

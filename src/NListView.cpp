@@ -47,6 +47,7 @@
 #include "ExceptionUtil.h"
 #include "SerializationHelper.h"
 #include "MimeHelper.h"
+#include "ColorStyleConfigDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -255,6 +256,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 {
 	ResetFileMapView();
 
+	m_bApplyColorStyle = TRUE;
 	m_bLongMailAddress = TRUE;
 	m_name = new SimpleString(64);
 	m_addr = new SimpleString(64);
@@ -333,6 +335,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 	ON_WM_MOUSEWHEEL()
+	ON_WM_ERASEBKGND()
 	//}}AFX_MSG_MAP
 	//ON_NOTIFY(LVN_ITEMACTIVATE, IDC_LIST, OnActivating)
 	ON_NOTIFY(NM_CLICK, IDC_LIST, OnActivating)  // Left Click
@@ -404,6 +407,7 @@ void NListView::OnActivating(NMHDR* pNMHDR, LRESULT* pResult)
 	NMITEMACTIVATE *pnm = (NMITEMACTIVATE *)pNMHDR;
 	if( m_lastSel != pnm->iItem ) {
 		TRACE("Selecting %d\n", pnm->iItem);
+		m_bApplyColorStyle = TRUE;
 		SelectItem(pnm->iItem);
 	}
 
@@ -572,8 +576,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT M_COPY_MAILS_TO_FOLDERS_Id = 26;
 	if (pFrame && !MboxMail::IsFolderMailsSelected()) {
-		/////menu.AppendMenu(MF_SEPARATOR);
-		; // AppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
+		//menu.AppendMenu(MF_SEPARATOR);
+		//AppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
+		;
 	}
 
 
@@ -814,6 +819,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		; // done
 	else if ((itemSelected == FALSE) && (m_lastSel != iItem)) {
 		TRACE("Selecting %d\n", iItem);
+		m_bApplyColorStyle = TRUE;
 		SelectItem(iItem);
 	}
 
@@ -1268,6 +1274,7 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 	NMLVKEYDOWN* pLVKeyDow = (NMLVKEYDOWN*)pNMHDR;
 	*pResult = 0;
 	int whichSel;
+	m_bApplyColorStyle = TRUE;
 	switch( pLVKeyDow->wVKey ) {
 	case VK_HOME:
 		SelectItem(0);
@@ -1508,7 +1515,7 @@ void NListView::ResizeColumns()
 	GetWindowRect(&rc);
 	int w = rc.Width();
 	int sb_width = GetSystemMetrics(SM_CXVSCROLL);
-	w -= sb_width + 6;
+	//w -= sb_width + 6;
 
 	int col_zero_len = 22;
 	int date_len = 100;
@@ -1676,6 +1683,8 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailSummaryList);
+
 	switch (lplvcd->nmcd.dwDrawStage)
 	{
 	case CDDS_PREPAINT:	// Request prepaint notifications for each item.
@@ -1745,14 +1754,22 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		//if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
 		if (iSubItem == 0)
 		{
+			CRect rect0 = rect;
+			rect0.left -= 6;
 			if (dc.Attach(hDC))
 			{
 				if (abs(MboxMail::b_mails_which_sorted) == 99)  // mails sorted by comnversations
 				{
 					if (m->m_groupColor == 0)
-						dc.FillRect(&rect, &CBrush(PeachPuff1));
+					{
+						DWORD color1 = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailConversion1);
+						dc.FillRect(&rect0, &CBrush(color1));
+					}
 					else
-						dc.FillRect(&rect, &CBrush(AntiqueWhite3));
+					{
+						DWORD color2 = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailConversion2);
+						dc.FillRect(&rect0, &CBrush(color2));
+					}
 
 					dc.SetBkMode(TRANSPARENT);
 					dc.SetTextColor(RGB(0, 0, 0));
@@ -1761,13 +1778,13 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					if (rItem.state & LVIS_SELECTED)
 					{
-						dc.FillRect(&rect, &CBrush(bkcolor));
+						dc.FillRect(&rect0, &CBrush(bkcolor));
 						dc.SetBkMode(TRANSPARENT);
 						dc.SetTextColor(txcolor);
 					}
 					else
 					{
-						dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+						dc.FillRect(&rect0, &CBrush(color));
 						dc.SetBkMode(TRANSPARENT);
 						dc.SetTextColor(RGB(0, 0, 0));
 					}
@@ -1981,7 +1998,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				}
 				else
 				{
-					dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+					dc.FillRect(&rect, &CBrush(color));
 					dc.SetBkMode(TRANSPARENT);
 					dc.SetTextColor(RGB(0, 0, 0));
 				}
@@ -3540,6 +3557,15 @@ void NListView::SelectItem(int iItem)
 		outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
 		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+		DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+		if (m_bApplyColorStyle && (color != COLOR_WHITE))
+		{
+			CString colorStr;
+			int retC2S = Color2Str(color, colorStr);
+			hdr = "<html><head><style>body{background-color: #";
+			hdr.Append(colorStr);
+			hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>");
+		}
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
 		char *inData = (char*)(LPCSTR)bdy;
@@ -3567,23 +3593,58 @@ void NListView::SelectItem(int iItem)
 		if (TextUtilsEx::findNoCase(pBdy, bodyLength, "<body", 5) < 0)
 			bodyTagMissing = TRUE;
 
+		MboxMail::m_tmpbuf->ClearAndResize(bodyLength+256);
+		int mailPosition = 0;
+		BOOL m_ReplaceAllWhiteBackgrounTags = TRUE;
+		if (m_bApplyColorStyle)
+			int retSet = NListView::SetBackgroundColor((char*)pBdy, bodyLength, MboxMail::m_tmpbuf, m_ReplaceAllWhiteBackgrounTags);
+#if 0
+		if (MboxMail::m_tmpbuf->Count())
+		{
+			CStringW path = FileUtils::GetmboxviewTempPathW();
+			CStringW filePath = path + L"\\" + L"Custom.html";
+			FileUtils::Write2File(filePath, (unsigned char*)outb.Data(), outb.Count());
+		}
+#endif
+		if (MboxMail::m_tmpbuf->Count())
+		{
+			pBdy = MboxMail::m_tmpbuf->Data();
+			bodyLength = MboxMail::m_tmpbuf->Count();
+		}
+		else
+		{
+			pBdy = bdy;
+			bodyLength = bdy.GetLength();
+		}
+
 		if (bodyTagMissing)
 		{
 			// File has htm extension but body tag is missing. 
 			// TODO: Below assume html TAG is present.  Do we need to check for html TAG ?
 			SimpleString *outbuf = MboxMail::m_outbuf;
-			outbuf->ClearAndResize(bdy.GetLength() + 1000);
+			outbuf->ClearAndResize(bodyLength + 1024);
 
 			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+			if (m_bApplyColorStyle && (color != COLOR_WHITE))
+			{
+				CString colorStr;
+				int retC2S = Color2Str(color, colorStr);
+				hdr = "<html><head><style>body{background-color: #";
+				hdr.Append(colorStr);
+				       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>");
+				//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+			}
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
-			char *inData = (char*)(LPCSTR)bdy;
-			int inDataLen = bdy.GetLength();
+			char *inData = (char*)pBdy;
+			int inDataLen = bodyLength;
 
 			if (hasInlineAttachments)
 			{
 				int mailPosition = 0; // not used anyway here
 				bool useMailPosition = false;
+				// append to outbuf
 				UpdateInlineSrcImgPath_SelectedItem(inData, inDataLen, outbuf, mailPosition, useMailPosition, cidArray);
 			}
 			else
@@ -3620,17 +3681,42 @@ void NListView::SelectItem(int iItem)
 			if ((charsetMissing) || (hasInlineAttachments))
 			{
 				SimpleString *outbuf = MboxMail::m_outbuf;
-				outbuf->ClearAndResize(bdy.GetLength() + 1000);
+				outbuf->ClearAndResize(bodyLength + 1000);
 
 				if (charsetMissing)
 				{
 					CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
+					DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+					if (m_bApplyColorStyle && (color != COLOR_WHITE))
+					{
+						CString colorStr;
+						int retC2S = Color2Str(color, colorStr);
+						hdr = "<html><head><style>body{background-color: #";
+						hdr.Append(colorStr);
+						       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+						//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
+					}
+
 					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 					int deb = 1;
 				}
+				else
+				{
+					DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+					if (m_bApplyColorStyle && (color != COLOR_WHITE))
+					{
+						CString colorStr;
+						int retC2S = Color2Str(color, colorStr);
+						CString hdr = "<html><head><style>body{background-color: ";
+						hdr.Append(colorStr);
+						       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+						//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
+						outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+					}
+				}
 
-				char *inData = (char*)(LPCSTR)bdy;
-				int inDataLen = bdy.GetLength();
+				char *inData = (char*)pBdy;
+				int inDataLen = bodyLength;
 
 				if (hasInlineAttachments)
 				{
@@ -3647,14 +3733,38 @@ void NListView::SelectItem(int iItem)
 			}
 			else
 			{
-				data = (char*)(LPCSTR)bdy;
-				datalen = bdy.GetLength();
+				DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+				if (m_bApplyColorStyle && (color != COLOR_WHITE))
+				{
+					SimpleString *outbuf = MboxMail::m_outbuf;
+					outbuf->ClearAndResize(bodyLength + 1000);
+
+					CString colorStr;
+					int retC2S = Color2Str(color, colorStr);
+					CString hdr = "<html><head><style>body{background-color: #";
+					hdr.Append(colorStr);
+					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+					//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
+					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+
+					outbuf->Append(pBdy, bodyLength);
+
+					data = outbuf->Data();
+					datalen = outbuf->Count();
+				}
+				else
+				{
+					data = (char*)pBdy;
+					datalen = bodyLength;
+				}
+
 				int deb = 1;
 			}
 			int deb = 1;
 		}
 	}
-	else {
+	else 
+	{
 		int deb = 1; 
 	}
 
@@ -3981,8 +4091,22 @@ void NListView::ClearDescView()
 	pMsgView->m_attachments.DeleteAllItems();
 	FileUtils::RemoveDirW(FileUtils::GetmboxviewTempPathW());
 	m_curFile.Empty();
-	pMsgView->m_browser.Navigate("about:blank", NULL);
+
+	CString url = "about:blank";
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+
+	{
+		CString colorStr;
+		int retC2A = NListView::Color2Str(color, colorStr);
+
+		url = "about:<html><head><style>body{background-color: #";
+		url.Append(colorStr);
+		url.Append(";}</style></head><body></body><br>");
+	}
+
+	pMsgView->m_browser.Navigate(url, NULL);
 	pMsgView->UpdateLayout();
+	pMsgView->PostMessage(WM_PAINT);
 	m_lastSel = -1;
 }
 
@@ -4908,6 +5032,7 @@ void NListView::SelectItemFound(int which)
 	}
 	m_list.SetItemState(which, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	m_list.EnsureVisible(which, FALSE);
+	m_bApplyColorStyle = TRUE;
 	SelectItem(which);
 	MboxMail *m = MboxMail::s_mails[which];
 	m_lastFindPos = which;
@@ -5731,6 +5856,7 @@ int NListView::FindInHTML(int iItem)
 	BOOL itemSelected = FALSE;
 	if (m_lastSel != iItem) {
 		TRACE("Selecting %d\n", iItem);
+		m_bApplyColorStyle = TRUE;
 		SelectItem(iItem);
 		itemSelected = TRUE;
 	}
@@ -12553,6 +12679,24 @@ int NListView::CopyMailsToFolders()
 	return 1;
 }
 
+BOOL NListView::OnEraseBkgnd(CDC* pDC)
+{
+	//BOOL ret = CWnd::OnEraseBkgnd(pDC);
+
+	CRect rect;
+	GetClientRect(&rect);
+
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailSummaryList);
+	//if (!m_bApplyColorStyle) color = RGB(255, 255, 255);
+
+	m_list.SetBkColor(color);
+	pDC->FillRect(&rect, &CBrush(color));
+
+	return TRUE;
+	//return FALSE;
+}
+
+
 #include "gdiplus.h"
 using namespace Gdiplus;
 
@@ -12641,3 +12785,190 @@ BOOL NListView::loadImage(BYTE* pData, size_t nSize, CStringW &extension)
 	GdiplusShutdown(m_gdiplusToken);
 	return FALSE;
 }
+
+
+int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *bodyTag = "<body ";
+	static int bodyTagLen = strlen(bodyTag);
+
+	static char *styleTag = " style";
+	static int styleTagLen = strlen(styleTag);
+
+	static char *bgColorTag = "bgcolor";
+	static int bgColorTagLen = strlen(bgColorTag);
+
+	static char *backgroundColorTag = "background-color";
+	static int backgroundColorTagLen = strlen(backgroundColorTag);
+
+	static char *backgroundTag = "background";
+	static int backgroundTagLen = strlen(backgroundTag);
+
+	static char *bodyTagEnd = ">";
+	static int bodyTagEndLen = strlen(bodyTagEnd);
+
+	outbuf->ClearAndResize(indDataLen + 128);
+
+	if (indDataLen < bodyTagLen)
+		return 1;
+
+	DWORD clr = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+	if (clr == COLOR_WHITE)
+		return 1;
+
+	CString colorStr;
+
+	int retC2S = NListView::Color2Str(clr, colorStr);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+
+	char * pBodyBeg = 0;
+	char * pBodyEnd = 0;
+
+	char *pStyleTag = 0;
+	char *pBgColorTag = 0;
+	char *pBackgroundColorTag = 0;
+	char *pBackgroundTag = 0;
+
+	char *pBackgroundColorTagBeg = 0;
+	char *pBackgroundColorTagEnd = 0;
+
+	if (ReplaceAllWhiteBackgrounTags == FALSE)
+	{
+		pBodyBeg = TextUtilsEx::findNoCaseP(p, count, bodyTag, bodyTagLen);
+		if (pBodyBeg == 0)
+			return 1;
+
+		p = pBodyBeg + bodyTagLen;
+		count = e - p;
+		if (count <= 0)
+			return 1;
+
+		pBodyEnd = TextUtilsEx::findNoCaseP(p, count, bodyTagEnd, bodyTagEndLen);
+		if (pBodyEnd == 0)
+			return 1;
+
+		e = pBodyEnd+1;
+
+		count = e - p;
+		if (count <= 0)
+			return 1;
+	}
+
+	outbuf->Append(p, p - inData);
+
+	p_mark = p;
+
+	while (p < e)  // always true
+	{
+		pStyleTag = 0;
+		pBgColorTag = 0;
+		pBackgroundColorTag = 0;
+		pBackgroundTag = 0;
+
+		pBackgroundColorTagBeg = 0;
+		pBackgroundColorTagEnd = 0;
+
+		count = e - p;
+		p = TextUtilsEx::findNoCaseP(p, count, "b", 1);
+		if (p == 0)
+			break;
+
+		if (TextUtilsEx::strncmpUpper2Lower(p, e, backgroundColorTag, backgroundColorTagLen) == 0)
+		{
+			pBackgroundColorTag = p;
+			p += backgroundColorTagLen;
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, bgColorTag, bgColorTagLen) == 0)
+		{
+			pBgColorTag = p;
+			p += bgColorTagLen;
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, backgroundTag, backgroundTagLen) == 0)
+		{
+			pBackgroundTag = p;
+			p += backgroundTagLen;
+		}
+
+		if ((pBackgroundColorTag == 0) && (pBgColorTag == 0) && (pBackgroundTag == 0))
+		{
+			p++;
+			continue;
+		}
+
+		p = TextUtilsEx::SkipWhite(p);
+		if ((*p != '=') && (*p != ':'))
+		{
+			if (pBackgroundTag)
+			{
+				p++;
+				continue;
+			}
+		}
+
+		p++;
+		if ((p + 2) > e)
+			break;
+
+		p = TextUtilsEx::SkipWhite(p);
+		if (*p == '"')
+			p++;
+
+		if (*p == '#')
+			p++;
+
+		pBackgroundColorTagBeg = p;
+
+		p = TextUtilsEx::findOneOf(p, e, "\" ;>");
+		if (p == 0)
+		{
+			outbuf->Clear();
+			return 1;
+		}
+
+		pBackgroundColorTagEnd = p;
+
+		CString pBackgroundColorTagVal;
+		if (pBackgroundColorTagBeg && pBackgroundColorTagEnd)
+		{
+			int tagLength = pBackgroundColorTagEnd - pBackgroundColorTagBeg;
+			char *b = pBackgroundColorTagVal.GetBufferSetLength(tagLength);
+			::memcpy(b, pBackgroundColorTagBeg, tagLength);
+			pBackgroundColorTagVal.ReleaseBuffer();
+
+			if ((pBackgroundColorTagVal.CompareNoCase("fff") == 0) 
+				|| (pBackgroundColorTagVal.CompareNoCase("ffffff") == 0)
+				|| (pBackgroundColorTagVal.CompareNoCase("white") == 0)
+				|| (pBackgroundColorTagVal.CompareNoCase("rgb(255,255,255)") == 0)
+				|| (pBackgroundColorTagVal.CompareNoCase("hsl(0,0%,100%)") == 0)
+				)
+			{
+				outbuf->Append(p_mark, pBackgroundColorTagBeg - p_mark);
+				outbuf->Append(colorStr, colorStr.GetLength());
+				p_mark = pBackgroundColorTagEnd;
+			}
+		}
+		p++;
+	}
+	outbuf->Append(p_mark, e - p_mark);
+
+	return 1;
+}
+
+int NListView::Color2Str(DWORD color, CString &colorStr)
+{
+	COLORREF cr = color;
+	RGBTRIPLE rgb;
+
+	rgb.rgbtRed = GetRValue(cr);
+	rgb.rgbtGreen = GetGValue(cr);
+	rgb.rgbtBlue = GetBValue(cr);
+
+	colorStr.Format("%02x%02x%02x", rgb.rgbtRed, rgb.rgbtGreen, rgb.rgbtBlue);
+	//colorStr.Format("0x%06x", color);
+	return 1;
+}
+

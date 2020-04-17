@@ -527,6 +527,8 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 	CMainFrame* pFrame = new CMainFrame(msgViewPosition);
+	if (pFrame->GetSafeHwnd() == 0)
+		int deb = 1;
 	m_pMainWnd = pFrame;
 
 	// create and load the frame with its resources

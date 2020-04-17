@@ -252,8 +252,8 @@ BOOL MboxMail::GetBody(SimpleString *res)
 	return ret;
 };
 
-char *GetMultiLine(char *p, char *e, CString &line);
-int GetFieldValue(CString &fieldLine, int startPos, CString &value);
+//char *GetMultiLine(char *p, char *e, CString &line);
+//int GetFieldValue(CString &fieldLine, int startPos, CString &value);
 
 bool IsFromValidDelimiter(char *p, char *e)
 {
@@ -417,6 +417,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					time_t tdate_fromField = 1;
 					date_fromField.Empty();
 					SYSTEMTIME tm;
+
 					if (ParseDateInFromField(p, e, &tm))
 					{
 						MyCTime::fixSystemtime(&tm);
@@ -7650,8 +7651,14 @@ BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 	static char *tm = "Thu Oct 27 09:02:59 +0000 2011";
 	static int tmlen = strlen(tm);
 
+	CString line;
+	char *p_next = MimeParser::GetMultiLine(p, end, line);
+
+	p = (char*)((LPCSTR)line);
+	char *e = (p + line.GetLength()) - tmlen;
+
 	time_t timeDT = -1;
-	char *e = end - tmlen;
+	
 	char c;
 	while (p < e)
 	{

@@ -132,7 +132,7 @@ void AttachmentsConfig::OnBnClickedOk()
 	if ((m_attachmentConfigParams.m_attachmentWindowMaxSize < 0) || (m_attachmentConfigParams.m_attachmentWindowMaxSize > 100))
 	{
 		CString txt;
-			txt.Format("Invalid max size for Attachment Wonow. Valid size is 0-100 !");
+			txt.Format("Invalid max size for Attachment Window. Valid size is 0-100 !");
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}

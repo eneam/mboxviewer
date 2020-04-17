@@ -46,7 +46,6 @@
 #define new DEBUG_NEW
 #endif
  
- 
 /*
 	  5.1.  SYNTAX
  
@@ -115,9 +114,12 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
  
 	char str[300],*s,*s_end;
 	s = &str[0];
-	s_end = &str[300];
+	//s_end = &str[300];
 	strncpy(&str[0],str1,299);
 	str[299] = '\0';
+
+	int slen = strlen(s);
+	s_end = &str[slen];
 
 	// Convert to lowercase.
 	int j;
@@ -136,7 +138,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	// dateFormatType == 2
 	// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
 
-	if ((s_end - s) < 100) 
+	if ((s_end - s) < 3) 
 		return false;
  
 	for (j=0; j<7; j++)
@@ -149,12 +151,14 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
  
 	if (j < 7)
 	{
+		// skip days
 		SKIP_NON_WHITESPACE();
 		dayOfWeek = j;
 		SKIP_WHITESPACE();
 		CHECK_PREMATURE_END();
 
-		if (*s == ',') s++;
+		if (*s == ',') 
+			s++;
 		SKIP_WHITESPACE();
 		CHECK_PREMATURE_END();
 	}
@@ -171,18 +175,16 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		// Parse Date field
 		// Date: Sun, 5 Nov 2017 22:42:43 -0600 (CST)
 
-		if ((s_end - s) < 100) // needs better check
-			return false;
-
 		if (sscanf(s, "%d%s%d", &day, monthStr, &year) != 3)
 			return false;
 
+		// skip day
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
-
+		// skip month
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
-
+		// skip year
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
@@ -209,12 +211,10 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 			}
 		}
 
-		if ((s_end - s) < 100) // needs better check
-			return false;
-
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
 			return false;
 
+		// skip hour & minute & seconds
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 	}
@@ -223,15 +223,13 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		// Parse the From field
 		// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
 
-		if ((s_end - s) < 100) // needs better check
+		if (sscanf(s, "%3s%d", monthStr, &day) != 2)
 			return false;
 
-		if (sscanf(s, "%s%d", monthStr, &day) != 2)
-			return false;
-
+		// skip month
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
-
+		// skip day
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
@@ -246,22 +244,19 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 			return false;
 		month = j;
 
-		if ((s_end - s) < 100) // needs better check
-			return false;
-
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
 			return false;
 
+		// skip hour & minute & seconds
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
 		char *s_save = s;  // pointer to zone
 
+		// skip zone
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
-
-		if ((s_end - s) < 100) // needs better check
-			return false;
+		CHECK_PREMATURE_END();
 
 		if (sscanf(s, "%d", &year) != 1)
 			return false;
@@ -281,10 +276,13 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		s = s_save;
 	}
 
-	if ((s_end - s) < 100) // needs better check
-		return false;
+	CHECK_PREMATURE_END();
  
-	if (*s == '+') s++;
+	if (*s == '+') 
+		s++;
+
+	CHECK_PREMATURE_END();
+
 	char zoneStr[300];
 	if (sscanf(s,"%s",zoneStr) != 1)
 	{
@@ -294,7 +292,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	if (zoneStr[0] == '-' ||
 		(zoneStr[0] >= '0' && zoneStr[0] <= '9'))
 	{
-		// Do nothing.
+		; // Do nothing.
 	}
 	else if (strcmp(zoneStr,"ut") == 0)
 	{
@@ -362,19 +360,18 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	}
  
 	// Convert zoneStr from (-)hhmm to minutes.
-	if ((s_end - s) < 100) // needs better check
-		return false;
 
 	int hh,mm;
 	int sign = 1;
+
 	s = zoneStr;
+	CHECK_PREMATURE_END();  // overkill should/will never be true
 	if (*s == '-')
 	{
 		sign = -1;
 		s++;
 	}
-	if ((s_end - s) < 100) // needs better check
-		return false;
+	CHECK_PREMATURE_END(); // overkill should/will never be true
 
 	if (sscanf(s,"%02d%02d",&hh,&mm) != 2)
 	{

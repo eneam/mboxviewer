@@ -37,6 +37,8 @@
 #define IDS_TITLE_BODY                  207
 #define IDB_PAPER_CLIP                  207
 #define IDD_NAME_TEMPL_DLG              208
+#define IDD_COLOR_CNF_DLG               213
+#define IDD_COLOR_STYLE_DLG             216
 #define IDC_BUTTON1                     1001
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
@@ -70,6 +72,7 @@
 #define IDC_ARCHIVE_LIST                1056
 #define IDC_FILTER1                     1056
 #define IDC_PRT_DO_NOT_PROMPT           1056
+#define IDC_COLOR_DFLT                  1056
 #define IDC_RADIO2                      1057
 #define IDC_EXPORT_EML_Y                1057
 #define IDC_FIND_LIST                   1057
@@ -80,6 +83,7 @@
 #define IDC_FILE_DATE                   1059
 #define IDC_ENHANCED_SELECT_FOLDER      1059
 #define IDC_ALL_ATTACHMENT_TYPES        1059
+#define IDC_COLOR_CHECK                 1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060
@@ -99,6 +103,7 @@
 #define IDC_SHOW_CHARSETS               1074
 #define IDC_RADIO6                      1075
 #define IDC_SHOW_CHARSETS_Y             1075
+#define IDC_COLOR_STYLE4                1075
 #define IDC_CHECK_FROM                  1076
 #define IDC_CHECK_TO                    1077
 #define IDC_CHECK_SUBJECT               1078
@@ -141,6 +146,7 @@
 #define IDC_EXPORT_DATE                 1097
 #define IDC_EXPORT_MESSAGE              1098
 #define IDC_RADIO5                      1101
+#define IDC_COLOR_CUSTOM                1101
 #define IDC_ENCODING_UTF8               1106
 #define IDC_ENCODING_CODE_PAGE          1107
 #define IDC_ENCODING_CODE_PAGE_ID       1108
@@ -236,10 +242,23 @@
 #define IDC_SET_CUSTOM_TEMPLATE         1196
 #define IDC_EDIT_TEMPL_FMT              1199
 #define IDC_EDIT_DATE_FMT               1200
-#define IDC_SRCFTIME_LINK               1201
 #define IDC_TEMPL_FROM_ADDRESS_TEXT     1206
 #define IDC_TEMPL_WHITE_TO_UNDERSCORE   1207
 #define IDC_TEMPL_TO_ADDRESS_TEXT       1208
+#define IDC_BUTTON5                     1209
+#define IDC_BUTTON6                     1210
+#define IDC_BUTTON7                     1211
+#define IDC_COLOR_BUTTON                1212
+#define IDC_BUTTON8                     1213
+#define IDC_COLOR_STYLE1                1214
+#define IDC_COLOR_STYLE2                1215
+#define IDC_COLOR_STYLE3                1216
+#define IDC_COLOR_STYLE5                1217
+#define IDC_COLOR_STYLE6                1218
+#define IDC_COLOR_STYLE7                1219
+#define IDC_COLOR_STYLE8                1220
+#define IDC_BUTTON_HELP                 1221
+#define IDC_BUTTON_CLOSE                1222
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -273,6 +292,7 @@
 #define ID_FILE_MERGEARCHIVEFILES       32886
 #define ID_PRINTTO_PDF                  32887
 #define ID_FILE_ATTACHMENTSCONFIG       32888
+#define ID_FILE_COLORCONFIG             32889
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -281,9 +301,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        213
-#define _APS_NEXT_COMMAND_VALUE         32889
-#define _APS_NEXT_CONTROL_VALUE         1208
+#define _APS_NEXT_RESOURCE_VALUE        218
+#define _APS_NEXT_COMMAND_VALUE         32890
+#define _APS_NEXT_CONTROL_VALUE         1223
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

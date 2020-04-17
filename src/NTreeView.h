@@ -108,6 +108,7 @@ protected:
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg LRESULT OnCmdParam_FileName(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnCmdParam_GeneralHint(WPARAM wParam, LPARAM lParam);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

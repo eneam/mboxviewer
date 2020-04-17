@@ -77,10 +77,11 @@ public:
 	static char *strchar(char *beg, char *end, char c);
 	static char *findOneOf(char *beg, char *end, char *charList);
 	static char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
-	static int strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
+	static int   strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 	static int strncmpUpper2Lower(char *any, int anyLength, const char *lower, int lowerlength);
 	static int strncmpExact(char *any, char *end, const char *lower, int lowerlength);
 	static int findNoCase(const char *input, int count, void const* Str, int  Size);
+	static char *findNoCaseP(const char *input, int count, void const* Str, int  Size);
 	//
 	static int DecodeURL(char *URL, int urlLen);
 

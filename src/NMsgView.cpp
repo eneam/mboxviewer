@@ -163,6 +163,7 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	//ON_WM_WINDOWPOSCHANGING()
 	//ON_WM_SIZING()
 	ON_WM_CLOSE()
+	ON_WM_RBUTTONDOWN()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -486,11 +487,11 @@ void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORRE
 		b = b1 + (i * (b2-b1) / width);
 		dc->FillSolidRect(left+i,top+width-i,1,height-(width-i)-(width-i),RGB(r,g,b));
 	}
-
 	rect.left += size-1;
 	rect.right -= size-1;
 	rect.bottom -= size-1;
 	rect.top += size-1;
+
 	::FrameRect(dc->m_hDC, rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 }
 
@@ -569,27 +570,56 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 	return xpos;
 }
 
-void NMsgView::OnPaint() 
+void NMsgView::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
 	static bool ft = true;
-		
+
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+		pMsgView = pFrame->GetMsgView();
+	}
+
+	CRect cr;
+	GetClientRect(cr);
+	if (cr.IsRectNull())
+		return;
+
 	GetWindowRect(&m_rcCaption);
 	ScreenToClient(&m_rcCaption);
 	m_rcCaption.DeflateRect(BSIZE, 0);
 	m_rcCaption.top = BSIZE;
-	if( ft ) {
-//		CClientDC cdc(this);
+	//if( ft ) 
+	{
 		ft = false;
-		CRect cr;
-		GetClientRect(cr);
-		dc.FillSolidRect(cr, ::GetSysColor(COLOR_WINDOW));
+		DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+		if (color == COLOR_WHITE)
+			dc.FillSolidRect(cr, ::GetSysColor(COLOR_WINDOW));
+		else
+		{
+			if (pListView && !pListView->m_bApplyColorStyle)
+				color = RGB(255, 255, 255);
+			dc.FillSolidRect(cr, color);
+		}
 	}
-	m_rcCaption.bottom = m_rcCaption.top + (m_bMax?CAPT_MAX_HEIGHT:CAPT_MIN_HEIGHT);
+	m_rcCaption.bottom = m_rcCaption.top + (m_bMax ? CAPT_MAX_HEIGHT : CAPT_MIN_HEIGHT);
 
-	dc.FillSolidRect(m_rcCaption, ::GetSysColor(COLOR_WINDOW));
-	dc.Draw3dRect(m_rcCaption, ::GetSysColor(COLOR_BTNHIGHLIGHT),
-		::GetSysColor(COLOR_BTNSHADOW));
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageHeader);
+	if (color == COLOR_WHITE)
+	{
+		dc.FillSolidRect(m_rcCaption, ::GetSysColor(COLOR_WINDOW));
+	}
+	else
+	{
+		if (pListView && !pListView->m_bApplyColorStyle)
+			color = RGB(255, 255, 255);
+		dc.FillSolidRect(m_rcCaption, color);
+	}
+	dc.Draw3dRect(m_rcCaption, ::GetSysColor(COLOR_BTNHIGHLIGHT), ::GetSysColor(COLOR_BTNSHADOW));
 
 	if (m_bMax)
 	{
@@ -627,9 +657,7 @@ void NMsgView::OnPaint()
 			dc.SelectObject( pOldFont );
 		}
 	}
-	CRect r;
-	GetClientRect(r);
-	FrameGradientFill( &dc, r, BSIZE, RGB(0x8a, 0x92, 0xa6), RGB(0x6a, 0x70, 0x80));
+	FrameGradientFill( &dc, cr, BSIZE, RGB(0x8a, 0x92, 0xa6), RGB(0x6a, 0x70, 0x80));
 	
 	// Do not call CWnd::OnPaint() for painting messages
 }
@@ -637,8 +665,9 @@ void NMsgView::OnPaint()
 BOOL NMsgView::OnEraseBkgnd(CDC* pDC) 
 {
 	// TODO: Add your message handler code here and/or call default
-	
-	return CWnd::OnEraseBkgnd(pDC);
+
+	return  TRUE;
+	//return CWnd::OnEraseBkgnd(pDC);
 }
 
 void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point) 
@@ -747,4 +776,59 @@ void NMsgView::OnClose()
 	// TODO: Add your message handler code here and/or call default
 
 	CWnd::OnClose();
+}
+
+void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	const char *ClearFindtext = _T("Clear Find Text");
+	const char *CustomColor = _T("Enable/Disable Custom Color Style");
+
+	CPoint pt;
+	::GetCursorPos(&pt);
+	CWnd *wnd = WindowFromPoint(pt);
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_SEPARATOR);
+
+	const UINT M_CLEAR_FIND_TEXT_Id = 1;
+	AppendMenu(&menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
+
+	const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
+	AppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor);
+
+	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	UINT n_Flags = TPM_RETURNCMD;
+	CString menuString;
+	int chrCnt = menu.GetMenuString(command, menuString, n_Flags);
+
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+		pMsgView = pFrame->GetMsgView();
+	}
+
+	if (command == M_CLEAR_FIND_TEXT_Id)
+	{
+		ClearSearchResultsInIHTMLDocument(m_searchID);
+		int deb = 1;
+	}
+	if ((command == M_ENABLE_DISABLE_COLOR_Id))
+	{
+		if (pListView && pMsgView)
+		{
+			pListView->m_bApplyColorStyle = !pListView->m_bApplyColorStyle;
+
+			pListView->Invalidate();
+			pListView->SelectItem(pListView->m_lastSel);
+		}
+		int deb = 1;
+	}
+	CWnd::OnRButtonDown(nFlags, point);
 }

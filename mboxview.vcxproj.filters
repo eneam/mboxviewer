@@ -145,6 +145,12 @@
     <ClCompile Include="src\MimeHelper.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\ColorStyleConfigDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ColorPickerDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -295,6 +301,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\MimeHelper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ColorStyleConfigDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ColorPickerDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -42,6 +42,7 @@
 #include "ExportToCSVDlg.h"
 #include "PrintConfigDlg.h"
 #include "OpenContainingFolderDlg.h"
+#include "ColorStyleConfigDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -53,6 +54,8 @@
 // Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
 // Postponed to the next relase 1.0.3.3 since larger effort is needed
 ///////
+
+ColorStylesDB CMainFrame::m_ColorStylesDB;
 
 #define MaxShellExecuteErrorCode 32
 
@@ -165,6 +168,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CLOSE()
 	//ON_BN_CLICKED(IDC_FOLDER_LIST, &CMainFrame::OnBnClickedFolderList)
 	ON_COMMAND(ID_FILE_ATTACHMENTSCONFIG, &CMainFrame::OnFileAttachmentsconfig)
+	ON_COMMAND(ID_FILE_COLORCONFIG, &CMainFrame::OnFileColorconfig)
+	ON_MESSAGE(WM_CMD_PARAM_NEW_COLOR_MESSAGE, &CMainFrame::OnCmdParam_ColorChanged)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -184,6 +189,7 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
 
+	m_colorStyleDlg = 0;
 	m_NamePatternParams.SetDflts();
 	m_csvConfig.SetDflts();
 
@@ -201,6 +207,8 @@ CMainFrame::~CMainFrame()
 {
 	// To stop memory leaks reports by debugger
 	MboxMail::ReleaseResources();
+	if (m_colorStyleDlg)
+		delete m_colorStyleDlg;
 	int deb = 1;
 }
 
@@ -309,6 +317,18 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_NamePatternParams.LoadFromRegistry();
 	m_attachmentConfigParams.LoadFromRegistry();
+
+	ColorStyleConfigDlg *dlg = new ColorStyleConfigDlg(this);
+	//dlg->Create(IDD_COLOR_STYLE_DLG, GetDesktopWindow());
+	if (dlg->Create(IDD_COLOR_STYLE_DLG, this) == FALSE)
+	{
+		m_colorStyleDlg = 0;
+	}
+	else
+	{
+		m_colorStyleDlg = dlg;
+		m_colorStyleDlg->ShowWindow(SW_HIDE);
+	}
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
@@ -473,6 +493,7 @@ void CMainFrame::OnFileOptions()
 #else
 			// Will refresh summary, text and attachments
 			// Hope it is safe assuming no more code below this line
+			pListView->m_bApplyColorStyle = TRUE;
 			pListView->Invalidate();
 			pListView->SelectItem(pListView->m_lastSel);
 #endif
@@ -622,12 +643,14 @@ NMsgView * CMainFrame::GetMsgView()
 BOOL CMainFrame::OnEraseBkgnd(CDC* pDC) 
 {
 	// active view will paint itself
+
 	return TRUE;
 }
 
 void CMainFrame::OnFileExportToCsv()
 {
 	// TODO: Add your command handler code here
+
 	int firstMail = 0;
 	int lastMail = MboxMail::s_mails.GetCount() - 1;
 	BOOL selectedMails = FALSE;
@@ -1462,12 +1485,13 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 
 			dc.Detach();
 		}
+		*pResult = CDRF_DODEFAULT;
 		int deb = 1;
 	}
 	break;
 	default:
 	{
-		*pResult = CDDS_PREERASE;
+		*pResult = CDRF_DODEFAULT;
 		int deb = 1;  // should not be here
 	}
 	}
@@ -1516,7 +1540,7 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
 	// TODO: Add your control notification handler code here
-	*pResult = 0x1ff;
+	*pResult = 0x1ff;  // ?? Explain
 
 	switch (pNMCD->dwDrawStage)
 	{
@@ -2159,6 +2183,8 @@ void CMainFrame::OnUpdateFilePrintconfig(CCmdUI *pCmdUI)
 {
 	// TODO: Add your command update UI handler code here
 	pCmdUI->Enable(MboxMail::s_mails.GetSize() > 0);
+	// TODO: Update code to always enable Print Config
+	//pCmdUI->Enable(TRUE);
 }
 
 void CMainFrame::UpdateFilePrintconfig()
@@ -2842,6 +2868,7 @@ void CMainFrame::OnFileAttachmentsconfig()
 #else
 				// Will refresh summary, text and attachments
 				// Hope it is safe assuming no more code below this line
+				pListView->m_bApplyColorStyle = TRUE;
 				pListView->Invalidate();
 				pListView->SelectItem(pListView->m_lastSel);
 #endif
@@ -2857,4 +2884,91 @@ AttachmentConfigParams *CMainFrame::GetAttachmentConfigParams()
 		return &pFrame->m_attachmentConfigParams;
 	else
 		return 0;
+}
+
+
+void CMainFrame::OnFileColorconfig()
+{
+	// TODO: Add your command handler code here
+
+	if (m_colorStyleDlg)
+	{
+#if 1
+		m_colorStyleDlg->ShowWindow(SW_SHOW);
+		m_colorStyleDlg->ShowWindow(SW_RESTORE);
+#else
+		BOOL isVisible = m_colorStyleDlg->IsWindowVisible();
+		if (!isVisible)
+		{
+			m_colorStyleDlg->ShowWindow(SW_SHOW);
+			int deb = 1;
+		}
+		BOOL isIconic = m_colorStyleDlg->IsIconic();
+		if (isIconic)
+		{
+			m_colorStyleDlg->ShowWindow(SW_RESTORE);
+			int deb = 1;
+		}
+#endif
+	}
+	else
+	{
+		ColorStyleConfigDlg *dlg = new ColorStyleConfigDlg(this);
+		//dlg->Create(IDD_COLOR_STYLE_DLG, GetDesktopWindow());
+		if (dlg->Create(IDD_COLOR_STYLE_DLG, this) == FALSE)
+		{
+			m_colorStyleDlg = 0;
+		}
+		else
+		{
+			m_colorStyleDlg = dlg;
+			m_colorStyleDlg->ShowWindow(SW_SHOW);
+		}
+	}
+}
+
+LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
+{
+	static int flag = 0;
+
+	int selectedColorStyle = (int)wParam;
+
+	//m_ColorStylesDB.m_colorStyles.SetColorStyle(selectedColorStyle);
+
+
+	NTreeView * pTreeView = GetTreeView();
+	if (pTreeView)
+		pTreeView->Invalidate();
+
+	//NListView * 
+	NListView *pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+	if (pListView)
+	{
+		pListView->Invalidate();
+		if (pListView->m_lastSel >= 0)
+		{
+			pListView->m_bApplyColorStyle = TRUE;
+			pListView->SelectItem(pListView->m_lastSel);
+		}
+		else if (pMsgView)
+		{
+			CString url = "about:blank";
+			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+
+			{
+				CString colorStr;
+				int retC2A = NListView::Color2Str(color, colorStr);
+
+				url = "about:<html><head><style>body{background-color: #";
+				url.Append(colorStr);
+				url.Append(";}</style></head><body></body><br>");
+			}
+
+			pMsgView->m_browser.Navigate(url, NULL);
+			pMsgView->UpdateLayout();
+			pMsgView->PostMessage(WM_PAINT);
+		}
+	}
+	return 0;
 }

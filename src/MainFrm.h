@@ -41,6 +41,7 @@
 #include "ChildView.h"
 #include "PrintConfigDlg.h"
 #include "AttachmentsConfig.h"
+#include "ColorStyleConfigDlg.h"
 
 struct CSVFILE_CONFIG
 {
@@ -182,6 +183,9 @@ protected:  // control bar embedded members
 public:
 	NamePatternParams m_NamePatternParams;
 	AttachmentConfigParams m_attachmentConfigParams;
+	ColorStyleConfigDlg *m_colorStyleDlg;
+
+	static ColorStylesDB m_ColorStylesDB;
 
 // Generated message map functions
 protected:
@@ -240,6 +244,8 @@ public:
 	afx_msg void OnClose();
 	//afx_msg void OnBnClickedFolderList();
 	afx_msg void OnFileAttachmentsconfig();
+	afx_msg void OnFileColorconfig();
+	afx_msg LRESULT OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam);
 };
 
 /////////////////////////////////////////////////////////////////////////////

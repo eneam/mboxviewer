@@ -93,13 +93,15 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	// TODO: Add your message handler code here and/or call default
 
-	CListCtrl::OnDrawItem(nIDCtl, lpDrawItemStruct);
+	//CListCtrl::OnDrawItem(nIDCtl, lpDrawItemStruct);
 
 	CDC dc;
 	BOOL ret = dc.Attach(lpDrawItemStruct->hDC);
 
 	CRect rect = lpDrawItemStruct->rcItem;
-	dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailSummaryTitles);
+	dc.FillRect(&rect, &CBrush(color));
 	dc.SetBkMode(TRANSPARENT);
 
 	dc.Detach();
@@ -166,6 +168,8 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		dc.RestoreDC(nsave);
 		dc.Detach();
 	}
+
+	CListCtrl::OnDrawItem(nIDCtl, lpDrawItemStruct);
 
 	int deb = 1;
 }

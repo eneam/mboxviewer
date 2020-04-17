@@ -1185,3 +1185,18 @@ int NTreeView::CreateFlatFolderList(CString &mboxFileName, CArray<CString> &fold
 	return retval;
 }
 
+BOOL NTreeView::OnEraseBkgnd(CDC* pDC)
+{
+	//BOOL ret = CWnd::OnEraseBkgnd(pDC);
+
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailArchiveList);
+
+	m_tree.SetBkColor(color);
+
+	CRect rect;
+	GetClientRect(&rect);
+	pDC->FillRect(&rect, &CBrush(color));
+
+	return TRUE;
+}
+

@@ -63,7 +63,23 @@ void CAttachments::OnPaint()
 					   // TODO: Add your message handler code here
 					   // Do not call CListCtrl::OnPaint() for painting messages
 
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+		pMsgView = pFrame->GetMsgView();
+	}
+
 	HDC hDC = dc.GetSafeHdc();
+
+	CRect cr;
+	GetClientRect(cr);
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageAttachments);
+	if (pListView && !pListView->m_bApplyColorStyle)
+		color = RGB(255, 255, 255);
+	dc.FillRect(&cr, &CBrush(color));
 
 	CFont newFont;
 	newFont.CreatePointFont(85, _T("Tahoma"));
@@ -103,7 +119,7 @@ void CAttachments::OnPaint()
 		}
 		else
 		{
-			dc.FillRect(&rect, &CBrush(RGB(255, 255, 255)));
+			dc.FillRect(&rect, &CBrush(color));
 			dc.SetBkMode(TRANSPARENT);
 			dc.SetTextColor(RGB(0, 0, 0));
 		}
