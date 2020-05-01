@@ -53,6 +53,7 @@ public:
 	static void CPathStripPathW(const wchar_t *path, CStringW &fileName);
 	static BOOL CPathGetPath(const char *path, CString &filePath);
 	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+	static void GetFileExtension(CString &fileName, CString &fileNameExtention);
 	static void UpdateFileExtension(CString &fileName, CString &newExtension);
 	static _int64 FileSize(LPCSTR fileName);
 	static BOOL BrowseToFileW(LPCWSTR filename);

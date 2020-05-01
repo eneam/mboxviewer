@@ -48,6 +48,7 @@
 #include "SerializationHelper.h"
 #include "MimeHelper.h"
 #include "ColorStyleConfigDlg.h"
+#include "MimeParser.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -3161,9 +3162,21 @@ void NListView::SelectItem(int iItem)
 	// Save raw message
 	if (m_bExportEml)
 	{
+		static const char *cFromMailBegin = "From ";
+		static const int cFromMailBeginLen = strlen(cFromMailBegin);
 		// Save mail
 		CFile fp(FileUtils::GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
-		fp.Write(bdy, bdy.GetLength());
+		char *pb = (char*)((LPCSTR)bdy);
+		int len = bdy.GetLength();
+		char *e = pb + len;
+		char *p = MimeParser::SkipEmptyLines(pb, e);
+		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+		{
+			p = MimeParser::EatNewLine(p, e);
+		}
+		int eml_len = len - (p - pb);
+		fp.Write(p, eml_len);
+		//fp.Write(bdy, bdy.GetLength());
 		fp.Close();
 	}
 	CString bdycharset = "UTF-8";

@@ -121,35 +121,60 @@ void NTreeView::PostNcDestroy()
 //	CWnd::PostNcDestroy();
 }
 
-#define BUFF_PREVIEW_SIZE	1024
+#define BUFF_PREVIEW_SIZE	10240
 
 // This function checks whether file archive is valid
 // TODO: add MessageBox to report an error
-BOOL ImboxviewFile(LPCSTR fileName)
+BOOL ImboxviewFile(CString & fName)
 {
+	LPCSTR fileName = fName;
+
+	// need better validation check; may need to parse the file
 	BOOL bRet = FALSE;
 	CFile fp;
-	int l = strlen(fileName);
-	if( l > 4 && _strnicmp(fileName + l - 4, ".eml", 4) == 0 )
+
+	CString fileNameExtention;
+	FileUtils::GetFileExtension(fName, fileNameExtention);
+	if (fileNameExtention.CompareNoCase(".eml") == 0)
 		return TRUE;
-	char *buff = (char*)calloc(BUFF_PREVIEW_SIZE+1, 1);
+
+	CString fileNameExtentionRoot = fileNameExtention.Mid(0, 5);
+
+	if (fileNameExtentionRoot.CompareNoCase(".mbox") != 0)
+		return FALSE;
+
+	char *buff = (char*)malloc(BUFF_PREVIEW_SIZE + 1);
 	if( buff == NULL )
 		return FALSE;
+
 	if( ! fp.Open(fileName, CFile::modeRead) ) {
 		free(buff);
 		return FALSE;
 	}
-	if(  fp.Read(buff, BUFF_PREVIEW_SIZE) == 0 ) {
-		free(buff);
-		fp.Close();
-		return FALSE;
-	}
-	if( strncmp(buff, "From ", 5) == 0 )
-		bRet = TRUE;
-	else {
-		char * p = strstr(buff, "\nFrom ");
-		if( p != NULL )
+	// Could do better -:)
+	for (int i = 0; i < 5000; i++)
+	{
+		UINT nCount = fp.Read(buff, BUFF_PREVIEW_SIZE);
+		if (nCount == 0) {
+			free(buff);
+			fp.Close();
+			return FALSE;
+		}
+		buff[nCount] = 0;
+		if ((i == 0) && strncmp(buff, "From ", 5) == 0)
+		{
 			bRet = TRUE;
+			break;
+		}
+		else 
+		{
+			char * p = strstr(buff, "\nFrom ");
+			if (p != NULL)
+			{
+				bRet = TRUE;
+				break;
+			}
+		}
 	}
 	free(buff);
 	fp.Close();

@@ -38,6 +38,12 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+v 1.0.3.10
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Relaxed the mbox parsing rules in order to accept mbox files with different From_ line format that indicates starts of new mail;
+ - Corrected mail content when exporting to eml file;
+ - Updated User Manual to describe new and updated features;
 
 v 1.0.3.9
 

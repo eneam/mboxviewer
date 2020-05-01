@@ -52,6 +52,7 @@ public:
 	static int GetMessageId(CString &fieldLine, int startPos, CString &value);
 	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
 	static BOOL isEmptyLine(const char* p, const char* e);
+	static char* SkipEmptyLines(const char* p, const char* e);
 	static char *EatNewLine(char* p, const char* e, BOOL &isEmpty);
 	inline static char *EatNewLine(char* p, char*e)
 	{

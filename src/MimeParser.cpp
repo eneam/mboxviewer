@@ -608,6 +608,18 @@ BOOL MimeParser::isEmptyLine(const char* p, const char* e)
 		return FALSE;
 }
 
+char* MimeParser::SkipEmptyLines(const char* p, const char* e)
+{
+	while (p < e)
+	{
+		if ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t'))  // eat white
+			p++;
+		else
+			return (char*)p;
+	};
+	return (char*)p;
+}
+
 char *MimeParser::EatNewLine(char* p, const char* e, BOOL &isEmpty)
 {
 	isEmpty = TRUE;

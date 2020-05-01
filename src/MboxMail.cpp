@@ -209,12 +209,14 @@ BOOL MboxMail::GetBody(CString &res)
 			//res = res.Mid(pos); // - 4);
 			if (bAddCR) // for correct mime parsing
 			{
-				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)res + pos, res.GetLength() - pos, MboxMail::m_tmpbuf);
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)res, res.GetLength(), MboxMail::m_tmpbuf);
 				res.Empty();
 				res.Append(MboxMail::m_tmpbuf->Data(), MboxMail::m_tmpbuf->Count());
 
 				//res.Replace("\n", "\r\n");
 			}
+			else
+				int deb = 1;
 		}
 		fp.Close();  // TODO: verify why Close() was not called
 	}
@@ -258,6 +260,8 @@ BOOL MboxMail::GetBody(SimpleString *res)
 bool IsFromValidDelimiter(char *p, char *e)
 {
 	static int cnt = 0;
+
+	return true;
 
 	// EX_TEST
 #if 0
@@ -349,11 +353,26 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 
 	char *badPtr = 0;
 
-	if (bEml && bFirstView) {
-		msgStart = p;
-		p += 5;
+	
+#if 1
+	if (bFirstView) 
+	{
+		p = MimeParser::SkipEmptyLines(p, e);
+		if (!((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))) // "From "  marks beginning of the next mail
+		{
+			msgStart = p;
+		}
 		bEml = false;  // not used below and not needed :)
 	}
+#else
+	if (bEml && bFirstView) {
+		p = MimeParser::SkipEmptyLines(p, e);
+		msgStart = p;
+		p += 5;
+		p = MimeParser::SkipEmptyLines(p, e);
+		bEml = false;  // not used below and not needed :)
+	}
+#endif
 
 	CString progDir;
 	BOOL retDir = GetProgramDir(progDir);
@@ -660,7 +679,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					// but it could be worst if we stop looking for headear fields prematuraly
 					if (isEmpty)
 					{
-						if (from.IsEmpty() || to.IsEmpty() || date.IsEmpty())
+						if (from.IsEmpty() && to.IsEmpty() && date.IsEmpty())
 							int deb = 1;
 
 						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 

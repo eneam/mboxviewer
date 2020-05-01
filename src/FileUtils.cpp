@@ -360,6 +360,14 @@ void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &di
 	fileNameExtention.Append(ext);
 }
 
+void FileUtils::GetFileExtension(CString &fileName, CString &fileNameExtention)
+{
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	SplitFilePath(fileName, driveName, directory, fileNameBase, fileNameExtention);
+}
+
 
 void FileUtils::UpdateFileExtension(CString &fileName, CString &newExtension)
 {
