@@ -665,6 +665,8 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\GenericFontFamilyDlg.cpp" />
+    <ClCompile Include="src\HtmlPdfHdrConfigDlg.cpp" />
     <ClCompile Include="src\HtmlUtils.cpp" />
     <ClCompile Include="src\InputBox.cpp" />
     <ClCompile Include="src\LinkCursor.cpp">
@@ -923,6 +925,8 @@
     <ClInclude Include="src\FindAdvancedDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
+    <ClInclude Include="src\GenericFontFamilyDlg.h" />
+    <ClInclude Include="src\HtmlPdfHdrConfigDlg.h" />
     <ClInclude Include="src\HtmlUtils.h" />
     <ClInclude Include="src\InitCommonControls.h" />
     <ClInclude Include="src\InputBox.h" />

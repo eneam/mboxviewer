@@ -42,6 +42,7 @@
 #include "PrintConfigDlg.h"
 #include "AttachmentsConfig.h"
 #include "ColorStyleConfigDlg.h"
+#include "HtmlPdfHdrConfigDlg.h"
 
 struct CSVFILE_CONFIG
 {
@@ -181,6 +182,7 @@ protected:  // control bar embedded members
 	int m_bEnhancedSelectFolderDlg;
 
 public:
+	HdrFldConfig m_HdrFldConfig;
 	NamePatternParams m_NamePatternParams;
 	AttachmentConfigParams m_attachmentConfigParams;
 	ColorStyleConfigDlg *m_colorStyleDlg;

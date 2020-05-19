@@ -317,6 +317,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_NamePatternParams.LoadFromRegistry();
 	m_attachmentConfigParams.LoadFromRegistry();
+	m_HdrFldConfig.LoadFromRegistry();
 
 	ColorStyleConfigDlg *dlg = new ColorStyleConfigDlg(this);
 	//dlg->Create(IDD_COLOR_STYLE_DLG, GetDesktopWindow());
@@ -1911,13 +1912,15 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"<br>"
 		"By default the standard Google Chrome browser in so called headless mode is invoked to perform conversion.<br>"
 		"<br>"
-		"The second option is provided to leverage free wkhtmltopdf application to covert HTML to PDF.<br>"
+		"The two options are provided to leverage developer version of Google Chrome Canary and free wkhtmltopdf application to covert HTML to PDF.<br>"
 		"<br>"
-		"Option to leverage the wkhtmltopdf is provided since the Chrome browser in the headless mode doesn't support options to control the page title, header and footer and the background color.<br>"
-		"<br>"
-		"It also enables users to run custom script with different HTML to PDF converter.<br>"
+		"Options to leverage the wkhtmltopdf and Chrome Canary are provided since the standard Chrome browser in the headless mode doesn't support options to control the page title, header and footer and the background color.<br>"
 		"<br>"
 		"User can set \"File -> Print Config -> Path To User Defined Script\" to invoke HTML2PDF-single-wkhtmltopdf.cmd script included in the release package.<br>"
+		"<br>"
+		"In order to leverage Chrome Canary browser, \"Path To User Defined Script\" needs to updated by the user to point to HTML2PDF-single-chrome-canary.cmd script.<br>"
+		"<br>"
+		"The Chrome Canary browser can be downloaded from <a href=\"https://www.google.com/chrome/canary\">Chrome Canary downloads</a>.<br>"
 		"<br>"
 		"HTML2PDF-single-wkhtmltopdf.cmd script creates PDF files with <u>the right footer \"Page Number of Total Pages\" and no page Title and Header</u>.<br>"
 		"<br>"

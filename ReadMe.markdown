@@ -25,6 +25,8 @@ Features
 * ability to compose mail list from single or multiple search results and archiving if desired;
 * ability to set Message Window position to Bottom, Right or Left;
 * ability to merge/concatenate multiple archive files and remove duplicate mails;
+* ability to customize the background color of key display panes;
+* ability to customize the HTML/PDF mail header output;
 
 License
 -----
@@ -38,6 +40,15 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+
+v 1.0.3.11
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added capability to customize the HTML/PDF mail header output;
+ - Fixed incorrect header field text in HTML/PDF showing up occasionally;
+ - Added HTML2PDF-single-chrome-canary.cmd, HTML2PDF-all-chrome-canary.cmd and HTML2PDF-group-chrome-canary.cmd scripts to remove header and footer in PDF;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.10
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

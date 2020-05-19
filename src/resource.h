@@ -37,16 +37,15 @@
 #define IDS_TITLE_BODY                  207
 #define IDB_PAPER_CLIP                  207
 #define IDD_NAME_TEMPL_DLG              208
-#define IDD_COLOR_CNF_DLG               213
 #define IDD_COLOR_STYLE_DLG             216
-#define IDC_BUTTON1                     1001
+#define IDD_HTML_PDF_HDR_DLG            218
+#define IDD_GENERIC_FONT_DLG            220
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
 #define IDC_SRCFTIME                    1001
 #define IDC_BUTTON2                     1002
 #define IDC_BUTTON_NEXT                 1002
-#define IDC_BUTTON3                     1003
 #define IDC_BUTTON_ROTATE               1003
 #define IDC_STATIC_PICTURE              1006
 #define IDC_COMPANY_URL                 1041
@@ -73,6 +72,7 @@
 #define IDC_FILTER1                     1056
 #define IDC_PRT_DO_NOT_PROMPT           1056
 #define IDC_COLOR_DFLT                  1056
+#define IDC_FONT_DFLT                   1056
 #define IDC_RADIO2                      1057
 #define IDC_EXPORT_EML_Y                1057
 #define IDC_FIND_LIST                   1057
@@ -84,6 +84,7 @@
 #define IDC_ENHANCED_SELECT_FOLDER      1059
 #define IDC_ALL_ATTACHMENT_TYPES        1059
 #define IDC_COLOR_CHECK                 1059
+#define IDC_FLD_NAME_BOLD               1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060
@@ -150,7 +151,6 @@
 #define IDC_ENCODING_UTF8               1106
 #define IDC_ENCODING_CODE_PAGE          1107
 #define IDC_ENCODING_CODE_PAGE_ID       1108
-#define IDC_BUTTON4                     1109
 #define IDC_BUTTON_PRT                  1109
 #define IDC_EDIT1                       1110
 #define IDC_EDIT_FROM                   1110
@@ -245,11 +245,7 @@
 #define IDC_TEMPL_FROM_ADDRESS_TEXT     1206
 #define IDC_TEMPL_WHITE_TO_UNDERSCORE   1207
 #define IDC_TEMPL_TO_ADDRESS_TEXT       1208
-#define IDC_BUTTON5                     1209
-#define IDC_BUTTON6                     1210
-#define IDC_BUTTON7                     1211
 #define IDC_COLOR_BUTTON                1212
-#define IDC_BUTTON8                     1213
 #define IDC_COLOR_STYLE1                1214
 #define IDC_COLOR_STYLE2                1215
 #define IDC_COLOR_STYLE3                1216
@@ -259,6 +255,15 @@
 #define IDC_COLOR_STYLE8                1220
 #define IDC_BUTTON_HELP                 1221
 #define IDC_BUTTON_CLOSE                1222
+#define IDC_PICK_FAMILY_FONT            1223
+#define IDC_FONT_CUSTOM                 1224
+#define IDC_FLD_SIZE                    1225
+#define IDC_PICK_CONCRETE_FONT          1226
+#define IDC_HDR_FLD_HELP                1227
+#define IDC_HDR_FLD_NAME                1228
+#define IDC_HDR_FLD_TEXT                1229
+#define IDC_BUTTON1                     1230
+#define IDC_HTML_PDF_CNF                1230
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -301,9 +306,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        218
+#define _APS_NEXT_RESOURCE_VALUE        222
 #define _APS_NEXT_COMMAND_VALUE         32890
-#define _APS_NEXT_CONTROL_VALUE         1223
+#define _APS_NEXT_CONTROL_VALUE         1231
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

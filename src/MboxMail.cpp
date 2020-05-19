@@ -3658,6 +3658,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	}
 #endif
 
+	CString htmlHdrFldNameStyle;
+	CString fldNameFontStyle;
+	CString fldTextFontStyle;
+	if (pFrame)
+	{
+		CreateFldFontStyle(pFrame->m_HdrFldConfig, fldNameFontStyle, fldTextFontStyle);
+		htmlHdrFldNameStyle.Format("<style>\r\n.hdrfldname{%s}\r\n.hdrfldtext{%s}\r\n</style>", fldNameFontStyle, fldTextFontStyle);
+	}
+
 	if (outbuflarge->Count() != 0)
 	{
 		//int retBG = NListView::RemoveBackgroundColor(outbuflarge->Data(), outbuflarge->Count(), &tmpbuf, mailPosition);
@@ -3675,28 +3684,36 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
+		CString font = "\">\r\n";
+		
 		if (pFrame)
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-					"\"></head>\r\n<body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
 			}
 			else
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-					"\"></head>\r\n<body>\r\n<div style=\"font-weight:normal;font-size:16px\">\r\n";
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"font-weight:normal" + font;
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-				"\"></head>\r\n<body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n"; 
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
 			fp.Write(bdy, bdy.GetLength());
 		}
 
-		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
+		int ret;
+		if (pFrame)
+		{
+			ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig, pFrame->m_HdrFldConfig);
+		}
+		else
+			ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
 		bdy = "</div></body></html>";
 		fp.Write(bdy, bdy.GetLength());
@@ -3783,25 +3800,41 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
+		CString font = "\">\r\n";
+
 		if (pFrame)
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
-				bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
+				//bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9" + font;
+
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
 			}
 			else
 			{
-				bdy = "<html><head></head><body>\r\n<div style=\"font-weight:normal;font-size:16px\">\r\n";
+				//bdy = "<html><head></head><body>\r\n" + font;
+
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"font-weight:normal" + font;
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
-			bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9;font-weight:normal;font-size:16px\">\r\n";
+			//bdy = "<html><head></head><body>\r\n<div style=\"background-color:#eee9e9" + font;
+
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
+
 			fp.Write(bdy, bdy.GetLength());
 		}
 
-		int ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
+		int ret;
+		if (pFrame)
+			ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig, pFrame->m_HdrFldConfig);
+		else
+			ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig);
 
 		bdy = "</div></body></html>";
 		fp.Write(bdy, bdy.GetLength());
@@ -3908,18 +3941,25 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	int cSubjectLen = strlen(cSubject);
 	outbuf.Append(cSubject, cSubjectLen);
 	tmpbuf.Copy(subjstr, subjlen);
-	encodeTextAsHtml(tmpbuf);
+	// encodeTextAsHtml(tmpbuf);
 
 	UINT pageCode = m->m_subj_charsetId;
 	if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 	{
 		BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
 		if (ret)
+		{
+			encodeTextAsHtml(*inbuf);
 			outbuf.Append(*inbuf);
+		}
 		else
+		{
+			encodeTextAsHtml(tmpbuf);
 			outbuf.Append(tmpbuf);
+		}
 	}
 	else {
+		encodeTextAsHtml(tmpbuf);
 		outbuf.Append(tmpbuf);
 	}
 	outbuf.Append("<br>\r\n");
@@ -3932,18 +3972,25 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	int cFromLen = strlen(cFrom);
 	outbuf.Append(cFrom, cFromLen);
 	tmpbuf.Copy(fromstr, fromlen);
-	encodeTextAsHtml(tmpbuf);
+	// encodeTextAsHtml(tmpbuf);
 
 	pageCode = m->m_from_charsetId;
 	if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 	{
 		BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
 		if (ret)
+		{
+			encodeTextAsHtml(*inbuf);
 			outbuf.Append(*inbuf);
+		}
 		else
+		{
+			encodeTextAsHtml(tmpbuf);
 			outbuf.Append(tmpbuf);
+		}
 	}
 	else {
+		encodeTextAsHtml(tmpbuf);
 		outbuf.Append(tmpbuf);
 	}
 	outbuf.Append("<br>\r\n");
@@ -3956,18 +4003,25 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	int cToLen = strlen(cTo);
 	outbuf.Append(cTo, cToLen);
 	tmpbuf.Copy(tostr, tolen);
-	encodeTextAsHtml(tmpbuf);
+	// encodeTextAsHtml(tmpbuf);
 
 	pageCode = m->m_to_charsetId;
 	if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 	{
 		BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
 		if (ret)
+		{
+			encodeTextAsHtml(*inbuf);
 			outbuf.Append(*inbuf);
+		}
 		else
+		{
+			encodeTextAsHtml(tmpbuf);
 			outbuf.Append(tmpbuf);
+		}
 	}
 	else {
+		encodeTextAsHtml(tmpbuf);
 		outbuf.Append(tmpbuf);
 	}
 	outbuf.Append("<br>\r\n");
@@ -3982,18 +4036,25 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		int cCCLen = strlen(cCC);
 		outbuf.Append(cCC, cCCLen);
 		tmpbuf.Copy(ccstr, cclen);
-		encodeTextAsHtml(tmpbuf);
+		// encodeTextAsHtml(tmpbuf);
 
 		pageCode = m->m_cc_charsetId;
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 		{
 			BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
 			if (ret)
+			{
+				encodeTextAsHtml(*inbuf);
 				outbuf.Append(*inbuf);
+			}
 			else
+			{
+				encodeTextAsHtml(tmpbuf);
 				outbuf.Append(tmpbuf);
+			}
 		}
 		else {
+			encodeTextAsHtml(tmpbuf);
 			outbuf.Append(tmpbuf);
 		}
 		outbuf.Append("<br>\r\n");
@@ -4009,18 +4070,25 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		int cBCCLen = strlen(cBCC);
 		outbuf.Append(cBCC, cBCCLen);
 		tmpbuf.Copy(bccstr, bcclen);
-		encodeTextAsHtml(tmpbuf);
+		// encodeTextAsHtml(tmpbuf);
 
 		pageCode = m->m_bcc_charsetId;
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
 		{
 			BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
 			if (ret)
+			{
+				encodeTextAsHtml(*inbuf);
 				outbuf.Append(*inbuf);
+			}
 			else
+			{
+				encodeTextAsHtml(tmpbuf);
 				outbuf.Append(tmpbuf);
+			}
 		}
 		else {
+			encodeTextAsHtml(tmpbuf);
 			outbuf.Append(tmpbuf);
 		}
 		outbuf.Append("<br>\r\n");
@@ -4054,6 +4122,259 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	outbuf.Append(datebuff, datelen);
 
 	outbuf.Append("<br>\r\n");
+	fp.Write(outbuf.Data(), outbuf.Count());
+
+	return 1;
+}
+
+int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameFontStyle, CString &fldTextFontStyle)
+{
+	if (hdrFieldConfig.m_bHdrFontDflt == 0)
+	{
+		int nameFontSize = hdrFieldConfig.m_nHdrFontSize;
+		int textFontSize = hdrFieldConfig.m_nHdrFontSize;
+
+		fldTextFontStyle.Format("font-size:%dpx;", textFontSize);
+
+		if (hdrFieldConfig.m_bHdrBoldFldName)
+		{
+			fldNameFontStyle.Format("font-weight:bold;font-size:%dpx;",  nameFontSize);
+		}
+		else
+			fldNameFontStyle.Format("font-size:%dpx;", nameFontSize);
+	}
+	else
+	{
+
+		int nameFontSize = hdrFieldConfig.m_HdrFldFontName.m_nFontSize;
+		int textFontSize = hdrFieldConfig.m_HdrFldFontText.m_nFontSize;
+		//
+		CString nameFont = hdrFieldConfig.m_HdrFldFontName.m_fontName;
+		CString textFont = hdrFieldConfig.m_HdrFldFontText.m_fontName;
+
+		//
+		CString nameFontFamily = hdrFieldConfig.m_HdrFldFontName.m_genericFontName;
+		CString textFontFamily = hdrFieldConfig.m_HdrFldFontText.m_genericFontName;
+		//
+
+		CString nameFontWeight;
+		if (hdrFieldConfig.m_HdrFldFontName.m_nFontStyle == 400)
+			nameFontWeight = "normal";
+		else if (hdrFieldConfig.m_HdrFldFontName.m_bIsBold)
+			nameFontWeight = "bold";
+		else
+			nameFontWeight.Format("%d", hdrFieldConfig.m_HdrFldFontName.m_nFontStyle);
+
+		CString textFontWeight;
+		if (hdrFieldConfig.m_HdrFldFontText.m_nFontStyle == 400)
+			textFontWeight = "normal";
+		else if (hdrFieldConfig.m_HdrFldFontText.m_bIsBold)
+			textFontWeight = "bold";
+		else
+			textFontWeight.Format("%d", hdrFieldConfig.m_HdrFldFontText.m_nFontStyle);
+
+		CString nameFontStyle = "normal";
+		if (hdrFieldConfig.m_HdrFldFontName.m_bIsItalic)
+			nameFontStyle = "italic";
+
+		CString textFontStyle = "normal";
+		if (hdrFieldConfig.m_HdrFldFontText.m_bIsItalic)
+			textFontWeight = "italic";
+
+
+		fldNameFontStyle.Format("font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;",
+			nameFontStyle, nameFontWeight, nameFontSize, nameFont, nameFontFamily);
+
+		fldTextFontStyle.Format("font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;",
+			textFontStyle, textFontWeight, textFontSize, textFont, textFontFamily);
+	}
+
+	return 1;
+}
+
+int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig)
+{
+	int fldNumb;
+	int fldNameLength;
+	int fldTxtLength;
+	char *fldText;
+	char *fldName = "";
+	int ii;
+
+	char *token = 0;
+	int tokenlen = 0;
+
+	SimpleString outbuf(1024, 256);
+	SimpleString tmpbuf(1024, 256);
+
+	SimpleString *inbuf = MboxMail::m_inbuf;
+	SimpleString *workbuf = MboxMail::m_workbuf;
+	inbuf->ClearAndResize(10000);
+	workbuf->ClearAndResize(10000);
+
+	MboxMail *m = s_mails[mailPosition];
+
+	UINT pageCode = 0;
+	CString txt;
+	for (ii = 0; ii < HdrFldList::HDR_FLD_MAX; ii++)
+	{
+		if (hdrFieldConfig.m_HdrFldList.IsFldSet(ii))
+		{
+			fldNumb = ii+1;
+			if (fldNumb == HdrFldList::HDR_FLD_SUBJECT)
+			{
+				fldName = "SUBJECT: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = m->m_subj.GetLength();
+				fldText = (char *)(LPCSTR)m->m_subj;
+				pageCode = m->m_subj_charsetId;
+			}
+			else if (fldNumb == HdrFldList::HDR_FLD_FROM)
+			{
+				fldName = "FROM: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = m->m_from.GetLength();
+				fldText = (char *)(LPCSTR)m->m_from;
+				pageCode = m->m_from_charsetId;
+			}
+			else if (fldNumb == HdrFldList::HDR_FLD_TO)
+			{
+				fldName = "TO: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = m->m_to.GetLength();
+				fldText = (char *)(LPCSTR)m->m_to;
+				pageCode = m->m_to_charsetId;
+			}
+			else if (fldNumb == HdrFldList::HDR_FLD_CC)
+			{
+				fldName = "CC: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = m->m_cc.GetLength();
+				fldText = (char *)(LPCSTR)m->m_cc;
+				pageCode = m->m_cc_charsetId;
+				if (fldTxtLength <= 0)
+					continue;
+			}
+			else if (fldNumb == HdrFldList::HDR_FLD_BCC)
+			{
+				fldName = "BCC: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = m->m_bcc.GetLength();
+				fldText = (char *)(LPCSTR)m->m_bcc;
+				pageCode = m->m_bcc_charsetId;
+				if (fldTxtLength <= 0)
+					continue;
+			}
+			else if (fldNumb == HdrFldList::HDR_FLD_DATE)
+			{
+				fldName = "DATE: ";
+				fldNameLength = strlen(fldName);
+				fldTxtLength = 0;
+				fldText = "";
+				continue;
+			}
+			else
+			{
+				continue;
+			}
+
+			//txt.Format("<span style=\'font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;\'>", 
+				//nameFontStyle, nameFontWeight, nameFontSize, nameFont, nameFontFamily);
+			//outbuf.Append(txt, txt.GetLength());
+			//outbuf.Append(fldNameFontStyle, fldNameFontStyle.GetLength());
+
+			txt.Format("<span class=\'hdrfldname\'>");
+			outbuf.Append(txt, txt.GetLength());
+			outbuf.Append(fldName, fldNameLength);
+			outbuf.Append("</span>");
+
+			tmpbuf.Copy(fldText, fldTxtLength);
+			// encodeTextAsHtml(tmpbuf);
+
+			//txt.Format("<span style=\'font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;\'>", 
+				//textFontStyle, textFontWeight, textFontSize, textFont, textFontFamily);
+			//outbuf.Append(txt, txt.GetLength());
+			//outbuf.Append(fldTextFontStyle, fldTextFontStyle.GetLength());
+
+			txt.Format("<span class=\'hdrfldtext\'>");
+			outbuf.Append(txt, txt.GetLength());
+			if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
+			{
+				BOOL ret = TextUtilsEx::Str2CodePage(&tmpbuf, pageCode, textConfig.m_nCodePageId, inbuf, workbuf);
+				if (ret)
+				{
+					encodeTextAsHtml(*inbuf);
+					outbuf.Append(*inbuf);
+				}
+				else
+				{
+					encodeTextAsHtml(tmpbuf);
+					outbuf.Append(tmpbuf);
+				}
+			}
+			else {
+				encodeTextAsHtml(tmpbuf);
+				outbuf.Append(tmpbuf);
+			}
+			outbuf.Append("</span>");
+			outbuf.Append("<br>\r\n");
+		}
+	}
+
+
+	//
+	fldNumb = HdrFldList::HDR_FLD_DATE -1;
+	if (hdrFieldConfig.m_HdrFldList.IsFldSet(fldNumb))
+	{
+		char datebuff[32];
+
+		CString format = textConfig.m_dateFormat;
+
+		datebuff[0] = 0;
+		if (m->m_timeDate >= 0)
+		{
+			MyCTime tt(m->m_timeDate);
+			if (!textConfig.m_bGMTTime)
+			{
+				CString lDateTime = tt.FormatLocalTm(format);
+				strcpy(datebuff, (LPCSTR)lDateTime);
+			}
+			else {
+				CString lDateTime = tt.FormatGmtTm(format);
+				strcpy(datebuff, (LPCSTR)lDateTime);
+			}
+		}
+
+		fldName = "DATE: ";
+		fldNameLength = strlen(fldName);
+		fldTxtLength = m->m_subj.GetLength();
+		fldText = (char *)datebuff;
+
+		//txt.Format("<span style=\'font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;\'>",
+			//nameFontStyle, nameFontWeight, nameFontSize, nameFont, nameFontFamily);
+		//outbuf.Append(txt, txt.GetLength());
+		//outbuf.Append(fldNameFontStyle, fldNameFontStyle.GetLength());
+
+		txt.Format("<span class=\'hdrfldname\'>");
+		outbuf.Append(txt, txt.GetLength());
+		outbuf.Append(fldName, fldNameLength);
+		outbuf.Append("</span>");
+
+		//txt.Format("<span style=\'font-style:%s;font-weight:%s;font-size:%dpx;font-family:\"%s\",%s;\'>",
+			//textFontStyle, textFontWeight, textFontSize, textFont, textFontFamily);
+		//outbuf.Append(txt, txt.GetLength());
+		//outbuf.Append(fldTextFontStyle, fldTextFontStyle.GetLength());
+
+		txt.Format("<span class=\'hdrfldtext\'>");
+		outbuf.Append(txt, txt.GetLength());
+
+		int datelen = strlen(datebuff);
+		outbuf.Append(datebuff, datelen);
+
+		outbuf.Append("</span>");
+		outbuf.Append("<br>\r\n");
+	}
+
 	fp.Write(outbuf.Data(), outbuf.Count());
 
 	return 1;

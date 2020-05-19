@@ -178,6 +178,15 @@ BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &in
 	return FALSE;
 }
 
+BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, int &intval)
+{
+	DWORD dwVal = 0;
+	BOOL ret = _GetProfileInt(hKey, section, key, dwVal);
+	if (ret)
+		intval = dwVal;
+	return ret;
+}
+
 /*
 BOOL CProfile::_WriteProfileString( LPCTSTR section, LPCTSTR key, CString &value )
 {

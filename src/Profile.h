@@ -52,6 +52,7 @@ public:
 	static int _GetProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key );
 	static CString _GetProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key );
 	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &intval);
+	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, int &intval);
 	static BOOL _GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CString &str);
 private:
 //	CString	m_regAppKey;

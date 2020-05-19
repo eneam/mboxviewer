@@ -40,6 +40,7 @@
 #include <algorithm>
 #include "dllist.h"
 #include "SimpleString.h"
+#include "HtmlPdfHdrConfigDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -365,6 +366,8 @@ public:
 	static int EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit);
 	static int EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CString &characterLimit);
 	//
+	static int CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameFontStyle, CString &fldTextFontStyle);
+	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
 	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);

@@ -12954,11 +12954,18 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 
 			if ((pBackgroundColorTagVal.CompareNoCase("fff") == 0) 
 				|| (pBackgroundColorTagVal.CompareNoCase("ffffff") == 0)
-				|| (pBackgroundColorTagVal.CompareNoCase("white") == 0)
+				)
+			{
+				outbuf->Append(p_mark, pBackgroundColorTagBeg - p_mark);
+				outbuf->Append(colorStr, colorStr.GetLength());
+				p_mark = pBackgroundColorTagEnd;
+			}
+			else if ((pBackgroundColorTagVal.CompareNoCase("white") == 0)
 				|| (pBackgroundColorTagVal.CompareNoCase("rgb(255,255,255)") == 0)
 				|| (pBackgroundColorTagVal.CompareNoCase("hsl(0,0%,100%)") == 0)
 				)
 			{
+				outbuf->Append('#');
 				outbuf->Append(p_mark, pBackgroundColorTagBeg - p_mark);
 				outbuf->Append(colorStr, colorStr.GetLength());
 				p_mark = pBackgroundColorTagEnd;

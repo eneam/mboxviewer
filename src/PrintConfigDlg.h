@@ -115,6 +115,7 @@ public:
 
 	afx_msg void OnBnClickedCustomTemplate();
 	afx_msg void OnBnClickedSetCustomTemplate();
+	afx_msg void OnBnClickedHtmlPdfCnf();
 };
 
 #endif _PRINT_CONFIG_DLG_

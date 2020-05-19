@@ -37,6 +37,7 @@
 #include "CustomNameTemplDlg.h"
 #include "FileUtils.h"
 #include "HtmlUtils.h"
+#include "HtmlPdfHdrConfigDlg.h"
 
 
 // PrintConfigDlg dialog
@@ -86,6 +87,7 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO3, &PrintConfigDlg::OnBnClickedRadio3)
 	ON_BN_CLICKED(IDC_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedCustomTemplate)
 	ON_BN_CLICKED(IDC_SET_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedSetCustomTemplate)
+	ON_BN_CLICKED(IDC_HTML_PDF_CNF, &PrintConfigDlg::OnBnClickedHtmlPdfCnf)
 END_MESSAGE_MAP()
 
 
@@ -565,3 +567,20 @@ void NamePatternParams::Bitmap2AddressParts()
 }
 
 
+void PrintConfigDlg::OnBnClickedHtmlPdfCnf()
+{
+	// TODO: Add your control notification handler code here
+
+	HtmlPdfHdrConfigDlg hdlg;
+	INT_PTR ret = hdlg.DoModal();
+
+	if (ret == IDOK)
+	{
+		CMainFrame *pFrame = (CMainFrame*)AfxGetMainWnd();
+		if (pFrame)
+		{
+			pFrame->m_HdrFldConfig.LoadFromRegistry();
+		}
+		int deb = 1;
+	}
+}

@@ -151,6 +151,12 @@
     <ClCompile Include="src\ColorPickerDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\HtmlPdfHdrConfigDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GenericFontFamilyDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -307,6 +313,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\ColorPickerDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\HtmlPdfHdrConfigDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GenericFontFamilyDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
