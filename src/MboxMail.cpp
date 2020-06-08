@@ -1157,7 +1157,9 @@ void MboxMail::Parse(LPCSTR path)
 	GetFileSizeEx(hFile, &li);
 	fSize = li.QuadPart;
 	s_step = fSize / 100;
-	int mappingsInFile = (int)((fSize - 1) / (_int64)MAPPING_SIZE) + 1;
+	_int64 mappingSize = (_int64)MAPPING_SIZE;
+
+	int mappingsInFile = (int)((fSize - 1)/mappingSize) + 1;
 	HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, (DWORD)(fSize >> 32), (DWORD)fSize, NULL);
 	if (hFileMap == NULL) {
 		CloseHandle(hFile);
@@ -1222,10 +1224,20 @@ void MboxMail::Parse(LPCSTR path)
 		s_curmap = lastStartOffset;
 		aligned_offset = (s_curmap / dwAllocationGranularity) * dwAllocationGranularity;
 		delta = s_curmap - aligned_offset;
-		bufSize = ((fSize - aligned_offset) < MAPPING_SIZE) ? (DWORD)(fSize - aligned_offset) : (DWORD)MAPPING_SIZE;
+		bufSize = ((fSize - aligned_offset) < mappingSize) ? (DWORD)(fSize - aligned_offset) : (DWORD)mappingSize;
 
 		TRACE("offset=%lld, bufsize=%ld, fSize-curmap=%lld, end=%lld\n", s_curmap, bufSize, fSize - s_curmap, s_curmap + bufSize);
 		char * pview = (char *)MapViewOfFileEx(hFileMap, FILE_MAP_READ, (DWORD)(aligned_offset >> 32), (DWORD)aligned_offset, bufSize, NULL);
+
+		if (pview == 0)
+		{
+			DWORD err = GetLastError();
+			CString txt = _T("Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.");
+			HWND h = NULL; // we don't have any window yet ??
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int deb = 1;
+			break;
+		}
 
 		if ((aligned_offset + bufSize) < fSize)
 			lastView = false;

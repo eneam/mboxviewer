@@ -44,6 +44,16 @@
 #include "MainFrm.h"
 #include "MboxMail.h"
 
+
+#ifdef _DEBUG
+inline void BreakParser()
+{
+	int deb = 1;
+}
+#else
+inline void BreakParser() {}
+#endif
+
 void MailHeader::Clear()
 {
 	m_IsText = false;
@@ -135,6 +145,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
 		{
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cTypeLen, m_ContentType);
 
@@ -179,6 +190,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			}
 			else
 			{
+				BreakParser();
 				int ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
 				if (!m_Name.IsEmpty()) {
 					CString charset;
@@ -193,11 +205,13 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
 		{
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cTransferEncodingLen, m_TransferEncoding);
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
 		{
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cDispositionLen, m_Disposition);
 
@@ -220,10 +234,12 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			}
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetMessageId(line, cMsgIdLen, m_MessageId);
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetMessageId(line, cMsgIdLen, m_ContentId);
 			m_ContentId.Trim();
@@ -231,11 +247,13 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
+			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetMessageId(line, cReplyIdLen, m_ReplyId);
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
 		{
+			BreakParser();
 			char *p_save = p;
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cContentLocationLen, m_ContentLocation);

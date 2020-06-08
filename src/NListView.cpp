@@ -61,6 +61,15 @@
 // Postponed to the next relase 1.0.3.3 since larger effort is needed
 ///////
 
+#ifdef _DEBUG
+inline void BreakNlistView()
+{
+	int deb = 1;
+}
+#else
+inline void BreakNlistView() {}
+#endif
+
 BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText);
 
 bool ALongRightProcessProcWriteIndexFile(const CUPDUPDATA* pCUPDUPData)
@@ -2773,7 +2782,8 @@ void NListView::FillCtrl()
 	m_list.SetRedraw(TRUE);
 	//pTreeView->m_tree.SetItemData(m_which, (DWORD)FileUtils::FileSize(m_path));
 	//BOOL retval = pTreeView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
-	BOOL retval = pTreeView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
+	BOOL retval;
+	//retval = pTreeView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
 	retval = pTreeView->m_tree.SelectItem(m_which);
 	CString txt = pTreeView->m_tree.GetItemText(m_which);
 
@@ -3756,7 +3766,7 @@ void NListView::SelectItem(int iItem)
 					int retC2S = Color2Str(color, colorStr);
 					CString hdr = "<html><head><style>body{background-color: #";
 					hdr.Append(colorStr);
-					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+					hdr.Append(";}</style></head></html><br>");
 					//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
 					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
@@ -9489,7 +9499,7 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 	static char * img_pattern = "<img";
 	static int img_patternLen = strlen(img_pattern);
 
-	static char * src_pattern = "src=\"";
+	static char * src_pattern = "src=";
 	static int src_patternLen = strlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
@@ -9613,6 +9623,14 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 		pos += src_patternLen;
 		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
+
+		BOOL inQuotes = FALSE;
+		if (*pos == '"')
+		{
+			inQuotes = TRUE;
+			pos++;
+		}
+
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
 		if (pos != 0)
 		{
@@ -9674,22 +9692,29 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 			pos = cidBegin;
 			pos = TextUtilsEx::strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
 			if (pos) { // not implemented ; implemented by broesers, etc
-				//pos += 0;  // include https:
-				//cidBegin = pos;
 				// set pos = 0 since src=data: case is not handled
 				srcData = true;
-				pos = 0;
+				//pos = 0;
+				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				continue;
 			}
 		}
 
 		if (pos == 0)
 		{
 			// find end of cid token or local file path
-			pos = TextUtilsEx::strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, " >");
+			}
 			if (pos == 0)
 			{
-				pos = srcImgEnd;  // jump over this <img .. > since no cid:
-				//fromBegin = pos;
+				MboxMail::m_EmbededImagesNoMatch++;
+				pos = srcImgEnd;  // jump over this <img .. > since no image
 				continue;
 			}
 			cidEnd = pos;
@@ -9698,11 +9723,18 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 		else
 		{
 			// find end of cid token
-			pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, " >");
+			}
+
 			if (pos == 0)
 			{
 				pos = srcImgEnd;  // jump over this <img .. > since no cid:
-				//fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
@@ -9714,11 +9746,6 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 			cid.SetCount(retLen);
 		}
 
-		// Enable if needed
-		//CString *cidName = new CString(cid.Data(), cid.Count());
-		//cidArray.Add(cidName);
-
-		//CString cidName = cid.Data();
 		CString cidName;
 		cidName.Insert(0, cid.Data());
 
@@ -9727,7 +9754,6 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 		if (pBodyFound && (retval > 0))
 		{
 			MboxMail::m_EmbededImagesFound++;
-
 			if (srcCid)
 			{
 				MboxMail::m_EmbededImagesFoundCid++;
@@ -9845,7 +9871,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	static char * img_pattern = "<img";
 	static int img_patternLen = strlen(img_pattern);
 
-	static char * src_pattern = "src=\"";
+	static char * src_pattern = "src=";
 	static int src_patternLen = strlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
@@ -9878,7 +9904,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	int patternLen = cid_patternLen;
 	int mhtmlIntroLen = 0;
 	char *srcBegin;
-	char *srcValueBegin;
+	char *srcEnd;
 
 	MboxMail *m = 0;
 	if (useMailPosition)
@@ -9978,9 +10004,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, src_pattern, src_patternLen);
 		if (pos == 0) {
-			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
 			pos = srcImgEnd;  // jump over this <img .. > since no cid:
-			fromBegin = pos;
 			continue;
 		}
 
@@ -9997,8 +10021,15 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 		patternLen = cid_patternLen;
 		srcBegin = pos;
+		srcEnd = srcBegin + src_patternLen;
 		pos += src_patternLen;
-		srcValueBegin = pos;
+
+		BOOL inQuotes = FALSE;
+		if (*pos == '"')
+		{
+			inQuotes = TRUE;
+			pos++;
+		}
 
 		BOOL foundHTTP = FALSE;
 		cidBegin = pos;
@@ -10068,19 +10099,26 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			pos = cidBegin;
 			pos = TextUtilsEx::strnstrUpper2Lower(pos, pos + data_patternLen, data_pattern, data_patternLen);
 			if (pos) { // not implemented ; implemented by browser, etrc
-				//patternLen = 0;
-				//pos += patternLen;  // include data:
-				//cidBegin = pos;
 				// set pos = 0 since src=data: case is not handled
 				srcData = true;
-				pos = 0;
+				//pos = 0;
+				pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+				continue;
 			}
 		}
 
 		if (pos == 0)
 		{
 			// find end of cid token or local file path
-			pos = TextUtilsEx::strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
+			//
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, " >");
+			}
 			if (pos == 0)
 			{
 				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
@@ -10090,21 +10128,29 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			}
 			cidEnd = pos;
 			srcLocalFile = true;
-			outbuf->Append(fromBegin, cidBegin - 1 - fromBegin - mhtmlIntroLen);
+			if ((srcImgEnd - cidEnd) > 10)
+				int deb = 1;
 		}
 		else
 		{
 			// find end of cid token
-			pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+			//
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, " >");
+			}
 			if (pos == 0)
 			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
 				pos = srcImgEnd;  // jump over this <img .. > since no cid:
-				fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
-			outbuf->Append(fromBegin, cidBegin - 1 - patternLen - fromBegin - mhtmlIntroLen);
+			if ((srcImgEnd - cidEnd) > 10)
+				int deb = 1;
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
@@ -10115,10 +10161,6 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 		cidName.Empty();
 		cidName.Append(cid.Data(), cid.Count());
-
-		pos++; // jump over \"
-		cidEnd = pos;
-		fromBegin = pos;
 
 		MailBodyContent *pBodyFound;
 		int retval = NListView::DetermineImageFileName(m, cidName, imageFileName, &pBodyFound, mailPosition);
@@ -10156,11 +10198,16 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 				MboxMail::m_EmbededImagesFoundLocalFile++;
 			}
 
+			int length = srcEnd - fromBegin;
+			outbuf->Append(fromBegin, length);
 
 			outbuf->Append("\"file:\\\\\\");
 			outbuf->Append(imgFile, imgFile.GetLength());
-			outbuf->Append("\"");
+			outbuf->Append('\"');
 
+			fromBegin = cidEnd;
+			if (*cidEnd == '\"')
+				fromBegin++;
 
 			if (!runInvestigation)
 			{
@@ -10258,9 +10305,6 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			else
 				int deb = 1;
 
-			outbuf->Append('\"');
-			outbuf->Append(srcValueBegin, cidEnd - srcValueBegin);
-			//outbuf->Append(srcBegin, cidEnd - srcBegin);
 			int deb = 1;
 		}
 #if 0
@@ -10317,6 +10361,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 	SimpleString cid;
 	CString imageFileName;
 	CString nameExtension;
+	CString baseName;
 	CString idExtension;
 	CString locationExtension;
 	CMimeBody *body;
@@ -10509,7 +10554,6 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 							imageFileName = mailIndex + contentId + ".jpg";
 					}
 					*foundBody = body;
-					break;
 				}
 				else
 				{
@@ -10584,7 +10628,6 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 							imageFileName = mailIndex + contentLocation + ".jpg";
 					}
 					*foundBody = body;
-					break;
 				}
 				else
 				{
@@ -10639,6 +10682,52 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 			}
 			int deb = 1;
 		}
+
+		if (*foundBody)
+		{
+			if (!imageFileName.IsEmpty())
+			{
+				int pos = imageFileName.ReverseFind('.');
+				if (pos > 0)  // extension found
+				{
+					nameExtension = imageFileName.Mid(pos);
+					baseName = imageFileName.Mid(0, pos);
+
+
+					// In few cases the file name extension is incorrect and needs to be corercted in order for Internet Explorer to display the image instead of the blank image.
+					// Othet Browser such as Chrome, Firefox don't need this fix.
+					//if ((nameExtension.CompareNoCase(".gif") == 0) || (nameExtension.CompareNoCase(".png") == 0) || (nameExtension.CompareNoCase(".bmp") == 0))
+					{
+						const unsigned char* data = pBP->GetContent();
+						int dataLength = pBP->GetContentLength();
+
+						CStringW extensionW;
+						BOOL ret = loadImage((BYTE*)data, (size_t)dataLength, extensionW);
+						if (ret)
+						{
+							CString extension;
+							DWORD error;
+							TextUtilsEx::Wide2Ansi(extensionW, extension, error);
+							if ((nameExtension.CompareNoCase(".jpg") == 0) && (extension.CompareNoCase(".jpeg") == 0))
+								;
+							else if ((nameExtension.CompareNoCase(".jpeg") == 0) && (extension.CompareNoCase(".jpg") == 0))
+								;
+							else if (nameExtension.CompareNoCase(extension) != 0)
+							{
+								imageFileName = baseName + extension;
+							}
+							int deb = 1;
+						}
+					}
+				}  // else extension found, all done
+				else
+				{
+					int deb = 1;
+				}
+			}
+			break;
+		}
+
 	}
 
 	if (*foundBody)
@@ -10742,7 +10831,7 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 	static char * img_pattern = "<img";
 	static int img_patternLen = strlen(img_pattern);
 
-	static char * src_pattern = "src=\"";
+	static char * src_pattern = "src=";
 	static int src_patternLen = strlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
@@ -10872,6 +10961,14 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 			bool srcLocalFile = false;
 
 			pos += src_patternLen;
+
+			BOOL inQuotes = FALSE;
+			if (*pos == '"')
+			{
+				inQuotes = TRUE;
+				pos++;
+			}
+
 			BOOL foundHTTP = FALSE;
 			cidBegin = pos;
 			pos = TextUtilsEx::strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
@@ -10879,7 +10976,7 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 			{
 				srcCid = true;
 				pos += cid_patternLen;
-				cidBegin = pos;
+				cidBegin = pos;  // cid value
 			}
 
 			if (pos == 0)
@@ -10900,7 +10997,7 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 					else
 					{
 						MboxMail::m_EmbededImagesFoundUnexpectedMHtml++;
-						pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+						pos = srcImgEnd;  // jump over this <img .. > since no cid:
 						continue;
 					}
 				}
@@ -10938,14 +11035,25 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 					//cidBegin = pos;
 					// set pos = 0 since src=data: case is not handled
 					srcData = true;
-					pos = 0;
+					//pos = 0;
+					pos = srcImgEnd;  // jump over this <img .. > since no cid:
+					continue;
 				}
 			}
 
 			if (pos == 0)
 			{
+				// Local File
 				// find end of cid token (or http or https) or local file path
-				pos = TextUtilsEx::strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
+				//pos = TextUtilsEx::strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
+				if (inQuotes)
+				{
+					pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, "\"");
+				}
+				else
+				{
+					pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, " >");
+				}
 				if (pos == 0)
 				{
 					MboxMail::m_EmbededImagesNoMatch++;
@@ -10957,11 +11065,23 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 			}
 			else
 			{
+				if (pos != cidBegin)
+					int deb = 1;
+
 				// find end of cid token (or http or https)
-				pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+				//pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+				if (inQuotes)
+				{
+					pos = TextUtilsEx::findOneOf(pos, srcImgEnd, "\"");
+				}
+				else
+				{
+					pos = TextUtilsEx::findOneOf(pos, srcImgEnd, " >");
+				}
+
 				if (pos == 0)
 				{
-					pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
+					pos = srcImgEnd;  // jump over this <img .. > since no cid:
 					continue;
 				}
 				cidEnd = pos;
@@ -11114,7 +11234,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 	static char * img_pattern = "<img";
 	static int img_patternLen = strlen(img_pattern);
 
-	static char * src_pattern = "src=\"";
+	static char * src_pattern = "src=";
 	static int src_patternLen = strlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
@@ -11143,11 +11263,11 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 	CString imageFilePath;
 
 	char *fromBegin = input;
-	char *alt_pos;
+	//char *alt_pos;
 	int patternLen = cid_patternLen;
 	int mhtmlIntroLen = 0;
 	char *srcBegin;
-	char *srcValueBegin;
+	char *srcEnd;
 
 	MboxMail *m = 0;
 	if (useMailPosition)
@@ -11185,29 +11305,35 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 		}
 		srcImgEnd++; // jump over
 
-		alt_pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "alt=\"", 5);
+		//alt_pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "alt=\"", 5);
 
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, src_pattern, src_patternLen);
 		if (pos == 0) {
-			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-			fromBegin = pos;
+			pos = srcImgEnd;  // jump over this <img .. > since no cid:
 			continue;
 		}
 
 		patternLen = cid_patternLen;
-		srcBegin = pos;
+		srcBegin = pos;  // point to src=
+		srcEnd = srcBegin + src_patternLen;
 		pos += src_patternLen;
-		srcValueBegin = pos;
+		
+		BOOL inQuotes = FALSE;
+		if (*pos == '"')
+		{
+			inQuotes = TRUE;
+			pos++;
+		}
 
 		BOOL foundHTTP = FALSE;
+		BOOL foundMHTML = FALSE;
 		cidBegin = pos;
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, pos + cid_patternLen, cid_pattern, cid_patternLen);
 		if (pos != 0)
 		{
 			patternLen = cid_patternLen;
 			pos += cid_patternLen;
-			cidBegin = pos;
+			cidBegin = pos;  // point to cid value
 		}
 
 		mhtmlIntroLen = 0;
@@ -11222,6 +11348,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 					cidBegin = pos + 1;
 					pos = 0;
 					foundHTTP = TRUE;
+					foundMHTML = TRUE;
 				}
 				int deb = 1;
 			}
@@ -11263,33 +11390,46 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 			}
 		}
 
+		// find cid value
 		if (pos == 0)
 		{
 			// find end of cid token or local file path
-			pos = TextUtilsEx::strnstrUpper2Lower(cidBegin, srcImgEnd, "\"", 1);
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(cidBegin, srcImgEnd, " >");
+			}
 			if (pos == 0)
 			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
 				pos = srcImgEnd;  // jump over this <img .. > since no cid:
-				fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
-			outbuf->Append(fromBegin, cidBegin - 1 - fromBegin - mhtmlIntroLen);
+			if ((srcImgEnd - cidEnd) > 10)
+				int deb = 1;
 		}
 		else
 		{
 			// find end of cid token
-			pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
+			if (inQuotes)
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, "\"");
+			}
+			else
+			{
+				pos = TextUtilsEx::findOneOf(pos, srcImgEnd, " >");
+			}
 			if (pos == 0)
 			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
 				pos = srcImgEnd;  // jump over this <img .. > since no cid:
-				fromBegin = pos;
 				continue;
 			}
 			cidEnd = pos;
-			outbuf->Append(fromBegin, cidBegin - 1 - patternLen - fromBegin - mhtmlIntroLen);
+			if ((srcImgEnd - cidEnd) > 10)
+				int deb = 1;
 		}
 
 		cid.Copy(cidBegin, cidEnd - cidBegin);
@@ -11300,10 +11440,6 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 
 		cidName.Empty();
 		cidName.Append(cid.Data(), cid.Count());
-
-		pos++; // jump over \"
-		cidEnd = pos;
-		fromBegin = pos;
 
 		int i;
 		MailBodyInfo* info = 0;
@@ -11320,16 +11456,27 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 
 		if (cidFound && info)
 		{
+			if (foundHTTP && !foundMHTML)
+			{
+				int deb = 1;
+			}
+
 			imgFile = info->m_imgFileName;
+
+			int length = srcEnd - fromBegin;
+			outbuf->Append(fromBegin, length);
 
 			outbuf->Append("\"file:\\\\\\");
 			outbuf->Append(imgFile, imgFile.GetLength());
-			outbuf->Append("\"");
+			outbuf->Append('\"');
+
+			fromBegin = cidEnd;
+			if (*cidEnd == '\"')
+				fromBegin++;
+
 		}
 		else
 		{
-			outbuf->Append('\"');
-			outbuf->Append(srcValueBegin, cidEnd - srcValueBegin);
 			int deb = 1;
 		}
 #if 0

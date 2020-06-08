@@ -191,6 +191,7 @@ void NTreeView::FillCtrl()
 	if (path.IsEmpty() || !FileUtils::PathDirExists(path))
 		return;
 	CString root;
+	path.TrimRight("\\");
 	char *last_slash = (char*)strrchr(path, '\\');
 	if (last_slash && *last_slash) 
 	{
@@ -238,7 +239,7 @@ void NTreeView::FillCtrl()
 							//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
 							CString cache = fullPath + ".mboxview";
 							DeleteFile(cache);
-							m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
+							//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
 							CString txt = m_tree.GetItemText(hItem);
 							int deb = 1;
 						}
@@ -363,15 +364,14 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if( str.IsEmpty() || path.IsEmpty() )
 		return;
-	if (path.GetLength() > 0)
-	{
-		if (path.GetAt(path.GetLength()-1) != _T('\\'))
-			pListView->m_path = path + _T('\\') + str;
-		else
-			pListView->m_path = path + str;
-	}
-	else
-		pListView->m_path = path + _T('\\') + str;
+	path.TrimRight("\\");
+	pListView->m_path = path + _T('\\') + str;
+
+	m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
+
+	HTREEITEM hOldItem = pNm->itemOld.hItem;
+	if (hOldItem >= 0)
+		m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
 
 	pListView->m_which = pNm->itemNew.hItem;
 
@@ -429,15 +429,8 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if (str.IsEmpty() || path.IsEmpty())
 		return;
-	if (path.GetLength() > 0)
-	{
-		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
-			pListView->m_path = path + _T('\\') + str;
-		else
-			pListView->m_path = path + str;
-	}
-	else
-		pListView->m_path = path + _T('\\') + str;
+	path.TrimRight("\\");
+	pListView->m_path = path + _T('\\') + str;
 	CString cache = pListView->m_path + ".mboxview";
 	DeleteFile(cache);
 	pListView->m_which = hItem;
@@ -467,15 +460,8 @@ void NTreeView::SelectMailFile()
 
 	pListView->CloseMailFile();
 
-	if (path.GetLength() > 0)
-	{
-		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
-			pListView->m_path = path + _T('\\') + str;
-		else
-			pListView->m_path = path + str;
-	}
-	else
-		pListView->m_path = path + _T('\\') + str;
+	path.TrimRight("\\");
+	pListView->m_path = path + _T('\\') + str;
 
 	CString txt;
 	if (!FileUtils::PathDirExists(path))
@@ -517,21 +503,23 @@ BOOL NTreeView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 {
 	CString line;
-	CString path;
-	CString fpath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	while( hItem != NULL ) {
-		path = m_tree.GetItemText(hItem);
-		if( ! path.IsEmpty() && ! fpath.IsEmpty() ) {
-			CString fullPath = fpath + "\\" + path;
+	CString ipath;
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	path.TrimRight("\\");
+	while( hItem != NULL ) 
+	{
+		ipath = m_tree.GetItemText(hItem);
+		if( ! ipath.IsEmpty() && ! path.IsEmpty() ) {
+			CString fullPath = path + "\\" + ipath;
 			_int64 fSize = 0;
 			//_int64 realFSize = FileUtils::FileSize(fullPath);
-			BOOL found = fileSizes.Lookup(path, fSize);
+			BOOL found = fileSizes.Lookup(ipath, fSize);
 			//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", path, realFSize, fSize);
 			if (!found) {
 				_int64 realFSize = FileUtils::FileSize(fullPath);
-				fileSizes[path] = fSize = realFSize;
+				fileSizes[ipath] = fSize = realFSize;
 			}
-			line.Format("%s\t%lld\n", path, fSize);
+			line.Format("%s\t%lld\n", ipath, fSize);
 			fp.Write(line, line.GetLength());
 		}
 		if (m_tree.ItemHasChildren(hItem)){
@@ -549,10 +537,12 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 void NTreeView::SaveData()
 {
 	HTREEITEM hRoot = m_tree.GetRootItem();
+	CString rootName = m_tree.GetItemText(hRoot);
 	CFile fp;
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	if( path.IsEmpty() )
 		return;
+	path.TrimRight("\\");
 	if( fp.Open(path+"\\.mboxview", CFile::modeWrite | CFile::modeCreate) ) {
 		Traverse(hRoot, fp);
 		fp.Close();
@@ -598,21 +588,24 @@ void NTreeView::OnFileRefresh()
 	// Below was moved to FillCtrl() called above;
 	HTREEITEM hSel = m_tree.GetSelectedItem();
 	HTREEITEM hRoot = m_tree.GetRootItem();
+	CString rootItem = m_tree.GetItemText(hRoot);
 	if( hRoot == NULL || ! m_tree.ItemHasChildren(hRoot) )
 		return;
 	HTREEITEM hItem = m_tree.GetChildItem(hRoot);
-	CString fpath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	path.TrimRight("\\");
 	BOOL bFound = FALSE;
-	while( hItem ) {
+	while( hItem ) 
+	{
 		CString str = m_tree.GetItemText(hItem);
-		if( ! str.IsEmpty() && ! fpath.IsEmpty() ) {
-			CString fullPath = fpath + "\\" + str;
+		if( ! str.IsEmpty() && ! path.IsEmpty() ) {
+			CString fullPath = path + "\\" + str;
 			_int64 fSize = 0;
 			fileSizes.Lookup(str, fSize);
 			if( fSize != FileUtils::FileSize(fullPath) ) {
 				CString cache= fullPath + ".mboxview";
 				DeleteFile(cache);
-				m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
+				//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
 				CString txt = m_tree.GetItemText(hItem);
 				bFound = TRUE;
 			}

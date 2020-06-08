@@ -145,7 +145,8 @@ BOOL CProfile::_GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CStrin
 	long res;
 	CString	path = (char *)section;
 	if (!RegOpenKeyEx(hKey, (LPCTSTR)path,
-		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) {
+		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) 
+	{
 		res = RegQueryValueEx(myKey, (LPCTSTR)key,
 			NULL, NULL, data, &size);
 		RegCloseKey(myKey);
@@ -166,7 +167,8 @@ BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &in
 	long res;
 	CString	path = (char *)section;
 	if (!RegOpenKeyEx(hKey, (LPCTSTR)path,
-		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) {
+		NULL, KEY_READ | KEY_QUERY_VALUE, &myKey)) 
+	{
 		res = RegQueryValueEx(myKey, (LPCTSTR)key,
 			NULL, NULL, (BYTE *)&result, &size);
 		RegCloseKey(myKey);
@@ -181,6 +183,8 @@ BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &in
 BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, int &intval)
 {
 	DWORD dwVal = 0;
+	if (key == 0)
+		return FALSE;
 	BOOL ret = _GetProfileInt(hKey, section, key, dwVal);
 	if (ret)
 		intval = dwVal;
@@ -215,8 +219,10 @@ BOOL CProfile::_DeleteProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key)
 	CString	path = (char *)section;
 	if( ERROR_SUCCESS == RegOpenKeyEx( hKey, 
 							(LPCTSTR)path, 0, KEY_ALL_ACCESS, 
-							&myKey) ) {
-		long Res = RegDeleteValue( myKey, key );
+							&myKey) ) 
+	{
+		if (key)
+			long Res = RegDeleteValue( myKey, key );
 		RegCloseKey( myKey );
 		return TRUE;
 	} else
@@ -232,8 +238,16 @@ BOOL CProfile::_WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, CSt
 							(LPCTSTR)path, 0, NULL, 
 							REG_OPTION_NON_VOLATILE, 
 							KEY_WRITE, NULL, &myKey, 
-							&dwDisposition ) ) {
-		RegSetValueEx ( myKey,key,0,REG_SZ,(CONST BYTE*)(LPCTSTR)value,value.GetLength()+1);
+							&dwDisposition ) ) 
+	{
+		if (key)
+		{
+			LSTATUS sts = RegSetValueEx(myKey, key, 0, REG_SZ, (CONST BYTE*)(LPCTSTR)value, value.GetLength() + 1);
+			if (sts == FALSE)
+			{
+				DWORD err = GetLastError();
+			}
+		}
 		RegCloseKey( myKey );
 		return TRUE;
 	} else
@@ -271,8 +285,16 @@ BOOL CProfile::_WriteProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD 
 							(LPCTSTR)path, 0, NULL, 
 							REG_OPTION_NON_VOLATILE, 
 							KEY_WRITE, NULL, &myKey, 
-							&dwDisposition ) ) {
-		RegSetValueEx ( myKey,key,0,REG_DWORD,(CONST BYTE*)&value,sizeof(value));
+							&dwDisposition ) ) 
+	{
+		if (key)
+		{
+			LSTATUS sts = RegSetValueEx(myKey, key, 0, REG_DWORD, (CONST BYTE*)&value, sizeof(value));
+			if (sts == FALSE)
+			{
+				DWORD err = GetLastError();
+			}
+		}
 		RegCloseKey( myKey );
 		return TRUE;
 	} else
