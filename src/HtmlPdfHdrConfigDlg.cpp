@@ -90,6 +90,11 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 
 	LoadData();
 
+	if (m_HdrFldConfig.m_bHdrFontDflt == 0)
+		OnBnClickedFontDflt();
+	else
+		OnBnClickedFontCustom();
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
