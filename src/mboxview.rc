@@ -43,12 +43,14 @@ IDB_PAPER_CLIP          BITMAP                  "..\\res\\PaperClip.bmp"
 IDR_MAINFRAME TOOLBAR 16, 15
 BEGIN
     BUTTON      ID_FILE_OPEN
+    SEPARATOR
     BUTTON      ID_FILE_REFRESH
     SEPARATOR
     BUTTON      ID_APP_ABOUT
     SEPARATOR
-    BUTTON      ID_BUTTON32868
-    BUTTON      ID_BUTTON32875
+    BUTTON      ID_TREE_EXPAND
+    SEPARATOR
+    BUTTON      ID_TREE_DROP_EXPAND
     BUTTON      ID_BUTTON32876
 END
 
@@ -155,7 +157,7 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 215, 115
+IDD_ABOUTBOX DIALOGEX 0, 0, 215, 128
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About mboxview"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -163,10 +165,11 @@ BEGIN
     LTEXT           "Simple MBox Viewer",IDC_STATIC,40,7,119,8,SS_NOPREFIX
     DEFPUSHBUTTON   "Close",IDOK,158,7,50,14,WS_GROUP
     LTEXT           " ",IDC_STATIC1,40,20,119,8
-    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,20,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,21,20
     LTEXT           "If you like this program please consider making a donation",IDC_DONATION,7,86,201,12,SS_NOTIFY
     LTEXT           "This program is free to use under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE version 3.",IDC_LICENSE,7,36,193,22
     LTEXT           "The executable, associated source code files and User Guide  can be downloaded from  Github and Sourceforge sites.",IDC_STATIC,7,60,201,27
+    LTEXT           "NOTE that the donation page is in Italian by default. The option at the bottom right corner allows to change to English.",IDC_STATIC,7,100,193,18
 END
 
 IDD_CONTROLS_DLG DIALOGEX 0, 0, 394, 239
@@ -600,7 +603,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,11
+ FILEVERSION 1,0,3,12
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -617,7 +620,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.11"
+            VALUE "FileVersion", "1.0.3.12"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -645,7 +648,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 208
         TOPMARGIN, 7
-        BOTTOMMARGIN, 105
+        BOTTOMMARGIN, 125
     END
 
     IDD_CONTROLS_DLG, DIALOG
@@ -1007,10 +1010,12 @@ END
 STRINGTABLE
 BEGIN
     ID_EDIT_FINDAGAIN       "Repeat last search\nFind again"
+    ID_FILE_REFRESH         "Refresh folder containing mails\nRefresh mail folders"
 END
 
 STRINGTABLE
 BEGIN
+    ID_TREE_EXPAND          "Expand tree containing folders\nExpand/Collapse mail folders"
     ID_VIEW_USERSELECTEDMAILS 
                             "Enable or Disable User Selected Mail List/Toggle the list"
 END

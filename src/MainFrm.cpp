@@ -170,6 +170,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_ATTACHMENTSCONFIG, &CMainFrame::OnFileAttachmentsconfig)
 	ON_COMMAND(ID_FILE_COLORCONFIG, &CMainFrame::OnFileColorconfig)
 	ON_MESSAGE(WM_CMD_PARAM_NEW_COLOR_MESSAGE, &CMainFrame::OnCmdParam_ColorChanged)
+	ON_MESSAGE(WM_CMD_PARAM_TREE_EXPAND_MESSAGE, &CMainFrame::OnCmdParam_TreeExpand)
+	ON_MESSAGE(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, &CMainFrame::OnCmdParam_LoadFolders)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -232,9 +234,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_pListView = DetListView();
 	m_pMsgView = DetMsgView();
 
-	if (GetTreeView())
-		GetTreeView()->FillCtrl();
-
 #if 0
 	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 		| CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
@@ -252,10 +251,18 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 
 	// TODO: Remove this if you don't want tool tips
-	m_wndToolBar.SetBarStyle(m_wndToolBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_TOP | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC);
+	m_wndToolBar.SetBarStyle(m_wndToolBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_TOP | CBRS_SIZE_DYNAMIC);
 #endif
 
 	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
+	CImageList* imgList = wndToolBarCtrl.GetImageList();
+	BOOL ret = m_imgListBag.Create(imgList);
+
+	ret = imgList->Copy(4, 5, ILCF_MOVE);
+
+	m_bTreeExpanded = FALSE;
+
+	PostMessageA(WM_CMD_PARAM_TREE_EXPAND_MESSAGE, 0, 0);
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
@@ -333,6 +340,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
+
+	PostMessageA(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, 0, 0);
 
 	return 0;
 }
@@ -548,6 +557,8 @@ void CMainFrame::OnFileOpen()
 		}
 	}
 
+	GetTreeView()->m_tree.SortChildren(0);
+
 #if 0
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 
@@ -578,13 +589,14 @@ void CMainFrame::OnFileOpen()
 	SetStatusBarPaneText(paneId, sText, FALSE);
 }
 
-void CMainFrame::DoOpen(CString& path) 
+void CMainFrame::DoOpen(CString& fpath) 
 {
 	int paneId = 0;
 	CString sText;
 	sText.Format("Opening new mail folder ...");
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
+	CString path = fpath;
 	if (path.GetLength() > 0)
 	{
 		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
@@ -592,6 +604,9 @@ void CMainFrame::DoOpen(CString& path)
 	}
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 	GetTreeView()->FillCtrl();
+	AfxGetApp()->AddToRecentFileList(path);
+
+	GetTreeView()->m_tree.SortChildren(0);
 
 	sText.Format("Ready");
 	SetStatusBarPaneText(paneId, sText, FALSE);
@@ -2973,5 +2988,52 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 			pMsgView->PostMessage(WM_PAINT);
 		}
 	}
+	return 0;
+}
+
+void CMainFrame::UpdateToolsBar()
+{
+	BOOL ret;
+
+	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
+	CImageList* imgList = wndToolBarCtrl.GetImageList();
+
+	ret = imgList->Copy(4, 5, ILCF_MOVE);
+
+	HICON ic = 0;
+	if (m_bTreeExpanded)
+		ic = m_imgListBag.ExtractIcon(4);
+	else
+		ic = m_imgListBag.ExtractIcon(3);
+	ret = imgList->Replace(3, ic);
+
+	NTreeView * pTreeView = GetTreeView();
+	if (pTreeView)
+		pTreeView->ExpandOrCollapseTree(m_bTreeExpanded);
+
+	m_bTreeExpanded = !m_bTreeExpanded;
+
+	m_wndToolBar.Invalidate();
+
+	int deb = 1;
+}
+
+LRESULT CMainFrame::OnCmdParam_TreeExpand(WPARAM wParam, LPARAM lParam)
+{
+	BOOL ret;
+
+	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
+	CImageList* imgList = wndToolBarCtrl.GetImageList();
+
+	ret = imgList->Copy(4, 5, ILCF_MOVE);
+
+	m_wndToolBar.Invalidate();
+	return 0;
+}
+
+LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
+{
+	if (GetTreeView())
+		GetTreeView()->LoadFolders();
 	return 0;
 }

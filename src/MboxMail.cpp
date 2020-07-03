@@ -8160,7 +8160,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		{
 			hintText.Append(
 				"By default attachments other than those embeded into mail\n"
-				"are shownin the attachment window.\n\n"
+				"are shown in the attachment window.\n\n"
 				"You can configure to shown all attachments, both inline and\n"
 				"non-inline, by selecting\n"
 				"\"File->Attachments Config->Attachment Window\" dialog\n"

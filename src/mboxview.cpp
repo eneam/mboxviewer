@@ -361,17 +361,22 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), openFolder);
 			}
 		}
-		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) {
+		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) 
+		{
 			CString mailFile = lpszParam + 10;
-			TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
-			TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
-			TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
-			TCHAR fname[_MAX_FNAME + 1];
 
-			_tsplitpath(mailFile, drive, dir, fname, ext);
-			if (_tcslen(dir) != 0) {
+			CString fileName;
+			CString driveName;
+			CString directory;
+			CString fileNameBase;
+			CString fileNameExtention;
+			FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
+
+			if (directory.GetLength() != 0)
+			{
 				CString txt;
-				if (!FileUtils::PathFileExist(mailFile)) {
+				if (!FileUtils::PathFileExist(mailFile)) 
+				{
 					CString txt = _T("Nonexistent File \"") + mailFile;
 					txt += _T("\".\nDo you want to continue?");
 					HWND h = NULL; // we don't have any window yet  
@@ -379,20 +384,23 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 					if (answer == IDNO)
 						m_bError = TRUE;
 				}
-				else {
-					CString lastPath = CString(drive) + dir;
-					CString file(fname); file += ext;
+				else 
+				{
+					CString lastPath = driveName + directory;
+					CString file = mailFile;
+
 					m_bLastPathSet = TRUE;
 					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), lastPath);
 					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), file);
-
 				}
 			}
-			else {
+			else 
+			{
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), mailFile);
 			}
 		}
-		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) {
+		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) 
+		{
 			CString exportEML = lpszParam + 11;
 			exportEML.MakeLower();
 			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0))) {

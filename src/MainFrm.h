@@ -116,6 +116,8 @@ public:
 	NListView * DetListView();
 	NTreeView * DetTreeView();
 
+	void UpdateToolsBar();
+
 	void DoOpen(CString& path);
 	void SetMailList(int nID);
 	void EnableMailList(int nId, BOOL enable);
@@ -180,6 +182,8 @@ protected:  // control bar embedded members
 	NMsgView *m_pMsgView;
 	CSVFILE_CONFIG m_csvConfig;
 	int m_bEnhancedSelectFolderDlg;
+	CImageList m_imgListBag;
+	BOOL m_bTreeExpanded;
 
 public:
 	HdrFldConfig m_HdrFldConfig;
@@ -248,6 +252,8 @@ public:
 	afx_msg void OnFileAttachmentsconfig();
 	afx_msg void OnFileColorconfig();
 	afx_msg LRESULT OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnCmdParam_TreeExpand(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam);
 };
 
 /////////////////////////////////////////////////////////////////////////////

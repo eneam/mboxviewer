@@ -2780,16 +2780,13 @@ void NListView::FillCtrl()
 #endif
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
-	//pTreeView->m_tree.SetItemData(m_which, (DWORD)FileUtils::FileSize(m_path));
-	//BOOL retval = pTreeView->m_tree.SetItemState(m_which, 0, TVIS_BOLD);
 	BOOL retval;
-	//retval = pTreeView->m_tree.SetItemState(m_which, TVIS_SELECTED, TVIS_BOLD);
 	retval = pTreeView->m_tree.SelectItem(m_which);
 	CString txt = pTreeView->m_tree.GetItemText(m_which);
 
 	_int64 fSize = FileUtils::FileSize(MboxMail::s_path);
 	pTreeView->UpdateFileSizesTable(txt, fSize);
-	pTreeView->SaveData();
+	pTreeView->SaveData(m_which);
 
 	if (pFrame)
 		pFrame->SetupMailListsToInitialState();

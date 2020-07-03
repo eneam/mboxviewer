@@ -284,7 +284,9 @@
 #define ID_SORTBY_SIZE                  32866
 #define ID_SORTBY_CONVERSATION          32867
 #define ID_BUTTON32868                  32868
+#define ID_TREE_EXPAND                  32868
 #define ID_BUTTON32875                  32875
+#define ID_TREE_DROP_EXPAND             32875
 #define ID_BUTTON32876                  32876
 #define ID_VIEW_USERSELECTEDMAILS       32878
 #define ID_HELP_MBOXVIEWHELP            32879

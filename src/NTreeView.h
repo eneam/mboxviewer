@@ -36,9 +36,38 @@
 //
 
 #include "WheelTreeCtrl.h"
+//#include <afxtempl.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView window
+
+typedef  CArray<CString> CSArray;
+
+class CRegArray
+{
+public:
+	CRegArray(CString &section);
+	CRegArray();
+	~CRegArray();
+
+	int Find(CString &str);
+	int Add(CString &str);
+	int Delete(CString &str);
+	int Delete(int index, CString &str);
+	BOOL GetAt(int index, CString &str);
+	int GetCount();
+	BOOL SaveToRegistry();
+	BOOL LoadFromRegistry();
+	BOOL LoadFromRegistry(CSArray &ar);
+	BOOL CreateKey(CString &section, HKEY &hKey);
+
+	void Dump();
+
+	CString m_ProcSoftwarePath;
+	CString m_section;
+	int m_nMaxSize;
+	CSArray m_array;
+};
 
 class NTreeView : public CWnd
 {
@@ -57,6 +86,7 @@ public:
 	// timer
 	UINT_PTR m_nIDEvent;
 	UINT m_nElapse;
+	CRegArray m_folderArray;
 
 // Attributes
 public:
@@ -73,14 +103,22 @@ public:
 
 // Implementation
 public:
+	void DetermineFolderPath(HTREEITEM hItem, CString &folderPath);
+	HTREEITEM DetermineRootItem(HTREEITEM hItem);
 	void Traverse( HTREEITEM hItem, CFile &fp );
-	void SaveData();
-	void FillCtrl();
+	void SaveData(HTREEITEM hItem);
+	void FillCtrl(BOOL expand = TRUE);
+	void ExpandOrCollapseTree(BOOL expand);
+	void LoadFolders();
+	HTREEITEM HasFolder(CString &path);
 	void SelectMailFile(); // based on -MBOX= command line argument
 	void ForceParseMailFile(HTREEITEM hItem);
 	void UpdateFileSizesTable(CString &path, _int64 fSize);
 	virtual ~NTreeView();
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
+	BOOL DeleteItem(HTREEITEM hItem);
+	BOOL DeleteItemChildren(HTREEITEM hItem);
+	BOOL DeleteFolder(HTREEITEM hItem);
 	void StartTimer();
 	void PostMsgCmdParamFileName();
 
@@ -102,6 +140,8 @@ protected:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnUpdateFileRefresh(CCmdUI* pCmdUI);
 	afx_msg void OnFileRefresh();
+	afx_msg void OnUpdateTreeExpand(CCmdUI* pCmdUI);
+	afx_msg void OnTreeExpand();
 	//}}AFX_MSG
 	afx_msg void OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult);
