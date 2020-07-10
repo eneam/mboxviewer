@@ -759,9 +759,13 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 		if (m_tree.ItemHasChildren(hItem))
 		{
 			HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	
 			Traverse(hChild, fp);
 		}
 		hItem = m_tree.GetNextSiblingItem(hItem);
+		HTREEITEM hParent = m_tree.GetParentItem(hItem);
+		if (hParent == 0)
+			return;
 	}
 }
 

@@ -846,18 +846,14 @@ void ColorStyleConfigDlg::OnBnClickedButtonHelp()
 {
 	// TODO: Add your control notification handler code here
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (!path.IsEmpty())
-	{
-		if (!FileUtils::PathDirExists(path)) {
-			return;
-		}
-	}
-	else
-		return;
+	CString HelpPath = FileUtils::GetmboxviewTempPath("MboxHelp");
+
+	BOOL createDirOk = TRUE;
+	if (!FileUtils::PathDirExists(HelpPath))
+		createDirOk = CreateDirectory(HelpPath, NULL);
 
 	CString codePageIdsFile = "ColorStyleConfigHelp.htm";
-	CString fullPath = path + "\\" + codePageIdsFile;
+	CString fullPath = HelpPath + "\\" + codePageIdsFile;
 
 	CFile fp;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {

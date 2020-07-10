@@ -634,18 +634,10 @@ void HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp()
 {
 	// TODO: Add your control notification handler code here
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (!path.IsEmpty())
-	{
-		if (!FileUtils::PathDirExists(path)) {
-			return;
-		}
-	}
-	else
-		return;
+	CString HelpPath = FileUtils::GetmboxviewTempPath("MboxHelp");
 
 	CString htmlHelpFileFile = "HTML_PDF_HdrConfigHelp.htm";
-	CString fullPath = path + "\\" + htmlHelpFileFile;
+	CString fullPath = HelpPath + "\\" + htmlHelpFileFile;
 
 	CFile fp;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {

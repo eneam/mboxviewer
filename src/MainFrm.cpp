@@ -781,16 +781,13 @@ void CMainFrame::OnViewCodepageids()
 {
 	// TODO: Add your command handler code here
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (!path.IsEmpty())
-	{
-		if (!FileUtils::PathDirExists(path)) {
-			return;
-		}
-	}
-	else
-		return;
-	int ret = TextUtilsEx::showCodePageTable(path);
+	CString HelpPath = FileUtils::GetmboxviewTempPath("MboxHelp");
+
+	BOOL createDirOk = TRUE;
+	if (!FileUtils::PathDirExists(HelpPath))
+		createDirOk = CreateDirectory(HelpPath, NULL);
+
+	int ret = TextUtilsEx::showCodePageTable(HelpPath);
 }
 
 // Called when File->"Print To"->CSV
@@ -1519,18 +1516,14 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 {
 	// TODO: Add your control notification handler code here
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (!path.IsEmpty())
-	{
-		if (!FileUtils::PathDirExists(path)) {
-			return;
-		}
-	}
-	else
-		return;
+	CString HelpPath = FileUtils::GetmboxviewTempPath("MboxHelp");
+
+	BOOL createDirOk = TRUE;
+	if (!FileUtils::PathDirExists(HelpPath))
+		createDirOk = CreateDirectory(HelpPath, NULL);
 
 	CString codePageIdsFile = "MailListsInfo.htm";
-	CString fullPath = path + "\\" + codePageIdsFile;
+	CString fullPath = HelpPath + "\\" + codePageIdsFile;
 
 	CFile fp;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
@@ -1774,18 +1767,14 @@ void CMainFrame::OnHelpMboxviewhelp()
 {
 	// TODO: Add your command handler code here
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (!path.IsEmpty())
-	{
-		if (!FileUtils::PathDirExists(path)) {
-			return;
-		}
-	}
-	else
-		return;
+	CString HelpPath = FileUtils::GetmboxviewTempPath("MboxHelp");
+
+	BOOL createDirOk = TRUE;
+	if (!FileUtils::PathDirExists(HelpPath))
+		createDirOk = CreateDirectory(HelpPath, NULL);
 
 	CString codePageIdsFile = "MboxviewerHelp.htm";
-	CString fullPath = path + "\\" + codePageIdsFile;
+	CString fullPath = HelpPath + "\\" + codePageIdsFile;
 
 	CFile fp;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
@@ -2039,8 +2028,6 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"ROOT_MAIL_DIRECTORY\\MailArchiveFile1.mbox.mboxview<br>"
 		"ROOT_MAIL_DIRECTORY\\MailArchiveFile2.mbox<br>"
 		"ROOT_MAIL_DIRECTORY\\MailArchiveFile2.mbox.mboxview<br>"
-		"ROOT_MAIL_DIRECTORY\\MboxviewerHelp.htm<br>"
-		"ROOT_MAIL_DIRECTORY\\MailListsInfo.htm<br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache<br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile1 - <font color=red>target directory for image files, such as png,jpg,etc, embeded into mails</font><br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile2<br>"
@@ -2059,6 +2046,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"<br>"
 		"<br>"
 		"Mbox Viewer also creates and manages temporary directory C:\\Users\\UserName\\AppData\\Local\\Temp\\mboxview directory to store temporary files (attachments, eml and htm) created when a single mail is selected by the user.<br>"
+		"Mbox Viewer created help files such as MailListsInfo.htm and MboxviewerHelp.htm are stored in the temporary directory C:\\Users\\UserName\\AppData\\Local\\Temp\\mboxview\\MboxHelp directory.<br>"
 		"<br><br>"
 	);
 	fp.Write((LPCSTR)text, text.GetLength());

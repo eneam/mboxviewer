@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.12
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for multiple folders housing mbox files under the Mail Tree view;
+ - Fixed HTML/PDF mail header dialog. User was able to configure custom font while the default font is set;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.11
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
