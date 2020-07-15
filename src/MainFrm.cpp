@@ -512,50 +512,64 @@ void CMainFrame::OnFileOptions()
 }
 void CMainFrame::OnFileOpen() 
 {
-	int paneId = 0;
-	CString sText;
-	sText.Format("Opening new mail folder ...");
-	SetStatusBarPaneText(paneId, sText, TRUE);
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	CString path;
 
 	if (m_bEnhancedSelectFolderDlg == FALSE)
 	{
-		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+		path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
 		if (!path.IsEmpty())
 			bff.SetDefaultFolder(path);
+
 		bff.SetFlags(BIF_RETURNONLYFSDIRS);
-		if (bff.SelectFolder()) {
-			path = bff.GetSelectedFolder();
-			if (path.GetLength() > 0)
-			{
-				if (path.GetAt(path.GetLength() - 1) != _T('\\'))
-					path.AppendChar(_T('\\'));
-			}
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
-			GetTreeView()->FillCtrl();
-			AfxGetApp()->AddToRecentFileList(path);
-		}
-	}
-	else
-	{
-		CString path;
-		INT_PTR ret = SelectFolder(path);
-		if (ret == IDOK)
+		if (bff.SelectFolder()) 
 		{
-			if (path.GetLength() > 0)
-			{
-				if (path.GetAt(path.GetLength() - 1) != _T('\\'))
-					path.AppendChar(_T('\\'));
-			}
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
-			GetTreeView()->FillCtrl();
-			AfxGetApp()->AddToRecentFileList(path);
+			path = bff.GetSelectedFolder();
+			path.TrimRight("\\");
 		}
 		else
 		{
 			int deb = 1;
 		}
 	}
+	else
+	{
+		INT_PTR ret = SelectFolder(path);
+		if (ret == IDOK)
+		{
+			path.TrimRight("\\");
+		}
+		else
+		{
+			int deb = 1;
+		}
+	}
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+	if (fileNameBase.IsEmpty())
+	{
+		CString txt = _T("The mbox files must be installed under a folder. Please create folder, move the mbox files to that folder and try again.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		return;
+	}
+
+	AfxGetApp()->AddToRecentFileList(path);
+
+	path.Append("\\");
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+
+	int paneId = 0;
+	CString sText;
+	sText.Format("Opening new mail folder ...");
+	SetStatusBarPaneText(paneId, sText, TRUE);
+
+	GetTreeView()->FillCtrl();
 
 	GetTreeView()->m_tree.SortChildren(0);
 
@@ -591,20 +605,34 @@ void CMainFrame::OnFileOpen()
 
 void CMainFrame::DoOpen(CString& fpath) 
 {
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+
+	CString path = fpath;
+	path.TrimRight("\\");
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+	if (fileNameBase.IsEmpty())
+	{
+		CString txt = _T("The mbox files must be installed under a folder. Please create folder, move the mbox files to that folder and try again.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		return;
+	}
+
+	AfxGetApp()->AddToRecentFileList(path);
+
 	int paneId = 0;
 	CString sText;
 	sText.Format("Opening new mail folder ...");
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
-	CString path = fpath;
-	if (path.GetLength() > 0)
-	{
-		if (path.GetAt(path.GetLength() - 1) != _T('\\'))
-			path.AppendChar(_T('\\'));
-	}
+	path.Append("\\");
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 	GetTreeView()->FillCtrl();
-	AfxGetApp()->AddToRecentFileList(path);
 
 	GetTreeView()->m_tree.SortChildren(0);
 

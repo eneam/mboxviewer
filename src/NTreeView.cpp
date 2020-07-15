@@ -699,7 +699,8 @@ void NTreeView::SelectMailFile()
 	else if (!FileUtils::PathFileExist(pListView->m_path))
 		txt = _T("Nonexistent File \"") + pListView->m_path;
 
-	if (!txt.IsEmpty()) {
+	if (!txt.IsEmpty()) 
+	{
 		txt += _T("\".\nDo you want to continue?");
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
