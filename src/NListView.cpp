@@ -266,6 +266,8 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 {
 	ResetFileMapView();
 
+	m_which = NULL;
+
 	m_bApplyColorStyle = TRUE;
 	m_bLongMailAddress = TRUE;
 	m_name = new SimpleString(64);
