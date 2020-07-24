@@ -976,6 +976,7 @@
     <Text Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\bitmap1.bmp" />
     <Image Include="res\PaperClip.bmp" />
     <Image Include="res\print.bmp" />
     <Image Include="res\select_folder.bmp" />

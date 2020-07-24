@@ -57,6 +57,7 @@ NTreeView::NTreeView()
 	m_timerTickCnt = 0;
 	m_nIDEvent = 1;
 	m_nElapse = 1;
+	m_bInFillControl = FALSE;
 }
 
 NTreeView::~NTreeView()
@@ -230,9 +231,10 @@ void NTreeView::LoadFolders()
 		CString path = m_folderArray.m_array.GetAt(ii);
 		if (!path.IsEmpty())
 		{
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 			if (path.CompareNoCase(pathLast) == 0)
 				continue;
+
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
 
 			FileUtils::CPathStripPath(path, str);
 			sText.Format("Opening %s ...", str);
@@ -324,19 +326,30 @@ void  NTreeView::ExpandOrCollapseTree(BOOL expand)
 // Items are inserted into CTree only by this function
 void NTreeView::FillCtrl(BOOL expand)
 {
+	if (m_bInFillControl)
+		return;
+
+	m_bInFillControl = TRUE;
+
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 	//m_tree.DeleteAllItems();
 	if (path.IsEmpty() || !FileUtils::PathDirExists(path))
+	{
+		m_bInFillControl = FALSE;
 		return;
+	}
 
 	// traverse the Tree to see if the folder already exist
+	CString itemName;
 	HTREEITEM hFolder;
 	if (hFolder = HasFolder(path))
 	{
 		HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
+		if (hCurrentSelectedItem)
+			itemName = m_tree.GetItemText(hCurrentSelectedItem);
 		if (hCurrentSelectedItem != hFolder)
 		{
-			if (hCurrentSelectedItem >= 0)
+			if (hCurrentSelectedItem > 0)
 				m_tree.SetItemState(hCurrentSelectedItem, 0, TVIS_BOLD);
 
 			UINT nCode = TVGN_CARET;
@@ -347,9 +360,11 @@ void NTreeView::FillCtrl(BOOL expand)
 		}
 
 		m_tree.Expand(hFolder, TVE_EXPAND);
+		m_bInFillControl = FALSE;
 		return;
 	}
 
+	CString registry_lastPath;
 	CString root;
 	path.TrimRight("\\");
 	char *last_slash = (char*)strrchr(path, '\\');
@@ -384,20 +399,26 @@ void NTreeView::FillCtrl(BOOL expand)
 		if (hRoot == 0)
 			return;
 
-		CString registry_lastPath = path;
+		itemName = m_tree.GetItemText(hRoot);
+
+		registry_lastPath = path;
 		registry_lastPath.TrimRight("\\");
 		registry_lastPath.Append("\\");
 
 		int index = m_folderArray.Add(registry_lastPath);
 
 		HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
-		if (hCurrentSelectedItem >= 0)
+		if (hCurrentSelectedItem > 0)
+		{
+			itemName = m_tree.GetItemText(hCurrentSelectedItem);
 			m_tree.SetItemState(hCurrentSelectedItem, 0, TVIS_BOLD);
+		}
+
+		m_tree.SetItemData(hRoot, index);
+		DWORD_PTR retIndex = m_tree.GetItemData(hRoot);
 
 		UINT nCode = TVGN_CARET;
 		BOOL retval = m_tree.Select(hRoot, nCode);
-		m_tree.SetItemData(hRoot, index);
-		DWORD_PTR retIndex = m_tree.GetItemData(hRoot);
 
 		CString fw = path + "\\*.*";
 		WIN32_FIND_DATA	wf;
@@ -466,17 +487,29 @@ void NTreeView::FillCtrl(BOOL expand)
 			pListView->CloseMailFile();
 		}
 	}
+
+	m_bInFillControl = FALSE;
 }
 
 void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult) 
 {
+	CString oldItemName;
+	CString newItemName;
+
 	NMTREEVIEW *pNm = (LPNMTREEVIEW)pNMHDR;
 
 	HTREEITEM hNewItem = pNm->itemNew.hItem;
 	HTREEITEM hOldItem = pNm->itemOld.hItem;
 
+	if (hOldItem)
+		oldItemName = m_tree.GetItemText(hOldItem);
+
+	if (hNewItem)
+		newItemName = m_tree.GetItemText(hNewItem);
+
 	if (hOldItem == hNewItem)
 		return;
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if ( pFrame == NULL )
 		return;
@@ -501,7 +534,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	HTREEITEM hParent = m_tree.GetParentItem(hNewItem);
 	if (hParent == 0)
 	{
-		if (hOldItem >= 0)
+		if (hOldItem > 0)
 			m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
 		m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
 
@@ -581,7 +614,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	path.TrimRight("\\");
 	pListView->m_path = path + _T('\\') + str;
 
-	if (hOldItem >= 0)
+	if (hOldItem > 0)
 	{
 		CString text = m_tree.GetItemText(hOldItem);
 		m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
@@ -830,7 +863,16 @@ void NTreeView::OnTreeExpand()
 
 void NTreeView::OnUpdateTreeExpand(CCmdUI* pCmdUI)
 {
-	pCmdUI->Enable(m_tree.GetRootItem() != NULL);
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	BOOL isTreeHidden = FALSE;
+	if (pFrame)
+	{
+		isTreeHidden = pFrame->IsTreeHidden();
+	}
+
+	BOOL enable = (m_tree.GetRootItem() != NULL) && !isTreeHidden;
+	pCmdUI->Enable(enable);
 }
 
 void NTreeView::OnUpdateFileRefresh(CCmdUI* pCmdUI) 

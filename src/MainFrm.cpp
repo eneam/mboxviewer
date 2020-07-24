@@ -125,6 +125,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_FILE_OPTIONS, OnUpdateFileOpen)
 	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
 	ON_COMMAND(ID_FILE_OPTIONS, OnFileOptions)
+	ON_COMMAND(ID_TREE_HIDE, OnTreeHide)
 	ON_WM_ERASEBKGND()
 	//}}AFX_MSG_MAP
 	//ON_COMMAND(ID_FILE_EXPORT_TO_CSV, &CMainFrame::OnFileExportToCsv)
@@ -170,7 +171,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_ATTACHMENTSCONFIG, &CMainFrame::OnFileAttachmentsconfig)
 	ON_COMMAND(ID_FILE_COLORCONFIG, &CMainFrame::OnFileColorconfig)
 	ON_MESSAGE(WM_CMD_PARAM_NEW_COLOR_MESSAGE, &CMainFrame::OnCmdParam_ColorChanged)
-	ON_MESSAGE(WM_CMD_PARAM_TREE_EXPAND_MESSAGE, &CMainFrame::OnCmdParam_TreeExpand)
 	ON_MESSAGE(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, &CMainFrame::OnCmdParam_LoadFolders)
 END_MESSAGE_MAP()
 
@@ -203,6 +203,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
 
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	treeColWidth = 177;
+	m_PlusIcon = 0;
+	m_MinusIcon = 0;
 }
 
 CMainFrame::~CMainFrame()
@@ -243,8 +247,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 #else
-	if (!m_wndToolBar.CreateEx(this) ||
-		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
+	BOOL createRet = m_wndToolBar.CreateEx(this);
+	BOOL lbarRet = m_wndToolBar.LoadToolBar(IDR_MAINFRAME);
+	if (!createRet || !lbarRet)
 	{
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
@@ -256,13 +261,20 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
 	CImageList* imgList = wndToolBarCtrl.GetImageList();
-	BOOL ret = m_imgListBag.Create(imgList);
 
-	ret = imgList->Copy(4, 5, ILCF_MOVE);
+	DWORD bkcolor = RGB(0, 0, 0);
+	m_imgListBag.Create(16, 15, ILC_COLOR16, 0, 0);
+	CBitmap bmp;
+	bmp.LoadBitmap(IDB_BITMAP1);
+	m_imgListBag.Add(&bmp, bkcolor);
+
+	m_PlusIcon = imgList->ExtractIcon(3);
+	m_MinusIcon = m_imgListBag.ExtractIcon(4);
+
+	m_HideIcon = imgList->ExtractIcon(4);
+	m_UnHideIcon = m_imgListBag.ExtractIcon(5);
 
 	m_bTreeExpanded = FALSE;
-
-	PostMessageA(WM_CMD_PARAM_TREE_EXPAND_MESSAGE, 0, 0);
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
@@ -510,6 +522,7 @@ void CMainFrame::OnFileOptions()
 		}
 	}
 }
+
 void CMainFrame::OnFileOpen() 
 {
 	CString fileName;
@@ -551,14 +564,18 @@ void CMainFrame::OnFileOpen()
 		}
 	}
 
+	path.Append("\\");
+
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
-	if (fileNameBase.IsEmpty())
+	if (directory.GetLength() <= 1)
 	{
-		CString txt = _T("The mbox files must be installed under a folder. Please create folder, move the mbox files to that folder and try again.");
+		CString txt = _T("The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.");
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return;
 	}
 
+	path.TrimRight("\\");
 	AfxGetApp()->AddToRecentFileList(path);
 
 	path.Append("\\");
@@ -603,6 +620,78 @@ void CMainFrame::OnFileOpen()
 	SetStatusBarPaneText(paneId, sText, FALSE);
 }
 
+void CMainFrame::OnTreeHide()
+{
+	BOOL ret;
+	int col = 0;
+	int cxCur;
+	int cxMin;
+
+	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
+	CImageList* imgList = wndToolBarCtrl.GetImageList();
+
+	m_wndView.m_verSplitter.GetColumnInfo(col, cxCur, cxMin);
+
+	if (cxCur != 0)
+		treeColWidth = cxCur;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	BOOL isTreeHidden = FALSE;
+	if (pFrame)
+	{
+		NListView *pListView = pFrame->GetListView();
+		if (pListView)
+		{
+			if ((pListView->m_which == 0) && m_bTreeHide)
+				return;
+		}
+
+		isTreeHidden = pFrame->IsTreeHidden();
+	}
+
+	HICON icHide = 0;
+	if (m_bTreeHide)
+	{
+		m_wndView.m_verSplitter.SetColumnInfo(0, 0, 0);
+
+		// Disable/enable expand tree button
+		// Install blank icon since EnableButton() doesn't gray out
+#if 0
+		// Install gray empty icon
+		HICON ic = imgList->ExtractIcon(5);
+		if (ic)
+			ret = imgList->Replace(3, ic);
+#endif
+		BOOL r = wndToolBarCtrl.EnableButton(ID_TREE_EXPAND, FALSE);
+
+		icHide = m_UnHideIcon;
+	}
+	else
+	{
+		m_wndView.m_verSplitter.SetColumnInfo(0, treeColWidth, 0);
+		// See above comments
+#if 0
+		if (m_bTreeExpanded)
+			ret = imgList->Replace(3, m_PlusIcon);
+		else
+			ret = imgList->Replace(3, m_MinusIcon);
+#endif
+		BOOL r = wndToolBarCtrl.EnableButton(ID_TREE_EXPAND, TRUE);
+		icHide = m_HideIcon;
+	}
+	if (icHide)
+		ret = imgList->Replace(4, icHide);
+
+	m_wndView.m_verSplitter.RecalcLayout();
+	m_wndView.m_verSplitter.Invalidate();
+
+	m_bTreeHide = !m_bTreeHide;
+
+	m_wndToolBar.Invalidate();
+
+	int deb = 1;
+}
+
 void CMainFrame::DoOpen(CString& fpath) 
 {
 	CString fileName;
@@ -614,15 +703,18 @@ void CMainFrame::DoOpen(CString& fpath)
 
 	CString path = fpath;
 	path.TrimRight("\\");
+	path.Append("\\");
 
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
-	if (fileNameBase.IsEmpty())
+	if (directory.GetLength() <= 1)
 	{
-		CString txt = _T("The mbox files must be installed under a folder. Please create folder, move the mbox files to that folder and try again.");
+		CString txt = _T("The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.");
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return;
 	}
 
+	path.TrimRight("\\");
 	AfxGetApp()->AddToRecentFileList(path);
 
 	int paneId = 0;
@@ -3007,21 +3099,58 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+BOOL CMainFrame::IsTreeHidden()
+{
+	int col = 0;
+	int cxCur;
+	int cxMin;
+
+	m_wndView.m_verSplitter.GetColumnInfo(col, cxCur, cxMin);
+
+	if (cxCur == 0)
+		return TRUE;
+	else
+		return FALSE;
+}
+
 void CMainFrame::UpdateToolsBar()
 {
 	BOOL ret;
-
 	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
 	CImageList* imgList = wndToolBarCtrl.GetImageList();
 
-	ret = imgList->Copy(4, 5, ILCF_MOVE);
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	HICON ic = 0;
+
+#if 0
+	BOOL isTreeHidden = FALSE;
+	if (pFrame)
+		isTreeHidden = pFrame->IsTreeHidden();
+
+	if (isTreeHidden)
+	{
+		ic = imgList->ExtractIcon(5);
+		if (ic)
+			ret = imgList->Replace(3, ic);
+
+		m_wndToolBar.Invalidate();
+		return;
+	}
+#endif
+
+	// must be a better way of changing icon, need to investigate
 	if (m_bTreeExpanded)
-		ic = m_imgListBag.ExtractIcon(4);
+	{
+		ic = m_MinusIcon;
+	}
 	else
-		ic = m_imgListBag.ExtractIcon(3);
-	ret = imgList->Replace(3, ic);
+	{
+		ic = m_PlusIcon;
+	}
+
+	if (ic)
+		ret = imgList->Replace(3, ic);
 
 	NTreeView * pTreeView = GetTreeView();
 	if (pTreeView)
@@ -3030,21 +3159,7 @@ void CMainFrame::UpdateToolsBar()
 	m_bTreeExpanded = !m_bTreeExpanded;
 
 	m_wndToolBar.Invalidate();
-
 	int deb = 1;
-}
-
-LRESULT CMainFrame::OnCmdParam_TreeExpand(WPARAM wParam, LPARAM lParam)
-{
-	BOOL ret;
-
-	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
-	CImageList* imgList = wndToolBarCtrl.GetImageList();
-
-	ret = imgList->Copy(4, 5, ILCF_MOVE);
-
-	m_wndToolBar.Invalidate();
-	return 0;
 }
 
 LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
@@ -3053,3 +3168,5 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		GetTreeView()->LoadFolders();
 	return 0;
 }
+
+

@@ -348,16 +348,55 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 {
 	if (m_bError)
 		return;
-	if (bFlag) {
-		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) {
+	if (bFlag) 
+	{
+		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) 
+		{
 			CString openFolder = lpszParam + 7;
-			if (openFolder.GetLength() > 0)
+			BOOL ret = FileUtils::PathDirExists(openFolder);
+			if (ret == FALSE)
 			{
-				if (openFolder.Right(1) != _T("\\"))
-					openFolder += _T("\\");
+				CString txt;
+				txt.Format(_T("Invalid -FOLDER=\"%s\" option.\n"
+					"Nonexistent or Invalid Folder \"%s\" .\n"), openFolder, openFolder);
+				txt += _T("Do you want to continue?");
+				HWND h = NULL; // we don't have any window yet  
+				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				if (answer == IDNO)
+					m_bError = TRUE;
+				return;
 			}
+
+			CString fileName;
+			CString driveName;
+			CString directory;
+			CString fileNameBase;
+			CString fileNameExtention;
+			FileUtils::SplitFilePath(openFolder, driveName, directory, fileNameBase, fileNameExtention);
+
+			openFolder.TrimRight("\\");
+			openFolder.Append("\\");
+
+			FileUtils::SplitFilePath(openFolder, driveName, directory, fileNameBase, fileNameExtention);
+			if (directory.GetLength() <= 1)
+			{
+				CString txt;
+				openFolder.TrimRight("\\");
+
+				txt.Format(_T("Invalid -FOLDER=\"%s\" option.\nInvalid folder \"%s\" .\n"
+					"The mbox files must be installed under a named folder\n."
+					"Please create folder, move the mbox files to that folder and try again."), 
+					openFolder, openFolder);
+				HWND h = NULL; // we don't have any window yet  
+				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+				m_bError = TRUE;
+				return;
+			}
+
 			if (m_bLastPathSet == FALSE)
 			{
+				openFolder.TrimRight("\\");
+				openFolder.Append("\\");
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), openFolder);
 			}
 		}
@@ -377,8 +416,11 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				CString txt;
 				if (!FileUtils::PathFileExist(mailFile)) 
 				{
-					CString txt = _T("Nonexistent File \"") + mailFile;
-					txt += _T("\".\nDo you want to continue?");
+					CString txt;
+					txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\n"
+						"Nonexistent File \"%s\"\n"), 
+						mailFile, mailFile);
+					txt += _T("Do you want to continue?");
 					HWND h = NULL; // we don't have any window yet  
 					int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 					if (answer == IDNO)
@@ -388,6 +430,26 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				{
 					CString lastPath = driveName + directory;
 					CString file = mailFile;
+
+					lastPath.TrimRight("\\");
+					lastPath.Append("\\");
+
+					FileUtils::SplitFilePath(lastPath, driveName, directory, fileNameBase, fileNameExtention);
+					if (directory.GetLength() <= 1)
+					{
+						CString txt;
+						txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
+							"The mbox files must be installed under a named folder\n."
+							"Please create folder, move the mbox files to that folder and try again."),
+							mailFile, lastPath);
+						HWND h = NULL; // we don't have any window yet  
+						int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+						m_bError = TRUE;
+						return;
+					}
+
+					lastPath.TrimRight("\\");
+					lastPath.Append("\\");
 
 					m_bLastPathSet = TRUE;
 					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), lastPath);
@@ -403,7 +465,8 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		{
 			CString exportEML = lpszParam + 11;
 			exportEML.MakeLower();
-			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0))) {
+			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0))) 
+			{
 				CString txt = _T("Invalid Command Line Option Value \"");
 				CString opt = lpszParam;
 				txt += opt + _T("\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?");
@@ -416,7 +479,8 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
 			}
 		}
-		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) {
+		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) 
+		{
 			CString barDelay = lpszParam + 19;
 			// Validate
 			if (!TextUtilsEx::isNumeric(barDelay))
@@ -429,12 +493,14 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
-			else {
+			else 
+			{
 				DWORD progressBarDelay = _tstoi(barDelay);
 				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), progressBarDelay);
 			}
 		}
-		else {
+		else 
+		{
 			// Unknown argument
 			CString txt = _T("Invalid Command Line Option \"");
 			CString opt = lpszParam;

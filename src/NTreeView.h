@@ -87,6 +87,9 @@ public:
 	UINT_PTR m_nIDEvent;
 	UINT m_nElapse;
 	CRegArray m_folderArray;
+	int treeColWidth;
+
+	BOOL  m_bInFillControl;
 
 // Attributes
 public:

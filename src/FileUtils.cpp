@@ -348,6 +348,11 @@ void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &di
 	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
 	TCHAR fname[_MAX_FNAME + 1]; fname[0] = 0;
 
+	driveName.Empty();
+	directory.Empty();
+	fileNameBase.Empty();
+	fileNameExtention.Empty();
+
 	_tsplitpath_s(fileName,
 		drive, _MAX_DRIVE + 1,
 		dir, _MAX_DIR + 1,

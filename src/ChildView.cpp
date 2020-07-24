@@ -108,7 +108,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rect;
 	GetClientRect(rect);
 	CSize size = rect.Size();
-	size.cx = 170;
+	size.cx = 177;
 	size.cy = 200;
 
 	if (!m_verSplitter.CreateStatic(this, 1, 2, WS_CHILD | WS_VISIBLE, AFX_IDW_PANE_FIRST)) {

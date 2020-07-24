@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.13
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added button to toolbar to hide/unhide the Mail Tree view;
+ - Added check to validate path of the folder housing mbox files;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.12
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

@@ -117,6 +117,7 @@ public:
 	NTreeView * DetTreeView();
 
 	void UpdateToolsBar();
+	BOOL IsTreeHidden();
 
 	void DoOpen(CString& path);
 	void SetMailList(int nID);
@@ -184,6 +185,12 @@ protected:  // control bar embedded members
 	int m_bEnhancedSelectFolderDlg;
 	CImageList m_imgListBag;
 	BOOL m_bTreeExpanded;
+	BOOL m_bTreeHide;
+	int treeColWidth;
+	HICON m_PlusIcon;
+	HICON m_MinusIcon;
+	HICON m_HideIcon;
+	HICON m_UnHideIcon;
 
 public:
 	HdrFldConfig m_HdrFldConfig;
@@ -202,6 +209,7 @@ protected:
 	afx_msg void OnFileOpen();
 	afx_msg void OnFileOptions();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnTreeHide();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -252,7 +260,6 @@ public:
 	afx_msg void OnFileAttachmentsconfig();
 	afx_msg void OnFileColorconfig();
 	afx_msg LRESULT OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnCmdParam_TreeExpand(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam);
 };
 

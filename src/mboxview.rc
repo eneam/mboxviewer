@@ -34,6 +34,8 @@ IDB_FOLDER              BITMAP                  "..\\res\\select_folder.bmp"
 
 IDB_PAPER_CLIP          BITMAP                  "..\\res\\PaperClip.bmp"
 
+IDB_BITMAP1             BITMAP                  "..\\res\\bitmap1.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -50,7 +52,8 @@ BEGIN
     SEPARATOR
     BUTTON      ID_TREE_EXPAND
     SEPARATOR
-    BUTTON      ID_TREE_DROP_EXPAND
+    BUTTON      ID_TREE_HIDE
+    SEPARATOR
     BUTTON      ID_BUTTON32876
 END
 
@@ -603,7 +606,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,12
+ FILEVERSION 1,0,3,13
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -620,7 +623,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.12"
+            VALUE "FileVersion", "1.0.3.13"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
