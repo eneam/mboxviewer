@@ -27,6 +27,7 @@
 //
 
 #include "stdafx.h"
+#include "Profile.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -92,6 +93,24 @@ BOOL CProfile::_GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CStrin
 		if (res == ERROR_SUCCESS) {
 			result = (char *)data;
 			str = result;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL CProfile::_GetProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, BYTE *lpData, DWORD &cbData)
+{
+	HKEY	myKey;
+	CString	result = (char *)("");
+
+	LSTATUS res;
+	CString	path = (char *)section;
+	if (ERROR_SUCCESS == RegOpenKeyEx(hKey, (LPCTSTR)path, NULL, KEY_READ | KEY_QUERY_VALUE, &myKey))
+	{
+		res = RegQueryValueEx(myKey, (LPCTSTR)key, NULL, NULL, lpData, &cbData);
+		RegCloseKey(myKey);
+		if (res == ERROR_SUCCESS) {
 			return TRUE;
 		}
 	}
@@ -172,6 +191,36 @@ BOOL CProfile::_WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, CSt
 		return FALSE;
 }
 
+BOOL CProfile::_WriteProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, const BYTE *lpData, DWORD cbData)
+{
+	DWORD	dwDisposition;
+	HKEY	myKey;
+	CString	path = (char *)section;
+	LSTATUS sts = RegCreateKeyEx(hKey,
+		(LPCTSTR)path, 0, NULL,
+		REG_OPTION_NON_VOLATILE,
+		KEY_WRITE, NULL, &myKey,
+		&dwDisposition);
+
+	// ERROR_SUCCESS
+	if (sts == ERROR_SUCCESS)
+	{
+		if (key)
+		{
+			LSTATUS sts = RegSetValueEx(myKey, key, 0, REG_BINARY, lpData, cbData);
+			if (sts != ERROR_SUCCESS)
+			{
+				DWORD err = GetLastError();
+			}
+		}
+		RegCloseKey(myKey);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+
 BOOL CProfile::_WriteProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD value )
 {
 	DWORD	dwDisposition;
@@ -195,4 +244,31 @@ BOOL CProfile::_WriteProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD 
 		return TRUE;
 	} else
 		return FALSE;
+}
+
+BOOL CProfile::_DeleteKey(HKEY hKey, LPCTSTR section, LPCTSTR key)
+{
+	HKEY	myKey;
+
+	if (!key)
+		return FALSE;
+
+	CString	path = (char *)section;
+	if (ERROR_SUCCESS == RegOpenKeyEx(hKey,
+		(LPCTSTR)path, 0, KEY_SET_VALUE, &myKey))
+	{
+
+		LSTATUS sts = RegDeleteValue(myKey, key);
+		if (sts != ERROR_SUCCESS)
+		{
+			DWORD err = GetLastError();
+		}
+		else
+			; // return FALSE
+
+		RegCloseKey(myKey);
+		return TRUE;
+	}
+	else
+		return TRUE;
 }

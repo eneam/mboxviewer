@@ -53,4 +53,5 @@ public:
 	static void PrintIHTMLElement(IHTMLElement *lpElm, CStringW &text);
 	static void FindStringInIHTMLDocument(CBrowser &browser, CString searchID, CString &searchText, BOOL matchWord, BOOL matchCase, CString &m_matchStyle);
 	static void ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &searchID);
+	static void CommonMimeType2DocumentTypes(CString &contentType, CString &documentExtension);
 };

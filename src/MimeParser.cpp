@@ -78,6 +78,9 @@ void MailHeader::Clear()
 	m_Name.Empty();
 	m_MessageId.Empty();
 	m_ReplyId.Empty();
+	m_InReplyId.Empty();
+	//m_threadId = 0;
+	m_ThreadId.Empty();
 }
 
 int MailHeader::Load(const char* pszData, int nDataSize)
@@ -101,8 +104,15 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 	static const char *cMsgId = "message-id:";
 	static const int cMsgIdLen = strlen(cMsgId);
-	static const char *cReplyId = "in-reply-to:";
+
+	static const char *cReferences = "references:";
+	static const int cReferencesLen = strlen(cReferences);
+
+	static const char *cReplyId = "reply-to:";
 	static const int cReplyIdLen = strlen(cReplyId);
+
+	static const char *cInReplyId = "in-reply-to:";
+	static const int cInReplyIdLen = strlen(cInReplyId);
 
 	static const char *cAlternative = "alternative";
 	static const int cAlternativeLen = strlen(cAlternative);
@@ -118,6 +128,9 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 	static const char *cCharset = "charset";
 	static const int cCharsetLen = strlen(cCharset);
+
+	static const char *cThreadId = "x-gm-thrid:";
+	static const int cThreadIdLen = strlen(cThreadId);
 
 	int contentIndex = 0;
 	int contentLength = 0;
@@ -246,10 +259,10 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			m_ContentId.Trim("<>");
 
 		}
-		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cReplyId, cReplyIdLen) == 0) {
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cInReplyId, cInReplyIdLen) == 0) {
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
-			MimeParser::GetMessageId(line, cReplyIdLen, m_ReplyId);
+			MimeParser::GetMessageId(line, cInReplyIdLen, m_InReplyId);
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentLocation, cContentLocationLen) == 0)
 		{
@@ -260,6 +273,26 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			if (m_ContentLocation.GetLength() > 50)
 				int deb = 1;
 		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cThreadId, cThreadIdLen) == 0) {
+			BreakParser();
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetThreadId(line, cThreadIdLen, m_ThreadId);
+		}
+#if 0
+		// Below doesn't always help, commented out for now
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cReferences, cReferencesLen) == 0) {
+			BreakParser();
+			// Kludge until we fully process all relevant fields, Message-ID, In-Reply-To and Reply-To
+			if (m_InReplyId.IsEmpty())
+			{
+				p = MimeParser::GetMultiLine(p, e, line);
+				MimeParser::GetMessageId(line, cReferencesLen, m_InReplyId);
+			}
+			else
+				p = EatNLine(p, e);
+
+		}
+#endif
 		else {
 			p = EatNLine(p, e);
 		}
@@ -559,6 +592,24 @@ int MimeParser::GetMessageId(CString &fieldLine, int startPos, CString &value)
 	return 1;
 }
 
+int MimeParser::GetThreadId(CString &fieldLine, int startPos, CString &value)
+{
+	int posEnd = fieldLine.FindOneOf(";\n\r");
+	if (posEnd < 0)  // indicates problem, '>' expected
+		value = fieldLine.Mid(startPos);
+	else
+		value = fieldLine.Mid(startPos, posEnd - startPos);
+	value.Trim();
+	return 1;
+}
+
+int MimeParser::GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value)
+{
+	const char *pos = (LPCSTR)fieldLine + startPos;
+	value = _atoi64(pos);
+	return 1;
+}
+
 int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value)
 {
 	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
@@ -584,21 +635,30 @@ int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *para
 			continue;
 	}
 
-	char * pend = strchr(p, ';');
+	char *pend = strchr(p, ';');
 	if (pend == 0)
 		pend = pend_sv;
 
 	while (p < pend)
 	{
-		if (*p == '=')
+		if (*p++ == '=')
 			break;
-		else
-			p++;
 	}
 	if (p >= pend)
 		return 0;
 
-	char *posBegin = ++p;
+	// handle quotes strings
+	char * pEndQoute = 0;
+	if (*p == '"')
+	{
+		pEndQoute = strchr(p+1, '"');
+		if (pEndQoute)
+			pend = pEndQoute;
+		else
+			; // ???
+	}
+
+	char *posBegin = p;
 	char *posEnd = pend;
 
 	value = fieldLine.Mid(posBegin - pbegin_sv, posEnd - posBegin);

@@ -127,6 +127,7 @@ bool CBrowseForFolder::SelectFolder()
 	bool bRet = false;
 
 	LPITEMIDLIST pidl;
+	m_bi.ulFlags |= BIF_USENEWUI;
 	if ((pidl = ::SHBrowseForFolder(&m_bi)) != NULL)
 	{
 		m_strPath.Empty();

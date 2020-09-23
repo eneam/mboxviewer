@@ -366,7 +366,8 @@ BOOL TextUtilsEx::CodePage2WStr(CString *str, UINT strCodePage, CStringW *wstr, 
 	SimpleString ss_wstr(wbuffLen);
 
 	int wlen = MultiByteToWideChar(strCodePage, 0, str->operator LPCSTR(), str->GetLength(), (LPWSTR)((void*)ss_wstr.Data()), wbuffLen);
-	if (wlen == 0) {
+	if (wlen == 0) 
+	{
 		wstr->Empty();
 		// error - implement error log file
 		error = ::GetLastError();
@@ -403,7 +404,8 @@ CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charset
 	CFieldCodeText tfc;
 	tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);
 	int outputLen = tfc.GetOutputLength();
-	if (outputLen > 0) {
+	if (outputLen > 0) 
+	{
 		int maxOutputLen = 2 * outputLen + 2;
 		unsigned char *outBuf = (unsigned char*)malloc(maxOutputLen);
 		int decodeLen = tfc.GetOutput(outBuf, maxOutputLen);

@@ -498,7 +498,7 @@ void  FileUtils::MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnd
 				allowUnderscore = FALSE;
 			}
 		}
-		else if ((c < 32))
+		else if ((c < 32) || (c > 126))
 		{
 			if (allowUnderscore)
 			{

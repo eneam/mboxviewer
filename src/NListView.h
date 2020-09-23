@@ -105,6 +105,11 @@ public:
 
 // Implementation
 public:
+	int m_frameCx_TreeNotInHide;
+	int m_frameCy_TreeNotInHide;
+	int m_frameCx_TreeInHide;
+	int m_frameCy_TreeInHide;
+	//
 	BOOL m_bApplyColorStyle;
 	BOOL m_bLastApplyColorStyle;
 	BOOL m_showAsPaperClip; // Show attachment indicataor as paper Clip, otherwise as star character
@@ -280,7 +285,11 @@ public:
 
 	void PostMsgCmdParamAttachmentHint();
 	//
-	static int PrintAttachmentNames(MboxMail *m, SimpleString *outbuf, CString &characterLimit);
+	static int PrintAsEmlFile(CFile *fpm, int mailPosition);
+	static int PrintMailAttachments(CFile *fpm, int mailPosition);
+	static int DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW);
+	static int PrintAttachmentNamesAsText2CSV(MboxMail *m, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator);
+	// Called in CheckMatchAdvanced and CheckMatch
 	static int FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
 	//
 	//////////////////////////////////////////////////////
@@ -354,6 +363,12 @@ public:
 
 	int CreateInlineImageCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	//int CreateInlineImageCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	int CreateAttachmentCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	//int CreateAttachmentCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	int CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	//int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 
 
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
@@ -365,6 +380,10 @@ public:
 	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath, bool runInvestigation = false);
 	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition, bool runInvestigation = false);
 	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition);
+	//
+	static int DetermineEmbeddedImages(char *inData, int indDataLen, int mailPosition);
+	static int DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m);
+	//
 	static int FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CString &fileName);
 	//
 	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray, bool runInvestigation = false);
@@ -375,9 +394,10 @@ public:
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
 	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+	static int RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor);
 	static int Color2Str(DWORD color, CString &colorStr);
 
-	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extension);
+	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CString &extension);
 
 	// Generated message map functions
 protected:

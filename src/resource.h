@@ -265,6 +265,7 @@
 #define IDC_HDR_FLD_TEXT                1229
 #define IDC_BUTTON1                     1230
 #define IDC_HTML_PDF_CNF                1230
+#define IDC_EXPORT_ATTACHMENT_SEPARATOR 1231
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -287,7 +288,6 @@
 #define ID_BUTTON32868                  32868
 #define ID_TREE_EXPAND                  32868
 #define ID_BUTTON32875                  32875
-#define ID_TREE_DROP_EXPAND             32875
 #define ID_TREE_HIDE                    32875
 #define ID_BUTTON32876                  32876
 #define ID_VIEW_USERSELECTEDMAILS       32878
@@ -302,6 +302,9 @@
 #define ID_PRINTTO_PDF                  32887
 #define ID_FILE_ATTACHMENTSCONFIG       32888
 #define ID_FILE_COLORCONFIG             32889
+#define ID_Menu32891                    32891
+#define ID_FORDEVELOPERS_SORTBYID       32892
+#define ID_FORDEVELOPERS_MEMORY         32893
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -311,8 +314,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        223
-#define _APS_NEXT_COMMAND_VALUE         32891
-#define _APS_NEXT_CONTROL_VALUE         1231
+#define _APS_NEXT_COMMAND_VALUE         32894
+#define _APS_NEXT_CONTROL_VALUE         1232
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -58,12 +58,16 @@ public:
 	BOOL m_bBCC;
 	BOOL m_bContent;
 	BOOL m_bAttachmentNames;
+	CString m_AttachmentNamesSeparatorString;
 	CString m_MessageLimitString;
 	CString m_MessageLimitCharsString;
 	int m_dateFormat;
 	int m_bGMTTime;
 	int m_nCodePageId;
 	CString m_separator;
+
+	void SaveToRegistry();
+	void LoadFromRegistry();
 };
 
 class MySelectFolder : public CFileDialog
@@ -119,6 +123,16 @@ public:
 	void UpdateToolsBar();
 	BOOL IsTreeHidden();
 
+	int MsgViewPosition() {
+		return m_msgViewPosition;
+	}
+
+	int TreeHideValue() {
+		return m_bIsTreeHidden;
+	}
+
+	BOOL DeleteAllPlacementKeys();
+
 	void DoOpen(CString& path);
 	void SetMailList(int nID);
 	void EnableMailList(int nId, BOOL enable);
@@ -170,7 +184,7 @@ protected:  // control bar embedded members
 	CReBar      m_wndReBar;
 	CDialogBar    m_wndDlgBar;
 	CChildView    m_wndView;
-	CComboBox m_wndSearchCombo;
+	//CComboBox m_wndSearchCombo;
 	BOOL m_bSelectMailFileDone;
 	HICON m_hIcon;
 	BOOL m_bMailDownloadComplete;
@@ -178,6 +192,7 @@ protected:  // control bar embedded members
 	//BOOL m_bMailListType;
 	BOOL m_bUserSelectedMailsCheckSet;
 	int m_msgViewPosition;
+	int  m_newMsgViewPosition;
 	NListView *m_pListView;
 	NTreeView *m_pTreeView;
 	NMsgView *m_pMsgView;
@@ -185,7 +200,7 @@ protected:  // control bar embedded members
 	int m_bEnhancedSelectFolderDlg;
 	CImageList m_imgListBag;
 	BOOL m_bTreeExpanded;
-	BOOL m_bTreeHide;
+
 	int treeColWidth;
 	HICON m_PlusIcon;
 	HICON m_MinusIcon;
@@ -193,6 +208,7 @@ protected:  // control bar embedded members
 	HICON m_UnHideIcon;
 
 public:
+	BOOL m_bIsTreeHidden;
 	HdrFldConfig m_HdrFldConfig;
 	NamePatternParams m_NamePatternParams;
 	AttachmentConfigParams m_attachmentConfigParams;
@@ -261,6 +277,8 @@ public:
 	afx_msg void OnFileColorconfig();
 	afx_msg LRESULT OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnFordevelopersSortbyid();
+	afx_msg void OnFordevelopersMemory();
 };
 
 /////////////////////////////////////////////////////////////////////////////

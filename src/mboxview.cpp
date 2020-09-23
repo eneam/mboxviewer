@@ -515,11 +515,26 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp initialization
 
+#if 0
+static int tot = 0;
+void* __cdecl malloc(size_t size)
+{
+	int deb = 1;
+	char mem[1];
+	void *p = new char[size];
+	tot += size;
+	return p;
+}
+#endif
+
 BOOL CmboxviewApp::InitInstance()
 {
 #ifdef USE_STACK_WALKER
 	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
 #endif
+
+	//AfxEnableMemoryTracking(TRUE);
+	//afxMemDF = allocMemDF | delayFreeMemDF | checkAlwaysMemDF;
 
 	CCmdLine cmdInfo;
 	CString mailFile;

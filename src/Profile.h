@@ -44,6 +44,8 @@ public:
 	static BOOL _DeleteProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key);
 	static BOOL _WriteProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD value );
 	static BOOL _WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, CString &value );
+	static BOOL _WriteProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, const BYTE *lpData, DWORD cbData);
+
 /*	static BOOL _WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, int value ) {
 		CString w;
 		w.Format("%d", value);
@@ -54,6 +56,9 @@ public:
 	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &intval);
 	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, int &intval);
 	static BOOL _GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CString &str);
+	static BOOL _GetProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, BYTE *lpData, DWORD &cbData);
+	//
+	static BOOL _DeleteKey(HKEY hKey, LPCTSTR section, LPCTSTR key);
 private:
 //	CString	m_regAppKey;
 };

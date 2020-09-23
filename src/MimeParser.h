@@ -50,6 +50,8 @@ public:
 	static char *GetMultiLine(char *p, char *e, CString &line);
 	static int GetFieldValue(CString &fieldLine, int startPos, CString &value);
 	static int GetMessageId(CString &fieldLine, int startPos, CString &value);
+	static int GetThreadId(CString &fieldLine, int startPos, CString &value);
+	static int GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value);
 	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
 	static BOOL isEmptyLine(const char* p, const char* e);
 	static char* SkipEmptyLines(const char* p, const char* e);
@@ -98,6 +100,9 @@ public:
 	UINT m_AttachmentNamePageCode;
 	CString m_MessageId;
 	CString m_ReplyId;
+	CString m_InReplyId;
+	//unsigned __int64 m_ThreadId;
+	CString m_ThreadId;
 };
 
 class MailBodyPool;

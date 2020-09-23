@@ -30,7 +30,7 @@
 #pragma once
 
 
-#define SZBUFFSIZE 1024*1024*100
+#define SZBUFFSIZE 1024*100
 
 class SerializerHelper
 {
@@ -38,22 +38,28 @@ private:
 	BOOL m_writing;
 	CString m_path;
 	HANDLE m_hFile;
-	int m_offset;
-	char * m_buff;
-	int m_buffSize;
+	__int64  m_file_read_offset;  //  read offset into file
+	int m_buff_offset;  // offset into m_buff
+	char *m_buff;
+	int m_buffSize;  // allocated size
+	int m_buffCnt;	// bytes in m_buff
+
 public:
 	SerializerHelper(LPCSTR fn) {
 		m_path = fn;
-		m_offset = 0;
+		m_file_read_offset = 0;
+		m_buff_offset = 0;
+		m_buffCnt = 0;
 		m_buff = NULL;
+		m_hFile = INVALID_HANDLE_VALUE;
 	}
 	~SerializerHelper() {
 		close();
 	}
 	void close();
-	BOOL open(BOOL bWrite);
-	int GetReadPointer();
-	BOOL SetReadPointer(int pos);
+	BOOL open(BOOL bWrite, int buffSize = 0);
+	BOOL GetReadPointer(__int64 &fileReadPosition);
+	BOOL SetReadPointer(__int64 fileReadPosition);
 	BOOL readN(void *v, int sz);
 	BOOL writeN(void *v, int sz);
 	BOOL writeString(LPCSTR val);

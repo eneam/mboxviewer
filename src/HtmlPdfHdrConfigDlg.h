@@ -46,7 +46,8 @@ public:
 		HDR_FLD_CC = 4,
 		HDR_FLD_BCC = 5,
 		HDR_FLD_DATE = 6,
-		HDR_FLD_MAX = 6
+		HDR_FLD_ATTACHMENTS = 7,
+		HDR_FLD_MAX = 7
 	};
 };
 

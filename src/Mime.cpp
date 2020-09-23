@@ -117,7 +117,6 @@ bool CMimeField::GetParameter(const char* pszAttr, string& strValue) const
 		strValue.erase();
 		return false;
 	}
-
 	if (m_strValue[nPos] == '"')
 	{
 		nPos++;
@@ -231,6 +230,9 @@ bool CMimeField::FindParameter(const char* pszAttr, int& nPos, int& nSize) const
 		//while (*pszParms == ' ' || *pszParms == '\t')
 		//	pszParms++;
 
+		while (CMimeChar::IsSpace((unsigned char)*pszParms))
+			pszParms++;
+
 		const char* pszParmEnd = NULL;
 		if (*pszParms == '"')		// quoted string
 			pszParmEnd = ::strchr(pszParms+1, '"');
@@ -242,8 +244,8 @@ bool CMimeField::FindParameter(const char* pszAttr, int& nPos, int& nSize) const
 		}
 		else  pszParmEnd++;			// pszParmEnd -> end of parameter value
 
-		if (!::_memicmp(pszAttr, pszName, nAttrSize) &&
-			(CMimeChar::IsSpace((unsigned char)pszName[nAttrSize]) || pszName[nAttrSize] == '='))
+		bool is_space = CMimeChar::IsSpace((unsigned char)pszName[nAttrSize]);
+		if (!::_memicmp(pszAttr, pszName, nAttrSize) && (is_space || pszName[nAttrSize] == '='))
 		{
 			nPos = (int)(pszParms - m_strValue.data());
 			nSize = (int)(pszParmEnd - pszParms);

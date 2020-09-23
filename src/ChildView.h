@@ -50,6 +50,11 @@ class CChildView : public CWnd
 // Construction
 public:
 	CChildView(int msgViewPosition = 1);  // 1=bottom 2=right  3=left
+
+	void GetTreePosition(int &row, int &col);
+	void GetListPosition(int &row, int &col);
+	void GetMsgPosition(int &row, int &col);
+
 	CNSplit	m_verSplitter, m_horSplitter;
 	int m_msgViewPosition;
 

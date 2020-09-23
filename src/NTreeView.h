@@ -90,6 +90,8 @@ public:
 	int treeColWidth;
 
 	BOOL  m_bInFillControl;
+	int m_frameCx;
+	int m_frameCy;
 
 // Attributes
 public:

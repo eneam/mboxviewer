@@ -63,8 +63,13 @@ class MyMailArray : public CArray<MboxMail*, MboxMail*>
 public:
 	// Kludge to prevent CArray from deleting data buffer
 	// Otherwise will need to reimplement array
+	// This will set count of items. if nNewSize == 0, array data segment is not changed.
+	// If nNewSize >  0, SetSize() is called and both count and count of items is set
 	void SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
+	// This will set count of items and will not touch array data segment
+	void SetCountKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
 	void CopyKeepData(const MyMailArray& src);
+	INT_PTR MaxSize();
 };
 
 typedef MyMailArray MailArray;
@@ -157,7 +162,7 @@ struct PRINT_MAIL_ARCHIVE_TO_CSV_ARGS
 class MailBodyContent
 {
 public:
-	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0; m_attachmentNamePageCode = 0; };
+	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0; m_attachmentNamePageCode = 0; m_isEmbeddedImage = false; };
 	~MailBodyContent() {};
 	CString m_contentType;
 	CString m_contentTransferEncoding;
@@ -170,6 +175,7 @@ public:
 	UINT m_pageCode;
 	int  m_contentOffset;
 	int m_contentLength;
+	bool m_isEmbeddedImage;
 };
 
 unsigned long StrHash(const char* buf, const UINT length);
@@ -177,6 +183,11 @@ unsigned long StrHash(const char* buf, const UINT length);
 struct MessageIdHash;
 struct MessageIdEqual;
 
+struct ThreadIdHash;
+struct ThreadIdEqual;
+
+
+typedef std::unordered_map<CString*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
 typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
 typedef std::unordered_map<CString*, MboxMail*, MessageIdHash, MessageIdEqual> MboxMailTableType;
 
@@ -216,6 +227,7 @@ public:
 		m_index = -1;
 		m_headLength = 0;
 		m_isOnUserSelectedMailList = false;
+		m_DetermineEmbeddedImagesDone = 0;
 		//m_crc32 = 0xffffffff;
 	}
 
@@ -235,28 +247,39 @@ public:
 	UINT m_cc_charsetId, m_bcc_charsetId;
 	CString m_messageId;
 	CString m_replyId;
+	CString m_threadId;
+	//unsigned _int64 m_threadId; // conversation thread id
 	int m_groupId;
 	int m_groupColor;
 	int m_nextMail;
 	int m_prevMail;
 	bool m_duplicateId;
 	bool m_done;
-	int m_index; // servers as unique id == index
+	int m_index; // serves as unique id == index
 	bool m_isOnUserSelectedMailList;
-
+	int m_DetermineEmbeddedImagesDone;
+//
 	BOOL GetBody(CString &str);
 	BOOL GetBody(SimpleString *str);
 	int DumpMailBox(MboxMail *mailBox, int which);
+	int SingleMailSizeof();
+	static int AllMailsSizeof(int count);
 
+
+	static ThreadIdTableType *m_pThreadIdTable;
 	static MessageIdTableType *m_pMessageIdTable;
 	static MboxMailTableType *m_pMboxMailTable;
 	//
-	static UINT MboxMail::createMessageIdTable(UINT count);
-	static void MboxMail::clearMessageIdTable();
+	static UINT createMessageIdTable(UINT count);
+	static void clearMessageIdTable();
 	static int getMessageId(CString *key);
 	static bool insertMessageId(CString *key, int val);
-	static int getReplyId(CString *key);
 	static int add2ConversationGroup(int mid, MboxMail *m);
+
+	static UINT createThreadIdTable(UINT count);
+	static void clearThreadIdTable();
+	static int getThreadId(CString *key);
+	static bool insertThreadId(CString *key, int val);
 
 	static MboxMail* getMboxMail(CString *key);
 	static bool insertMboxMail(CString *key, MboxMail *mbox);
@@ -264,7 +287,7 @@ public:
 	static void clearMboxMailTable();
 	//
 	static int m_nextGroupId;
-	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :)
+	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :) Big Yes
 	static SimpleString *m_outbuf;
 	static SimpleString *m_inbuf;
 	static SimpleString *m_outdata;
@@ -272,6 +295,30 @@ public:
 	static SimpleString *m_workbuf;
 	static SimpleString *m_tmpbuf;
 	static SimpleString *m_largebuf;
+	// added below later; must implement large buffer manager ? just created mess to resolve later
+	static BOOL m_outbufBusy;
+	static BOOL m_inbufBusy;
+	static BOOL m_outdataBusy;
+	static BOOL m_indataBusy;
+	static BOOL m_workbufBusy;
+	static BOOL m_tmpbufBusy;
+	static BOOL m_largebufBusy;
+
+	static SimpleString *get_outbuf();
+	static SimpleString *get_inbuf();
+	static SimpleString *get_outdata();
+	static SimpleString *get_indata();
+	static SimpleString *get_workbuf();
+	static SimpleString *get_tmpbuf();
+	static SimpleString *get_largebuf();
+
+	static void rel_outbuf();
+	static void rel_inbuf();
+	static void rel_outdata();
+	static void rel_indata();
+	static void rel_workbuf();
+	static void rel_tmpbuf();
+	static void rel_largebuf();
 
 	static int m_Html2TextCount;
 
@@ -356,6 +403,8 @@ public:
 	static void assignColor2ConvesationGroups();
 	static void assignColor2ConvesationGroups(MailArray *mails);
 	static void Destroy();
+	static bool preprocessConversationsByThreadId();
+	static bool HasGMThreadId();
 	static bool preprocessConversations();
 	static bool sortConversations();
 	static bool validateSortConversations();
@@ -368,10 +417,9 @@ public:
 	//
 	static int CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameFontStyle, CString &fldTextFontStyle);
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
-	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
-	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool firstMail);
+	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail);
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
-	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
 	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
 	//
 	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
@@ -389,6 +437,8 @@ public:
 	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
 	//
 	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
+	static int GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);
+	//
 	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
 	static int GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, SimpleString *outbuf, UINT &pageCode);
 	static void getCMimeBodyHeader(CMimeMessage *mail, CMimeBody* pBP, CMBodyHdr *pHdr);
@@ -430,6 +480,12 @@ public:
 	static void LoadHintBitmap();
 
 	static BOOL ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime);
+
+	static int DetermineEmbeddedImages(int mailPosition, /*in - mail body*/ CFile &fpm);
+	static int DetermineEmbeddedImages(MboxMail *m, /*in - mail body*/ CFile &fpm);
+	//static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, CStringW &htmlbuf);
+	static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
+	static int printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
 };
 
 inline char* FixIfNull(const char* ptr)

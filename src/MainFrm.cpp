@@ -162,7 +162,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_MESSAGEWINDOW_RIGHT, &CMainFrame::OnMessagewindowRight)
 	ON_COMMAND(ID_MESSAGEWINDOW_LEFT, &CMainFrame::OnMessagewindowLeft)
 	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
-	//ON_WM_SIZE()
+	ON_WM_SIZE()
 	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
 	ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
 	ON_COMMAND(ID_PRINTTO_PDF, &CMainFrame::OnPrinttoPdf)
@@ -172,6 +172,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_COLORCONFIG, &CMainFrame::OnFileColorconfig)
 	ON_MESSAGE(WM_CMD_PARAM_NEW_COLOR_MESSAGE, &CMainFrame::OnCmdParam_ColorChanged)
 	ON_MESSAGE(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, &CMainFrame::OnCmdParam_LoadFolders)
+	ON_COMMAND(ID_FORDEVELOPERS_SORTBYID, &CMainFrame::OnFordevelopersSortbyid)
+	ON_COMMAND(ID_FORDEVELOPERS_MEMORY, &CMainFrame::OnFordevelopersMemory)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -193,9 +195,12 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 
 	m_colorStyleDlg = 0;
 	m_NamePatternParams.SetDflts();
-	m_csvConfig.SetDflts();
+	//m_csvConfig.SetDflts();
+	m_csvConfig.LoadFromRegistry();
+	
 
 	m_msgViewPosition = msgViewPosition; // bottom=1
+	m_newMsgViewPosition = m_msgViewPosition;
 	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
 	m_bSelectMailFileDone = FALSE;
 	m_MailIndex = -1;  // Not used ??
@@ -207,6 +212,11 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	treeColWidth = 177;
 	m_PlusIcon = 0;
 	m_MinusIcon = 0;
+	m_bIsTreeHidden = FALSE;
+
+	m_pListView = 0;
+	m_pTreeView = 0;
+	m_pMsgView = 0;
 }
 
 CMainFrame::~CMainFrame()
@@ -355,6 +365,22 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	PostMessageA(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, 0, 0);
 
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+
+	WINDOWPLACEMENT wpr;
+	DWORD cb = sizeof(wpr);
+	BOOL ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+	if (ret && (cb == sizeof(wpr)))
+	{
+		HWND hWnd = GetSafeHwnd();
+		if (::IsWindow(m_hWnd))
+		{
+			ret = SetWindowPlacement(&wpr);
+		}
+		else
+			int deb = 1;
+	}
+
 	return 0;
 }
 
@@ -370,6 +396,7 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 
 	cs.dwExStyle &= ~(WS_EX_MDICHILD|WS_EX_CLIENTEDGE);
 	cs.lpszClass = AfxRegisterWndClass(0);
+
 	return TRUE;
 }
 
@@ -549,6 +576,7 @@ void CMainFrame::OnFileOpen()
 		else
 		{
 			int deb = 1;
+			return;
 		}
 	}
 	else
@@ -561,6 +589,7 @@ void CMainFrame::OnFileOpen()
 		else
 		{
 			int deb = 1;
+			return;
 		}
 	}
 
@@ -627,32 +656,75 @@ void CMainFrame::OnTreeHide()
 	int cxCur;
 	int cxMin;
 
+	NTreeView * pTreeView = GetTreeView();
+	NListView * pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+
+	// m_msgViewPosition:: 1=bottom 2=right  3=left
+	int rowTree, colTree;
+	int rowList, colList;
+	int rowMsg, colMsg;
+
+	m_wndView.GetTreePosition(rowTree, colTree);
+	m_wndView.GetListPosition(rowList, colList);
+	m_wndView.GetMsgPosition(rowMsg, colMsg);
+
+
 	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
 	CImageList* imgList = wndToolBarCtrl.GetImageList();
 
 	m_wndView.m_verSplitter.GetColumnInfo(col, cxCur, cxMin);
 
 	if (cxCur != 0)
+	{
 		treeColWidth = cxCur;
+	}
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	BOOL isTreeHidden = FALSE;
-	if (pFrame)
-	{
-		NListView *pListView = pFrame->GetListView();
-		if (pListView)
-		{
-			if ((pListView->m_which == 0) && m_bTreeHide)
-				return;
-		}
 
-		isTreeHidden = pFrame->IsTreeHidden();
+	pListView = pFrame->GetListView();
+	if (m_pListView)
+	{
+		if ((m_pListView->m_which == 0) && !m_bIsTreeHidden)
+			return;
 	}
 
+	isTreeHidden = IsTreeHidden();
+
 	HICON icHide = 0;
-	if (m_bTreeHide)
+
+	BOOL bIsTreeHidden = m_bIsTreeHidden;
+	m_bIsTreeHidden = !m_bIsTreeHidden;
+
+	TRACE("TreeState %d --> %d m_frameCy_TreeInHide=%d m_frameCx_TreeInHide=%d m_frameCy_TreeNotInHide=%d m_frameCx_TreeNotInHide=%d\n", 
+		bIsTreeHidden, m_bIsTreeHidden, 
+		pListView->m_frameCy_TreeInHide, pListView->m_frameCx_TreeInHide, 
+		pListView->m_frameCy_TreeNotInHide, pListView->m_frameCx_TreeNotInHide);
+
+
+
+	if (!bIsTreeHidden)
 	{
-		m_wndView.m_verSplitter.SetColumnInfo(0, 0, 0);
+		m_wndView.m_verSplitter.SetColumnInfo(rowTree, 0, 0);
+
+		if (m_pListView)
+		{
+			if (m_msgViewPosition == 1)
+				m_wndView.m_horSplitter.SetRowInfo(rowList, pListView->m_frameCy_TreeInHide, 0);
+			else if (m_msgViewPosition == 2)
+				m_wndView.m_horSplitter.SetColumnInfo(colList, pListView->m_frameCx_TreeInHide, 0);
+			else if (m_msgViewPosition == 3)
+			{
+				CRect frameRect;
+				pFrame->GetClientRect(frameRect);
+				CSize frameSize = frameRect.Size();
+				int msgWidth = frameSize.cx - 0 - pListView->m_frameCx_TreeInHide;
+				if (msgWidth < 0)
+					int deb = 1;
+				m_wndView.m_horSplitter.SetColumnInfo(colMsg, pMsgView->m_frameCx_TreeInHide, 0);
+			}
+		}
 
 		// Disable/enable expand tree button
 		// Install blank icon since EnableButton() doesn't gray out
@@ -668,7 +740,26 @@ void CMainFrame::OnTreeHide()
 	}
 	else
 	{
-		m_wndView.m_verSplitter.SetColumnInfo(0, treeColWidth, 0);
+		m_wndView.m_verSplitter.SetColumnInfo(rowTree, m_pTreeView->m_frameCx, 0);
+
+		if (m_pListView)
+		{
+			if (m_msgViewPosition == 1)
+				m_wndView.m_horSplitter.SetRowInfo(rowList, pListView->m_frameCy_TreeNotInHide, 0);
+			else if (m_msgViewPosition == 2)
+				m_wndView.m_horSplitter.SetColumnInfo(colList, pListView->m_frameCx_TreeNotInHide, 0);
+			else if (m_msgViewPosition == 3)
+			{
+				CRect frameRect;
+				pFrame->GetClientRect(frameRect);
+				CSize frameSize = frameRect.Size();
+				int msgWidth = frameSize.cx - m_pTreeView->m_frameCx - pListView->m_frameCx_TreeNotInHide;
+				if (msgWidth < 0)
+					int deb = 1;
+				m_wndView.m_horSplitter.SetColumnInfo(colMsg, pMsgView->m_frameCx_TreeNotInHide, 0);
+			}
+		}
+
 		// See above comments
 #if 0
 		if (m_bTreeExpanded)
@@ -682,12 +773,14 @@ void CMainFrame::OnTreeHide()
 	if (icHide)
 		ret = imgList->Replace(4, icHide);
 
+	//m_wndView.m_horSplitter.RecalcLayout();
 	m_wndView.m_verSplitter.RecalcLayout();
-	m_wndView.m_verSplitter.Invalidate();
+	//m_wndView.m_verSplitter.Invalidate();
+	//m_wndView.m_horSplitter.Invalidate();
 
-	m_bTreeHide = !m_bTreeHide;
+	//m_wndToolBar.Invalidate();
 
-	m_wndToolBar.Invalidate();
+	//m_bIsTreeHidden = !m_bIsTreeHidden;
 
 	int deb = 1;
 }
@@ -806,6 +899,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 	d.m_bBCC = m_csvConfig.m_bBCC;
 	d.m_bContent = m_csvConfig.m_bContent;
 	d.m_bAttachmentNames = m_csvConfig.m_bAttachmentNames;
+	d.m_AttachmentNamesSeparatorString = m_csvConfig.m_AttachmentNamesSeparatorString;
 	d.m_dateFormat = m_csvConfig.m_dateFormat;
 	d.m_bGMTTime = m_csvConfig.m_bGMTTime;
 	d.m_MessageLimitString = m_csvConfig.m_MessageLimitString;
@@ -824,10 +918,13 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		m_csvConfig.m_bBCC = d.m_bBCC;
 		m_csvConfig.m_bContent = d.m_bContent;
 		m_csvConfig.m_bAttachmentNames = d.m_bAttachmentNames;
+		m_csvConfig.m_AttachmentNamesSeparatorString = d.m_AttachmentNamesSeparatorString;
 		m_csvConfig.m_dateFormat = d.m_dateFormat;
 		m_csvConfig.m_bGMTTime = d.m_bGMTTime;
 		m_csvConfig.m_MessageLimitString = d.m_MessageLimitString;
 		m_csvConfig.m_MessageLimitCharsString = d.m_MessageLimitCharsString;
+
+		m_csvConfig.SaveToRegistry();
 	
 		//csvConfig.m_separator = d.m_separator;
 		// Hardcoded for now.
@@ -2243,6 +2340,8 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 	if (msgViewPosition == curMsgViewPosition) {
 		CString txt = _T("New and current Message Window position are the same: ") + newPos + _T(" and ") + curPos + _T(".\nNo action will be taken.");
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		m_newMsgViewPosition = msgViewPosition;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), m_newMsgViewPosition);
 		return;
 	}
 
@@ -2252,8 +2351,8 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
 	{
-		DWORD newPosition = msgViewPosition;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), newPosition);
+		m_newMsgViewPosition = msgViewPosition;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), m_newMsgViewPosition);
 	}
 }
 
@@ -2281,6 +2380,35 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 	CFrameWnd::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
+	int deb1, deb2, deb3, deb4;
+
+	if (nType == SIZE_RESTORED)
+		int deb = 1;
+
+	switch (nType)
+	{
+	case SIZE_MAXIMIZED:
+		// window was maximized
+		deb1 = 1;
+		break;
+
+	case SIZE_MINIMIZED:
+		// window was minimized
+		deb2 = 1;
+		break;
+
+	case SIZE_RESTORED:
+		// misleading - this occurs when restored from minimized/maximized AND
+		// for normal size operations when already restored
+		deb3 = 1;
+		break;
+
+	default:
+		// you could also deal with SIZE_MAXHIDE and SIZE_MAXSHOW
+		// but rarely need to
+		deb4 = 1;
+		break;
+}
 
 	// TODO: resize panes dynamically; more investigation and changes needed
 #if 0
@@ -2727,7 +2855,8 @@ void CSVFILE_CONFIG::SetDflts()
 	m_bAttachmentNames = FALSE;
 	//m_bAttachmentNames = TRUE;
 	//m_MessageLimitString;
-	m_MessageLimitCharsString.Append("32500");
+	m_MessageLimitCharsString = "32500";
+	m_AttachmentNamesSeparatorString = " CRLF";
 	m_dateFormat = 0;
 	m_bGMTTime = 0;
 	m_nCodePageId = CP_UTF8;
@@ -2750,6 +2879,7 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 	m_bBCC = src.m_bBCC;
 	m_bContent = src.m_bContent;
 	m_bAttachmentNames = src.m_bAttachmentNames;
+	m_AttachmentNamesSeparatorString = src.m_AttachmentNamesSeparatorString;
 	m_dateFormat = src.m_dateFormat;
 	m_bGMTTime = src.m_bGMTTime;
 	m_MessageLimitString = src.m_MessageLimitString;
@@ -2758,6 +2888,22 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 	m_separator = src.m_separator;
 
 	int deb = 1;
+}
+
+void CSVFILE_CONFIG::SaveToRegistry()
+{
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "CSV_attachmentNamesSeparator", m_AttachmentNamesSeparatorString);
+}
+
+void CSVFILE_CONFIG::LoadFromRegistry()
+{
+	SetDflts();
+
+	BOOL retval;
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "CSV_attachmentNamesSeparator", m_AttachmentNamesSeparatorString))
+	{
+		;
+	}
 }
 
 INT_PTR CMainFrame::SelectFolder(CString &folder)
@@ -2881,6 +3027,52 @@ void CMainFrame::OnClose()
 		if (answer == IDNO)
 			return;
 	}
+
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+	WINDOWPLACEMENT wp;
+	GetWindowPlacement(&wp);
+
+	if (wp.showCmd == SW_MAXIMIZE)
+		wp.showCmd = SW_SHOWMAXIMIZED; 
+	if ((wp.showCmd != SW_SHOWMAXIMIZED) && (wp.showCmd != SW_SHOW))
+		wp.showCmd = SW_SHOW;
+
+
+	BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wp, sizeof(wp));
+
+
+	NTreeView * pTreeView = GetTreeView();
+	NListView * pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+
+	if (m_msgViewPosition == m_newMsgViewPosition)
+	{
+		if (pMsgView)
+		{
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", pMsgView->m_frameCx_TreeNotInHide);
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", pMsgView->m_frameCy_TreeNotInHide);
+
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", pMsgView->m_frameCx_TreeInHide);
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", pMsgView->m_frameCy_TreeInHide);
+		}
+
+		if (pListView)
+		{
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", pListView->m_frameCx_TreeNotInHide);
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", pListView->m_frameCy_TreeNotInHide);
+
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth", pListView->m_frameCx_TreeInHide);
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight", pListView->m_frameCy_TreeInHide);
+		}
+
+		if (pTreeView)
+		{
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_pTreeView->m_frameCx);
+			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_pTreeView->m_frameCy);
+		}
+	}
+	else
+		DeleteAllPlacementKeys();
 
 	MboxMail::ReleaseResources();
 
@@ -3170,3 +3362,54 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 }
 
 
+BOOL CMainFrame::DeleteAllPlacementKeys()
+{
+	LSTATUS ret;
+
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth");
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight");
+
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth");
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight");
+
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth");
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight");
+
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth");
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight");
+
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "TreeFrameWidth");
+	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "TreeFrameHeight");
+
+	return TRUE;
+}
+
+void CMainFrame::OnFordevelopersSortbyid()
+{
+	// TODO: Add your command handler code here
+
+	NListView *pListView = 0;
+	pListView = this->GetListView();
+
+	if (pListView)
+	{
+		pListView->SortByColumn(1, TRUE);
+	}
+	int deb = 1;
+}
+
+void CMainFrame::OnFordevelopersMemory()
+{
+	// TODO: Add your command handler code here
+
+	int mailCount = MboxMail::s_mails_ref.GetCount();
+	int allMailsSize = MboxMail::AllMailsSizeof(mailCount);
+	CString txt;
+	txt.Format("Allocated Memory: %d\n", allMailsSize);
+
+	HWND h = GetSafeHwnd();
+	int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int deb = 1;
+}

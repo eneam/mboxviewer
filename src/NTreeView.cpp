@@ -36,6 +36,7 @@
 #include "NTreeView.h"
 #include "InputBox.h"
 #include "CheckListBoxDlg.h"
+#include "OpenContainingFolderDlg.h"
 
 
 #ifdef _DEBUG
@@ -58,6 +59,14 @@ NTreeView::NTreeView()
 	m_nIDEvent = 1;
 	m_nElapse = 1;
 	m_bInFillControl = FALSE;
+
+	m_frameCx = 177;
+	m_frameCy = 200;
+
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+
+	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_frameCx);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_frameCy);
 }
 
 NTreeView::~NTreeView()
@@ -115,6 +124,22 @@ void NTreeView::OnSize(UINT nType, int cx, int cy)
 {
 	CWnd::OnSize(nType, cx, cy);
 	
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int msgViewPosition = pFrame->MsgViewPosition();
+		BOOL bTreeHideVal = pFrame->TreeHideValue();
+		BOOL isTreeHidden = pFrame->IsTreeHidden();
+
+		TRACE("NTreeView::OnSize cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+			cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
+
+		if (cx > 0)
+		{
+			m_frameCx = cx;
+			m_frameCy = cy;
+		}
+	}
 	m_tree.MoveWindow(0, 0, cx, cy);
 }
 
@@ -1057,7 +1082,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT S_SORT_BY_POSITION_Id = 10;
 	// Sort by position in the archive file. Enabled for debugging only
-	// AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Position"));
+	// AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Mail ID"));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -1069,10 +1094,16 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_Properties_Id = 12;
 	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
-	const UINT M_Reload_Id = 13;
+	const UINT M_AttachmentCache_Id = 13;
+	AppendMenu(&menu, M_AttachmentCache_Id, _T("Export All Mail Attachments"));
+
+	const UINT M_EmlCache_Id = 14;
+	AppendMenu(&menu, M_EmlCache_Id, _T("Export All Mails as Eml"));
+
+	const UINT M_Reload_Id = 15;
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
-	const UINT M_CreateFolder_Id = 14;
+	const UINT M_CreateFolder_Id = 16;
 	//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1216,6 +1247,42 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			ForceParseMailFile(hItem);
 		// For internal testing
 		//int ret = MboxMail::DumpMailStatsToFile(&MboxMail::s_mails, MboxMail::s_mails.GetCount());
+	}
+	break;
+
+	case M_AttachmentCache_Id: {
+		CString txt = _T("Do you want to create cache with all attachements?");
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+		{
+			int firstMail = 0;
+			int lastMail = MboxMail::s_mails.GetCount() - 1;
+
+			CString targetPrintSubFolderName = "";
+			if (pListView)
+			{ 
+				int retval = pListView->CreateAttachmentCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
+			}
+		}
+	}
+	break;
+
+	case M_EmlCache_Id: {
+		CString txt = _T("Do you want to create cache with all Eml files?");
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+		{
+			int firstMail = 0;
+			int lastMail = MboxMail::s_mails.GetCount() - 1;
+
+			CString targetPrintSubFolderName = "";
+			if (pListView)
+			{
+				int retval = pListView->CreateEmlCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
+			}
+		}
 	}
 	break;
 

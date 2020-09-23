@@ -96,27 +96,13 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	CRect frameRect;
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	if (pFrame) {
-		pFrame->GetClientRect(frameRect);
-		
-		int deb = 1;
-	}
-	CSize frameSize = frameRect.Size();
-	
-	CRect rect;
-	GetClientRect(rect);
-	CSize size = rect.Size();
-	size.cx = 177;
-	size.cy = 200;
+	BOOL ret;
 
 	if (!m_verSplitter.CreateStatic(this, 1, 2, WS_CHILD | WS_VISIBLE, AFX_IDW_PANE_FIRST)) {
 		TRACE("Failed to create first splitter\n");
 		return -1;
 	}
 
-	BOOL ret;
 	if (m_msgViewPosition == 1)
 		ret = m_horSplitter.CreateStatic(&m_verSplitter, 2, 1, WS_CHILD | WS_VISIBLE, m_verSplitter.IdFromRowCol(0, 1));
 	else 
@@ -127,24 +113,96 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	CSize listSize = size;
-	CSize msgSize = size;
-	msgSize.cx = 700;
-	msgSize.cy = 200;
-	if (m_msgViewPosition == 2)   // windows on right
+	CRect frameRect;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) 
 	{
-		listSize.cx = frameSize.cx - size.cx - msgSize.cx - 30;
+		pFrame->GetClientRect(frameRect);
+		int deb = 1;
+	}
+	// frameSize is not correct yet. 
+	// SetWindowPlacement(&wpr); is called in CMainFrame::OnCreate but executed after CChildView::OnCreate
+	// Need to find better solution to windows placement
+	CSize frameSize = frameRect.Size();
+
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+#if 1
+	WINDOWPLACEMENT wpr;
+	DWORD cb = sizeof(wpr);
+	ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+	int cx = -1;
+	int cy = -1;
+	if (ret && (cb == sizeof(wpr)))
+	{
+		cx = wpr.rcNormalPosition.right - wpr.rcNormalPosition.left;
+		cy = wpr.rcNormalPosition.bottom - wpr.rcNormalPosition.top;
+		int deb = 1;
+	}
+	//frameSize.cx = cx;
+	//frameSize.cy = cy;
+
+#endif
+
+	CRect rect;
+	GetClientRect(rect);
+	CSize treeSize = rect.Size();
+
+	treeSize.cx = 177;
+	treeSize.cy = 200;
+
+	int tree_frameCx = 177;
+	int tree_frameCy = 200;
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", tree_frameCx);
+	
+	if (ret)
+		treeSize.cx = tree_frameCx;
+
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", tree_frameCy);
+	if (ret)
+		treeSize.cy = tree_frameCy;
+
+	if (!m_verSplitter.CreateView(0, 0, RUNTIME_CLASS(NTreeView), treeSize, NULL)) {
+		TRACE("Failed to create Tree left view\n");
+		return -1;
+	}
+	//
+
+	CSize listSize;
+
+	int list_frameCx_TreeNotInHide = 700;
+	int list_frameCy_TreeNotInHide = 200;
+
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", list_frameCx_TreeNotInHide);;
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", list_frameCy_TreeNotInHide);;
+
+	if (m_msgViewPosition == 1)   // windows on top
+	{
+		listSize.cx = frameSize.cx - treeSize.cx;
+		listSize.cy = list_frameCy_TreeNotInHide;
+	}
+	else if (m_msgViewPosition == 2)   // windows on right
+	{
+		listSize.cx = list_frameCx_TreeNotInHide;
 		listSize.cy = 200;
 	}
 	else if (m_msgViewPosition == 3)   // windows on left
 	{
-		listSize.cx = frameSize.cx - size.cx - msgSize.cx;
+		listSize.cx = list_frameCx_TreeNotInHide;
 		listSize.cy = 200;
 	}
-	
 
+	if (listSize.cx < 0)
+		int deb = 1;
+	if (listSize.cy < 0)
+		int deb = 1;
+
+	if (listSize.cx < 20)
+		listSize.cx = 20;
+	//
+
+	// m_msgViewPosition:: 1=bottom 2=right  3=left
 	if (m_msgViewPosition == 1)
-		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NListView), size, NULL);
+		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NListView), listSize, NULL);
 	else if (m_msgViewPosition == 2)
 		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NListView), listSize, NULL);
 	else if (m_msgViewPosition == 3)
@@ -156,9 +214,41 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
+	CSize msgSize;
 
+	int msg_frameCx_TreeNotInHide = 700;
+	int msg_frameCy_TreeNotInHide = 200;
+
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", msg_frameCx_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", msg_frameCy_TreeNotInHide);
+
+	if (m_msgViewPosition == 1)   // windows on top
+	{
+		msgSize.cx = frameSize.cx - treeSize.cx;
+		msgSize.cy = msg_frameCy_TreeNotInHide;
+	}
+	else if (m_msgViewPosition == 2)   // windows on right
+	{
+		msgSize.cx = msg_frameCx_TreeNotInHide;
+		msgSize.cy = 200;
+	}
+	else if (m_msgViewPosition == 3)   // windows on left
+	{
+		msgSize.cx = msg_frameCx_TreeNotInHide;
+		msgSize.cy = 200;
+	}
+
+	if (msgSize.cx < 20)
+		msgSize.cx = 20;
+
+	if (msgSize.cx < 0)
+		int deb = 1;
+	if (msgSize.cy < 0)
+		int deb = 1;
+
+	// m_msgViewPosition:: 1=bottom 2=right  3=left
 	if (m_msgViewPosition == 1)
-		ret = m_horSplitter.CreateView(1, 0, RUNTIME_CLASS(NMsgView), size, NULL);
+		ret = m_horSplitter.CreateView(1, 0, RUNTIME_CLASS(NMsgView), msgSize, NULL);
 	else if (m_msgViewPosition == 2)
 		ret = m_horSplitter.CreateView(0, 1, RUNTIME_CLASS(NMsgView), msgSize, NULL);
 	else if (m_msgViewPosition == 3)
@@ -170,12 +260,48 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	if( ! m_verSplitter.CreateView(0, 0, RUNTIME_CLASS(NTreeView), size, NULL) ) {
-		TRACE("Failed to create left view\n");
-		return -1;
-	}
-	
 	return 0;
+}
+
+void CChildView::GetTreePosition(int &row, int &col)
+{
+	row = 0;
+	col = 0;
+}
+
+void CChildView::GetListPosition(int &row, int &col)
+{
+	// m_msgViewPosition:: 1=bottom 2=right  3=left
+	row = 0; col = 0;
+	if (m_msgViewPosition == 1)
+	{
+		row = 0;  col = 0;
+	}
+	else if (m_msgViewPosition == 2)
+	{
+		row = 0;  col = 0;
+	}
+	else if (m_msgViewPosition == 3)
+	{
+		row = 0;  col = 1;
+	}
+}
+void CChildView::GetMsgPosition(int &row, int &col)
+{
+	// m_msgViewPosition:: 1=bottom 2=right  3=left
+	row = 0; col = 0;
+	if (m_msgViewPosition == 1)
+	{
+		row = 1;  col = 0;
+	}
+	else if (m_msgViewPosition == 2)
+	{
+		row = 0;  col = 1;
+	}
+	else if (m_msgViewPosition == 3)
+	{
+		row = 0;  col = 0;
+	}
 }
 
 void CChildView::OnSize(UINT nType, int cx, int cy) 

@@ -67,6 +67,7 @@ void HtmlPdfHdrConfigDlg::LoadData()
 	m_fldListBox.AddString("CC");
 	m_fldListBox.AddString("BCC");
 	m_fldListBox.AddString("DATE");
+	m_fldListBox.AddString("ATTACHMENTS");
 
 	int i;
 	for (i = 0; i < m_fldListBox.GetCount(); i++)

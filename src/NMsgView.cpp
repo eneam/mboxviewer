@@ -143,6 +143,21 @@ NMsgView::NMsgView()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
 		m_bImageViewer = bImageViewer;
 	}
+
+	m_frameCx_TreeNotInHide = 700;
+	m_frameCy_TreeNotInHide = 200;
+	m_frameCx_TreeInHide = 700;
+	m_frameCy_TreeInHide = 200;
+
+
+	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+
+	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", m_frameCx_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", m_frameCy_TreeNotInHide);
+	//
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", m_frameCx_TreeInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", m_frameCy_TreeInHide);
+
 }
 
 NMsgView::~NMsgView()
@@ -219,6 +234,28 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 {
 	int deb1, deb2, deb3, deb4;
 	CWnd::OnSize(nType, cx, cy);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int msgViewPosition = pFrame->MsgViewPosition();
+		BOOL bTreeHideVal = pFrame->TreeHideValue();
+		BOOL isTreeHidden = pFrame->IsTreeHidden();
+
+		TRACE("NMsgView::OnSize cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+			cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
+
+		if (!pFrame->m_bIsTreeHidden)
+		{
+			m_frameCx_TreeNotInHide = cx;
+			m_frameCy_TreeNotInHide = cy;
+		}
+		else
+		{
+			m_frameCx_TreeInHide = cx;
+			m_frameCy_TreeInHide = cy;
+		}
+	}
 
 	if (nType == SIZE_RESTORED)
 		int deb = 1;

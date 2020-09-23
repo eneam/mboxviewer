@@ -325,15 +325,15 @@ BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
 		int deb = 1;
 	}
 
-	CStringW cStrNamePath = FileUtils::GetmboxviewTempPathW() + validNameW;
+	CStringW cStrNamePathW = FileUtils::GetmboxviewTempPathW() + validNameW;
 	CString cStrNamePathA;
 	DWORD error;
-	BOOL retW2A = TextUtilsEx::Wide2Ansi(cStrNamePath, cStrNamePathA, error);
+	BOOL retW2A = TextUtilsEx::Wide2Ansi(cStrNamePathW, cStrNamePathA, error);
 
 	const unsigned char* data = pBP->GetContent();
 	int dataLength = pBP->GetContentLength();
 
-	BOOL retWrite = FileUtils::Write2File(cStrNamePath, data, dataLength);
+	BOOL retWrite = FileUtils::Write2File(cStrNamePathW, data, dataLength);
 
 	AttachmentInfo *item = new AttachmentInfo;
 	retW2A = TextUtilsEx::Wide2Ansi(validNameW, item->m_name, error);

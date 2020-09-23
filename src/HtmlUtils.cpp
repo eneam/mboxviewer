@@ -984,3 +984,75 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 	}
 	lpAllElements->Release();
 }
+
+
+void HtmlUtils::CommonMimeType2DocumentTypes(CString &contentType, CString &documentExtension)
+{
+	// use the hash table to optimize
+
+	documentExtension.Empty();
+	if (contentType.CompareNoCase("text/plain") == 0)
+	{
+		documentExtension.Append(".txt");
+	}
+	else if (contentType.CompareNoCase("text/html") == 0)
+	{
+		documentExtension.Append(".htm");
+	}
+	else if (contentType.CompareNoCase("application/msword") == 0)
+	{
+		documentExtension.Append(".doc");
+	}
+	else if (contentType.CompareNoCase("application/vnd.amazon.ebook") == 0)
+	{
+		documentExtension.Append(".azw");
+	}
+	else if (contentType.CompareNoCase("application/vnd.ms-excel") == 0)
+	{
+		documentExtension.Append(".xls");
+	}
+	else if (contentType.CompareNoCase("application/xhtml+xml") == 0)
+	{
+		documentExtension.Append(".xhtml");
+	}
+	else if (contentType.CompareNoCase("application/vnd.visio") == 0)
+	{
+		documentExtension.Append(".vsd");
+	}
+	else if (contentType.CompareNoCase("audio/webm") == 0)
+	{
+		documentExtension.Append(".weba");
+	}
+	else if (contentType.CompareNoCase("application/x-tar") == 0)
+	{
+		documentExtension.Append(".tar");
+	}
+	else if (contentType.CompareNoCase("image/svg+xml") == 0)
+	{
+		documentExtension.Append(".svg");
+	}
+	else if (contentType.CompareNoCase("application/vnd.ms-powerpoint") == 0)
+	{
+		documentExtension.Append(".ppt");
+	}
+	else if (contentType.CompareNoCase("application/java-archive") == 0)
+	{
+		documentExtension.Append(".jar");
+	}
+	else if (contentType.CompareNoCase("video/x-msvideo") == 0)
+	{
+		documentExtension.Append(".avi");
+	}
+	else if (contentType.CompareNoCase("application/x-7z-compressed") == 0)
+	{
+		documentExtension.Append(".7z");
+	}
+	else if (contentType.CompareNoCase("message/rfc822") == 0)
+	{
+		documentExtension.Append(".eml");
+	}
+	else if (contentType.CompareNoCase("text/rfc822-headers") == 0)
+	{
+		documentExtension.Append(".eml");
+	}
+}

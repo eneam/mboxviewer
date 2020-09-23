@@ -84,6 +84,11 @@ public:
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
 	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
 
+	int m_frameCx_TreeNotInHide;
+	int m_frameCy_TreeNotInHide;
+	int m_frameCx_TreeInHide;
+	int m_frameCy_TreeInHide;
+	//
 	BOOL m_bMax;
 	CRect m_rcCaption;
 	void UpdateLayout();

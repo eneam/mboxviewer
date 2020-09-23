@@ -41,6 +41,20 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.14
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced to make windows placements persists across multiple restart;
+ - Added option to export all mail attachments;
+ - Added option to export all mails as separate Eml mails;
+ - Added option to configure attachment name separator, including CRLF, in CSV file;
+ - Added option to list all attachment names in TEXT, HTML and PDF files. In HTML files, Names are links to attachment files;
+ - Improved detection of file extensions of attachment files;
+ - Enhanced mail grouping by conversation for Gmail file types with X-GM-THRID field present;
+ - Enhanced mail grouping by conversation for non Gmail file types when sent mails are missing;
+ - Made default Select Folder dialog resizable;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.13
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
