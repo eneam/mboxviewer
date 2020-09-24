@@ -5,6 +5,7 @@ Changes
 v 1.0.3.14
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced to create missing index files for mbox files larger than 100Gb;
  - Enhanced to make windows placements persists across multiple restart;
  - Added option to export all mail attachments;
  - Added option to export all mails as separate Eml mails;
