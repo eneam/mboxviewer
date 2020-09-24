@@ -7364,6 +7364,8 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	BOOL bReplaceWhiteWithUnderscore = FALSE;
 	FileUtils::MakeValidFileName(fileName, bReplaceWhiteWithUnderscore);
 
+	fileName.Trim(" \t_");
+
 	int fileNameLen = fileName.GetLength();
 	return 1;
 
@@ -7381,11 +7383,15 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 
 	CString fromAddr;
 	CString fromName;
-	SimpleString addrTo;
-
+	
 	CString toAddr;
 	CString toName;
+
+	SimpleString addrTo;
 	SimpleString nameTo;
+
+	CString addrStr;
+	CString nameStr;
 
 	CString subjAddr;
 	CString subj;
@@ -7527,8 +7533,15 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 			username.Empty();
 			domain.Empty();
 
-			MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
-			FileUtils::MakeValidFileName(name, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+			int maxNumbOfAddr = 1;
+			NListView::TrimToAddr(&m->m_to, addrStr, maxNumbOfAddr);
+			NListView::TrimToName(&m->m_to, nameStr, maxNumbOfAddr);
+
+			//MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
+			name.Append(nameStr, nameStr.GetLength());
+			addr.Append(addrStr, addrStr.GetLength());
+
+			FileUtils::MakeValidFileName(nameStr, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
 			if ((name.Count() > 0) && !((name.Count() == 1) && (name.GetAt(0) == '_')))
 			{
 				toName.Empty();
@@ -7572,7 +7585,14 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 			username.Empty();
 			domain.Empty();
 
-			MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
+			int maxNumbOfAddr = 1;
+			NListView::TrimToAddr(&m->m_to, addrStr, maxNumbOfAddr);
+			NListView::TrimToName(&m->m_to, nameStr, maxNumbOfAddr);
+
+			//MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
+			name.Append(nameStr, nameStr.GetLength());
+			addr.Append(addrStr, addrStr.GetLength());
+
 			int pos = addr.Find(0, '@');
 			if (pos >= 0)
 			{
@@ -7631,6 +7651,8 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 	}
 
 	FileUtils::MakeValidFileName(fileName, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+
+	fileName.Trim(" \t_");
 
 	int fileNameLen = fileName.GetLength();
 	return 1;

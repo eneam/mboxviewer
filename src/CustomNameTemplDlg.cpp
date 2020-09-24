@@ -116,7 +116,7 @@ void NameTemplateCnf::ClearParts()
 void NameTemplateCnf::SetDflts()
 {
 
-	m_TemplateFormat = "%DATE_TIME% %FROM_NAME% %TO_NAME% %SUBJECT% %UNIQUE_ID%";
+	m_TemplateFormat = "%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%";
 	m_DateFormat = "%Y-%m-%d";
 
 	m_bReplaceWhiteWithUnderscore = FALSE;
