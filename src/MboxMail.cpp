@@ -7537,11 +7537,10 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 			NListView::TrimToAddr(&m->m_to, addrStr, maxNumbOfAddr);
 			NListView::TrimToName(&m->m_to, nameStr, maxNumbOfAddr);
 
-			//MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
 			name.Append(nameStr, nameStr.GetLength());
 			addr.Append(addrStr, addrStr.GetLength());
 
-			FileUtils::MakeValidFileName(nameStr, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
+			FileUtils::MakeValidFileName(name, nameTemplateCnf.m_bReplaceWhiteWithUnderscore);
 			if ((name.Count() > 0) && !((name.Count() == 1) && (name.GetAt(0) == '_')))
 			{
 				toName.Empty();
@@ -7589,7 +7588,6 @@ int MboxMail::MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf,
 			NListView::TrimToAddr(&m->m_to, addrStr, maxNumbOfAddr);
 			NListView::TrimToName(&m->m_to, nameStr, maxNumbOfAddr);
 
-			//MboxMail::splitMailAddress(m->m_to, tolen, &name, &addr);
 			name.Append(nameStr, nameStr.GetLength());
 			addr.Append(addrStr, addrStr.GetLength());
 

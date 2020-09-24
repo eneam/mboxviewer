@@ -3389,6 +3389,7 @@ BOOL CMainFrame::DeleteAllPlacementKeys()
 void CMainFrame::OnFordevelopersSortbyid()
 {
 	// TODO: Add your command handler code here
+#if 0
 
 	NListView *pListView = 0;
 	pListView = this->GetListView();
@@ -3397,6 +3398,7 @@ void CMainFrame::OnFordevelopersSortbyid()
 	{
 		pListView->SortByColumn(1, TRUE);
 	}
+#endif
 	int deb = 1;
 }
 
