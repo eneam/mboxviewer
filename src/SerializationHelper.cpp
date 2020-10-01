@@ -302,5 +302,7 @@ BOOL SerializerHelper::readString(CString &val)
 	}
 	LPSTR buf = val.GetBufferSetLength(l);
 	DWORD nRead = 0;
-	return readN(buf, l);
+	BOOL ret = readN(buf, l);
+	val.ReleaseBuffer();
+	return ret;
 }

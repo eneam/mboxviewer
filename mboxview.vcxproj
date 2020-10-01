@@ -709,6 +709,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\MenuEdit.cpp" />
     <ClCompile Include="src\Mime.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -934,6 +935,7 @@
     <ClInclude Include="src\MainFrm.h" />
     <ClInclude Include="src\MboxMail.h" />
     <ClInclude Include="src\mboxview.h" />
+    <ClInclude Include="src\MenuEdit.h" />
     <ClInclude Include="src\Mime.h" />
     <ClInclude Include="src\MimeChar.h" />
     <ClInclude Include="src\MimeCode.h" />

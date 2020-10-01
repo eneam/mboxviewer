@@ -542,6 +542,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	if ( ! pListView )
 		return;
 
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if (pMsgView)
+		pMsgView->DisableMailHeader();
+
 	pListView->CloseMailFile();
 	
 	if ( !hNewItem) 
@@ -912,9 +916,12 @@ void NTreeView::OnFileRefresh()
 	return;
 }
 
-void AppendMenu(CMenu *menu, int commandId, const char *commandName)
+void AppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark)
 {
-	menu->AppendMenu(MF_STRING, commandId, commandName);
+	UINT nFlags = MF_STRING;
+	if (checkMark)
+		nFlags = MF_STRING | MF_CHECKED;
+	menu->AppendMenu(nFlags, commandId, commandName);
 	menu->AppendMenu(MF_SEPARATOR);
 }
 

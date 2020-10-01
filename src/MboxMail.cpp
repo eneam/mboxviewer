@@ -134,111 +134,6 @@ int MboxMail::m_EmbededImagesNotFoundLocalFile = 0;
 //int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
-///////
-// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
-// Postponed to the next relase 1.0.3.3 since larger effort is needed
-///////
-
-static void LargeBufferAllocFailed()
-{
-	_ASSERT(0);
-}
-
-SimpleString *MboxMail::get_outbuf()
-{
-	if (m_outbufBusy)
-		LargeBufferAllocFailed();
-	m_outbufBusy = TRUE;
-	return m_outbuf;
-}
-SimpleString *MboxMail::get_inbuf()
-{
-	if (m_inbufBusy)
-		LargeBufferAllocFailed();
-	m_inbufBusy = TRUE;
-	return m_inbuf;
-}
-SimpleString *MboxMail::get_outdata()
-{
-	if (m_outdataBusy)
-		LargeBufferAllocFailed();
-	m_outdataBusy = TRUE;
-	return m_outdata;
-}
-SimpleString *MboxMail::get_indata()
-{
-	if (m_indataBusy)
-		LargeBufferAllocFailed();
-	m_indataBusy = TRUE;
-	return m_indata;
-}
-SimpleString *MboxMail::get_workbuf()
-{
-	if (m_workbufBusy)
-		LargeBufferAllocFailed();
-	m_workbufBusy = TRUE;
-	return m_workbuf;
-}
-SimpleString *MboxMail::get_tmpbuf()
-{
-	if (m_tmpbufBusy)
-		LargeBufferAllocFailed();
-	m_tmpbufBusy = TRUE;
-	return m_tmpbuf;
-}
-SimpleString *MboxMail::get_largebuf()
-{
-	if (m_largebufBusy)
-		LargeBufferAllocFailed();
-	m_largebufBusy = TRUE;
-	return m_largebuf;
-}
-
-///
-void MboxMail::rel_outbuf()
-{
-	if (!m_outbufBusy)
-		LargeBufferAllocFailed();
-	m_outbufBusy = FALSE;
-}
-void MboxMail::rel_inbuf()
-{
-	if (!m_inbufBusy)
-		LargeBufferAllocFailed();
-	m_inbufBusy = FALSE;
-}
-void MboxMail::rel_outdata()
-{
-	if (!m_outdataBusy)
-		LargeBufferAllocFailed();
-	m_outdataBusy = FALSE;
-}
-void MboxMail::rel_indata()
-{
-	if (!m_indataBusy)
-		LargeBufferAllocFailed();
-	m_indataBusy = FALSE;
-}
-void MboxMail::rel_workbuf()
-{
-	if (!m_workbufBusy)
-		LargeBufferAllocFailed();
-	m_workbufBusy = FALSE;
-}
-void MboxMail::rel_tmpbuf()
-{
-	if (!m_tmpbufBusy)
-		LargeBufferAllocFailed();
-	m_tmpbufBusy = FALSE;
-}
-void MboxMail::rel_largebuf()
-{
-	if (!m_largebufBusy)
-		LargeBufferAllocFailed();
-	m_largebufBusy = FALSE;
-}
-
-
 struct MsgIdHash {
 public:
 	size_t operator()(const MboxMail *key) const
@@ -405,7 +300,9 @@ BOOL MboxMail::GetBody(SimpleString *res)
 
 int MboxMail::SingleMailSizeof()
 {
-	int allocExtra = 8;
+	int cstringSz = sizeof(CString);
+
+	int allocExtra = 28;
 	int fieldsSz = sizeof(*this) + allocExtra;
 	fieldsSz += m_from.GetAllocLength() + allocExtra;
 	fieldsSz += m_to.GetAllocLength() + allocExtra;
@@ -758,7 +655,6 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 
 							//m->m_crc32 = TextUtilities::CalcCRC32(msgStart, m->m_length);
 
-							MailBodyContent body;
 							char *bodyStart = msgStart;
 							char *bodyEnd = msgStart + m->m_length;
 							char *nextStart = ParseContent(m, bodyStart, bodyEnd);
@@ -8956,6 +8852,110 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 			MboxMail::m_HintConfig.ClearHint(hintNumber);
 		}
 	}
+}
+
+///////
+// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
+// Postponed to the next relase 1.0.3.3 since larger effort is needed
+///////
+
+static void LargeBufferAllocFailed()
+{
+	_ASSERT(0);
+}
+
+SimpleString *MboxMail::get_outbuf()
+{
+	if (m_outbufBusy)
+		LargeBufferAllocFailed();
+	m_outbufBusy = TRUE;
+	return m_outbuf;
+}
+SimpleString *MboxMail::get_inbuf()
+{
+	if (m_inbufBusy)
+		LargeBufferAllocFailed();
+	m_inbufBusy = TRUE;
+	return m_inbuf;
+}
+SimpleString *MboxMail::get_outdata()
+{
+	if (m_outdataBusy)
+		LargeBufferAllocFailed();
+	m_outdataBusy = TRUE;
+	return m_outdata;
+}
+SimpleString *MboxMail::get_indata()
+{
+	if (m_indataBusy)
+		LargeBufferAllocFailed();
+	m_indataBusy = TRUE;
+	return m_indata;
+}
+SimpleString *MboxMail::get_workbuf()
+{
+	if (m_workbufBusy)
+		LargeBufferAllocFailed();
+	m_workbufBusy = TRUE;
+	return m_workbuf;
+}
+SimpleString *MboxMail::get_tmpbuf()
+{
+	if (m_tmpbufBusy)
+		LargeBufferAllocFailed();
+	m_tmpbufBusy = TRUE;
+	return m_tmpbuf;
+}
+SimpleString *MboxMail::get_largebuf()
+{
+	if (m_largebufBusy)
+		LargeBufferAllocFailed();
+	m_largebufBusy = TRUE;
+	return m_largebuf;
+}
+
+///
+void MboxMail::rel_outbuf()
+{
+	if (!m_outbufBusy)
+		LargeBufferAllocFailed();
+	m_outbufBusy = FALSE;
+}
+void MboxMail::rel_inbuf()
+{
+	if (!m_inbufBusy)
+		LargeBufferAllocFailed();
+	m_inbufBusy = FALSE;
+}
+void MboxMail::rel_outdata()
+{
+	if (!m_outdataBusy)
+		LargeBufferAllocFailed();
+	m_outdataBusy = FALSE;
+}
+void MboxMail::rel_indata()
+{
+	if (!m_indataBusy)
+		LargeBufferAllocFailed();
+	m_indataBusy = FALSE;
+}
+void MboxMail::rel_workbuf()
+{
+	if (!m_workbufBusy)
+		LargeBufferAllocFailed();
+	m_workbufBusy = FALSE;
+}
+void MboxMail::rel_tmpbuf()
+{
+	if (!m_tmpbufBusy)
+		LargeBufferAllocFailed();
+	m_tmpbufBusy = FALSE;
+}
+void MboxMail::rel_largebuf()
+{
+	if (!m_largebufBusy)
+		LargeBufferAllocFailed();
+	m_largebufBusy = FALSE;
 }
 
 // TODO: Need to add menu option to display Copyright/License information

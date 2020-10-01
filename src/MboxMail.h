@@ -265,7 +265,6 @@ public:
 	int SingleMailSizeof();
 	static int AllMailsSizeof(int count);
 
-
 	static ThreadIdTableType *m_pThreadIdTable;
 	static MessageIdTableType *m_pMessageIdTable;
 	static MboxMailTableType *m_pMboxMailTable;

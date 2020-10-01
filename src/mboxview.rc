@@ -191,6 +191,7 @@ BEGIN
     CONTROL         "Custom1",IDC_EXPLORER,"",WS_TABSTOP,82,131,50,14
     CONTROL         "List1",IDC_ATTACHMENTS,"SysListView32",WS_BORDER | WS_TABSTOP,7,67,60,50
     LTEXT           "This dialog is not used. I create here all controls that are created dinamically so\nvstudio defines id automatically in resource.h",IDC_STATIC,13,7,256,32
+    EDITTEXT        IDC_EDIT_MAIL_HDR,206,69,52,50,ES_MULTILINE | WS_VSCROLL | WS_HSCROLL,WS_EX_CLIENTEDGE
 END
 
 IDD_FIND DIALOGEX 0, 0, 233, 241
@@ -378,7 +379,7 @@ BEGIN
     GROUPBOX        "Select filter rule",IDC_STATIC,7,214,361,93
     CONTROL         "  (From  --> To)  and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_RADIO2,
                     "Button",BS_AUTORADIOBUTTON,18,294,338,10
-    GROUPBOX        "Filter",IDC_STATIC,7,7,361,203
+    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,361,203
     GROUPBOX        "",IDC_STATIC,7,308,361,82
     LTEXT           "If some fields are not checked, for example From, then filter rule wil be reduced as follow:",IDC_STATIC,14,241,332,10
     LTEXT           "<-- --> To and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_STATIC,21,254,324,8
@@ -558,16 +559,16 @@ BEGIN
     CONTROL         "6",IDC_COLOR_STYLE6,"Button",BS_AUTORADIOBUTTON,124,47,16,10
     CONTROL         "7",IDC_COLOR_STYLE7,"Button",BS_AUTORADIOBUTTON,145,47,15,10
     CONTROL         "8",IDC_COLOR_STYLE8,"Button",BS_AUTORADIOBUTTON,166,47,20,10
-    GROUPBOX        "Background Color Styles",IDC_STATIC,7,8,180,25
+    GROUPBOX        "Background Color Styles",IDC_STATIC,6,8,180,25
     DEFPUSHBUTTON   "Save",IDOK,52,163,44,14
     PUSHBUTTON      "Cancel",IDCANCEL,141,163,45,14
     LISTBOX         IDC_LIST1,10,72,103,77,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Pane:",IDC_STATIC,7,62,109,91
+    GROUPBOX        "Pane:",IDC_STATIC,6,62,109,91
     PUSHBUTTON      "",IDC_COLOR_BUTTON,123,119,60,14
     LTEXT           "Pick Color",IDC_STATIC,126,106,59,8
     CONTROL         "Apply",IDC_COLOR_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,123,138,34,10
-    GROUPBOX        "Preconfigured",IDC_STATIC,7,35,179,27
-    PUSHBUTTON      "Help",IDC_BUTTON_HELP,7,163,43,14
+    GROUPBOX        "Preconfigured",IDC_STATIC,6,35,180,27
+    PUSHBUTTON      "Help",IDC_BUTTON_HELP,6,163,43,14
     PUSHBUTTON      "Close",IDC_BUTTON_CLOSE,97,163,42,14
 END
 
@@ -613,7 +614,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,14
+ FILEVERSION 1,0,3,15
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -630,7 +631,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.14"
+            VALUE "FileVersion", "1.0.3.15"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -771,7 +772,7 @@ BEGIN
 
     IDD_COLOR_STYLE_DLG, DIALOG
     BEGIN
-        LEFTMARGIN, 7
+        LEFTMARGIN, 6
         RIGHTMARGIN, 186
         TOPMARGIN, 7
         BOTTOMMARGIN, 177
@@ -871,7 +872,14 @@ END
 
 IDD_CONTROLS_DLG AFX_DIALOG_LAYOUT
 BEGIN
-    0
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 100
 END
 
 IDD_INPUT_BOX_DLG AFX_DIALOG_LAYOUT

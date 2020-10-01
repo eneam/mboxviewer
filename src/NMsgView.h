@@ -39,8 +39,24 @@
 /////////////////////////////////////////////////////////////////////////////
 // NMsgView window
 
-class SimpleString;
+//class SimpleString;
 #include "CAttachments.h"
+#include "SimpleString.h"
+#include "MenuEdit.h"
+
+#if 0
+class CMenuEdit : public CEdit
+{
+public:
+	CMenuEdit() {};
+
+protected:
+	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+
+	DECLARE_MESSAGE_MAP()
+};
+#endif
 
 
 class NMsgView : public CWnd
@@ -53,6 +69,10 @@ public:
 	CBrowser m_browser;
 	//CListCtrl	m_attachments;
 	CAttachments m_attachments;
+	CMenuEdit m_hdr;
+	SimpleString m_hdrData;
+	int m_hdrWindowLen;
+	//CRichEditCtrl m_hdr;
 	CFont m_font;
 	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleBody;
 	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strBody;
@@ -83,6 +103,12 @@ public:
 	void ClearSearchResultsInIHTMLDocument(CString &searchID);
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
 	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
+
+	void DisableMailHeader();
+	int HideMailHeader(int iItem);
+	int ShowMailHeader(int iItem);
+	int FindMailHeader(char *data, int datalen);
+	char *EatFldLine(char *p, char *e);
 
 	int m_frameCx_TreeNotInHide;
 	int m_frameCy_TreeNotInHide;

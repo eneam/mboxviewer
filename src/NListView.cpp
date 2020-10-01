@@ -2710,6 +2710,11 @@ void NListView::FillCtrl()
 	NTreeView *pTreeView = pFrame->GetTreeView();
 	if( ! pTreeView )
 		return;
+
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if (pMsgView)
+		pMsgView->DisableMailHeader();
+
 	CString cache= m_path + ".mboxview";
 	int ni = 0;
 #ifdef _DEBUG
@@ -3244,6 +3249,9 @@ void NListView::SelectItem(int iItem)
 	NMsgView *pMsgView = pFrame->GetMsgView();
 	if (!pMsgView)
 		return;
+
+	pMsgView->DisableMailHeader();
+
 	pMsgView->m_bAttach = FALSE;
 	// Sanity check
 	if (iItem < 0 || iItem >= MboxMail::s_mails.GetSize()) {
@@ -14649,4 +14657,3 @@ int NListView::Color2Str(DWORD color, CString &colorStr)
 	//colorStr.Format("0x%06x", color);
 	return 1;
 }
-

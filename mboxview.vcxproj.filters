@@ -157,6 +157,9 @@
     <ClCompile Include="src\GenericFontFamilyDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\MenuEdit.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -319,6 +322,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\GenericFontFamilyDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MenuEdit.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

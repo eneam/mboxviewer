@@ -38,6 +38,8 @@
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
 #include "MboxMail.h"
+#include "MimeParser.h"
+#include "MenuEdit.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -64,8 +66,9 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 // NMsgView
 
 NMsgView::NMsgView()
-	:m_attachments(this)
+	:m_attachments(this), m_hdr()
 {
+	m_hdrWindowLen = 0;
 	m_bAttach = FALSE;
 	m_nAttachSize = 50;
 	m_bMax = TRUE;
@@ -157,7 +160,6 @@ NMsgView::NMsgView()
 	//
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", m_frameCx_TreeInHide);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", m_frameCy_TreeInHide);
-
 }
 
 NMsgView::~NMsgView()
@@ -226,6 +228,11 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_attachments.SetImageList(&sysImgList, LVSIL_SMALL);
 	sysImgList.Detach();
 	//	m_attachments.SetExtendedStyle(WS_EX_STATICEDGE);
+
+	if (!m_hdr.Create(WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY | WS_VSCROLL | WS_HSCROLL | WS_SYSMENU , CRect(), this, IDC_EDIT_MAIL_HDR))
+	{
+		int deb = 1;
+	}
 
 	return 0;
 }
@@ -364,21 +371,40 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 
 	int acy = m_bAttach ? m_nAttachSize : 0;
 
+	int textWndOffset = nOffset;
+	int hdrHight = 0;
+	int hdrWidth = 0;
+	if (m_hdrWindowLen > 0)
+	{
+		hdrHight = cy - nOffset;
+		hdrWidth = cx + 1;
+	}
+	m_hdr.MoveWindow(BSIZE, BSIZE + textWndOffset, hdrWidth, hdrHight);
+
+	int browserOffset = nOffset + hdrHight;
+
 	int browserX = BSIZE;
-	int browserY = BSIZE + nOffset;
+	int browserY = BSIZE + browserOffset;
 	int browserWidth = cx;
-	int browserHight = cy - acy - nOffset;
+	int browserHight = cy - acy - browserOffset;
+	if (m_hdrWindowLen > 0)
+	{
+		browserHight = 0;
+		browserWidth = 0;
+	}
 	m_browser.MoveWindow(browserX, browserY, browserWidth, browserHight);
 
 	int attachmentX = BSIZE;
 	int attachmentY = cy - acy + BSIZE;
+	//attachmentY = cy - acy;
 	int attachmentWidth = cx;
 	int attachmentHight = acy;
+	if (m_hdrWindowLen > 0)
+	{
+		attachmentHight = 0;
+		attachmentWidth = 0;
+	}
 	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
-
-	//int acy = m_bAttach ? m_nAttachSize : 0;
-	//m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
-	//m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
 
 	// TODO: seem to fix resizing issue; it should not be needed by iy seem to work
 	Invalidate();
@@ -441,17 +467,40 @@ void NMsgView::UpdateLayout()
 
 	int acy = m_bAttach ? (m_nAttachSize) : 0;
 
+	int textWndOffset = nOffset;
+	int hdrHight = 0;
+	int hdrWidth = 0;
+	if (m_hdrWindowLen > 0)
+	{
+		hdrHight = cy - nOffset;
+		hdrWidth = cx + 1;
+	}
+	m_hdr.MoveWindow(BSIZE, BSIZE + textWndOffset, hdrWidth, hdrHight);
+
+	int browserOffset = nOffset + hdrHight;
 	int browserX = BSIZE;
-	int browserY = BSIZE + nOffset;
+	int browserY = BSIZE + browserOffset;
 	int browserWidth = cx;
-	int browserHight = cy - acy - nOffset;
+	int browserHight = cy - acy - browserOffset;
+	if (m_hdrWindowLen > 0)
+	{
+		browserHight = 0;
+		browserWidth = 0;
+	}
 	m_browser.MoveWindow(browserX, browserY, browserWidth, browserHight);
 
 	int attachmentX = BSIZE;
 	int attachmentY = cy - acy + BSIZE;
+	//attachmentY = cy - acy;
 	int attachmentWidth = cx;
 	int attachmentHight = acy;
+	if (m_hdrWindowLen > 0)
+	{
+		attachmentHight = 0;
+		attachmentWidth = 0;
+	}
 	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
+
 
 	Invalidate();
 	UpdateWindow();
@@ -609,6 +658,9 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 
 void NMsgView::OnPaint()
 {
+	if (m_hdrWindowLen > 0)
+		m_hdr.SetWindowText(m_hdrData.Data());
+
 	CPaintDC dc(this); // device context for painting
 	static bool ft = true;
 
@@ -820,7 +872,15 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	// TODO: Add your message handler code here and/or call default
 
 	const char *ClearFindtext = _T("Clear Find Text");
-	const char *CustomColor = _T("Enable/Disable Custom Color Style");
+	const char *CustomColor = _T("Custom Color Style");
+	const char *ShowMailHdr = _T("View Message Header");
+
+	NListView *pListView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+	}
 
 	CPoint pt;
 	::GetCursorPos(&pt);
@@ -834,7 +894,10 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	AppendMenu(&menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
 
 	const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
-	AppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor);
+	AppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, pListView->m_bApplyColorStyle);
+
+	const UINT M_SHOW_MAIL_HEADER_Id = 3;
+	AppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen > 0);
 
 	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -842,30 +905,258 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, n_Flags);
 
+	if (command == M_CLEAR_FIND_TEXT_Id)
+	{
+		ClearSearchResultsInIHTMLDocument(m_searchID);
+		int deb = 1;
+	}
+	else if ((command == M_ENABLE_DISABLE_COLOR_Id))
+	{
+		if (pListView)
+		{
+			pListView->m_bApplyColorStyle = !pListView->m_bApplyColorStyle;
+			int iItem = pListView->m_lastSel;
+			if (m_hdrWindowLen)
+			{
+				this->ShowMailHeader(iItem);
+			}
+			else
+			{
+				pListView->Invalidate();
+				pListView->SelectItem(pListView->m_lastSel);
+			}
+		}
+		int deb = 1;
+	}
+	else if ((command == M_SHOW_MAIL_HEADER_Id))
+	{
+		int iItem = pListView->m_lastSel;
+		if (m_hdrWindowLen)
+		{
+			this->HideMailHeader(iItem);
+		}
+		else
+		{
+			this->ShowMailHeader(iItem);
+		}
+		int deb = 1;
+	}
+
+	CWnd::OnRButtonDown(nFlags, point);
+}
+
+char * NMsgView::EatFldLine(char *p, char *e)
+{
+	// Fld found, eat the rest
+	while ((p < e) && (*p++ != '\n'));
+	while (p < e)
+	{
+		if ((*p == ' ') || (*p == '\t'))
+			while ((p < e) && (*p++ != '\n'));
+		else
+			break;
+	}
+	return p;
+}
+
+int NMsgView::FindMailHeader(char *data, int datalen)
+{
+	static const char *cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+
+	char *p = data;
+	char *e = data + datalen;
+	char *fldName = p;
+	char *pend = e;
+
+	p = MimeParser::SkipEmptyLines(p, e);
+
+	if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+	{
+		p = MimeParser::EatNewLine(p, e);
+	}
+	fldName = p;
+	pend = p;
+
+	int fldNameCnt = 0;
+	char c;
+	while (p < e)
+	{
+		c = *p;
+		if ((c == '\r') || (c == '\n'))
+		{
+			if (fldNameCnt > 0)
+			{
+				p++;
+				break;
+			}
+			else
+			{
+				pend = p;
+				fldNameCnt = 0;
+				p++;
+				continue;
+			}
+		}
+
+		c = *p;
+		if (c == ':')
+		{
+			if (fldNameCnt == 0)
+			{
+				p = MimeParser::EatNewLine(p, e);
+				break;
+			}
+			else
+			{
+				p = EatFldLine(p, e);
+				fldName = p;
+				fldNameCnt = 0;
+				continue;
+			}
+		}
+		else if ((c == ' ') || (c == '\t'))
+		{
+			while ((p < e) && (*p != '\n') && ((c == ' ') || (c == '\t')))
+			{
+				p++;
+			}
+
+			c = *p;
+			if (c == ':')
+			{
+				if (fldNameCnt == 0)
+				{
+					p = MimeParser::EatNewLine(p, e);
+					break;
+				}
+				else
+				{
+					p = EatFldLine(p, e);
+					fldNameCnt = 0;
+					fldName = p;
+					continue;
+				}
+			}
+			else
+			{
+				p = MimeParser::EatNewLine(p, e);
+				fldNameCnt = 0;
+				break;
+			}
+		}
+		else
+		{
+			fldNameCnt++;
+			p++;
+		}
+	}
+
+	int headerLength = -1;
+	if (pend < e)
+		headerLength = pend - data;
+	return headerLength;
+}
+
+int NMsgView::ShowMailHeader(int mailPosition)
+{
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	m->GetBody(&m_hdrData);
+
+	int headerlen = 0;
+	if (m->m_headLength > 0)
+		headerlen = m->m_headLength;
+	else
+		headerlen = FindMailHeader(m_hdrData.Data(), m_hdrData.Count());
+
+	if (headerlen > 0)
+	{
+		m->m_headLength = headerlen;
+
+		m_hdrData.SetCount(headerlen);
+		char *p = m_hdrData.Data();
+		// CFile Read removes CR and therfore we need to add CR, great  !!
+		char *ms = strchr(p, '\n');
+		if (ms) 
+		{
+			BOOL bAddCR = FALSE;
+			if (*(ms - 1) != '\r')
+				bAddCR = TRUE;
+			int pos = ms - p + 1;
+			if (bAddCR)
+			{
+				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrData.Data(), m_hdrData.Count(), tmpbuf);
+				m_hdrData.Clear();
+				m_hdrData.Append(tmpbuf->Data(), tmpbuf->Count());
+				MboxMail::rel_tmpbuf();
+			}
+		}
+	}
+	else
+		m_hdrData.SetCount(0);
+
+#if 0
+	SimpleString hdr;
+	//hdr.Append("\r");
+	hdr.Append(m_hdrData);
+	m_hdrData.Copy(hdr);
+	//m_hdr.SetWindowText(m_hdrData.Data());
+#endif
+
+	m_hdr.ShowWindow(SW_SHOW);
+	m_hdr.ShowWindow(SW_RESTORE);
+
+	m_hdrWindowLen = 100;
+	Invalidate();
+	UpdateLayout();
+
+	//CDC *dc = m_hdr.GetDC();
+	//m_hdr.PrintWindow(dc, PW_CLIENTONLY);
+
 	NListView *pListView = 0;
 	NMsgView *pMsgView = 0;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame)
 	{
 		pListView = pFrame->GetListView();
-		pMsgView = pFrame->GetMsgView();
-	}
-
-	if (command == M_CLEAR_FIND_TEXT_Id)
-	{
-		ClearSearchResultsInIHTMLDocument(m_searchID);
-		int deb = 1;
-	}
-	if ((command == M_ENABLE_DISABLE_COLOR_Id))
-	{
-		if (pListView && pMsgView)
+		if (pListView)
 		{
-			pListView->m_bApplyColorStyle = !pListView->m_bApplyColorStyle;
+			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+			if (pListView->m_bApplyColorStyle && (color != COLOR_WHITE))
+			{
+				m_hdr.SetBkColor(color);
+			}
+			else
+				m_hdr.SetBkColor(COLOR_WHITE);
 
-			pListView->Invalidate();
-			pListView->SelectItem(pListView->m_lastSel);
 		}
-		int deb = 1;
 	}
-	CWnd::OnRButtonDown(nFlags, point);
+	return 1;
+}
+
+int NMsgView::HideMailHeader(int mailPosition)
+{
+	m_hdrWindowLen = 0;
+	m_hdrData.SetCount(0);
+	Invalidate();
+	UpdateLayout();
+
+	return 1;
+}
+
+
+void  NMsgView::DisableMailHeader()
+{
+	m_hdrData.Clear();
+	m_hdrWindowLen = 0;
 }
