@@ -923,7 +923,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 			else
 			{
 				pListView->Invalidate();
-				pListView->SelectItem(pListView->m_lastSel);
+				pListView->SelectItem(pListView->m_lastSel, TRUE);
 			}
 		}
 		int deb = 1;
@@ -934,6 +934,8 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		if (m_hdrWindowLen)
 		{
 			this->HideMailHeader(iItem);
+			pListView->Invalidate();
+			pListView->SelectItem(pListView->m_lastSel, TRUE);
 		}
 		else
 		{
@@ -978,48 +980,47 @@ int NMsgView::FindMailHeader(char *data, int datalen)
 	fldName = p;
 	pend = p;
 
-	int fldNameCnt = 0;
-	char c;
-	while (p < e)
+	// Too Simplistic ?? 
+	// Parsing mbox file to create index file relies on empty lines for better or worse
+	// I think I have seen one case that simplistic approach would fails but can't find any now
+	// TODO: add code to compare these two methods
+	BOOL simpleApproach = TRUE; 
+	if (simpleApproach)
 	{
-		c = *p;
-		if ((c == '\r') || (c == '\n'))
+		while (p < e)
 		{
-			if (fldNameCnt > 0)
-			{
-				p++;
+			if ((*p == '\n') || ((*p == '\r') && (*(p+1) == '\n')))
 				break;
-			}
 			else
-			{
-				pend = p;
-				fldNameCnt = 0;
-				p++;
-				continue;
-			}
-		}
-
-		c = *p;
-		if (c == ':')
-		{
-			if (fldNameCnt == 0)
-			{
 				p = MimeParser::EatNewLine(p, e);
-				break;
-			}
-			else
-			{
-				p = EatFldLine(p, e);
-				fldName = p;
-				fldNameCnt = 0;
-				continue;
-			}
 		}
-		else if ((c == ' ') || (c == '\t'))
+		int headerLength = -1;
+		if (p < e)
+			headerLength = p - data;
+		return headerLength;
+	}
+	else
+	{
+		// may find one or two extar lines
+		int fldNameCnt = 0;
+		char c;
+		while (p < e)
 		{
-			while ((p < e) && (*p != '\n') && ((c == ' ') || (c == '\t')))
+			c = *p;
+			if ((c == '\r') || (c == '\n'))
 			{
-				p++;
+				if (fldNameCnt > 0)
+				{
+					p++;
+					break;
+				}
+				else
+				{
+					pend = p;
+					fldNameCnt = 0;
+					p++;
+					continue;
+				}
 			}
 
 			c = *p;
@@ -1033,29 +1034,55 @@ int NMsgView::FindMailHeader(char *data, int datalen)
 				else
 				{
 					p = EatFldLine(p, e);
-					fldNameCnt = 0;
+					pend = p;
 					fldName = p;
+					fldNameCnt = 0;
 					continue;
+				}
+			}
+			else if ((c == ' ') || (c == '\t'))
+			{
+				while ((p < e) && (*p != '\n') && ((c == ' ') || (c == '\t')))
+				{
+					p++;
+				}
+
+				c = *p;
+				if (c == ':')
+				{
+					if (fldNameCnt == 0)
+					{
+						p = MimeParser::EatNewLine(p, e);
+						break;
+					}
+					else
+					{
+						p = EatFldLine(p, e);
+						pend = p;
+						fldNameCnt = 0;
+						fldName = p;
+						continue;
+					}
+				}
+				else
+				{
+					p = MimeParser::EatNewLine(p, e);
+					fldNameCnt = 0;
+					break;
 				}
 			}
 			else
 			{
-				p = MimeParser::EatNewLine(p, e);
-				fldNameCnt = 0;
-				break;
+				fldNameCnt++;
+				p++;
 			}
 		}
-		else
-		{
-			fldNameCnt++;
-			p++;
-		}
-	}
 
-	int headerLength = -1;
-	if (pend < e)
-		headerLength = pend - data;
-	return headerLength;
+		int headerLength = -1;
+		if (pend < e)
+			headerLength = pend - data;
+		return headerLength;
+	}
 }
 
 int NMsgView::ShowMailHeader(int mailPosition)
@@ -1105,23 +1132,12 @@ int NMsgView::ShowMailHeader(int mailPosition)
 	else
 		m_hdrData.SetCount(0);
 
-#if 0
-	SimpleString hdr;
-	//hdr.Append("\r");
-	hdr.Append(m_hdrData);
-	m_hdrData.Copy(hdr);
-	//m_hdr.SetWindowText(m_hdrData.Data());
-#endif
-
 	m_hdr.ShowWindow(SW_SHOW);
 	m_hdr.ShowWindow(SW_RESTORE);
 
 	m_hdrWindowLen = 100;
 	Invalidate();
 	UpdateLayout();
-
-	//CDC *dc = m_hdr.GetDC();
-	//m_hdr.PrintWindow(dc, PW_CLIENTONLY);
 
 	NListView *pListView = 0;
 	NMsgView *pMsgView = 0;
@@ -1132,6 +1148,8 @@ int NMsgView::ShowMailHeader(int mailPosition)
 		if (pListView)
 		{
 			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+			if (m_hdrData.Count() == 0)
+				pListView->m_bApplyColorStyle = TRUE;
 			if (pListView->m_bApplyColorStyle && (color != COLOR_WHITE))
 			{
 				m_hdr.SetBkColor(color);
@@ -1150,7 +1168,6 @@ int NMsgView::HideMailHeader(int mailPosition)
 	m_hdrData.SetCount(0);
 	Invalidate();
 	UpdateLayout();
-
 	return 1;
 }
 

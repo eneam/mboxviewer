@@ -213,6 +213,7 @@ public:
 	NamePatternParams m_NamePatternParams;
 	AttachmentConfigParams m_attachmentConfigParams;
 	ColorStyleConfigDlg *m_colorStyleDlg;
+	BOOL m_bViewMessageHeaders;
 
 	static ColorStylesDB m_ColorStylesDB;
 
@@ -279,6 +280,8 @@ public:
 	afx_msg LRESULT OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnFordevelopersSortbyid();
 	afx_msg void OnFordevelopersMemory();
+	afx_msg void OnViewMessageheaders();
+	afx_msg void OnFileRestorehintmessages();
 };
 
 /////////////////////////////////////////////////////////////////////////////

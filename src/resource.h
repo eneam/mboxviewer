@@ -267,7 +267,6 @@
 #define IDC_HTML_PDF_CNF                1230
 #define IDC_EXPORT_ATTACHMENT_SEPARATOR 1231
 #define IDC_EDIT_MAIL_HDR               1232
-#define IDC_STATIC_MAIL_HDR             1233
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -307,6 +306,8 @@
 #define ID_Menu32891                    32891
 #define ID_FORDEVELOPERS_SORTBYID       32892
 #define ID_FORDEVELOPERS_MEMORY         32893
+#define ID_VIEW_MESSAGEHEADERS          32894
+#define ID_FILE_RESTOREHINTMESSAGES     32895
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -316,7 +317,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        223
-#define _APS_NEXT_COMMAND_VALUE         32894
+#define _APS_NEXT_COMMAND_VALUE         32896
 #define _APS_NEXT_CONTROL_VALUE         1236
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

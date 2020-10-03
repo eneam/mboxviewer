@@ -174,6 +174,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_MESSAGE(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, &CMainFrame::OnCmdParam_LoadFolders)
 	ON_COMMAND(ID_FORDEVELOPERS_SORTBYID, &CMainFrame::OnFordevelopersSortbyid)
 	ON_COMMAND(ID_FORDEVELOPERS_MEMORY, &CMainFrame::OnFordevelopersMemory)
+	ON_COMMAND(ID_VIEW_MESSAGEHEADERS, &CMainFrame::OnViewMessageheaders)
+	ON_COMMAND(ID_FILE_RESTOREHINTMESSAGES, &CMainFrame::OnFileRestorehintmessages)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -204,6 +206,7 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_bMailDownloadComplete = FALSE;  // Page download complete in CBrowser
 	m_bSelectMailFileDone = FALSE;
 	m_MailIndex = -1;  // Not used ??
+	m_bViewMessageHeaders = FALSE;
 	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
 	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
 
@@ -773,14 +776,7 @@ void CMainFrame::OnTreeHide()
 	if (icHide)
 		ret = imgList->Replace(4, icHide);
 
-	//m_wndView.m_horSplitter.RecalcLayout();
 	m_wndView.m_verSplitter.RecalcLayout();
-	//m_wndView.m_verSplitter.Invalidate();
-	//m_wndView.m_horSplitter.Invalidate();
-
-	//m_wndToolBar.Invalidate();
-
-	//m_bIsTreeHidden = !m_bIsTreeHidden;
 
 	int deb = 1;
 }
@@ -1548,8 +1544,13 @@ void CMainFrame::SetupMailListsToInitialState()
 	MboxMail::m_folderMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
 
 	CMenu *menu = this->GetMenu();
-	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
-	m_bUserSelectedMailsCheckSet = FALSE;
+
+	menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_UNCHECKED);
+	m_bViewMessageHeaders = FALSE;
+
+	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
+	m_bUserSelectedMailsCheckSet = TRUE;
+	EnableMailList(IDC_EDIT_LIST, TRUE);
 
 	// User Selected Mails will not be enabled :) fix it/make it clear ?
 	EnableAllMailLists(TRUE);
@@ -3414,4 +3415,47 @@ void CMainFrame::OnFordevelopersMemory()
 	HWND h = GetSafeHwnd();
 	int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	int deb = 1;
+}
+
+
+void CMainFrame::OnViewMessageheaders()
+{
+	// TODO: Add your command handler code here
+
+	MboxMail::ShowHint(HintConfig::MessageHeaderConfigHint, GetSafeHwnd());
+
+	m_bViewMessageHeaders = !m_bViewMessageHeaders;
+
+	NListView *pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+
+	if (pListView && pMsgView)
+	{
+		int iItem = pListView->m_lastSel;
+		if (m_bViewMessageHeaders)
+		{
+			pMsgView->ShowMailHeader(iItem);
+		}
+		else
+		{
+			pListView->Invalidate();
+			pListView->SelectItem(pListView->m_lastSel, TRUE);
+		}
+	}
+
+	CMenu *menu = this->GetMenu();
+	if (m_bViewMessageHeaders)
+		menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_CHECKED);
+	else
+		menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_UNCHECKED);
+
+	int deb = 1;
+}
+
+
+void CMainFrame::OnFileRestorehintmessages()
+{
+	// TODO: Add your command handler code here
+
+	MboxMail::m_HintConfig.ClearAllHints();
 }

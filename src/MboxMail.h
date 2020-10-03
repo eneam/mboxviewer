@@ -87,6 +87,7 @@ public:
 
 	BOOL IsHintSet(int nintNumber);
 	void ClearHint(int nintNumber);
+	void ClearAllHints();
 
 	enum {
 		GeneralUsageHint = 1,
@@ -97,7 +98,8 @@ public:
 		FindDialogHint = 6,
 		AdvancedFindDialogHint = 7,
 		PrintToPDFScriptHint = 8,
-		AttachmentConfigHint = 9
+		AttachmentConfigHint = 9,
+		MessageHeaderConfigHint = 10
 	};
 };
 

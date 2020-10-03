@@ -831,6 +831,9 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 						if (from.IsEmpty() && to.IsEmpty() && date.IsEmpty())
 							int deb = 1;
 
+						if (from.IsEmpty() || to.IsEmpty() || date.IsEmpty())
+							int deb = 1;
+
 						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 
 					}
 				}
@@ -8635,6 +8638,11 @@ void HintConfig::ClearHint(int hintNumber)
 	m_nHintBitmap &= ~position;
 }
 
+void HintConfig::ClearAllHints()
+{
+	m_nHintBitmap = 0xFFFFFFFF;
+}
+
 
 void HintConfig::LoadHintBitmap()
 {
@@ -8828,6 +8836,16 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"You can configure to shown all attachments, both inline and\n"
 				"non-inline, by selecting\n"
 				"\"File->Attachments Config->Attachment Window\" dialog\n"
+			);
+		}
+		else if (hintNumber == HintConfig::MessageHeaderConfigHint)
+		{
+			hintText.Append(
+				"By default the mail text is shown in Message Window.\n"
+				"Enable global \"View -> View Message Headers\" option to show the message header instead of the text.\n\n"
+				"To switch between text and headers of the selected mail\n"
+				"right click on the header pane in Message Window and check/uncheck the \"View Message Header\" option.\n"
+				"\n"
 			);
 		}
 

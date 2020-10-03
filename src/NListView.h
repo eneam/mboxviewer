@@ -167,7 +167,7 @@ public:
 	BOOL m_bFindNext;
 	BOOL m_bInFind;
 	HTREEITEM m_which;
-	void SelectItem(int which);
+	void SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);
 	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	CString m_searchString;
 	int m_lastFindPos;

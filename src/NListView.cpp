@@ -3234,7 +3234,7 @@ MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	return strcmp(strItem1, strItem2);
 }
 
-void NListView::SelectItem(int iItem)
+void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 {
 	CMainFrame *pFrame = 0;
 
@@ -3243,6 +3243,13 @@ void NListView::SelectItem(int iItem)
 	*(char*)pFrame = 'a';
 #endif
 
+	// Sanity check
+	if (iItem < 0 || iItem >= MboxMail::s_mails.GetSize()) {
+		return;
+		//ClearDescView();
+		return;
+	}
+
 	pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (!pFrame)
 		return;
@@ -3250,15 +3257,24 @@ void NListView::SelectItem(int iItem)
 	if (!pMsgView)
 		return;
 
-	pMsgView->DisableMailHeader();
+	m_lastSel = iItem;
+
+	if (pFrame->m_bViewMessageHeaders == TRUE)
+	{
+		if (ignoreViewMessageHeader == FALSE)
+		{
+			pMsgView->ShowMailHeader(iItem);
+			return;
+		}
+		else
+			pMsgView->DisableMailHeader();
+
+	}
+	else
+		pMsgView->DisableMailHeader();
 
 	pMsgView->m_bAttach = FALSE;
-	// Sanity check
-	if (iItem < 0 || iItem >= MboxMail::s_mails.GetSize()) {
-		return;
-		//ClearDescView();
-		return;
-	}
+
 #if 1
 	// Already set for ID_INDICATOR_MAIL
 	if (pFrame) {
@@ -3268,7 +3284,7 @@ void NListView::SelectItem(int iItem)
 	}
 #endif
 
-	m_lastSel = iItem;
+
 	// Erase any files previously saved
 	FileUtils::RemoveDirW(FileUtils::GetmboxviewTempPathW());
 

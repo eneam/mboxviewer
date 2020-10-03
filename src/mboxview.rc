@@ -81,6 +81,7 @@ BEGIN
             MENUITEM "PDF...",                      ID_PRINTTO_PDF
         END
         MENUITEM "Merge Archive Files...",      ID_FILE_MERGEARCHIVEFILES
+        MENUITEM "Restore Hint Messages",       ID_FILE_RESTOREHINTMESSAGES
         POPUP "Development Options"
         BEGIN
             MENUITEM "Sort By Id",                  ID_FORDEVELOPERS_SORTBYID
@@ -116,6 +117,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "User Selected Mails",         ID_VIEW_USERSELECTEDMAILS
         MENUITEM SEPARATOR
+        MENUITEM "View Message Headers",        ID_VIEW_MESSAGEHEADERS
         MENUITEM "View EML",                    ID_EDIT_VIEWEML
         POPUP "Sort By"
         BEGIN
