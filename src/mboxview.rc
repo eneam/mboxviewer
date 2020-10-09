@@ -114,10 +114,15 @@ BEGIN
             MENUITEM "Right",                       ID_MESSAGEWINDOW_RIGHT
             MENUITEM "Left",                        ID_MESSAGEWINDOW_LEFT
         END
+        POPUP "Message Header Pane Layout"
+        BEGIN
+            MENUITEM "Default",                     ID_MESSAGEHEADERPANELAYOUT_DEFAULT
+            MENUITEM "Expanded",                    ID_MESSAGEHEADERPANELAYOUT_EXPANDED
+        END
         MENUITEM SEPARATOR
         MENUITEM "User Selected Mails",         ID_VIEW_USERSELECTEDMAILS
         MENUITEM SEPARATOR
-        MENUITEM "View Message Headers",        ID_VIEW_MESSAGEHEADERS
+        MENUITEM "View Raw Message Headers",    ID_VIEW_MESSAGEHEADERS
         MENUITEM "View EML",                    ID_EDIT_VIEWEML
         POPUP "Sort By"
         BEGIN
@@ -338,13 +343,13 @@ BEGIN
     PUSHBUTTON      "Open File",IDYES,383,66,56,14
 END
 
-IDD_FIND_ADVANCED DIALOGEX 0, 0, 373, 407
+IDD_FIND_ADVANCED DIALOGEX 0, 0, 385, 368
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find Advanced"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,234,391,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,297,391,50,14
+    DEFPUSHBUTTON   "OK",IDOK,267,352,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,323,352,50,14
     CONTROL         "From",IDC_EDIT_FROM_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,27,51,10
     EDITTEXT        IDC_EDIT_FROM,77,27,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_FROM_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,27,12,10
@@ -368,24 +373,17 @@ BEGIN
     EDITTEXT        IDC_EDIT_ATTACHMENT,77,151,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,151,12,10
     CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,151,19,10
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,352,100,15
-    LTEXT           "start date:",IDC_STATIC,56,355,40,8
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,371,100,15
-    LTEXT           "end date:",IDC_STATIC,56,374,38,8
-    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,314,50,10
-    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,392,76,10
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,311,100,15
+    LTEXT           "start date:",IDC_STATIC,56,314,40,8
+    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,330,100,15
+    LTEXT           "end date:",IDC_STATIC,56,333,38,8
+    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,77,10
+    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,76,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,193,35,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,193,35,10
-    CONTROL         "  (From <-- --> To)  and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_FILTER1,
-                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,18,279,346,10
-    GROUPBOX        "Select filter rule",IDC_STATIC,7,214,361,93
-    CONTROL         "  (From  --> To)  and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_RADIO2,
-                    "Button",BS_AUTORADIOBUTTON,18,294,338,10
-    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,361,203
-    GROUPBOX        "",IDC_STATIC,7,308,361,82
-    LTEXT           "If some fields are not checked, for example From, then filter rule wil be reduced as follow:",IDC_STATIC,14,241,332,10
-    LTEXT           "<-- --> To and Subject and CC and BCC and  (Message or Attachments) and Attachment Name",IDC_STATIC,21,254,324,8
-    LTEXT           "(From <-- --> To) attempts to match  (John->Bob) and (Bob->John) mails",IDC_STATIC,28,226,340,8
+    GROUPBOX        "",IDC_STATIC,7,224,373,43
+    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,373,216
+    GROUPBOX        "",IDC_STATIC,7,267,373,82
     CONTROL         "CC",IDC_EDIT_CC_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,88,25,10
     EDITTEXT        IDC_EDIT_CC,77,88,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_CC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,88,22,10
@@ -394,18 +392,22 @@ BEGIN
     EDITTEXT        IDC_EDIT_BCC,77,109,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_BCC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,109,16,10
     CONTROL         "",IDC_EDIT_BCC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,109,16,10
-    PUSHBUTTON      "Reset All",IDC_EDIT_RESET,20,192,50,9
+    PUSHBUTTON      "Reset All",IDC_EDIT_RESET,19,192,50,9
     CONTROL         "Attachment",IDC_EDIT_ATTACHMENT_NAME_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,171,51,10
     EDITTEXT        IDC_EDIT_ATTACHMENT_NAME,77,171,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,241,171,12,10
     CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,281,171,19,10
     LTEXT           "Name",IDC_STATIC,35,179,34,8
     CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,98,392,110,10
-    LTEXT           " i.e. ((Any -> Bob) or (Bob -> Any)) and ...",IDC_STATIC,22,265,325,8
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,209,111,10
     LTEXT           "Text",IDC_STATIC,34,158,16,8
-    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,19,327,349,8
-    LTEXT           "type new value",IDC_STATIC,20,338,100,8
+    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,31,286,349,8
+    LTEXT           "type new value",IDC_STATIC,20,297,100,8
+    PUSHBUTTON      "Configure Filter Rule",IDC_BUTTON1,14,231,83,14
+    LTEXT           "",IDC_RULE_NUMBER_TEXT,110,236,251,8
+    LTEXT           "",IDC_RULE_TEXT,14,250,366,8
+    CONTROL         "Match TO field only if single recipient on the list",IDC_SINGLE_TO,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,150,209,167,10
 END
 
 IDD_FIND_IN_MAIL DIALOGEX 0, 0, 309, 45
@@ -609,6 +611,32 @@ BEGIN
     GROUPBOX        "Select Font Family",IDC_STATIC,14,7,88,78
 END
 
+IDD_FIND_FILTER_DLG DIALOGEX 0, 0, 421, 221
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select Filter Rule"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER0,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,22,32,363,10
+    CONTROL         "(From -> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER1,
+                    "Button",BS_AUTORADIOBUTTON,22,48,361,10
+    CONTROL         "((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER2,
+                    "Button",BS_AUTORADIOBUTTON,22,64,360,10
+    CONTROL         "((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER3,
+                    "Button",BS_AUTORADIOBUTTON,22,81,385,10
+    CONTROL         "(From -> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER4,
+                    "Button",BS_AUTORADIOBUTTON,22,98,383,10
+    DEFPUSHBUTTON   "OK",IDOK,279,200,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,364,200,50,14
+    GROUPBOX        "Select Predefined Filter Rule",IDC_STATIC,7,14,407,100
+    GROUPBOX        "NOTE:",IDC_STATIC,7,114,407,83
+    LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC,21,129,381,8
+    LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC,21,141,381,8
+    LTEXT           "3.  and no CC and no BCC will match mails without CC and BCC fields",IDC_STATIC,21,154,381,8
+    LTEXT           "4.  If field is not selected in the parent dialog, it is removed from the rule",IDC_STATIC,21,166,381,8
+    LTEXT           "5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field",IDC_STATIC,21,178,381,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -713,9 +741,9 @@ BEGIN
     IDD_FIND_ADVANCED, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 368
+        RIGHTMARGIN, 380
         TOPMARGIN, 7
-        BOTTOMMARGIN, 405
+        BOTTOMMARGIN, 366
     END
 
     IDD_FIND_IN_MAIL, DIALOG
@@ -794,6 +822,14 @@ BEGIN
         RIGHTMARGIN, 112
         TOPMARGIN, 7
         BOTTOMMARGIN, 105
+    END
+
+    IDD_FIND_FILTER_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 414
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 214
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -922,6 +958,11 @@ BEGIN
     0
 END
 
+IDD_FIND_FILTER_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1038,6 +1079,12 @@ BEGIN
     ID_TREE_EXPAND          "Expand tree containing folders\nExpand/Collapse mail folders"
     ID_VIEW_USERSELECTEDMAILS 
                             "Enable or Disable User Selected Mail List/Toggle the list"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_TITLE_CC            "CC:"
+    IDS_TITLE_BCC           "BCC:"
 END
 
 #endif    // English (United States) resources

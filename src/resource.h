@@ -37,10 +37,13 @@
 #define IDS_TITLE_BODY                  207
 #define IDB_PAPER_CLIP                  207
 #define IDD_NAME_TEMPL_DLG              208
+#define IDS_TITLE_CC                    208
+#define IDS_TITLE_BCC                   209
 #define IDD_COLOR_STYLE_DLG             216
 #define IDD_HTML_PDF_HDR_DLG            218
 #define IDD_GENERIC_FONT_DLG            220
 #define IDB_BITMAP1                     222
+#define IDD_FIND_FILTER_DLG             223
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -74,9 +77,12 @@
 #define IDC_PRT_DO_NOT_PROMPT           1056
 #define IDC_COLOR_DFLT                  1056
 #define IDC_FONT_DFLT                   1056
+#define IDC_FILTER_NUMBER0              1056
 #define IDC_RADIO2                      1057
 #define IDC_EXPORT_EML_Y                1057
 #define IDC_FIND_LIST                   1057
+#define IDC_FILTER_NUMBER1              1057
+#define IDC_FILTER_NUMBER3              1058
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
 #define IDC_EXPORT_FROM                 1059
@@ -86,9 +92,11 @@
 #define IDC_ALL_ATTACHMENT_TYPES        1059
 #define IDC_COLOR_CHECK                 1059
 #define IDC_FLD_NAME_BOLD               1059
+#define IDC_FILTER_NUMBER2              1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060
+#define IDC_FILTER_NUMBER4              1060
 #define IDC_CHECK_SUBJECT_A             1061
 #define IDC_EDIT_SUBJECT_CHECKED        1061
 #define IDC_CHECK_MESSAGE_A             1062
@@ -267,6 +275,10 @@
 #define IDC_HTML_PDF_CNF                1230
 #define IDC_EXPORT_ATTACHMENT_SEPARATOR 1231
 #define IDC_EDIT_MAIL_HDR               1232
+#define IDC_RULE_NUMBER_TEXT            1237
+#define IDC_RULE_TEXT                   1238
+#define IDC_                            1239
+#define IDC_SINGLE_TO                   1239
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -308,6 +320,9 @@
 #define ID_FORDEVELOPERS_MEMORY         32893
 #define ID_VIEW_MESSAGEHEADERS          32894
 #define ID_FILE_RESTOREHINTMESSAGES     32895
+#define ID_VIEW_MESSAGEHEADERPANELAYOUT 32896
+#define ID_MESSAGEHEADERPANELAYOUT_DEFAULT 32897
+#define ID_MESSAGEHEADERPANELAYOUT_EXPANDED 32898
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -316,9 +331,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        223
-#define _APS_NEXT_COMMAND_VALUE         32896
-#define _APS_NEXT_CONTROL_VALUE         1236
+#define _APS_NEXT_RESOURCE_VALUE        225
+#define _APS_NEXT_COMMAND_VALUE         32899
+#define _APS_NEXT_CONTROL_VALUE         1240
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

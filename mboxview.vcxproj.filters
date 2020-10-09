@@ -160,6 +160,9 @@
     <ClCompile Include="src\MenuEdit.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\FindFilterRuleDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -325,6 +328,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\MenuEdit.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FindFilterRuleDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -119,7 +119,7 @@ public:
 	//MailArray s_mails;
 	int b_mails_which_sorted;  // column to sort
 	int m_lastSel;  // position of last selected mail
-	//BOOL m_bIsDirty;  // content from s_mails was touched and needs to be copied to this mail list
+	BOOL m_bIsDirty;  // content from s_mails was touched and needs to be copied to this mail list
 };
 
 struct TEXTFILE_CONFIG
@@ -262,7 +262,7 @@ public:
 	int m_DetermineEmbeddedImagesDone;
 //
 	BOOL GetBody(CString &str);
-	BOOL GetBody(SimpleString *str);
+	BOOL GetBody(SimpleString *str, int maxLength = -1);
 	int DumpMailBox(MboxMail *mailBox, int which);
 	int SingleMailSizeof();
 	static int AllMailsSizeof(int count);

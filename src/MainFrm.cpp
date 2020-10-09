@@ -176,6 +176,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FORDEVELOPERS_MEMORY, &CMainFrame::OnFordevelopersMemory)
 	ON_COMMAND(ID_VIEW_MESSAGEHEADERS, &CMainFrame::OnViewMessageheaders)
 	ON_COMMAND(ID_FILE_RESTOREHINTMESSAGES, &CMainFrame::OnFileRestorehintmessages)
+	ON_COMMAND(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, &CMainFrame::OnMessageheaderpanelayoutDefault)
+	ON_COMMAND(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, &CMainFrame::OnMessageheaderpanelayoutExpanded)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -513,6 +515,20 @@ void CMainFrame::OnFileOptions()
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), charsetId);
 			needRedraw = true;
 		}
+#if 0
+		if (pMsgView->m_cnf_cc_charsetId != d.m_cc_charsetId) {
+			pMsgView->m_cnf_cc_charsetId = d.m_cc_charsetId;
+			DWORD charsetId = d.m_cc_charsetId;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("ccCharsetId"), charsetId);
+			needRedraw = true;
+		}
+		if (pMsgView->m_cnf_bcc_charsetId != d.m_bcc_charsetId) {
+			pMsgView->m_cnf_bcc_charsetId = d.m_bcc_charsetId;
+			DWORD charsetId = d.m_bcc_charsetId;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("bccCharsetId"), charsetId);
+			needRedraw = true;
+		}
+#endif
 		if (pMsgView->m_show_charsets != d.m_show_charsets) {
 			pMsgView->m_show_charsets = d.m_show_charsets;
 			DWORD show_charsets = d.m_show_charsets;
@@ -1545,9 +1561,6 @@ void CMainFrame::SetupMailListsToInitialState()
 
 	CMenu *menu = this->GetMenu();
 
-	menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_UNCHECKED);
-	m_bViewMessageHeaders = FALSE;
-
 	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
 	m_bUserSelectedMailsCheckSet = TRUE;
 	EnableMailList(IDC_EDIT_LIST, TRUE);
@@ -1819,11 +1832,11 @@ void CMainFrame::CreateMailListsInfoText(CFile &fp)
 		"<li>Found Mails list is populated by the search results. User can run Find Advanced dialog or set the Find All option in the Find dialog.</li>"
 		"<li>User Selected Mails list is composed by a user from the mails in the All Mails and Found Mails lists. Mails on All Mails and Found Mails lists are marked by the red vertical bar in the first column if they are also on User Selected Mails list.</li>"
 		"</ul>"
-		"Each internal mail list has associated button in the dialog bar located next to the tool bar. When a particular mail list is shown in the Mail Summary Window, associated button is highlighted.<br>"
+		"Each internal mail list has associated button in the dialog bar located next to the tool bar. When a particular mail list is selected and shown in the Mail Summary Window, associated button is highlighted.<br>"
 		"<br>"
-		"Access to the User Selected Mails list is disabled upon startup and the associated Button gray out. It can be enabled by the user to perform simple list auditing if desired by selecting View->User Selected Mail List to enable/disable.<br>"
+		"Access to the User Selected Mails list is enabled upon startup and allows users to perform simple list auditing. It can be disabled and the associated Button gray out by the user if desired by selecting View->User Selected Mail List to enable/disable.<br>"
 		"<br>"
-		"When User Selected Mails list is enabled, additional mail menu options will also be enabled such as Copy Selected Mails to User Selected Mails.<br>"
+		"When User Selected Mails list is enabled, additional mail menu options are enabled such as Copy Selected Mails to User Selected Mails.<br>"
 		"<br>"
 		"Content of the User Selected Mails list is controlled by the user. User can merge search results with the content of the User Selected List.<br>"
 		"<br>"
@@ -2249,6 +2262,12 @@ void CMainFrame::OnHelpMboxviewhelp()
 		"ROOT_MAIL_DIRECTORY\\ImageCache<br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile1 - <font color=red>target directory for image files, such as png,jpg,etc, embeded into mails</font><br>"
 		"ROOT_MAIL_DIRECTORY\\ImageCache\\MailArchiveFile2<br>"
+		"ROOT_MAIL_DIRECTORY\\AttachmentCache<br>"
+		"ROOT_MAIL_DIRECTORY\\AttachmentCache\\MailArchiveFile1 - <font color=red>target directory for attachment files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\AttachmentCache\\MailArchiveFile2<br>"
+		"ROOT_MAIL_DIRECTORY\\EmlCache<br>"
+		"ROOT_MAIL_DIRECTORY\\EmlCache\\MailArchiveFile1 - <font color=red>target directory for Eml files</font><br>"
+		"ROOT_MAIL_DIRECTORY\\EmlCache\\MailArchiveFile2<br>"
 		"ROOT_MAIL_DIRECTORY\\ArchiveCache<br>"
 		"ROOT_MAIL_DIRECTORY\\ArchiveCache\\MailArchiveFile1 - <font color=red>target directory for saving Found Mails and User Selected Mails to mbox and mboxlist files</font><br>"
 		"ROOT_MAIL_DIRECTORY\\ArchiveCache\\MailArchiveFile2<br>"
@@ -2290,6 +2309,7 @@ void CMainFrame::OnMessagewindowBottom()
 {
 	// TODO: Add your command handler code here
 	ConfigMessagewindowPosition(1);
+	CheckMessagewindowPositionMenuOption(1);
 }
 
 
@@ -2297,6 +2317,7 @@ void CMainFrame::OnMessagewindowRight()
 {
 	// TODO: Add your command handler code here
 	ConfigMessagewindowPosition(2);
+	CheckMessagewindowPositionMenuOption(2);
 }
 
 
@@ -2304,6 +2325,30 @@ void CMainFrame::OnMessagewindowLeft()
 {
 	// TODO: Add your command handler code here
 	ConfigMessagewindowPosition(3);
+	CheckMessagewindowPositionMenuOption(3);
+}
+
+void CMainFrame::CheckMessagewindowPositionMenuOption(int msgViewPosition)
+{
+	CMenu *menu = this->GetMenu();
+	if (msgViewPosition == 1)
+	{
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_CHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
+	}
+	else if (msgViewPosition == 2)
+	{
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_CHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
+	}
+	else if (msgViewPosition == 3)
+	{
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_CHECKED);
+	}
 }
 
 void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
@@ -3021,13 +3066,19 @@ BOOL MySelectFolder::OnFileNameOK()
 void CMainFrame::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
+	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if ((MboxMail::IsUserMailsSelected() && (MboxMail::s_mails.GetCount() > 0)) || (MboxMail::s_mails_edit.GetCount() > 0))
 	{
-		CString txt = _T("User Selelected Mails List not empty. Terminate program?");
-		int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
-		if (answer == IDNO)
-			return;
+		if (isDirty)
+		{
+			CString txt = _T("User Selected Mails List not empty. Terminate program?");
+			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+			if (answer == IDNO)
+				return;
+		}
 	}
+	else if (isDirty)
+		int deb = 1;
 
 	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
 	WINDOWPLACEMENT wp;
@@ -3458,4 +3509,35 @@ void CMainFrame::OnFileRestorehintmessages()
 	// TODO: Add your command handler code here
 
 	MboxMail::m_HintConfig.ClearAllHints();
+}
+
+
+void CMainFrame::OnMessageheaderpanelayoutDefault()
+{
+	// TODO: Add your command handler code here
+
+	NMsgView * pMsgView = GetMsgView();
+	if (pMsgView)
+	{
+		pMsgView->OnMessageheaderpanelayoutDefault();
+
+		CMenu *menu = this->GetMenu();
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_CHECKED);
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_UNCHECKED);
+	}
+}
+
+void CMainFrame::OnMessageheaderpanelayoutExpanded()
+{
+	// TODO: Add your command handler code here
+
+	NMsgView * pMsgView = GetMsgView();
+	if (pMsgView)
+	{
+		pMsgView->OnMessageheaderpanelayoutExpanded();
+
+		CMenu *menu = this->GetMenu();
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_CHECKED);
+	}
 }

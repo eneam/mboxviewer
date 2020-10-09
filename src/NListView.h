@@ -147,6 +147,9 @@ public:
 		//
 	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
 	int CheckMatch(int which, CString &searchString);
+	
+	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params, BOOL bSingleAddress);
+	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params);
 	int CheckMatchAdvanced(int i, CFindAdvancedParams &params);
 	void DetermineKeywordsForProgresBar(CString *stringWithCase, CString &keyword1, CString &keyword2);  // for Advanced Find
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
@@ -218,6 +221,8 @@ public:
 	UINT m_nElapse;
 	//
 	std::vector <MailBodyInfo*> m_BodyInfoArray;
+	//
+	int SaveAsEmlFile(CString &bdy);
 	void FindImageFileName(CString &cid);
 	//
 	int LoadMails(LPCSTR cache, MailArray *mails = 0);
@@ -370,7 +375,7 @@ public:
 	int CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	//int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 
-
+	static BOOL IsSingleAddress(CString *to);
 	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
 	static void TrimToName(CString *to, CString &toName, int maxNumbOfAddr);
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);

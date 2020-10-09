@@ -498,6 +498,25 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		NMsgView *pMsgView = pFrame->GetMsgView();
+
+		if (pFrame->m_bViewMessageHeaders || (pMsgView && pMsgView->m_hdrWindowLen))
+		{
+			CString InfoTxt =
+				"Mail Context Menu is not available while View Message Headers are enabled.\n\n"
+				"Please disable viewing of raw mail headers to reenable the context menu.\n\n"
+				"UnCheck \"View -> View Message Headers\"\n"
+				"and Right click on Mail Header Pane at the top of the Message Window and\n"
+				"UnCheck \"View Message Header\"\n";
+			int answer = MessageBox(InfoTxt, "Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			return;
+		}
+	}
+
+
 	int iItem = pnm->iItem;
 
 	if (iItem < 0)
@@ -525,6 +544,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	int iItem = pnm->iItem;
 
@@ -601,7 +622,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_ADVANCED_FIND_Id = 14;
 	AppendMenu(&menu, S_ADVANCED_FIND_Id, _T("Find Advanced"));
 
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	
 
 	const UINT S_REMOVE_Id = 15;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
@@ -642,7 +663,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT S_RESTORE_LIST_Id = 24;
 	if (pFrame && MboxMail::IsAllMailsSelected() && pFrame->IsUserMailsListEnabled() && (MboxMail::s_mails_edit.GetCount() == 0)) {
-		menu.AppendMenu(MF_SEPARATOR);
+		//menu.AppendMenu(MF_SEPARATOR);
 		AppendMenu(&menu, S_RESTORE_LIST_Id, _T("Restore User Selected List from Mail List file"));
 	}
 
@@ -3263,6 +3284,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	{
 		if (ignoreViewMessageHeader == FALSE)
 		{
+			pMsgView->SetMsgHeader(iItem, m_gmtTime, m_format);
 			pMsgView->ShowMailHeader(iItem);
 			return;
 		}
@@ -3284,7 +3306,6 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	}
 #endif
 
-
 	// Erase any files previously saved
 	FileUtils::RemoveDirW(FileUtils::GetmboxviewTempPathW());
 
@@ -3294,32 +3315,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	MboxMail *m = MboxMail::s_mails[iItem];
 
 	// Set header data
-	pMsgView->m_strSubject = m->m_subj;
-	pMsgView->m_strFrom = m->m_from;
-	//CTime tt(m->m_timeDate);
-	//pMsgView->m_strDate = tt.Format(m_format);
-	if (m->m_timeDate >= 0)
-	{
-		MyCTime tt(m->m_timeDate);
-		if (!m_gmtTime) 
-		{
-			pMsgView->m_strDate = tt.FormatLocalTm(m_format);
-		}
-		else {
-			pMsgView->m_strDate = tt.FormatGmtTm(m_format);
-		}
-	}
-	else
-		pMsgView->m_strDate = "";
-
-	pMsgView->m_strTo = m->m_to;
-	pMsgView->m_subj_charsetId = m->m_subj_charsetId;
-	pMsgView->m_subj_charset = m->m_subj_charset;
-	pMsgView->m_from_charsetId = m->m_from_charsetId;
-	pMsgView->m_from_charset = m->m_from_charset;
-	pMsgView->m_date_charsetId = 0;
-	pMsgView->m_to_charsetId = m->m_to_charsetId;
-	pMsgView->m_to_charset = m->m_to_charset;
+	pMsgView->SetMsgHeader(iItem, m_gmtTime, m_format);
 
 	// Get raw mail body
 	CString bdy;   m->GetBody(bdy);
@@ -3327,22 +3323,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	// Save raw message
 	if (m_bExportEml)
 	{
-		static const char *cFromMailBegin = "From ";
-		static const int cFromMailBeginLen = strlen(cFromMailBegin);
-		// Save mail
-		CFile fp(FileUtils::GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
-		char *pb = (char*)((LPCSTR)bdy);
-		int len = bdy.GetLength();
-		char *e = pb + len;
-		char *p = MimeParser::SkipEmptyLines(pb, e);
-		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
-		{
-			p = MimeParser::EatNewLine(p, e);
-		}
-		int eml_len = len - (p - pb);
-		fp.Write(p, eml_len);
-		//fp.Write(bdy, bdy.GetLength());
-		fp.Close();
+		SaveAsEmlFile(bdy);
 	}
 	CString bdycharset = "UTF-8";
 
@@ -4276,12 +4257,19 @@ void NListView::ClearDescView()
 	pMsgView->m_strFrom.LoadString(IDS_DESC_NONE);
 	pMsgView->m_strDate.LoadString(IDS_DESC_NONE);
 	pMsgView->m_strTo.LoadString(IDS_DESC_NONE);
-	pMsgView->m_strTo.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strCC.LoadString(IDS_DESC_NONE);
+	pMsgView->m_strBCC.LoadString(IDS_DESC_NONE);
+
+
 	pMsgView->m_subj_charset.SetString(_T(""));
 	pMsgView->m_from_charset.SetString(_T(""));
 	pMsgView->m_date_charset.SetString(_T(""));
 	pMsgView->m_to_charset.SetString(_T(""));
+	pMsgView->m_cc_charset.SetString(_T(""));
+	pMsgView->m_bcc_charset.SetString(_T(""));
+
 	pMsgView->m_body_charset.SetString(_T(""));
+
 	pMsgView->m_body_charsetId = 0;
 	pMsgView->m_attachments.DeleteAllItems();
 	FileUtils::RemoveDirW(FileUtils::GetmboxviewTempPathW());
@@ -6011,6 +5999,8 @@ int NListView::CopySelectedMails()
 		MboxMail::m_editMails.m_lastSel = 0;
 	MboxMail::m_editMails.b_mails_which_sorted = 1;
 
+	MboxMail::m_editMails.m_bIsDirty = TRUE;
+
 	return 1;
 }
 
@@ -6041,6 +6031,8 @@ int NListView::CopyAllMails()
 		if (MboxMail::s_mails_edit.GetCount() > 0)
 			MboxMail::m_editMails.m_lastSel = 0;
 		MboxMail::m_editMails.b_mails_which_sorted = 1;
+
+		MboxMail::m_editMails.m_bIsDirty = TRUE;
 	}
 
 	return 1;
@@ -6354,6 +6346,34 @@ void NListView::SwitchToMailList(int nID, BOOL force)
 void NListView::OnEditFindadvanced()
 {
 	EditFindAdvanced();
+}
+
+BOOL NListView::IsSingleAddress(CString *to)
+{
+	int posBeg = 0;
+	int posEnd = 0;
+
+	posEnd = to->Find("@", posBeg);
+	if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
+	{
+		posEnd = to->Find(",", posEnd + 1);
+		if (posEnd < 0)
+			return TRUE;
+	}
+	else
+		return TRUE;
+
+	// find out if the second addr is on the list
+	if ((posEnd >= 0) && ((posEnd + 1) < to->GetLength()))
+	{
+		posEnd = to->Find("@", posEnd + 1);
+		if (posEnd < 0)
+			return TRUE;
+		else
+			return FALSE;
+	}
+	else
+		return TRUE;
 }
 
 void NListView::TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr)
@@ -6717,231 +6737,401 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 	m_bInFind = false;
 }
 
+int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams &params, BOOL bSingleAddress)
+{
+	int pos;
+	if (bSingleAddress && params.m_bSingleTo)
+	{
+		BOOL isSingle = IsSingleAddress(&hdrFld);
+		if (isSingle)
+			pos = MatchHeaderFld(fldIndx, hdrFld, params);
+		else
+			pos = -1;
+	}
+	else
+	{
+		pos = MatchHeaderFld(fldIndx, hdrFld, params);
+	}
+	return pos;
+}
+
+int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams &params)
+{
+	int pos = 1;
+	if (params.m_bEditChecked[fldIndx])
+	{
+		int fldLength = m_stringWithCase[fldIndx].GetLength();
+		CString &fld = m_stringWithCase[fldIndx];
+
+		if (!hdrFld.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*')))
+		{
+			pos = 1;
+		}
+		else if (params.m_bWholeWord[fldIndx]) 
+		{
+			pos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)hdrFld, hdrFld.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+		else 
+		{
+			pos = g_tu.BMHSearch((unsigned char *)(LPCSTR)hdrFld, hdrFld.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+	}
+	return pos;
+}
+
 int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 {
-	int deb;
 	int pos = -1;
 	MboxMail *m = MboxMail::s_mails[i];
 
-	int fromPos = -1;
-	int toPos = -1;
-	int subjectPos = -1;
-	int ccPos = -1;
-	int bccPos = -1;
-	BOOL fromChecked = FALSE;
-	BOOL toChecked = FALSE;
-	BOOL doReverseCheck = FALSE;
+	int fromPos = 1;
+	int toPos = 1;
+	int fromRPos = 1;
+	int toRPos = 1;
+	int subjectPos = 1;
+	int ccPos = 1;
+	int bccPos = 1;
 
-	int fldIndx = 0; // From
-	if (params.m_bEditChecked[fldIndx])
+	int fldIndx;
+#if 1
+	if (params.m_filterNumb == 0)
 	{
-		fromChecked = TRUE;
-		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
-			fromPos = 1;
+		fldIndx = 0; // From
+		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 
-		else if (params.m_bWholeWord[fldIndx]) {
-			fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-	}
+		fldIndx = 1; // To
+		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
 
-	if (fromPos >= 0)
-		deb = 1;
-
-	// logical AND rule
-
-	fldIndx = 1; // To
-	if (params.m_bEditChecked[fldIndx])
-	{
-		toChecked = TRUE;
-		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
-			toPos = 1;
-
-		else if (params.m_bWholeWord[fldIndx]) {
-			toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-	}
-	if (toPos >= 0)
-		deb = 1;
-
-	doReverseCheck = FALSE;
-	if (fromChecked && toChecked) 
-	{
-		if ((fromPos < 0) || (toPos < 0)) 
+		if ((fromPos < 0) || (toPos < 0))
 		{
-			if (params.m_bBiderectionalMatch)
-				doReverseCheck = TRUE;
-			else
-				return -1;
-		}
-	}
-	else if (fromChecked)
-	{
-		if (fromPos < 0)
-		{
-			if (params.m_bBiderectionalMatch)
-				doReverseCheck = TRUE;
-			else
-				return -1;
-		}
-	}
-	else if (toChecked)
-	{
-		if (toPos < 0)
-		{
-			if (params.m_bBiderectionalMatch)
-				doReverseCheck = TRUE;
-			else
-				return -1;
-		}
-	}
-
-	if (doReverseCheck)
-	{
-		fromPos = -1;
-		toPos = -1;
-
-		fromChecked = FALSE;
-		toChecked = FALSE;
-
-		int fldIndx = 1; // To is From
-		if (params.m_bEditChecked[fldIndx])
-		{
-			fromChecked = TRUE;
-			if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
-				fromPos = 1;
-
-			else if (params.m_bWholeWord[fldIndx]) {
-				fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-			}
-			else {
-				fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-		if (fromPos >= 0)
-			deb = 1;
-
-		fldIndx = 0; // From is To
-		if (params.m_bEditChecked[fldIndx])
-		{
-			toChecked = TRUE;
-			if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
-				toPos = 1;
-
-			else if (params.m_bWholeWord[fldIndx]) {
-				toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-			}
-			else {
-				toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-					(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-		if (toPos >= 0)
-			deb = 1;
-
-		if (fromChecked && toChecked)
-		{
-			if ((fromPos < 0) || (toPos < 0))
-				return -1;
-		}
-		else if (fromChecked)
-		{
+			fldIndx = 1; // To search string is now From
+			fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 			if (fromPos < 0)
 				return -1;
+
+			fldIndx = 0; // From search string is now To
+			toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+			if (toPos < 0)
+				return -1;
 		}
-		else if (toChecked)
+
+		fldIndx = 3; // CC
+		ccPos = MatchHeaderFld(fldIndx, m->m_cc, params);
+		if (ccPos < 0)
+			return -1;
+
+		fldIndx = 4; // BCC
+		bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params);
+		if (bccPos < 0)
+			return -1;
+	}
+	else if (params.m_filterNumb == 1)
+	{
+		fldIndx = 0; // From
+		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
+		if (fromPos < 0)
+			return -1;
+
+		fldIndx = 1; // To
+		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		if (toPos < 0)
+			return -1;
+
+		fldIndx = 3; // CC
+		ccPos = MatchHeaderFld(fldIndx, m->m_cc, params);
+		if (ccPos < 0)
+			return -1;
+
+		fldIndx = 4; // BCC
+		bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params);
+		if (bccPos < 0)
+			return -1;
+	}
+	else if (params.m_filterNumb == 2)
+	{
+		fldIndx = 0; // From
+		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
+		if (fromPos < 0)
+			return -1;
+
+		fldIndx = 1; // To
+		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+
+		fldIndx = 3; // CC
+		if (toPos < 0)
 		{
+			ccPos = MatchHeaderFld(fldIndx, m->m_cc, params);
+		}
+
+		fldIndx = 4; // BCC
+		if ((toPos < 0) && (ccPos < 0))
+		{
+			bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params);
+			if (bccPos < 0)
+				return -1;
+		}
+	}
+	else if (params.m_filterNumb == 3)
+	{
+		if (!m->m_cc.IsEmpty() || !m->m_bcc.IsEmpty())
+			return -1;
+
+		fldIndx = 0; // From
+		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
+
+		fldIndx = 1; // To
+		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+
+		if ((fromPos < 0) || (toPos < 0))
+		{
+			fldIndx = 1; // To search string is now From
+			fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
+			if (fromPos < 0)
+				return -1;
+
+			fldIndx = 0; // From search string is now To
+			toPos = MatchHeaderFld(fldIndx, m->m_to, params);
+			if (toPos < 0)
+				return -1;
+
+			fldIndx = 1; // To
+			toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
 			if (toPos < 0)
 				return -1;
 		}
 	}
-
-	// We are here so: either From and To matched or not checked
-
-	if (params.m_bEditChecked[0] || params.m_bEditChecked[1]) 
+	else if (params.m_filterNumb == 4)
 	{
-		if (params.m_bEditChecked[2] || params.m_bEditChecked[3] || params.m_bEditChecked[4] || params.m_bEditChecked[5] || params.m_bEditChecked[6] || params.m_bEditChecked[7]) {
-			; // more to match, continue. If any of remaining checks fail, report match failure
+		if (!m->m_cc.IsEmpty() || !m->m_bcc.IsEmpty())
+			return -1;
+
+		fldIndx = 0; // From
+		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
+		if (fromPos < 0)
+			return -1;
+
+		fldIndx = 1; // To
+		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		if (toPos < 0)
+			return -1;
+	}
+
+#else
+
+	// Implementation optimizes execution of filter rules but should minimze the run time
+	if ((params.m_filterNumb == 3) || (params.m_filterNumb == 4))
+	{
+		if ((!m->m_cc.IsEmpty()) || (!m->m_bcc.IsEmpty()))
+			return -1;
+	}
+
+	fldIndx = 0; // From
+	if (params.m_bEditChecked[fldIndx])
+	{
+		int fldLength = m_stringWithCase[fldIndx].GetLength();
+		CString &fld = m_stringWithCase[fldIndx];
+
+		if (!m->m_from.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
+			fromPos = 1;
 		}
-		else
-			return i;
-#if 0
-		if (
-			(params.m_bEditChecked[2] == FALSE) && 
-			(params.m_bEditChecked[3] == FALSE) && 
-			(params.m_bEditChecked[4] == FALSE) && 
-			(params.m_bEditChecked[5] == FALSE) && 
-			(params.m_bEditChecked[6] == FALSE) 
-		)
+		else if (params.m_bWholeWord[fldIndx]) {
+			fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+		else {
+			fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+	}
+
+	if ((params.m_filterNumb == 1) || (params.m_filterNumb == 2) || (params.m_filterNumb == 4))  // From->To cases
+	{
+		if (fromPos < 0)
+			return -1;
+	}
+
+	fldIndx = 1; // To
+	if (params.m_bEditChecked[fldIndx])
+	{
+		int fldLength = m_stringWithCase[fldIndx].GetLength();
+		CString &fld = m_stringWithCase[fldIndx];
+
+		if (!m->m_to.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
+			toPos = 1;
+		}
+		else if (params.m_bWholeWord[fldIndx]) {
+			toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+		else {
+			toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+		}
+	}
+
+	// From->To cases and CC and  BCC case or From->To cases and no CC and  no BCC case
+	// From->To  must match
+	if ((params.m_filterNumb == 1) || (params.m_filterNumb == 4)) 
+	{
+		if ((fromPos < 0) || (toPos < 0))
+			return -1;
+	}
+
+	BOOL fromToMatched = FALSE;
+	if ((fromPos >= 0) && (toPos >= 0))
+		fromToMatched = TRUE;
+
+	// Check if reverse match is needed
+	if (((params.m_filterNumb == 0) || (params.m_filterNumb == 3)) && !fromToMatched) // From <-> To cases
+	{
+		int fldIndx = 1; // To is From
+		if (params.m_bEditChecked[fldIndx])
 		{
-			return i;
+			int fldLength = m_stringWithCase[fldIndx].GetLength();
+			CString &fld = m_stringWithCase[fldIndx];
+
+			fromChecked = TRUE;
+			if (!m->m_from.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
+				fromRPos = 1;
+			}
+			else if (params.m_bWholeWord[fldIndx]) {
+				fromRPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+			else {
+				fromRPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
 		}
+
+		if (fromRPos < 0)
+			return -1;
+
+		fldIndx = 0; // From is To
+		if (params.m_bEditChecked[fldIndx])
+		{
+			int fldLength = m_stringWithCase[fldIndx].GetLength();
+			CString &fld = m_stringWithCase[fldIndx];
+
+			if (!m->m_to.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
+				toRPos = 1;
+			}
+			else if (params.m_bWholeWord[fldIndx]) {
+				toRPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+			else {
+				toRPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+		}
+
+		if (toRPos < 0)
+			return -1;
+	}
+
+	BOOL skipCC = FALSE;
+	BOOL skipBCC = FALSE;
+	if ((params.m_filterNumb == 2) && (toPos >= 0))  // From -> (To or CC or BCC) case
+	{
+		skipCC = TRUE;
+		skipBCC = TRUE;
+	}
+
+	if (!skipCC)
+	{
+		fldIndx = 3; // CC
+		if (params.m_bEditChecked[fldIndx])
+		{
+			int fldLength = m_stringWithCase[fldIndx].GetLength();
+			CString &fld = m_stringWithCase[fldIndx];
+
+			if (!m->m_cc.IsEmpty() && ((fldLength == 1) && (fld.GetAt(0) == '*'))) {
+				ccPos = 1;
+			}
+			else if (params.m_bWholeWord[fldIndx])
+			{
+				ccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+			else
+			{
+				ccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+		}
+		if (ccPos >= 0)
+		{
+			int deb = 1;
+		}
+		else if ((params.m_filterNumb == 0) || (params.m_filterNumb == 1))  // XXX and CC case
+		{
+			if (ccPos < 0) {
+				return -1;
+			}
+		}
+	}
+
+
+	if (!skipBCC && (params.m_filterNumb == 2) && (ccPos >= 0)) // From -> (To or CC or BCC) case
+	{
+		skipBCC = TRUE;
+	}
+
+	if (!skipCC)
+	{
+		fldIndx = 4; // BCC
+		if (params.m_bEditChecked[fldIndx])
+		{
+			int fldLength = m_stringWithCase[fldIndx].GetLength();
+			CString &fld = m_stringWithCase[fldIndx];
+
+			if (!m->m_bcc.IsEmpty() && ((fldLength == 1) && (fld.GetAt(0) == '*'))) {
+				bccPos = 1;
+			}
+			else if (params.m_bWholeWord[fldIndx])
+			{
+				bccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+			else
+			{
+				bccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
+					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
+			}
+		}
+
+		if (bccPos >= 0)
+		{
+			int deb = 1;
+		}
+		else if ((params.m_filterNumb == 0) || (params.m_filterNumb == 1)) // XXX and BCC case
+		{
+			if (bccPos < 0) {
+				return -1;
+			}
+		}
+	}
 #endif
-	}
-
-	fldIndx = 3; // CC
-	if (params.m_bEditChecked[fldIndx])
-	{
-		if (!m->m_cc.IsEmpty() && (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*'))
-			ccPos = 1;
-
-		else if (params.m_bWholeWord[fldIndx]) {
-			ccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			ccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		if (ccPos < 0) {
-			return -1;
-		}
-	}
-
-	fldIndx = 4; // BCC
-	if (params.m_bEditChecked[fldIndx])
-	{
-		if (!m->m_bcc.IsEmpty() && (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*'))
-			bccPos = 1;
-
-		else if (params.m_bWholeWord[fldIndx]) {
-			bccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			bccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
-		}
-		if (bccPos < 0) {
-			return -1;
-		}
-	}
 
 	fldIndx = 2; // subject
 	if (params.m_bEditChecked[fldIndx])
 	{
-		if (m_stringWithCase[fldIndx].GetLength() == 1 && m_stringWithCase[fldIndx][0] == '*')
-			subjectPos = 1;
+		int fldLength = m_stringWithCase[fldIndx].GetLength();
+		CString &fld = m_stringWithCase[fldIndx];
 
+		if (!m->m_subj.IsEmpty() && ((fldLength == 1) && (fld.GetAt(0) == '*'))) {
+			subjectPos = 1;
+		}
 		else if (params.m_bWholeWord[fldIndx]) {
 			subjectPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
 		}
 		else {
 			subjectPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_subj, m->m_subj.GetLength(),
-				(unsigned char *)(LPCSTR)m_stringWithCase[fldIndx], m_stringWithCase[fldIndx].GetLength(), params.m_bCaseSensitive[fldIndx]);
+				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
 		}
 		if (subjectPos < 0) {
 			return -1;
@@ -8935,12 +9125,18 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		return -1;
 	}
 
+	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if (MboxMail::IsUserMailsSelected())
 	{
-		CString txt = _T("User Selected Mails List not empty. Overwrite?");
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDNO)
-			return -1;
+		if (isDirty)
+		{
+			CString txt = _T("User Selected Mails List is not empty. Overwrite?");
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDNO)
+				return -1;
+			else if (answer == IDYES)
+				MboxMail::m_editMails.m_bIsDirty = FALSE;
+		}
 	}
 
 	CString mboxFileSuffix = "_USER.mbox";
@@ -9148,6 +9344,8 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		}
 	}
 
+	MboxMail::m_editMails.m_bIsDirty = FALSE;
+
 	return ret;
 }
 
@@ -9256,6 +9454,8 @@ int NListView::SaveAsMboxListFile_v2()
 	}
 	sz.close();
 
+	MboxMail::m_editMails.m_bIsDirty = FALSE;
+
 	return 1;
 }
 
@@ -9341,6 +9541,8 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		fp.Write(outbuf->Data(), outbuf->Count());
 	}
 	fp.Close();
+
+	MboxMail::m_editMails.m_bIsDirty = FALSE;
 
 	CString txt = "Created Mbox Mail Archive file\n\n" + mboxFilePath;
 	OpenContainingFolderDlg dlg(txt, FALSE);
@@ -14672,4 +14874,25 @@ int NListView::Color2Str(DWORD color, CString &colorStr)
 	colorStr.Format("%02x%02x%02x", rgb.rgbtRed, rgb.rgbtGreen, rgb.rgbtBlue);
 	//colorStr.Format("0x%06x", color);
 	return 1;
+}
+
+int NListView::SaveAsEmlFile(CString &bdy)
+{
+	static const char *cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	// Save mail
+	CFile fp(FileUtils::GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
+	char *pb = (char*)((LPCSTR)bdy);
+	int len = bdy.GetLength();
+	char *e = pb + len;
+	char *p = MimeParser::SkipEmptyLines(pb, e);
+	if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+	{
+		p = MimeParser::EatNewLine(p, e);
+	}
+	int eml_len = len - (p - pb);
+	fp.Write(p, eml_len);
+	//fp.Write(bdy, bdy.GetLength());
+	fp.Close();
+	return  1;
 }

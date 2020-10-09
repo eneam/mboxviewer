@@ -32,6 +32,7 @@
 #include "stdafx.h"
 #include "mboxview.h"
 #include "FindAdvancedDlg.h"
+#include "FindFilterRuleDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -43,6 +44,14 @@
 // CFindAdvancedDlg dialog
 
 const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments", "Attachment Name" };
+
+const char  *ruleText[] = {
+	"((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+};
 
 
 CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
@@ -102,8 +111,8 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER1, m_params.m_startDate);
 	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER2, m_params.m_endDate);
 
+	DDX_Check(pDX, IDC_SINGLE_TO, m_params.m_bSingleTo);
 	//DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
-	DDX_Radio(pDX, IDC_FILTER1, m_params.m_filterNumb);
 
 	DDX_Check(pDX, IDC_CHECK_NEGATE_FIND_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 
@@ -124,6 +133,8 @@ BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	ON_BN_CLICKED(IDC_EDIT_RESET, &CFindAdvancedDlg::OnBnClickedEditReset)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER1, &CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker1)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker2)
+	ON_BN_CLICKED(IDC_BUTTON1, &CFindAdvancedDlg::OnBnClickedButtonSelectFilterRule)
+	ON_BN_CLICKED(IDC_CHECK_NEGATE_FIND_CRITERIA, &CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -154,6 +165,7 @@ void CFindAdvancedDlg::OnOK()
 	{
 		m_params.m_string[i].TrimRight();
 		g_tu.MakeLower(m_params.m_string[i]);
+
 		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty()) {
 			CString txt;
 			txt.Format("%s field is checked but search string is empty!", FindFields[i]);
@@ -161,10 +173,6 @@ void CFindAdvancedDlg::OnOK()
 			return;
 		}
 	}
-
-	m_params.m_bBiderectionalMatch = TRUE;
-	if (m_params.m_filterNumb != 0)
-		m_params.m_bBiderectionalMatch = FALSE;
 
 	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));	
 	CDialog::OnOK();
@@ -175,12 +183,39 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	if (GetSafeHwnd()) {
+	if (GetSafeHwnd()) 
+	{
 		CWnd *p = GetDlgItem(IDC_CHECK_FIND_ALL);
-		if (p) {
+		if (p) 
+		{
 			((CButton*)p)->SetCheck(1);
 			p->EnableWindow(FALSE);
 		}
+
+		SetRuleInfoText();
+
+		p = GetDlgItem(IDC_FILTERDATES);
+		CButton *b = (CButton*)p;
+		if (b)
+		{
+			int state = b->GetCheck();
+			if (state == BST_CHECKED)
+				b->SetWindowText("FILTER DATES: !!!!!!");
+			else
+				b->SetWindowText("filter dates:");
+		}
+#if 0
+		p = GetDlgItem(IDC_CHECK_NEGATE_FIND_CRITERIA);
+		b = (CButton*)p;
+		if (b)
+		{
+			int state = b->GetCheck();
+			if (state == BST_CHECKED)
+				b->SetWindowText("FIND ALL MAILS THAT DON'T MATCH !!!!!!");
+			else
+				b->SetWindowText("Find all mails that don't match");
+		}
+#endif
 	}
 
 	UpdateData(TRUE);
@@ -192,6 +227,17 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 
 void CFindAdvancedDlg::OnBnClickedFilterDates()
 {
+	CWnd *p = GetDlgItem(IDC_FILTERDATES);
+	CButton *b = (CButton*)p;
+	if (b)
+	{
+		int state = b->GetCheck();
+		if (state == BST_CHECKED)
+			b->SetWindowText("FILTER DATES: !!!!!!");
+		else
+			b->SetWindowText("filter dates:");
+	}
+
 	UpdateData(TRUE);
 }
 
@@ -294,7 +340,8 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllCase()
 
 void CFindAdvancedParams::SetDflts()
 {
-	for (int i = 0; i < FILTER_FIELDS_NUMB; i++) {
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++) 
+	{
 		m_string[i] = _T("");
 		m_bWholeWord[i] = FALSE;
 		m_bCaseSensitive[i] = FALSE;
@@ -310,8 +357,8 @@ void CFindAdvancedParams::SetDflts()
 
 	m_bFindAll = TRUE;
 	m_filterNumb = 0;
+	m_bSingleTo = 0;
 
-	m_bBiderectionalMatch = FALSE;
 	m_bFindAllMailsThatDontMatch = FALSE;
 }
 
@@ -336,8 +383,8 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 
 	m_bFindAll = src.m_bFindAll;
 	m_filterNumb = src.m_filterNumb;
+	m_bSingleTo = src.m_bSingleTo;
 
-	m_bBiderectionalMatch = src.m_bBiderectionalMatch;
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 };
 
@@ -346,10 +393,15 @@ void CFindAdvancedDlg::OnBnClickedEditReset()
 {
 	// TODO: Add your control notification handler code here
 
+	int m_filterNumb = m_params.m_filterNumb;
+	int m_bSingleTo = m_params.m_bSingleTo;
+
 	m_params.SetDflts();
 
-	UpdateData(FALSE);
+	m_params.m_filterNumb = m_filterNumb;
+	m_params.m_bSingleTo = m_bSingleTo;
 
+	UpdateData(FALSE);
 }
 
 
@@ -362,7 +414,8 @@ void CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT
 	MyCTime::fixSystemtime(&sysTime);
 
 	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER1);
-	if (p) {
+	if (p) 
+	{
 		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
 		int deb = 1;
 	}
@@ -381,11 +434,111 @@ void CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT
 	MyCTime::fixSystemtime(&sysTime);
 
 	CWnd *p = GetDlgItem(IDC_DATETIMEPICKER2);
-	if (p) {
+	if (p) 
+	{
 		BOOL ret = ((CDateTimeCtrl*)p)->SetTime(&sysTime);
 		int deb = 1;
 	}
 
 	UpdateData(TRUE);
 	*pResult = 0;
+}
+
+
+void CFindAdvancedDlg::OnBnClickedButtonSelectFilterRule()
+{
+	// TODO: Add your control notification handler code here
+
+
+	FindFilterRuleDlg m_FindFilterRuleDlg;
+
+	m_FindFilterRuleDlg.m_filterNumb = m_params.m_filterNumb;
+
+	INT_PTR ret = m_FindFilterRuleDlg.DoModal();
+	if (ret == IDOK)
+	{
+		m_params.m_filterNumb = m_FindFilterRuleDlg.m_filterNumb;
+
+		SetRuleInfoText();
+	}
+}
+
+void CFindAdvancedDlg::SetRuleInfoText()
+{
+	if (GetSafeHwnd())
+	{
+		CWnd *p = GetDlgItem(IDC_RULE_NUMBER_TEXT);
+		if (p)
+		{
+			CString RuleNumberText;
+
+			RuleNumberText.Format("Rule %d is selected !!!", m_params.m_filterNumb + 1);
+
+			p->SetWindowText(RuleNumberText);
+			p->EnableWindow(TRUE);
+		}
+
+		if ((m_params.m_filterNumb >= 0) && (m_params.m_filterNumb <= 4))
+		{
+			CWnd *p = GetDlgItem(IDC_RULE_TEXT);
+			if (p)
+			{
+				p->SetWindowText(ruleText[m_params.m_filterNumb]);
+				p->EnableWindow(TRUE);
+			}
+		}
+		if ((m_params.m_filterNumb == 3) || (m_params.m_filterNumb == 4))
+		{
+			CWnd *p = GetDlgItem(IDC_EDIT_CC_CHECKED);
+			CButton *b = (CButton*)p;
+			if (p && p->IsWindowEnabled())
+			{
+				b->SetCheck(BST_UNCHECKED);
+				p->EnableWindow(FALSE);
+			}
+			p = GetDlgItem(IDC_EDIT_BCC_CHECKED);
+			b = (CButton*)p;
+			if (p && p->IsWindowEnabled())
+			{
+				b->SetCheck(BST_UNCHECKED);
+				p->EnableWindow(FALSE);
+			}
+		}
+		else
+		{
+			CWnd *p = GetDlgItem(IDC_EDIT_CC_CHECKED);
+			CButton *b = (CButton*)p;
+			if (p && !p->IsWindowEnabled())
+			{
+				b->SetCheck(BST_UNCHECKED);
+				p->EnableWindow(TRUE);
+			}
+			p = GetDlgItem(IDC_EDIT_BCC_CHECKED);
+			b = (CButton*)p;
+			if (p && !p->IsWindowEnabled())
+			{
+				b->SetCheck(BST_UNCHECKED);
+				p->EnableWindow(TRUE);
+			}
+		}
+	}
+}
+
+
+void CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria()
+{
+	// TODO: Add your control notification handler code here
+
+#if 0
+	CWnd *p = GetDlgItem(IDC_CHECK_NEGATE_FIND_CRITERIA);
+	CButton *b = (CButton*)p;
+	if (b)
+	{
+		int state = b->GetCheck();
+		if (state == BST_CHECKED)
+			b->SetWindowText("FIND ALL MAILS THAT DON'T MATCH !!!!!!");
+		else
+			b->SetWindowText("Find all mails that don't match");
+	}
+#endif
 }

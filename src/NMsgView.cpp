@@ -68,6 +68,9 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 NMsgView::NMsgView()
 	:m_attachments(this), m_hdr()
 {
+	m_hdrPaneLayout = 0;
+	DWORD hdrPaneLayout = 0;
+
 	m_hdrWindowLen = 0;
 	m_bAttach = FALSE;
 	m_nAttachSize = 50;
@@ -108,6 +111,8 @@ NMsgView::NMsgView()
 	m_strTitleDate.LoadString(IDS_TITLE_DATE);
 	m_strDate.LoadString(IDS_DESC_NONE);
 	m_strTitleTo.LoadString(IDS_TITLE_TO);
+	m_strTitleCC.LoadString(IDS_TITLE_CC);
+	m_strTitleBCC.LoadString(IDS_TITLE_BCC);
 	m_strTo.LoadString(IDS_DESC_NONE);
 	m_strTitleBody.LoadString(IDS_TITLE_BODY);
 
@@ -122,6 +127,8 @@ NMsgView::NMsgView()
 	m_cnf_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
 	m_cnf_date_charsetId = 0;
 	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
+	m_cnf_cc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "ccCharsetId");
+	m_cnf_bcc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "bccCharsetId");
 	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
 
 #if 0
@@ -136,8 +143,7 @@ NMsgView::NMsgView()
 #endif
 
 	DWORD bImageViewer;
-	BOOL retval;
-	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
+	BOOL retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
 	if (retval == TRUE) {
 		m_bImageViewer = bImageViewer;
 	}
@@ -234,6 +240,29 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		int deb = 1;
 	}
 
+	// TODO: Move to CMainFrame
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		if (pFrame->GetMessageWindowPosition() > 1)
+			m_hdrPaneLayout = 1;
+
+		if (m_hdrPaneLayout == 0)
+		{
+			CMenu *menu = pFrame->GetMenu();
+			menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_CHECKED);
+			menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_UNCHECKED);
+		}
+		else
+		{
+			CMenu *menu = pFrame->GetMenu();
+			menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_UNCHECKED);
+			menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_CHECKED);
+		}
+
+		pFrame->CheckMessagewindowPositionMenuOption(pFrame->GetMessageWindowPosition());
+	}
 	return 0;
 }
 
@@ -242,6 +271,9 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 	int deb1, deb2, deb3, deb4;
 	CWnd::OnSize(nType, cx, cy);
 
+	CRect r;
+	GetClientRect(r);
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame)
 	{
@@ -249,8 +281,8 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 		BOOL bTreeHideVal = pFrame->TreeHideValue();
 		BOOL isTreeHidden = pFrame->IsTreeHidden();
 
-		TRACE("NMsgView::OnSize cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
-			cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
+		TRACE("NMsgView::OnSize() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+			r.Width(), r.Height(), cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
 
 		if (!pFrame->m_bIsTreeHidden)
 		{
@@ -292,7 +324,7 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 		break;
 	}
 
-	int nOffset = m_bMax?CAPT_MAX_HEIGHT:CAPT_MIN_HEIGHT;
+	int nOffset = CalculateHigthOfMsgHdrPane();
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
@@ -416,9 +448,22 @@ void NMsgView::UpdateLayout()
 	CRect r;
 	GetClientRect(r);
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int msgViewPosition = pFrame->MsgViewPosition();
+		BOOL bTreeHideVal = pFrame->TreeHideValue();
+		BOOL isTreeHidden = pFrame->IsTreeHidden();
+
+		int cx = 0;
+		int cy = 0;
+		TRACE("NMsgView::UpdateLayout() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+			r.Width(), r.Height(), cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
+	}
+
 	int cx = r.Width()-1;
 	int cy = r.Height()-1;
-	int nOffset = m_bMax?CAPT_MAX_HEIGHT:CAPT_MIN_HEIGHT;
+	int nOffset = CalculateHigthOfMsgHdrPane();
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
@@ -695,7 +740,9 @@ void NMsgView::OnPaint()
 			dc.FillSolidRect(cr, color);
 		}
 	}
-	m_rcCaption.bottom = m_rcCaption.top + (m_bMax ? CAPT_MAX_HEIGHT : CAPT_MIN_HEIGHT);
+
+	int nOffset = CalculateHigthOfMsgHdrPane();
+	m_rcCaption.bottom = m_rcCaption.top + nOffset;
 
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageHeader);
 	if (color == COLOR_WHITE)
@@ -714,36 +761,78 @@ void NMsgView::OnPaint()
 	{
 		CRect	r = m_rcCaption;
 
-		if( r.Width() > 120 ) {
-			r.right -= 120;
+		if( r.Width() > 0 ) 
+		{
 			CFont *pOldFont = dc.SelectObject(&m_BoldFont);
 
 			dc.SetBkMode(TRANSPARENT);
 
-			int xpos = 0;
-			int ypos = r.top + TEXT_LINE_TWO;
-			UINT localCP = GetACP();
-			std::string str;
-			BOOL ret = TextUtilsEx::id2charset(localCP, str);
-			m_date_charset = str.c_str();
+			if (m_hdrPaneLayout == 0)
+			{
+				int xpos = 0;
+				int ypos = r.top + TEXT_LINE_TWO;
+				UINT localCP = GetACP();
+				std::string str;
+				BOOL ret = TextUtilsEx::id2charset(localCP, str);
+				m_date_charset = str.c_str();
 
-			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleDate, m_strDate, m_date_charset, localCP, m_cnf_date_charsetId);
-			xpos += TEXT_BOLD_LEFT;
-			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleFrom, m_strFrom, m_from_charset, m_from_charsetId, m_cnf_from_charsetId);
-			xpos += 3 * TEXT_BOLD_LEFT;
-			xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleTo, m_strTo, m_to_charset, m_to_charsetId, m_cnf_to_charsetId);
-
-			if (m_show_charsets) {
+				xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleDate, m_strDate, m_date_charset, localCP, m_cnf_date_charsetId);
+				xpos += TEXT_BOLD_LEFT;
+				xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleFrom, m_strFrom, m_from_charset, m_from_charsetId, m_cnf_from_charsetId);
 				xpos += 3 * TEXT_BOLD_LEFT;
-				xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleBody, m_strBody, m_body_charset, m_body_charsetId, m_body_charsetId);
+				xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleTo, m_strTo, m_to_charset, m_to_charsetId, m_cnf_to_charsetId);
+
+				if (m_show_charsets) {
+					xpos += 3 * TEXT_BOLD_LEFT;
+					xpos = PaintHdrField(dc, r, xpos, ypos, FALSE, m_strTitleBody, m_strBody, m_body_charset, m_body_charsetId, m_body_charsetId);
+				}
+
+				ypos = r.top + TEXT_LINE_ONE;
+				xpos = 0;
+				xpos = PaintHdrField(dc, r, xpos, ypos, TRUE, m_strTitleSubject, m_strSubject, m_subj_charset, m_subj_charsetId, m_cnf_subj_charsetId);
+			}
+			else
+			{
+				UINT localCP = GetACP();
+				std::string str;
+				BOOL ret = TextUtilsEx::id2charset(localCP, str);
+				m_date_charset = str.c_str();
+
+				int xpos = 0;
+				int ypos = r.top + 4;
+				xpos = PaintHdrField(dc, r, xpos, ypos, TRUE, m_strTitleSubject, m_strSubject, m_subj_charset, m_subj_charsetId, m_cnf_subj_charsetId);
+
+				BOOL largeFont = TRUE;
+				xpos = 0;
+				ypos += 3 + 18;
+				xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleFrom, m_strFrom, m_from_charset, m_from_charsetId, m_cnf_from_charsetId);
+
+				xpos = 0;
+				ypos += 3 + 18;
+				xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleTo, m_strTo, m_to_charset, m_to_charsetId, m_cnf_to_charsetId);
+
+				if (!m_strCC.IsEmpty())
+				{
+					xpos = 0;
+					ypos += 3 + 18;
+					xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleCC, m_strCC, m_cc_charset, m_cc_charsetId, m_cnf_cc_charsetId);
+				}
+
+				if (!m_strBCC.IsEmpty())
+				{
+					xpos = 0;
+					ypos += 3 + 18;
+					xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleBCC, m_strBCC, m_bcc_charset, m_bcc_charsetId, m_cnf_bcc_charsetId);
+				}
+
+				xpos = 0;
+				ypos += 3 + 18;
+				xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleDate, m_strDate, m_date_charset, localCP, m_cnf_date_charsetId);
+				xpos += TEXT_BOLD_LEFT;
 			}
 
-			ypos = r.top + TEXT_LINE_ONE;
-			xpos = 0;
-			xpos = PaintHdrField(dc, r, xpos, ypos, TRUE, m_strTitleSubject, m_strSubject, m_subj_charset, m_subj_charsetId, m_cnf_subj_charsetId);
-
 			// Rstore font
-			dc.SelectObject( pOldFont );
+			dc.SelectObject(pOldFont);
 		}
 	}
 	FrameGradientFill( &dc, cr, BSIZE, RGB(0x8a, 0x92, 0xa6), RGB(0x6a, 0x70, 0x80));
@@ -873,7 +962,8 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	const char *ClearFindtext = _T("Clear Find Text");
 	const char *CustomColor = _T("Custom Color Style");
-	const char *ShowMailHdr = _T("View Message Header");
+	const char *ShowMailHdr = _T("View Raw Message Header");
+	const char *HdrPaneLayout = _T("Header Pane Layout");
 
 	NListView *pListView = 0;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -898,6 +988,22 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	const UINT M_SHOW_MAIL_HEADER_Id = 3;
 	AppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen > 0);
+
+#if 0
+	// Added global option under View
+	CMenu hdrLayout;
+	hdrLayout.CreatePopupMenu();
+	hdrLayout.AppendMenu(MF_SEPARATOR);
+
+	const UINT S_DEFAULT_LAYOUT_Id = 4;
+	AppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, _T("Default"), m_hdrPaneLayout == 0);
+
+	const UINT S_EXPANDED_LAYOUT_Id = 5;
+	AppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, _T("Expanded"), m_hdrPaneLayout == 1);
+
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), _T("Header Fields Layout"));
+	menu.AppendMenu(MF_SEPARATOR);
+#endif
 
 	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -943,6 +1049,25 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		}
 		int deb = 1;
 	}
+#if 0
+	// Added global option under View
+	else if ((command == S_DEFAULT_LAYOUT_Id))
+	{
+		m_hdrPaneLayout = 0;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+		Invalidate();
+		UpdateLayout();
+		int deb = 1;
+	}
+	else if ((command == S_EXPANDED_LAYOUT_Id))
+	{
+		m_hdrPaneLayout = 1;
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+		Invalidate();
+		UpdateLayout();
+		int deb = 1;
+	}
+#endif
 
 	CWnd::OnRButtonDown(nFlags, point);
 }
@@ -1097,20 +1222,20 @@ int NMsgView::ShowMailHeader(int mailPosition)
 		return 1;
 	}
 
-	m->GetBody(&m_hdrData);
+	m->GetBody(&m_hdrDataTmp, 128*1024);
 
 	int headerlen = 0;
 	if (m->m_headLength > 0)
 		headerlen = m->m_headLength;
 	else
-		headerlen = FindMailHeader(m_hdrData.Data(), m_hdrData.Count());
+		headerlen = FindMailHeader(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
 
 	if (headerlen > 0)
 	{
 		m->m_headLength = headerlen;
 
-		m_hdrData.SetCount(headerlen);
-		char *p = m_hdrData.Data();
+		m_hdrDataTmp.SetCount(headerlen);
+		char *p = m_hdrDataTmp.Data();
 		// CFile Read removes CR and therfore we need to add CR, great  !!
 		char *ms = strchr(p, '\n');
 		if (ms) 
@@ -1122,10 +1247,17 @@ int NMsgView::ShowMailHeader(int mailPosition)
 			if (bAddCR)
 			{
 				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
-				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrData.Data(), m_hdrData.Count(), tmpbuf);
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
 				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
 				m_hdrData.Append(tmpbuf->Data(), tmpbuf->Count());
 				MboxMail::rel_tmpbuf();
+			}
+			else
+			{
+				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
+				m_hdrData.Append(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
 			}
 		}
 	}
@@ -1176,4 +1308,113 @@ void  NMsgView::DisableMailHeader()
 {
 	m_hdrData.Clear();
 	m_hdrWindowLen = 0;
+}
+
+
+int NMsgView::SetMsgHeader(int mailPosition, int gmtTime, CString &format)
+{
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	// Set header data
+	m_strSubject = m->m_subj;
+	m_strFrom = m->m_from;
+	m_strTo = m->m_to;
+	m_strCC = m->m_cc;
+	m_strBCC = m->m_bcc;
+	//
+	//CTime tt(m->m_timeDate);
+	//pMsgView->m_strDate = tt.Format(m_format);
+	if (m->m_timeDate >= 0)
+	{
+		MyCTime tt(m->m_timeDate);
+		if (!gmtTime)
+		{
+			m_strDate = tt.FormatLocalTm(format);
+		}
+		else {
+			m_strDate = tt.FormatGmtTm(format);
+		}
+	}
+	else
+		m_strDate = "";
+
+	//
+	m_subj_charsetId = m->m_subj_charsetId;
+	m_subj_charset = m->m_subj_charset;
+	//
+	m_from_charsetId = m->m_from_charsetId;
+	m_from_charset = m->m_from_charset;
+	//
+	m_to_charsetId = m->m_to_charsetId;
+	m_to_charset = m->m_to_charset;
+	//
+	m_cc_charsetId = m->m_cc_charsetId;
+	m_cc_charset = m->m_cc_charset;
+	//
+	m_bcc_charsetId = m->m_bcc_charsetId;
+	m_bcc_charset = m->m_bcc_charset;
+	//
+	m_date_charsetId = 0;
+
+	return 1;
+}
+
+int NMsgView::CalculateHigthOfMsgHdrPane()
+{
+	int m_subjectTextHight = 18;
+	int m_otherTextHight = 18;
+
+	int pane_Hight = 0;
+
+	if (m_hdrPaneLayout == 0)
+	{
+		pane_Hight = m_bMax ? CAPT_MAX_HEIGHT : CAPT_MIN_HEIGHT;
+	}
+	else
+	{
+		pane_Hight = 
+			  4 + m_subjectTextHight  // subject
+			+ 3 + m_otherTextHight  // from
+			+ 3 + m_otherTextHight  // to
+			;
+		if (!m_strCC.IsEmpty())
+			pane_Hight += 3 + m_otherTextHight;  // cc
+
+		if (!m_strBCC.IsEmpty())
+			pane_Hight += 3 + m_otherTextHight;  // bcc
+
+		pane_Hight =
+			pane_Hight += 3 + m_subjectTextHight + 4; // date
+
+	}
+	return pane_Hight;
+}
+
+void NMsgView::OnMessageheaderpanelayoutDefault()
+{
+	// TODO: Add your command handler code here
+	m_hdrPaneLayout = 0;
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+	Invalidate();
+	UpdateLayout();
+	int deb = 1;
+}
+
+
+void NMsgView::OnMessageheaderpanelayoutExpanded()
+{
+	// TODO: Add your command handler code here
+	m_hdrPaneLayout = 1;
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+	Invalidate();
+	UpdateLayout();
+	int deb = 1;
 }

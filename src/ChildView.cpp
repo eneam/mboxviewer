@@ -165,6 +165,38 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE("Failed to create Tree left view\n");
 		return -1;
 	}
+
+	//
+	CSize msgSize;
+
+	int msg_frameCx_TreeNotInHide = 700;
+	int msg_frameCy_TreeNotInHide = 200;
+
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", msg_frameCx_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", msg_frameCy_TreeNotInHide);
+
+	if (m_msgViewPosition == 1)   // windows on top
+	{
+		msgSize.cx = frameSize.cx - treeSize.cx;
+		msgSize.cy = msg_frameCy_TreeNotInHide;
+	}
+	else if (m_msgViewPosition == 2)   // windows on right
+	{
+		msgSize.cx = msg_frameCx_TreeNotInHide;
+		msgSize.cy = 200;
+	}
+	else if (m_msgViewPosition == 3)   // windows on left
+	{
+		msgSize.cx = msg_frameCx_TreeNotInHide;
+		msgSize.cy = 200;
+	}
+
+
+
+	if (msgSize.cx < 0)
+		int deb = 1;
+	if (msgSize.cy < 0)
+		int deb = 1;
 	//
 
 	CSize listSize;
@@ -196,9 +228,32 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (listSize.cy < 0)
 		int deb = 1;
 
-	if (listSize.cx < 20)
-		listSize.cx = 20;
-	//
+	if (m_msgViewPosition > 1)
+	{
+		if (msgSize.cx < 64)
+		{
+			msgSize.cx = 64;
+			listSize.cx -= 60;
+		}
+		else if (listSize.cx < 64)
+		{
+			listSize.cx = 20;
+			msgSize.cx -= 60;
+		}
+	}
+	else
+	{
+		if (msgSize.cy < 64)
+		{
+			msgSize.cy = 64;
+			listSize.cy -= 60;
+		}
+		else if (listSize.cx < 64)
+		{
+			listSize.cy = 20;
+			msgSize.cy -= 60;
+		}
+	}
 
 	// m_msgViewPosition:: 1=bottom 2=right  3=left
 	if (m_msgViewPosition == 1)
@@ -213,38 +268,6 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE("Failed to create top view\n");
 		return -1;
 	}
-
-	CSize msgSize;
-
-	int msg_frameCx_TreeNotInHide = 700;
-	int msg_frameCy_TreeNotInHide = 200;
-
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", msg_frameCx_TreeNotInHide);
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", msg_frameCy_TreeNotInHide);
-
-	if (m_msgViewPosition == 1)   // windows on top
-	{
-		msgSize.cx = frameSize.cx - treeSize.cx;
-		msgSize.cy = msg_frameCy_TreeNotInHide;
-	}
-	else if (m_msgViewPosition == 2)   // windows on right
-	{
-		msgSize.cx = msg_frameCx_TreeNotInHide;
-		msgSize.cy = 200;
-	}
-	else if (m_msgViewPosition == 3)   // windows on left
-	{
-		msgSize.cx = msg_frameCx_TreeNotInHide;
-		msgSize.cy = 200;
-	}
-
-	if (msgSize.cx < 20)
-		msgSize.cx = 20;
-
-	if (msgSize.cx < 0)
-		int deb = 1;
-	if (msgSize.cy < 0)
-		int deb = 1;
 
 	// m_msgViewPosition:: 1=bottom 2=right  3=left
 	if (m_msgViewPosition == 1)

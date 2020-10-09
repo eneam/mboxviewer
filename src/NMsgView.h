@@ -71,17 +71,19 @@ public:
 	CAttachments m_attachments;
 	CMenuEdit m_hdr;
 	SimpleString m_hdrData;
+	SimpleString m_hdrDataTmp;
 	int m_hdrWindowLen;
 	//CRichEditCtrl m_hdr;
 	CFont m_font;
-	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleBody;
-	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strBody;
-	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_body_charsetId;
-	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId;
-	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_body_charset;
+	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleCC, m_strTitleBCC, m_strTitleBody;  // Labels
+	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strCC, m_strBCC, m_strBody;
+	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_cc_charsetId, m_bcc_charsetId, m_body_charsetId;
+	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId, m_cnf_cc_charsetId, m_cnf_bcc_charsetId;
+	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_cc_charset, m_bcc_charset, m_body_charset;
 
 	int m_show_charsets;
 	int m_bImageViewer;
+	int m_hdrPaneLayout;
 
 // Attributes
 public:
@@ -104,6 +106,12 @@ public:
 	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
 	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
 
+
+	void OnMessageheaderpanelayoutDefault();
+	void OnMessageheaderpanelayoutExpanded();
+	//
+	int CalculateHigthOfMsgHdrPane();
+	int SetMsgHeader(int mailPosition, int gmtTime, CString &format);
 	void DisableMailHeader();
 	int HideMailHeader(int iItem);
 	int ShowMailHeader(int iItem);

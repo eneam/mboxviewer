@@ -134,6 +134,11 @@ int MboxMail::m_EmbededImagesNotFoundLocalFile = 0;
 //int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
+///////
+// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
+// Postponed to the future relases since the large effort is needed
+///////
+
 struct MsgIdHash {
 public:
 	size_t operator()(const MboxMail *key) const
@@ -274,18 +279,26 @@ BOOL MboxMail::GetBody(CString &res)
 	return ret;
 };
 
-BOOL MboxMail::GetBody(SimpleString *res)
+BOOL MboxMail::GetBody(SimpleString *res, int maxLength)
 {
 	BOOL ret = TRUE;
 	CFile fp;
 	res->Clear();
+	int bytes2Read = m_length;
+	if (maxLength > 0)
+	{
+		if (maxLength < m_length)
+			bytes2Read = maxLength;
+	}
 	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
 	{
-		res->Resize(m_length);
+		res->Resize(bytes2Read);
 		//TRACE("offset = %lld\n", m_startOff);
 		fp.Seek(m_startOff, SEEK_SET);
-		fp.Read(res->Data(), m_length);
-		res->SetCount(m_length);
+		UINT readLength = fp.Read(res->Data(), bytes2Read);
+		if (readLength != bytes2Read)
+			int deb = 1;
+		res->SetCount(bytes2Read);
 		fp.Close();
 	}
 	else
@@ -6751,7 +6764,7 @@ MailList::MailList(int nId)
 	//s_mails;
 	b_mails_which_sorted = 0;
 	m_lastSel = -1;
-	//m_bIsDirty;
+	m_bIsDirty = FALSE;
 }
 
 MailList::MailList()
@@ -6760,7 +6773,7 @@ MailList::MailList()
 	//s_mails;
 	b_mails_which_sorted = 0;
 	m_lastSel = -1;
-	//m_bIsDirty;
+	m_bIsDirty = FALSE;
 }
 
 MailList::~MailList()
@@ -7718,6 +7731,8 @@ int MboxMail::RemoveDuplicateMails()
 	int dupCnt = s_mails.GetSize() - s_mails_edit.GetSize();
 
 	s_mails.CopyKeepData(s_mails_edit);
+
+	MboxMail::m_editMails.m_bIsDirty = TRUE;
 
 	clearMboxMailTable();
 
@@ -8787,7 +8802,9 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"\"Shift-Left Click\", \"Ctrl-Left Click\" and \"Ctrl-A\".\n\n"
 				"Right click on a single or multiple selected mails to see all available options.\n\n"
 				"Right click on a mail attachment to see all available options.\n\n"
-				"Left double click on a mail to open folder with all associated files for that mail."
+				"Left double click on a mail to open folder with all associated files for that mail.\n\n"
+				"Right click on the Header Pane at the top of the Message Window to see additional context menu options.\n\n"
+				"You can expand list of fields in the message header pane by setting \"View -> Message Header Pane Layout\" to Expanded.\n\n"
 			);
 		}
 		else if (hintNumber == HintConfig::FindDialogHint)
@@ -8872,10 +8889,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 	}
 }
 
-///////
-// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
-// Postponed to the next relase 1.0.3.3 since larger effort is needed
-///////
+// Fix static buffer allocation, it is bad !!!
 
 static void LargeBufferAllocFailed()
 {

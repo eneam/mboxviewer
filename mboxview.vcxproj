@@ -655,6 +655,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\FindFilterRuleDlg.cpp" />
     <ClCompile Include="src\FindInMailDlg.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -925,6 +926,7 @@
     <ClInclude Include="src\FileUtils.h" />
     <ClInclude Include="src\FindAdvancedDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
+    <ClInclude Include="src\FindFilterRuleDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
     <ClInclude Include="src\GenericFontFamilyDlg.h" />
     <ClInclude Include="src\HtmlPdfHdrConfigDlg.h" />

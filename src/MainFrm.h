@@ -141,6 +141,7 @@ public:
 	BOOL IsUserMailsListEnabled();
 	void ConfigMessagewindowPosition(int msgViewPosition);
 	int GetMessageWindowPosition() { return m_msgViewPosition; }
+	void CheckMessagewindowPositionMenuOption(int msgViewPosition);
 	void CreateMailListsInfoText(CFile &fp);
 	void UpdateFilePrintconfig();
 	int MergeArchiveFiles();
@@ -282,6 +283,8 @@ public:
 	afx_msg void OnFordevelopersMemory();
 	afx_msg void OnViewMessageheaders();
 	afx_msg void OnFileRestorehintmessages();
+	afx_msg void OnMessageheaderpanelayoutDefault();
+	afx_msg void OnMessageheaderpanelayoutExpanded();
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -57,10 +57,11 @@ struct CFindAdvancedParams
 	COleDateTime m_endDate;
 	BOOL m_filterDates;
 
+	// from FindFilterRuleDlg
 	int m_filterNumb;
-	BOOL m_bFindAll;
+	int m_bSingleTo;
 
-	BOOL m_bBiderectionalMatch;
+	BOOL m_bFindAll;
 	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
 	void SetDflts();
@@ -81,6 +82,8 @@ public:
 
 	//}}AFX_DATA
 
+
+	void SetRuleInfoText();
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -106,6 +109,8 @@ public:
 	afx_msg void OnBnClickedEditReset();
 	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonSelectFilterRule();
+	afx_msg void OnBnClickedCheckNegateFindCriteria();
 };
 
 //{{AFX_INSERT_LOCATION}}

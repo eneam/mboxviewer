@@ -1328,15 +1328,21 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 	NListView *pListView = pFrame->GetListView();
 	if (!pListView)
 		return;
+	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if (!pListView->IsUserSelectedMailListEmpty())
 	{
-		CString txt = _T("User Select Mails list is not empty.\n"
-			"Content will be lost if you switch to new mail archive.\n"
-			"Do you want to continue?");
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDNO)
+		if (isDirty)
 		{
-			*pResult = TRUE;
+			CString txt = _T("User Selected Mails list is not empty.\n"
+				"Content will be lost if you switch to new mail archive.\n"
+				"Do you want to continue?");
+			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDNO)
+			{
+				*pResult = TRUE;
+			}
+			else if (answer == IDYES)
+				MboxMail::m_editMails.m_bIsDirty = FALSE;
 		}
 	}
 }
