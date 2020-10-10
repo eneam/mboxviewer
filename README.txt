@@ -2,6 +2,15 @@
 Changes
 ---
 
+v 1.0.3.15
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added additional filter rules to redesined Find Advanced dialog;
+ - Added option to show expanded list of header fields in the message header pane;
+ - Added option to show raw mail header fields;
+ - Added option to restore message hints;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.14
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

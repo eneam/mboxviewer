@@ -611,11 +611,12 @@ BEGIN
     GROUPBOX        "Select Font Family",IDC_STATIC,14,7,88,78
 END
 
-IDD_FIND_FILTER_DLG DIALOGEX 0, 0, 421, 221
+IDD_FIND_FILTER_DLG DIALOGEX 0, 0, 421, 248
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Select Filter Rule"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    GROUPBOX        "Select Predefined Filter Rule",IDC_STATIC,7,14,407,119
     CONTROL         "((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER0,
                     "Button",BS_AUTORADIOBUTTON | WS_GROUP,22,32,363,10
     CONTROL         "(From -> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER1,
@@ -626,15 +627,16 @@ BEGIN
                     "Button",BS_AUTORADIOBUTTON,22,81,385,10
     CONTROL         "(From -> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER4,
                     "Button",BS_AUTORADIOBUTTON,22,98,383,10
-    DEFPUSHBUTTON   "OK",IDOK,279,200,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,364,200,50,14
-    GROUPBOX        "Select Predefined Filter Rule",IDC_STATIC,7,14,407,100
-    GROUPBOX        "NOTE:",IDC_STATIC,7,114,407,83
-    LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC,21,129,381,8
-    LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC,21,141,381,8
-    LTEXT           "3.  and no CC and no BCC will match mails without CC and BCC fields",IDC_STATIC,21,154,381,8
-    LTEXT           "4.  If field is not selected in the parent dialog, it is removed from the rule",IDC_STATIC,21,166,381,8
-    LTEXT           "5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field",IDC_STATIC,21,178,381,8
+    CONTROL         "(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER5,
+                    "Button",BS_AUTORADIOBUTTON,22,114,344,10
+    GROUPBOX        "NOTE:",IDC_STATIC,7,138,407,83
+    LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC,21,153,381,8
+    LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC,21,165,381,8
+    LTEXT           "3.  and no CC and no BCC will match mails without CC and BCC fields",IDC_STATIC,21,178,381,8
+    LTEXT           "4.  If field is not selected in the parent dialog, it is removed from the rule",IDC_STATIC,21,190,381,8
+    LTEXT           "5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field",IDC_STATIC,21,202,381,8
+    DEFPUSHBUTTON   "OK",IDOK,279,227,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,364,227,50,14
 END
 
 
@@ -829,7 +831,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 414
         TOPMARGIN, 7
-        BOTTOMMARGIN, 214
+        BOTTOMMARGIN, 241
     END
 END
 #endif    // APSTUDIO_INVOKED

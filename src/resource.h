@@ -277,8 +277,8 @@
 #define IDC_EDIT_MAIL_HDR               1232
 #define IDC_RULE_NUMBER_TEXT            1237
 #define IDC_RULE_TEXT                   1238
-#define IDC_                            1239
 #define IDC_SINGLE_TO                   1239
+#define IDC_FILTER_NUMBER5              1240
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -333,7 +333,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        225
 #define _APS_NEXT_COMMAND_VALUE         32899
-#define _APS_NEXT_CONTROL_VALUE         1240
+#define _APS_NEXT_CONTROL_VALUE         1241
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -6737,27 +6737,25 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 	m_bInFind = false;
 }
 
-int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams &params, BOOL bSingleAddress)
+int NListView::MatchHeaderFldSingleAddress(int fldIndx, CString &hdrFld, CFindAdvancedParams &params, int pos)
 {
-	int pos;
-	if (bSingleAddress && params.m_bSingleTo)
+	if (params.m_bSingleTo)
 	{
 		BOOL isSingle = IsSingleAddress(&hdrFld);
 		if (isSingle)
-			pos = MatchHeaderFld(fldIndx, hdrFld, params);
+			pos = MatchHeaderFld(fldIndx, hdrFld, params, pos);
 		else
-			pos = -1;
+			pos = -2;
 	}
 	else
 	{
-		pos = MatchHeaderFld(fldIndx, hdrFld, params);
+		pos = MatchHeaderFld(fldIndx, hdrFld, params, pos);
 	}
 	return pos;
 }
 
-int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams &params)
+int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams &params, int pos)
 {
-	int pos = 1;
 	if (params.m_bEditChecked[fldIndx])
 	{
 		int fldLength = m_stringWithCase[fldIndx].GetLength();
@@ -6778,9 +6776,23 @@ int NListView::MatchHeaderFld(int fldIndx, CString &hdrFld, CFindAdvancedParams 
 				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
 		}
 	}
+	if (pos < 0) pos = -1;
 	return pos;
 }
 
+#if 0
+const char  *ruleText[] = {
+	"((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
+};
+#endif
+
+
+// TODO: needs some work to simplify and clarify
 int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 {
 	int pos = -1;
@@ -6795,14 +6807,15 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	int bccPos = 1;
 
 	int fldIndx;
-#if 1
 	if (params.m_filterNumb == 0)
 	{
+		// "((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+
 		fldIndx = 0; // From
 		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 
 		fldIndx = 1; // To
-		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 
 		if ((fromPos < 0) || (toPos < 0))
 		{
@@ -6812,7 +6825,7 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 				return -1;
 
 			fldIndx = 0; // From search string is now To
-			toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+			toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 			if (toPos < 0)
 				return -1;
 		}
@@ -6829,13 +6842,15 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	}
 	else if (params.m_filterNumb == 1)
 	{
+		// "(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+
 		fldIndx = 0; // From
 		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 		if (fromPos < 0)
 			return -1;
 
 		fldIndx = 1; // To
-		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 		if (toPos < 0)
 			return -1;
 
@@ -6851,30 +6866,42 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	}
 	else if (params.m_filterNumb == 2)
 	{
+		// "((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name"
+
 		fldIndx = 0; // From
 		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 		if (fromPos < 0)
 			return -1;
 
-		fldIndx = 1; // To
-		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
-
-		fldIndx = 3; // CC
-		if (toPos < 0)
+		// need special hack/check first because of "To or CC or BCC) and not "To and CC and BCC"
+		// if none of the fields set, assume it is a match
+		if (params.m_bEditChecked[1] || params.m_bEditChecked[3] || params.m_bEditChecked[4])
 		{
-			ccPos = MatchHeaderFld(fldIndx, m->m_cc, params);
-		}
+			fldIndx = 1; // To
+			toPos = -1;
+			toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params, toPos);
 
-		fldIndx = 4; // BCC
-		if ((toPos < 0) && (ccPos < 0))
-		{
-			bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params);
-			if (bccPos < 0)
-				return -1;
+			if (toPos < 0)
+			{
+				fldIndx = 3; // CC
+				ccPos = -1;
+				ccPos = MatchHeaderFld(fldIndx, m->m_cc, params, ccPos);
+
+				if (ccPos < 0)
+				{
+					fldIndx = 4; // BCC
+					bccPos = -1;
+					bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params, bccPos);
+					if (bccPos < 0)
+						return -1;
+				}
+			}
 		}
 	}
 	else if (params.m_filterNumb == 3)
 	{
+		// "((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+
 		if (!m->m_cc.IsEmpty() || !m->m_bcc.IsEmpty())
 			return -1;
 
@@ -6882,7 +6909,7 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 		fromPos = MatchHeaderFld(fldIndx, m->m_from, params);
 
 		fldIndx = 1; // To
-		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 
 		if ((fromPos < 0) || (toPos < 0))
 		{
@@ -6892,18 +6919,15 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 				return -1;
 
 			fldIndx = 0; // From search string is now To
-			toPos = MatchHeaderFld(fldIndx, m->m_to, params);
-			if (toPos < 0)
-				return -1;
-
-			fldIndx = 1; // To
-			toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+			toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 			if (toPos < 0)
 				return -1;
 		}
 	}
 	else if (params.m_filterNumb == 4)
 	{
+	// "(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+
 		if (!m->m_cc.IsEmpty() || !m->m_bcc.IsEmpty())
 			return -1;
 
@@ -6913,208 +6937,46 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 			return -1;
 
 		fldIndx = 1; // To
-		toPos = MatchHeaderFld(fldIndx, m->m_to, params, TRUE);
+		toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params);
 		if (toPos < 0)
 			return -1;
 	}
-
-#else
-
-	// Implementation optimizes execution of filter rules but should minimze the run time
-	if ((params.m_filterNumb == 3) || (params.m_filterNumb == 4))
+	else if (params.m_filterNumb == 5)
 	{
-		if ((!m->m_cc.IsEmpty()) || (!m->m_bcc.IsEmpty()))
-			return -1;
-	}
+		// "(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
 
-	fldIndx = 0; // From
-	if (params.m_bEditChecked[fldIndx])
-	{
-		int fldLength = m_stringWithCase[fldIndx].GetLength();
-		CString &fld = m_stringWithCase[fldIndx];
-
-		if (!m->m_from.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
-			fromPos = 1;
-		}
-		else if (params.m_bWholeWord[fldIndx]) {
-			fromPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			fromPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-		}
-	}
-
-	if ((params.m_filterNumb == 1) || (params.m_filterNumb == 2) || (params.m_filterNumb == 4))  // From->To cases
-	{
-		if (fromPos < 0)
-			return -1;
-	}
-
-	fldIndx = 1; // To
-	if (params.m_bEditChecked[fldIndx])
-	{
-		int fldLength = m_stringWithCase[fldIndx].GetLength();
-		CString &fld = m_stringWithCase[fldIndx];
-
-		if (!m->m_to.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
-			toPos = 1;
-		}
-		else if (params.m_bWholeWord[fldIndx]) {
-			toPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-		}
-		else {
-			toPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-				(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-		}
-	}
-
-	// From->To cases and CC and  BCC case or From->To cases and no CC and  no BCC case
-	// From->To  must match
-	if ((params.m_filterNumb == 1) || (params.m_filterNumb == 4)) 
-	{
-		if ((fromPos < 0) || (toPos < 0))
-			return -1;
-	}
-
-	BOOL fromToMatched = FALSE;
-	if ((fromPos >= 0) && (toPos >= 0))
-		fromToMatched = TRUE;
-
-	// Check if reverse match is needed
-	if (((params.m_filterNumb == 0) || (params.m_filterNumb == 3)) && !fromToMatched) // From <-> To cases
-	{
-		int fldIndx = 1; // To is From
-		if (params.m_bEditChecked[fldIndx])
+		// need special hack/check first because of "From or To or CC or BCC) and not "From and To and CC and BCC"
+		// if none of the fields set, assume it is a match
+		if (params.m_bEditChecked[0] || params.m_bEditChecked[1] || params.m_bEditChecked[3] || params.m_bEditChecked[4])
 		{
-			int fldLength = m_stringWithCase[fldIndx].GetLength();
-			CString &fld = m_stringWithCase[fldIndx];
+			fldIndx = 0; // From
+			fromPos = -1;
+			fromPos = MatchHeaderFld(fldIndx, m->m_from, params, fromPos);
 
-			fromChecked = TRUE;
-			if (!m->m_from.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
-				fromRPos = 1;
-			}
-			else if (params.m_bWholeWord[fldIndx]) {
-				fromRPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-			else {
-				fromRPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_from, m->m_from.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-
-		if (fromRPos < 0)
-			return -1;
-
-		fldIndx = 0; // From is To
-		if (params.m_bEditChecked[fldIndx])
-		{
-			int fldLength = m_stringWithCase[fldIndx].GetLength();
-			CString &fld = m_stringWithCase[fldIndx];
-
-			if (!m->m_to.IsEmpty() && (fldLength == 1 && (fld.GetAt(0) == '*'))) {
-				toRPos = 1;
-			}
-			else if (params.m_bWholeWord[fldIndx]) {
-				toRPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-			else {
-				toRPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_to, m->m_to.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-
-		if (toRPos < 0)
-			return -1;
-	}
-
-	BOOL skipCC = FALSE;
-	BOOL skipBCC = FALSE;
-	if ((params.m_filterNumb == 2) && (toPos >= 0))  // From -> (To or CC or BCC) case
-	{
-		skipCC = TRUE;
-		skipBCC = TRUE;
-	}
-
-	if (!skipCC)
-	{
-		fldIndx = 3; // CC
-		if (params.m_bEditChecked[fldIndx])
-		{
-			int fldLength = m_stringWithCase[fldIndx].GetLength();
-			CString &fld = m_stringWithCase[fldIndx];
-
-			if (!m->m_cc.IsEmpty() && ((fldLength == 1) && (fld.GetAt(0) == '*'))) {
-				ccPos = 1;
-			}
-			else if (params.m_bWholeWord[fldIndx])
+			if (fromPos < 0)
 			{
-				ccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-			else
-			{
-				ccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_cc, m->m_cc.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-		if (ccPos >= 0)
-		{
-			int deb = 1;
-		}
-		else if ((params.m_filterNumb == 0) || (params.m_filterNumb == 1))  // XXX and CC case
-		{
-			if (ccPos < 0) {
-				return -1;
+				fldIndx = 1; // To
+				toPos = -1;
+				toPos = MatchHeaderFldSingleAddress(fldIndx, m->m_to, params, toPos);
+
+				if (toPos < 0)
+				{
+					fldIndx = 3; // CC
+					ccPos = -1;
+					ccPos = MatchHeaderFld(fldIndx, m->m_cc, params, ccPos);
+
+					if (ccPos < 0)
+					{
+						fldIndx = 4; // BCC
+						bccPos = -1;
+						bccPos = MatchHeaderFld(fldIndx, m->m_bcc, params, bccPos);
+						if (bccPos < 0)
+							return -1;
+					}
+				}
 			}
 		}
 	}
-
-
-	if (!skipBCC && (params.m_filterNumb == 2) && (ccPos >= 0)) // From -> (To or CC or BCC) case
-	{
-		skipBCC = TRUE;
-	}
-
-	if (!skipCC)
-	{
-		fldIndx = 4; // BCC
-		if (params.m_bEditChecked[fldIndx])
-		{
-			int fldLength = m_stringWithCase[fldIndx].GetLength();
-			CString &fld = m_stringWithCase[fldIndx];
-
-			if (!m->m_bcc.IsEmpty() && ((fldLength == 1) && (fld.GetAt(0) == '*'))) {
-				bccPos = 1;
-			}
-			else if (params.m_bWholeWord[fldIndx])
-			{
-				bccPos = g_tu.BMHSearchW((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-			else
-			{
-				bccPos = g_tu.BMHSearch((unsigned char *)(LPCSTR)m->m_bcc, m->m_bcc.GetLength(),
-					(unsigned char *)(LPCSTR)fld, fldLength, params.m_bCaseSensitive[fldIndx]);
-			}
-		}
-
-		if (bccPos >= 0)
-		{
-			int deb = 1;
-		}
-		else if ((params.m_filterNumb == 0) || (params.m_filterNumb == 1)) // XXX and BCC case
-		{
-			if (bccPos < 0) {
-				return -1;
-			}
-		}
-	}
-#endif
 
 	fldIndx = 2; // subject
 	if (params.m_bEditChecked[fldIndx])

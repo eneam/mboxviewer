@@ -50,7 +50,8 @@ const char  *ruleText[] = {
 	"(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
 	"((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",
 	"((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"
+	"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	"(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
 };
 
 
@@ -478,7 +479,7 @@ void CFindAdvancedDlg::SetRuleInfoText()
 			p->EnableWindow(TRUE);
 		}
 
-		if ((m_params.m_filterNumb >= 0) && (m_params.m_filterNumb <= 4))
+		if ((m_params.m_filterNumb >= 0) && (m_params.m_filterNumb <= 5))
 		{
 			CWnd *p = GetDlgItem(IDC_RULE_TEXT);
 			if (p)

@@ -148,8 +148,8 @@ public:
 	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
 	int CheckMatch(int which, CString &searchString);
 	
-	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params, BOOL bSingleAddress);
-	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params);
+	int MatchHeaderFldSingleAddress(int fldIndx, CString &fld, CFindAdvancedParams &params, int pos = 1);
+	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params, int pos = 1);
 	int CheckMatchAdvanced(int i, CFindAdvancedParams &params);
 	void DetermineKeywordsForProgresBar(CString *stringWithCase, CString &keyword1, CString &keyword2);  // for Advanced Find
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
