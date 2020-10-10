@@ -2,6 +2,8 @@
 // Written by PJ Arends
 // pja@telus.net
 // http://www3.telus.net/pja/
+//
+// MBox viewer team: adapted for mbox viewer
 
 #if !defined(AFX_MENUEDIT_H__8EA53611_FD2B_11D4_B625_D04FA07D2222__INCLUDED_)
 #define AFX_MENUEDIT_H__8EA53611_FD2B_11D4_B625_D04FA07D2222__INCLUDED_

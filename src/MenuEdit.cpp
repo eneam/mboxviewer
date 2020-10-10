@@ -2,6 +2,8 @@
 // Written by PJ Arends
 // pja@telus.net
 // http://www3.telus.net/pja/
+//
+// MBox viewer team: adapted for mbox viewer
 
 #include "stdafx.h"
 #include "MenuEdit.h"
