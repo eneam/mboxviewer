@@ -28,6 +28,8 @@ set ProgName=wkhtmltopdf.exe
 set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
 set CmdPath=%ProgDirectoryPath%\%ProgName%
 
+set NoBackgroundColorOption=--no-background
+
 if NOT exist "%CmdPath%" (
 
 echo.
