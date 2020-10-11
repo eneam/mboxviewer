@@ -23,6 +23,7 @@ setlocal enabledelayedexpansion
 REM Update path if needed
 REM Download wkhtmltopdf from https://wkhtmltopdf.org/downloads.html
 REM Usage link on how to control header and footer https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
+
 set ProgName=wkhtmltopdf.exe
 set ProgDirectoryPath=C:\Program Files\wkhtmltopdf\bin
 set CmdPath=%ProgDirectoryPath%\%ProgName%
@@ -64,8 +65,8 @@ REM echo PDF_GROUP_DIR=!PDF_GROUP_DIR!
 
 REM The --no-background option, if present, will remove background color in the target PDF. 
 
-echo "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "!HTMLFileName!" "!PDF_GROUP_DIR!\!HTMLFileNameBase!.pdf" 
-call "%CmdPath%" --log-level none --no-background --footer-right "Page [page] of [toPage]" "!HTMLFileName!" "!PDF_GROUP_DIR!\!HTMLFileNameBase!.pdf" 
+echo "%CmdPath%" --log-level none --zoom 0.9 --enable-local-file-access %NoBackgroundColorOption% --footer-right "Page [page] of [toPage]" "!HTMLFileName!" "!PDF_GROUP_DIR!\!HTMLFileNameBase!.pdf" 
+call "%CmdPath%" --log-level none --zoom 0.9 --enable-local-file-access %NoBackgroundColorOption% --footer-right "Page [page] of [toPage]" "!HTMLFileName!" "!PDF_GROUP_DIR!\!HTMLFileNameBase!.pdf" 
 
 echo.
 

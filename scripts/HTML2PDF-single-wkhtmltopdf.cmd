@@ -25,7 +25,12 @@ REM NOTE: Not clear whether in all cases HTML is fully render/loaded before prin
 
 REM This script is invoked by Mbox Viewer and the full path to HTML file is passed as the first argument.
 REM Path to script can be configured and enabled by selecting proper option in File -> Print Config.
+REM
 REM To avoid suprises, script needs to be tested outside of the Mbox Viewer to make sure it works.
+REM
+REM wkhtmltopdf.exe version MUST be 0.12.6 or later  !!!!!!!!!!!!!!!!!
+REM To verify the version, execute "C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" -V
+
 
 set FilePath=%1
 set HTMLFilePath=%~1
@@ -60,7 +65,7 @@ REM echo File Name Ext is: %HTMLNameExt%
 
 del /Q "%PDFdir%\%HTMLNameBase%.pdf"
 
-call "%CmdPath%" --log-level none %NoBackgroundColorOption% --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf" 
+call "%CmdPath%" --log-level none --zoom 0.9 --enable-local-file-access %NoBackgroundColorOption% --footer-right "Page [page] of [toPage]" "%HTMLFilePath%" "%PDFdir%\%HTMLNameBase%.pdf"
 
 REM Replace "REM pause" with "pause" for testing.
 REM pause
