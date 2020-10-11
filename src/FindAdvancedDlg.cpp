@@ -60,7 +60,15 @@ CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 
 {
 	//{{AFX_DATA_INIT(CFindAdvancedDlg)
+
 	m_params.SetDflts();
+
+	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
+	m_checkedColor = RGB(255, 255, 0);
+
+	m_brBkMailsDontMatch.CreateSolidBrush(m_dflBkColor);
+	m_brBkDate.CreateSolidBrush(m_dflBkColor);
+
 	//}}AFX_DATA_INIT
 }
 
@@ -127,7 +135,9 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	//{{AFX_MSG_MAP(CFindAdvancedDlg)
+
 	//}}AFX_MSG_MAP
+	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_CHECK1, &CFindAdvancedDlg::OnBnClickedFilterDates)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_WHOLE, &CFindAdvancedDlg::OnBnClickedEditSetAllWhole)
 	ON_BN_CLICKED(IDC_EDIT_SET_ALL_CASE, &CFindAdvancedDlg::OnBnClickedEditSetAllCase)
@@ -161,6 +171,7 @@ void CFindAdvancedDlg::OnOK()
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
+
 
 	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
@@ -201,22 +212,22 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 		{
 			int state = b->GetCheck();
 			if (state == BST_CHECKED)
-				b->SetWindowText("FILTER DATES: !!!!!!");
-			else
-				b->SetWindowText("filter dates:");
+			{
+				m_brBkDate.DeleteObject();
+				m_brBkDate.CreateSolidBrush(m_checkedColor);
+			}
 		}
-#if 0
 		p = GetDlgItem(IDC_CHECK_NEGATE_FIND_CRITERIA);
 		b = (CButton*)p;
 		if (b)
 		{
 			int state = b->GetCheck();
 			if (state == BST_CHECKED)
-				b->SetWindowText("FIND ALL MAILS THAT DON'T MATCH !!!!!!");
-			else
-				b->SetWindowText("Find all mails that don't match");
+			{
+				m_brBkMailsDontMatch.DeleteObject();
+				m_brBkMailsDontMatch.CreateSolidBrush(m_checkedColor);
+			}
 		}
-#endif
 	}
 
 	UpdateData(TRUE);
@@ -233,10 +244,11 @@ void CFindAdvancedDlg::OnBnClickedFilterDates()
 	if (b)
 	{
 		int state = b->GetCheck();
+		m_brBkDate.DeleteObject();
 		if (state == BST_CHECKED)
-			b->SetWindowText("FILTER DATES: !!!!!!");
+			m_brBkDate.CreateSolidBrush(m_checkedColor);
 		else
-			b->SetWindowText("filter dates:");
+			m_brBkDate.CreateSolidBrush(m_dflBkColor);
 	}
 
 	UpdateData(TRUE);
@@ -396,11 +408,24 @@ void CFindAdvancedDlg::OnBnClickedEditReset()
 
 	int m_filterNumb = m_params.m_filterNumb;
 	int m_bSingleTo = m_params.m_bSingleTo;
+	// TODO: Need to reset to initial range
+	COleDateTime startDate = m_params.m_startDate;
+	COleDateTime endDate = m_params.m_endDate;
 
 	m_params.SetDflts();
 
 	m_params.m_filterNumb = m_filterNumb;
-	m_params.m_bSingleTo = m_bSingleTo;
+	//m_params.m_bSingleTo = m_bSingleTo;
+	m_params.m_startDate = startDate;
+	m_params.m_endDate = endDate;
+
+	m_brBkMailsDontMatch.DeleteObject();
+	m_brBkDate.DeleteObject();
+	m_brBkMailsDontMatch.CreateSolidBrush(m_dflBkColor);
+	m_brBkDate.CreateSolidBrush(m_dflBkColor);
+
+	GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
+	GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
 
 	UpdateData(FALSE);
 }
@@ -530,16 +555,31 @@ void CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria()
 {
 	// TODO: Add your control notification handler code here
 
-#if 0
 	CWnd *p = GetDlgItem(IDC_CHECK_NEGATE_FIND_CRITERIA);
 	CButton *b = (CButton*)p;
 	if (b)
 	{
 		int state = b->GetCheck();
+		m_brBkMailsDontMatch.DeleteObject();
 		if (state == BST_CHECKED)
-			b->SetWindowText("FIND ALL MAILS THAT DON'T MATCH !!!!!!");
+			m_brBkMailsDontMatch.CreateSolidBrush(m_checkedColor);
 		else
-			b->SetWindowText("Find all mails that don't match");
+			m_brBkMailsDontMatch.CreateSolidBrush(m_dflBkColor);
 	}
-#endif
+}
+
+HBRUSH CFindAdvancedDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	if (pWnd->GetDlgCtrlID() == IDC_CHECK_NEGATE_FIND_CRITERIA)
+	{
+		return (HBRUSH)m_brBkMailsDontMatch;
+	}
+	else if (pWnd->GetDlgCtrlID() == IDC_FILTERDATES)
+	{
+		return (HBRUSH)m_brBkDate;
+	}
+	else
+		return hbr;
 }

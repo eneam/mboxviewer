@@ -79,6 +79,10 @@ public:
 	enum { IDD = IDD_FIND_ADVANCED };
 
 	struct CFindAdvancedParams m_params;
+	COLORREF m_dflBkColor;
+	COLORREF m_checkedColor;
+	CBrush m_brBkMailsDontMatch;
+	CBrush m_brBkDate;
 
 	//}}AFX_DATA
 
@@ -102,7 +106,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:
-
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor);
 	afx_msg void OnBnClickedFilterDates();
 	afx_msg void OnBnClickedEditSetAllWhole();
 	afx_msg void OnBnClickedEditSetAllCase();
