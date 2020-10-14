@@ -529,6 +529,10 @@ void* __cdecl malloc(size_t size)
 
 BOOL CmboxviewApp::InitInstance()
 {
+	HANDLE procHandle = GetCurrentProcess();
+	BOOL priClass = SetPriorityClass(procHandle, ABOVE_NORMAL_PRIORITY_CLASS);
+	DWORD err = GetLastError();
+
 #ifdef USE_STACK_WALKER
 	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
 #endif
@@ -645,7 +649,6 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 	MboxMail::LoadHintBitmap();
-	
 	return TRUE;
 }
 

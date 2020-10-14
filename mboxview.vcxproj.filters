@@ -163,6 +163,9 @@
     <ClCompile Include="src\FindFilterRuleDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\MyCButton.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -331,6 +334,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\FindFilterRuleDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyCButton.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -570,6 +570,8 @@ void CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria()
 
 HBRUSH CFindAdvancedDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 {
+	// The below works. It is called for every object in the dialog. May not be the most efficient.
+	// TODO: Use MyCButton instead ??
 	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	if (pWnd->GetDlgCtrlID() == IDC_CHECK_NEGATE_FIND_CRITERIA)
