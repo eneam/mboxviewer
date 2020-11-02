@@ -97,6 +97,7 @@ BOOL NTreeView::RemoveFileSizeMap(CString path)
 {
 	GlobalFileSizeMap::iterator it;
 
+	path.TrimRight("\\");
 	std::string stdPath = path;
 	it = m_gFileSizes.find(stdPath);
 	ArchiveFileInfoMap *item;
@@ -396,6 +397,7 @@ BOOL NTreeView::SetupFileSizeMap(CString &path)
 {
 	GlobalFileSizeMap::iterator it;
 
+	path.TrimRight("\\");
 	std::string stdPath = path;
 	it = m_gFileSizes.find(stdPath);
 	ArchiveFileInfoMap *item;
@@ -414,6 +416,7 @@ BOOL NTreeView::SetupFileSizeMap(CString &path)
 
 void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUpdateTree)
 {
+	CString mboxFilePath;
 	CString registry_lastPath;
 	CString root;
 	path.TrimRight("\\");
@@ -422,6 +425,7 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 	// Read first file index file if it exists from previous runs
 	// and add to the filesSize hash table
 	// new archive files might be discovered and added ??
+	m_bIsDataDirty = FALSE;
 	fileSizes.RemoveAll();
 	CStdioFile fp;
 	if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText))
@@ -451,9 +455,15 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 				if ((bShow != 0) && (bShow != 1))
 					bShow = 1;
 			}
+			mboxFilePath = path + "\\" + mboxFileName;
+			if (FileUtils::PathFileExist(mboxFilePath))
+			{
+				fileSizes[mboxFileName].fSize = fSize;
+				fileSizes[mboxFileName].bShow = bShow;
+			}
+			else
+				m_bIsDataDirty = TRUE;
 
-			fileSizes[mboxFileName].fSize = fSize;
-			fileSizes[mboxFileName].bShow = bShow;
 		}
 		fp.Close();
 	}
@@ -550,13 +560,6 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 		} while (FindNextFile(f, &wf));
 		FindClose(f);
 
-		if (m_bIsDataDirty)
-		{
-			CString itemName = m_tree.GetItemText(hRoot);
-			SaveData(hRoot);
-			m_bIsDataDirty = FALSE;
-		}
-
 		fw = path + "\\*.mboxview";
 
 		// Delete *.mbox.mboxview and *.eml.mboxview files without associated  mbox or eml archive files
@@ -593,6 +596,12 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 			} while (FindNextFile(f, &wf));
 			FindClose(f);
 		}
+	}
+	if (m_bIsDataDirty)
+	{
+		CString itemName = m_tree.GetItemText(hRoot);
+		SaveData(hRoot);
+		m_bIsDataDirty = FALSE;
 	}
 }
 // Called on Startup, File open and All File Refresh
@@ -644,6 +653,8 @@ void NTreeView::FillCtrl(BOOL expand)
 		return;
 	}
 
+	CString tmppath = path;
+	path.TrimRight("\\");
 	std::string stdPath = path;
 	if (m_gFileSizes.find(stdPath) == m_gFileSizes.end()) 
 	{
@@ -2258,6 +2269,13 @@ BOOL NTreeView::RefreshFolder(HTREEITEM hItem)
 
 	m_tree.SortChildren(0);
 
+	HTREEITEM hFolder;
+	if (hFolder = HasFolder(path))
+	{
+		m_tree.SortChildren(hFolder);
+		m_tree.Expand(hFolder, TVE_EXPAND);
+	}
+
 	sText.Format("Ready");
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
@@ -2272,19 +2290,28 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 
 	FileSizeMap::CPair *pCurVal;
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	path.TrimRight("\\");
+	path.AppendChar('\\');
+
+	CString mboxFileName;
 	pCurVal = fileSizes.PGetFirstAssoc();
 	while (pCurVal != NULL)
 	{
 		if (pCurVal->value.bShow == 0)
 		{
-			dlg.m_InList.Add(pCurVal->key);
+			mboxFileName = path + pCurVal->key;
+			if (FileUtils::PathFileExist(mboxFileName))
+			{
+				dlg.m_InList.Add(pCurVal->key);
+			}
 		}
 		pCurVal = fileSizes.PGetNextAssoc(pCurVal);
 	}
 	//
 
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+
 
 	int nResponse = dlg.DoModal();
 	if (nResponse == IDOK)

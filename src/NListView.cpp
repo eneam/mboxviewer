@@ -2737,6 +2737,11 @@ void NListView::FillCtrl()
 	if (pMsgView)
 		pMsgView->DisableMailHeader();
 
+
+	// TODO: MessageBox ??
+	if (FileUtils::PathFileExist(m_path) == FALSE)
+		return;
+
 	CString cache= m_path + ".mboxview";
 	int ni = 0;
 #ifdef _DEBUG
