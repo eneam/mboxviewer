@@ -365,6 +365,22 @@ void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &di
 	fileNameExtention.Append(ext);
 }
 
+void FileUtils::GetFileBaseNameAndExtension(CString &fileName, CString &fileNameBase, CString &fileNameExtention)
+{
+	CString driveName;
+	CString directory;
+	SplitFilePath(fileName, driveName, directory, fileNameBase, fileNameExtention);
+}
+
+void FileUtils::GetFileBaseName(CString &fileName, CString &fileBaseName)
+{
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+	SplitFilePath(fileName, driveName, directory, fileNameBase, fileNameExtention);
+}
+
 void FileUtils::GetFileExtension(CString &fileName, CString &fileNameExtention)
 {
 	CString driveName;

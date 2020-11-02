@@ -561,8 +561,8 @@ char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
 		nextLine.TrimLeft();
 		nextLine.TrimRight("\r\n");
 
-		//line += " " + nextLine;  // this is according to spec but it doesn't work in many cases
-		line += nextLine;
+		line += " " + nextLine;  // this is according to spec but it doesn't work in many cases
+		//line += nextLine;
 	}
 	line.Trim();
 	return p;

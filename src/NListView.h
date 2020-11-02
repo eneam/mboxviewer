@@ -146,6 +146,10 @@ public:
 	_int64 m_MapViewOfFileExCount;
 		//
 	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
+
+	// TESTING
+	BOOL MatchIfFieldFolded(int mailPosition, char *fld);
+	// 
 	int CheckMatch(int which, CString &searchString);
 	
 	int MatchHeaderFldSingleAddress(int fldIndx, CString &fld, CFindAdvancedParams &params, int pos = 1);
@@ -403,6 +407,7 @@ public:
 	static int Color2Str(DWORD color, CString &colorStr);
 
 	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CString &extension);
+	static int NListView::DetermineListFileName(CString &fileName, CString &listFileName);
 
 	// Generated message map functions
 protected:

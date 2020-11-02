@@ -166,6 +166,9 @@
     <ClCompile Include="src\MyCButton.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\OpenArchiveFileDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -337,6 +340,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\MyCButton.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OpenArchiveFileDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

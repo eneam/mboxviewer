@@ -44,6 +44,8 @@
 #define IDD_GENERIC_FONT_DLG            220
 #define IDB_BITMAP1                     222
 #define IDD_FIND_FILTER_DLG             223
+#define IDD_DIALOG1                     225
+#define IDD_OPEN_ARCHIVE_DLG            225
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -279,6 +281,9 @@
 #define IDC_RULE_TEXT                   1238
 #define IDC_SINGLE_TO                   1239
 #define IDC_FILTER_NUMBER5              1240
+#define IDC_EDIT_TARGET_FOLDER          1241
+#define IDC_EDIT_ARCHIVE_FILE_NAME      1242
+#define IDC_EDIT_DFLT_FOLDER            1243
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -331,9 +336,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        225
+#define _APS_NEXT_RESOURCE_VALUE        226
 #define _APS_NEXT_COMMAND_VALUE         32899
-#define _APS_NEXT_CONTROL_VALUE         1241
+#define _APS_NEXT_CONTROL_VALUE         1244
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

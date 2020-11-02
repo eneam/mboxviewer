@@ -52,6 +52,10 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
 NTreeView::NTreeView()
 {
+	m_bIsDataDirty = FALSE;
+	m_fileSizes.InitHashTable(37);
+	fileSizes = &m_fileSizes;
+
 	m_bSelectMailFileDone = FALSE;
 	m_bSelectMailFilePostMsgDone = FALSE;
 	m_bGeneralHintPostMsgDone = FALSE;
@@ -71,6 +75,43 @@ NTreeView::NTreeView()
 
 NTreeView::~NTreeView()
 {
+	ClearGlobalFileSizeMap();
+}
+
+void NTreeView::ClearGlobalFileSizeMap()
+{
+	GlobalFileSizeMap::iterator it;
+
+	ArchiveFileInfoMap *item;
+	for (it = m_gFileSizes.begin(); it != m_gFileSizes.end(); it++)
+	{
+		item = it->second;
+		delete item;
+		it->second = 0;
+	}
+
+	m_gFileSizes.clear();
+}
+
+BOOL NTreeView::RemoveFileSizeMap(CString path)
+{
+	GlobalFileSizeMap::iterator it;
+
+	std::string stdPath = path;
+	it = m_gFileSizes.find(stdPath);
+	ArchiveFileInfoMap *item;
+	if (it != m_gFileSizes.end())
+	{
+		item = it->second;
+		delete item;
+		it->second = 0;
+		m_gFileSizes.erase(stdPath);
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
 }
 
 
@@ -170,7 +211,11 @@ BOOL ImboxviewFile(CString & fName)
 	if (fileNameExtention.CompareNoCase(".eml") == 0)
 		return TRUE;
 
+	// fileNameExtention can contain : .mbox, .mboxo, etc. i.e .mbox....
 	CString fileNameExtentionRoot = fileNameExtention.Mid(0, 5);
+
+	if (fileNameExtentionRoot.CompareNoCase(".mboxview") == 0)
+		return FALSE;
 
 	if (fileNameExtentionRoot.CompareNoCase(".mbox") != 0)
 		return FALSE;
@@ -347,10 +392,220 @@ void  NTreeView::ExpandOrCollapseTree(BOOL expand)
 	}
 }
 
+BOOL NTreeView::SetupFileSizeMap(CString &path)
+{
+	GlobalFileSizeMap::iterator it;
+
+	std::string stdPath = path;
+	it = m_gFileSizes.find(stdPath);
+	ArchiveFileInfoMap *item;
+	if (it != m_gFileSizes.end())
+	{
+		item = it->second;
+		fileSizes = &item->m_fileSizes;
+		return TRUE;
+	}
+	else
+	{
+		_ASSERT(it != m_gFileSizes.end());
+		return FALSE;
+	}
+}
+
+void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUpdateTree)
+{
+	CString registry_lastPath;
+	CString root;
+	path.TrimRight("\\");
+	char *last_slash = (char*)strrchr(path, '\\');
+
+	// Read first file index file if it exists from previous runs
+	// and add to the filesSize hash table
+	// new archive files might be discovered and added ??
+	fileSizes.RemoveAll();
+	CStdioFile fp;
+	if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText))
+	{
+		CString line;
+		while (fp.ReadString(line))
+		{
+			int w = line.Find('\t', 0);
+			if (w == -1)
+				break;
+
+			CString mboxFileName = line.Left(w);
+
+			_int64	fSize = 0;
+			_int64  bShow = 1;
+
+			CString sizeAndShowVal = line.Mid(w + 1);  // get size and show values
+			int wShowValPos = sizeAndShowVal.Find('\t', 0);
+			if (wShowValPos == -1)  // old format; no mbox show value
+			{
+				fSize = _atoi64(sizeAndShowVal);
+			}
+			else
+			{
+				fSize = _atoi64(sizeAndShowVal.Left(wShowValPos));
+				bShow = _atoi64(sizeAndShowVal.Mid(wShowValPos + 1));
+				if ((bShow != 0) && (bShow != 1))
+					bShow = 1;
+			}
+
+			fileSizes[mboxFileName].fSize = fSize;
+			fileSizes[mboxFileName].bShow = bShow;
+		}
+		fp.Close();
+	}
+	else
+	{
+		// TODO: verify implications
+		fileSizes.RemoveAll();
+	}
+
+	root = last_slash + 1;
+
+	HTREEITEM hRoot = m_tree.InsertItem(root, 0, 0, TVI_ROOT);
+	if (hRoot == 0)
+		return;
+
+	CString itemName = m_tree.GetItemText(hRoot);
+
+	registry_lastPath = path;
+	registry_lastPath.TrimRight("\\");
+	registry_lastPath.Append("\\");
+
+	int index = m_folderArray.Add(registry_lastPath);
+
+
+	HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
+	if (hCurrentSelectedItem > 0)
+	{
+		itemName = m_tree.GetItemText(hCurrentSelectedItem);
+		m_tree.SetItemState(hCurrentSelectedItem, 0, TVIS_BOLD);
+	}
+
+	m_tree.SetItemData(hRoot, index);
+	DWORD_PTR retIndex = m_tree.GetItemData(hRoot);
+
+	UINT nCode = TVGN_CARET;
+	BOOL retval = m_tree.Select(hRoot, nCode);
+
+	CString fw = path + "\\*.*";
+	WIN32_FIND_DATA	wf;
+	BOOL found;
+	// Iterate all archive mbox or eml files in the lastPath folder
+	// New archives file is addedd to CTree but not to fileSizes hash table
+	// TODO: explain why the size is not added to fileSizes hash table
+	// Index file is removed however to force parsing to create new index file
+	//
+	HANDLE f = FindFirstFile(fw, &wf);
+	if (f != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.')
+			{
+				CString fn = wf.cFileName;
+				CString fullPath = path + "\\" + fn;
+
+				if (ImboxviewFile(fullPath))
+				{
+					_int64 fSize = 0;
+					ArchiveFileInfo info;
+					_int64 realFSize = FileUtils::FileSize(fullPath);
+					found = fileSizes.Lookup(fn, info);
+
+					// if found ==  FALSE, the fn is a new file and therefore fSize != realFSize
+					// if found ==  TRUE, the fn file exists and fSize == realFSize should match but the fn was changed somehow
+					// Currently only the file size is used to make sure the file didn't change, do we need to add checksum ??
+					// mboxview will likely crash if file was changed and we didn't detect the change
+					if (info.fSize != realFSize)
+					{
+						//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
+						CString cache = fullPath + ".mboxview";
+						DeleteFile(cache);
+						// Delete List Files
+						CString listFileName;
+						int ret = NListView::DetermineListFileName(fn, listFileName);
+						if (!listFileName.IsEmpty())
+							DeleteFile(listFileName);
+
+						fileSizes[fn].fSize = realFSize;
+						m_bIsDataDirty = TRUE;
+						int deb = 1;
+					}
+
+					if (info.bShow)
+					{
+						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
+						if (hItem)
+						{
+							//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
+							CString txt = m_tree.GetItemText(hItem);
+						}
+					}
+				}
+			}
+		} while (FindNextFile(f, &wf));
+		FindClose(f);
+
+		if (m_bIsDataDirty)
+		{
+			CString itemName = m_tree.GetItemText(hRoot);
+			SaveData(hRoot);
+			m_bIsDataDirty = FALSE;
+		}
+
+		fw = path + "\\*.mboxview";
+
+		// Delete *.mbox.mboxview and *.eml.mboxview files without associated  mbox or eml archive files
+		HANDLE f = FindFirstFile(fw, &wf);
+		if (f != INVALID_HANDLE_VALUE)
+		{
+			do
+			{
+				if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.')
+				{
+					CString fn = wf.cFileName;
+					CString mboxviewPath = path + "\\" + fn;
+
+					CString driveName;
+					CString directory;
+					CString fileNameBase;
+					CString fileNameExtention;
+
+					FileUtils::SplitFilePath(fn, driveName, directory, fileNameBase, fileNameExtention);
+					CString mboxPath = path + "\\" + fileNameBase;
+
+					ArchiveFileInfo info;
+					found = fileSizes.Lookup(fileNameBase, info);
+					if (found == FALSE)
+					{
+
+						BOOL ret = FileUtils::PathFileExist(mboxPath);
+						if (ret == FALSE)
+						{
+							DeleteFile(mboxviewPath);
+						}
+					}
+				}
+			} while (FindNextFile(f, &wf));
+			FindClose(f);
+		}
+	}
+}
 // Called on Startup, File open and All File Refresh
 // Items are inserted into CTree only by this function
 void NTreeView::FillCtrl(BOOL expand)
 {
+	// called from 
+	// void CMainFrame::OnFileOpen()
+	// void CMainFrame::DoOpen(CString& fpath)
+	// void NTreeView::LoadFolders()
+	// BOOL NTreeView::DeleteFolder(HTREEITEM hItem)
+	//
+	// 
 	if (m_bInFillControl)
 		return;
 
@@ -389,115 +644,23 @@ void NTreeView::FillCtrl(BOOL expand)
 		return;
 	}
 
-	CString registry_lastPath;
-	CString root;
-	path.TrimRight("\\");
-	char *last_slash = (char*)strrchr(path, '\\');
-	if (last_slash && *last_slash) 
+	std::string stdPath = path;
+	if (m_gFileSizes.find(stdPath) == m_gFileSizes.end()) 
 	{
-		// Read first file index file if it exists from previous runs
-		// and add to the filesSize hash table
-		// new archive files might be discovered and added ??
-		CStdioFile fp;
-		if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText)) 
-		{
-			CString line;
-			while (fp.ReadString(line)) 
-			{
-				int w = line.Find('\t', 0);
-				if (w == -1)
-					break;
-				CString p = line.Left(w);
-				_int64	fSize = 0;
-				if (w != -1)
-					fSize = _atoi64(line.Mid(w + 1));
-				fileSizes[p] = fSize;
-			}
-			fp.Close();
-		}
-		else
-			fileSizes.RemoveAll();
-
-		root = last_slash + 1;
-
-		HTREEITEM hRoot = m_tree.InsertItem(root, 0, 0, TVI_ROOT);
-		if (hRoot == 0)
-			return;
-
-		itemName = m_tree.GetItemText(hRoot);
-
-		registry_lastPath = path;
-		registry_lastPath.TrimRight("\\");
-		registry_lastPath.Append("\\");
-
-		int index = m_folderArray.Add(registry_lastPath);
-
-		HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
-		if (hCurrentSelectedItem > 0)
-		{
-			itemName = m_tree.GetItemText(hCurrentSelectedItem);
-			m_tree.SetItemState(hCurrentSelectedItem, 0, TVIS_BOLD);
-		}
-
-		m_tree.SetItemData(hRoot, index);
-		DWORD_PTR retIndex = m_tree.GetItemData(hRoot);
-
-		UINT nCode = TVGN_CARET;
-		BOOL retval = m_tree.Select(hRoot, nCode);
-
-		CString fw = path + "\\*.*";
-		WIN32_FIND_DATA	wf;
-		BOOL found;
-		// Iterate all archive file mbox or eml in the lastPath folder
-		// New archives file can be addedd to CTree but not to fileSizes hash table
-		HANDLE f = FindFirstFile(fw, &wf);
-		if (f != INVALID_HANDLE_VALUE) 
-		{
-			do 
-			{
-				if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.') 
-				{
-					CString fn = wf.cFileName;
-					CString fullPath = path + "\\" + fn;
-					if (ImboxviewFile(fullPath)) 
-					{
-						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
-						if (hItem)
-						{
-							_int64 fSize = 0;
-							_int64 realFSize = FileUtils::FileSize(fullPath);
-							found = fileSizes.Lookup(fn, fSize);
-							if (fSize != realFSize)
-							{
-								//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
-								CString cache = fullPath + ".mboxview";
-								DeleteFile(cache);
-								//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
-								CString txt = m_tree.GetItemText(hItem);
-								int deb = 1;
-							}
-						}
-					}
-				}
-			} while (FindNextFile(f, &wf));
-			FindClose(f);
-
-#if 0
-			CString line;
-			CString path;
-			_int64 fSize = 0;
-
-			TRACE("FillCtrl: Hash Table fileSizes Count=%d\n", fileSizes.GetCount());
-			POSITION pos = fileSizes.GetStartPosition();
-			while (pos) {
-				fileSizes.GetNextAssoc(pos, path, fSize);
-				TRACE("File=%s FileSize=%lld\n", path, fSize);
-			}
-#endif
-		}
-		if (expand)
-			m_tree.Expand(hRoot, TVE_EXPAND);
+		ArchiveFileInfoMap *infoMap = new ArchiveFileInfoMap;
+		m_gFileSizes.insert(GlobalFileSizeMap::value_type(stdPath, infoMap));
 	}
+
+	// TODO: globals
+	BOOL ret = SetupFileSizeMap(path);
+
+	if (ret == FALSE)
+		int deb = 1;
+
+	LoadFileSizes(path, *fileSizes, FALSE);
+
+	int count = fileSizes->GetCount();
+	int deb = 1;
 	
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame) 
@@ -572,6 +735,13 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		BOOL retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", folderPath);
 
+		BOOL ret = SetupFileSizeMap(folderPath);
+
+		int count = fileSizes->GetCount();
+
+		if (ret == FALSE)
+			int deb = 1;
+
 		pListView->m_path = "";
 		pListView->m_which = NULL;
 		pListView->ResetSize();
@@ -639,6 +809,13 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if( str.IsEmpty() || path.IsEmpty() )
 		return;
+
+	BOOL ret = SetupFileSizeMap(path);
+
+	int count = fileSizes->GetCount();
+
+	if (ret == FALSE)
+		int deb = 1;
 
 	path.TrimRight("\\");
 	pListView->m_path = path + _T('\\') + str;
@@ -795,8 +972,30 @@ BOOL NTreeView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	return TRUE;
 }
 
-void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
+void NTreeView::Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes)
 {
+#if 1
+	CString line;
+	CString path;
+
+	ArchiveFileInfo info;
+	POSITION pos = fileSizes.GetStartPosition();
+	while (pos) 
+	{
+		fileSizes.GetNextAssoc(pos, path, info);
+
+		// or for better performance; not really crusial here
+		// CMap<CString, LPCSTR, ArchiveFileInfo, ArchiveFileInfo>::CPair *infopair = fileSizes.PLookup(path);
+		// _int64 fSize = infopair->value.fSize;
+		// _int64 bShow = infopair->value.bShow;
+
+		_int64 fSize = fileSizes[path].fSize;
+		_int64 bShow = fileSizes[path].bShow;
+
+		line.Format("%s\t%lld\t%lld\n", path, fSize, bShow);
+		fp.Write(line, line.GetLength());
+	}
+#else
 	CString line;
 	CString ipath;
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
@@ -808,15 +1007,18 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 		{
 			CString fullPath = path + "\\" + ipath;
 			_int64 fSize = 0;
+			ArchiveFileInfo info;
 			//_int64 realFSize = FileUtils::FileSize(fullPath);
-			BOOL found = fileSizes.Lookup(ipath, fSize);
+			BOOL found = fileSizes.Lookup(ipath, info);
 			//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", path, realFSize, fSize);
 			if (!found) 
 			{
 				_int64 realFSize = FileUtils::FileSize(fullPath);
-				fileSizes[ipath] = fSize = realFSize;
+				fileSizes[ipath].fSize = fSize = realFSize;
 			}
-			line.Format("%s\t%lld\n", ipath, fSize);
+			fSize = fileSizes[ipath].fSize;
+			_int64 bShow = fileSizes[ipath].bShow;
+			line.Format("%s\t%lld\t%lld\n", ipath, fSize, bShow);
 			fp.Write(line, line.GetLength());
 		}
 		if (m_tree.ItemHasChildren(hItem))
@@ -830,6 +1032,7 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp )
 		if (hParent == 0)
 			return;
 	}
+#endif
 }
 
 
@@ -852,7 +1055,7 @@ void NTreeView::SaveData(HTREEITEM m_which)
 
 	if( fp.Open(path+"\\.mboxview", CFile::modeWrite | CFile::modeCreate) ) 
 	{
-		Traverse(hRoot, fp);
+		Traverse(hRoot, fp, *fileSizes);
 		fp.Close();
 	}
 #if 0
@@ -867,19 +1070,22 @@ void NTreeView::SaveData(HTREEITEM m_which)
 #endif
 }
 
-void NTreeView::UpdateFileSizesTable(CString &path, _int64 realFSize)
+
+// Not used anymore
+void NTreeView::UpdateFileSizesTable(CString &path, _int64 realFSize, FileSizeMap &fileSizes)
 {
 	_int64 fSize = 0;
-	BOOL found = fileSizes.Lookup(path, fSize);
+	ArchiveFileInfo info;
+	BOOL found = fileSizes.Lookup(path, info);
 	if (found)
 	{
-		if (fSize != realFSize) {
+		if (info.fSize != realFSize) {
 			fileSizes.RemoveKey(path);
-			fileSizes[path] = realFSize;
+			fileSizes[path].fSize = realFSize;
 		}
 	}
 	else
-		fileSizes[path] = realFSize;
+		fileSizes[path].fSize = realFSize;
 }
 
 void NTreeView::OnTreeExpand()
@@ -991,9 +1197,13 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		//
 		const UINT M_DeleteItem_Id = 1;
-		AppendMenu(&menu, M_DeleteItem_Id, _T("Delete Folder"));
+		AppendMenu(&menu, M_DeleteItem_Id, _T("Remove Folder"));
 		const UINT M_FolderPath_Id = 2;
 		AppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
+		const UINT M_FolderRefresh_Id = 3;
+		AppendMenu(&menu, M_FolderRefresh_Id, _T("Refresh Folder"));
+		const UINT M_OpenHiddenFiles_Id = 4;
+		AppendMenu(&menu, M_OpenHiddenFiles_Id, _T("Restore Removed Files"));
 
 		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -1010,17 +1220,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString Label;
 			int retLabel = menu.GetMenuString(M_DeleteItem_Id, Label, nFlags);
 
-			CString infoText = 
-				"The selected folder will be deleted from the current view.\n"
-				"The physical folder and content on the disk will not be deleted.\n\n"
-				"Delete the selected folder ?";
-			HWND h = wnd->GetSafeHwnd();
-			int answer = ::MessageBox(h, infoText, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-			if (answer == IDYES)
-			{
-				if (hItem)
-					BOOL ret = DeleteFolder(hItem);
-			}
+			MboxMail::ShowHint(HintConfig::MessageRemoveFolderHint, GetSafeHwnd());
+			if (hItem)
+				BOOL ret = DeleteFolder(hItem);
 		}
 		break;
 		case M_FolderPath_Id: {
@@ -1030,6 +1232,25 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 		}
 		 break;
+		case M_FolderRefresh_Id: {
+			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			path.TrimRight("\\");
+			HWND h = wnd->GetSafeHwnd();
+			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
+			if (hItem)
+			{
+				RefreshFolder(hItem);
+			}
+		}
+		break;
+
+		case M_OpenHiddenFiles_Id: {
+			if (hItem)
+			{
+				int ret = OpenHiddenFiles(hItem, *fileSizes);
+			}
+		}
+		break;
 
 		default: {
 				int deb = 1;
@@ -1110,7 +1331,10 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_Reload_Id = 15;
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
-	const UINT M_CreateFolder_Id = 16;
+	const UINT M_Remove_Id = 16;
+	AppendMenu(&menu, M_Remove_Id, _T("Remove File"));
+
+	const UINT M_CreateFolder_Id = 17;
 	//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1306,6 +1530,14 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
+
+	case M_Remove_Id:
+	{
+		CString mailFile = m_tree.GetItemText(hItem);
+		RemoveFileFromTreeView(hItem, *fileSizes);
+	}
+	break;
+	
 
 	default: {
 		int deb = 1;
@@ -1987,6 +2219,95 @@ BOOL CRegArray::LoadFromRegistry(CSArray &ar)
 		return TRUE;
 	}
 	return FALSE;
+}
+
+void NTreeView::RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes)
+{
+	HWND h = GetSafeHwnd();
+	MboxMail::ShowHint(HintConfig::MessageRemoveFileHint, h);
+
+	ArchiveFileInfo info;
+	CString mailFile = m_tree.GetItemText(hItem);
+	BOOL found = fileSizes.Lookup(mailFile, info);
+	if (found)
+	{
+		fileSizes[mailFile].bShow = 0;
+		BOOL ret = m_tree.DeleteItem(hItem);
+		SaveData(hItem);
+	}
+	return;
+}
+
+BOOL NTreeView::RefreshFolder(HTREEITEM hItem)
+{
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+
+	BOOL ret = DeleteFolder(hItem);
+
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), path);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	int paneId = 0;
+	CString sText;
+	sText.Format("Opening new mail folder ...");
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+	FillCtrl();
+
+	m_tree.SortChildren(0);
+
+	sText.Format("Ready");
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	return TRUE;
+}
+
+
+int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
+{
+	CCheckListBoxDlg dlg;
+	dlg.m_title = "Select Files to Restore";
+
+	FileSizeMap::CPair *pCurVal;
+
+	pCurVal = fileSizes.PGetFirstAssoc();
+	while (pCurVal != NULL)
+	{
+		if (pCurVal->value.bShow == 0)
+		{
+			dlg.m_InList.Add(pCurVal->key);
+		}
+		pCurVal = fileSizes.PGetNextAssoc(pCurVal);
+	}
+	//
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+
+	int nResponse = dlg.DoModal();
+	if (nResponse == IDOK)
+	{
+		int i;
+		for (i = 0; i < dlg.m_OutList.GetCount(); i++)
+		{
+			CString &s = dlg.m_OutList[i];
+			CString filePath = path + s;
+			fileSizes[s].bShow = 1;
+
+			HTREEITEM hItemRet = m_tree.InsertItem(s, 4, 5, hItem);
+			int deb = 1;
+		}
+		SaveData(hItem);
+		m_tree.SortChildren(hItem);
+	}
+	else if (nResponse == IDCANCEL)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with Cancel
+	}
+	return 1;
 }
 
 //

@@ -649,6 +649,42 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 	MboxMail::LoadHintBitmap();
+
+#if 0
+	// TEST if file name can be longet than 260 characters
+
+	CFile testFile;
+	CString fileName = "\\\\?";
+
+	fileName.AppendChar('\\');
+
+	fileName.Empty();
+	fileName.Append("C:\\");
+	for (int i = 0; i < 512; i++)
+		fileName.Append("x");
+
+	fileName.Append("Y.txt");
+
+	UINT nFlags = CFile::modeWrite | CFile::modeCreate;
+	BOOL ret = testFile.Open(fileName, nFlags);
+	if (ret)
+		testFile.Close();
+
+	DWORD dwAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+
+	CStringW fileNameW;
+	DWORD error;
+
+	BOOL r = TextUtilsEx::Ansi2Wide(fileName, fileNameW, error);
+
+	HANDLE hFile = CreateFileW(fileNameW, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		BOOL retClose = CloseHandle(hFile);
+	}
+#endif
+
 	return TRUE;
 }
 

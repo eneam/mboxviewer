@@ -40,6 +40,7 @@
 #include "MimeCode.h"
 #include "MboxMail.h"
 #include "OpenContainingFolderDlg.h"
+#include "OpenArchiveFileDlg.h"
 #include "FindInMailDlg.h"
 #include "FindAdvancedDlg.h"
 #include "AttachmentsConfig.h"
@@ -2227,7 +2228,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	17
+#define CACHE_VERSION	18
 
 BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 {
@@ -2945,8 +2946,8 @@ void NListView::FillCtrl()
 	CString txt = pTreeView->m_tree.GetItemText(m_which);
 
 	_int64 fSize = FileUtils::FileSize(MboxMail::s_path);
-	pTreeView->UpdateFileSizesTable(txt, fSize);
-	pTreeView->SaveData(m_which);
+	//pTreeView->UpdateFileSizesTable(txt, fSize);
+	//pTreeView->SaveData(m_which);
 
 	if (pFrame)
 		pFrame->SetupMailListsToInitialState();
@@ -6798,6 +6799,17 @@ int NListView::CheckMatchAdvanced(int i, CFindAdvancedParams &params)
 	int pos = -1;
 	MboxMail *m = MboxMail::s_mails[i];
 
+#if 0
+	// Just testing
+	char * fldName = "Subject:";
+	fldName = "To:";
+	BOOL match = MatchIfFieldFolded(i, fldName);
+	if (match)
+		return i;
+	else
+		return - 1;
+#endif
+
 	int fromPos = 1;
 	int toPos = 1;
 	int fromRPos = 1;
@@ -9373,6 +9385,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	CFile fp;
 
 	CString mboxFile = fileNameBase + fileNameExtention;
+	CString archiveFile = fileNameBase + mboxFileSuffix;;
 	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
 
 	if (FileUtils::PathFileExist(mboxFilePath))
@@ -9421,25 +9434,43 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	}
 	else if (nResponse == IDYES)
 	{
-		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-		if (pFrame)
+		CString txt = "Open Created Archive File\n\n" + mboxFilePath;
+		OpenArchiveFileDlg dlg;
+		dlg.m_sourceFolder = printCachePath;
+		dlg.m_targetFolder = path;
+		dlg.m_archiveFileName = archiveFile;
+		INT_PTR nResponse = dlg.DoModal();
+		////////////
+		if (nResponse == IDOK)
 		{
-			pFrame->DoOpen(printCachePath);
-
-			NTreeView *pTreeView = pFrame->GetTreeView();
-			if (pTreeView) 
+			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+			if (pFrame)
 			{
-				// delete index file to make sure it is not used i ncase old and new length of new mbox file are the same
-				CString indexFile = mboxFilePath + ".mboxview";
-				DeleteFile((LPCSTR)indexFile);
+				CString archiveFilePath = dlg.m_targetFolder + dlg.m_archiveFileName;
 
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), mboxFilePath);
+				BOOL retMove = MoveFile(mboxFilePath, archiveFilePath);
 
-				pTreeView->PostMsgCmdParamFileName();
-				pTreeView->m_bSelectMailFilePostMsgDone = FALSE;
+				pFrame->DoOpen(archiveFilePath);
 
-				pTreeView->PostMsgCmdParamFileName();
+				NTreeView *pTreeView = pFrame->GetTreeView();
+				if (pTreeView)
+				{
+					// delete index file to make sure it is not used i ncase old and new length of new mbox file are the same
+					CString indexFile = archiveFilePath + ".mboxview";
+					DeleteFile((LPCSTR)indexFile);
+
+					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), archiveFilePath);
+
+					pTreeView->PostMsgCmdParamFileName();
+					pTreeView->m_bSelectMailFilePostMsgDone = FALSE;
+
+					pTreeView->PostMsgCmdParamFileName();
+				}
 			}
+		}
+		else if (nResponse == IDCANCEL)
+		{
+			int deb = 1;
 		}
 		int deb = 1;
 	}
@@ -14757,4 +14788,73 @@ int NListView::SaveAsEmlFile(CString &bdy)
 	//fp.Write(bdy, bdy.GetLength());
 	fp.Close();
 	return  1;
+}
+
+
+BOOL NListView::MatchIfFieldFolded(int mailPosition, char *fldName)
+{
+	const int maxBodyLength = 128 * 1024;
+	static SimpleString mBody(maxBodyLength);
+
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	mBody.Clear();
+	m->GetBody(&mBody, maxBodyLength);
+
+	char *data = mBody.Data();
+	int datalen = mBody.Count();
+	char *p = data;
+	char *e = data + datalen;
+
+	int fldNameLength = strlen(fldName);
+
+	while (p < e)
+	{
+		if ((*p == '\n') || ((*p == '\r') && (*(p + 1) == '\n')))
+		{
+			break;
+		}
+		else if (TextUtilsEx::strncmpExact(p, e, fldName, fldNameLength) == 0)
+		{
+			p = MimeParser::EatNewLine(p, e);
+			if ((*p == ' ') || (*p == '\t'))
+				return TRUE;
+			else
+				p = MimeParser::EatNewLine(p, e);
+		}
+		else
+		{
+			p = MimeParser::EatNewLine(p, e);
+		}
+	}
+	return FALSE;
+}
+
+int NListView::DetermineListFileName(CString &fileName, CString &listFileName)
+{
+	CString mailFile = MboxMail::s_path;
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	if (path.IsEmpty())
+		return -1;
+
+	CString fileNameBase;
+	CString fileNameExtention;
+	FileUtils::GetFileBaseNameAndExtension(fileName, fileNameBase, fileNameExtention);
+
+	//CString mboxListFile = path + "ArchiveCache" + "\\"  + fileNameBase + "\\" + fileNameBase + "_USER" + fileNameExtention + ".mboxlist";
+	CString mboxListFile = path + "ArchiveCache" + "\\" + fileNameBase + "\\" + fileNameBase + "_USER.mbox.mboxlist";
+	if (FileUtils::PathFileExist(mboxListFile))
+	{
+		listFileName.Append(mboxListFile);
+	}
+	return 1;
 }

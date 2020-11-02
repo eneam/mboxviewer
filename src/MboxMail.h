@@ -99,7 +99,9 @@ public:
 		AdvancedFindDialogHint = 7,
 		PrintToPDFScriptHint = 8,
 		AttachmentConfigHint = 9,
-		MessageHeaderConfigHint = 10
+		MessageHeaderConfigHint = 10,
+		MessageRemoveFolderHint = 11,
+		MessageRemoveFileHint = 12
 	};
 };
 

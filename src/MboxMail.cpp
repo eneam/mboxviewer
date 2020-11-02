@@ -8865,7 +8865,22 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"\n"
 			);
 		}
-
+		else if (hintNumber == HintConfig::MessageRemoveFolderHint)
+		{
+			hintText.Append(
+				"The selected folder will be removed from the current view.\n"
+				"The physical folder and content on the disk will not be deleted.\n"
+				"\n"
+			);
+		}
+		else if (hintNumber == HintConfig::MessageRemoveFileHint)
+		{
+			hintText.Append(
+				"The selected file will be removed from the current view.\n"
+				"The physical file and content on the disk will not be deleted.\n"
+				"\n"
+			);
+		}
 
 		if (!hintText.IsEmpty())
 		{
@@ -8884,8 +8899,8 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 			mbp.dwLanguageId = 0;
 			int ret = MessageBoxIndirect(&mbp);
 #endif
-			MboxMail::m_HintConfig.ClearHint(hintNumber);
 		}
+		MboxMail::m_HintConfig.ClearHint(hintNumber);
 	}
 }
 

@@ -35,6 +35,9 @@
 // NTreeView.h : header file
 //
 
+
+#include <algorithm>
+#include <unordered_map>
 #include "WheelTreeCtrl.h"
 //#include <afxtempl.h>
 
@@ -69,6 +72,27 @@ public:
 	CSArray m_array;
 };
 
+class ArchiveFileInfo
+{
+public:
+	ArchiveFileInfo() { fSize = 0; bShow = 1; };
+	_int64 fSize;
+	_int64 bShow;
+};
+
+typedef CMap<CString, LPCSTR, ArchiveFileInfo, ArchiveFileInfo> FileSizeMap;
+
+class ArchiveFileInfoMap
+{
+public:
+	ArchiveFileInfoMap() { };
+	~ArchiveFileInfoMap() { m_fileSizes.RemoveAll();; }
+	FileSizeMap m_fileSizes;
+};
+
+typedef unordered_map<std::string, ArchiveFileInfoMap*> GlobalFileSizeMap;
+
+
 class NTreeView : public CWnd
 {
 	CFont		m_font;
@@ -76,9 +100,18 @@ class NTreeView : public CWnd
 // Construction
 public:
 	NTreeView();
+	virtual ~NTreeView();
+
 	DECLARE_DYNCREATE(NTreeView)
 	CWheelTreeCtrl	m_tree;
-	CMap<CString, LPCSTR, _int64, _int64>	fileSizes;
+	//
+	//  TODO: consider to create class
+	FileSizeMap	*fileSizes; // plus other data
+	FileSizeMap	m_fileSizes; // plus other data
+	GlobalFileSizeMap m_gFileSizes;  // fileSizes of all folders
+	//
+	BOOL m_bIsDataDirty;  // if true, folder data/file sizes needs to be saved to .mboxview
+	//
 	BOOL m_bSelectMailFileDone;
 	BOOL m_bSelectMailFilePostMsgDone;
 	BOOL m_bGeneralHintPostMsgDone;
@@ -108,9 +141,15 @@ public:
 
 // Implementation
 public:
+	void ClearGlobalFileSizeMap();
+	BOOL RemoveFileSizeMap(CString path);
+	BOOL SetupFileSizeMap(CString &path);
+	void LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUpdateTree);
+	int OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes);
+	void RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes);
 	void DetermineFolderPath(HTREEITEM hItem, CString &folderPath);
 	HTREEITEM DetermineRootItem(HTREEITEM hItem);
-	void Traverse( HTREEITEM hItem, CFile &fp );
+	void Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes);
 	void SaveData(HTREEITEM hItem);
 	void FillCtrl(BOOL expand = TRUE);
 	void ExpandOrCollapseTree(BOOL expand);
@@ -118,14 +157,15 @@ public:
 	HTREEITEM HasFolder(CString &path);
 	void SelectMailFile(); // based on -MBOX= command line argument
 	void ForceParseMailFile(HTREEITEM hItem);
-	void UpdateFileSizesTable(CString &path, _int64 fSize);
-	virtual ~NTreeView();
+	void UpdateFileSizesTable(CString &path, _int64 fSize, FileSizeMap &fileSizes);
+
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	BOOL DeleteItem(HTREEITEM hItem);
 	BOOL DeleteItemChildren(HTREEITEM hItem);
 	BOOL DeleteFolder(HTREEITEM hItem);
 	void StartTimer();
 	void PostMsgCmdParamFileName();
+	BOOL RefreshFolder(HTREEITEM hItem);
 
 	// Folder related
 	int CreateEmptyFolder(HTREEITEM hItem);
