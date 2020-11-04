@@ -50,6 +50,8 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
 
+// TODO: Must find time, some code is messy and  needs cleanup !!!
+
 NTreeView::NTreeView()
 {
 	m_bIsDataDirty = FALSE;
@@ -687,6 +689,8 @@ void NTreeView::FillCtrl(BOOL expand)
 		}
 	}
 
+	m_tree.SetRedraw();
+
 	m_bInFillControl = FALSE;
 }
 
@@ -1023,10 +1027,8 @@ void NTreeView::InsertMailFile(CString &mailFile)
 
 	if (!txt.IsEmpty())
 	{
-		txt += _T("\".\nDo you want to continue?");
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDNO)
-			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		// TODO:
+		return;
 	}
 	else
 	{

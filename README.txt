@@ -9,6 +9,7 @@ v 1.0.3.16
  - Added option to hide mbox files from the tree view and restore these files when needed;
  - Enhanced "Open File" option after creation of archive file is done to avoid exceeding the file name length limit (currently 260);
  - Fixed missing blank character when unfolding field text lines;
+ - Updated index file version due to unfolding issue;
  - Updated User Manual to describe new and updated features;
 
 v 1.0.3.15
