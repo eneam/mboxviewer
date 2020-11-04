@@ -2739,6 +2739,7 @@ void NListView::FillCtrl()
 
 
 	// TODO: MessageBox ??
+	// m_path is set to mboxFilePath not just to mboxFileName
 	if (FileUtils::PathFileExist(m_path) == FALSE)
 		return;
 
@@ -2809,6 +2810,8 @@ void NListView::FillCtrl()
 		PARSE_ARGS args;
 		args.path = m_path;
 		args.exitted = FALSE;
+
+		//  ALongRightProcessProc will set MboxMail::s_path = m_path;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
 		INT_PTR nResult = Dlg.DoModal();
 
@@ -2948,9 +2951,16 @@ void NListView::FillCtrl()
 	m_list.SetRedraw(TRUE);
 	BOOL retval;
 	retval = pTreeView->m_tree.SelectItem(m_which);
-	CString txt = pTreeView->m_tree.GetItemText(m_which);
+	CString mboxFileName = pTreeView->m_tree.GetItemText(m_which);
 
 	_int64 fSize = FileUtils::FileSize(MboxMail::s_path);
+	CString folderPath;
+	CString fileName;
+	FileUtils::GetFolderPathAndFileName(m_path, folderPath, fileName);
+
+	if (fileName.Compare(mboxFileName) != 0)
+		_ASSERT(fileName.Compare(mboxFileName) != 0);
+
 	//pTreeView->UpdateFileSizesTable(txt, fSize);
 	//pTreeView->SaveData(m_which);
 
@@ -9455,21 +9465,17 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 				BOOL retMove = MoveFile(mboxFilePath, archiveFilePath);
 
-				pFrame->DoOpen(archiveFilePath);
+				//pFrame->DoOpen(archiveFilePath);
 
 				NTreeView *pTreeView = pFrame->GetTreeView();
 				if (pTreeView)
 				{
 					// delete index file to make sure it is not used i ncase old and new length of new mbox file are the same
-					CString indexFile = archiveFilePath + ".mboxview";
-					DeleteFile((LPCSTR)indexFile);
+					// InsertMailFile will delete index file
+					//CString indexFile = archiveFilePath + ".mboxview";
+					//DeleteFile((LPCSTR)indexFile);
 
-					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), archiveFilePath);
-
-					pTreeView->PostMsgCmdParamFileName();
-					pTreeView->m_bSelectMailFilePostMsgDone = FALSE;
-
-					pTreeView->PostMsgCmdParamFileName();
+					pTreeView->InsertMailFile(archiveFilePath);
 				}
 			}
 		}

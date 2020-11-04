@@ -53,7 +53,8 @@ public:
 	static void CPathStripPathW(const wchar_t *path, CStringW &fileName);
 	static BOOL CPathGetPath(const char *path, CString &filePath);
 	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
-	static void FileUtils::GetFileBaseNameAndExtension(CString &fileName, CString &fileNameExtention, CString &fileBaseName);
+	static void GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName);
+	static void GetFileBaseNameAndExtension(CString &fileName, CString &fileNameExtention, CString &fileBaseName);
 	static void GetFileBaseName(CString &fileName, CString &fileBaseName);
 	static void GetFileExtension(CString &fileName, CString &fileNameExtention);
 	static void UpdateFileExtension(CString &fileName, CString &newExtension);

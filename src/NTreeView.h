@@ -85,8 +85,9 @@ typedef CMap<CString, LPCSTR, ArchiveFileInfo, ArchiveFileInfo> FileSizeMap;
 class ArchiveFileInfoMap
 {
 public:
-	ArchiveFileInfoMap() { };
-	~ArchiveFileInfoMap() { m_fileSizes.RemoveAll();; }
+	ArchiveFileInfoMap(CString &folderPath) { m_folderPath = folderPath; };
+	~ArchiveFileInfoMap() { m_fileSizes.RemoveAll();}
+	CString m_folderPath;
 	FileSizeMap m_fileSizes;
 };
 
@@ -155,7 +156,8 @@ public:
 	void ExpandOrCollapseTree(BOOL expand);
 	void LoadFolders();
 	HTREEITEM HasFolder(CString &path);
-	void SelectMailFile(); // based on -MBOX= command line argument
+	void SelectMailFile(CString *fileName = 0); // based on -MBOX= command line argument
+	void InsertMailFile(CString &mailFile);
 	void ForceParseMailFile(HTREEITEM hItem);
 	void UpdateFileSizesTable(CString &path, _int64 fSize, FileSizeMap &fileSizes);
 
@@ -164,7 +166,7 @@ public:
 	BOOL DeleteItemChildren(HTREEITEM hItem);
 	BOOL DeleteFolder(HTREEITEM hItem);
 	void StartTimer();
-	void PostMsgCmdParamFileName();
+	void PostMsgCmdParamFileName(CString *fileName = 0);
 	BOOL RefreshFolder(HTREEITEM hItem);
 
 	// Folder related

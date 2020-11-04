@@ -113,6 +113,8 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
 
+	UpdateData(TRUE);
+
 	CString mboxFilePath = m_targetFolder + m_archiveFileName;
 
 	if (FileUtils::PathFileExist(mboxFilePath))

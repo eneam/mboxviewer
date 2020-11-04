@@ -658,7 +658,7 @@ void NTreeView::FillCtrl(BOOL expand)
 	std::string stdPath = path;
 	if (m_gFileSizes.find(stdPath) == m_gFileSizes.end()) 
 	{
-		ArchiveFileInfoMap *infoMap = new ArchiveFileInfoMap;
+		ArchiveFileInfoMap *infoMap = new ArchiveFileInfoMap(path);
 		m_gFileSizes.insert(GlobalFileSizeMap::value_type(stdPath, infoMap));
 	}
 
@@ -906,10 +906,20 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 
 
 // Called when user specified command line option MAIL_FILE=
-void NTreeView::SelectMailFile()
+// Added call from SaveAsMboxArchiveFile_v2 to open item
+// TODO: 
+void NTreeView::SelectMailFile(CString *fileNm)
 {
 	// mailFile can be mailFilePath or mailFileName
-	CString mailFile = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
+	CString mailFile;
+	if (fileNm)
+	{
+		mailFile.Append(*fileNm);
+		//delete fileNm;
+	}
+	else
+		mailFile = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
+
 	if (mailFile.IsEmpty())
 		return;
 
@@ -959,11 +969,88 @@ void NTreeView::SelectMailFile()
 	else 
 	{
 		HTREEITEM hFolder = HasFolder(path);
+		if (hFolder)
+		{
+			HTREEITEM hItem = NTreeView::FindItem(hFolder, mailFileName);
+			UINT nCode = TVGN_CARET;
+			if (hItem)
+				BOOL retval = m_tree.Select(hItem, nCode);
+		}
+	}
+}
 
-		HTREEITEM hItem = NTreeView::FindItem(hFolder, mailFileName);
-		UINT nCode = TVGN_CARET;
-		if (hItem)
-			BOOL retval = m_tree.Select(hItem, nCode);
+// TODO: Works but need to rewrite, it is too complex. Need to review  all globals  to reduce complexity,
+// make reliable and maintainable
+void NTreeView::InsertMailFile(CString &mailFile)
+{
+	// mailFile can be mailFilePath or mailFileName
+	if (mailFile.IsEmpty())
+		return;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == NULL)
+		return;
+	NListView *pListView = pFrame->GetListView();
+	if (!pListView)
+		return;
+
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
+
+	CString mailFileName = fileNameBase + fileNameExtention;
+
+	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"));
+	if (directory.GetLength() > 0)
+	{
+		path = driveName + directory;
+	}
+
+	if (path.IsEmpty())
+		return;
+
+	path.TrimRight("\\");
+	pListView->m_path = path + _T('\\') + mailFileName;
+
+	CString txt;
+	if (!FileUtils::PathDirExists(path))
+		txt = _T("Nonexistent Directory \"") + path;
+	else if (!FileUtils::PathFileExist(pListView->m_path))
+		txt = _T("Nonexistent File \"") + pListView->m_path;
+
+	if (!txt.IsEmpty())
+	{
+		txt += _T("\".\nDo you want to continue?");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+	}
+	else
+	{
+		HTREEITEM hFolder = HasFolder(path);
+		if (hFolder)
+		{
+			HTREEITEM hItem = NTreeView::FindItem(hFolder, mailFileName);
+			UINT nCode = TVGN_CARET;
+			if (hItem == 0)
+			{
+				(*fileSizes)[mailFileName].bShow = 1;
+				_int64 fSize = FileUtils::FileSize(pListView->m_path);
+				(*fileSizes)[mailFileName].fSize = fSize;
+				SaveData(hFolder);
+
+				CString mboxIndexFilepath = pListView->m_path + ".mboxview";
+				BOOL ret = ::DeleteFile(mboxIndexFilepath);
+
+				HTREEITEM hItem = m_tree.InsertItem(mailFileName, 4, 5, hFolder);
+				if (hItem)
+					BOOL retval = m_tree.Select(hItem, nCode);
+				int deb = 1;
+			}
+		}
 	}
 }
 
@@ -1090,13 +1177,18 @@ void NTreeView::UpdateFileSizesTable(CString &path, _int64 realFSize, FileSizeMa
 	BOOL found = fileSizes.Lookup(path, info);
 	if (found)
 	{
-		if (info.fSize != realFSize) {
+		if (info.fSize != realFSize) 
+		{
 			fileSizes.RemoveKey(path);
 			fileSizes[path].fSize = realFSize;
+			fileSizes[path].bShow = 1;
 		}
 	}
 	else
+	{
 		fileSizes[path].fSize = realFSize;
+		fileSizes[path].bShow = 1;
+	}
 }
 
 void NTreeView::OnTreeExpand()
@@ -1207,10 +1299,10 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		//menu.AppendMenu(MF_SEPARATOR);
 
 		//
-		const UINT M_DeleteItem_Id = 1;
-		AppendMenu(&menu, M_DeleteItem_Id, _T("Remove Folder"));
-		const UINT M_FolderPath_Id = 2;
+		const UINT M_FolderPath_Id = 1;
 		AppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
+		const UINT M_DeleteItem_Id = 2;
+		AppendMenu(&menu, M_DeleteItem_Id, _T("Remove Folder"));
 		const UINT M_FolderRefresh_Id = 3;
 		AppendMenu(&menu, M_FolderRefresh_Id, _T("Refresh Folder"));
 		const UINT M_OpenHiddenFiles_Id = 4;
@@ -1226,7 +1318,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		switch (command)
 		{
-		case M_DeleteItem_Id: {
+		case M_DeleteItem_Id: 
+		{
 			UINT nFlags = MF_BYCOMMAND;
 			CString Label;
 			int retLabel = menu.GetMenuString(M_DeleteItem_Id, Label, nFlags);
@@ -1236,18 +1329,20 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 				BOOL ret = DeleteFolder(hItem);
 		}
 		break;
-		case M_FolderPath_Id: {
+		case M_FolderPath_Id: 
+		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			path.TrimRight("\\");
 			HWND h = wnd->GetSafeHwnd();
 			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 		}
 		 break;
-		case M_FolderRefresh_Id: {
+		case M_FolderRefresh_Id: 
+		{
 			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
 			path.TrimRight("\\");
 			HWND h = wnd->GetSafeHwnd();
-			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
+			//int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 			if (hItem)
 			{
 				RefreshFolder(hItem);
@@ -1255,7 +1350,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		break;
 
-		case M_OpenHiddenFiles_Id: {
+		case M_OpenHiddenFiles_Id: 
+		{
 			if (hItem)
 			{
 				int ret = OpenHiddenFiles(hItem, *fileSizes);
@@ -1363,7 +1459,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	switch (command)
 	{
-	case M_FileLocation_Id: {
+	case M_FileLocation_Id: 
+	{
 		UINT nFlags = MF_BYCOMMAND;
 		CString Label;
 		int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
@@ -1376,7 +1473,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	break;
-	case M_Properties_Id: {
+	case M_Properties_Id: 
+	{
 		CHAR sizeStr_inKB[256]; 
 		CHAR sizeStr_inBytes[256];
 		int sizeStrSize = 256;
@@ -1407,14 +1505,16 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
-	case S_CSV_Id: {
+	case S_CSV_Id: 
+	{
 		if (pFrame) {
 			pFrame->OnFileExportToCsv();
 		}
 		int deb = 1;
 	}
 	break;
-	case S_TEXT_Id: {
+	case S_TEXT_Id: 
+	{
 		UINT nFlags = MF_BYCOMMAND;
 		CString Label;
 		int retLabel = menu.GetMenuString(S_TEXT_Id, Label, nFlags);
@@ -1426,7 +1526,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
-	case S_HTML_Id: {
+	case S_HTML_Id: 
+	{
 		if (pFrame) 
 		{
 			pFrame->PrintMailArchiveToHTML();
@@ -1435,7 +1536,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
-	case S_PDF_Id: {
+	case S_PDF_Id: 
+	{
 		if (pFrame) 
 		{
 			MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());
@@ -1481,7 +1583,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case M_Reload_Id: {
+	case M_Reload_Id: 
+	{
 		CString txt = _T("Do you want to refresh index file?");
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
@@ -1492,7 +1595,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case M_AttachmentCache_Id: {
+	case M_AttachmentCache_Id: 
+	{
 		CString txt = _T("Do you want to create cache with all attachements?");
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
@@ -1510,7 +1614,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case M_EmlCache_Id: {
+	case M_EmlCache_Id: 
+	{
 		CString txt = _T("Do you want to create cache with all Eml files?");
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
@@ -1627,6 +1732,8 @@ BOOL NTreeView::DeleteFolder(HTREEITEM hItem)
 	CString folderPath;
 	DetermineFolderPath(hItem, folderPath);
 	BOOL ret = m_folderArray.Delete(folderPath);
+
+	RemoveFileSizeMap(folderPath);
 
 	itemTxt = m_tree.GetItemText(hItem);
 	TRACE("Deleting %s\n", itemTxt);
@@ -1768,11 +1875,10 @@ void NTreeView::FindAllDirs(LPCTSTR pstr)
 			NTreeView::FindAllDirs(str);
 		}
 	}
-
 	finder.Close();
 }
 
-void NTreeView::PostMsgCmdParamFileName()
+void NTreeView::PostMsgCmdParamFileName(CString *fileName)
 {
 	if (GetSafeHwnd() && !m_bGeneralHintPostMsgDone)
 	{
@@ -1790,12 +1896,18 @@ void NTreeView::PostMsgCmdParamFileName()
 LRESULT NTreeView::OnCmdParam_FileName(WPARAM wParam, LPARAM lParam)
 {
 	SelectMailFile();
+	// This is just one time message;
+	// TO: Fix it
+	//m_bGeneralHintPostMsgDone = FALSE;
 	return 0;
 }
 
 LRESULT NTreeView::OnCmdParam_GeneralHint(WPARAM wParam, LPARAM lParam)
 {
 	MboxMail::ShowHint(HintConfig::GeneralUsageHint, GetSafeHwnd());
+	// This is just one time message;
+	// TO: Fix it
+	//m_bGeneralHintPostMsgDone = FALSE;
 	return 0;
 }
 
@@ -2310,9 +2422,6 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 		pCurVal = fileSizes.PGetNextAssoc(pCurVal);
 	}
 	//
-
-
-
 	int nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
 	{

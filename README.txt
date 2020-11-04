@@ -2,6 +2,15 @@
 Changes
 ---
 
+v 1.0.3.16
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - It is RECOMMENDED to upgrade to this release if you expierence unexpected regeneration of index files;
+ - Added option to hide mbox files from the tree view and restore these files when needed;
+ - Enhanced "Open File" option after creation of archive file is done to avoid exceeding the file name length limit (currently 260);
+ - Fixed missing blank character when unfolding field text lines;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.15
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
