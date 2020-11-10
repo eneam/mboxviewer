@@ -266,10 +266,22 @@ void HtmlUtils::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *wo
 		nCmdOption = OLECMDEXECOPT_PROMPTUSER;
 	}
 
+#if 0
+	// Trying to figure out how to bypass Save On dialog
+	// Doesn't work yet (or ever ?)
+	nCmdId = OLECMDID_SAVEAS;
+	nCmdOption = OLECMDEXECOPT_DONTPROMPTUSER;
+
+	val.vt = VT_BSTR;
+	val.bstrVal = CComBSTR(L"F:\\New\\test.pdf");
+#endif
+
 	hr = lpOleCommandTarget->Exec(NULL, nCmdId, nCmdOption, &val, &valOut);
 	if (FAILED(hr))
 	{
 		BreakBeforeGoingCleanup();
+		DWORD err = GetLastError();
+		int deb = 1;
 		goto cleanup;
 	}
 

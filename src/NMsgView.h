@@ -134,6 +134,8 @@ public:
 
 	// Generated message map functions
 protected:
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
 	//{{AFX_MSG(NMsgView)
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);

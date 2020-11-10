@@ -33,6 +33,7 @@
 
 
 #include "stdafx.h"
+#include "MainFrm.h"
 #include "webbrowser2.h"
 
 #ifdef _DEBUG
@@ -529,4 +530,17 @@ void CWebBrowser2::SetResizable(BOOL bNewValue)
 		VTS_BOOL;
 	InvokeHelper(0x22c, DISPATCH_PROPERTYPUT, VT_EMPTY, NULL, parms,
 		 bNewValue);
+}
+
+BOOL CWebBrowser2::PreTranslateMessage(MSG* pMsg)
+{
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	{
+		if (pMsg->wParam == VK_ESCAPE)
+		{
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		}
+	}
+
+	return CWnd::PreTranslateMessage(pMsg);
 }

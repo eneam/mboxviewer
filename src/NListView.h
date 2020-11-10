@@ -407,7 +407,8 @@ public:
 	static int Color2Str(DWORD color, CString &colorStr);
 
 	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CString &extension);
-	static int NListView::DetermineListFileName(CString &fileName, CString &listFileName);
+	static int DetermineListFileName(CString &fileName, CString &listFileName);
+	void SetListFocus();
 
 	// Generated message map functions
 protected:

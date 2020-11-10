@@ -353,113 +353,13 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) 
 		{
 			CString openFolder = lpszParam + 7;
-			BOOL ret = FileUtils::PathDirExists(openFolder);
-			if (ret == FALSE)
-			{
-				CString txt;
-				txt.Format(_T("Invalid -FOLDER=\"%s\" option.\n"
-					"Nonexistent or Invalid Folder \"%s\" .\n"), openFolder, openFolder);
-				txt += _T("Do you want to continue?");
-				HWND h = NULL; // we don't have any window yet  
-				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-				if (answer == IDNO)
-					m_bError = TRUE;
-				return;
-			}
-
-			CString fileName;
-			CString driveName;
-			CString directory;
-			CString fileNameBase;
-			CString fileNameExtention;
-			FileUtils::SplitFilePath(openFolder, driveName, directory, fileNameBase, fileNameExtention);
-
-			openFolder.TrimRight("\\");
-			openFolder.Append("\\");
-
-			FileUtils::SplitFilePath(openFolder, driveName, directory, fileNameBase, fileNameExtention);
-			if (directory.GetLength() <= 1)
-			{
-				CString txt;
-				openFolder.TrimRight("\\");
-
-				txt.Format(_T("Invalid -FOLDER=\"%s\" option.\nInvalid folder \"%s\" .\n"
-					"The mbox files must be installed under a named folder\n."
-					"Please create folder, move the mbox files to that folder and try again."), 
-					openFolder, openFolder);
-				HWND h = NULL; // we don't have any window yet  
-				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-				m_bError = TRUE;
-				return;
-			}
-
-			if (m_bLastPathSet == FALSE)
-			{
-				openFolder.TrimRight("\\");
-				openFolder.Append("\\");
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), openFolder);
-			}
+			CMainFrame::m_commandLineParms.m_mboxFolderPath = openFolder;
 		}
 		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) 
 		{
 			CString mailFile = lpszParam + 10;
 
-			CString fileName;
-			CString driveName;
-			CString directory;
-			CString fileNameBase;
-			CString fileNameExtention;
-			FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
-
-			if (directory.GetLength() != 0)
-			{
-				CString txt;
-				if (!FileUtils::PathFileExist(mailFile)) 
-				{
-					CString txt;
-					txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\n"
-						"Nonexistent File \"%s\"\n"), 
-						mailFile, mailFile);
-					txt += _T("Do you want to continue?");
-					HWND h = NULL; // we don't have any window yet  
-					int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-					if (answer == IDNO)
-						m_bError = TRUE;
-				}
-				else 
-				{
-					CString lastPath = driveName + directory;
-					CString file = mailFile;
-
-					lastPath.TrimRight("\\");
-					lastPath.Append("\\");
-
-					FileUtils::SplitFilePath(lastPath, driveName, directory, fileNameBase, fileNameExtention);
-					if (directory.GetLength() <= 1)
-					{
-						CString txt;
-						txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
-							"The mbox files must be installed under a named folder\n."
-							"Please create folder, move the mbox files to that folder and try again."),
-							mailFile, lastPath);
-						HWND h = NULL; // we don't have any window yet  
-						int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-						m_bError = TRUE;
-						return;
-					}
-
-					lastPath.TrimRight("\\");
-					lastPath.Append("\\");
-
-					m_bLastPathSet = TRUE;
-					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), lastPath);
-					CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), file);
-				}
-			}
-			else 
-			{
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), mailFile);
-			}
+			CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = mailFile;
 		}
 		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) 
 		{
@@ -477,6 +377,10 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			}
 			else {
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+
+				CMainFrame::m_commandLineParms.m_exportEml = FALSE;
+				if (exportEML.Compare("y") == 0)
+					CMainFrame::m_commandLineParms.m_exportEml = TRUE;
 			}
 		}
 		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) 
@@ -497,16 +401,50 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			{
 				DWORD progressBarDelay = _tstoi(barDelay);
 				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), progressBarDelay);
+				CMainFrame::m_commandLineParms.m_progressBarDelay = progressBarDelay;
 			}
+		}
+		else if (strncmp(lpszParam, _T("EML_PREVIEW_MODE"), 19) == 0)
+		{
+			CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
+		}
+		else if (strncmp(lpszParam, _T("MBOX_MERGE_LIST_FILE"), 20) == 0)
+		{
+			CString emlListFile = lpszParam + 21;
+			CMainFrame::m_commandLineParms.m_mboxListFilePath = emlListFile;
+		}
+		else if (strncmp(lpszParam, _T("MBOX_MERGE_TO_FILE"), 18) == 0)
+		{
+			CString mergeToFilePath = lpszParam + 19;
+			CMainFrame::m_commandLineParms.m_mergeToFilePath = mergeToFilePath;
+		}
+		else if (strncmp(lpszParam, _T("TRACE_CASE"), 10) == 0)
+		{
+			CString traceCase = lpszParam + 11;
+			DWORD nTraceCase = _tstoi(traceCase);
+			CMainFrame::m_commandLineParms.m_traceCase = nTraceCase;
 		}
 		else 
 		{
 			// Unknown argument
 			CString txt = _T("Invalid Command Line Option \"");
 			CString opt = lpszParam;
-			txt += opt + _T("\". \nValid options: -FOLDER=,-MAIL_FILE=,-EXPORT_EML=,\n-PROGRESS_BAR_DELAY=.\nDo you want to continue?");
+			txt += opt 
+				+ _T("\"")
+				+ _T("\n\nValid options:\n")
+				+ _T("  -FOLDER=Folder Path\n")
+				+ _T("  -MAIL_FILE=Mbox File Path or Name to open\n")
+				+ _T("  -EXPORT_EML=y or n\n")
+				+ _T("  -PROGRESS_BAR_DELAY=Seconds\n")
+				+ _T("  -EML_PREVIEW_MODE\n")
+				+ _T("  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n")
+				+ _T("  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n")
+				+ _T("\nDo you want to continue?")
+				;
+
+			CMainFrame::m_commandLineParms.Clear();
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_YESNO);
 			if (answer == IDNO)
 				m_bError = TRUE;
 		}
@@ -543,11 +481,27 @@ BOOL CmboxviewApp::InitInstance()
 	CCmdLine cmdInfo;
 	CString mailFile;
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "mailFile", mailFile);
+
+	CMainFrame::m_commandLineParms.m_allCommanLineOptions = CWinApp::m_lpCmdLine;
 	ParseCommandLine(cmdInfo);
 	if (cmdInfo.m_bError)
 	{
 		MboxMail::ReleaseResources();
 		return FALSE;
+	}
+	else
+	{
+		// Do additional Check of command line options
+		int retCode = CMainFrame::m_commandLineParms.VerifyParameters();
+		if (retCode == -1)  // error and don't continue
+		{
+			MboxMail::ReleaseResources();
+			return FALSE;
+		}
+		else if (retCode == -2)  // error but continue; probably overkill
+		{
+			CMainFrame::m_commandLineParms.Clear();
+		}
 	}
 
 	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "processPath");

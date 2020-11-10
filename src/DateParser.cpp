@@ -99,14 +99,24 @@
  
 static char *days[] = { "sun","mon","tue","wed","thu","fri","sat" };
 static char *months[] = { "jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec" };
+
+inline
+bool return_false() {
+	return false;
+}
  
 #define SKIP_WHITESPACE() while (*s == ' ' || *s == '\t') s++
 #define SKIP_NON_WHITESPACE() while (*s != ' ' && *s != '\t' && *s != '\0') s++
-#define CHECK_PREMATURE_END()	 if (*s == '\0') return false
+//#define CHECK_PREMATURE_END()	 if (*s == '\0') return false
+#define CHECK_PREMATURE_END()	 if (*s == '\0') return return_false();
+
 
 
 bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int dateFormatType)
 {
+	if (dateFormatType != 1)
+		return false;   // TODO: dateFormatType ==2 needs some work
+
 	if (!sysTime || !str1)
 		return false;
  
@@ -251,12 +261,18 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
 
-		char *s_save = s;  // pointer to zone
 
-		// skip zone
-		SKIP_NON_WHITESPACE();
-		SKIP_WHITESPACE();
-		CHECK_PREMATURE_END();
+		char *s_save = 0;
+		// TODO: fixme
+		if ((*s == '+') || (*s == '-'))
+		{
+			s_save = s;  // pointer to zone
+
+			// skip zone
+			SKIP_NON_WHITESPACE();
+			SKIP_WHITESPACE();
+			CHECK_PREMATURE_END();
+		}
 
 		if (sscanf(s, "%d", &year) != 1)
 			return false;

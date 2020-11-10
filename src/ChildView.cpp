@@ -161,6 +161,12 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (ret)
 		treeSize.cy = tree_frameCy;
 
+
+	BOOL bEmlPrewviewMode = CMainFrame::m_commandLineParms.m_bEmlPreviewMode;
+
+	if (bEmlPrewviewMode)
+		treeSize.cx = 0;
+
 	if (!m_verSplitter.CreateView(0, 0, RUNTIME_CLASS(NTreeView), treeSize, NULL)) {
 		TRACE("Failed to create Tree left view\n");
 		return -1;
@@ -191,8 +197,6 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		msgSize.cy = 200;
 	}
 
-
-
 	if (msgSize.cx < 0)
 		int deb = 1;
 	if (msgSize.cy < 0)
@@ -211,15 +215,21 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	{
 		listSize.cx = frameSize.cx - treeSize.cx;
 		listSize.cy = list_frameCy_TreeNotInHide;
+		if (bEmlPrewviewMode)
+			listSize.cy = 0;
 	}
 	else if (m_msgViewPosition == 2)   // windows on right
 	{
 		listSize.cx = list_frameCx_TreeNotInHide;
+		if (bEmlPrewviewMode)
+			listSize.cx = 0;
 		listSize.cy = 200;
 	}
 	else if (m_msgViewPosition == 3)   // windows on left
 	{
 		listSize.cx = list_frameCx_TreeNotInHide;
+		if (bEmlPrewviewMode)
+			listSize.cx = 0;
 		listSize.cy = 200;
 	}
 
@@ -228,30 +238,33 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (listSize.cy < 0)
 		int deb = 1;
 
-	if (m_msgViewPosition > 1)
+	if (bEmlPrewviewMode == FALSE)
 	{
-		if (msgSize.cx < 64)
+		if (m_msgViewPosition > 1)
 		{
-			msgSize.cx = 64;
-			listSize.cx -= 60;
+			if (msgSize.cx < 64)
+			{
+				msgSize.cx = 64;
+				listSize.cx -= 60;
+			}
+			else if (listSize.cx < 64)
+			{
+				listSize.cx = 20;
+				msgSize.cx -= 60;
+			}
 		}
-		else if (listSize.cx < 64)
+		else
 		{
-			listSize.cx = 20;
-			msgSize.cx -= 60;
-		}
-	}
-	else
-	{
-		if (msgSize.cy < 64)
-		{
-			msgSize.cy = 64;
-			listSize.cy -= 60;
-		}
-		else if (listSize.cx < 64)
-		{
-			listSize.cy = 20;
-			msgSize.cy -= 60;
+			if (msgSize.cy < 64)
+			{
+				msgSize.cy = 64;
+				listSize.cy -= 60;
+			}
+			else if (listSize.cx < 64)
+			{
+				listSize.cy = 20;
+				msgSize.cy -= 60;
+			}
 		}
 	}
 

@@ -290,12 +290,12 @@ HTREEITEM NTreeView::HasFolder(CString &path)
 void NTreeView::LoadFolders()
 {
 	CString pathLast = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-
 	int paneId = 0;
 	CString sText;
 	CString str;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
 	BOOL lastPathLoaded = FALSE;
 	BOOL expand = FALSE;
 	int ii = 0;
@@ -341,6 +341,12 @@ void NTreeView::LoadFolders()
 
 	m_tree.SortChildren(0);
 	// or m_tree.SortChildren(TVI_ROOT);
+
+	HTREEITEM hFolder;
+	if (hFolder = HasFolder(pathLast))
+	{
+		m_tree.Expand(hFolder, TVE_EXPAND);
+	}
 }
 
 void  NTreeView::ExpandOrCollapseTree(BOOL expand)
@@ -623,8 +629,26 @@ void NTreeView::FillCtrl(BOOL expand)
 	m_bInFillControl = TRUE;
 
 	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+
+
 	//m_tree.DeleteAllItems();
 	if (path.IsEmpty() || !FileUtils::PathDirExists(path))
+	{
+		m_bInFillControl = FALSE;
+		return;
+	}
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	CString fpath = path;
+	fpath.TrimRight("\\");
+	fpath.Append("\\");
+
+	FileUtils::SplitFilePath(fpath, driveName, directory, fileNameBase, fileNameExtention);
+	if (directory.GetLength() <= 1)
 	{
 		m_bInFillControl = FALSE;
 		return;
@@ -856,6 +880,11 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	pListView->FillCtrl();
 	MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
 
+	if (MboxMail::s_mails.GetCount() > 0)
+	{
+		pListView->SelectItemFound(0);
+	}
+
 	pFrame->UpdateFilePrintconfig();
 
 	sText.Format("Ready");
@@ -924,47 +953,30 @@ void NTreeView::SelectMailFile(CString *fileNm)
 	else
 		mailFile = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"));
 
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), CString(""));
+
 	if (mailFile.IsEmpty())
 		return;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame == NULL)
 		return;
+
 	NListView *pListView = pFrame->GetListView();
 	if (!pListView)
 		return;
 
-	pListView->CloseMailFile();
+	CString mboxFilePath;
+	CString mboxFileName;
+	FileUtils::GetFolderPathAndFileName(mailFile, mboxFilePath, mboxFileName);
 
-	CString fileName;
-	CString driveName;
-	CString directory;
-	CString fileNameBase;
-	CString fileNameExtention;
-	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
-
-	CString mailFileName = fileNameBase + fileNameExtention;
-
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"));
-	if (directory.GetLength() > 0)
-	{
-		path = driveName + directory;
-	}
-
-	if (path.IsEmpty())
-		return;
-
-	path.TrimRight("\\");
-	pListView->m_path = path + _T('\\') + mailFileName;
+	mboxFilePath.TrimRight("\\");
+	mboxFilePath.Append("\\");
 
 	CString txt;
-	if (!FileUtils::PathDirExists(path))
-		txt = _T("Nonexistent Directory \"") + path;
-	else if (!FileUtils::PathFileExist(pListView->m_path))
-		txt = _T("Nonexistent File \"") + pListView->m_path;
-
-	if (!txt.IsEmpty()) 
+	if (!FileUtils::PathFileExist(mailFile))
 	{
+		txt = _T("Nonexistent File \"") + mailFile;
 		txt += _T("\".\nDo you want to continue?");
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
@@ -972,13 +984,27 @@ void NTreeView::SelectMailFile(CString *fileNm)
 	}
 	else 
 	{
-		HTREEITEM hFolder = HasFolder(path);
+		pListView->m_path = mailFile;
+
+		pListView->CloseMailFile();
+
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), mboxFilePath);
+
+		HTREEITEM hFolder = HasFolder(mboxFilePath);
 		if (hFolder)
 		{
-			HTREEITEM hItem = NTreeView::FindItem(hFolder, mailFileName);
+			HTREEITEM hItem = NTreeView::FindItem(hFolder, mboxFileName);
 			UINT nCode = TVGN_CARET;
 			if (hItem)
+			{
 				BOOL retval = m_tree.Select(hItem, nCode);
+
+				if (MboxMail::s_mails.GetCount() > 0)
+				{
+					pListView->SelectItemFound(0);
+					pListView->SetListFocus();
+				}
+			}
 		}
 	}
 }

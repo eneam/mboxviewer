@@ -44,6 +44,14 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.17
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added -EML_PREVIEW_MODE command line option to hide Mbox Tree and Mail List panes when -MAIL_FILE is configured. ESCAPE key will terminate the mbox viewer;
+ - Added -MBOX_MERGE_LIST_FILE and -MBOX_MERGE_TO_FILE command line options to merge mbox files listed in the file. The merged file is automatically open in mbox viewer;
+ - Fixed rare crash when Removing Duplicate mails with extremly large number of duplicate mails;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.16
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

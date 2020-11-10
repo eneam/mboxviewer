@@ -135,6 +135,8 @@ public:
 	void SetAddressBar(BOOL bNewValue);
 	BOOL GetResizable();
 	void SetResizable(BOOL bNewValue);
+
+	BOOL PreTranslateMessage(MSG* pMsg);
 };
 
 //{{AFX_INSERT_LOCATION}}

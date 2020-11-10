@@ -44,6 +44,38 @@
 #include "ColorStyleConfigDlg.h"
 #include "HtmlPdfHdrConfigDlg.h"
 
+typedef CArray<CString, CString> MboxFileList;
+
+struct CommandLineParms
+{
+	CommandLineParms() 
+	{
+		m_bEmlPreviewMode = FALSE;  m_progressBarDelay = -1; m_exportEml = FALSE; m_traceCase = 0;
+	}
+	void Clear()
+	{
+		m_bEmlPreviewMode = FALSE;  m_progressBarDelay = -1; m_exportEml = FALSE;
+		m_mboxListFilePath.Empty(); m_mergeToFilePath.Empty();
+		m_mboxFolderPath.Empty(); m_mboxFileNameOrPath.Empty();
+
+	}
+	int VerifyParameters();
+	//
+	CString m_allCommanLineOptions;
+	//
+	CString m_mboxListFilePath;
+	CString m_mergeToFilePath;
+	// params to open single eml or mbox file
+	BOOL m_bEmlPreviewMode;
+	CString m_mboxFolderPath;
+	CString m_mboxFileNameOrPath;
+	//
+	int m_progressBarDelay;
+	BOOL m_exportEml;
+	//
+	int m_traceCase;
+};
+
 struct CSVFILE_CONFIG
 {
 public:
@@ -172,6 +204,11 @@ public:
 	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);
 	void SortByColumn(int column);
 
+	int MergeMboxArchiveFiles(CString &mboxListFilePath, CString &mergedMboxFilePath);
+	int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath);
+
+
+	static CommandLineParms m_commandLineParms;
 	static AttachmentConfigParams *GetAttachmentConfigParams();
 
 #ifdef _DEBUG

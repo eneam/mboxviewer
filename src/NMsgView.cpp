@@ -263,6 +263,7 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		pFrame->CheckMessagewindowPositionMenuOption(pFrame->GetMessageWindowPosition());
 	}
+
 	return 0;
 }
 
@@ -1417,4 +1418,16 @@ void NMsgView::OnMessageheaderpanelayoutExpanded()
 	Invalidate();
 	UpdateLayout();
 	int deb = 1;
+}
+
+int NMsgView::PreTranslateMessage(MSG* pMsg)
+{
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	{
+		if (pMsg->wParam == VK_ESCAPE)
+		{
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);            // Do not process further
+		}
+	}
+	return CWnd::PreTranslateMessage(pMsg);
 }

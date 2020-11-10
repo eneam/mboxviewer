@@ -507,3 +507,16 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 }
+
+int CAttachments::PreTranslateMessage(MSG* pMsg)
+{
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	{ 
+		if (pMsg->wParam == VK_ESCAPE)
+		{
+			AfxGetMainWnd()->PostMessage(WM_CLOSE); 
+		}
+	}
+
+	return CWnd::PreTranslateMessage(pMsg);
+}

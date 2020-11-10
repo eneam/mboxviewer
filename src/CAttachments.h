@@ -63,6 +63,8 @@ public:
 	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;
 
 	DECLARE_MESSAGE_MAP()
+	BOOL PreTranslateMessage(MSG* pMsg);
+
 	afx_msg void OnPaint();
 	afx_msg void OnActivating(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);

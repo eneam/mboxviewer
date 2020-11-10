@@ -648,8 +648,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_ARCHIVE_LOCATION_Id = 20;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save as Mail Archive file"));
-		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mail Archive Location"));
+		AppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save as Mbox Mail Archive file"));
+		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mbox Mail Archive Location"));
 	}
 
 	const UINT S_SAVE_AS_LIST_Id = 21;
@@ -1424,6 +1424,14 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		//if (m_lastSel) SelectItem(m_lastSel);
 		int deb = 1;
+	}
+	break;
+	case VK_ESCAPE:
+	{
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		{
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		}
 	}
 	break;
 	case 'A':
@@ -2920,11 +2928,24 @@ void NListView::FillCtrl()
 		MboxMail::clearMessageIdTable();
 		MboxMail::clearThreadIdTable();
 
-		CString txt = _T("Inline image files can be pre-created now or created on the fly later. "
-			"Image cache improves performance when printing large number of mails to PDF or viewing in Browser.\n"
-			"\nCreate cache of inline images (may take several minutes depending on the mail count and content) ?");
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDYES)
+		int mailCnt = MboxMail::s_mails.GetCount();
+
+		if (mailCnt > 1000)
+		{
+			CString txt = _T("Inline image files can be pre-created now or created on the fly later. "
+				"Image cache improves performance when printing large number of mails to PDF or viewing in Browser.\n"
+				"\nCreate cache of inline images (may take several minutes depending on the mail count and content) ?");
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDYES)
+			{
+				int firstMail = 0;
+				int lastMail = MboxMail::s_mails.GetCount() - 1;
+
+				CString targetPrintSubFolderName = "";
+				int retval = CreateInlineImageCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
+			}
+		}
+		else if (mailCnt > 0)
 		{
 			int firstMail = 0;
 			int lastMail = MboxMail::s_mails.GetCount() - 1;
@@ -7250,6 +7271,7 @@ int NListView::RemoveDuplicateMails()
 	m_list.SetRedraw(FALSE);
 
 	MboxMail::RemoveDuplicateMails();
+
 	RedrawMails();
 
 	if (MboxMail::s_mails.GetCount() > 0)
@@ -14868,4 +14890,9 @@ int NListView::DetermineListFileName(CString &fileName, CString &listFileName)
 		listFileName.Append(mboxListFile);
 	}
 	return 1;
+}
+
+void NListView::SetListFocus()
+{
+	m_list.SetFocus();
 }

@@ -7677,12 +7677,15 @@ int MboxMail::RemoveDuplicateMails()
 	if (s_mails.GetCount() > s_mails_edit.GetCount())
 		s_mails_edit.SetSizeKeepData(s_mails.GetCount());
 
-	if ((s_mails.GetCount()/2+1) > s_mails_find.GetCount())
-		s_mails_find.SetSizeKeepData(s_mails.GetCount()/2 + 1);
+	if (s_mails.GetCount() > s_mails_find.GetCount())
+		s_mails_find.SetSizeKeepData(s_mails.GetCount());
 
+
+	int i = 0;
 	int to_dup_i = 0;
 	int to_i = 0;
-	for (int i = 0; i < s_mails.GetSize(); i++)
+
+	for (i; i < s_mails.GetSize(); i++)
 	{
 		m = s_mails[i];
 
@@ -7697,11 +7700,11 @@ int MboxMail::RemoveDuplicateMails()
 				to_i++;
 				m->m_duplicateId = false;
 			}
-			else 
+			else
 			{
 				if ((m_found->m_timeDate != m->m_timeDate) ||
 					(m_found->m_from != m->m_from) ||
-					(m_found->m_to != m->m_to) )
+					(m_found->m_to != m->m_to))
 				{
 					s_mails_edit[to_i] = s_mails[i];
 					to_i++;
@@ -7715,7 +7718,7 @@ int MboxMail::RemoveDuplicateMails()
 				}
 			}
 		}
-		else 
+		else
 		{
 			s_mails_edit[to_i] = s_mails[i];
 			to_i++;
@@ -8690,11 +8693,17 @@ BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 	static char *tm = "Thu Oct 27 09:02:59 +0000 2011";
 	static int tmlen = strlen(tm);
 
+	BOOL r = p < end;
+
 	CString line;
 	char *p_next = MimeParser::GetMultiLine(p, end, line);
 
+	if (tmlen > line.GetLength())
+		return FALSE;
+
 	p = (char*)((LPCSTR)line);
-	char *e = (p + line.GetLength()) - tmlen;
+	char *e = p + line.GetLength();
+	p = e - tmlen;
 
 	time_t timeDT = -1;
 	
@@ -8707,31 +8716,31 @@ BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 
 		if (c == 'm')
 		{
-			if (TextUtilsEx::strncmpUpper2Lower(p, end, "mon", 3) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, "mon", 3) == 0)
 				break;
 		}
 		else if (c == 't')
 		{
-			if (TextUtilsEx::strncmpUpper2Lower(p, end, "tue", 3) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, "tue", 3) == 0)
 				break;
-			else if (TextUtilsEx::strncmpUpper2Lower(p, end, "thu", 3) == 0)
+			else if (TextUtilsEx::strncmpUpper2Lower(p, e, "thu", 3) == 0)
 				break;
 		}
 		else if (c == 'w')
 		{
-			if (TextUtilsEx::strncmpUpper2Lower(p, end, "wed", 3) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, "wed", 3) == 0)
 				break;
 		}
 		else if (c == 'f')
 		{
-			if (TextUtilsEx::strncmpUpper2Lower(p, end, "fri", 3) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, "fri", 3) == 0)
 				break;
 		}
 		else if (c == 's')
 		{
-			if (TextUtilsEx::strncmpUpper2Lower(p, end, "sat", 3) == 0)
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, "sat", 3) == 0)
 				break;
-			else if (TextUtilsEx::strncmpUpper2Lower(p, end, "sun", 3) == 0)
+			else if (TextUtilsEx::strncmpUpper2Lower(p, e, "sun", 3) == 0)
 				break;
 		}
 		p++;
