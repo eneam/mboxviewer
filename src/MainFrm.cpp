@@ -378,7 +378,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
-	BOOL ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+	BOOL  ret;
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wpr, cb);
+	else
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
 	if (ret && (cb == sizeof(wpr)))
 	{
 		HWND hWnd = GetSafeHwnd();
@@ -2637,8 +2641,6 @@ restart:
 }
 
 
-
-
 int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &mergedMboxFilePath)
 {
 	CStdioFile fpList;
@@ -2650,11 +2652,28 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		CFileStatus rStatus;
 		BOOL ret = fpList.GetStatus(rStatus);
 
-		CString txt = _T("Could not create \"") + mergedMboxFilePath;
+		CString txt = _T("Could not open list file \"") + mboxListFilePath;
 		txt += _T("\" file.\nMake sure file is not open on other applications.");
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
+	}
+
+	CString filePath;
+	while (fpList.ReadString(filePath))
+	{
+		TRACE("FilePath=%s\n", filePath);
+		if (!FileUtils::PathFileExist(filePath))
+		{
+			CString txt = _T("File path invalid:\n\n");
+			txt.Append(filePath);
+			txt.Append("\n\nCan't continue merging files\n");
+
+			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+
+			fpList.Close();
+			return -1;
+		}
 	}
 
 	CFile fpMergeTo;
@@ -2666,18 +2685,18 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		CFileStatus rStatus;
 		BOOL ret = fpMergeTo.GetStatus(rStatus);
 
-		CString txt = _T("Could not create \"") + mergedMboxFilePath;
+		CString txt = _T("Could not create Merge To File\"") + mergedMboxFilePath;
 		txt += _T("\" file.\nMake sure file is not open on other applications.");
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
-	CString filePath;
+	fpList.SeekToBegin();
 	while (fpList.ReadString(filePath))
 	{
 		TRACE("FilePath=%s\n", filePath);
-		MergeMboxArchiveFile(fpMergeTo, filePath);
+		int ret = MergeMboxArchiveFile(fpMergeTo, filePath);
 	}
 
 	fpList.Close();
@@ -3192,6 +3211,11 @@ BOOL MySelectFolder::OnFileNameOK()
 void CMainFrame::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
+
+	NTreeView * pTreeView = GetTreeView();
+	NListView * pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+
 	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if ((MboxMail::IsUserMailsSelected() && (MboxMail::s_mails.GetCount() > 0)) || (MboxMail::s_mails_edit.GetCount() > 0))
 	{
@@ -3218,7 +3242,18 @@ void CMainFrame::OnClose()
 			HTREEITEM hFolder = pTreeView->HasFolder(mboxFolderPath);
 			if (hFolder)
 			{
-				pTreeView->DeleteFolder(hFolder);
+				BOOL recursive = FALSE;
+				int childrenCount = 0;
+				childrenCount = pTreeView->GetChildrenCount(hFolder, recursive);
+				if (childrenCount == 1)
+				{
+					HTREEITEM hItem = pTreeView->FindItem(hFolder, mboxFileName);
+					if (hItem)
+					{
+						pTreeView->DeleteFolder(hFolder);
+					}
+				}
+				int deb = 1;
 			}
 		}
 	}
@@ -3232,42 +3267,46 @@ void CMainFrame::OnClose()
 	if ((wp.showCmd != SW_SHOWMAXIMIZED) && (wp.showCmd != SW_SHOW))
 		wp.showCmd = SW_SHOW;
 
-
-	BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wp, sizeof(wp));
-
-
-	NTreeView * pTreeView = GetTreeView();
-	NListView * pListView = GetListView();
-	NMsgView * pMsgView = GetMsgView();
-
-	if (m_msgViewPosition == m_newMsgViewPosition)
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 	{
-		if (pMsgView)
-		{
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", pMsgView->m_frameCx_TreeNotInHide);
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", pMsgView->m_frameCy_TreeNotInHide);
-
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", pMsgView->m_frameCx_TreeInHide);
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", pMsgView->m_frameCy_TreeInHide);
-		}
-
-		if (pListView)
-		{
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", pListView->m_frameCx_TreeNotInHide);
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", pListView->m_frameCy_TreeNotInHide);
-
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth", pListView->m_frameCx_TreeInHide);
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight", pListView->m_frameCy_TreeInHide);
-		}
-
-		if (pTreeView)
-		{
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_pTreeView->m_frameCx);
-			ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_pTreeView->m_frameCy);
-		}
+		BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wp, sizeof(wp));
+		if (m_msgViewPosition != m_newMsgViewPosition)
+			DeleteAllPlacementKeys();		
 	}
 	else
-		DeleteAllPlacementKeys();
+	{
+		BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wp, sizeof(wp));
+
+		if (m_msgViewPosition == m_newMsgViewPosition)
+		{
+			BOOL ret;
+			if (pMsgView)
+			{
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", pMsgView->m_frameCx_TreeNotInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", pMsgView->m_frameCy_TreeNotInHide);
+
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", pMsgView->m_frameCx_TreeInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", pMsgView->m_frameCy_TreeInHide);
+			}
+
+			if (pListView)
+			{
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", pListView->m_frameCx_TreeNotInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", pListView->m_frameCy_TreeNotInHide);
+
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth", pListView->m_frameCx_TreeInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight", pListView->m_frameCy_TreeInHide);
+			}
+
+			if (pTreeView)
+			{
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_pTreeView->m_frameCx);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_pTreeView->m_frameCy);
+			}
+		}
+		else
+			DeleteAllPlacementKeys();
+	}
 
 	MboxMail::ReleaseResources();
 
@@ -3577,14 +3616,6 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), mboxFilePath);
 		}
 	}
-	else if (listFilePath.IsEmpty() && !mergeToFilePath.IsEmpty())
-	{
-		;
-	}
-	else if (!listFilePath.IsEmpty() && mergeToFilePath.IsEmpty())
-	{
-		;
-	}
 
 	if (pTreeView)
 	{
@@ -3842,6 +3873,8 @@ int CommandLineParms::VerifyParameters()
 			return -1;
 		}
 
+
+		// LoadFolders() needs "lastPath" to open folder housing "mailFile"
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), folderPath);
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), m_mboxFileNameOrPath);
 	}

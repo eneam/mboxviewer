@@ -161,6 +161,7 @@ public:
 	void ForceParseMailFile(HTREEITEM hItem);
 	void UpdateFileSizesTable(CString &path, _int64 fSize, FileSizeMap &fileSizes);
 
+	int GetChildrenCount(HTREEITEM hItem, BOOL recursive);
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	BOOL DeleteItem(HTREEITEM hItem);
 	BOOL DeleteItemChildren(HTREEITEM hItem);

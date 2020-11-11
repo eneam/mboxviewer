@@ -184,6 +184,9 @@ public:
 
 unsigned long StrHash(const char* buf, const UINT length);
 
+struct MboxHash;
+struct MboxEqual;
+
 struct MessageIdHash;
 struct MessageIdEqual;
 
@@ -193,7 +196,7 @@ struct ThreadIdEqual;
 
 typedef std::unordered_map<CString*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
 typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
-typedef std::unordered_map<CString*, MboxMail*, MessageIdHash, MessageIdEqual> MboxMailTableType;
+typedef std::unordered_map<MboxMail*, MboxMail*, MboxHash, MboxEqual> MboxMailTableType;
 
 
 class CMBodyHdr;
@@ -284,8 +287,10 @@ public:
 	static int getThreadId(CString *key);
 	static bool insertThreadId(CString *key, int val);
 
-	static MboxMail* getMboxMail(CString *key);
-	static bool insertMboxMail(CString *key, MboxMail *mbox);
+	//static MboxMail* getMboxMail(CString *key);
+	//static bool insertMboxMail(CString *key, MboxMail *mbox);
+	static MboxMail* getMboxMail(MboxMail *key);
+	static bool insertMboxMail(MboxMail *key, MboxMail *mbox);
 	static UINT createMboxMailTable(UINT count);
 	static void clearMboxMailTable();
 	//

@@ -148,11 +148,42 @@ public:
 	}
 };
 
+struct MboxHash {
+public:
+	size_t operator()(const MboxMail *key) const
+	{
+		size_t hashsum;
+		if (key->m_messageId.GetLength() > 0)
+			hashsum = StrHash((const char*)(LPCSTR)key->m_messageId, key->m_messageId.GetLength());
+		else
+		{
+			size_t hashsum1 = StrHash((const char*)(LPCSTR)key->m_from, key->m_from.GetLength());
+			size_t hashsum2 = StrHash((const char*)(LPCSTR)key->m_to, key->m_to.GetLength());
+			hashsum = hashsum1 + hashsum2 + (0xffff & key->m_timeDate);
+		}
+		return hashsum;
+	}
+};
+
 struct MsgIdEqual {
 public:
 	bool operator()(const MboxMail *key1, const MboxMail *key2) const
 	{
 		if (key1->m_messageId == key2->m_messageId)
+			return true;
+		else
+			return false;
+	}
+};
+
+struct MboxEqual {
+public:
+	bool operator()(const MboxMail *key1, const MboxMail *key2) const
+	{
+		if ((key1->m_timeDate == key2->m_timeDate) &&
+			(key1->m_messageId == key2->m_messageId) &&
+			(key1->m_from == key2->m_from) &&
+			(key1->m_to == key2->m_to) )
 			return true;
 		else
 			return false;
@@ -7689,42 +7720,23 @@ int MboxMail::RemoveDuplicateMails()
 	{
 		m = s_mails[i];
 
-		if (m->m_messageId.GetLength())
+		m_found = getMboxMail(m);
+		if (m_found == 0)
 		{
-			m_found = getMboxMail(&m->m_messageId);
-			if (m_found == 0)
-			{
-				insertMboxMail(&m->m_messageId, m);
+			insertMboxMail(m, m);
 
-				s_mails_edit[to_i] = s_mails[i];
-				to_i++;
-				m->m_duplicateId = false;
-			}
-			else
-			{
-				if ((m_found->m_timeDate != m->m_timeDate) ||
-					(m_found->m_from != m->m_from) ||
-					(m_found->m_to != m->m_to))
-				{
-					s_mails_edit[to_i] = s_mails[i];
-					to_i++;
-					m->m_duplicateId = false;
-				}
-				else
-				{
-					s_mails_find[to_dup_i] = s_mails[i];
-					to_dup_i++;
-					m->m_duplicateId = true;
-				}
-			}
+			s_mails_edit[to_i] = s_mails[i];
+			to_i++;
+			m->m_duplicateId = false;
 		}
 		else
 		{
-			s_mails_edit[to_i] = s_mails[i];
-			to_i++;
-			int deb = 1;
+			s_mails_find[to_dup_i] = s_mails[i];
+			to_dup_i++;
+			m->m_duplicateId = true;
 		}
 	}
+
 	s_mails_edit.SetSizeKeepData(to_i);
 
 	s_mails_find.SetSizeKeepData(to_dup_i);
@@ -7744,7 +7756,8 @@ int MboxMail::RemoveDuplicateMails()
 
 
 //
-MboxMail* MboxMail::getMboxMail(CString *key)
+
+MboxMail* MboxMail::getMboxMail(MboxMail *key)
 {
 	MboxMailTableType::iterator it;
 	if (m_pMboxMailTable == 0)
@@ -7758,14 +7771,12 @@ MboxMail* MboxMail::getMboxMail(CString *key)
 		return 0;
 }
 
-bool MboxMail::insertMboxMail(CString *key, MboxMail *mbox)
+bool MboxMail::insertMboxMail(MboxMail *key, MboxMail *mbox)
 {
 	if (m_pMboxMailTable == 0)
 		createMboxMailTable(50000);
 
-	CString *mapKey = new CString;
-	*mapKey = *key;
-	std::pair<MboxMailTableType::iterator, bool> result = m_pMboxMailTable->insert(MboxMailTableType::value_type(mapKey, mbox));
+	std::pair<MboxMailTableType::iterator, bool> result = m_pMboxMailTable->insert(MboxMailTableType::value_type(key, mbox));
 	return result.second;
 }
 
@@ -7778,15 +7789,10 @@ UINT MboxMail::createMboxMailTable(UINT count)
 
 void MboxMail::clearMboxMailTable()
 {
-	MboxMailTableType::iterator it;
-
-	if (m_pMboxMailTable) {
-		for (it = m_pMboxMailTable->begin(); it != m_pMboxMailTable->end(); it++) {
-			delete it->first;
-			//it->first = 0;
-		}
+	if (m_pMboxMailTable)
 		m_pMboxMailTable->clear();
-	}
+
+	int deb = 1;
 }
 
 BOOL MboxMail::CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText)

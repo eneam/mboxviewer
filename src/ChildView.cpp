@@ -129,7 +129,10 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 #if 1
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
-	ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wpr, cb);
+	else
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
 	int cx = -1;
 	int cy = -1;
 	if (ret && (cb == sizeof(wpr)))
@@ -194,6 +197,8 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else if (m_msgViewPosition == 3)   // windows on left
 	{
 		msgSize.cx = msg_frameCx_TreeNotInHide;
+		if (bEmlPrewviewMode)
+			msgSize.cx = frameSize.cx*2;
 		msgSize.cy = 200;
 	}
 
@@ -274,7 +279,11 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else if (m_msgViewPosition == 2)
 		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NListView), listSize, NULL);
 	else if (m_msgViewPosition == 3)
+	{
+		
+		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NMsgView), msgSize, NULL);
 		ret = m_horSplitter.CreateView(0, 1, RUNTIME_CLASS(NListView), listSize, NULL);
+	}
 	else
 		;
 	if (ret == FALSE) {
@@ -288,7 +297,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else if (m_msgViewPosition == 2)
 		ret = m_horSplitter.CreateView(0, 1, RUNTIME_CLASS(NMsgView), msgSize, NULL);
 	else if (m_msgViewPosition == 3)
-		ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NMsgView), msgSize, NULL);
+		; // ret = m_horSplitter.CreateView(0, 0, RUNTIME_CLASS(NMsgView), msgSize, NULL);
 	else
 		;
 	if (ret == FALSE) {

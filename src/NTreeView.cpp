@@ -976,11 +976,21 @@ void NTreeView::SelectMailFile(CString *fileNm)
 	CString txt;
 	if (!FileUtils::PathFileExist(mailFile))
 	{
-		txt = _T("Nonexistent File \"") + mailFile;
-		txt += _T("\".\nDo you want to continue?");
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-		if (answer == IDNO)
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		{
+			txt = _T("Nonexistent Mail File \"") + mailFile;
+			txt += _T("\".\nTerminating");
+			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		}
+		else
+		{
+			txt = _T("Nonexistent Mail File \"") + mailFile;
+			txt += _T("\".\nDo you want to continue?");
+			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer == IDNO)
+				AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		}
 	}
 	else 
 	{
@@ -1248,8 +1258,11 @@ void NTreeView::OnUpdateFileRefresh(CCmdUI* pCmdUI)
 
 void NTreeView::OnFileRefresh() 
 {
-	m_tree.DeleteAllItems();
-	LoadFolders();
+	if (!CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	{
+		m_tree.DeleteAllItems();
+		LoadFolders();
+	}
 	return;
 }
 
@@ -1781,6 +1794,37 @@ BOOL NTreeView::DeleteFolder(HTREEITEM hItem)
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", empty);
 	}
 	return ret;
+}
+
+int NTreeView::GetChildrenCount(HTREEITEM hItem, BOOL recursive)
+{
+	if (hItem == 0)
+		return -1;
+
+	int count = 0;
+	CString itemTxt;
+	itemTxt = m_tree.GetItemText(hItem);
+
+	HTREEITEM hNextNextItem;
+	HTREEITEM hNextItem = m_tree.GetChildItem(hItem);
+
+	while (hNextItem != NULL)
+	{
+		hNextNextItem = m_tree.GetNextSiblingItem(hNextItem);
+		if (m_tree.ItemHasChildren(hNextItem))
+		{
+			HTREEITEM hChild = m_tree.GetChildItem(hNextItem);
+			if (hChild)
+				count++;
+		}
+		else
+		{
+			itemTxt = m_tree.GetItemText(hNextItem);
+			count++;
+		}
+		hNextItem = hNextNextItem;
+	}
+	return count;
 }
 
 BOOL NTreeView::DeleteItemChildren(HTREEITEM hItem)
