@@ -939,7 +939,6 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 
 
 // Called when user specified command line option MAIL_FILE=
-// Added call from SaveAsMboxArchiveFile_v2 to open item
 // TODO: 
 void NTreeView::SelectMailFile(CString *fileNm)
 {

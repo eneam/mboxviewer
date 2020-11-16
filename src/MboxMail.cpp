@@ -56,6 +56,7 @@ MailBodyPool *MailBody::m_mpool = new MailBodyPool;
 ThreadIdTableType *MboxMail::m_pThreadIdTable = 0;
 MessageIdTableType *MboxMail::m_pMessageIdTable = 0;
 MboxMailTableType *MboxMail::m_pMboxMailTable = 0;
+MboxMail::MboxMailMapType *MboxMail::m_pMboxMailMap = 0;
 int MboxMail::m_nextGroupId = 0;
 
 SimpleString* MboxMail::m_outbuf = new SimpleString(10000);
@@ -7704,6 +7705,8 @@ int MboxMail::RemoveDuplicateMails()
 
 	// !! s_mails is already populated from mboxview file
 
+	DWORD tc_start = GetTickCount();
+
 	// Remove duplicate mails
 	if (s_mails.GetCount() > s_mails_edit.GetCount())
 		s_mails_edit.SetSizeKeepData(s_mails.GetCount());
@@ -7749,13 +7752,66 @@ int MboxMail::RemoveDuplicateMails()
 
 	MboxMail::m_editMails.m_bIsDirty = TRUE;
 
+	DWORD tc_clear_start = GetTickCount();
+
 	clearMboxMailTable();
+	DWORD tc_clear_end = GetTickCount();
+	DWORD delta_clear = tc_clear_end - tc_clear_start;
+
+	DWORD tc_end = GetTickCount();
+	DWORD delta = tc_end - tc_start;
+
+	TRACE("RemoveDuplicateMails: total time=%d !!!!!!!!!!!!.\n", delta);
+	TRACE("RemoveDuplicateMails: clear time=%d !!!!!!!!!!!!.\n", delta_clear);
 
 	return dupCnt;
 }
 
 
 //
+
+#if 1
+
+// Will increate MboxMail by 8 bytes
+// Performance will be better, no allocation and deallocation required
+// For 200,000 email it will use 1.6 Mbytes plus extra overhead for collisiomn lists
+#define HASH_ARRAY_SIZE 50000
+MboxMail* MboxMail::getMboxMail(MboxMail *key)
+{
+	MboxMailTableType::iterator it;
+	if (m_pMboxMailMap == 0)
+		createMboxMailTable(HASH_ARRAY_SIZE);
+
+	MboxMail *elem = m_pMboxMailMap->find(key);
+	return elem;
+}
+
+bool MboxMail::insertMboxMail(MboxMail *key, MboxMail *mbox)
+{
+	if (m_pMboxMailMap == 0)
+		createMboxMailTable(HASH_ARRAY_SIZE);
+
+	m_pMboxMailMap->insert(key, mbox);
+
+	return true;
+}
+
+UINT MboxMail::createMboxMailTable(UINT count)
+{
+	m_pMboxMailMap = new MboxMailMapType(count);
+	//m_pMboxMailTable->reserve(count);
+	return count;
+}
+
+void MboxMail::clearMboxMailTable()
+{
+	if (m_pMboxMailMap)
+		m_pMboxMailMap->clear();
+
+	int deb = 1;
+}
+
+#else
 
 MboxMail* MboxMail::getMboxMail(MboxMail *key)
 {
@@ -7794,6 +7850,8 @@ void MboxMail::clearMboxMailTable()
 
 	int deb = 1;
 }
+
+#endif
 
 BOOL MboxMail::CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText)
 {

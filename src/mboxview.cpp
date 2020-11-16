@@ -149,6 +149,11 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp construction
 
+#define IHASH_MAP_TEST
+#ifdef  IHASH_MAP_TEST
+#include "IHashTable.h"
+#endif
+
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
@@ -162,6 +167,12 @@ CmboxviewApp::CmboxviewApp()
 	//int test_enc();
 	//test_enc();
 
+#ifdef  IHASH_MAP_TEST
+	bool IHashMapTest();
+
+	bool ret = IHashMapTest();
+	exit(8);
+#endif
 
 	//FileUtils FU;  FU.UnitTest();
 }
@@ -674,4 +685,200 @@ void CAboutDlg::OnClose()
 
 	CDialog::OnClose();
 }
+
+#ifdef IHASH_MAP_TEST
+
+#include <string>
+
+int next_fake_prime(int L);
+
+bool IHashMapTest()
+{
+	class Item
+	{
+	public:
+		Item(std::string &nm) { name = nm; }
+		//
+		dlink_node<Item> hashNode;
+		dlink_node<Item> hashNode2;
+		std::string name;
+	};
+
+	struct ItemHash {
+		unsigned long operator()(const Item *key) const
+		{
+			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			return hashsum;
+		};
+		unsigned long operator()(Item *key) const
+		{
+			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			return hashsum;
+		};
+	};
+
+	struct ItemEqual {
+		bool operator()(const Item *key, const Item *item) const
+		{
+			return (key->name == item->name);
+		};
+		bool operator()(Item *key, const Item *item) const
+		{
+			return (key->name == item->name);
+		};
+	};
+
+	using MyHashMap = IHashMap<Item, Item, ItemHash, ItemEqual, &Item::hashNode>;
+	using MyHashMap2 = IHashMap<Item, Item, ItemHash, ItemEqual, &Item::hashNode2>;
+
+	unsigned long sz = 10;
+
+	Item *it = new Item(std::string("John"));
+	Item *it2 = new Item(std::string("Irena"));
+	Item *it3 = new Item(std::string("Lucyna"));
+	Item *it4 = new Item(std::string("Jan"));
+
+	MyHashMap hashMap(sz);
+	MyHashMap hashMap2(sz);
+
+	/// Insert  it3 and it4 to second hash map hashMap2
+	if (hashMap2.find(it3) == nullptr)
+		hashMap2.insert(it3, it3);
+
+	if (hashMap2.find(it4) == nullptr)
+		hashMap2.insert(it4, it4);
+
+	hashMap2.clear();
+	assert(hashMap2.count() == 0);
+
+	/// Insert it, it2 and it3
+	if (hashMap.find(it) == nullptr)
+		hashMap.insert(it, it);
+	assert(hashMap.count() == 1);
+
+	if (hashMap.find(it2) == nullptr)
+		hashMap.insert(it2, it2);
+	assert(hashMap.count() == 2);
+
+	if (hashMap.find(it3) == nullptr)
+		hashMap.insert(it3, it3);
+	assert(hashMap.count() == 3);
+
+
+	// Iterate and print item names
+	MyHashMap::IHashMapIter iter = hashMap.first();
+	for (; !hashMap.last(iter); hashMap.next(iter))
+	{
+		TRACE("%s\n", iter.element->name.c_str());
+	}
+
+	// Remove all items by Key one by one
+	hashMap.remove(it);
+	assert(hashMap.count() == 2);
+
+	hashMap.remove(it2);
+	assert(hashMap.count() == 1);
+
+	hashMap.remove(it3);
+	assert(hashMap.count() == 0);
+
+	///Insert it, it 2 and i3 again to the same hash map
+	if (hashMap.find(it) == nullptr)
+		hashMap.insert(it, it);
+	assert(hashMap.count() == 1);
+
+	if (hashMap.find(it2) == nullptr)
+		hashMap.insert(it2, it2);
+	assert(hashMap.count() == 2);
+
+	if (hashMap.find(it3) == nullptr)
+		hashMap.insert(it3, it3);
+	assert(hashMap.count() == 3);
+
+	// Remove by key and hashsum
+	Item *item;
+	if ((item = hashMap.find(it2)) != nullptr)
+	{
+		unsigned long hashsum = ItemHash{}(it2);
+		hashMap.remove(item, hashsum);
+	}
+	assert(hashMap.count() == 2);
+
+	// Add back
+	unsigned long hashsum = ItemHash{}(it2);
+	if (hashMap.find(it2, hashsum) == nullptr)
+		hashMap.insert(hashsum, it2);
+	assert(hashMap.count() == 3);
+
+	// Iterate and remove selected elements
+	iter = hashMap.first();
+	for (; !hashMap.last(iter); )
+	{
+		if (iter.element->name.compare("Lucyna") == 0)
+		{
+			TRACE("Keep %s\n", iter.element->name.c_str());
+			hashMap.next(iter);
+		}
+		else
+		{
+			// Remove by Iterator
+			TRACE("Remove %s\n", iter.element->name.c_str());
+			hashMap.remove(iter);
+		}
+	}
+
+	hashMap.clear();
+
+	delete it;
+	delete it2;
+	delete it3;
+	delete it4;
+
+	int deb = 1;
+
+	int L = 1;
+	int R = 10;
+	int p = next_fake_prime(L);
+	TRACE("%d,%d=%d\n", L,R,p);
+	//
+	L = 1000; R = 10;
+	p = next_fake_prime(L);
+	TRACE("%d,%d=%d\n", L, R, p);
+	//
+	L = 1197010; R = 100;
+	p = next_fake_prime(L);
+	TRACE("%d,%d=%d\n", L, R, p);
+
+	return true;
+}
+
+int next_fake_prime(int L)
+{
+	int i, j;
+	int R = 10;
+	if (L < 3) L = 3;
+	int modNumbs = 19;
+	if (L <= 19)
+		modNumbs = L;
+	if (L < 10000)
+		R = 10;
+	else 
+		R = 100;
+
+	for (i = L; i <= L+R; i++)
+	{
+		for (j = 2; j <= modNumbs; ++j)
+		{
+			if (i % j == 0)
+				break;
+		}
+		if (j == modNumbs)
+			break;
+	}
+	if (i < (L+R))
+		return i;
+	else
+		return L;
+}
+#endif
 

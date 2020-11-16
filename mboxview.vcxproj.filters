@@ -345,6 +345,9 @@
     <ClInclude Include="src\OpenArchiveFileDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\IHashTable.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.markdown" />

@@ -44,9 +44,9 @@
 #endif
 
 template <typename T>
-struct list_node
+struct dlink_node
 {
-	list_node()
+	dlink_node()
 		: next(0x0)
 		, prev(0x0)
 	{}
@@ -58,18 +58,18 @@ struct list_node
 /**
  * intrusive double linked dllist.
  */
-template <typename T, list_node<T> T::*NODE>
+template <typename T, dlink_node<T> T::*NODE>
 class dllist
 {
 	T* head_ptr;
 	T* tail_ptr;
-	int count;
+	int cnt;
 
 public:
 	 dllist()
 	 	 : head_ptr( 0x0 )
 	 	 , tail_ptr( 0x0 )
-		 , count(0)
+		 , cnt(0)
 	 {}
 	~dllist() { clear(); }
 
@@ -79,7 +79,7 @@ public:
 	 */
 	void insert_head( T* elem )
 	{
-		list_node<T>* node = &(elem->*NODE);
+		dlink_node<T>* node = &(elem->*NODE);
 
 		_INTRUSIVE_LIST_ASSERT( node->next == 0x0 );
 		_INTRUSIVE_LIST_ASSERT( node->prev == 0x0 );
@@ -89,7 +89,7 @@ public:
 
 		if( head_ptr != 0x0 )
 		{
-			list_node<T>* last_head = &(head_ptr->*NODE);
+			dlink_node<T>* last_head = &(head_ptr->*NODE);
 			last_head->prev = elem;
 		}
 
@@ -98,7 +98,7 @@ public:
 		if( tail_ptr == 0x0 )
 			tail_ptr = head_ptr;
 
-		count++;
+		cnt++;
 	}
 
 	/**
@@ -111,15 +111,15 @@ public:
 			insert_head( item );
 		else
 		{
-			list_node<T>* tail_node = &(tail_ptr->*NODE);
-			list_node<T>* item_node = &(item->*NODE);
+			dlink_node<T>* tail_node = &(tail_ptr->*NODE);
+			dlink_node<T>* item_node = &(item->*NODE);
 			_INTRUSIVE_LIST_ASSERT( item_node->next == 0x0 );
 			_INTRUSIVE_LIST_ASSERT( item_node->prev == 0x0 );
 			tail_node->next = item;
 			item_node->prev = tail_ptr;
 			item_node->next = 0x0;
 			tail_ptr = item;
-			count++;
+			cnt++;
 		}
 	}
 
@@ -130,12 +130,12 @@ public:
 	 */
 	void insert_after( T* item, T* in_list )
 	{
-		list_node<T>* node    = &(item->*NODE);
-		list_node<T>* in_node = &(in_list->*NODE);
+		dlink_node<T>* node    = &(item->*NODE);
+		dlink_node<T>* in_node = &(in_list->*NODE);
 
 		if( in_node->next )
 		{
-			list_node<T>* in_next = &(in_node->next->*NODE);
+			dlink_node<T>* in_next = &(in_node->next->*NODE);
 			in_next->prev = item;
 		}
 
@@ -146,7 +146,7 @@ public:
 		if( in_list == tail_ptr )
 			tail_ptr = item;
 
-		count++;
+		cnt++;
 	}
 
 	/**
@@ -156,12 +156,12 @@ public:
 	 */
 	void insert_before( T* item, T* in_list )
 	{
-		list_node<T>* node    = &(item->*NODE);
-		list_node<T>* in_node = &(in_list->*NODE);
+		dlink_node<T>* node    = &(item->*NODE);
+		dlink_node<T>* in_node = &(in_list->*NODE);
 
 		if( in_node->prev )
 		{
-			list_node<T>* in_prev = &(in_node->prev->*NODE);
+			dlink_node<T>* in_prev = &(in_node->prev->*NODE);
 			in_prev->next = item;
 		}
 
@@ -172,7 +172,7 @@ public:
 		if( in_list == head_ptr )
 			head_ptr = item;
 
-		count++;
+		cnt++;
 	}
 
 	/**
@@ -182,13 +182,13 @@ public:
 	 */
 	void remove( T* item )
 	{
-		list_node<T>* node = &(item->*NODE);
+		dlink_node<T>* node = &(item->*NODE);
 
 		T* next = node->next;
 		T* prev = node->prev;
 
-		list_node<T>* next_node = &(next->*NODE);
-		list_node<T>* prev_node = &(prev->*NODE);
+		dlink_node<T>* next_node = &(next->*NODE);
+		dlink_node<T>* prev_node = &(prev->*NODE);
 
 		if( item == head_ptr ) head_ptr = next;
 		if( item == tail_ptr ) tail_ptr = prev;
@@ -198,7 +198,7 @@ public:
 		node->next = 0x0;
 		node->prev = 0x0;
 
-		count--;
+		cnt--;
 	}
 
 	/**
@@ -232,12 +232,14 @@ public:
 	 * @return first item in dllist or 0x0 if dllist is empty.
 	 */
 	T* head() { return head_ptr; }
+	T* first() { return head_ptr; }
 
 	/**
 	 * return last item in dllist.
 	 * @return last item in dllist or 0x0 if dllist is empty.
 	 */
 	T* tail() const { return tail_ptr; }
+	T* last() const { return tail_ptr; }
 
 	/**
 	 * return next element in dllist after argument element or 0x0 on end of dllist.
@@ -247,7 +249,7 @@ public:
 	 */
 	T* next( T* item )
 	{
-		list_node<T>* node = &(item->*NODE);
+		dlink_node<T>* node = &(item->*NODE);
 		return node->next;
 	}
 
@@ -259,7 +261,7 @@ public:
 	 */
 	const T* next( const T* item )
 	{
-		const list_node<T>* node = &(item->*NODE);
+		const dlink_node<T>* node = &(item->*NODE);
 		return node->next;
 	}
 
@@ -271,7 +273,7 @@ public:
 	 */
 	T* prev( T* item )
 	{
-		list_node<T>* node = &(item->*NODE);
+		dlink_node<T>* node = &(item->*NODE);
 		return node->prev;
 	}
 
@@ -283,7 +285,7 @@ public:
 	 */
 	const T* prev( const T* item )
 	{
-		const list_node<T>* node = &(item->*NODE);
+		const dlink_node<T>* node = &(item->*NODE);
 		return node->prev;
 	}
 
@@ -294,6 +296,8 @@ public:
 	{
 		while( !empty() )
 			remove( head() );
+
+		assert(cnt == 0);
 	}
 
 	/**
@@ -301,6 +305,12 @@ public:
 	 * @return true if dllist is empty.
 	 */
 	bool empty() { return head_ptr == 0x0; }
+
+	/**
+
+ * @return number of elements on the list
+ */
+	int count() { return cnt; }
 };
 
 /**
@@ -315,7 +325,7 @@ public:
  *     int some_data;
  * };
  */
-#define DLLIST_NODE( owner )    list_node<owner>
+#define DLLIST_NODE( owner )    dlink_node<owner>
 
 /**
  * macro to define dllist that act upon specific member in struct-type.

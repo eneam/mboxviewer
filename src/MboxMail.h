@@ -41,6 +41,7 @@
 #include "dllist.h"
 #include "SimpleString.h"
 #include "HtmlPdfHdrConfigDlg.h"
+#include "IHashTable.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -193,11 +194,13 @@ struct MessageIdEqual;
 struct ThreadIdHash;
 struct ThreadIdEqual;
 
+class MboxMail;
 
 typedef std::unordered_map<CString*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
 typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
 typedef std::unordered_map<MboxMail*, MboxMail*, MboxHash, MboxEqual> MboxMailTableType;
 
+//using MboxMailMapType = IHashMap<MboxMail, MboxMail, MboxHash, MboxEqual, &MboxMail::m_hashMapLink>;
 
 class CMBodyHdr;
 
@@ -218,6 +221,7 @@ class CMBodyHdr;
 class MboxMail
 {
 public:
+	
 	MboxMail() 
 	{
 		m_startOff = m_length = m_hasAttachments = m_headLength = 0;
@@ -238,9 +242,11 @@ public:
 		//m_crc32 = 0xffffffff;
 	}
 
+	dlink_node<MboxMail> m_hashMapLink;
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
 
 	//UINT32 m_crc32;
+	//
 	_int64 m_startOff;
 	int m_hasAttachments;
 	int m_length, m_headLength, m_recv;
@@ -275,6 +281,8 @@ public:
 	static ThreadIdTableType *m_pThreadIdTable;
 	static MessageIdTableType *m_pMessageIdTable;
 	static MboxMailTableType *m_pMboxMailTable;
+	using MboxMailMapType = IHashMap<MboxMail, MboxMail, MboxHash, MboxEqual, &MboxMail::m_hashMapLink>;
+	static MboxMailMapType *m_pMboxMailMap;
 	//
 	static UINT createMessageIdTable(UINT count);
 	static void clearMessageIdTable();

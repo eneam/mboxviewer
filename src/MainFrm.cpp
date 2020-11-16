@@ -3242,17 +3242,26 @@ void CMainFrame::OnClose()
 			HTREEITEM hFolder = pTreeView->HasFolder(mboxFolderPath);
 			if (hFolder)
 			{
-				BOOL recursive = FALSE;
-				int childrenCount = 0;
-				childrenCount = pTreeView->GetChildrenCount(hFolder, recursive);
-				if (childrenCount == 1)
+				if (!m_commandLineParms.m_bEmlPreviewFolderExisted)
 				{
-					HTREEITEM hItem = pTreeView->FindItem(hFolder, mboxFileName);
-					if (hItem)
+					pTreeView->DeleteFolder(hFolder);
+				}
+#if 0
+				else
+				{
+					BOOL recursive = FALSE;
+					int childrenCount = 0;
+					childrenCount = pTreeView->GetChildrenCount(hFolder, recursive);
+					if (childrenCount == 1)
 					{
-						pTreeView->DeleteFolder(hFolder);
+						HTREEITEM hItem = pTreeView->FindItem(hFolder, mboxFileName);
+						if (hItem)
+						{
+							pTreeView->DeleteFolder(hFolder);
+						}
 					}
 				}
+#endif
 				int deb = 1;
 			}
 		}
@@ -3615,6 +3624,18 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), mboxFilePath);
 		}
+	}
+	else if (m_commandLineParms.m_bEmlPreviewMode && !m_commandLineParms.m_mboxFileNameOrPath.IsEmpty())
+	{
+		CString mboxFilePath;
+		CString mboxFileName;
+		FileUtils::GetFolderPathAndFileName(m_commandLineParms.m_mboxFileNameOrPath, mboxFilePath, mboxFileName);
+
+		mboxFilePath.TrimRight("\\");
+		mboxFilePath.Append("\\");
+
+		if (pTreeView->m_folderArray.Find(mboxFilePath) >= 0)
+			m_commandLineParms.m_bEmlPreviewFolderExisted = TRUE;
 	}
 
 	if (pTreeView)

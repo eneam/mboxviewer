@@ -933,6 +933,7 @@
     <ClInclude Include="src\GenericFontFamilyDlg.h" />
     <ClInclude Include="src\HtmlPdfHdrConfigDlg.h" />
     <ClInclude Include="src\HtmlUtils.h" />
+    <ClInclude Include="src\IHashTable.h" />
     <ClInclude Include="src\InitCommonControls.h" />
     <ClInclude Include="src\InputBox.h" />
     <ClInclude Include="src\LinkCursor.h" />
