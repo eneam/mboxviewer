@@ -3511,6 +3511,9 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		bool isText = pBP->IsText();
 		bool isMessage = pBP->IsMessage();
 		bool isAttachment = MboxCMimeHelper::IsAttachment(pBP);
+		bool isInlineAttachment = MboxCMimeHelper::IsInlineAttachment(pBP);
+		if (isInlineAttachment)
+			int deb = 1;
 		bool IsBodyEmpty = bdy.IsEmpty();
 
 		if (contentTypeMain.CompareNoCase("message") == 0)
@@ -11781,7 +11784,7 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 						if (MboxMail::s_mails.GetCount())
 							int deb = 1;
 
-						if (isAttachment || showAllAttachments)
+						if (showAllAttachments)
 						{
 							pMsgView->m_bAttach = TRUE;
 							pMsgView->m_attachments.AddInlineAttachment(imageFileName);
@@ -12305,13 +12308,17 @@ BOOL CreateAttachmentCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &
 		}
 	}
 
+	AttachmentMgr m_attachmentDB;
+
 	MboxMail *m;
 	for (int i = 0; i < ni; i++)
 	{
+		m_attachmentDB.Clear();
+
 		m = MboxMail::s_mails[i];
 
 		int mailPosition = i;
-		NListView::PrintMailAttachments(&fpm, mailPosition);
+		NListView::PrintMailAttachments(&fpm, mailPosition, m_attachmentDB);
 
 		if (!mainThread && MboxMail::pCUPDUPData)
 		{
@@ -12911,8 +12918,10 @@ int NListView::PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selecte
 	return 1;
 }
 //
-int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW)
+int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW, AttachmentMgr &attachmentDB)
 {
+	DBGT(__FUNCTION__);
+
 	// This is based on NListView::SelectItem()
 
 	CString cStrName = body->m_attachmentName;
@@ -13071,6 +13080,14 @@ int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyCon
 	if (cStrNameW.IsEmpty())
 		cStrNameW = contentTypeMainW + L"." + contentTypeExtensionW;
 
+	int prefix = attachmentDB.GetValidName(cStrNameW);
+	if (prefix >= 0)
+	{
+		CStringW nameW;
+		nameW.Format(L"%d_%s", prefix, cStrNameW);
+		cStrNameW = nameW;
+	}
+
 	nameW = cStrNameW;
 
 	if (alloc_tmpbuf)  // this is a big mess
@@ -13081,7 +13098,8 @@ int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyCon
 
 // Creates mail attachments files except embeded image attachments
 //
-int NListView::PrintMailAttachments(CFile *fpm, int mailPosition)
+//
+int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB)
 {
 	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
 		return -1;
@@ -13135,66 +13153,82 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition)
 	ret = TextUtilsEx::Ansi2Wide(printCachePath, printCachePathW, error);
 
 	if (!m->m_DetermineEmbeddedImagesDone)
-		ret =  MboxMail::DetermineEmbeddedImages(mailPosition, *fpm);
+	{
+		// Sets body->m_isEmbeddedImage
+		ret = MboxMail::DetermineEmbeddedImages(mailPosition, *fpm);
+	}
+
+	bool showAllAttachments = false;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		showAllAttachments = attachmentConfigParams->m_bShowAllAttachments_Window;
+	}
+
+	attachmentDB.Clear();
 
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
 		body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty() && !body->m_isEmbeddedImage)
+		BOOL showAttachment = FALSE;
+		if (body->IsAttachment())
 		{
-			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0) || (m->m_DetermineEmbeddedImagesDone == 2))
+			if (showAllAttachments || !body->m_isEmbeddedImage)
+				showAttachment = TRUE;
+		}
+
+		if (showAttachment)
+		{
+			UINT inCodePage = body->m_attachmentNamePageCode;
+			resultW.Empty();
+
+			MyCTime tt(m->m_timeDate);
+
+			CString strDate;
+
+			CString format;
+			format = "%Y%m%d-%H%M%S-";
+			strDate = tt.FormatLocalTm(format);
+
+			CString uID;
+			uID.Format("%07d", m->m_index);
+
+			CString fileName;
+			fileName.Append(strDate);
+			fileName.Append(uID);
+			fileName.Append(" ");
+			CStringW fileNameW;
+			if (TextUtilsEx::Ansi2Wide(fileName, fileNameW, error))
 			{
-				UINT inCodePage = body->m_attachmentNamePageCode;
-				resultW.Empty();
-
-				MyCTime tt(m->m_timeDate);
-
-				CString strDate;
-
-				CString format;
-				format = "%Y%m%d-%H%M%S-";
-				strDate = tt.FormatLocalTm(format);
-
-				CString uID;
-				uID.Format("%07d", m->m_index);
-
-				CString fileName;
-				fileName.Append(strDate);
-				fileName.Append(uID);
-				fileName.Append(" ");
-				CStringW fileNameW;
-				if (TextUtilsEx::Ansi2Wide(fileName, fileNameW, error))
-				{
-					int deb = 1;
-				}
-
-				// make attachment name
-
-				SimpleString*outbuf = MboxMail::get_tmpbuf();
-				outbuf->ClearAndResize(body->m_contentLength * 2);
-
-				int retLen = MboxMail::DecodeBody(*fpm, body, mailPosition, outbuf);
-				if (outbuf->Count() > 1500000)
-					int deb = 1;
-
-				DetermineAttachmentName(fpm, mailPosition, body, outbuf, resultW);
-
-				fileNameW.Append(resultW);
-
-				validNameW.Empty();
-
-				FileUtils::MakeValidFileNameW(fileNameW, validNameW, bReplaceWhiteWithUnderscore);
-
-				CStringW filePathW = printCachePathW + L"\\" + validNameW;
-
-				const char *data = outbuf->Data();
-				int dataLength = outbuf->Count();
-
-				ret = FileUtils::Write2File(filePathW, (unsigned char*)data, dataLength);
-
-				MboxMail::rel_tmpbuf();
+				int deb = 1;
 			}
+
+			// make attachment name
+
+			SimpleString*outbuf = MboxMail::get_tmpbuf();
+			outbuf->ClearAndResize(body->m_contentLength * 2);
+
+			int retLen = MboxMail::DecodeBody(*fpm, body, mailPosition, outbuf);
+			if (outbuf->Count() > 1500000)
+				int deb = 1;
+
+			DetermineAttachmentName(fpm, mailPosition, body, outbuf, resultW, attachmentDB);
+
+			fileNameW.Append(resultW);
+
+			validNameW.Empty();
+
+			FileUtils::MakeValidFileNameW(fileNameW, validNameW, bReplaceWhiteWithUnderscore);
+
+			CStringW filePathW = printCachePathW + L"\\" + validNameW;
+
+			const char *data = outbuf->Data();
+			int dataLength = outbuf->Count();
+
+			ret = FileUtils::Write2File(filePathW, (unsigned char*)data, dataLength);
+
+			MboxMail::rel_tmpbuf();
 		}
 	}
 
@@ -13211,7 +13245,6 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition)
 {
 	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
 		return -1;
-
 
 	MboxMail *m = MboxMail::s_mails[mailPosition];
 	if (m == 0)
@@ -13300,8 +13333,12 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition)
 	return 1;
 }
 
-int NListView::PrintAttachmentNamesAsText2CSV(MboxMail *m, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator)
+int NListView::PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator)
 {
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
 	if (m == 0)
 	{
 		// TODO: Assert ??
@@ -13327,55 +13364,72 @@ int NListView::PrintAttachmentNamesAsText2CSV(MboxMail *m, SimpleString *outbuf,
 
 	limit -= 2; // two " enclosing chracters
 
+	bool showAllAttachments = false;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		showAllAttachments = attachmentConfigParams->m_bShowAllAttachments_Window;
+	}
+
+	AttachmentMgr attachmentDB;
 	int attachmentCnt = 0;
+	CFile *fpm = 0;
+	SimpleString *bodyData = 0;
+
+
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
 		body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty() && !body->m_isEmbeddedImage)
+		BOOL showAttachment = FALSE;
+		if (body->IsAttachment())
 		{
-			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0))
+			if (showAllAttachments || !body->m_isEmbeddedImage)
+				showAttachment = TRUE;
+		}
+
+		if (showAttachment)
+		{
+			UINT inCodePage = body->m_attachmentNamePageCode;
+
+			SimpleString*buf = 0;
+			NListView::DetermineAttachmentName(fpm, mailPosition, body, buf, nameW, attachmentDB);
+
+			validNameW.Empty();
+			FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
+
+			UINT outCodePage = CP_UTF8;
+			BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &resultUTF8, error);
+
+			int namelen = resultUTF8.Count();
+			tmpbuf2.ClearAndResize(namelen + 10);
+
+			begCount = outbuf->Count();
+
+			if (attachmentCnt)
 			{
-				UINT inCodePage = body->m_attachmentNamePageCode;
-				nameW.Empty();
-				BOOL ret = TextUtilsEx::CodePage2WStr(&body->m_attachmentName, inCodePage, &nameW, error);
+				CString fmt = attachmentSeparator;
+				fmt.Replace("CRLF", "\r\n");
+				//fmt.Replace("CR", "\r");
+				//fmt.Replace("LF", "\n");
+				tmpbuf2.Append(fmt, fmt.GetLength());
+			}
 
-				validNameW.Empty();
-				FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
+			tmpbuf2.Append('"');
+			tmpbuf2.Append(resultUTF8.Data(), resultUTF8.Count());
+			tmpbuf2.Append('"');
 
-				UINT outCodePage = CP_UTF8;
-				BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &resultUTF8, error);
+			tmpbuf.ClearAndResize(3 * tmpbuf2.Count());
+			int ret_addrlen = MboxMail::escapeSeparators(tmpbuf.Data(), tmpbuf2.Data(), tmpbuf2.Count(), '"');
+			tmpbuf.SetCount(ret_addrlen);
 
-				int namelen = resultUTF8.Count();
-				tmpbuf2.ClearAndResize(namelen+10);
+			attachmentCnt++;
 
-				begCount = outbuf->Count();
-
-				if (attachmentCnt)
-				{
-					CString fmt = attachmentSeparator;
-					fmt.Replace("CRLF", "\r\n");
-					//fmt.Replace("CR", "\r");
-					//fmt.Replace("LF", "\n");
-					tmpbuf2.Append(fmt, fmt.GetLength());
-				}
-
-				tmpbuf2.Append('"');
-				tmpbuf2.Append(resultUTF8.Data(), resultUTF8.Count());
-				tmpbuf2.Append('"');
-
-				tmpbuf.ClearAndResize(3 * tmpbuf2.Count());
-				int ret_addrlen = MboxMail::escapeSeparators(tmpbuf.Data(), tmpbuf2.Data(), tmpbuf2.Count(), '"');
-				tmpbuf.SetCount(ret_addrlen);
-
-				attachmentCnt++;
-
-				outbuf->Append(tmpbuf);
-				if (outbuf->Count() > limit)
-				{
-					outbuf->SetCount(begCount); // reverse count and return
-					break;
-				}
+			outbuf->Append(tmpbuf);
+			if (outbuf->Count() > limit)
+			{
+				outbuf->SetCount(begCount); // reverse count and return
+				break;
 			}
 		}
 	}
@@ -14896,3 +14950,32 @@ void NListView::SetListFocus()
 {
 	m_list.SetFocus();
 }
+
+void AttachmentMgr::Clear()
+{
+	m_attachmentMap.RemoveAll();
+}
+
+int AttachmentMgr::GetValidName(CStringW &inNameW)
+{
+	int nextId = -1;
+
+	AttachmentDB::CPair *infopair = m_attachmentMap.PLookup(inNameW);
+
+	// Check for duplicate names. Sometimes two or more names can represent different content
+	if (infopair != nullptr)
+	{
+		AttachmentData &item = infopair->value;
+		nextId = item.m_nextId;
+		item.m_nextId++;
+		return nextId;
+	}
+	else
+	{
+		AttachmentData item;
+		m_attachmentMap[inNameW] = item;
+	}
+	return nextId;
+}
+
+

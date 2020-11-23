@@ -1457,7 +1457,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT S_SORT_BY_POSITION_Id = 10;
 	// Sort by position in the archive file. Enabled for debugging only
-	// AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Mail ID"));
+	//AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Mail ID"));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -1638,6 +1638,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case M_AttachmentCache_Id: 
 	{
 		CString txt = _T("Do you want to create cache with all attachements?");
+		txt.Append("\n\nNote that \"File->Attachments Config\" controls whether image attachments embedded into messages will also be exported");
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)

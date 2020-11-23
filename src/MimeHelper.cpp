@@ -74,7 +74,24 @@ bool MboxCMimeHelper::IsAttachment(CMimeBody* pBP)
 	Name(pBP, name);
 	Filename(pBP, fileName);
 	GetContentDisposition(pBP, disposition);
-	if ((disposition.CompareNoCase("attachment") == 0) || (!name.IsEmpty()) || (!fileName.IsEmpty()))
+	int dispositionMatchRet = disposition.CompareNoCase("attachment");
+	if ((dispositionMatchRet == 0) || (!name.IsEmpty()) || (!fileName.IsEmpty()))
+		return true;
+	else
+		return false;
+}
+
+bool MboxCMimeHelper::IsInlineAttachment(CMimeBody* pBP)
+{
+	CString name;
+	CString fileName;
+	CString disposition;
+
+	Name(pBP, name);
+	Filename(pBP, fileName);
+	GetContentDisposition(pBP, disposition);
+	int dispositionMatchRet = disposition.CompareNoCase("inline");
+	if ((dispositionMatchRet == 0) && ((!name.IsEmpty()) || (!fileName.IsEmpty())))
 		return true;
 	else
 		return false;

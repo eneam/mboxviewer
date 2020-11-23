@@ -32,6 +32,8 @@
 #ifndef INTRUSIVE_LIST_H_INCLUDED
 #define INTRUSIVE_LIST_H_INCLUDED
 
+#include "assert.h"
+
 #if defined( _INTRUSIVE_LIST_ASSERT_ENABLED )
 #  if !defined( _INTRUSIVE_LIST_ASSERT )
 #    include <assert.h>

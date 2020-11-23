@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.18
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced Export All Mail Attachments to include inline and optionally embeded attachments;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.17
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

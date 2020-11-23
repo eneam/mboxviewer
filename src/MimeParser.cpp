@@ -75,6 +75,7 @@ void MailHeader::Clear()
 	m_ContentLocation.Empty();
 	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
+	m_AttachmentName2.Empty();
 	m_Name.Empty();
 	m_MessageId.Empty();
 	m_ReplyId.Empty();
@@ -101,6 +102,8 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 	static const int cNameLen = strlen(cName);
 	static const char *cFileName = "filename";
 	static const int cFileNameLen = strlen(cFileName);
+	static const char *cFileNameStar = "filename*";
+	static const int cFileNameStarLen = strlen(cFileNameStar);
 
 	static const char *cMsgId = "message-id:";
 	static const int cMsgIdLen = strlen(cMsgId);
@@ -205,7 +208,8 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			{
 				BreakParser();
 				int ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
-				if (!m_Name.IsEmpty()) {
+				if (!m_Name.IsEmpty()) 
+				{
 					CString charset;
 					UINT charsetId = 0;
 					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId);
@@ -227,7 +231,43 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cDispositionLen, m_Disposition);
+#if 1
+			// For testing; remove when no longer needed
+			// Maybe we should run this only if both regular Filename and Name are missing/empty?
+			int posret = line.Find(cFileNameStar);
+			if (posret > 0)
+			{
+				CString fileName;
+				BOOL hasCharset;
+				// TODO: Verify ; Concatenate multiple filename*0 , filename*1 segments if present; make sure it is safe before you anable 
+				int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cFileNameStar, cFileNameStarLen, fileName, hasCharset);
+				TRACE("NAME  = %s\n", m_Name);
+				TRACE("FILENAME  = %s\n", line);
+				TRACE("FILENAME* = %s\n", fileName);
 
+				CString charset;
+				UINT charsetId = 0;
+
+				CString outString;
+				if (hasCharset)
+				{
+					int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, outString);
+					fileName.Empty();
+					fileName.Append(outString);
+				}
+
+				// We prefer filename but in this case we may prefer Name if not empty
+				if (!m_Name.IsEmpty())
+				{
+					if (m_Name.CompareNoCase(fileName) == 0)
+						TRACE("Name and Filename match\n");
+					else
+						TRACE("Name and Filename don't match !!!!!!\n");
+				}
+				int deb = 1;
+			}
+
+#endif
 			if (TextUtilsEx::strncmpUpper2Lower((char*)(LPCSTR)m_Disposition, m_Disposition.GetLength(), cAttachment, cAttachmentLen) == 0)
 			{
 				// TODO:  Maybe. There are plenty of irregular mails and they can be considered as inline and 
@@ -244,6 +284,33 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 				m_AttachmentNamePageCode = charsetId;
 				m_AttachmentName = attachmentName;
+			}
+			else if (m_Name.IsEmpty())
+			{
+				// For now run this only if both regular Filename and Name are empty?
+				int posret = line.Find(cFileNameStar);
+				if (posret > 0)
+				{
+					CString fileName;
+					BOOL hasCharset;
+					// TODO: Concatenate multiple filename*0 , filename*1 segments if present;
+					int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cFileNameStar, cFileNameStarLen, fileName, hasCharset);
+
+					CString charset;
+					UINT charsetId = 0;
+
+					CString attachmentName;
+					if (hasCharset)
+					{
+						int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, attachmentName);
+						fileName.Empty();
+						fileName.Append(attachmentName);
+
+						m_AttachmentNamePageCode2 = charsetId;
+						m_AttachmentName2 = attachmentName;
+					}
+					int deb = 1;
+				}
 			}
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
@@ -303,6 +370,19 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 	return headLength;
 }
 
+bool MailHeader::IsAttachment()
+{
+	if (!m_Name.IsEmpty() ||
+		!m_AttachmentName.IsEmpty() ||
+		!m_ContentId.IsEmpty() ||
+		!m_ContentLocation.IsEmpty() ||
+		(m_Disposition.CollateNoCase("attachment") == 0)
+		)
+		return true;
+	else
+		return false;
+}
+
 // Followed the design of CMimeBody::Load in mime.cpp, so ite should be reliable :)
 // This parser doesn't decode body parts. It only determines length and offsets to the body parts.
 int MailBody::Load(char *& pszDataBase, const char* pszData, int nDataSize)
@@ -311,6 +391,15 @@ int MailBody::Load(char *& pszDataBase, const char* pszData, int nDataSize)
 	int nSize = MailHeader::Load(pszData, nDataSize);
 	if (nSize <= 0)
 		return nSize;
+
+	if (!m_AttachmentName2.IsEmpty())
+	{
+		if (m_Name.IsEmpty() && m_AttachmentName.IsEmpty())
+		{
+			m_AttachmentName.Append(m_AttachmentName2);
+			m_AttachmentNamePageCode = m_AttachmentNamePageCode2;
+		}
+	}
 
 	const char* pszDataBegin = pszData;	// preserve start position
 	pszData += nSize;
@@ -628,11 +717,10 @@ int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *para
 			return 0;
 
 		p = p + paramLen;
+		// SkipWhite ??
 		char c = *p;
 		if (c == '=')
 			break;
-		else if ((c != ' ') && (c != '\t'))
-			continue;
 	}
 
 	char *pend = strchr(p, ';');
@@ -666,6 +754,155 @@ int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *para
 	value.Trim("\"\t ");
 
 	return 1;
+}
+
+int MimeParser::GetFilenameParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset)
+{
+	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
+	value.Empty();
+
+	CString part;
+	hasCharset = FALSE;
+	int hasCharsetDone = FALSE;
+	int lastPos = fieldLine.GetLength();
+	while ((startPos > 0) && (startPos < lastPos))
+	{
+		BOOL has_charset = FALSE;
+		int nextPos = GetFilenameParamPartValue(fieldLine, startPos, param, paramLen, part, has_charset);
+		if (!part.IsEmpty())
+		{
+			value.Append(part);
+			startPos = nextPos;
+			if (has_charset && !hasCharsetDone)
+			{
+				hasCharset = TRUE;
+				hasCharsetDone = TRUE;
+			}
+		}
+		else
+			break;
+	}
+	value.Trim("\"\t ");
+	if (value.IsEmpty())
+		return 0;
+	else
+		return 1;
+}
+
+int MimeParser::GetFilenameParamPartValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset)
+{
+	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
+	value.Empty();
+	hasCharset = FALSE;
+
+	int nextPos = 0;
+	char *pbegin_sv = (char*)(LPCSTR)fieldLine;
+	char *pend_sv = pbegin_sv + fieldLine.GetLength();
+	char *p = pbegin_sv + startPos;
+
+	// or keep it simple and require that *p == '=' at this point ?
+	while (p < pend_sv)
+	{
+		//p = strstr(p, param);
+		p = TextUtilsEx::strnstrUpper2Lower(p, pend_sv, param, paramLen);
+		if (p == 0)
+			return -1;
+
+		p = p + paramLen;
+		// TODO: SkipWhite
+		char c = *p;
+		if (c == '=')
+		{
+			hasCharset = TRUE;
+			break;
+		}
+		else
+		{
+			if (isdigit(c))
+			{
+				p++;
+				c = *p;
+				if (c == '=')
+				{
+					break;
+				}
+				else if (c == '*')
+				{
+					p++;
+					c = *p;
+					if (c == '=')
+					{
+						hasCharset = TRUE;
+						break;
+					}
+					else
+						return -1;
+				}
+				else
+					return -1;
+			}
+			else
+				return -1;
+		}
+	}
+	// TODO: SkipWhite
+
+	if (p >= pend_sv)
+		return -1;
+
+	char *pend_semicolon = strchr(p, ';');
+
+	// this is hack or work around when segment is not terminated with ;
+	char *pend_filename = TextUtilsEx::strnstrUpper2Lower(p, pend_sv, param, paramLen);
+
+	char *pend = 0;
+	if (pend_semicolon && pend_filename)
+	{
+		if (pend_semicolon < pend_filename)
+			pend = pend_semicolon;
+		else
+		{
+			pend = pend_filename;
+			pend--; // remove single  space due to unfolding
+		}
+	}
+	else if (pend_semicolon)
+		pend = pend_semicolon;
+	else if (pend_filename)
+		pend--; // remove single  space due to unfolding
+	else
+		pend = pend_sv;
+
+	nextPos = pend - pbegin_sv;
+
+	while (p < pend)
+	{
+		if (*p++ == '=')
+			break;
+	}
+	if (p >= pend)
+		return -1;
+
+	// handle quotes strings
+	char * pEndQoute = 0;
+	if (*p == '"')
+	{
+		pEndQoute = strchr(p + 1, '"');
+		if (pEndQoute)
+			pend = pEndQoute;
+		else
+			; // ???
+	}
+
+	char *posBegin = p;
+	char *posEnd = pend;
+
+	CString part = fieldLine.Mid(posBegin - pbegin_sv, posEnd - posBegin);
+	value.Append(part);
+
+	value.Trim("\"");
+
+	return nextPos;
 }
 
 #if 0

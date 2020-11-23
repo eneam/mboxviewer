@@ -20,6 +20,7 @@ public:
 	static void Filename(CMimeBody* pBP, CString &value);
 	//
 	static bool IsAttachment(CMimeBody* pBP);
+	static bool IsInlineAttachment(CMimeBody* pBP);
 protected:
 	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
 };

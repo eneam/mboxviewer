@@ -429,7 +429,91 @@ CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charset
 		return subj;
 }
 
+int  TextUtilsEx::hextob(char ch)
+{
+	if (ch >= '0' && ch <= '9') return ch - '0';
+	if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+	if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+	return -1;
+}
 
+int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UINT &charsetId,  BOOL hasCharset, CString &outString)
+{
+	const char *p_beg = (LPCSTR)inString;
+	const char *p = p_beg;
+	int length = inString.GetLength();
+	const char *e = p + length;
+
+	charsetId = 0;
+	if (hasCharset)
+	{
+		// find charset
+		while ((p < e) && (*p != '\''))
+		{
+			p++;
+		}
+		if (p >= e)
+		{
+			//  TODO: can't decode; return untoched string for now
+			return 0;
+		}
+
+		charset.Append(p_beg, p - p_beg);
+		charsetId = TextUtilsEx::Str2PageCode(charset);
+
+		// skip first '\''
+		p++;
+
+		// find language
+		while ((p < e) && (*p != '\''))
+		{
+			p++;
+		}
+
+		if (p >= e)
+		{
+			//  TODO: can't decode; return untoched string for now
+			return 0;
+		}
+
+		p++;
+
+
+		// decode
+
+		SimpleString out(length * 2);
+
+		int c;
+		while (p < e)
+		{
+			c = *p;
+			if (c == '%')
+			{
+				p++;
+				c = *p++;
+				int first = hextob(c);
+				if (first < 0)
+					return 0;
+				c = *p++;
+				int second = hextob(c);
+				if (second < 0)
+					return 0;
+				unsigned char uc = first * 16 + second;
+				out.Append(uc);
+			}
+			else
+			{
+				out.Append(c);
+				p++;
+			}
+		}
+
+		outString.Empty();
+		outString.Append(out.Data(), out.Count());
+	}
+
+	return 1;
+}
 
 CP2NM cp2name[] = {
 	//{ Info.CodePage , "Info.Name" , "Info.DisplayName" },

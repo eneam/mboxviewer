@@ -78,6 +78,32 @@ public:
 
 typedef MyCArray<MailBodyInfo*> MailBodyInfoArray;
 
+class AttachmentData
+{
+public:
+	AttachmentData() { m_nextId = 0;}
+	~AttachmentData() {}
+
+	CStringW m_nameW;
+	int m_nextId;
+};
+
+class AttachmentMgr
+{
+public:
+	AttachmentMgr() {}
+	~AttachmentMgr() {}
+
+	void Clear();
+
+	CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> m_attachmentMap;
+	// Insert into DB if not present; append unique Id if name present
+	int GetValidName(CStringW &inName);
+};
+
+typedef CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> AttachmentDB;
+
+
 class NListView : public CWnd
 {
 	CWheelListCtrl	m_list;
@@ -105,6 +131,7 @@ public:
 
 // Implementation
 public:
+
 	int m_frameCx_TreeNotInHide;
 	int m_frameCy_TreeNotInHide;
 	int m_frameCx_TreeInHide;
@@ -295,9 +322,9 @@ public:
 	void PostMsgCmdParamAttachmentHint();
 	//
 	static int PrintAsEmlFile(CFile *fpm, int mailPosition);
-	static int PrintMailAttachments(CFile *fpm, int mailPosition);
-	static int DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW);
-	static int PrintAttachmentNamesAsText2CSV(MboxMail *m, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator);
+	static int PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB);
+	static int DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW, AttachmentMgr &attachmentDB);
+	static int PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator);
 	// Called in CheckMatchAdvanced and CheckMatch
 	static int FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
 	//

@@ -140,6 +140,18 @@ UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 // Postponed to the future relases since the large effort is needed
 ///////
 
+bool MailBodyContent::IsAttachment()
+{
+	if (!m_attachmentName.IsEmpty() ||
+		!m_contentId.IsEmpty() ||
+		!m_contentLocation.IsEmpty() ||
+		(m_contentDisposition.CollateNoCase("attachment") == 0)
+		)
+		return true;
+	else
+		return false;
+}
+
 struct MsgIdHash {
 public:
 	size_t operator()(const MboxMail *key) const
@@ -3254,7 +3266,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			int ret = MboxMail::DetermineEmbeddedImages(m, fpm);
 
 		BOOL targetCSV = TRUE;
-		NListView::PrintAttachmentNamesAsText2CSV(m, &outbuf, csvConfig.m_MessageLimitCharsString, csvConfig.m_AttachmentNamesSeparatorString);
+		NListView::PrintAttachmentNamesAsText2CSV(mailPosition, &outbuf, csvConfig.m_MessageLimitCharsString, csvConfig.m_AttachmentNamesSeparatorString);
 
 		separatorNeeded = true;
 	}
@@ -4032,8 +4044,6 @@ int MboxMail::DetermineEmbeddedImages(MboxMail *m, /*in - mail body*/ CFile &fpm
 	return 1;
 }
 
-
-//int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, CStringW &htmlbuf)
 int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix)
 {
 #if 1
@@ -4123,52 +4133,64 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	attachmentFileNamePrefix = strDate;
 	attachmentFileNamePrefix.Append(uID);
 
+	bool showAllAttachments = false;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		showAllAttachments = attachmentConfigParams->m_bShowAllAttachments_Window;
+	}
+
+	AttachmentMgr attachmentDB;
 	int attachmentCnt = 0;
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
 		body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty() && !body->m_isEmbeddedImage)
+		BOOL showAttachment = FALSE;
+		if (body->IsAttachment())
 		{
-			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0) || (m->m_DetermineEmbeddedImagesDone == 2))
-			{
-				UINT inCodePage = body->m_attachmentNamePageCode;
+			if (showAllAttachments || !body->m_isEmbeddedImage)
+				showAttachment = TRUE;
+		}
 
-				SimpleString*buf = 0;
-				NListView::DetermineAttachmentName(fpm, mailPosition, body, buf, nameW);
+		if (showAttachment)
+		{
+			UINT inCodePage = body->m_attachmentNamePageCode;
 
-				validNameW.Empty();
-				FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
+			SimpleString*buf = 0;
+			NListView::DetermineAttachmentName(fpm, mailPosition, body, buf, nameW, attachmentDB);
 
-				UINT outCodePage = CP_UTF8;
-				BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &validNameUTF8, error);
+			validNameW.Empty();
+			FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
 
-				// Create hyperlink
+			UINT outCodePage = CP_UTF8;
+			BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &validNameUTF8, error);
 
-				if (attachmentCnt)
-					outbuf->Append(" , ");
-				else
-					outbuf->Append(" ");
+			// Create hyperlink
 
-				CStringW filePathW = printCachePathW + L"\\" + validNameW;
+			if (attachmentCnt)
+				outbuf->Append(" , ");
+			else
+				outbuf->Append(" ");
 
-				SimpleString fileName(1024);
-				fileName.Append(attachmentFileNamePrefix, attachmentFileNamePrefix.GetLength());
-				fileName.Append(' ');
-				fileName.Append(validNameUTF8);
+			CStringW filePathW = printCachePathW + L"\\" + validNameW;
 
-				//outbuf->Append("\r\n<a href=\"file:../../AttachmentCache/");
-				//outbuf->Append((char*)(LPCSTR)mboxFileNameBase, mboxFileNameBase.GetLength());
-				outbuf->Append("\r\n<a href=\"file://");
-				outbuf->Append(printCachePath, printCachePath.GetLength());
-				outbuf->Append('\\');
-				outbuf->Append(fileName);
-				outbuf->Append("\"target=\"_blank\">\"");
-				outbuf->Append(validNameUTF8);
-				outbuf->Append("\"</a>");
+			SimpleString fileName(1024);
+			fileName.Append(attachmentFileNamePrefix, attachmentFileNamePrefix.GetLength());
+			fileName.Append(' ');
+			fileName.Append(validNameUTF8);
 
-				attachmentCnt++;
-			}
+			//outbuf->Append("\r\n<a href=\"file:../../AttachmentCache/");
+			//outbuf->Append((char*)(LPCSTR)mboxFileNameBase, mboxFileNameBase.GetLength());
+			outbuf->Append("\r\n<a href=\"file://");
+			outbuf->Append(printCachePath, printCachePath.GetLength());
+			outbuf->Append('\\');
+			outbuf->Append(fileName);
+			outbuf->Append("\"target=\"_blank\">\"");
+			outbuf->Append(validNameUTF8);
+			outbuf->Append("\"</a>");
+
+			attachmentCnt++;
 		}
 	}
 
@@ -4363,38 +4385,50 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 	attachmentFileNamePrefix = strDate;
 	attachmentFileNamePrefix.Append(uID);
 
+	bool showAllAttachments = false;
+	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	if (attachmentConfigParams)
+	{
+		showAllAttachments = attachmentConfigParams->m_bShowAllAttachments_Window;
+	}
+
+	AttachmentMgr attachmentDB;
 	int attachmentCnt = 0;
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
 		body = m->m_ContentDetailsArray[j];
 
-		if (!body->m_attachmentName.IsEmpty() && !body->m_isEmbeddedImage)
+		BOOL showAttachment = FALSE;
+		if (body->IsAttachment())
 		{
-			if ((body->m_contentDisposition.CompareNoCase("attachment") == 0))
-			{
-				UINT inCodePage = body->m_attachmentNamePageCode;
+			if (showAllAttachments || !body->m_isEmbeddedImage)
+				showAttachment = TRUE;
+		}
 
-				SimpleString*buf = 0;
-				NListView::DetermineAttachmentName(fpm, mailPosition, body, buf, nameW);
+		if (showAttachment)
+		{
+			UINT inCodePage = body->m_attachmentNamePageCode;
 
-				validNameW.Empty();
-				FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
+			SimpleString*buf = 0;
+			NListView::DetermineAttachmentName(fpm, mailPosition, body, buf, nameW, attachmentDB);
 
-				UINT outCodePage = CP_UTF8;
-				BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &resultUTF8, error);
+			validNameW.Empty();
+			FileUtils::MakeValidFileNameW(nameW, validNameW, bReplaceWhiteWithUnderscore);
 
-				if (attachmentCnt)
-					outbuf->Append(" , ");
-				else
-					outbuf->Append(" ");
+			UINT outCodePage = CP_UTF8;
+			BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &resultUTF8, error);
+
+			if (attachmentCnt)
+				outbuf->Append(" , ");
+			else
+				outbuf->Append(" ");
 
 
-				outbuf->Append('"');
-				outbuf->Append(resultUTF8.Data(), resultUTF8.Count());
-				outbuf->Append('"');
+			outbuf->Append('"');
+			outbuf->Append(resultUTF8.Data(), resultUTF8.Count());
+			outbuf->Append('"');
 
-				attachmentCnt++;
-			}
+			attachmentCnt++;
 		}
 	}
 
@@ -5179,14 +5213,28 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			}
 		}
 
+		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+		BOOL printAttachments = TRUE;
+		if (pFrame)
+		{
+			printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+		}
+
+		AttachmentMgr attachmentDB;
 		if (selectedMailIndexList == 0) 
 		{
 			for (int i = firstMail; i <= lastMail; i++)
 			{
-				NListView::PrintMailAttachments(&fpm, i);
 				if (textType == 0)
 					printSingleMailToTextFile(fp, i, fpm, textConfig);
-				else {
+				else
+				{
+					if (printAttachments)
+					{
+						attachmentDB.Clear();
+						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+					}
+
 					BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 				}
@@ -5201,11 +5249,17 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			{
 				//i = selectedMailIndexList->ElementAt(j);
 				i = (*selectedMailIndexList)[j];
-				NListView::PrintMailAttachments(&fpm, i);
 
 				if (textType == 0)
 					printSingleMailToTextFile(fp, i, fpm, textConfig);
-				else {
+				else 
+				{
+					if (printAttachments)
+					{
+						attachmentDB.Clear();
+						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+					}
+
 					BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 				}
@@ -5332,14 +5386,28 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	int cnt = lastMail - firstMail;
 	if (cnt <= 0)
 		cnt = 1;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	BOOL printAttachments = TRUE;
+	if (pFrame)
+	{
+		printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+	}
+
+	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		NListView::PrintMailAttachments(&fpm, i);
-
 		if (textType == 0) {
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
 		}
-		else {
+		else 
+		{
+			if (printAttachments)
+			{
+				attachmentDB.Clear();
+				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+			}
+
 			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 		}
@@ -6659,6 +6727,8 @@ void MboxMail::ReleaseResources()
 	MailBody::m_mpool = 0;
 	delete m_pMessageIdTable;
 	m_pMessageIdTable = 0;
+	delete m_pMboxMailMap;
+	m_pMboxMailMap = 0;
 	delete m_pMboxMailTable;
 	m_pMboxMailTable = 0;
 	delete m_pThreadIdTable;
@@ -7799,7 +7869,6 @@ bool MboxMail::insertMboxMail(MboxMail *key, MboxMail *mbox)
 UINT MboxMail::createMboxMailTable(UINT count)
 {
 	m_pMboxMailMap = new MboxMailMapType(count);
-	//m_pMboxMailTable->reserve(count);
 	return count;
 }
 
@@ -8171,13 +8240,26 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 		}
 	}
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	BOOL printAttachments = TRUE;
+	if (pFrame)
+	{
+		printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+	}
+
+	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		NListView::PrintMailAttachments(&fpm, i);
-
 		if (textType == 0)
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
-		else {
+		else 
+		{
+			if (printAttachments)
+			{
+				attachmentDB.Clear();
+				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+			}
+
 			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 		}
@@ -8254,13 +8336,26 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	if (cnt <= 0)
 		cnt = 0;
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	BOOL printAttachments = TRUE;
+	if (pFrame)
+	{
+		printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+	}
+
+	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		NListView::PrintMailAttachments(&fpm, i);
-
 		if (textType == 0)
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
-		else {
+		else 
+		{
+			if (printAttachments)
+			{
+				attachmentDB.Clear();
+				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+			}
+
 			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 		}
@@ -8373,17 +8468,28 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	if (progressBar && MboxMail::pCUPDUPData)
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
+	BOOL printAttachments = TRUE;
+	if (pFrame)
+	{
+		printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+	}
+
+	AttachmentMgr attachmentDB;
 	int i;
 	int cnt = selectedMailIndexList->GetCount();
 	for (int j = 0; j < cnt; j++)
 	{
 		i = (*selectedMailIndexList)[j];
-
-		NListView::PrintMailAttachments(&fpm, i);
-
 		if (textType == 0)
 			printSingleMailToTextFile(fp, i, fpm, textConfig);
-		else {
+		else 
+		{
+			if (printAttachments)
+			{
+				attachmentDB.Clear();
+				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
+			}
+
 			BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
 		}

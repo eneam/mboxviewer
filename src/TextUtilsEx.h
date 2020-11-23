@@ -61,6 +61,8 @@ public:
 	static BOOL Str2CurrentCodepage(SimpleString *str, UINT strCodePage, SimpleString *result, SimpleString *workBuff);
 	//
 	static CString DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId = 0);
+	static int hextob(char ch);
+	static int DecodeMimeChunkedString(CString &subj, CString &charset, UINT &charsetId, BOOL hasCharset, CString &outString);
 	//
 	static BOOL Str2Wide(CString &res, UINT CodePage, CStringW &m_strW);
 	//

@@ -149,7 +149,7 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp construction
 
-#define IHASH_MAP_TEST
+//#define IHASH_MAP_TEST
 #ifdef  IHASH_MAP_TEST
 #include "IHashTable.h"
 #endif

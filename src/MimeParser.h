@@ -53,6 +53,8 @@ public:
 	static int GetThreadId(CString &fieldLine, int startPos, CString &value);
 	static int GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value);
 	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
+	static int GetFilenameParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset);
+	static int GetFilenameParamPartValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset);
 	static BOOL isEmptyLine(const char* p, const char* e);
 	static char* SkipEmptyLines(const char* p, const char* e);
 	static char *EatNewLine(char* p, const char* e, BOOL &isEmpty);
@@ -76,6 +78,8 @@ public:
 	bool IsMultiPart() { return m_IsMultiPart; }
 	bool AssertHdr();
 
+	bool IsAttachment();
+
 	bool m_IsText;
 	bool m_IsTextPlain;
 	bool m_IsTextHtml;
@@ -98,6 +102,8 @@ public:
 	UINT m_NamePageCode;
 	CString m_AttachmentName;  // filename From Content-Disposition
 	UINT m_AttachmentNamePageCode;
+	CString m_AttachmentName2;  // filename From Content-Disposition
+	UINT m_AttachmentNamePageCode2;
 	CString m_MessageId;
 	CString m_ReplyId;
 	CString m_InReplyId;

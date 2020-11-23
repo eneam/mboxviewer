@@ -54,6 +54,32 @@ class SimpleString;
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 void ShowMemStatus();
 
+class Tracer
+{
+public:
+	Tracer(const char *functionName) : functionName_(functionName)
+	{
+		TRACE("Entering function %s\n", functionName);
+	}
+
+	~Tracer()
+	{
+		TRACE("Exitting function %s\n", functionName_);
+	}
+
+	const char *functionName_;
+};
+
+#ifdef _DEBUG
+#define DEBUG_TRACER
+#ifdef DEBUG_TRACER
+#define DBGT(f) Tracer(f);
+#endif
+#else
+#define DBGT(f)
+#endif
+
+
 class MboxMail;
 struct NamePatternParams;
 
@@ -181,6 +207,8 @@ public:
 	int  m_contentOffset;
 	int m_contentLength;
 	bool m_isEmbeddedImage;
+
+	bool IsAttachment();
 };
 
 unsigned long StrHash(const char* buf, const UINT length);
@@ -199,8 +227,6 @@ class MboxMail;
 typedef std::unordered_map<CString*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
 typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
 typedef std::unordered_map<MboxMail*, MboxMail*, MboxHash, MboxEqual> MboxMailTableType;
-
-//using MboxMailMapType = IHashMap<MboxMail, MboxMail, MboxHash, MboxEqual, &MboxMail::m_hashMapLink>;
 
 class CMBodyHdr;
 
