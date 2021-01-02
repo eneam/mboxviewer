@@ -42,6 +42,7 @@
 
 
 class SimpleString;
+class MyStackWalker;
 
 class SE_Exception : public std::exception
 {
@@ -76,7 +77,10 @@ public:
 		DWORD  dwProcessId = GetCurrentProcessId(),
 		HANDLE hProcess = GetCurrentProcess());
 
+	~MyStackWalker();
+
 	static SimpleString *GetBuffer();
+	void ClearBuffer();
 
 
 protected:
@@ -88,7 +92,7 @@ protected:
 
 #endif
 
-BOOL DumpStack(char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord = 0, int mailPosition = -1);
+BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord = 0, int mailPosition = -1);
 BOOL DumpStackEx(char *fileName, CException* e);
 BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosition, char *data, int datalen);
 

@@ -623,8 +623,6 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_ADVANCED_FIND_Id = 14;
 	AppendMenu(&menu, S_ADVANCED_FIND_Id, _T("Find Advanced"));
 
-	
-
 	const UINT S_REMOVE_Id = 15;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
@@ -2820,11 +2818,13 @@ void NListView::FillCtrl()
 		args.exitted = FALSE;
 
 		//  ALongRightProcessProc will set MboxMail::s_path = m_path;
+		MboxMail::runningWorkerThreadType = 1;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
 		INT_PTR nResult = Dlg.DoModal();
 
 		if (!nResult)  // should never be true ?
 		{
+			MboxMail::runningWorkerThreadType = 0;
 			MboxMail::assert_unexpected();
 			return;
 		}
@@ -2846,6 +2846,7 @@ void NListView::FillCtrl()
 			DWORD delta = tc_end - tc_start;
 			TRACE("(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
+		MboxMail::runningWorkerThreadType = 0;
 
 		MboxMail::pCUPDUPData = NULL;
 
@@ -9019,9 +9020,12 @@ int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 void NListView::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
-	Sleep(10000);
-
-	CWnd::OnTimer(nIDEvent);
+	MboxMail::ignoreException = FALSE;
+	MessageBeep(MB_OK);
+	MessageBeep(MB_OK);
+	KillTimer(nIDEvent);
+	//Sleep(10000);
+	//CWnd::OnTimer(nIDEvent);
 }
 
 #define MAIL_LIST_VERSION2  (MAIL_LIST_VERSION_BASE+2)

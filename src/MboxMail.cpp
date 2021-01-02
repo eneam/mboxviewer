@@ -40,11 +40,19 @@
 #include "SerializationHelper.h"
 #include "MimeHelper.h"
 
+#ifdef USE_STACK_WALKER
+#include "StackWalker.h"
+#endif
+
 #ifdef _DEBUG
 #undef THIS_FILE
 #define THIS_FILE __FILE__
 #define new DEBUG_NEW
 #endif
+
+MyStackWalker *MboxMail::glStackWalker = 0;
+BOOL MboxMail::ignoreException = FALSE;
+int MboxMail::runningWorkerThreadType = 0;
 
 BOOL MboxMail::m_seExceptionMsgBox = TRUE;
 BOOL MboxMail::m_cppExceptionMsgBox = FALSE;
@@ -516,7 +524,7 @@ char szFrom6[] = "\nFrom ";
 char	*g_szFrom;
 int		g_szFromLen;
 
-bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml)
+bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset)
 {
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = strlen(cFromMailBegin);
@@ -585,7 +593,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	BOOL retDir = GetProgramDir(progDir);
 
 	BOOL mustAbort = FALSE;
-	TCHAR szCauseBuffer[256];
+	//TCHAR szCauseBuffer[256];
 
 	char *stackDumpFileName = "Exception_StackTrace.txt";
 	char *mailDumpFileName = "Exception_MailDump.txt";
@@ -595,24 +603,24 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	BOOL exceptionThrown = FALSE;
 	BOOL exceptionDone = FALSE;
 
-	char *pat = "From: Anu Garg";
+	char *pat = "From:  XXXX";
 	int patLen = strlen(pat);
 
 	BOOL headerDone = FALSE;
 	while (p < (e - 4))   // TODO: why (e - 4) ?? chaneg 4 -> 5
 	{
-		try 
 		{
 			// EX_TEST
 #if 0
-			if ((s_mails.GetCount() == 200) && (exceptionDone == FALSE))
+			if ((s_mails.GetCount() == 3000) && (exceptionDone == FALSE))
 			{
 				//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
-				char* szTemp = (char*)1;
+				//char* szTemp = (char*)1;
 				//strcpy_s(szTemp, 1000, "A");
 				*badPtr = 'a';
 				SCODE sc = 99;
 				//AfxThrowOleException(sc);
+				MboxMail *m = s_mails[100000];
 			}
 #endif
 
@@ -660,6 +668,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					}
 
 					msgStart = p;
+					msgOffset = startOffset + (_int64)(msgStart - orig);
 				}
 				else 
 				{
@@ -748,6 +757,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 						}
 					}
 					msgStart = p;
+					msgOffset = startOffset + (_int64)(msgStart - orig);
 					to.Empty();
 					from.Empty();
 					subject.Empty();
@@ -900,215 +910,6 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				p = MimeParser::EatNewLine(p, e);
 			}
 		}
-
-		//   Other supported exceptions. At the moment we are file using 
-		//catch (CMemoryException * e)
-		//catch (CFileException * e)
-		//catch (COleException * e)
-		//catch (CUserException* e)
-		//catch (CResourceException * e)
-		//catch CSimpleException
-		//catch CInvalidArgException
-		//catch CNotSupportedException
-		//catch CArchiveException
-		//catch CDBException
-		//catch COleDispatchException
-		//catch CDaoException
-		//catch CInternetException
-
-		catch (const SE_Exception& ex)
-		{
-			// TODO: this is very long catch  !!!
-			//exceptionThrown = TRUE;
-			exceptionDone = TRUE;
-			seNumb = ex.getSeNumber();
-			szCause = (char*)seDescription(seNumb);
-
-			int mailPosition = s_mails.GetCount();
-			char *se_stackDumpFileName = "SystemE_StackTrace.txt";
-			BOOL ret = DumpStack(se_stackDumpFileName, szCause, seNumb, 0, mailPosition);
-
-			int datalen = 0;
-			char *data = p;
-			char *msgEnd = p;
-			char *p_save = p;
-
-			while (p < e)
-			{
-				//if ((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
-				if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
-					msgEnd = p;
-					break;
-				}
-				p = MimeParser::EatNewLine(p, e);
-				msgEnd = p;
-			}
-			// or update above -:)
-			p = MimeParser::EatNewLine(p, e);
-			msgEnd = p;
-			while (p < e)
-			{
-				//if ((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
-				if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
-					msgEnd = p;
-					break;
-				}
-				p = MimeParser::EatNewLine(p, e);
-				msgEnd = p;
-			}
-
-			if (msgStart)
-			{
-				data = msgStart;
-				datalen = msgEnd - msgStart;
-			}
-			else
-			{
-				data = orig;
-				datalen = msgEnd - orig;
-			}
-			if (datalen < 0)
-				datalen = 0;
-
-			char *se_mailDumpFileName = "SystemE_MailDump.txt";
-			BOOL retW = DumpMailData(se_mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
-
-			char *se_translation_stackDumpFileName = "TranslationSystemE_StackTrace.txt";
-
-			CString errorTxt;
-#ifdef USE_STACK_WALKER
-			errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
-				"To help to diagnose the problem, created files\n\n%s , %s and %s\n\nin\n\n%s directory.\n\n"
-				"Please provide the files to the development team.\n\n"
-				"%s file contains mail data so please review the content before forwarding to the development."),
-				seNumb, szCause, se_stackDumpFileName, se_mailDumpFileName, se_translation_stackDumpFileName, progDir, se_mailDumpFileName);
-#else
-			errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
-				"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
-				"Please provide the files to the development team.\n\n"
-				"%s file contains mail data so please review the content before forwarding to the development."
-				"Please run mboxview residing in DEBUG directory to generate additional information."),
-				seNumb, szCause, se_mailDumpFileName, progDir, se_mailDumpFileName);
-#endif
-
-			if (m_seExceptionMsgBox)
-			{
-				// Documents say it is not safe to call AfxMessageBox from separate thread but it seem to kind of work
-				// May need to return info to the main thread and create MessageBox
-				AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
-				AfxAbort();
-			}
-		}
-		catch (CException* e)
-		{
-			exceptionName = "Exception";
-
-			seNumb = 0;
-			e->GetErrorMessage(szCauseBuffer, 255, &seNumb);
-			szCause = &szCauseBuffer[0];
-
-			stackDumpFileName = "E_StackTrace.txt";
-			mailDumpFileName = "E_MailDump.txt";
-
-			e->Delete();
-			exceptionThrown = TRUE;
-			exceptionDone = TRUE;
-		}
-		catch (...)  // memory leak ??
-		{
-			exceptionName = "AnyException";
-			seNumb = 0;
-			szCause = "Unknown";
-
-			stackDumpFileName = "AnyE_StackTrace.txt";
-			mailDumpFileName = "AnyE_MailDump.txt";
-
-			exceptionThrown = TRUE;
-			mustAbort = TRUE;
-			exceptionDone = TRUE;
-		}
-
-		if (exceptionThrown)
-		{
-			// TODO: this is very long catch  !!!
-			int mailPosition = s_mails.GetCount();
-			BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
-
-			int datalen = 0;
-			char *data = p;
-			char *msgEnd = p;
-			char *p_save = p;
-
-			while (p < e)
-			{
-				//if ((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
-				if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
-					msgEnd = p;
-					break;
-				}
-				p = MimeParser::EatNewLine(p, e);
-				msgEnd = p;
-			}
-			// or update above -:)
-			p = MimeParser::EatNewLine(p, e);
-			msgEnd = p;
-			while (p < e)
-			{
-				//if ((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p, e))
-				if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
-					msgEnd = p;
-					break;
-				}
-				p = MimeParser::EatNewLine(p, e);
-				msgEnd = p;
-			}
-
-			if (msgStart)
-			{
-				data = msgStart;
-				datalen = msgEnd - msgStart;
-			}
-			else
-			{
-				data = orig;
-				datalen = msgEnd - orig;
-			}
-			if (datalen < 0)
-				datalen = 0;
-
-			BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
-
-			CString errorTxt;
-#ifdef USE_STACK_WALKER
-			errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
-				"To help to diagnose the problem, created files\n\n%s and %s\n\nin\n\n%s directory.\n\n"
-				"Please provide the files to the development team.\n\n"
-				"%s file contains mail data so please review the content before forwarding to the development."),
-				exceptionName, seNumb, szCause, stackDumpFileName, mailDumpFileName, progDir, mailDumpFileName);
-#else
-			errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
-				"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
-				"Please provide the files to the development team.\n\n"
-				"%s file contains mail data so please review the content before forwarding to the development.\n\n"
-				"Please run mboxview residing in DEBUG directory to generate additional information."),
-				exceptionName, seNumb, szCause, mailDumpFileName, progDir, mailDumpFileName);
-#endif
-
-			if (m_cppExceptionMsgBox || mustAbort)
-			{
-				// Documents say it is not safe to call AfxMessageBox from separate thread but it seem to kind of work
-				// May need to return info to the main thread and create MessageBox
-				AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
-				AfxAbort();
-			}
-			// To attempt to continue, reset the below
-			p = p_save;
-			p = MimeParser::EatNewLine(p, e);
-
-			msgStart = NULL; tdate = -1; headerDone = FALSE;
-			to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
-			bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
-		}
 	}
 	
 	// should save state for cross boundary emails - resolved 2018
@@ -1128,8 +929,6 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 			mailDumpFileName = "Exception_MailDump.txt";
 			exceptionName = "UnknownException";
 
-			//  TODO: Handling of exception - lots of duplications FIXME
-			try
 			{
 				// EX_TEST
 #if 0
@@ -1180,105 +979,6 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					if (s_mails.GetCount() == 1098)
 						int deb = 1;
 				}
-			}
-			catch (const SE_Exception& ex)
-			{
-				//exceptionThrown = TRUE;
-				exceptionDone = TRUE;
-				seNumb = ex.getSeNumber();
-				szCause = (char*)seDescription(seNumb);
-
-				int mailPosition = s_mails.GetCount();
-				char *se_stackDumpFileName = "SystemE_StackTrace.txt";
-				BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
-
-				
-				int datalen = p - msgStart;
-				char *msgEnd = p + datalen;
-
-				char *se_mailDumpFileName = "SystemE_MailDump.txt";
-				BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, msgStart, datalen);
-
-				char *se_translation_stackDumpFileName = "TranslationSystemE_StackTrace.txt";
-
-				CString errorTxt;
-				errorTxt.Format(_T("SE_Exception: Code=%8.8x Description=%s\n\n"
-					"To help to diagnose the problem, files:\n\n%s and %s and %s were created in:\n\n%s directory.\n\n"
-					"Please provide the files to the development team.\n\n"
-					"%s file contains mail data so please review the content before forwarding to the development."),
-					seNumb, szCause, se_stackDumpFileName, se_mailDumpFileName, se_translation_stackDumpFileName, progDir, mailDumpFileName);
-
-				if (m_seExceptionMsgBox)
-				{
-					AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
-					AfxAbort();
-				}
-
-				// To attempt to continue, reset the below
-				msgStart = NULL; tdate = -1; headerDone = FALSE;
-				to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
-				bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
-			}
-			catch (CException* e)
-			{
-				exceptionThrown = TRUE;
-				exceptionDone = TRUE;
-
-				exceptionName = "Exception";
-
-				seNumb = 0;
-				e->GetErrorMessage(szCauseBuffer, 255, &seNumb);
-				szCause = &szCauseBuffer[0];
-
-				stackDumpFileName = "E_StackTrace.txt";
-				mailDumpFileName = "E_MailDump.txt";
-
-				e->Delete();
-			}
-			catch (...)  // memory leak ??
-			{
-				exceptionThrown = TRUE;
-				exceptionDone = TRUE;
-
-				exceptionName = "AnyException";
-				seNumb = 0;
-				szCause = "Unknown";
-
-				stackDumpFileName = "AnyE_StackTrace.txt";
-				mailDumpFileName = "AnyE_MailDump.txt";
-
-				mustAbort = TRUE;
-			}
-
-			if (exceptionThrown)
-			{
-				int mailPosition = s_mails.GetCount();
-				BOOL ret = DumpStack(stackDumpFileName, szCause, seNumb, 0, mailPosition);
-
-				int datalen = p - msgStart;
-				char *msgEnd = p + datalen;
-				char *p_save = p;
-
-				BOOL retW = DumpMailData(mailDumpFileName, szCause, seNumb, mailPosition, msgStart, datalen);
-
-				CString errorTxt;
-				errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
-					"To help to diagnose the problem, files:\n\n%s and %s were created in:\n\n%s directory.\n\n"
-					"Please provide the files to the development team.\n\n"
-					"%s file contains mail data so please review the content before forwarding to the development."),
-					exceptionName, seNumb, szCause, stackDumpFileName, mailDumpFileName, progDir, mailDumpFileName);
-
-				if (m_cppExceptionMsgBox || mustAbort)
-				{
-					AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
-					AfxAbort();
-				}
-				// To attempt to continue, reset the below
-				p = p_save;
-				p = MimeParser::EatNewLine(p, e);
-				msgStart = NULL; tdate = -1; headerDone = FALSE;
-				to.Empty(); from.Empty(); subject.Empty(); date.Empty(); cc.Empty(); bcc.Empty();
-				bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
 			}
 		}
 	}
@@ -1407,25 +1107,6 @@ void MboxMail::Parse(LPCSTR path)
 	_int64 aligned_offset = 0;
 	_int64 delta = 0;
 
-
-#if 0
-	//set_terminate(term_func);
-	char *dllList[] = { "msvcrt.dll" , "msvcr80.dll", "msvcr90.dll", "msvcr100.dll" };
-	HMODULE hDLL = 0;
-	for (int ii = 0; ii < sizeof(dllList); ii++)
-	{
-		hDLL = LoadLibrary(dllList[ii]);
-		if (hDLL != NULL)
-			break;
-	}
-	if (hDLL)
-		Scoped_SE_Translator scoped_se_translator(trans_func);
-#endif
-
-#ifdef USE_STACK_WALKER
-	Scoped_SE_Translator scoped_se_translator(trans_func);
-#endif
-
 	// TODO:  Need to consider to redo reading and create  Character Stream for reading
 	_int64 lastStartOffset = 0;
 	while  ((lastView == false) && !pCUPDUPData->ShouldTerminate()) 
@@ -1458,10 +1139,32 @@ void MboxMail::Parse(LPCSTR path)
 		char *p = pview + delta;
 		int viewBufSize = bufSize - (DWORD)delta;
 		_int64 viewOffset = s_curmap;
-		MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml);
+		_int64 msgOffset = viewOffset;
+		BOOL processException = FALSE;
+#ifdef USE_STACK_WALKER
+		try
+		{
+#endif
+			MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset);
+#ifdef USE_STACK_WALKER
+		}
+		catch (...)
+		{
+			processException = TRUE;
+		}
+#endif
 		firstView = false;
-
 		UnmapViewOfFile(p);
+
+#ifdef USE_STACK_WALKER
+		if (processException)
+		{
+			DumpMailParseException(msgOffset);
+			exit(0);
+			//AfxAbort();
+			//break;
+		}
+#endif
 	}
 #ifdef _DEBUG
 	tc = (GetTickCount() - tc);
@@ -6738,6 +6441,13 @@ void MboxMail::ReleaseResources()
 
 	CString processpath = "";
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), processpath);
+
+
+	MyStackWalker *sw = MboxMail::glStackWalker;
+	MboxMail::glStackWalker = 0;
+#ifdef USE_STACK_WALKER
+	delete sw;
+#endif
 }
 
 void ShellExecuteError2Text(UINT errorCode, CString &errorText) {
@@ -7788,6 +7498,11 @@ int MboxMail::RemoveDuplicateMails()
 	int i = 0;
 	int to_dup_i = 0;
 	int to_i = 0;
+
+
+	// Test exceptions
+	//CTime ct(1, 1, 1, 1, 1, 1,1);
+	//m = s_mails[s_mails.GetSize() + 1000];
 
 	for (i; i < s_mails.GetSize(); i++)
 	{
@@ -9182,6 +8897,96 @@ void MboxMail::rel_largebuf()
 	if (!m_largebufBusy)
 		LargeBufferAllocFailed();
 	m_largebufBusy = FALSE;
+}
+
+void MboxMail::DumpMailParseException(_int64 msgOffset)
+{
+	static const char *cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+
+	CString progDir;
+	BOOL retDir = GetProgramDir(progDir);
+
+	int seNumb = 0;
+	CString szCause = seDescription(seNumb);
+
+	int mailPosition = s_mails.GetCount();
+
+	BOOL ret = TRUE;
+	CFile fp;
+
+	int bytes2Read = MAPPING_SIZE;
+
+	SimpleString *res = MboxMail::m_outdata;
+	res->Clear();
+
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite))
+	{
+		res->Resize(bytes2Read);
+		//TRACE("offset = %lld\n", m_startOff);
+		fp.Seek(msgOffset, SEEK_SET);
+		UINT readLength = fp.Read(res->Data(), bytes2Read);
+		if (readLength != bytes2Read)
+			int deb = 1;
+		res->SetCount(bytes2Read);
+		fp.Close();
+	}
+	else
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+		return;
+	}
+
+	char *p = res->Data();
+	char *e = p + res->Count();
+
+	int datalen = 0;
+	char *data = p;
+	char *msgEnd = p;
+	char *msgStart = p;
+
+	p = MimeParser::EatNewLine(p, e);
+
+	while (p < e)
+	{
+		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+			msgEnd = p;
+			break;
+		}
+		p = MimeParser::EatNewLine(p, e);
+		msgEnd = p;
+	}
+	p = MimeParser::EatNewLine(p, e);
+	msgEnd = p;
+	while (p < e)
+	{
+		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) {
+			msgEnd = p;
+			break;
+		}
+		p = MimeParser::EatNewLine(p, e);
+		msgEnd = p;
+	}
+
+	data = msgStart;
+	datalen = msgEnd - msgStart;
+
+	if (datalen < 0)
+		datalen = 0;
+
+	char *se_mailDumpFileName = "UnhandledExeption_MailDump.txt";
+	BOOL retW = DumpMailData(se_mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
+
+	CString errorTxt;
+
+	errorTxt.Format(_T("Unhandled_Exception: Code=%8.8x Description=%s\n\n"
+		"To help to diagnose the problem, created files\n\n%s\n\nin\n\n%s directory.\n\n"
+		"Please provide the files to the development team.\n\n"
+		"%s file contains mail data so please review the content before forwarding to the development."),
+		seNumb, szCause, se_mailDumpFileName, progDir, se_mailDumpFileName);
+
+	AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
 }
 
 // TODO: Need to add menu option to display Copyright/License information

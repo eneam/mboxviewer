@@ -277,6 +277,9 @@ public:
     pSW = NULL;
     pUDSN = NULL;
     pSGSP = NULL;
+    //
+    BaseOfImage = 0;
+    ImageSize = 0;
   }
   ~StackWalkerInternal()
   {
@@ -421,6 +424,11 @@ public:
   HMODULE m_hDbhHelp;
   HANDLE  m_hProcess;
   LPSTR   m_szSymPath;
+  //
+  DWORD64  BaseOfImage;          // base load address of process
+  DWORD    ImageSize;			// virtual size of the loaded process module
+
+
 
 #pragma pack(push, 8)
   typedef struct IMAGEHLP_MODULE64_V3
@@ -616,6 +624,16 @@ private:
     {
       this->LoadModule(hProcess, me.szExePath, me.szModule, (DWORD64)me.modBaseAddr,
                        me.modBaseSize);
+
+	  int moduleNameLength = strlen(me.szModule);
+	  if (moduleNameLength >= 4)
+	  {
+		  if (strcmp(&me.szModule[moduleNameLength-4], ".exe") == 0)
+		  {
+			  BaseOfImage = (DWORD64)me.modBaseAddr;
+				  ImageSize = me.modBaseSize;
+		  }
+	  }
       cnt++;
       keepGoing = !!pM32N(hSnap, &me);
     }
@@ -659,8 +677,8 @@ private:
     DWORD        cbNeeded;
     MODULEINFO   mi;
     HMODULE*     hMods = 0;
-    char*        tt = NULL;
-    char*        tt2 = NULL;
+    char*        ImageFileName = NULL;
+    char*        ModuleName = NULL;
     const SIZE_T TTBUFLEN = 8096;
     int          cnt = 0;
 
@@ -680,9 +698,9 @@ private:
     }
 
     hMods = (HMODULE*)malloc(sizeof(HMODULE) * (TTBUFLEN / sizeof(HMODULE)));
-    tt = (char*)malloc(sizeof(char) * TTBUFLEN);
-    tt2 = (char*)malloc(sizeof(char) * TTBUFLEN);
-    if ((hMods == NULL) || (tt == NULL) || (tt2 == NULL))
+	ImageFileName = (char*)malloc(sizeof(char) * TTBUFLEN);
+    ModuleName = (char*)malloc(sizeof(char) * TTBUFLEN);
+    if ((hMods == NULL) || (ImageFileName == NULL) || (ModuleName == NULL))
       goto cleanup;
 
     if (!pEPM(hProcess, hMods, TTBUFLEN, &cbNeeded))
@@ -702,25 +720,39 @@ private:
       // base address, size
       pGMI(hProcess, hMods[i], &mi, sizeof(mi));
       // image file name
-      tt[0] = 0;
-      pGMFNE(hProcess, hMods[i], tt, TTBUFLEN);
+	  ImageFileName[0] = 0;
+      pGMFNE(hProcess, hMods[i], ImageFileName, TTBUFLEN);
       // module name
-      tt2[0] = 0;
-      pGMBN(hProcess, hMods[i], tt2, TTBUFLEN);
+      ModuleName[0] = 0;
+      pGMBN(hProcess, hMods[i], ModuleName, TTBUFLEN);
 
-      DWORD dwRes = this->LoadModule(hProcess, tt, tt2, (DWORD64)mi.lpBaseOfDll, mi.SizeOfImage);
-      if (dwRes != ERROR_SUCCESS)
-        this->m_parent->OnDbgHelpErr("LoadModule", dwRes, 0);
+      DWORD dwRes = this->LoadModule(hProcess, ImageFileName, ModuleName, (DWORD64)mi.lpBaseOfDll, mi.SizeOfImage);
+	  if (dwRes != ERROR_SUCCESS)
+	  {
+		  this->m_parent->OnDbgHelpErr("LoadModule", dwRes, 0);
+	  }
+	  else
+	  {
+		  int moduleNameLength = strlen(ModuleName);
+		  if (moduleNameLength >= 4)
+		  {
+			  if (strcmp(&ModuleName[moduleNameLength - 4], ".exe") == 0)
+			  {
+				  BaseOfImage = (DWORD64)mi.lpBaseOfDll;
+				  ImageSize = mi.SizeOfImage;
+			  }
+		  }
+	  }
       cnt++;
     }
 
   cleanup:
     if (hPsapi != NULL)
       FreeLibrary(hPsapi);
-    if (tt2 != NULL)
-      free(tt2);
-    if (tt != NULL)
-      free(tt);
+    if (ModuleName != NULL)
+      free(ModuleName);
+    if (ImageFileName != NULL)
+      free(ImageFileName);
     if (hMods != NULL)
       free(hMods);
 
@@ -1366,8 +1398,8 @@ void StackWalker::OnLoadModule(LPCSTR    img,
   maxLen = _TRUNCATE;
 #endif
   if (fileVersion == 0)
-    _snprintf_s(buffer, maxLen, "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s'\n",
-                img, mod, (LPVOID)baseAddr, size, result, symType, pdbName);
+    _snprintf_s(buffer, maxLen, "%s:%s (%p:%p), size: %d (result: %d), SymType: '%s', PDB: '%s'\n",
+                img, mod, (LPVOID)baseAddr, (LPVOID)(baseAddr+size), size, result, symType, pdbName);
   else
   {
     DWORD v4 = (DWORD)(fileVersion & 0xFFFF);
@@ -1376,8 +1408,8 @@ void StackWalker::OnLoadModule(LPCSTR    img,
     DWORD v1 = (DWORD)((fileVersion >> 48) & 0xFFFF);
     _snprintf_s(
         buffer, maxLen,
-        "%s:%s (%p), size: %d (result: %d), SymType: '%s', PDB: '%s', fileVersion: %d.%d.%d.%d\n",
-        img, mod, (LPVOID)baseAddr, size, result, symType, pdbName, v1, v2, v3, v4);
+        "%s:%s (%p:%p), size: %d (result: %d), SymType: '%s', PDB: '%s', fileVersion: %d.%d.%d.%d\n",
+        img, mod, (LPVOID)baseAddr, (LPVOID)(baseAddr + size), size, result, symType, pdbName, v1, v2, v3, v4);
   }
   buffer[STACKWALK_MAX_NAMELEN - 1] = 0; // be sure it is NULL terminated
   OnOutput(buffer);
@@ -1407,8 +1439,9 @@ void StackWalker::OnCallstackEntry(CallstackEntryType eType, CallstackEntry& ent
                   entry.lineFileName, entry.name);
     }
     else
-      _snprintf_s(buffer, maxLen, "%s (%d): %s\n", entry.lineFileName, entry.lineNumber,
-                  entry.name);
+      _snprintf_s(buffer, maxLen, "%s (%d): %s (Address: %p)\n", entry.lineFileName, entry.lineNumber,
+                  entry.name, (LPVOID)entry.offset);
+
     buffer[STACKWALK_MAX_NAMELEN - 1] = 0;
     OnOutput(buffer);
   }
@@ -1475,6 +1508,70 @@ void StackWalker::OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUser
 void StackWalker::OnOutput(LPCSTR buffer)
 {
   OutputDebugStringA(buffer);
+}
+
+BOOL StackWalker::ProcessStackTrace(unsigned int u, EXCEPTION_POINTERS* ep)
+{
+	CONTEXT context = *ep->ContextRecord;
+	//const HANDLE hProcess = ::GetCurrentProcess();
+	const HANDLE hThread = ::GetCurrentThread();
+
+	STACKFRAME64 stack = { 0 };
+
+	DWORD imageType;
+#ifdef _M_IX86
+	// normally, call ImageNtHeader() and use machine info from PE header
+	imageType = IMAGE_FILE_MACHINE_I386;
+	stack.AddrPC.Offset = context.Eip;
+	stack.AddrPC.Mode = AddrModeFlat;
+	stack.AddrFrame.Offset = context.Ebp;
+	stack.AddrFrame.Mode = AddrModeFlat;
+	stack.AddrStack.Offset = context.Esp;
+	stack.AddrStack.Mode = AddrModeFlat;
+#elif _M_X64
+	imageType = IMAGE_FILE_MACHINE_AMD64;
+	stack.AddrPC.Offset = context.Rip;
+	stack.AddrPC.Mode = AddrModeFlat;
+	stack.AddrFrame.Offset = context.Rsp;
+	stack.AddrFrame.Mode = AddrModeFlat;
+	stack.AddrStack.Offset = context.Rsp;
+	stack.AddrStack.Mode = AddrModeFlat;
+#elif _M_IA64
+	imageType = IMAGE_FILE_MACHINE_IA64;
+	stack.AddrPC.Offset = context.StIIP;
+	stack.AddrPC.Mode = AddrModeFlat;
+	stack.AddrFrame.Offset = context.IntSp;
+	stack.AddrFrame.Mode = AddrModeFlat;
+	stack.AddrBStore.Offset = context.RsBSP;
+	stack.AddrBStore.Mode = AddrModeFlat;
+	stack.AddrStack.Offset = context.IntSp;
+	stack.AddrStack.Mode = AddrModeFlat;
+#else
+#error "Platform not supported!"
+#endif
+
+	int cnt = 0;
+	for (int frame = 0; cnt <= 7; ++frame)
+	{
+		BOOL result = this->m_sw->pSW(imageType, this->m_hProcess, hThread, &stack, &context, NULL, this->m_sw->pSFTA, this->m_sw->pSGMB, NULL);
+
+		if (result) 
+		{
+			DWORD64 firstAddr = this->m_sw->BaseOfImage;
+			DWORD64 lastAddr = this->m_sw->BaseOfImage + this->m_sw->ImageSize;
+			if ((stack.AddrPC.Offset >= firstAddr) && (stack.AddrPC.Offset <= lastAddr))
+				return TRUE;
+		}
+		cnt++;
+	}
+	return FALSE;
+}
+
+BOOL StackWalker::LoadAllModules()
+{
+	LoadModules();
+	BOOL ret = this->m_sw->LoadModules(GetCurrentProcess(), GetCurrentProcessId());
+	return ret;
 }
 
 #endif

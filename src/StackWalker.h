@@ -113,6 +113,7 @@ public:
   );
 
   BOOL LoadModules();
+  BOOL LoadAllModules();
 
   BOOL ShowCallstack(
       HANDLE                    hThread = GetCurrentThread(),
@@ -120,6 +121,8 @@ public:
       PReadProcessMemoryRoutine readMemoryFunction = NULL,
       LPVOID pUserData = NULL // optional to identify some data in the 'readMemoryFunction'-callback
   );
+
+  BOOL ProcessStackTrace(unsigned int u, EXCEPTION_POINTERS* ep);
 
   BOOL ShowObject(LPVOID pObject);
 

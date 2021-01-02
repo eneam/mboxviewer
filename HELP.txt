@@ -5,11 +5,11 @@ Starting with version 1.0.3.7, two versions of mboxview executable and associate
 	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.exe
 	mbox-viewer.exe-v1.0.3.7/ReleasePlusStackTrace/mboxview.pdb
 
-Performance of both versions of the mboxview is identical. It is recommended to run the mbox viewer under the ReleasePlusStackTrace directory one once you verify it runs under your version of Windows OS.
+Performance of both versions of the mboxview is basicaly identical. 
 
-Both versions were enhanced to catch execution exeptions and dump suspect raw mail data to the text file.
+NOTE: The mbox viewer under the ReleasePlusStackTrace directory should be run only to help to resolve crash of the  mbox viewer under the main direcory. !!!
 
-In addition, the mboxview.exe under the ReleasePlusStackTrace directory was enhanced to dump stack trace upon catching execution exception to help to diagnose the problem.
+The mbox viewer under the ReleasePlusStackTrace directory was enhanced to catch execution exeptions and dump the stack trace and optionaly the suspect raw mail data to the text files.
 
 Windows XP is the oldest version of Windows OS supported by the mbox viewer.
 
@@ -17,22 +17,15 @@ The separate version of the mboxview is released in the ReleasePlusStackTrace di
 This may change in the future releases subject to additional verifications and enhancements.
 
 In case the standard mbox viewer crashes, please change the directory to the ReleasePlusStackTrace directory and re-run the mbox viewer.
-Alternatively, you can run the mbox viewer from the ReleasePlusStackTrace directory day one once you verify it can run under your version of Windows OS.
 
-If the mbox viewer in ReleasePlusStackTrace directory crashes it will generate one of more text files that can help to diagnose the problem:
+If the mbox viewer in ReleasePlusStackTrace directory crashes, it will generate one of two text files that can help to diagnose the problem:
 
-mboxview_SystemE_MailDump.txt
-mboxview_SystemE_StackTrace.txt
-mboxview_TranslationSystemE_StackTrace.txt
-mboxview_E_MailDump.txt
-mboxview_E_StackTrace.txt
-mboxview_AnyE_StackTrace.txt
-mboxview_AnyE_MailDump.txt
 mboxview_UnhandledException_StackDump.txt
+mboxview_UnhandledException_MailDump.txt
 
 Please raise the ticket on the sourceforge or github and attach the generated files.
 
-The *_MailDump.txt files should contain two raw user mails so please review these files to make sure they don't contain sensitive information.
+The mboxview_UnhandledException_MailDump.txt file should contain two raw user mails so please review these files to make sure they don't contain sensitive information.
 
 https://sourceforge.net/projects/mbox-viewer/
 

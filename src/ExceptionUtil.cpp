@@ -38,7 +38,7 @@
 void __cdecl trans_func(unsigned int u, EXCEPTION_POINTERS* ep)
 {
 	char const*  szCause = seDescription(u);
-	BOOL ret = DumpStack("TranslationSystemE_StackTrace.txt", (TCHAR*)szCause, u, ep->ContextRecord);
+	BOOL ret = DumpStack(nullptr, "TranslationSystemE_StackTrace.txt", (TCHAR*)szCause, u, ep->ContextRecord);
 
 	throw SE_Exception(u);
 }
@@ -52,24 +52,42 @@ MyStackWalker::MyStackWalker(int options, LPCSTR szSymPath, DWORD  dwProcessId, 
 	StackWalker(options, szSymPath, dwProcessId, hProcess)
 {
 	if (stackWalkerBuffer == 0)
-		stackWalkerBuffer = new SimpleString;
+	{
+		stackWalkerBuffer = new SimpleString(20000);
+	}
 
 	if (stackWalkerBuffer)
+	{
 		MyStackWalker::stackWalkerBuffer->Clear();
+	}
+};
+
+MyStackWalker::~MyStackWalker()
+{
+	if (stackWalkerBuffer)
+	{
+		SimpleString *swb = MyStackWalker::stackWalkerBuffer;
+		MyStackWalker::stackWalkerBuffer = 0;
+		delete swb;
+	}
 };
 
 SimpleString *MyStackWalker::GetBuffer()
 {
-	if (stackWalkerBuffer == 0)
-		stackWalkerBuffer = new SimpleString;
+	//if (stackWalkerBuffer == 0) stackWalkerBuffer = new SimpleString;
 
 	return stackWalkerBuffer;
 }
 
+void MyStackWalker::ClearBuffer()
+{
+	if (stackWalkerBuffer)
+		stackWalkerBuffer->SetCount(0);
+}
+
 void MyStackWalker::OnOutput(LPCSTR szText)
 {
-	if (stackWalkerBuffer == 0)
-		stackWalkerBuffer = new SimpleString;
+	//if (stackWalkerBuffer == 0) stackWalkerBuffer = new SimpleString;
 
 	if (stackWalkerBuffer)
 		stackWalkerBuffer->Append((char*)szText);
@@ -123,7 +141,7 @@ BOOL CreateDumpFilePath(char *fileName, CString &filePath)
 
 #ifdef USE_STACK_WALKER
 
-BOOL DumpStack(char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
+BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
 {
 	BOOL ret = TRUE;
 
@@ -145,11 +163,15 @@ BOOL DumpStack(char *fileName, const char *seText, UINT seNumb, PCONTEXT Context
 		//| StackWalker::SymUseSymSrv        // Also use the public Microsoft-Symbol-Server
 		;
 
-	MyStackWalker sw(options);
-	//MyStackWalker sw(StackWalker::OptionsAll, NULL, GetCurrentProcessId(), GetCurrentProcess());
+	if (sw == nullptr)
+	{
+		sw = new MyStackWalker(options);
+	}
+	
+	if (sw == nullptr)
+		return FALSE;
 
-	//sw.ShowCallstack();
-	sw.ShowCallstack(GetCurrentThread(), ContextRecord);
+	sw->ShowCallstack(GetCurrentThread(), ContextRecord);
 
 	SimpleString *buffer = MyStackWalker::GetBuffer();
 	if (buffer)
@@ -202,12 +224,12 @@ BOOL DumpStackEx(char *fileName, CException* e)
 	UINT seNumber = 0;
 	e->GetErrorMessage(szCause, 255, &seNumber);
 
-	BOOL ret = DumpStack(fileName, szCause, seNumber);
+	BOOL ret = DumpStack(nullptr, fileName, szCause, seNumber);
 	return ret;
 }
 #else
 
-BOOL DumpStack(char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
+BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
 {
 	return TRUE;
 }
@@ -282,116 +304,3 @@ BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosit
 	}
 	return ret;
 }
-
-// Need to review and leverage to set or not set SetUnhandledExceptionFilter() 
-#ifdef UNHANDLED_EXCEPTION_TEST
-
-/**********************************************************************
- *main.cpp from
- * https://github.com/JochenKalmbach/StackWalker
- **********************************************************************/
-
-// For more info about "PreventSetUnhandledExceptionFilter" see:
-// "SetUnhandledExceptionFilter" and VC8
-// http://blog.kalmbachnet.de/?postid=75
-// and
-// Unhandled exceptions in VC8 and above… for x86 and x64
-// http://blog.kalmbach-software.de/2008/04/02/unhandled-exceptions-in-vc8-and-above-for-x86-and-x64/
-// Even better: http://blog.kalmbach-software.de/2013/05/23/improvedpreventsetunhandledexceptionfilter/
-
-#if defined(_M_X64) || defined(_M_IX86)
-static BOOL PreventSetUnhandledExceptionFilter()
-{
-	HMODULE hKernel32 = LoadLibrary(_T("kernel32.dll"));
-	if (hKernel32 == NULL)
-		return FALSE;
-	void* pOrgEntry = GetProcAddress(hKernel32, "SetUnhandledExceptionFilter");
-	if (pOrgEntry == NULL)
-		return FALSE;
-
-#ifdef _M_IX86
-	// Code for x86:
-	// 33 C0                xor         eax,eax
-	// C2 04 00             ret         4
-	unsigned char szExecute[] = { 0x33, 0xC0, 0xC2, 0x04, 0x00 };
-#elif _M_X64
-	// 33 C0                xor         eax,eax
-	// C3                   ret
-	unsigned char szExecute[] = { 0x33, 0xC0, 0xC3 };
-#else
-#error "The following code only works for x86 and x64!"
-#endif
-
-	DWORD dwOldProtect = 0;
-	BOOL  bProt = VirtualProtect(pOrgEntry, sizeof(szExecute), PAGE_EXECUTE_READWRITE, &dwOldProtect);
-
-	SIZE_T bytesWritten = 0;
-	BOOL   bRet = WriteProcessMemory(GetCurrentProcess(), pOrgEntry, szExecute, sizeof(szExecute),
-		&bytesWritten);
-
-	if ((bProt != FALSE) && (dwOldProtect != PAGE_EXECUTE_READWRITE))
-	{
-		DWORD dwBuf;
-		VirtualProtect(pOrgEntry, sizeof(szExecute), dwOldProtect, &dwBuf);
-	}
-	return bRet;
-}
-#else
-#pragma message("This code works only for x86 and x64!")
-#endif
-
-static TCHAR s_szExceptionLogFileName[_MAX_PATH] = _T("\\exceptions.log"); // default
-static BOOL  s_bUnhandledExeptionFilterSet = FALSE;
-static LONG __stdcall CrashHandlerExceptionFilter(EXCEPTION_POINTERS* pExPtrs)
-{
-#ifdef _M_IX86
-	if (pExPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
-	{
-		static char MyStack[1024 * 128]; // be sure that we have enough space...
-		// it assumes that DS and SS are the same!!! (this is the case for Win32)
-		// change the stack only if the selectors are the same (this is the case for Win32)
-		//__asm push offset MyStack[1024*128];
-		//__asm pop esp;
-		__asm mov eax, offset MyStack[1024 * 128];
-		__asm mov esp, eax;
-	}
-#endif
-
-	StackWalkerToConsole sw; // output to console
-	sw.ShowCallstack(GetCurrentThread(), pExPtrs->ContextRecord);
-	TCHAR lString[500];
-	_stprintf_s(lString,
-		_T("*** Unhandled Exception! See console output for more infos!\n")
-		_T("   ExpCode: 0x%8.8X\n")
-		_T("   ExpFlags: %d\n")
-#if _MSC_VER >= 1900
-		_T("   ExpAddress: 0x%8.8p\n")
-#else
-		_T("   ExpAddress: 0x%8.8X\n")
-#endif
-		_T("   Please report!"),
-		pExPtrs->ExceptionRecord->ExceptionCode, pExPtrs->ExceptionRecord->ExceptionFlags,
-		pExPtrs->ExceptionRecord->ExceptionAddress);
-	FatalAppExit(-1, lString);
-	return EXCEPTION_CONTINUE_SEARCH;
-}
-
-static void InitUnhandledExceptionFilter()
-{
-	TCHAR szModName[_MAX_PATH];
-	if (GetModuleFileName(NULL, szModName, sizeof(szModName) / sizeof(TCHAR)) != 0)
-	{
-		_tcscpy_s(s_szExceptionLogFileName, szModName);
-		_tcscat_s(s_szExceptionLogFileName, _T(".exp.log"));
-	}
-	if (s_bUnhandledExeptionFilterSet == FALSE)
-	{
-		// set global exception handler (for handling all unhandled exceptions)
-		SetUnhandledExceptionFilter(CrashHandlerExceptionFilter);
-#if defined _M_X64 || defined _M_IX86
-		PreventSetUnhandledExceptionFilter();
-#endif
-		s_bUnhandledExeptionFilterSet = TRUE;
-	}
-}
-#endif // UNHANDLED_EXCEPTION_TEST

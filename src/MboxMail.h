@@ -50,6 +50,8 @@
 #endif
 
 class SimpleString;
+class StackWalker;
+class MyStackWalker;
 
 void ShellExecuteError2Text(UINT errorCode, CString &errorText);
 void ShowMemStatus();
@@ -78,7 +80,6 @@ public:
 #else
 #define DBGT(f)
 #endif
-
 
 class MboxMail;
 struct NamePatternParams;
@@ -267,6 +268,10 @@ public:
 		m_DetermineEmbeddedImagesDone = 0;
 		//m_crc32 = 0xffffffff;
 	}
+	static MyStackWalker *glStackWalker;
+	static BOOL ignoreException;
+	static int runningWorkerThreadType;
+	//
 
 	dlink_node<MboxMail> m_hashMapLink;
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
@@ -370,7 +375,7 @@ public:
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCSTR path);
-	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml = false);
+	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset);
 
 	static BOOL m_seExceptionMsgBox;
 	static BOOL m_cppExceptionMsgBox;
@@ -528,6 +533,8 @@ public:
 	//static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, CStringW &htmlbuf);
 	static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
 	static int printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
+
+	static void DumpMailParseException(_int64 msgOffset);
 };
 
 inline char* FixIfNull(const char* ptr)

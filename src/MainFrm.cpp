@@ -3697,7 +3697,7 @@ BOOL CMainFrame::DeleteAllPlacementKeys()
 void CMainFrame::OnFordevelopersSortbyid()
 {
 	// TODO: Add your command handler code here
-#if 0
+#if 1
 
 	NListView *pListView = 0;
 	pListView = this->GetListView();

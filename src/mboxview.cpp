@@ -60,25 +60,64 @@
 // UpdateData(FALSE) from Dialog members to UI controls 
 // UpdateData(TRUE) from UI controls to Dialog members -  be carefull if you call TRUE in dialog followed by CANCEL
 
+static int unhandledExceptionsCnt = 0;
+
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
 	// Do something, for example generate error report
 	//..
 
+	//MessageBeep(MB_OK);
+	//MessageBeep(MB_OK);
+	//MessageBeep(MB_OK);
+
 	UINT seNumb = 0;
 	if (pExceptionPtrs->ExceptionRecord)
 		seNumb = pExceptionPtrs->ExceptionRecord->ExceptionCode;
 
+	if (MboxMail::ignoreException)
+	{
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	if (seNumb < 0x80000000)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	// MyUnhandledExceptionFilter() is called as a result of calling AddVectoredExceptionHandler(first, MyUnhandledExceptionFilter);
+	// This results invoking MyUnhandledExceptionFilter() for all exceptions
+	// We only want to generate the stack trace when exception is caused by mboxviewer code
+#ifdef USE_STACK_WALKER
+	if (MboxMail::glStackWalker)
+	{
+		BOOL ret = MboxMail::glStackWalker->ProcessStackTrace(seNumb, pExceptionPtrs);
+		if (!ret)
+			return EXCEPTION_CONTINUE_SEARCH;
+		else
+			int deb = 1;
+	}
+#endif
+
+	if (unhandledExceptionsCnt > 0)
+		exit(0);
+
+	if (unhandledExceptionsCnt == 0)
+	{
+
 	char const*  szCause = seDescription(seNumb);
 
 	char *stackDumpFileName = "UnhandledException_StackDump.txt";
-	BOOL ret = DumpStack(stackDumpFileName, (TCHAR*)szCause, seNumb, pExceptionPtrs->ContextRecord);
+	int mailPosition = MboxMail::s_mails.GetCount();
+	MyStackWalker *sw  = nullptr;
+	if (MboxMail::glStackWalker)
+	{
+		sw = MboxMail::glStackWalker;
+	}
+	BOOL ret = DumpStack(sw, stackDumpFileName, (TCHAR*)szCause, seNumb, pExceptionPtrs->ContextRecord, mailPosition);
 
 	CString progDir;
 	BOOL retDir = GetProgramDir(progDir);
 
 	char *exceptionName = "UnhandledException";
-
 	CString errorTxt;
 #ifdef USE_STACK_WALKER
 	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
@@ -88,13 +127,84 @@ LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 #else
 	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"), exceptionName, seNumb, szCause);
 #endif
-
 	AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+
+	MboxMail::ignoreException = TRUE;
+
+	if (!MboxMail::runningWorkerThreadType)
+	{
+		//MessageBeep(MB_OK);
+		//MessageBeep(MB_OK);
+		//MessageBeep(MB_OK);
+		//AfxAbort();
+		exit(0);
+	}
+	}
+
+	unhandledExceptionsCnt++;
 
 	// Execute default exception handler next
 	//return EXCEPTION_EXECUTE_HANDLER;
 	//return EXCEPTION_CONTINUE_EXECUTION;
 	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+// CRT invalid parameter handler
+void __cdecl InvalidParameterHandler(
+	const wchar_t* expression,
+	const wchar_t* function,
+	const wchar_t* file,
+	unsigned int line,
+	uintptr_t pReserved)
+{
+	pReserved;
+
+	// Invalid parameter exception
+
+	// Retrieve exception information
+	//EXCEPTION_POINTERS* pExceptionPtrs = GetExceptionInformation();
+
+	CStringW lineW;
+	lineW.Format(L"%d", line);
+	CStringW txt = L"expression=" + CStringW(expression) + L"function=" + CStringW(function) + L"file=" + CStringW(file) + L"line=" + lineW;
+
+	CString txtA;
+	DWORD error;
+	BOOL retW2A = TextUtilsEx::Wide2Ansi(txt, txtA, error);
+
+	AfxMessageBox(txtA, MB_OK | MB_ICONHAND);
+
+	// GetExceptionPointers(0, &pExceptionPtrs);
+
+	// Write minidump file
+	//CreateMiniDump(pExceptionPtrs);
+
+	// Terminate process
+	TerminateProcess(GetCurrentProcess(), 1);
+}
+
+
+// It looks by AddVectoredExceptionHandler() will catch all kinds of exceptions,
+// However, some of them must be ignored be ignored
+PVOID vectorHandle = 0;
+void SetMyExceptionHandler()
+{
+	//Scoped_SE_Translator scoped_se_translator(trans_func);
+	//_set_invalid_parameter_handler(InvalidParameterHandler);
+	//SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
+	ULONG first = 1;
+	vectorHandle = AddVectoredExceptionHandler(first, MyUnhandledExceptionFilter);
+}
+
+void UnSetMyExceptionHandler()
+{
+	//Scoped_SE_Translator scoped_se_translator(trans_func);
+	//SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
+	ULONG ret = RemoveVectoredExceptionHandler(vectorHandle);
+
+	//_set_invalid_parameter_handler(InvalidParameterHandler);
 }
 
 const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
@@ -483,7 +593,35 @@ BOOL CmboxviewApp::InitInstance()
 	DWORD err = GetLastError();
 
 #ifdef USE_STACK_WALKER
-	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+	// Stack Trace seems to work better but it is working perfectly
+	// It seem to show offending line fine but not the lines in other stack frames
+	int options =
+		StackWalker::RetrieveSymbol      // Try to get the symbol-name
+		| StackWalker::RetrieveLine        // Try to get the line for this symbol
+		//| StackWalker::RetrieveModuleInfo  // Try to retrieve the module-infos
+		//| StackWalker::RetrieveFileVersion // Also retrieve the version for the DLL/EXE
+		| StackWalker::SymBuildPath        // Generate a "good" symbol-search-path
+		//| StackWalker::SymUseSymSrv        // Also use the public Microsoft-Symbol-Server
+		;
+
+	MboxMail::glStackWalker = new MyStackWalker(options);
+	MyStackWalker *sw = MboxMail::glStackWalker;
+	if (sw)
+	{
+		// preload modules, etc to minimize work in MyUnhandledExceptionFilter();
+		sw->LoadAllModules();
+		sw->ClearBuffer();
+	}
+
+#if 0
+	char *stackDumpFileName = "UnhandledException_StackDump.txt";
+	UINT seNumb = 0;
+	CONTEXT *ContextRecord = nullptr;
+	int mailPosition = -1;
+	BOOL ret = DumpStack(sw, stackDumpFileName, (TCHAR*)"Preload", seNumb, ContextRecord, mailPosition);
+#endif
+
+	SetMyExceptionHandler();
 #endif
 
 	//AfxEnableMemoryTracking(TRUE);
