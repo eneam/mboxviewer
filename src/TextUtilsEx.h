@@ -84,6 +84,8 @@ public:
 	static int strncmpExact(char *any, char *end, const char *lower, int lowerlength);
 	static int findNoCase(const char *input, int count, void const* Str, int  Size);
 	static char *findNoCaseP(const char *input, int count, void const* Str, int  Size);
+	static BOOL isWhiteLine(const char* p, const char* e);
+	static BOOL isWhiteLine(CString &str);
 	//
 	static int DecodeURL(char *URL, int urlLen);
 

@@ -617,7 +617,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
 				//char* szTemp = (char*)1;
 				//strcpy_s(szTemp, 1000, "A");
-				*badPtr = 'a';
+				//*badPtr = 'a';
 				SCODE sc = 99;
 				//AfxThrowOleException(sc);
 				MboxMail *m = s_mails[100000];
@@ -7499,10 +7499,9 @@ int MboxMail::RemoveDuplicateMails()
 	int to_dup_i = 0;
 	int to_i = 0;
 
-
 	// Test exceptions
-	//CTime ct(1, 1, 1, 1, 1, 1,1);
-	//m = s_mails[s_mails.GetSize() + 1000];
+	// CTime ct(1, 1, 1, 1, 1, 1,1);
+	// m = s_mails[s_mails.GetSize() + 1000];
 
 	for (i; i < s_mails.GetSize(); i++)
 	{

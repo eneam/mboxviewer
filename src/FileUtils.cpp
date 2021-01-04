@@ -654,6 +654,42 @@ int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesTo
 		return TRUE;
 }
 
+BOOL FileUtils::NormalizeFilePath(CString &filePath)
+{
+	CString outFilePath;
+	filePath.Replace("/", "\\");
+	filePath.TrimRight("\\");
+	int i, k;
+	char c;
+	k = 0;
+	for (i = 0; i < filePath.GetLength(); )
+	{
+		c = filePath.GetAt(i);
+		outFilePath.AppendChar(c);
+		i++;
+		if (c == '\\')
+		{
+			for ( ; i < filePath.GetLength(); i++)
+			{
+				c = filePath.GetAt(i);
+				if (c != '\\')
+					break;
+			}
+		}
+	}
+
+	char buffer[MAX_PATH + 1];
+	BOOL ret = PathCanonicalizeA(buffer, (LPCSTR)outFilePath);
+	if (ret)
+	{
+		filePath.Empty();
+		filePath.Append(buffer);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
 void FileUtils::UnitTest()
 {
 	DWORD error;

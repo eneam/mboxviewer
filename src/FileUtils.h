@@ -66,6 +66,7 @@ public:
 	static void MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bReplaceWhiteWithUnderscore);
 	static BOOL Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength);
 	static int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten);
+	static BOOL NormalizeFilePath(CString &filePath);
 	//
 	void UnitTest();
 };

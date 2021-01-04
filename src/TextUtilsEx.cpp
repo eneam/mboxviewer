@@ -1020,3 +1020,20 @@ int TextUtilsEx::DecodeURL(char *URL, int urlLen)
 
 	return retLen;
 }
+
+BOOL TextUtilsEx::isWhiteLine(CString &str)
+{
+	const char* p = (LPCSTR)str;
+	const char* e = p + str.GetLength();
+	return isWhiteLine(p, e);
+}
+
+BOOL TextUtilsEx::isWhiteLine(const char* p, const char* e)
+{
+	while ((p < e) && ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t')))  // eat white
+		p++;
+	if (p == e)
+		return TRUE;
+	else
+		return FALSE;
+}

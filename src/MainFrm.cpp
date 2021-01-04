@@ -2659,20 +2659,83 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		return -1;
 	}
 
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+	CString folderPath;
+	CString fileNameExtentionRoot;
+
 	CString filePath;
 	while (fpList.ReadString(filePath))
 	{
-		TRACE("FilePath=%s\n", filePath);
-		if (!FileUtils::PathFileExist(filePath))
+		if (TextUtilsEx::isWhiteLine(filePath))
+			continue;
+
+		if (filePath.CompareNoCase(mergedMboxFilePath) == 0)
 		{
-			CString txt = _T("File path invalid:\n\n");
+			CString txt = _T("Invalid File Path:\n\n");
 			txt.Append(filePath);
-			txt.Append("\n\nCan't continue merging files\n");
+			txt.Append("\n\nIn List File:\n\n");
+			txt.Append(mboxListFilePath);
+			txt.Append("\n\nFile Path and Merge To File Path are the same\nCan't continue merging files\n");
 
 			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 			fpList.Close();
 			return -1;
+		}
+
+		FileUtils::SplitFilePath(filePath, driveName, directory, fileNameBase, fileNameExtention);
+		folderPath = driveName + directory;
+		if (fileNameBase.Find("*") >= 0)
+		{
+			// mboxo, mboxrd, mboxcl, and mboxcl2
+			if (fileNameExtention.CompareNoCase(".mbox") &&
+				fileNameExtention.CompareNoCase(".eml") &&
+				fileNameExtention.CompareNoCase(".mboxo") &&
+				fileNameExtention.CompareNoCase(".mboxrd") &&
+				fileNameExtention.CompareNoCase(".mboxcl") &&
+				fileNameExtention.CompareNoCase(".mboxcl2")
+				)
+			{
+				CString txt = _T("Wildcard File Name has invalid extension:\n\n");
+				txt.Append(filePath);
+				txt.Append("\n\nCan't continue merging files\n");
+
+				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+
+				fpList.Close();
+				return -1;
+			}
+			if (!FileUtils::PathDirExists(folderPath))
+			{
+				CString txt = _T("Invalid Folder Path in Wildcard File Name:\n\n");
+				txt.Append(folderPath);
+				txt.Append("\n\nCan't continue merging files\n");
+
+				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+
+				fpList.Close();
+				return -1;
+			}
+		}
+		else
+		{
+			TRACE("FilePath=%s\n", filePath);
+			if (!FileUtils::PathFileExist(filePath))
+			{
+				CString txt = _T("Invalid File Path:\n\n");
+				txt.Append(filePath);
+				txt.Append("\n\nIn List File:\n\n");
+				txt.Append(mboxListFilePath);
+				txt.Append("\n\nCan't continue merging files\n");
+
+				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+
+				fpList.Close();
+				return -1;
+			}
 		}
 	}
 
@@ -2689,25 +2752,79 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		txt += _T("\" file.\nMake sure file is not open on other applications.");
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		fpList.Close();
 		return -1;
 	}
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CString sText;
+	int paneId = 0;
 
 	fpList.SeekToBegin();
 	while (fpList.ReadString(filePath))
 	{
+		if (TextUtilsEx::isWhiteLine(filePath))
+			continue;
+
 		TRACE("FilePath=%s\n", filePath);
-		int ret = MergeMboxArchiveFile(fpMergeTo, filePath);
+		FileUtils::SplitFilePath(filePath, driveName, directory, fileNameBase, fileNameExtention);
+		folderPath = driveName + directory;
+		if (fileNameBase.Find("*") >= 0)
+		{
+			WIN32_FIND_DATA	wf;
+			HANDLE f = FindFirstFile(filePath, &wf);
+			if (f != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.')
+					{
+						CString fn = wf.cFileName;
+						CString fullPath = folderPath + fn;
+						if (fullPath.CompareNoCase(mergedMboxFilePath) != 0)
+						{
+							_int64 fileSize = FileUtils::FileSize(fullPath);
+							sText.Format("Merging %s (%lld bytes) ...", fullPath, fileSize);
+							if (pFrame)
+								pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+							int ret = MergeMboxArchiveFile(fpMergeTo, fullPath);
+							//Sleep(3000);
+						}
+						else
+							int deb = 1;
+					}
+				} while (FindNextFile(f, &wf));
+				FindClose(f);
+			}
+		}
+		else
+		{
+			_int64 fileSize = FileUtils::FileSize(filePath);
+			sText.Format("Merging %s (%lld bytes) ...", filePath, fileSize);
+			if (pFrame)
+				pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+			int ret = MergeMboxArchiveFile(fpMergeTo, filePath);
+			//Sleep(3000);
+		}
 	}
 
 	fpList.Close();
 	fpMergeTo.Close();
+
+	sText.Format("Ready");
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
 	return 1;
 }
 
 int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath)
 {
-	// All archive files are valid; merge
+	// All archive files are assumed valid; merge
+	// Caller should check the file content to validate. Not done yet
 
 	CString filePath;
 	CString fileName;
@@ -2724,42 +2841,55 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath)
 			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
+
 		// Append file
 		UINT wantBytes = 16 * 1024;
 		// don't use  MboxMail::m_oubuf is still used by dlgFile above !!!!! 
 		MboxMail::m_inbuf->ClearAndResize(wantBytes + 2);
 		TCHAR *inBuffer = MboxMail::m_inbuf->Data();
 
-		BOOL fromLineDone = FALSE;
 		UINT readBytes = 0;
-		do 
+
+		readBytes = fp_input.Read(inBuffer, wantBytes);
+		if (readBytes <= 0)
+		{
+			fp_input.Close();
+			return -1;
+		}
+
+		static const char *cFromMailBegin = "From ";
+		static const int cFromMailBeginLen = strlen(cFromMailBegin);
+
+		char *p = inBuffer;
+		char *e = p + readBytes;
+		char *fldName = p;
+		char *pend = e;
+
+		p = MimeParser::SkipEmptyLines(p, e);
+
+		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) != 0)
+		{
+			// From 1513218656940664977@xxx Thu Sep 24 18:02:48 +0000 2015
+			// More parsing would be needed to find first line with Date and Time
+			// The below is safe for parsing the created mbox file
+			CString FromLine = "From 1513218656940664977@xxx \r\n";
+			fpMergeTo.Write(FromLine, FromLine.GetLength());
+		}
+		inBuffer = p;
+		readBytes = e - p;
+
+		if (readBytes > 0)
+		{
+			fpMergeTo.Write(inBuffer, readBytes);
+		}
+
+		do
 		{
 			readBytes = fp_input.Read(inBuffer, wantBytes);
-
-			static const char *cFromMailBegin = "From ";
-			static const int cFromMailBeginLen = strlen(cFromMailBegin);
-
-			char *p = inBuffer;
-			char *e = p + readBytes;
-			char *fldName = p;
-			char *pend = e;
-
-			p = MimeParser::SkipEmptyLines(p, e);
-
-			if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) != 0)
+			if (readBytes > 0)
 			{
-				if (fromLineDone == FALSE)
-				{
-					// From 1513218656940664977@xxx Thu Sep 24 18:02:48 +0000 2015
-					// More parsing would be needed to find first line with Date and Time
-					// The below is safe for parsing the created mbox file
-					CString FromLine = "From 1513218656940664977@xxx \r\n";
-					fpMergeTo.Write(FromLine, FromLine.GetLength());
-					fromLineDone = TRUE;
-				}
+				fpMergeTo.Write(inBuffer, readBytes);
 			}
-			fpMergeTo.Write(inBuffer, readBytes);
-
 		} while (readBytes > 0);
 
 #if 0
@@ -2772,7 +2902,6 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath)
 #endif
 
 		fp_input.Close();
-
 	}
 
 	return 1;

@@ -537,6 +537,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		else if (strncmp(lpszParam, _T("MBOX_MERGE_TO_FILE"), 18) == 0)
 		{
 			CString mergeToFilePath = lpszParam + 19;
+			FileUtils::NormalizeFilePath(mergeToFilePath);
 			CMainFrame::m_commandLineParms.m_mergeToFilePath = mergeToFilePath;
 		}
 		else if (strncmp(lpszParam, _T("TRACE_CASE"), 10) == 0)
@@ -621,6 +622,7 @@ BOOL CmboxviewApp::InitInstance()
 	BOOL ret = DumpStack(sw, stackDumpFileName, (TCHAR*)"Preload", seNumb, ContextRecord, mailPosition);
 #endif
 
+	/// Disable "Whole program Optimization" to get accurate Stack Trace  !!!!
 	SetMyExceptionHandler();
 #endif
 
