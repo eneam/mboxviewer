@@ -185,7 +185,9 @@ void __cdecl InvalidParameterHandler(
 
 
 // It looks by AddVectoredExceptionHandler() will catch all kinds of exceptions,
-// However, some of them must be ignored be ignored
+// However, some of them must be ignored be ignored and it is difficult to know which exceptions
+// must be ignored. Unfortunatelly, in rare unknown cases program will be terminated incorrectly.
+
 PVOID vectorHandle = 0;
 void SetMyExceptionHandler()
 {
@@ -594,8 +596,6 @@ BOOL CmboxviewApp::InitInstance()
 	DWORD err = GetLastError();
 
 #ifdef USE_STACK_WALKER
-	// Stack Trace seems to work better but it is working perfectly
-	// It seem to show offending line fine but not the lines in other stack frames
 	int options =
 		StackWalker::RetrieveSymbol      // Try to get the symbol-name
 		| StackWalker::RetrieveLine        // Try to get the line for this symbol

@@ -391,4 +391,10 @@
     <Text Include="LICENSE.txt" />
     <Text Include="HELP.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\print.bmp" />
+    <Image Include="res\select_folder.bmp" />
+    <Image Include="res\PaperClip.bmp" />
+    <Image Include="res\bitmap1.bmp" />
+  </ItemGroup>
 </Project>

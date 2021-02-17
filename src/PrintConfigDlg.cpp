@@ -67,13 +67,15 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_FILE_NAME_MAX_SIZE, m_NamePatternParams.m_nWantedFileNameFormatSizeLimit);
 	DDX_Radio(pDX, IDC_PRT_DO_NOT_PROMPT, m_NamePatternParams.m_bPrintDialog);
 	DDX_Radio(pDX, IDC_HTML2PDF_SCRIPT_TYPE, m_NamePatternParams.m_bScriptType);
-	DDX_Text(pDX, IDC_CHROME_EXE_PATH, m_NamePatternParams.m_ChromeBrowserPath);
+	DDX_Text(pDX, IDC_CHROME_EXE_PATH, m_NamePatternParams.m_BrowserPath);
+	//DDX_Text(pDX, IDC_MSEDGE_EXE_PATH, m_NamePatternParams.m_MSEdgeBrowserPath);
 	DDX_Text(pDX, IDC_HTML2PDF_SCRIPT_PATH, m_NamePatternParams.m_UserDefinedScriptPath);
 	DDX_Check(pDX, IDC_SEPARATE_PDF, m_NamePatternParams.m_bPrintToSeparatePDFFiles);
 	DDX_Check(pDX, IDC_SEPARATE_HTML, m_NamePatternParams.m_bPrintToSeparateHTMLFiles);
 	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
 	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
 	DDX_Check(pDX, IDC_KEEP_BODY_BKGRND_COLOR, m_NamePatternParams.m_bKeepMailBodyBackgroundColor);
+	DDX_Check(pDX, IDC_HEADER_AND_FOOTER, m_NamePatternParams.m_bHeaderAndFooter);
 	DDX_Check(pDX, IDC_CUSTOM_TEMPLATE, m_NamePatternParams.m_bCustomFormat);
 	int deb = 1;
 }
@@ -84,7 +86,8 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_FILE_NAME_MAX_SIZE, &PrintConfigDlg::OnEnChangeFileNameMaxSize)
 	ON_BN_CLICKED(IDC_PRT_PAGE_SETP, &PrintConfigDlg::OnBnClickedPrtPageSetp)
 	ON_BN_CLICKED(IDC_HTML2PDF_SCRIPT_TYPE, &PrintConfigDlg::OnBnClickedHtml2pdfScriptType)
-	ON_BN_CLICKED(IDC_RADIO3, &PrintConfigDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_USER_SCRIPT, &PrintConfigDlg::OnBnClickedUserDefinedScript)
+	ON_BN_CLICKED(IDC_MSEDGE, &PrintConfigDlg::OnBnClickedMSEdge)
 	ON_BN_CLICKED(IDC_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedCustomTemplate)
 	ON_BN_CLICKED(IDC_SET_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedSetCustomTemplate)
 	ON_BN_CLICKED(IDC_HTML_PDF_CNF, &PrintConfigDlg::OnBnClickedHtmlPdfCnf)
@@ -139,7 +142,32 @@ BOOL PrintConfigDlg::OnInitDialog()
 			p->EnableWindow(FALSE);
 		}
 
+		p = GetDlgItem(IDC_CHROME_EXE_PATH);
+		if (p)
+		{
+			if (m_NamePatternParams.m_bScriptType == 0)
+			{
+				m_NamePatternParams.m_BrowserPath = m_NamePatternParams.m_ChromeBrowserPath;
+			}
+			else if (m_NamePatternParams.m_bScriptType == 1)
+			{
+				m_NamePatternParams.m_BrowserPath = m_NamePatternParams.m_MSEdgeBrowserPath;
+			}
+			p->SetWindowText(m_NamePatternParams.m_BrowserPath);
+		}
+
 		p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			if ((m_NamePatternParams.m_bScriptType == 0) || (m_NamePatternParams.m_bScriptType == 1))
+			{
+				((CButton*)p)->SetCheck(1);
+				p->EnableWindow(FALSE);
+			}
+			else
+				p->EnableWindow(TRUE);
+		}
+
+		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
 		if (p) {
 			if (m_NamePatternParams.m_bScriptType == 0)
 			{
@@ -147,7 +175,10 @@ BOOL PrintConfigDlg::OnInitDialog()
 				p->EnableWindow(FALSE);
 			}
 			else
+			{
+				((CButton*)p)->SetCheck(m_NamePatternParams.m_bHeaderAndFooter);
 				p->EnableWindow(TRUE);
+			}
 		}
 
 		p = 0;
@@ -218,8 +249,10 @@ void NamePatternParams::SetDflts()
 	m_nFileNameFormatSizeLimit = 260;
 	m_nWantedFileNameFormatSizeLimit = m_nFileNameFormatSizeLimit;
 	m_bPrintDialog = 1;
-	m_bScriptType = 0;
+	m_bScriptType = 1;
 	m_ChromeBrowserPath = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
+	m_MSEdgeBrowserPath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+	m_BrowserPath = m_MSEdgeBrowserPath;
 	m_bPrintToSeparatePDFFiles = FALSE;
 	m_bPrintToSeparateHTMLFiles = FALSE;
 	m_bPrintToSeparateTEXTFiles = FALSE;
@@ -227,6 +260,7 @@ void NamePatternParams::SetDflts()
 	m_bAddBackgroundColorToMailHeader = TRUE;
 	m_bAddBreakPageAfterEachMailInPDF = FALSE;
 	m_bKeepMailBodyBackgroundColor = TRUE;
+	m_bHeaderAndFooter = FALSE;
 	m_bCustomFormat = FALSE;
 
 	m_nameTemplateCnf.SetDflts();
@@ -270,7 +304,9 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_nWantedFileNameFormatSizeLimit = src.m_nWantedFileNameFormatSizeLimit;
 	m_bPrintDialog = src.m_bPrintDialog;
 	m_bScriptType = src.m_bScriptType;
+	m_BrowserPath = src.m_BrowserPath;
 	m_ChromeBrowserPath = src.m_ChromeBrowserPath;
+	m_MSEdgeBrowserPath = src.m_MSEdgeBrowserPath;
 	m_UserDefinedScriptPath = src.m_UserDefinedScriptPath;
 	m_bPrintToSeparatePDFFiles = src.m_bPrintToSeparatePDFFiles;
 	m_bPrintToSeparateHTMLFiles = src.m_bPrintToSeparateHTMLFiles;
@@ -278,6 +314,7 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bAddBackgroundColorToMailHeader = src.m_bAddBackgroundColorToMailHeader;
 	m_bAddBreakPageAfterEachMailInPDF = src.m_bAddBreakPageAfterEachMailInPDF;
 	m_bKeepMailBodyBackgroundColor = src.m_bKeepMailBodyBackgroundColor;
+	m_bHeaderAndFooter = src.m_bHeaderAndFooter;
 	m_bCustomFormat = src.m_bCustomFormat;
 
 	m_nameTemplateCnf.Copy(src.m_nameTemplateCnf);
@@ -312,8 +349,19 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	if (updated.m_bScriptType != current.m_bScriptType) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printHTML2PDFScriptType", updated.m_bScriptType);
 	}
-	if (updated.m_ChromeBrowserPath != current.m_ChromeBrowserPath) {
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printChromeBrowserPath", updated.m_ChromeBrowserPath);
+	if (updated.m_bScriptType == 0)
+	{
+		if (updated.m_BrowserPath != current.m_ChromeBrowserPath) {
+			updated.m_ChromeBrowserPath = updated.m_BrowserPath;
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printChromeBrowserPath", updated.m_ChromeBrowserPath);
+		}
+	}
+	else if (updated.m_bScriptType == 1)
+	{
+		if (updated.m_BrowserPath != current.m_MSEdgeBrowserPath) {
+			updated.m_MSEdgeBrowserPath = updated.m_BrowserPath;
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printMSEdgeBrowserPath", updated.m_MSEdgeBrowserPath);
+		}
 	}
 	if (updated.m_UserDefinedScriptPath != current.m_UserDefinedScriptPath) {
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printUserDefinedScriptPath", updated.m_UserDefinedScriptPath);
@@ -326,6 +374,12 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	}
 	if (updated.m_bKeepMailBodyBackgroundColor != current.m_bKeepMailBodyBackgroundColor) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailBodyBackgroundColor", updated.m_bKeepMailBodyBackgroundColor);
+	}
+	if (updated.m_bHeaderAndFooter != current.m_bHeaderAndFooter) {
+		if (updated.m_bScriptType == 1)
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPageHeaderAndFooter", updated.m_bHeaderAndFooter);
+		else
+			updated.m_bHeaderAndFooter = current.m_bHeaderAndFooter;
 	}
 	if (updated.m_bCustomFormat != current.m_bCustomFormat) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplate", updated.m_bCustomFormat);
@@ -346,9 +400,10 @@ void NamePatternParams::LoadFromRegistry()
 {
 	BOOL retval;
 	DWORD bDate, bTime, bFrom, bTo, bSubject, bPrintDialog, bScriptType, nWantedFileNameFormatSizeLimit;
-	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF, bKeepMailBodyBackgroundColor;
+	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF, bKeepMailBodyBackgroundColor, bHeaderAndFooter;
 	DWORD nAddressPartsBitmap;
 	CString chromeBrowserPath;
+	CString msedgeBrowserPath;
 	CString userDefinedScriptPath;
 	DWORD bCustomFormat;
 	CString templateFormat;
@@ -372,6 +427,9 @@ void NamePatternParams::LoadFromRegistry()
 		m_bScriptType = bScriptType;
 	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printChromeBrowserPath"), chromeBrowserPath))
 		m_ChromeBrowserPath = chromeBrowserPath;
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMSEdgeBrowserPath"), msedgeBrowserPath))
+		m_MSEdgeBrowserPath = msedgeBrowserPath;
+
 	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printUserDefinedScriptPath"), userDefinedScriptPath))
 		m_UserDefinedScriptPath = userDefinedScriptPath;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailHdrBackgroundColor"), bAddBackgroundColorToMailHeader))
@@ -380,6 +438,8 @@ void NamePatternParams::LoadFromRegistry()
 		m_bAddBreakPageAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailBodyBackgroundColor"), bKeepMailBodyBackgroundColor))
 		m_bKeepMailBodyBackgroundColor = bKeepMailBodyBackgroundColor;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPageHeaderAndFooter"), bHeaderAndFooter))
+		m_bHeaderAndFooter = bHeaderAndFooter;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplate"), bCustomFormat))
 		m_bCustomFormat = bCustomFormat;
 	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplateFormat"), templateFormat))
@@ -391,6 +451,24 @@ void NamePatternParams::LoadFromRegistry()
 		m_nAddressPartsBitmap = nAddressPartsBitmap;
 		Bitmap2AddressParts();
 	}
+
+	if (m_bScriptType == 0)
+	{
+		m_bHeaderAndFooter = TRUE;
+		if (chromeBrowserPath.IsEmpty())
+			m_BrowserPath = m_ChromeBrowserPath;
+		else
+			m_BrowserPath = chromeBrowserPath;
+	}
+	else if (m_bScriptType == 1)
+	{
+		if (chromeBrowserPath.IsEmpty())
+			m_BrowserPath = m_MSEdgeBrowserPath;
+		else
+			m_BrowserPath = msedgeBrowserPath;
+	}
+	else
+		m_bHeaderAndFooter = TRUE;
 }
 
 void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)
@@ -421,9 +499,24 @@ void PrintConfigDlg::OnBnClickedPrtPageSetp()
 void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
 {
 	// TODO: Add your control notification handler code here
+
 	if (GetSafeHwnd())
 	{
 		CWnd *p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			((CButton*)p)->SetCheck(1);
+			p->EnableWindow(FALSE);
+		}
+
+		p = GetDlgItem(IDC_CHROME_EXE_PATH);
+		if (p)
+		{
+			m_NamePatternParams.m_BrowserPath = m_NamePatternParams.m_ChromeBrowserPath;
+			p->SetWindowText(m_NamePatternParams.m_BrowserPath);
+			p->EnableWindow(TRUE);
+		}
+
+		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
 		if (p) {
 			((CButton*)p)->SetCheck(1);
 			p->EnableWindow(FALSE);
@@ -432,8 +525,36 @@ void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
 	int deb = 1;
 }
 
+void PrintConfigDlg::OnBnClickedMSEdge()
+{
+	// TODO: Add your control notification handler code here
 
-void PrintConfigDlg::OnBnClickedRadio3()
+	if (GetSafeHwnd())
+	{
+		CWnd *p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
+		if (p) {
+			((CButton*)p)->SetCheck(1);
+			p->EnableWindow(FALSE);
+		}
+
+		p = GetDlgItem(IDC_CHROME_EXE_PATH);
+		if (p)
+		{
+			m_NamePatternParams.m_BrowserPath = m_NamePatternParams.m_MSEdgeBrowserPath;
+			p->SetWindowText(m_NamePatternParams.m_BrowserPath);
+			p->EnableWindow(TRUE);
+		}
+		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
+		if (p) {
+			((CButton*)p)->SetCheck(m_NamePatternParams.m_bHeaderAndFooter);
+			p->EnableWindow(TRUE);
+		}
+	}
+	int deb = 1;
+}
+
+
+void PrintConfigDlg::OnBnClickedUserDefinedScript()
 {
 	// TODO: Add your control notification handler code here
 	if (GetSafeHwnd())
@@ -442,6 +563,9 @@ void PrintConfigDlg::OnBnClickedRadio3()
 		if (p) {
 			p->EnableWindow(TRUE);
 		}
+		p = GetDlgItem(IDC_CHROME_EXE_PATH);
+		if (p)
+			p->EnableWindow(FALSE);
 	}
 	int deb = 1;
 }

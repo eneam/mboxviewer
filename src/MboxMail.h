@@ -129,7 +129,8 @@ public:
 		AttachmentConfigHint = 9,
 		MessageHeaderConfigHint = 10,
 		MessageRemoveFolderHint = 11,
-		MessageRemoveFileHint = 12
+		MessageRemoveFileHint = 12,
+		MergeFilesHint = 13
 	};
 };
 

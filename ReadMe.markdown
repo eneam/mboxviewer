@@ -44,6 +44,14 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.19
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added option to print mails directly to PDF with no page header and footer via Microsoft Edge browser;
+ - Fixed merging files via file list and added support for wildcard file names;
+ - Enhanced the stack trace dump in Exception;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.18
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

@@ -2944,6 +2944,8 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 void CMainFrame::OnFileMergearchivefiles()
 {
 	// TODO: Add your command handler code here
+	HWND h = GetSafeHwnd();
+	MboxMail::ShowHint(HintConfig::MergeFilesHint, h);
 	MergeArchiveFiles();
 }
 
@@ -2991,7 +2993,20 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 		path = m_NamePatternParams.m_ChromeBrowserPath;
 		if (!FileUtils::PathFileExist(path))
 		{
-			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update the setup.");
+			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
+				"\nOr configure Microsoft Edge Browser for printing."
+				"\nSelect File->Print Config to update the setup.");
+			return -1;
+		}
+	}
+	else if (m_NamePatternParams.m_bScriptType == 1)
+	{
+		path = m_NamePatternParams.m_MSEdgeBrowserPath;
+		if (!FileUtils::PathFileExist(path))
+		{
+			errorText = _T("Path to MSEdge Browser not valid.\nPlease make sure Microsoft Edge is installed and path is correct."
+				"\nOr configure Google Chrome Browser for printing."
+				"\nSelect File->Print Config to update the setup.");
 			return -1;
 		}
 	}
@@ -3047,7 +3062,26 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		// args no change
 		path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
 		if (!FileUtils::PathFileExist(path)) {
-			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct.\nSelect File->Print Config to update setup.");
+			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
+				"\nOr configure Microsoft Edge Browser for printing."
+				"\nSelect File->Print Config to update setup.");
+			int deb = 1;
+			return -1;
+		}
+	}
+	else if (pFrame->m_NamePatternParams.m_bScriptType == 1)
+	{
+		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
+			args = "--headless --disable-gpu";
+		else
+			args = "--headless --disable-gpu --print-to-pdf-no-header";
+
+		args += " --print-to-pdf=\"" + pdfFileName + "\" \"" + htmFileName + "\"";
+		path = pFrame->m_NamePatternParams.m_MSEdgeBrowserPath;
+		if (!FileUtils::PathFileExist(path)) {
+			errorText = _T("Path to MSEdge Browser not valid.\nPlease make sure MSEdge is installed and path is correct."
+				"\nOr configure Google  Chrome Browser for printing."
+				"\nSelect File->Print Config to update the setup.");
 			int deb = 1;
 			return -1;
 		}

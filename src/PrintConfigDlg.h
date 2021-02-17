@@ -52,7 +52,9 @@ struct NamePatternParams
 	int m_nWantedFileNameFormatSizeLimit;
 	int m_bPrintDialog;
 	int m_bScriptType;
+	CString	m_BrowserPath;
 	CString	m_ChromeBrowserPath;
+	CString	m_MSEdgeBrowserPath;
 	CString	m_UserDefinedScriptPath;
 	int m_bPrintToSeparatePDFFiles;
 	int m_bPrintToSeparateHTMLFiles;
@@ -60,6 +62,7 @@ struct NamePatternParams
 	int m_bAddBackgroundColorToMailHeader;
 	int m_bAddBreakPageAfterEachMailInPDF;
 	int m_bKeepMailBodyBackgroundColor;
+	int m_bHeaderAndFooter;
 	int m_bCustomFormat;
 
 	DWORD m_nAddressPartsBitmap;
@@ -111,7 +114,8 @@ public:
 	afx_msg void OnEnChangeFileNameMaxSize();
 	afx_msg void OnBnClickedPrtPageSetp();
 	afx_msg void OnBnClickedHtml2pdfScriptType();
-	afx_msg void OnBnClickedRadio3();
+	afx_msg void OnBnClickedUserDefinedScript();
+	afx_msg void OnBnClickedMSEdge();
 
 	afx_msg void OnBnClickedCustomTemplate();
 	afx_msg void OnBnClickedSetCustomTemplate();

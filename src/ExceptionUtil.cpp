@@ -74,8 +74,6 @@ MyStackWalker::~MyStackWalker()
 
 SimpleString *MyStackWalker::GetBuffer()
 {
-	//if (stackWalkerBuffer == 0) stackWalkerBuffer = new SimpleString;
-
 	return stackWalkerBuffer;
 }
 
@@ -87,8 +85,6 @@ void MyStackWalker::ClearBuffer()
 
 void MyStackWalker::OnOutput(LPCSTR szText)
 {
-	//if (stackWalkerBuffer == 0) stackWalkerBuffer = new SimpleString;
-
 	if (stackWalkerBuffer)
 		stackWalkerBuffer->Append((char*)szText);
 };

@@ -69,7 +69,6 @@
 #define IDC_YMD                         1053
 #define IDC_DATETIMEPICKER1             1053
 #define IDC_DATETIMEPICKER2             1054
-#define IDC_RADIO1                      1056
 #define IDC_SCOPE                       1056
 #define IDC_EXPORT_EML                  1056
 #define IDC_SEARCH_PREV                 1056
@@ -109,11 +108,11 @@
 #define IDC_FILTERDATES_A               1064
 #define IDC_EDIT_ATTACHMENT_NAME_CHECKED 1064
 #define IDC_PROGRESS_BAR_DELAY          1065
+#define IDC_MSEDGE                      1066
 #define IDC_SUBJ_ID                     1070
 #define IDC_FROM_ID                     1071
 #define IDC_TO_ID                       1072
 #define IDC_SHOW_CHARSETS               1074
-#define IDC_RADIO6                      1075
 #define IDC_SHOW_CHARSETS_Y             1075
 #define IDC_COLOR_STYLE4                1075
 #define IDC_CHECK_FROM                  1076
@@ -157,7 +156,6 @@
 #define IDC_EXPORT_TO                   1096
 #define IDC_EXPORT_DATE                 1097
 #define IDC_EXPORT_MESSAGE              1098
-#define IDC_RADIO5                      1101
 #define IDC_COLOR_CUSTOM                1101
 #define IDC_ENCODING_UTF8               1106
 #define IDC_ENCODING_CODE_PAGE          1107
@@ -217,7 +215,7 @@
 #define IDC_PRT_PREVIEW_DIALOG          1162
 #define IDC_PRT_PRINT_DIALOG            1163
 #define IDC_HTML2PDF_SCRIPT_TYPE        1164
-#define IDC_RADIO3                      1165
+#define IDC_USER_SCRIPT                 1165
 #define IDC_EDIT_CC_CHECKED             1169
 #define IDC_EDIT_CC                     1170
 #define IDC_EDIT_CC_WHOLE               1171
@@ -284,6 +282,8 @@
 #define IDC_EDIT_TARGET_FOLDER          1241
 #define IDC_EDIT_ARCHIVE_FILE_NAME      1242
 #define IDC_EDIT_DFLT_FOLDER            1243
+#define IDC_CHECK4                      1244
+#define IDC_HEADER_AND_FOOTER           1244
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -338,7 +338,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        226
 #define _APS_NEXT_COMMAND_VALUE         32899
-#define _APS_NEXT_CONTROL_VALUE         1244
+#define _APS_NEXT_CONTROL_VALUE         1245
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

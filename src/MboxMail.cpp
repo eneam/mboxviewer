@@ -8673,10 +8673,13 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		else if (hintNumber == HintConfig::PrintToPDFHint)
 		{
 			hintText.Append(
-				"Chrome Browser is used by deafult to print to PDF file.\n"
+				"Microsoft Edge Browser is used by default to print to PDF file.\n"
+				"You can configure Edge browser to optionally print page header and footer\n\n"
+				"If Edge Browser is not installed on your computer\n"
+				"Chrome Browser can be installed to print to PDF file.\n"
 				"However, the header and footer are always printed.\n "
 				"\n"
-				"Select \"File->Print Config->Path to User Defined Script\" to \n"
+				"You can also select \"File->Print Config->User Defined Script\" to "
 				"use free wkhtmltopdf tool to remove header and footer\n"
 				"and evalute if wkhtmltopdf works for you."
 			);
@@ -8727,8 +8730,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 			hintText.Append(
 				"If you need to remove the background color when printing to\n"
 				"PDF file directly you need to configure wkhtmltopdf for\n"
-				"printing. By default the Chrome browser is configured to\n"
-				"print to PDF file. However, Chrome browser doesn't support\n"
+				"printing. Both MS Edge and Chrome browsers don't support\n"
 				"removing the background color via the command line option\n\n"
 				"Select \"File->Print Config->Page Setup\" to configure\n"
 				"HTML2PDF-single-wkhtmltopdf.cmd script.\n\n"
@@ -8771,6 +8773,16 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 			hintText.Append(
 				"The selected file will be removed from the current view.\n"
 				"The physical file and content on the disk will not be deleted.\n"
+				"\n"
+			);
+		}
+		else if (hintNumber == HintConfig::MergeFilesHint)
+		{
+			hintText.Append(
+				"Mbox and eml mail files can also be merged via two command line options:\n\n"
+				"-MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n\n"
+				"-MBOX_MERGE_TO_FILE=Path to File to save merge results\n\n"
+				"List of files to merge supports widcard file names\n"
 				"\n"
 			);
 		}
