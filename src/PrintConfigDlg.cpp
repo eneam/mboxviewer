@@ -169,7 +169,7 @@ BOOL PrintConfigDlg::OnInitDialog()
 
 		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
 		if (p) {
-			if (m_NamePatternParams.m_bScriptType == 0)
+			if (m_NamePatternParams.m_bScriptType != 1)
 			{
 				((CButton*)p)->SetCheck(1);
 				p->EnableWindow(FALSE);
@@ -379,7 +379,7 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 		if (updated.m_bScriptType == 1)
 			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPageHeaderAndFooter", updated.m_bHeaderAndFooter);
 		else
-			updated.m_bHeaderAndFooter = current.m_bHeaderAndFooter;
+			updated.m_bHeaderAndFooter = current.m_bHeaderAndFooter; // update m_bHeaderAndFooter only when m_bScriptType == 1
 	}
 	if (updated.m_bCustomFormat != current.m_bCustomFormat) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplate", updated.m_bCustomFormat);
@@ -566,6 +566,12 @@ void PrintConfigDlg::OnBnClickedUserDefinedScript()
 		p = GetDlgItem(IDC_CHROME_EXE_PATH);
 		if (p)
 			p->EnableWindow(FALSE);
+
+		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
+		if (p) {
+			((CButton*)p)->SetCheck(1);
+			p->EnableWindow(FALSE);
+		}
 	}
 	int deb = 1;
 }
