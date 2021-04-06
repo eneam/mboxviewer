@@ -850,7 +850,7 @@ void ColorStyleConfigDlg::OnBnClickedButtonHelp()
 
 	BOOL createDirOk = TRUE;
 	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = CreateDirectory(HelpPath, NULL);
+		createDirOk = FileUtils::CreateDirectory(HelpPath);
 
 	CString codePageIdsFile = "ColorStyleConfigHelp.htm";
 	CString fullPath = HelpPath + "\\" + codePageIdsFile;

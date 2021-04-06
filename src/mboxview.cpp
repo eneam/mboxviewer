@@ -266,10 +266,44 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 #include "IHashTable.h"
 #endif
 
+#include "winerror.h"
+
+BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
+{
+	TCHAR Buffer[1024];
+	DWORD cchBufferLength = 1022;
+
+	Buffer[0] = 0;
+	DWORD cchMsg = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,  /* (not used with FORMAT_MESSAGE_FROM_SYSTEM) */
+		dwErrorCode,
+		0,  //MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		Buffer,
+		cchBufferLength,
+		NULL);
+	CString errMessage = CString(Buffer);
+	errMessage.TrimRight(" \t\r\n");
+	errorMessage.Format("Error Code %u \"%s\"\n", dwErrorCode, errMessage);
+
+	return (cchMsg > 0);
+}
+
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+#if 0
+	for (int i = 0; i < 1; i++)
+	{
+		CString errorMessage;
+		DWORD dwErrorCode = ERROR_REQ_NOT_ACCEP;
+		//dwErrorCode = i;
+		BOOL ret = GetErrorMessage(dwErrorCode, errorMessage);
+
+		TRACE("%s", errorMessage);
+	}
+#endif
 
 	//bool ret = TextUtilities::TestAll();
 

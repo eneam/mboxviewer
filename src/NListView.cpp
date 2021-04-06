@@ -2238,55 +2238,15 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 
 BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 {
-	BOOL validMboxFile = FALSE;
-	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		// TODO: Not critical failure; noy used; remove ?
-		int deb = 1;
-		; // return FALSE;
-	}
-	else
-		validMboxFile = TRUE;
 
-	if (!validMboxFile)
-		int deb = 1;
-
-	CString mailFileName;
-	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
-	int pos = mailFileName.ReverseFind('.');
-	CString baseFailFileName;
-	if (pos >= 0)
-		baseFailFileName = mailFileName.Mid(0, pos);
-	else
-		baseFailFileName = mailFileName;
 
 	int ni = MboxMail::s_mails.GetSize();
 	SerializerHelper sz(cache);
 	//if (!sz.open(TRUE, 64))
 	if (!sz.open(TRUE)) 
 	{
-		// TODO: MessageMbox ?
-		if (validMboxFile)
-			fpm.Close();  // if open
 		return FALSE;
 	}
-
-	//CString filePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	CString imageCachePath;
-	BOOL ret = FileUtils::CPathGetPath(MboxMail::s_path, imageCachePath);
-	imageCachePath.Append("\\");
-	imageCachePath.Append("ImageCache");
-	imageCachePath.Append("\\");
-
-	BOOL createDirOk = TRUE;
-	if (!FileUtils::PathDirExists(imageCachePath))
-		createDirOk = CreateDirectory(imageCachePath, NULL);
-
-	imageCachePath.Append(baseFailFileName);
-	imageCachePath.Append("\\");
-
-	if (!FileUtils::PathDirExists(imageCachePath))
-		createDirOk = CreateDirectory(imageCachePath, NULL);
 
 	if (!mainThread)
 	{
@@ -2396,8 +2356,6 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 	TRACE("lastoff=%lld\n", lastoff);
 
 	sz.close();
-	if (validMboxFile)
-		fpm.Close();
 
 	if (terminated)
 	{
@@ -2749,7 +2707,9 @@ void NListView::FillCtrl()
 	if (FileUtils::PathFileExist(m_path) == FALSE)
 		return;
 
-	CString cache= m_path + ".mboxview";
+	CString cache;
+	BOOL ret = MboxMail::GetMboxviewFilePath(m_path, cache);
+
 	int ni = 0;
 #ifdef _DEBUG
 	DWORD tc = GetTickCount(); // montano@
@@ -2988,296 +2948,6 @@ void NListView::FillCtrl()
 
 	if (pFrame)
 		pFrame->SetupMailListsToInitialState();
-}
-
-// TODO: Not used anymore. To be removed at some point.
-int NListView::fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition)
-{
-	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
-
-	static char * cid_pattern = "src=\"cid:";
-	static int cid_patternLen = strlen(cid_pattern);
-
-	char *input = inData;
-	int inputLength = indDataLen;
-	char *inputEnd = input + inputLength;
-	char *srcImgEnd = inputEnd;
-	char *cidBegin;
-	char *cidEnd;
-	SimpleString cid;
-
-	char *fromBegin = input;
-	char *alt_pos;
-
-	MboxMail *m = 0;
-	if (useMailPosition)
-	{
-		if ((mailPosition < MboxMail::s_mails.GetCount()) && (mailPosition >= 0))
-			m = MboxMail::s_mails[mailPosition];
-		else
-			return -1;
-	}
-
-	CString mailArchiveFileName;
-	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
-	int position = mailArchiveFileName.ReverseFind('.');
-	CString baseFileArchiveName;
-	if (position >= 0)
-		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
-	else
-		baseFileArchiveName = mailArchiveFileName;
-
-	CString imageCachePath;
-	BOOL ret = FileUtils::CPathGetPath(MboxMail::s_path, imageCachePath);
-	imageCachePath.Append("\\");
-	imageCachePath.Append("ImageCache");
-	imageCachePath.Append("\\");
-	imageCachePath.Append(baseFileArchiveName);
-	imageCachePath.Append("\\");
-
-	CString imgFile;
-
-	char *pos = input;
-	while ((pos != 0) && (pos < inputEnd))
-	{
-		pos = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, img_pattern, img_patternLen);
-		if (pos == 0) {
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
-			break;
-		}
-		pos += img_patternLen;
-
-		if ((*pos == ' ') || (*pos == '\n') || (*pos == '\r'))
-			pos += 1;
-		else
-			continue;
-
-		// find end of <img src ...>
-		srcImgEnd = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, ">", 1);
-		if (srcImgEnd == 0) { // TODO: corrupted file ?
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
-			break;
-		}
-		srcImgEnd++; // jump over
-
-		alt_pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "alt=\"", 5);
-
-		pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, cid_pattern, cid_patternLen);
-		if (pos == 0) {
-			outbuf->Append(fromBegin, srcImgEnd - fromBegin);
-			pos = srcImgEnd;  // jump over this <img .. > sonce no cid:
-			fromBegin = pos;
-			continue;
-		}
-
-		pos += cid_patternLen;
-		cidBegin = pos;
-
-		outbuf->Append(fromBegin, cidBegin - 5 - fromBegin);
-
-		// find end of cid token
-		pos = TextUtilsEx::strnstrUpper2Lower(pos, srcImgEnd, "\"", 1);
-		cidEnd = pos;
-
-		cid.Copy(cidBegin, cidEnd - cidBegin);
-
-		CString cidName;
-		cidName.Append(cid.Data(), cid.Count());
-
-		pos++; // jump over \"
-		cidEnd = pos;
-		fromBegin = pos;
-
-		CString nameExtension;
-		if (m == 0)
-		{
-			FileUtils::MakeValidFileName(cidName);
-			FileUtils::MakeValidFileName(cid);
-
-			for (int row = 0; row < attachments->GetItemCount(); ++row)
-			{
-				CString name = attachments->GetItemText(row, 0);
-				int pos = name.ReverseFind('.');
-				CString cidPart;
-				if (pos >= 0)
-					cidPart = name.Mid(0, pos);
-				else
-					cidPart = name;
-				if (cidPart.Compare(cid.Data()) == 0) {
-					nameExtension = name.Mid(pos);
-					break;
-				}
-			}
-			imgFile = FileUtils::GetmboxviewTempPath() + cidName + nameExtension;
-		}
-		else
-		{
-			MailBodyContent *body;
-			for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
-			{
-				body = m->m_ContentDetailsArray[j];
-
-				CString mailIndex;
-				mailIndex.Format("%d_", m->m_index);
-
-				CString contentTypeExtension;
-				CString contentTypeMain;
-				int pos = body->m_contentType.ReverseFind('/');
-				if (pos > 0)
-				{
-					contentTypeExtension = body->m_contentType.Mid(pos + 1);
-					contentTypeMain = body->m_contentType.Left(pos);
-				}
-
-				if (contentTypeMain.CompareNoCase("image") == 0)
-				{
-					if (!body->m_contentId.IsEmpty())
-					{
-						CString attachmentName = body->m_contentId;
-
-						//FileUtils::MakeValidFileName(cid);
-						//FileUtils::MakeValidFileName(cidName);
-
-						if (attachmentName.Compare(cidName) == 0)
-						{
-							if (!contentTypeExtension.IsEmpty())
-							{
-								nameExtension = contentTypeExtension;
-								FileUtils::MakeValidFileName(attachmentName);
-								imgFile = imageCachePath + mailIndex + attachmentName + "." + nameExtension;
-								break;
-							}
-							else
-							{
-								int pos = attachmentName.ReverseFind('.');
-								if (pos >= 0)
-									nameExtension = attachmentName.Mid(pos);
-
-								FileUtils::MakeValidFileName(attachmentName);
-								imgFile = imageCachePath + mailIndex + attachmentName + nameExtension;
-								break;
-							}
-						}
-					}
-
-					if (!body->m_attachmentName.IsEmpty())
-					{
-						if ((body->m_contentDisposition.CompareNoCase("inline") == 0))
-						{
-							if (!body->m_contentId.IsEmpty())
-							{
-								CString cidPart;
-								int pos = body->m_attachmentName.ReverseFind('.');
-								if (pos >= 0)
-									cidPart = body->m_attachmentName.Mid(0, pos);
-
-								CString extendedCid;
-								extendedCid.Format("%d_%s", m->m_index, cid.Data());
-
-								if (cidPart.Compare(extendedCid) == 0) {
-									nameExtension = body->m_attachmentName.Mid(pos);
-									imgFile = imageCachePath + nameExtension;
-									break;
-								}
-								int deb = 1;
-							}
-						}
-					}
-				}
-			}
-
-
-			if (!nameExtension.IsEmpty())
-			{
-				; // imgFile = imageCachePath + body->m_attachmentName;
-			}
-			else
-			{
-				CString cidAttachmentName;
-				imgFile.Empty();
-				nameExtension.Empty();
-				for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
-				{
-					body = m->m_ContentDetailsArray[j];
-					if (!body->m_attachmentName.IsEmpty())
-					{
-						if ((body->m_contentDisposition.CompareNoCase("inline") == 0))
-						{
-							CString attachmentName;
-							int posAt = body->m_attachmentName.ReverseFind('@');
-							if (posAt >= 0)
-							{
-								attachmentName = body->m_attachmentName.Mid(0, posAt);
-							}
-							else
-								attachmentName = body->m_attachmentName;
-
-							posAt = cidName.ReverseFind('@');
-							if (posAt >= 0)
-							{
-								cidAttachmentName = cidName.Mid(0, posAt);
-							}
-							else
-								cidAttachmentName = cidName;
-
-							{
-								if (attachmentName.CompareNoCase(cidAttachmentName) == 0)
-								{
-									int pos = attachmentName.ReverseFind('.');
-									if (pos >= 0)
-										nameExtension = attachmentName.Mid(pos);
-								}
-								int deb = 1;
-							}
-							if (!nameExtension.IsEmpty())
-							{
-								CString extendedCid;
-								extendedCid.Format("%d_%s", m->m_index, cidAttachmentName);
-								imgFile = imageCachePath + extendedCid;
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (nameExtension.IsEmpty()) {
-			;// TODO: any harm if no action ?
-		}
-
-		SimpleString alt;
-		if (alt_pos == 0) {
-			alt.Append("alt=\"image");
-			alt.Append((char*)(LPCSTR)nameExtension);
-			alt.Append("\" ");
-			int deb = 1;
-		}
-
-		if (!nameExtension.IsEmpty())
-		{
-			outbuf->Append("\"file:\\\\\\");
-			outbuf->Append(imgFile, imgFile.GetLength());
-			outbuf->Append("\"");
-		}
-		else
-		{
-			outbuf->Append("\"cid:");
-			outbuf->Append(cid);
-			outbuf->Append("\"");
-		}
-
-		if (alt.Count()) {
-			outbuf->Append(" ");
-			outbuf->Append(alt);
-		}
-
-		pos = srcImgEnd;
-
-		int deb = 1;
-	}
-	return -1;
 }
 
 static int CALLBACK
@@ -5776,19 +5446,21 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 	ret = MboxMail::exportToTextFile(textConfig, textFileName, firstMail, lastMail, selectedMailsIndexList, textType, progressBar);
 	if (ret > 0) 
 	{
-		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-		if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(....);
+		CString path = MboxMail::GetLastPath();
+		CString datapath = MboxMail::GetLastDataPath();
+		if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(....);
 		{
-			if (FileUtils::PathDirExists(path))
+			if (FileUtils::PathDirExists(datapath))
 			{ // likely :) 
-				CString txt = "Created file\n\n" + textFileName;
+				CString txt = "Created file \n\n" + textFileName;
 				if (createFileOnly) {
 					int deb = 1;
 				}
 				else if (printToPrinter)
 				{
 					CFile fp;
-					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
+					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) 
+					{
 						ULONGLONG ll = fp.GetLength();
 						SimpleString *inbuf = MboxMail::m_inbuf;
 						SimpleString *workbuf = MboxMail::m_workbuf;
@@ -5815,7 +5487,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					{
 						if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
 							CMainFrame::CheckShellExecuteResult(result, h);
 						}
 						int deb = 1;
@@ -7171,6 +6843,7 @@ int NListView::OpenArchiveFileLocation()
 	}
 
 	CString mailFile = MboxMail::s_path;
+	CString datapath = MboxMail::GetLastDataPath();
 
 	CString driveName;
 	CString directory;
@@ -7180,11 +6853,11 @@ int NListView::OpenArchiveFileLocation()
 	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString errorText;
-	CString printCachePath;
+	CString archiveCachePath;
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, archiveCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -7193,9 +6866,9 @@ int NListView::OpenArchiveFileLocation()
 	}
 
 	CString mboxFile = fileNameBase + fileNameExtention;
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
+	CString mboxFilePath = archiveCachePath + "\\" + fileNameBase + mboxFileSuffix;
 
-	//CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	//CString path = MboxMail::GetLastPath();
 	//CString mboxFile = path + "\\" + fileNameBase + mboxFileSuffix;
 
 	if (!FileUtils::PathFileExist(mboxFilePath))
@@ -7207,7 +6880,7 @@ int NListView::OpenArchiveFileLocation()
 	}
 	if (FileUtils::BrowseToFile(mboxFilePath) == FALSE) {  // TODO: s_path error checking ??
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), archiveCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 	}
 	return 1;
@@ -7227,6 +6900,7 @@ int NListView::OpenMailListFileLocation()
 	}
 
 	CString mailFile = MboxMail::s_path;
+	CString datapath = MboxMail::GetLastDataPath();
 
 	CString driveName;
 	CString directory;
@@ -7236,11 +6910,11 @@ int NListView::OpenMailListFileLocation()
 	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString errorText;
-	CString printCachePath;
+	CString archiveCachePath;
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, archiveCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -7249,9 +6923,9 @@ int NListView::OpenMailListFileLocation()
 	}
 
 	CString mboxFile = fileNameBase + fileNameExtention;
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
+	CString mboxFilePath = archiveCachePath + "\\" + fileNameBase + mboxFileSuffix;
 
-	//CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	//CString path = MboxMail::GetLastPath();
 	//CString mboxFile = path + "\\" + fileNameBase + mboxFileSuffix;
 
 	if (!FileUtils::PathFileExist(mboxFilePath))
@@ -7263,7 +6937,7 @@ int NListView::OpenMailListFileLocation()
 	}
 	if (FileUtils::BrowseToFile(mboxFilePath) == FALSE) {  // TODO: s_path error checking ??
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), archiveCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 	}
 	return 1;
@@ -7421,7 +7095,7 @@ int NListView::PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, C
 		return - 1;
 	}
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
 	if (retval == FALSE) 
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -7547,7 +7221,7 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 		return -1;
 	}
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -7616,7 +7290,7 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 			else
 				int ret = MboxMail::MakeFileNameFromMailHeader(firstMail, fileType, pdfFileName, targetPrintSubFolderName, fileExists, errorText);
 
-			CString txt = "Created PDF file\n\n" + pdfFileName;
+			CString txt = "Created PDF file \n\n" + pdfFileName;
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -7799,7 +7473,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	if (PopulateSelectedMailsList() > 0)
 		selectedMailsIndexList = &m_selectedMailsList;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -7929,7 +7603,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 	if (PopulateSelectedMailsList() > 0)
 		selectedMailsIndexList = &m_selectedMailsList;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -7994,7 +7668,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 
 			int ret = MboxMail::MakeFileNameFromMailArchiveName(textType, pdfFileName, targetPrintSubFolder, fileExists, errorText);
 
-			CString txt = "Created PDF file\n\n" + pdfFileName;
+			CString txt = "Created PDF file \n\n" + pdfFileName;
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -8346,7 +8020,7 @@ int NListView::PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, 
 	CString printCachePath;
 	CString errorText;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -8452,7 +8126,7 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 	CString printCachePath;
 	CString errorText;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -8521,7 +8195,7 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 			else
 				int ret = MboxMail::MakeFileNameFromMailHeader(firstMail, fileType, fileName, targetPrintSubFolderName, fileExists, errorText);
 
-			CString txt = "Created HTML file\n\n" + fileName;
+			CString txt = "Created HTML file \n\n" + fileName;
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -8669,7 +8343,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFol
 	if (PopulateSelectedMailsList() > 0)
 		selectedMailsIndexList = &m_selectedMailsList;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -8779,7 +8453,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 	if (PopulateSelectedMailsList() > 0)
 		selectedMailsIndexList = &m_selectedMailsList;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -8844,7 +8518,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 
 			int ret = MboxMail::MakeFileNameFromMailArchiveName(textType, fileName, targetPrintSubFolder, fileExists, errorText);
 
-			CString txt = "Created HTML file\n\n" + fileName;
+			CString txt = "Created HTML file \n\n" + fileName;
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -9068,7 +8742,8 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		return -1;
 	}
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
+	CString datapath = MboxMail::GetLastDataPath();
 	if (path.IsEmpty())
 		return -1;  // Hopefully s_path will fail first
 
@@ -9080,11 +8755,11 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString errorText;
-	CString printCachePath;
+	CString archiveCachePath;
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, archiveCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -9093,7 +8768,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	}
 
 	CString mboxFile = fileNameBase + fileNameExtention;  // main mbox file name
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;  // derived _USER.mbox mbox file name
+	CString mboxFilePath = archiveCachePath + "\\" + fileNameBase + mboxFileSuffix;  // derived _USER.mbox mbox file name
 
 	CString mboxFileListSuffix = ".mboxlist";
 	CString mboxListFile;
@@ -9292,7 +8967,8 @@ int NListView::SaveAsMboxListFile_v2()
 		return -1;
 	}
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
+	CString datapath = MboxMail::GetLastDataPath();
 	if (path.IsEmpty())
 		return -1;  // Hopefully s_path wil fail first
 
@@ -9304,11 +8980,11 @@ int NListView::SaveAsMboxListFile_v2()
 	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString errorText;
-	CString printCachePath;
+	CString archiveCachePath;
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, archiveCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -9318,7 +8994,7 @@ int NListView::SaveAsMboxListFile_v2()
 
 	CFile fp;
 	CString mboxFile = fileNameBase + fileNameExtention;
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
+	CString mboxFilePath = archiveCachePath + "\\" + fileNameBase + mboxFileSuffix;
 
 	CString mboxFileListSuffix = ".mboxlist";
 	CString mboxListFile = mboxFilePath + mboxFileListSuffix;
@@ -9402,7 +9078,8 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		return -1;
 	}
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
+	CString datapath = MboxMail::GetLastDataPath();
 	if (path.IsEmpty())
 		return -1;  // Hopefully s_path wil fail first
 
@@ -9414,11 +9091,11 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	FileUtils::SplitFilePath(mailFile, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString errorText;
-	CString printCachePath;
+	CString archiveCachePath;
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, archiveCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -9430,7 +9107,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 	CString mboxFile = fileNameBase + fileNameExtention;
 	CString archiveFile = fileNameBase + mboxFileSuffix;;
-	CString mboxFilePath = printCachePath + "\\" + fileNameBase + mboxFileSuffix;
+	CString mboxFilePath = archiveCachePath + "\\" + fileNameBase + mboxFileSuffix;
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
@@ -9463,24 +9140,27 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 	MboxMail::m_editMails.m_bIsDirty = FALSE;
 
-	CString txt = "Created Mbox Mail Archive file\n\n" + mboxFilePath;
-	OpenContainingFolderDlg dlg(txt, FALSE);
+	CString txt = "Created Mbox Mail Archive file \n\n" + mboxFilePath;
+	BOOL supressOpenFileOption = FALSE;
+	if (path.Compare(datapath))
+		supressOpenFileOption = TRUE;
+	OpenContainingFolderDlg dlg(txt, supressOpenFileOption);
 	INT_PTR nResponse = dlg.DoModal();
 	////////////
 	if (nResponse == IDOK)
 	{
 		if (FileUtils::BrowseToFile(mboxFilePath) == FALSE) {
 			HWND h = GetSafeHwnd();
-			HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+			HINSTANCE result = ShellExecute(h, _T("open"), archiveCachePath, NULL, NULL, SW_SHOWNORMAL);
 			CMainFrame::CheckShellExecuteResult(result, h);
 		}
 		int deb = 1;
 	}
 	else if (nResponse == IDYES)
 	{
-		CString txt = "Open Created Archive File\n\n" + mboxFilePath;
+		CString txt = "Open Created Archive File \n\n" + mboxFilePath;
 		OpenArchiveFileDlg dlg;
-		dlg.m_sourceFolder = printCachePath;
+		dlg.m_sourceFolder = archiveCachePath;
 		dlg.m_targetFolder = path;
 		dlg.m_archiveFileName = archiveFile;
 		INT_PTR nResponse = dlg.DoModal();
@@ -10313,6 +9993,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	}
 
 
+#if 0
 	CString mailArchiveFileName;
 	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailArchiveFileName);
 	int position = mailArchiveFileName.ReverseFind('.');
@@ -10328,6 +10009,15 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	imageCachePath.Append("ImageCache");
 	imageCachePath.Append("\\");
 	imageCachePath.Append(baseFileArchiveName);
+	imageCachePath.Append("\\");
+#endif
+
+	CString errorText;
+	CString imageCachePath;
+	CString rootPrintSubFolder = "ImageCache";
+	CString targetPrintSubFolder;
+
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, imageCachePath, errorText);
 	imageCachePath.Append("\\");
 
 	CString imgFile;
@@ -10599,12 +10289,12 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 					if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ex))
 					{
 						CString errorText;
-						CString printCachePath;
+						CString imageCachePath;
 						CString rootPrintSubFolder = "ImageCache";
 						//CString targetPrintSubFolder = baseFileArchiveName;
 						CString targetPrintSubFolder;
 
-						BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+						BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, imageCachePath, errorText);
 						if (retval == FALSE)
 						{
 							HWND h = NULL; // we don't have any window yet  
@@ -12131,12 +11821,12 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 	WRITE_IMAGE_FILE_ARGS args;
 
 	CString rootPrintSubFolder = "AttachmentCache";
-	CString printCachePath;
+	CString attachmentCachePath;
 	CString errorText;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, attachmentCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -12215,14 +11905,14 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 	if (nResponse == IDOK)
 	{
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), attachmentCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 		int deb = 1;
 	}
 	else if (nResponse == IDYES)
 	{
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), attachmentCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 		int deb = 1;
 	}
@@ -12242,26 +11932,14 @@ BOOL CreateAttachmentCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &
 		return FALSE;
 	}
 
-	CString mailFileName;
-	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
-	int pos = mailFileName.ReverseFind('.');
-	CString baseFailFileName;
-	if (pos >= 0)
-		baseFailFileName = mailFileName.Mid(0, pos);
-	else
-		baseFailFileName = mailFileName;
-
 	int ni = MboxMail::s_mails.GetSize();
 
-	CString attachmentPath;
-	BOOL ret = FileUtils::CPathGetPath(MboxMail::s_path, attachmentPath);
-	attachmentPath.Append("\\");
-	attachmentPath.Append("AttachmentCache");
-	attachmentPath.Append("\\");
+	//CString errorText;
+	CString attachmentCachePath;
+	CString rootPrintSubFolder = "AttachmentCache";
+	CString targetPrintSubFolder;
 
-	CString attachmentCachePath = attachmentPath;
-	attachmentCachePath.Append(baseFailFileName);
-	attachmentCachePath.Append("\\");
+	BOOL createDirOk = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, attachmentCachePath, errorText);
 
 	//
 	if (FileUtils::PathDirExists(attachmentCachePath))
@@ -12270,13 +11948,14 @@ BOOL CreateAttachmentCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &
 		FileUtils::RemoveDirW(attachmentCachePath, false);
 	}
 	//
+	// FileUtils::RemoveDirW(attachmentCachePath, false); removes files only; no need to recreate attachmentCachePath directory
+#if 0
+	attachmentCachePath.Empty();
+	rootPrintSubFolder = "AttachmentCache";
+	targetPrintSubFolder.Empty();
 
-	BOOL createDirOk = TRUE;
-	if (!FileUtils::PathDirExists(attachmentPath))
-		createDirOk = CreateDirectory(attachmentPath, NULL);;
-
-	if (!FileUtils::PathDirExists(attachmentCachePath))
-		createDirOk = CreateDirectory(attachmentCachePath, NULL);
+	createDirOk = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, attachmentCachePath, errorText);
+#endif
 
 	if ((fpm.m_hFile == CFile::hFileNull) || !createDirOk)
 	{
@@ -12360,12 +12039,12 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	WRITE_IMAGE_FILE_ARGS args;
 
 	CString rootPrintSubFolder = "EmlCache";
-	CString printCachePath;
+	CString emlCachePath;
 	CString errorText;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, emlCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -12444,14 +12123,14 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	if (nResponse == IDOK)
 	{
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), emlCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 		int deb = 1;
 	}
 	else if (nResponse == IDYES)
 	{
 		HWND h = GetSafeHwnd();
-		HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+		HINSTANCE result = ShellExecute(h, _T("open"), emlCachePath, NULL, NULL, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h);
 		int deb = 1;
 	}
@@ -12472,6 +12151,7 @@ BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorTe
 		return FALSE;
 	}
 
+#if 0
 	CString mailFileName;
 	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
 	int pos = mailFileName.ReverseFind('.');
@@ -12508,6 +12188,36 @@ BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorTe
 
 	if (!FileUtils::PathDirExists(emlCachePath))
 		createDirOk = CreateDirectory(emlCachePath, NULL);
+#endif
+
+	int ni = MboxMail::s_mails.GetSize();
+
+	//CString errorText;
+	CString emlCachePath;
+	CString rootPrintSubFolder = "EmlCache";
+	CString targetPrintSubFolder;
+
+	BOOL createDirOk = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, emlCachePath, errorText);
+
+	//
+	if (FileUtils::PathDirExists(emlCachePath))
+	{
+		MboxMail::pCUPDUPData->SetProgress(_T("Deleting all Eml files in the Eml Cache directory ..."), 0);
+		FileUtils::RemoveDirW(emlCachePath, false);
+	}
+	//
+
+	// FileUtils::RemoveDirW(EmlCache, false); removes files only; no need to recreate EmlCache directory
+#if 0
+	emlCachePath.Empty();
+	rootPrintSubFolder = "EmlCache";
+	targetPrintSubFolder.Empty();
+
+	createDirOk = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, emlCachePath, errorText);
+#endif
+
+	emlCachePath.Append("\\");
+
 
 	if ((fpm.m_hFile == CFile::hFileNull) || !createDirOk)
 	{
@@ -12588,12 +12298,12 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 	WRITE_IMAGE_FILE_ARGS args;
 
 	CString rootPrintSubFolder = "ImageCache";
-	CString printCachePath;
+	CString imageCachePath;
 	CString errorText;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolderName, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolderName, imageCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -12602,7 +12312,7 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 	}
 
 	/*IN*/
-	args.cache = "";
+	args.cache = imageCachePath;
 
 
 	/*OUT*/
@@ -12677,6 +12387,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString 
 		return FALSE;
 	}
 
+
 	CString mailFileName;
 	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
 	int pos = mailFileName.ReverseFind('.');
@@ -12686,6 +12397,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString 
 	else
 		baseFailFileName = mailFileName;
 
+#if 0
 	int ni = MboxMail::s_mails.GetSize();
 
 	CString imageCachePath;
@@ -12704,10 +12416,18 @@ BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString 
 	if (!FileUtils::PathDirExists(imageCachePath))
 		createDirOk = CreateDirectory(imageCachePath, NULL);
 
+#endif
+	//
+	CString imageCachePath;
+	CString rootPrintSubFolder = "ImageCache";
+	CString targetPrintSubFolder;
+
+	BOOL createDirOk = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, imageCachePath, errorText);
 	if ((fpm.m_hFile == CFile::hFileNull) || !createDirOk)
 	{
 		return TRUE;
 	}
+	imageCachePath.Append("\\");
 
 	if (!mainThread)
 	{
@@ -12716,7 +12436,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString 
 			MboxMail::pCUPDUPData->SetProgress(_T("Creating inline image files ..."), 0);
 		}
 	}
-
+	int ni = MboxMail::s_mails.GetSize();
 	double delta = (double)ni;
 	if (delta <= 0) delta = 1;
 	double step = delta / 100;
@@ -12789,7 +12509,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 	if (PopulateSelectedMailsList() > 0)
 		selectedMailsIndexList = &m_selectedMailsList;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -12854,7 +12574,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 
 			int ret = MboxMail::MakeFileNameFromMailArchiveName(textType, fileName, targetPrintSubFolder, fileExists, errorText);
 
-			CString txt = "Created TEXT file\n\n" + fileName;
+			CString txt = "Created TEXT file \n\n" + fileName;
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -13140,12 +12860,12 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 	MailBodyContent *body;
 
 	CString errorText;
-	CString printCachePath;
+	CString attachmentCachePath;
 	CStringW printCachePathW;
 	CString rootPrintSubFolder = "AttachmentCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, attachmentCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -13154,7 +12874,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 		//return -1;
 	}
 
-	ret = TextUtilsEx::Ansi2Wide(printCachePath, printCachePathW, error);
+	ret = TextUtilsEx::Ansi2Wide(attachmentCachePath, printCachePathW, error);
 
 	if (!m->m_DetermineEmbeddedImagesDone)
 	{
@@ -13277,15 +12997,15 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition)
 	else
 		MboxMail::MakeFileName(m, pFrame->m_NamePatternParams.m_nameTemplateCnf, mailFileNameBase, pFrame->m_NamePatternParams.m_nFileNameFormatSizeLimit);
 
-	CString printCachePath;
+	CString emlCachePath;
 	CString rootPrintSubFolder = "EmlCache";
 	CString errorText;
 	CString targetPrintSubFolder;
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, emlCachePath, errorText);
 	if (retval == FALSE) {
 		return -1;
 	}
-	CString fileName = printCachePath + "\\" + mailFileNameBase + ".eml";
+	CString fileName = emlCachePath + "\\" + mailFileNameBase + ".eml";
 
 	SimpleString *outbuf = MboxMail::m_outbuf;
 	outbuf->ClearAndResize(10000);
@@ -13650,7 +13370,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 		return -1;
 	}
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	if (path.IsEmpty())
 		return -1;  // Hopefully s_path wil fail first
 
@@ -13666,7 +13386,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 	CString rootPrintSubFolder = "ArchiveCache";
 	CString targetPrintSubFolder;
 
-	BOOL retval = MboxMail::CreatePrintCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
@@ -14097,7 +13817,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		return -1;
 	}
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	if (path.IsEmpty())
 		return -1;  // Hopefully s_path will fail first
 
@@ -14933,8 +14653,8 @@ int NListView::DetermineListFileName(CString &fileName, CString &listFileName)
 {
 	CString mailFile = MboxMail::s_path;
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-	if (path.IsEmpty())
+	CString datapath = MboxMail::GetLastDataPath();
+	if (datapath.IsEmpty())
 		return -1;
 
 	CString fileNameBase;
@@ -14942,7 +14662,7 @@ int NListView::DetermineListFileName(CString &fileName, CString &listFileName)
 	FileUtils::GetFileBaseNameAndExtension(fileName, fileNameBase, fileNameExtention);
 
 	//CString mboxListFile = path + "ArchiveCache" + "\\"  + fileNameBase + "\\" + fileNameBase + "_USER" + fileNameExtention + ".mboxlist";
-	CString mboxListFile = path + "ArchiveCache" + "\\" + fileNameBase + "\\" + fileNameBase + "_USER.mbox.mboxlist";
+	CString mboxListFile = datapath + "ArchiveCache" + "\\" + fileNameBase + "\\" + fileNameBase + "_USER.mbox.mboxlist";
 	if (FileUtils::PathFileExist(mboxListFile))
 	{
 		listFileName.Append(mboxListFile);

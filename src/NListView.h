@@ -56,8 +56,6 @@ class SimpleString;
 class NMsgView;
 
 BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText);
-//int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
-
 
 typedef CArray<int, int> MailIndexList;
 class MailBodyContent;
@@ -412,7 +410,6 @@ public:
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
 	//static int DeleteAllHtmFiles(CString &targetFolder);
 	//
-	static int fixInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition);
 	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath, bool runInvestigation = false);
 	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition, bool runInvestigation = false);
 	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition);

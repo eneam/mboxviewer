@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.20
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for read only media such as CDs;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.19
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

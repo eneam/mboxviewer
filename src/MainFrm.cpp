@@ -589,7 +589,7 @@ void CMainFrame::OnFileOpen()
 
 	if (m_bEnhancedSelectFolderDlg == FALSE)
 	{
-		path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+		path = MboxMail::GetLastPath();
 		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
 		if (!path.IsEmpty())
 			bff.SetDefaultFolder(path);
@@ -635,7 +635,7 @@ void CMainFrame::OnFileOpen()
 	AfxGetApp()->AddToRecentFileList(path);
 
 	path.Append("\\");
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+	MboxMail::SetLastPath(path);
 
 	int paneId = 0;
 	CString sText;
@@ -647,7 +647,7 @@ void CMainFrame::OnFileOpen()
 	GetTreeView()->m_tree.SortChildren(0);
 
 #if 0
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	CFolderPickerDialog fdlg(path);
@@ -661,7 +661,7 @@ void CMainFrame::OnFileOpen()
 			if (path.GetAt(path.GetLength() - 1) != _T('\\'))
 				path.AppendChar(_T('\\'));
 		}
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+		MboxMail::SetLastPath(path);
 		GetTreeView()->FillCtrl();
 		AfxGetApp()->AddToRecentFileList(path);
 		int deb = 1;
@@ -835,7 +835,7 @@ void CMainFrame::DoOpen(CString& fpath)
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
 	path.Append("\\");
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+	MboxMail::SetLastPath(path);
 	GetTreeView()->FillCtrl();
 
 	GetTreeView()->m_tree.SortChildren(0);
@@ -976,18 +976,19 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		int ret = MboxMail::exportToCSVFile(m_csvConfig, csvFileName, firstMail, lastMail, selectedMailsIndexList, progressBar);
 		if (ret > 0) 
 		{
-			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
+			CString datapath = MboxMail::GetLastDataPath();
+			CString path = MboxMail::GetLastPath();
+			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
-				if (FileUtils::PathDirExists(path)) { // likely :) 
-					CString text = "Created file\n\n" + csvFileName;
+				if (FileUtils::PathDirExists(datapath)) { // likely :) 
+					CString text = "Created file \n\n" + csvFileName;
 					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
 						if (FileUtils::BrowseToFile(csvFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
 						}
 						int deb = 1;
@@ -1021,7 +1022,7 @@ void CMainFrame::OnViewCodepageids()
 
 	BOOL createDirOk = TRUE;
 	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = CreateDirectory(HelpPath, NULL);
+		createDirOk = FileUtils::CreateDirectory(HelpPath);
 
 	int ret = TextUtilsEx::showCodePageTable(HelpPath);
 }
@@ -1096,18 +1097,19 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 
 		if (ret > 0) 
 		{
-			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
+			CString datapath = MboxMail::GetLastDataPath();
+			CString path = MboxMail::GetLastPath();
+			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
-				if (FileUtils::PathDirExists(path)) { // likely :) 
-					CString txt = "Created file\n\n" + textFileName;
+				if (FileUtils::PathDirExists(datapath)) { // likely :) 
+					CString txt = "Created file \n\n" + textFileName;
 					OpenContainingFolderDlg dlg(txt);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
 						if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
 						}
 						int deb = 1;
@@ -1182,12 +1184,13 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 		ret = MboxMail::exportToTextFile(textConfig, textFileName, mailPosition, mailPosition, selectedMailsIndexList, textType, progressBar);
 		if (ret > 0)
 		{
-			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-			if (!path.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
+			CString datapath = MboxMail::GetLastDataPath();
+			CString path = MboxMail::GetLastPath();
+			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
-				if (FileUtils::PathDirExists(path))
+				if (FileUtils::PathDirExists(datapath))
 				{ // likely :) 
-					CString txt = "Created file\n\n" + textFileName;
+					CString txt = "Created file \n\n" + textFileName;
 					if (createFileOnly) {
 						int deb = 1;
 					}
@@ -1221,7 +1224,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						{
 							if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 								HWND h = GetSafeHwnd();
-								HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+								HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
 								CheckShellExecuteResult(result, h);
 							}
 							int deb = 1;
@@ -1758,7 +1761,7 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 
 	BOOL createDirOk = TRUE;
 	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = CreateDirectory(HelpPath, NULL);
+		createDirOk = FileUtils::CreateDirectory(HelpPath);
 
 	CString codePageIdsFile = "MailListsInfo.htm";
 	CString fullPath = HelpPath + "\\" + codePageIdsFile;
@@ -2009,7 +2012,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 
 	BOOL createDirOk = TRUE;
 	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = CreateDirectory(HelpPath, NULL);
+		createDirOk = FileUtils::CreateDirectory(HelpPath);
 
 	CString codePageIdsFile = "MboxviewerHelp.htm";
 	CString fullPath = HelpPath + "\\" + codePageIdsFile;
@@ -2513,7 +2516,7 @@ int CMainFrame::MergeArchiveFiles()
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	CFileDialog dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
 
-	CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString inFolderPath = MboxMail::GetLastPath();
 #if 0
 	// No need to enforce the below
 	if (!inFolderPath.IsEmpty())
@@ -2570,6 +2573,13 @@ restart:
 
 		CString outFolderPath;
 		CString fileName;
+		CString datapath = MboxMail::GetLastDataPath();
+		if (inFolderPath.Compare(datapath))
+		{
+			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
+			inFolderPath = appFolderPath + "MboxRepo";
+			FileUtils::CreateDirectory(inFolderPath);
+		}
 		BOOL ret = SaveFileDialog(fileName, fileNameFilter, dfltExtension, inFolderPath, outFolderPath, title);
 		CString filePath = outFolderPath + "\\" + fileName;
 		CString fileExtension = ::PathFindExtension(fileName);
@@ -2583,6 +2593,7 @@ restart:
 				txt += _T("\" file.\nMake sure file is not open on other applications.");
 				HWND h = NULL; // we don't have any window yet
 				int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				MboxMail::m_outbuf->Clear();
 				return -1;
 			}
 
@@ -2601,6 +2612,7 @@ restart:
 						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 						fp.Close();
+						MboxMail::m_outbuf->Clear();
 						return -1;
 					}
 					// Append file
@@ -2630,6 +2642,12 @@ restart:
 				TRACE("FILE=%s\n", strFilePath);
 			}
 			fp.Close();
+
+			if (FileUtils::BrowseToFile(filePath) == FALSE) {
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, _T("open"), outFolderPath, NULL, NULL, SW_SHOWNORMAL);
+				CheckShellExecuteResult(result, h);
+			}
 			int deb = 1;
 		}
 	}
@@ -2637,6 +2655,7 @@ restart:
 	{
 		int deb = 1;
 	}
+	MboxMail::m_outbuf->Clear();
 	return 1;
 }
 
@@ -2743,15 +2762,24 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CFileException exMergeTo;
 	if (!fpMergeTo.Open(mergedMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
+		DWORD dwErrorCode = GetLastError();
+		CString errorMessage;
+		GetErrorMessage(dwErrorCode, errorMessage);
+
 		TCHAR szError[1024];
-		exMergeTo.GetErrorMessage(szError, 1024);
+		exMergeTo.GetErrorMessage(szError, 1022);
 		CFileStatus rStatus;
 		BOOL ret = fpMergeTo.GetStatus(rStatus);
 
 		CString txt = _T("Could not create Merge To File\"") + mergedMboxFilePath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		//txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n\n");
+		txt += CString(szError);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		//answer = MessageBox(errorMessage, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 		fpList.Close();
 		return -1;
@@ -2912,31 +2940,63 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
 	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 1;
 
-	MboxMail::m_inbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
-	TCHAR *fileNameBuffer = MboxMail::m_inbuf->Data();
+	CString path = MboxMail::GetLastPath();
+	CString datapath = MboxMail::GetLastDataPath();
 
-	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
-	CFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
-
-	OPENFILENAME& ofn = dlgFile.GetOFN();
-	//ofn.Flags |= ??;
-	ofn.lpstrFile = fileNameBuffer;
-	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
-	ofn.lpstrInitialDir = inFolderPath;
-	ofn.lpstrTitle = title;
-
-	INT_PTR ret = dlgFile.DoModal();
-	if (ret == IDOK)
+	for (;;)
 	{
-		outFolderPath = dlgFile.GetFolderPath();
-		fileName = dlgFile.GetFileName();
-		TRACE("FOLDER=%s\n", outFolderPath);
-		TRACE("FILE=%s\n", fileName);
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
+
+		MboxMail::m_inbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
+		TCHAR *fileNameBuffer = MboxMail::m_inbuf->Data();
+
+		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+		dwFlags &= ~OFN_NOCHANGEDIR;
+		CFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
+
+		OPENFILENAME& ofn = dlgFile.GetOFN();
+		//ofn.Flags |= ??;
+		ofn.lpstrFile = fileNameBuffer;
+		ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+		ofn.lpstrInitialDir = inFolderPath;
+		ofn.lpstrTitle = title;
+
+		INT_PTR ret = dlgFile.DoModal();
+		if (ret == IDOK)
+		{
+			fileName = dlgFile.GetFileName();
+			CString filePathName = dlgFile.GetPathName();
+			BOOL ret = FileUtils::CPathGetPath(filePathName, outFolderPath);
+
+			TRACE("FOLDER=%s\n", outFolderPath);
+			TRACE("FILE=%s\n", fileName);
+
+			MboxMail::m_inbuf->Clear();
+
+			if (path.Compare(datapath)) 
+			{
+				if (!CMainFrame::CanMboxBeSavedInFolder(outFolderPath))
+				{
+					CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
+					CString validFolder = appFolderPath + "MboxRepo";
+
+					CString txt = _T("Saving the mbox archive mail file is allowed in \n\n");
+					txt.Append(validFolder);
+					txt.Append(_T("\n\nor in subfolders of MboxRepo"));
+					txt.Append(_T("\nor in folders other than under the root folder\n\n"));
+					txt.Append(appFolderPath);
+					txt.Append(_T("\n\nPlease try again."));
+					HWND h = GetSafeHwnd(); // we don't have any window yet
+					int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+					continue;
+				}
+			}
+			return TRUE;
+		}
+		else
+		{
+			MboxMail::m_inbuf->Clear();
+			return FALSE;
+		}
 	}
 }
 
@@ -3274,7 +3334,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	MySelectFolder dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
 
-	CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString inFolderPath = MboxMail::GetLastPath();
 
 	OPENFILENAME& ofn = dlgFile.GetOFN();
 	//ofn.Flags |= OFN_ALLOWMULTISELECT;
@@ -3785,7 +3845,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 				int index = pTreeView->m_folderArray.Add(mboxFilePath);
 			}
 
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), mboxFilePath);
+			MboxMail::SetLastPath(mboxFilePath);
 		}
 	}
 	else if (m_commandLineParms.m_bEmlPreviewMode && !m_commandLineParms.m_mboxFileNameOrPath.IsEmpty())
@@ -4012,7 +4072,6 @@ int CommandLineParms::VerifyParameters()
 			return -2;
 	}
 
-	// TODO: FIXME end up copy and pase; encapsuate in functions
 	if (!m_mboxFileNameOrPath.IsEmpty())
 	{
 		if (!FileUtils::PathFileExist(m_mboxFileNameOrPath))
@@ -4059,7 +4118,7 @@ int CommandLineParms::VerifyParameters()
 
 
 		// LoadFolders() needs "lastPath" to open folder housing "mailFile"
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), folderPath);
+		MboxMail::SetLastPath(folderPath);
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), m_mboxFileNameOrPath);
 	}
 
@@ -4104,7 +4163,7 @@ int CommandLineParms::VerifyParameters()
 			else
 				return -2;
 		}
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), folderPath);
+		MboxMail::SetLastPath(folderPath);
 	}
 
 	if (!m_mboxListFilePath.IsEmpty() && !m_mergeToFilePath.IsEmpty())
@@ -4134,6 +4193,16 @@ int CommandLineParms::VerifyParameters()
 		CString fileNameExtention;
 
 		FileUtils::SplitFilePath(m_mergeToFilePath, driveName, directory, fileNameBase, fileNameExtention);
+		if (fileNameExtention.CompareNoCase(_T(".mbox")))
+		{
+			CString txt;
+				txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
+					"File extension must be set to .mbox.\n"),
+					m_mergeToFilePath, fileNameExtention);
+				HWND h = NULL; // we don't have any window yet  
+				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+				return -1;
+		}
 
 		if (directory.GetLength() <= 1)
 		{
@@ -4145,6 +4214,32 @@ int CommandLineParms::VerifyParameters()
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
+		}
+
+		if (!CMainFrame::CanMboxBeSavedInFolder(mboxFolderPath))
+		{
+			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
+			CString validFolder = appFolderPath + "MboxRepo";
+
+			CString txt;
+			mboxFolderPath.TrimRight(_T("\\"));
+			appFolderPath.TrimRight(_T("\\"));
+			txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n"),
+				m_mergeToFilePath, mboxFolderPath);
+			txt.Append(_T("\nSaving the mbox archive mail file is allowed in \n\n"));
+			txt.Append(validFolder);
+			txt.Append(_T("\n\nor in subfolders of MboxRepo"));
+			txt.Append(_T("\nor in folders other than under the root folder\n\n"));
+			txt.Append(appFolderPath);
+			HWND h = NULL; // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			return -1;
+		}
+		else
+		{
+			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
+			CString validFolder = appFolderPath + "MboxRepo";
+			///if (mboxFolderPath.CompareNoCase(validFolder)
 		}
 
 		BOOL ret = FileUtils::PathDirExists(mboxFolderPath);
@@ -4161,6 +4256,7 @@ int CommandLineParms::VerifyParameters()
 			else
 				return -2;
 		}
+
 		if (FileUtils::PathFileExist(m_mergeToFilePath))
 		{
 			CString txt;
@@ -4206,4 +4302,29 @@ int CommandLineParms::VerifyParameters()
 			return -2;
 	}
 	return(1);
+}
+
+
+// 
+BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
+{
+	// Should I just run MesageBox here ??
+	CString mboxFolder;
+	CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
+
+	CString validFolderPath = appFolderPath + "MboxRepo";
+	int validFolderPathLength = validFolderPath.GetLength();
+
+	appFolderPath.TrimRight("\\");
+	int appFolderPathLength = appFolderPath.GetLength();
+
+	CString front = destinationFolder.Left(appFolderPathLength);
+	if (front.CompareNoCase(appFolderPath))
+		return TRUE;
+
+	front = destinationFolder.Left(validFolderPathLength);
+	if (front.CompareNoCase(validFolderPath) == 0)
+		return TRUE;
+	else
+		return FALSE;
 }

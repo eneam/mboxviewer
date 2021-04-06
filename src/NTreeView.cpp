@@ -289,7 +289,9 @@ HTREEITEM NTreeView::HasFolder(CString &path)
 
 void NTreeView::LoadFolders()
 {
-	CString pathLast = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString pathLast = MboxMail::GetLastPath();
+	// Make sure data path is also set
+	MboxMail::SetLastPath(pathLast);
 	int paneId = 0;
 	CString sText;
 	CString str;
@@ -307,7 +309,7 @@ void NTreeView::LoadFolders()
 			if (path.CompareNoCase(pathLast) == 0)
 				continue;
 
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+			MboxMail::SetLastPath(path);
 
 			FileUtils::CPathStripPath(path, str);
 			sText.Format("Opening %s ...", str);
@@ -324,7 +326,7 @@ void NTreeView::LoadFolders()
 		}
 	}
 
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", pathLast);
+	MboxMail::SetLastPath(pathLast);
 
 	FileUtils::CPathStripPath(pathLast, str);
 	sText.Format("Opening %s ...", str);
@@ -351,7 +353,7 @@ void NTreeView::LoadFolders()
 
 void  NTreeView::ExpandOrCollapseTree(BOOL expand)
 {
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 
 	HTREEITEM hFolder = 0;
 	if (!path.IsEmpty() && FileUtils::PathDirExists(path))
@@ -435,8 +437,9 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 	// new archive files might be discovered and added ??
 	m_bIsDataDirty = FALSE;
 	fileSizes.RemoveAll();
+	CString datapath = MboxMail::GetLastDataPath();
 	CStdioFile fp;
-	if (fp.Open(path + "\\.mboxview", CFile::modeRead | CFile::typeText))
+	if (fp.Open(datapath + "\\.mboxview", CFile::modeRead | CFile::typeText))
 	{
 		CString line;
 		while (fp.ReadString(line))
@@ -525,13 +528,13 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 			if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.')
 			{
 				CString fn = wf.cFileName;
-				CString fullPath = path + "\\" + fn;
+				CString mboxFilePath = path + "\\" + fn;
 
-				if (ImboxviewFile(fullPath))
+				if (ImboxviewFile(mboxFilePath))
 				{
 					_int64 fSize = 0;
 					ArchiveFileInfo info;
-					_int64 realFSize = FileUtils::FileSize(fullPath);
+					_int64 realFSize = FileUtils::FileSize(mboxFilePath);
 					found = fileSizes.Lookup(fn, info);
 
 					// if found ==  FALSE, the fn is a new file and therefore fSize != realFSize
@@ -541,13 +544,15 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 					if (info.fSize != realFSize)
 					{
 						//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
-						CString cache = fullPath + ".mboxview";
-						DeleteFile(cache);
+						CString cache;
+						BOOL retval = MboxMail::GetMboxviewFilePath(mboxFilePath, cache);
+
+						FileUtils::DeleteFile(cache);
 						// Delete List Files
 						CString listFileName;
 						int ret = NListView::DetermineListFileName(fn, listFileName);
 						if (!listFileName.IsEmpty())
-							DeleteFile(listFileName);
+							FileUtils::DeleteFile(listFileName);
 
 						fileSizes[fn].fSize = realFSize;
 						m_bIsDataDirty = TRUE;
@@ -568,7 +573,8 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 		} while (FindNextFile(f, &wf));
 		FindClose(f);
 
-		fw = path + "\\*.mboxview";
+		CString datapath = MboxMail::GetLastDataPath();
+		fw = datapath + "*.mboxview";
 
 		// Delete *.mbox.mboxview and *.eml.mboxview files without associated  mbox or eml archive files
 		HANDLE f = FindFirstFile(fw, &wf);
@@ -579,7 +585,7 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 				if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY && wf.cFileName[0] != '.')
 				{
 					CString fn = wf.cFileName;
-					CString mboxviewPath = path + "\\" + fn;
+					CString mboxviewPath = datapath + fn;
 
 					CString driveName;
 					CString directory;
@@ -597,7 +603,7 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 						BOOL ret = FileUtils::PathFileExist(mboxPath);
 						if (ret == FALSE)
 						{
-							DeleteFile(mboxviewPath);
+							FileUtils::DeleteFile(mboxviewPath);
 						}
 					}
 				}
@@ -628,8 +634,7 @@ void NTreeView::FillCtrl(BOOL expand)
 
 	m_bInFillControl = TRUE;
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
-
+	CString path = MboxMail::GetLastPath();
 
 	//m_tree.DeleteAllItems();
 	if (path.IsEmpty() || !FileUtils::PathDirExists(path))
@@ -772,7 +777,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		CString folderPath;
 		DetermineFolderPath(hNewItem, folderPath);
 
-		BOOL retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", folderPath);
+		MboxMail::SetLastPath(folderPath);
 
 		BOOL ret = SetupFileSizeMap(folderPath);
 
@@ -843,8 +848,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	CString folderPath;
 	DetermineFolderPath(hNewItem, folderPath);
 
-	BOOL retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", folderPath);
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	MboxMail::SetLastPath(folderPath);
+	CString path = MboxMail::GetLastPath();
 
 	if( str.IsEmpty() || path.IsEmpty() )
 		return;
@@ -924,13 +929,16 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 		return;
 	}
 	CString str = m_tree.GetItemText(hItem);
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	if (str.IsEmpty() || path.IsEmpty())
 		return;
 	path.TrimRight("\\");
 	pListView->m_path = path + _T('\\') + str;
-	CString cache = pListView->m_path + ".mboxview";
-	DeleteFile(cache);
+
+	CString cache;
+	BOOL retval = MboxMail::GetMboxviewFilePath(pListView->m_path, cache);
+
+	FileUtils::DeleteFile(cache);
 	pListView->m_which = hItem;
 	pListView->ResetSize();
 	pListView->FillCtrl();
@@ -997,7 +1005,7 @@ void NTreeView::SelectMailFile(CString *fileNm)
 
 		pListView->CloseMailFile();
 
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), mboxFilePath);
+		MboxMail::SetLastPath(mboxFilePath);
 
 		HTREEITEM hFolder = HasFolder(mboxFilePath);
 		if (hFolder)
@@ -1042,7 +1050,7 @@ void NTreeView::InsertMailFile(CString &mailFile)
 
 	CString mailFileName = fileNameBase + fileNameExtention;
 
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"));
+	CString path = MboxMail::GetLastPath();
 	if (directory.GetLength() > 0)
 	{
 		path = driveName + directory;
@@ -1079,8 +1087,9 @@ void NTreeView::InsertMailFile(CString &mailFile)
 				(*fileSizes)[mailFileName].fSize = fSize;
 				SaveData(hFolder);
 
-				CString mboxIndexFilepath = pListView->m_path + ".mboxview";
-				BOOL ret = ::DeleteFile(mboxIndexFilepath);
+				CString mboxIndexFilepath; // = pListView->m_path + ".mboxview";
+				BOOL retval = MboxMail::GetMboxviewFilePath(pListView->m_path, mboxIndexFilepath);
+				BOOL ret = FileUtils::DeleteFile(mboxIndexFilepath);
 
 				HTREEITEM hItem = m_tree.InsertItem(mailFileName, 4, 5, hFolder);
 				if (hItem)
@@ -1133,7 +1142,7 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes)
 #else
 	CString line;
 	CString ipath;
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	path.TrimRight("\\");
 	while( hItem != NULL ) 
 	{
@@ -1177,7 +1186,7 @@ void NTreeView::Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes)
 void NTreeView::SaveData(HTREEITEM m_which)
 {
 	CFile fp;
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	if( path.IsEmpty() )
 		return;
 	path.TrimRight("\\");
@@ -1188,7 +1197,11 @@ void NTreeView::SaveData(HTREEITEM m_which)
 
 	CString rootName = m_tree.GetItemText(hRoot);
 
-	if( fp.Open(path+"\\.mboxview", CFile::modeWrite | CFile::modeCreate) ) 
+	CString datapath = MboxMail::GetLastDataPath();
+	FileUtils::CreateDirectory(datapath);
+	datapath.TrimRight("\\");
+
+	if( fp.Open(datapath+"\\.mboxview", CFile::modeWrite | CFile::modeCreate) ) 
 	{
 		Traverse(hRoot, fp, *fileSizes);
 		fp.Close();
@@ -1371,7 +1384,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		break;
 		case M_FolderPath_Id: 
 		{
-			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			CString path = MboxMail::GetLastPath();
 			path.TrimRight("\\");
 			HWND h = wnd->GetSafeHwnd();
 			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
@@ -1379,7 +1392,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		 break;
 		case M_FolderRefresh_Id: 
 		{
-			CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+			CString path = MboxMail::GetLastPath();
 			path.TrimRight("\\");
 			HWND h = wnd->GetSafeHwnd();
 			//int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
@@ -1466,22 +1479,25 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_FileLocation_Id = 11;
 	AppendMenu(&menu, M_FileLocation_Id, _T("Open File Location"));
 
-	const UINT M_Properties_Id = 12;
+	const UINT M_DatabaseLocation_Id = 12;
+	AppendMenu(&menu, M_DatabaseLocation_Id, _T("Open Database Folder Location"));
+
+	const UINT M_Properties_Id = 13;
 	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
-	const UINT M_AttachmentCache_Id = 13;
+	const UINT M_AttachmentCache_Id = 14;
 	AppendMenu(&menu, M_AttachmentCache_Id, _T("Export All Mail Attachments"));
 
-	const UINT M_EmlCache_Id = 14;
+	const UINT M_EmlCache_Id = 15;
 	AppendMenu(&menu, M_EmlCache_Id, _T("Export All Mails as Eml"));
 
-	const UINT M_Reload_Id = 15;
+	const UINT M_Reload_Id = 16;
 	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
-	const UINT M_Remove_Id = 16;
+	const UINT M_Remove_Id = 17;
 	AppendMenu(&menu, M_Remove_Id, _T("Remove File"));
 
-	const UINT M_CreateFolder_Id = 17;
+	const UINT M_CreateFolder_Id = 18;
 	//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1505,8 +1521,23 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString Label;
 		int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
 
-		CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+		CString path = MboxMail::GetLastPath();
 		if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+			HWND h = GetSafeHwnd();
+			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+			CMainFrame::CheckShellExecuteResult(result, h);
+		}
+	}
+	break;
+	case M_DatabaseLocation_Id:
+	{
+		UINT nFlags = MF_BYCOMMAND;
+		CString Label;
+		int retLabel = menu.GetMenuString(M_DatabaseLocation_Id, Label, nFlags);
+
+		CString path = MboxMail::GetLastDataPath();
+		//if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+		{
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 			CMainFrame::CheckShellExecuteResult(result, h);
@@ -1785,13 +1816,13 @@ BOOL NTreeView::DeleteFolder(HTREEITEM hItem)
 	{
 		CString folderPath;
 		DetermineFolderPath(hRootItem, folderPath);
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", folderPath);
+		MboxMail::SetLastPath(folderPath);
 		FillCtrl(FALSE);
 	}
 	else
 	{
 		CString empty = "";
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", empty);
+		MboxMail::SetLastPath(empty);
 	}
 	return ret;
 }
@@ -2435,11 +2466,11 @@ void NTreeView::RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes)
 
 BOOL NTreeView::RefreshFolder(HTREEITEM hItem)
 {
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 
 	BOOL ret = DeleteFolder(hItem);
 
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"), path);
+	MboxMail::SetLastPath(path);
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -2475,7 +2506,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 	FileSizeMap::CPair *pCurVal;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	CString path = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath");
+	CString path = MboxMail::GetLastPath();
 	path.TrimRight("\\");
 	path.AppendChar('\\');
 

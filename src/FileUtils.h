@@ -41,8 +41,14 @@ public:
 	static BOOL PathFileExist(LPCSTR path);
 	static BOOL PathFileExistW(LPCWSTR path);
 	static __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
-	static CString GetmboxviewTempPath(char *name = 0);
-	static CStringW GetmboxviewTempPathW(wchar_t *name = 0);
+	static CString GetmboxviewTempPath(const char *name = 0);
+	static CStringW GetmboxviewTempPathW(const wchar_t *name = 0);
+	//
+	static CString GetMboxviewLocalAppDataPath(const char *name = 0);
+	static CStringW GetMboxviewLocalAppDataPathW(const wchar_t *name = 0);
+	static CString CreateMboxviewLocalAppDataPath(const char *name = 0);
+	static CStringW CreateMboxviewLocalAppDataPathW(const wchar_t *name = 0);
+	//
 	BOOL RemoveDirectory(CString &dir, DWORD &error);
 	BOOL RemoveDirectoryW(CStringW &dir, DWORD &error);
 	static BOOL RemoveDir(CString & dir, bool recursive = false);
@@ -53,6 +59,8 @@ public:
 	static void CPathStripPathW(const wchar_t *path, CStringW &fileName);
 	static BOOL CPathGetPath(const char *path, CString &filePath);
 	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+	static void SplitFilePathW(CStringW &fileName, CStringW &driveName, CStringW &directory, CStringW &fileNameBase, CStringW &fileNameExtention);
+	static void GetFolderPathAndFileNameW(CStringW &fileNamePath, CStringW &folderPath, CStringW &fileName);
 	static void GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName);
 	static void GetFileBaseNameAndExtension(CString &fileName, CString &fileNameExtention, CString &fileBaseName);
 	static void GetFileBaseName(CString &fileName, CString &fileBaseName);
@@ -67,6 +75,10 @@ public:
 	static BOOL Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength);
 	static int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten);
 	static BOOL NormalizeFilePath(CString &filePath);
+	static BOOL CreateDirectory(const char *path);
+	static DWORD CreateDirectoryW(const wchar_t *path);
+	static BOOL DeleteFile(const char *path);
+	static BOOL DeleteFileW(const wchar_t *path);
 	//
 	void UnitTest();
 };

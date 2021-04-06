@@ -372,7 +372,14 @@ public:
 
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
-	static CString s_path;
+	static CString s_path; // current archive file path
+	static CString s_datapath;  //current root directory for .mboxview and index files and many temp files
+	static void SetLastPath(CString &path);
+	static CString GetLastPath();
+	//
+	static CString GetLastDataPath();
+	static CString SetLastDataPath(CString *lastMboxDirPath = 0);
+	
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCSTR path);
@@ -509,16 +516,18 @@ public:
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
 	static CString GetDateFormat(int i);
-	
 	static int RemoveDuplicateMails();
 
 	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
 	static int MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
 	//
-	static BOOL CreatePrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static BOOL CreateCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static BOOL GetCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText, CString *mboxFilePath=NULL);
+
 	static BOOL GetPrintCachePath(CString &printCachePath);
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
-	static bool GetArchiveSpecificCachePath(CString &path, CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
+	static BOOL GetMboxviewFilePath(CString &mboxFilePath, CString &mboxviewFilePath);
+	static BOOL GetFileCachePathWithoutExtension(CString &mboxFilePath, CString &mboxBaseFileCachePath);
 	//
 	static void ReleaseResources();
 	static void assert_unexpected();
@@ -536,6 +545,8 @@ public:
 	static int printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
 
 	static void DumpMailParseException(_int64 msgOffset);
+
+	static void mbassert();
 };
 
 inline char* FixIfNull(const char* ptr)

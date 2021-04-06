@@ -210,6 +210,7 @@ public:
 	int MergeMboxArchiveFiles(CString &mboxListFilePath, CString &mergedMboxFilePath);
 	int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath);
 
+	static BOOL CanMboxBeSavedInFolder(CString &destinationFolder);
 
 	static CommandLineParms m_commandLineParms;
 	static AttachmentConfigParams *GetAttachmentConfigParams();

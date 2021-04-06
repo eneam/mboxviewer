@@ -95,6 +95,7 @@ int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
 void Com_Initialize();
 void SetMyExceptionHandler();
 void UnSetMyExceptionHandler();
+BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage);
 
 /////////////////////////////////////////////////////////////////////////////
 

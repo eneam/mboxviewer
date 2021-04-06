@@ -114,36 +114,118 @@ __int64 FileUtils::FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
 	return li.QuadPart;
 }
 
-CString FileUtils::GetmboxviewTempPath(char *name)
+CString FileUtils::GetmboxviewTempPath(const char *name)
 {
 	char	buf[_MAX_PATH + 1];
 	buf[0] = 0;
 	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
-	if (!FileUtils::PathDirExists(buf))
-		strcpy(buf, "\\");
-	strcat(buf, "mboxview\\");
-	if (name) {
-		strcat(buf, name);
-		strcat(buf, "\\");
+
+	CString localTempPath = CString(buf);
+	localTempPath.TrimRight("\\");
+	localTempPath.Append("\\mboxview\\");
+	if (name) 
+	{
+		localTempPath.Append(name);
+		localTempPath.Append("\\");
 	}
-	BOOL ret = ::CreateDirectory(buf, NULL);
-	return buf;
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExists(localTempPath))
+		ret = FileUtils::CreateDirectory(localTempPath);
+	return localTempPath;
 }
 
-CStringW FileUtils::GetmboxviewTempPathW(wchar_t *name)
+CStringW FileUtils::GetmboxviewTempPathW(const wchar_t *name)
 {
 	wchar_t	buf[_MAX_PATH + 1];
 	buf[0] = 0;
 	DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
-	if (!PathIsDirectoryW(buf))
-		wcscpy(buf, L"\\");
-	wcscat(buf, L"mboxview\\");
-	if (name) {
-		wcscat(buf, name);
-		wcscat(buf, L"\\");
+	//
+	CStringW localTempPath = CStringW(buf);
+	localTempPath.TrimRight(L"\\");
+	localTempPath.Append(L"\\mboxview\\");
+	if (name)
+	{
+		localTempPath.Append(name);
+		localTempPath.Append(L"\\");
 	}
-	BOOL ret = ::CreateDirectoryW(buf, NULL);
-	return buf;
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExistsW(localTempPath))
+		ret = FileUtils::CreateDirectoryW(localTempPath);
+	return localTempPath;
+}
+
+CString FileUtils::GetMboxviewLocalAppDataPath(const char *name)
+{
+	char	buf[_MAX_PATH + 1];
+	buf[0] = 0;
+	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
+
+	CString folderPath;
+	CString fileName;
+
+	CString localTempPath = CString(buf);
+	localTempPath.TrimRight("\\");
+	FileUtils::GetFolderPathAndFileName(localTempPath, folderPath, fileName);
+	folderPath.Append("MBoxViewer\\");
+	if (name) {
+		folderPath.Append(name);
+		folderPath.Append("\\");
+	}
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExists(folderPath))
+	{
+		ret = FileUtils::CreateDirectory(folderPath);
+		if (ret == FALSE)
+			folderPath.Empty();
+	}
+	return folderPath;
+}
+
+CStringW FileUtils::GetMboxviewLocalAppDataPathW(const wchar_t *name)
+{
+	wchar_t	buf[_MAX_PATH + 1];
+	buf[0] = 0;
+	DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
+
+	CStringW folderPath;
+	CStringW fileName;
+
+	CStringW localTempPath = CStringW(buf);
+	localTempPath.TrimRight(L"\\");
+	FileUtils::GetFolderPathAndFileNameW(localTempPath, folderPath, fileName);
+	folderPath.Append(L"MBoxViewer\\");
+	if (name) {
+		folderPath.Append(name);
+		folderPath.Append(L"\\");
+	}
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExistsW(folderPath))
+		ret = FileUtils::CreateDirectoryW(folderPath);
+
+	return folderPath;
+}
+
+CString FileUtils::CreateMboxviewLocalAppDataPath(const char *name)
+{
+	CString folderPath = FileUtils::GetMboxviewLocalAppDataPath(name);
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExists(folderPath))
+	{
+		ret = FileUtils::CreateDirectory(folderPath);
+		if (ret == FALSE)
+			folderPath.Empty();
+	}
+	return folderPath;
+}
+
+CStringW FileUtils::CreateMboxviewLocalAppDataPathW(const wchar_t *name)
+{
+	CStringW folderPath = FileUtils::GetMboxviewLocalAppDataPathW(name);
+	BOOL ret = TRUE;
+	if (!FileUtils::PathDirExistsW(folderPath))
+		ret = FileUtils::CreateDirectoryW(folderPath);
+
+	return folderPath;
 }
 
 BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
@@ -365,6 +447,30 @@ void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &di
 	fileNameExtention.Append(ext);
 }
 
+void FileUtils::SplitFilePathW(CStringW &fileName, CStringW &driveName, CStringW &directory, CStringW &fileNameBase, CStringW &fileNameExtention)
+{
+	wchar_t ext[_MAX_EXT + 1]; ext[0] = 0;
+	wchar_t drive[_MAX_DRIVE + 1]; drive[0] = 0;
+	wchar_t dir[_MAX_DIR + 1]; dir[0] = 0;
+	wchar_t fname[_MAX_FNAME + 1]; fname[0] = 0;
+
+	driveName.Empty();
+	directory.Empty();
+	fileNameBase.Empty();
+	fileNameExtention.Empty();
+
+	_wsplitpath_s(fileName,
+		drive, _MAX_DRIVE + 1,
+		dir, _MAX_DIR + 1,
+		fname, _MAX_FNAME + 1,
+		ext, _MAX_EXT + 1);
+
+	driveName.Append(drive);
+	directory.Append(dir);
+	fileNameBase.Append(fname);
+	fileNameExtention.Append(ext);
+}
+
 void FileUtils::GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName)
 {
 	CString driveName;
@@ -372,6 +478,17 @@ void FileUtils::GetFolderPathAndFileName(CString &fileNamePath, CString &folderP
 	CString fileNameBase;
 	CString fileNameExtention;
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
+	folderPath = driveName + directory;
+	fileName = fileNameBase + fileNameExtention;
+}
+
+void FileUtils::GetFolderPathAndFileNameW(CStringW &fileNamePath, CStringW &folderPath, CStringW &fileName)
+{
+	CStringW driveName;
+	CStringW directory;
+	CStringW fileNameBase;
+	CStringW fileNameExtention;
+	SplitFilePathW(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 	fileName = fileNameBase + fileNameExtention;
 }
@@ -688,6 +805,110 @@ BOOL FileUtils::NormalizeFilePath(CString &filePath)
 	}
 	else
 		return FALSE;
+}
+
+BOOL FileUtils::CreateDirectory(const char *path)
+{
+	CList<CString, CString &> folderList;
+
+	CString folderPath(path);
+	CString subFolderPath(path);
+	CString folderName;
+
+	int i;
+	BOOL foundValidSubFolder = FALSE;
+	for (i = 0; i < 100; i++)
+	{
+		if (FileUtils::PathDirExists(subFolderPath))
+		{
+			foundValidSubFolder = TRUE;
+			break;
+		}
+
+		folderPath = subFolderPath;
+		folderPath.TrimRight("\\");
+		FileUtils::GetFolderPathAndFileName(folderPath, subFolderPath, folderName);
+		if (subFolderPath.IsEmpty())
+			break;
+		folderList.AddHead(folderName);
+	}
+	if (!foundValidSubFolder)
+		return FALSE;
+	if (folderList.IsEmpty())
+		return TRUE;
+
+	folderPath = subFolderPath;
+	folderPath.TrimRight("\\");
+	folderPath.Append("\\");
+	while (folderList.GetCount() > 0)
+	{
+		folderName = folderList.RemoveHead();
+		folderPath.Append(folderName);
+		folderPath.Append("\\");
+		if (!::CreateDirectory(folderPath, NULL))
+			return FALSE;
+		if (!FileUtils::PathDirExists(folderPath))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+DWORD FileUtils::CreateDirectoryW(const wchar_t *path)
+{
+	CList<CStringW, CStringW &> folderList;
+
+	CStringW folderPath(path);
+	CStringW subFolderPath(path);
+	CStringW folderName;
+
+	int i;
+	BOOL foundValidSubFolder = FALSE;
+	for (i = 0; i < 100; i++)
+	{
+		if (FileUtils::PathDirExistsW(subFolderPath))
+		{
+			foundValidSubFolder = TRUE;
+			break;
+		}
+
+		folderPath = subFolderPath;
+		folderPath.TrimRight(L"\\");
+		FileUtils::GetFolderPathAndFileNameW(folderPath, subFolderPath, folderName);
+		if (subFolderPath.IsEmpty())
+			break;
+		folderList.AddHead(folderName);
+	}
+	if (!foundValidSubFolder)
+		return FALSE;
+	if (folderList.IsEmpty())
+		return TRUE;
+
+	folderPath = subFolderPath;
+	folderPath.TrimRight(L"\\");
+	folderPath.Append(L"\\");
+	while (folderList.GetCount() > 0)
+	{
+		folderName = folderList.RemoveHead();
+		folderPath.Append(folderName);
+		folderPath.Append(L"\\");
+		if (!::CreateDirectoryW(folderPath, NULL))
+			return FALSE;
+		if (!FileUtils::PathDirExistsW(folderPath))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+BOOL FileUtils::DeleteFile(const char *path)
+{
+	return ::DeleteFile(path);
+}
+
+BOOL FileUtils::DeleteFileW(const wchar_t *path)
+{
+	return ::DeleteFileW(path);
 }
 
 void FileUtils::UnitTest()
