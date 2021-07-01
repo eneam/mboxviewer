@@ -709,6 +709,46 @@ void  FileUtils::MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bRepl
 	}
 }
 
+BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int dataLength)
+{
+	DWORD dwAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+
+	HANDLE hFile = CreateFile(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		int deb = 1;
+		return FALSE;
+	}
+	else
+	{
+		const unsigned char* pszData = data;
+		int nLeft = dataLength;
+
+		for (;;)
+		{
+			DWORD nWritten = 0;
+
+			BOOL retWrite = WriteFile(hFile, pszData, nLeft, &nWritten, 0);
+			if (nWritten != nLeft)
+				int deb = 1;
+
+			if (nWritten < 0)
+				break;
+
+			pszData += nWritten;
+			nLeft -= nWritten;
+			if (nLeft <= 0)
+				break;
+		}
+
+		BOOL retClose = CloseHandle(hFile);
+		if (retClose == FALSE)
+			int deb = 1;
+	}
+	return TRUE;
+}
+
 BOOL FileUtils::Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength)
 {
 	DWORD dwAccess = GENERIC_WRITE;
@@ -769,6 +809,50 @@ int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesTo
 		return FALSE;
 	else
 		return TRUE;
+}
+
+BOOL FileUtils::ReadEntireFile(CString &cStrNamePath, SimpleString &txt)
+{
+	DWORD dwAccess = GENERIC_READ;
+	DWORD dwCreationDisposition = OPEN_EXISTING;
+
+	HANDLE hFile = CreateFile(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		int deb = 1;
+		return FALSE;
+	}
+	else
+	{
+		LPOVERLAPPED lpOverlapped = 0;
+		LPVOID       lpBuffer;
+		DWORD        nNumberOfBytesToRead;
+		DWORD      nNumberOfBytesRead;
+
+		_int64 fsize = FileUtils::FileSize(cStrNamePath);
+		_int64 bytesLeft = fsize;
+		txt.ClearAndResize((int)fsize+1);
+		lpBuffer = txt.Data();
+		while (bytesLeft > 0)
+		{
+			if (bytesLeft > 0xffffffff)
+				nNumberOfBytesToRead = 0xffffffff;
+			else
+				nNumberOfBytesToRead = (DWORD)bytesLeft;
+
+			BOOL retval = ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
+			if (retval == FALSE)
+				break;
+
+			int newCount = txt.Count() + nNumberOfBytesRead;
+			txt.SetCount(newCount);
+			lpBuffer = txt.Data(newCount);
+			bytesLeft -= nNumberOfBytesRead;
+		}
+		BOOL retClose = CloseHandle(hFile);
+	}
+
+	return TRUE;
 }
 
 BOOL FileUtils::NormalizeFilePath(CString &filePath)

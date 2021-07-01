@@ -45,6 +45,8 @@ public:
 	static UINT Str2PageCode(const  char* PageCodeStr);
 	// Str2Ansi converts str encoded with strCodePage -> CP_ACP i.e. to system default Windows ANSI code page, can be different on different computers.
 	static DWORD Str2Ansi(CString &str, UINT strCodePage);  
+	//
+	static BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff);
 	// Str2CodePage converts str encoded using strCodePage -> outCodePage or to CP_UTF8 if outCodePage == 0
 	static BOOL Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff);
 	// UTF16 -> outCodePage or to UTF8 if outCodePage == 0

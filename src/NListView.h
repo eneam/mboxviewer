@@ -46,6 +46,7 @@
 #include "TextUtilities.h"
 #include "AttachmentsConfig.h"
 #include "MyCTime.h"
+#include "ForwardMailDlg.h"
 
 
 class CMimeMessage;
@@ -107,6 +108,7 @@ class NListView : public CWnd
 	CWheelListCtrl	m_list;
 	CFont		m_font;
 	CFont m_boldFont;
+	UINT m_acp; // ANSI code page for this system
 
 // Construction
 public:
@@ -141,6 +143,8 @@ public:
 	CBitmap m_paperClip;
 	CImageList m_imgList;
 
+	// Forward Mail
+	ForwardMailData m_ForwardMailData;
 	//CImageList m_ImageList;
 	MailIndexList m_selectedMailsList;
 
@@ -299,6 +303,26 @@ public:
 	int LoadFolderListFile_v2(CString &folderPath, CString &folderName);
 	int CopyMailsToFolders();
 
+
+	int VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePath, CString &errorText);
+
+	BOOL m_developmentMode;
+	int m_tcpPort;
+	BOOL m_enbaleForwardMailsLog;
+	BOOL m_enbaleSMTPProtocolLog;
+	int DeleteForwardEmlFiles(CString &folderPath);
+	int ForwardSingleMail(int iItem, BOOL progressBar, CString &progressText, CString &errorText);
+	int ForwardMailDialog(int iItem);
+	int ForwardSelectedMails(int iItem);
+	int ForwardMailRange(int iItem);
+	int ForwardMails_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
+	int ForwardSelectedMails_Thread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName);
+	int ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexList *selectedMailIndexList, CString &errorText);
+	INT64  ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText);
+	CString FixCommandLineArgument(CString &in);
+	CString FixCommandLineArgument(int in);
+	INT64 ExecCommand_KillProcess(CString processName, CString &errorText, BOOL progressBar, CString &progressText);
+
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
 	int RefreshMailsOnUserSelectsMailListMark();
@@ -319,7 +343,8 @@ public:
 
 	void PostMsgCmdParamAttachmentHint();
 	//
-	static int PrintAsEmlFile(CFile *fpm, int mailPosition);
+	static int ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDirectory, CString &emlFile, CString &errorText);
+	static int PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile);
 	static int PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB);
 	static int DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW, AttachmentMgr &attachmentDB);
 	static int PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator);
@@ -470,6 +495,23 @@ public:
 	afx_msg LRESULT OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnClose();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+};
+
+struct FORWARD_MAILS_ARGS
+{
+	ForwardMailData forwardMailsData;
+	CString password;
+	BOOL separatePDFs;
+	CString errorText;
+	CString targetPrintFolderPath;
+	CString targetPrintSubFolderName;
+	int firstMail;
+	int lastMail;
+	MailIndexList *selectedMailIndexList;
+	int nItem;
+	BOOL exitted;
+	int ret;
+	NListView *lview;
 };
 
 struct PARSE_ARGS

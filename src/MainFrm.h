@@ -43,6 +43,8 @@
 #include "AttachmentsConfig.h"
 #include "ColorStyleConfigDlg.h"
 #include "HtmlPdfHdrConfigDlg.h"
+#include "SMTPMailServerConfigDlg.h"
+
 
 typedef CArray<CString, CString> MboxFileList;
 
@@ -256,6 +258,10 @@ public:
 	AttachmentConfigParams m_attachmentConfigParams;
 	ColorStyleConfigDlg *m_colorStyleDlg;
 	BOOL m_bViewMessageHeaders;
+	MailDB m_mailDB;
+
+	BOOL CreateMailDbFile(MailDB &m_mailDB, CString &fileName);
+	BOOL WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp);
 
 	static ColorStylesDB m_ColorStylesDB;
 
@@ -326,6 +332,10 @@ public:
 	afx_msg void OnFileRestorehintmessages();
 	afx_msg void OnMessageheaderpanelayoutDefault();
 	afx_msg void OnMessageheaderpanelayoutExpanded();
+	afx_msg void OnFileSmtpmailserverconfig();
+	afx_msg void OnHelpUserguide();
+	afx_msg void OnHelpReadme();
+	afx_msg void OnHelpLicense();
 };
 
 /////////////////////////////////////////////////////////////////////////////

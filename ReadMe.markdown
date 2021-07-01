@@ -30,6 +30,7 @@ Features
 * ability to customize the background color of key display panes;
 * ability to customize the HTML/PDF mail header output;
 * view raw mail header;
+* forward mails directly from MBox Viewer;
 
 License
 -----
@@ -43,6 +44,12 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+
+v 1.0.3.21
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for forwarding of mails directly form MBox Viewer via Gmail, Outlook or Yahoo SMTP server;
+ - Updated User Manual to describe new and updated features;
 
 v 1.0.3.20
 

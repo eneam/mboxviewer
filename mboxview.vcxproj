@@ -226,6 +226,7 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>ThirdParty\jsoncpp</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -270,7 +271,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -281,6 +282,7 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>ThirdParty\jsoncpp</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -430,6 +432,7 @@
       <CallingConvention>FastCall</CallingConvention>
       <ExceptionHandling>Async</ExceptionHandling>
       <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>ThirdParty\jsoncpp</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -464,7 +467,7 @@
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -475,6 +478,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>FastCall</CallingConvention>
       <ExceptionHandling>Async</ExceptionHandling>
+      <AdditionalIncludeDirectories>ThirdParty\jsoncpp</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -667,6 +671,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\ForwardMailDlg.cpp" />
     <ClCompile Include="src\GenericFontFamilyDlg.cpp" />
     <ClCompile Include="src\HtmlPdfHdrConfigDlg.cpp" />
     <ClCompile Include="src\HtmlUtils.cpp" />
@@ -756,6 +761,7 @@
     </ClCompile>
     <ClCompile Include="src\MyCButton.cpp" />
     <ClCompile Include="src\MyCTime.cpp" />
+    <ClCompile Include="src\MyTcpClient.cpp" />
     <ClCompile Include="src\NListView.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -840,6 +846,7 @@
     </ClCompile>
     <ClCompile Include="src\SerializationHelper.cpp" />
     <ClCompile Include="src\SimpleString.cpp" />
+    <ClCompile Include="src\SMTPMailServerConfigDlg.cpp" />
     <ClCompile Include="src\StackWalker.cpp" />
     <ClCompile Include="src\StdAfx.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -897,6 +904,14 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="Thirdparty\jsoncpp\jsoncpp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|Win32'">ThirdParty\jsoncpp</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|Win32'">NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">ThirdParty\jsoncpp</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\mboxview.rc">
@@ -931,6 +946,7 @@
     <ClInclude Include="src\FindDlg.h" />
     <ClInclude Include="src\FindFilterRuleDlg.h" />
     <ClInclude Include="src\FindInMailDlg.h" />
+    <ClInclude Include="src\ForwardMailDlg.h" />
     <ClInclude Include="src\GenericFontFamilyDlg.h" />
     <ClInclude Include="src\HtmlPdfHdrConfigDlg.h" />
     <ClInclude Include="src\HtmlUtils.h" />
@@ -949,6 +965,7 @@
     <ClInclude Include="src\MimeParser.h" />
     <ClInclude Include="src\MyCButton.h" />
     <ClInclude Include="src\MyCTime.h" />
+    <ClInclude Include="src\MyTcpClient.h" />
     <ClInclude Include="src\NListView.h" />
     <ClInclude Include="src\NMsgView.h" />
     <ClInclude Include="src\NSplit.h" />
@@ -962,6 +979,7 @@
     <ClInclude Include="src\Resource.h" />
     <ClInclude Include="src\SerializationHelper.h" />
     <ClInclude Include="src\SimpleString.h" />
+    <ClInclude Include="src\SMTPMailServerConfigDlg.h" />
     <ClInclude Include="src\StackWalker.h" />
     <ClInclude Include="src\StdAfx.h" />
     <ClInclude Include="src\TextUtilities.h" />
@@ -970,6 +988,8 @@
     <ClInclude Include="src\webbrowser2.h" />
     <ClInclude Include="src\WheelListCtrl.h" />
     <ClInclude Include="src\WheelTreeCtrl.h" />
+    <ClInclude Include="Thirdparty\jsoncpp\json\json-forwards.h" />
+    <ClInclude Include="Thirdparty\jsoncpp\json\json.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\imview.ico" />

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.51.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MailKit">
+      <HintPath>G:\MailKit\MailKit\MailKit\bin\$(ConfigurationName)\netstandard2.1\MailKit.dll</HintPath>
+    </Reference>
+    <Reference Include="MimeKit">
+      <HintPath>G:\MailKit\MailKit\MailKit\bin\$(ConfigurationName)\netstandard2.1\MimeKit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

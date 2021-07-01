@@ -50,6 +50,9 @@
 #include "MimeHelper.h"
 #include "ColorStyleConfigDlg.h"
 #include "MimeParser.h"
+#include "ForwardMailDlg.h"
+#include "MyTcpClient.h"
+
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -74,6 +77,34 @@ inline void BreakNlistView() {}
 BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText);
 BOOL CreateAttachmentCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText);
 BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText);
+
+bool ALongRightProcessProcForwardMails(const CUPDUPDATA* pCUPDUPData)
+{
+	FORWARD_MAILS_ARGS *args = (FORWARD_MAILS_ARGS*)pCUPDUPData->GetAppData();
+	MboxMail::pCUPDUPData = pCUPDUPData;
+
+	HANDLE h = GetCurrentThread();
+	BOOL prio = SetThreadPriority(h, THREAD_PRIORITY_ABOVE_NORMAL);
+	DWORD myThreadId = GetCurrentThreadId();
+	DWORD myThreadPri = GetThreadPriority(h);
+	TRACE(_T("(ALongRightProcessProcForwardMails) threadId=%ld threadPriority=%ld\n"), myThreadId, myThreadPri);
+
+	Com_Initialize();
+
+	// TODO: CUPDUPDATA* pCUPDUPData is global set as  MboxMail::pCUPDUPData = pCUPDUPData; Should conider to pass as parameter
+
+	if (args->selectedMailIndexList)  // should always be true
+	{
+		args->ret = args->lview->ForwardMails_WorkerThread(args->forwardMailsData, args->selectedMailIndexList, args->errorText);
+	}
+	else
+	{
+		;// args->ret = args->lview->ForwardMailRange_WorkerThread(args->firstMail, args->lastMail, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText);
+	}
+
+	args->exitted = TRUE;
+	return true;
+}
 
 bool ALongRightProcessProcWriteIndexFile(const CUPDUPDATA* pCUPDUPData)
 {
@@ -396,6 +427,12 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	//
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth", m_frameCx_TreeInHide);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight", m_frameCy_TreeInHide);
+
+	m_acp = GetACP();
+	m_tcpPort = 61333;
+	m_enbaleForwardMailsLog = FALSE;
+	m_enbaleSMTPProtocolLog = FALSE;
+	m_developmentMode = FALSE;
 }
 
 NListView::~NListView()
@@ -575,6 +612,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
 	// Create enums or replace switch statment with if else ..
+	// XXX_GROUP_Id represents group of related emails, related == convesation
 	const UINT S_TEXT_Id = 1;
 	AppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
 
@@ -678,6 +716,12 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		//AppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
 		;
 	}
+
+	const UINT M_FORWARD_MAIL_Id = 27;
+	AppendMenu(&menu, M_FORWARD_MAIL_Id, _T("Forward Mail"));
+
+	const UINT M_FORWARD_RELATED_MAILS_Id = 28;
+	AppendMenu(&menu, M_FORWARD_RELATED_MAILS_Id, _T("Forward Related Mails"));
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -901,6 +945,18 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		int retval = CopyMailsToFolders();
 	}
 	break;
+	case M_FORWARD_MAIL_Id: {
+		//MboxMail::ShowHint(HintConfig::ForwardMailHint, GetSafeHwnd());
+		ForwardSelectedMails(iItem);
+		int deb = 1;
+	}
+	break;
+	case M_FORWARD_RELATED_MAILS_Id: {
+		//MboxMail::ShowHint(HintConfig::ForwardMailHint, GetSafeHwnd());
+		int ret = ForwardMailRange(iItem);
+		int deb = 1;
+	}
+	break;
 	default: {
 		int deb = 1;
 	}
@@ -991,6 +1047,10 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 		}
 	}
+
+	const UINT S_FORWARD_SELECTED_MAILS_Id = 23;
+	AppendMenu(&menu, S_FORWARD_SELECTED_MAILS_Id, _T("Forward Selected Mails"));
+	
 
 	// Used above for printing to PDF and CSV
 	//const UINT S_PDF_DIRECT_Id = 28;
@@ -1111,6 +1171,12 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 			int lastMail = MboxMail::s_mails.GetCount() - 1;
 			pFrame->PrintMailsToCSV(firstMail, lastMail, selectedMails);
 		}
+		int deb = 1;
+	}
+	break;
+	case S_FORWARD_SELECTED_MAILS_Id: {
+		//MboxMail::ShowHint(HintConfig::ForwardMailHint, GetSafeHwnd());
+		ForwardSelectedMails(iItem);
 		int deb = 1;
 	}
 	break;
@@ -12254,12 +12320,14 @@ BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorTe
 	}
 
 	MboxMail *m;
+	CString emlFile;
 	for (int i = 0; i < ni; i++)
 	{
+		emlFile.Empty();
 		m = MboxMail::s_mails[i];
 
 		int mailPosition = i;
-		NListView::PrintAsEmlFile(&fpm, mailPosition);
+		NListView::PrintAsEmlFile(&fpm, mailPosition, emlFile);
 
 		if (!mainThread && MboxMail::pCUPDUPData)
 		{
@@ -12965,7 +13033,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 //
 // Creates mail attachments files except embeded image attachments
 //
-int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition)
+int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 {
 	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
 		return -1;
@@ -13053,6 +13121,97 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition)
 
 	if (fpm_save == 0)
 		mboxFp.Close();
+
+	emlFile = fileName;
+
+	return 1;
+}
+
+int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDirectory, CString &emlFile, CString &errorText)
+{
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		errorText = _T("Internal error, try again and see if that help, otherwise restart application");
+		return -1;
+	}
+
+	CFile mboxFp;
+	CFile *fpm_save = fpm;
+	if (fpm == 0)
+	{
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		{
+			errorText = _T("Could not open \"") + MboxMail::s_path;
+			errorText += _T("\" file.\nMake sure file is not open on other applications.");
+			return -1;
+		}
+		fpm = &mboxFp;
+	}
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	CString mailFileNameBase;
+	if (!pFrame->m_NamePatternParams.m_bCustomFormat)
+		MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, mailFileNameBase);
+	else
+		MboxMail::MakeFileName(m, pFrame->m_NamePatternParams.m_nameTemplateCnf, mailFileNameBase, pFrame->m_NamePatternParams.m_nFileNameFormatSizeLimit);
+
+	CString fileName = targetDirectory + mailFileNameBase + ".eml";
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	outbuf->ClearAndResize(10000);
+
+	CFile fp;
+	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate))
+	{
+		errorText = _T("Could not create \"") + fileName;
+		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+#if 0
+		// ExportAsEmlFile is the static function. Must use global MessageBox
+		// It can be called from non main thread and need to figure whether calling
+		// :: MessageBox is valid. Note: it seems to work
+		// Not ideal because program is not blocked. TODO: invetsigate and change 
+
+		HWND h = NULL;
+		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
+		// continue for now.
+		return -1;
+	}
+
+	BOOL ret;
+	outbuf->Clear();
+	ret = m->GetBody(outbuf);
+	// Remove From line at the begining of mail body
+
+	static const char *cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+
+	char *p = outbuf->Data();
+	int bodyCnt = outbuf->Count();
+	char *e = p + bodyCnt;
+	p = MimeParser::SkipEmptyLines(p, e);
+	if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+	{
+		// Can From line be splitted ?
+		//p = MimeParser::GetMultiLine(p, e, line);
+		p = MimeParser::EatNewLine(p, e);
+		bodyCnt -= p - outbuf->Data();
+		if (bodyCnt < 0)
+			bodyCnt = 0;
+	}
+
+	fp.Write(p, bodyCnt);
+	fp.Close();
+
+	if (fpm_save == 0)
+		mboxFp.Close();
+
+	emlFile = fileName;
 
 	return 1;
 }
@@ -14701,5 +14860,891 @@ int AttachmentMgr::GetValidName(CStringW &inNameW)
 	}
 	return nextId;
 }
+
+int NListView::ForwardSingleMail(int iItem, BOOL progressBar, CString &progressText, CString &errorText)
+{
+	CString htmFileName;
+	//CString errorText;
+	//BOOL progressBar;
+	//CString progressText;
+
+	CFile fpm;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	{
+		errorText = _T("Could not open \"") + MboxMail::s_path;
+		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+		return -1;
+	}
+
+	int mailPosition = iItem;
+	CString emlFile;
+	CString targetDirectory = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+
+	int rexport = NListView::ExportAsEmlFile(&fpm, mailPosition, targetDirectory, emlFile, errorText);
+	if (rexport < 0) {
+		if (errorText.IsEmpty())
+			MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	
+	CString password;
+	DWORD64 id = (DWORD64)(time(0));
+	CString instanceId;
+	instanceId.Format("%lld", id);
+	
+	if (pFrame)
+	{
+		password.Format("%s:%s", instanceId, pFrame->m_mailDB.SMTPConfig.UserPassword);
+	}
+
+	// Try max 10 times
+	int i;
+	for (i = 0; i < 10; i++)
+	{
+		INT64 retval = NListView::ExecCommand_WorkerThread(m_tcpPort, instanceId, password, m_ForwardMailData, emlFile, errorText, progressBar, progressText);
+
+		if (retval == 0)
+			break;
+
+		if (retval == -13) // PortAlreadyInUse
+		{
+			srand((unsigned int)time(0));
+			
+			int range = 65533 - 49152;
+			m_tcpPort = 49152 + rand()%range;  // next port to try
+		}
+		else
+			return -1;
+	}
+	if (i == 10) {
+		//ForwardEmlFile.exe should create error file by now
+		return -1;
+	}
+	else
+		return 1;
+}
+
+int NListView::ForwardMailDialog(int iItem)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == 0) {
+		//internal error;
+		return -1;
+	}
+
+	if (pFrame->m_mailDB.SMTPConfig.UserAccount.IsEmpty() || pFrame->m_mailDB.SMTPConfig.UserPassword.IsEmpty())
+	{
+		CString txt = _T("User name and/or password are not provided.\n");
+		txt += "Select \"File\"->\"SMTP Mail Server Config\" and provide user name and password.\n";
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	m_ForwardMailData.m_From = pFrame->m_mailDB.SMTPConfig.UserAccount;
+	m_ForwardMailData.m_MailService = pFrame->m_mailDB.SMTPConfig.MailServiceName;
+
+	ForwardMailDlg dlg;
+
+	CStringW subjectW;
+	if (iItem >= 0)
+	{
+		MboxMail *m = MboxMail::s_mails[iItem];
+		TextUtilsEx::Str2Wide(m->m_subj, m->m_subj_charsetId, subjectW);
+	}
+
+	m_ForwardMailData.m_subjectW = subjectW;
+
+	dlg.m_Data.Copy(m_ForwardMailData);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		m_ForwardMailData.Copy(dlg.m_Data);
+		return 1;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+// Forward related mails aprt of the same conversation
+int NListView::ForwardMailRange(int iSelectedItem)
+{
+	CString errorText;
+	CString targetPrintSubFolderName;
+	CString targetPrintFolderPath;
+
+	if (abs(MboxMail::b_mails_which_sorted) != 99) {
+
+		CString txt = _T("Please sort all mails by conversation first.\n");
+		txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+		HWND h = GetSafeHwnd(); // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return -1;
+	}
+
+	int firstMail = iSelectedItem;
+	int lastMail = iSelectedItem;
+	FindFirstAndLastMailOfConversation(iSelectedItem, firstMail, lastMail);
+
+	int selectedCnt = lastMail - firstMail + 1;
+	if (selectedCnt > 100)
+	{
+		CString txt = _T("Mail sending limit imposed by Mail Service is not well defined.\n"
+			"Number of mails you selected to forward is greater than 100\n"
+			"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n\n"
+			"Do you want to forward selected emails anyway?\n");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer != IDYES)
+		{
+			return -1;
+		}
+	}
+	m_selectedMailsList.SetSize(0);
+	m_selectedMailsList.SetSize(selectedCnt);
+
+	int i = 0;
+	int j = 0;
+	for (i = firstMail; i < lastMail; i++, j++)
+	{
+		m_selectedMailsList.SetAtGrow(j, i); // to be safe grow just in case
+	}
+
+	// Function please
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int MaxMailSize = pFrame->m_mailDB.SMTPConfig.MaxMailSize * 1024;
+		int largeMailsCnt = 0;
+		int i;
+		int cnt = m_selectedMailsList.GetCount();
+		for (int j = 0; j < cnt; j++)
+		{
+			i = m_selectedMailsList[j];
+			MboxMail *m = MboxMail::s_mails[i];
+			if (m->m_length > MaxMailSize)
+				largeMailsCnt++;
+		}
+
+		if (largeMailsCnt)
+		{
+			CString txt;
+			txt.Format("Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
+				"Size of each mail is shown in the size column in the Summary Pane.\n\n"
+				"Do you want to send anyway?\n", largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer != IDYES)
+			{
+				return -1;
+			}
+		}
+	}
+
+	MailIndexList *selectedMailsIndexList = &m_selectedMailsList;
+	int iItem = (*selectedMailsIndexList)[0];
+
+	int rval = ForwardMailDialog(iItem);
+	if (rval <= 0)
+		return -1;
+
+	int ret = ForwardSelectedMails_Thread(&m_selectedMailsList, targetPrintSubFolderName);
+	if (ret < 0)
+		return -1;
+	else
+		return 1;
+}
+
+int NListView::ForwardSelectedMails(int iSelectedItem)
+{
+	CString errorText;
+	CString targetPrintSubFolderName;
+	CString targetPrintFolderPath;
+
+	if (PopulateSelectedMailsList() <= 0)
+		return 0;
+
+	int selectedCnt = m_selectedMailsList.GetCount();
+	if (selectedCnt > 100)
+	{
+		CString txt = _T("Mail sending limit imposed by Mail Service is not well defined.\n"
+			"Number of mails you selected to forward is greater than 100\n"
+			"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n"
+			"You make take manual action to unblock the accout without delay\n\n"
+			"Do you want to forward selected emails anyway?\n");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer != IDYES)
+		{
+			return -1;
+		}
+	}
+
+	// Need function ??
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int MaxMailSize = pFrame->m_mailDB.SMTPConfig.MaxMailSize * 1024;
+		int largeMailsCnt = 0;
+		int i;
+		int cnt = m_selectedMailsList.GetCount();
+		for (int j = 0; j < cnt; j++)
+		{
+			i = m_selectedMailsList[j];
+			MboxMail *m = MboxMail::s_mails[i];
+			if (m->m_length > MaxMailSize)
+				largeMailsCnt++;
+		}
+
+		if (largeMailsCnt)
+		{
+			CString txt;
+			txt.Format("Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
+				"Size of each mail is shown in the size column in the Summary Pane.\n\n"
+				"Do you want to send anyway?\n", largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			if (answer != IDYES)
+			{
+				return -1;
+			}
+		}
+	}
+
+	MailIndexList *selectedMailsIndexList = &m_selectedMailsList;
+	int iItem = (*selectedMailsIndexList)[0];
+
+	int rval = ForwardMailDialog(iItem);
+	if (rval <= 0)
+		return -1;  // user cancelled the sending
+
+	int ret = ForwardSelectedMails_Thread(selectedMailsIndexList, targetPrintSubFolderName);
+
+	return 1;
+}
+
+int NListView::ForwardMails_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName)
+{
+	m_selectedMailsList.SetSize(0);
+	int selectedCnt = lastMail - firstMail;
+	m_selectedMailsList.SetSize(selectedCnt);
+
+	int i = 0;
+	int j = 0;
+	for (i = firstMail; i < lastMail; i++, j++)
+	{
+		m_selectedMailsList.SetAtGrow(j, i); // to be safe grow just in case
+	}
+	if (m_selectedMailsList.GetCount() > 100)
+		int deb = 1;
+
+	int ret = NListView::ForwardSelectedMails_Thread(&m_selectedMailsList, targetPrintSubFolderName);
+	return ret;
+}
+
+int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList, CString &targetPrintSubFolderName)
+{
+	FORWARD_MAILS_ARGS args;
+
+	//CString rootPrintSubFolder = "PrintCache";
+	//CString targetPrintSubFolder = targetPrintSubFolderName;
+	//CString printCachePath;
+	CString errorText;
+	CString forwardEmlFileExePath;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		int ret = VerifyPathToForwardEmlFileExecutable(forwardEmlFileExePath, errorText);
+		if (ret < 0)
+		{
+			HWND h = NULL;
+			int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+	}
+	else
+	{
+		HWND h = NULL;
+		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		errorText.Append("Internal error. Try again.");
+		return -1;
+	}
+
+	/*IN*/
+	args.forwardMailsData.Copy(m_ForwardMailData);
+
+	SimpleString result;
+	SimpleString workBuff;
+	const char *data = (LPCSTR)args.forwardMailsData.m_Text;
+	int datalen = args.forwardMailsData.m_Text.GetLength();
+	BOOL rval = TextUtilsEx::Str2CodePage((char*)data, datalen, m_acp, CP_UTF8, &result, &workBuff);
+
+	CString appDataPath = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+	CString cStrNamePath = appDataPath + "MailText.txt";
+	BOOL wret = FileUtils::Write2File(cStrNamePath, (unsigned char*)result.Data(), result.Count());
+
+	args.forwardMailsData.m_Text.Empty();
+
+	args.password = pFrame->m_mailDB.SMTPConfig.UserPassword;
+	args.lview = this;
+	args.targetPrintFolderPath = ""; // printCachePath;
+	args.targetPrintSubFolderName = ""; // targetPrintSubFolder;
+	args.firstMail = -1;
+	args.lastMail = -1;
+	args.selectedMailIndexList = selectedMailsIndexList;
+	args.nItem = -1;
+	args.separatePDFs = TRUE;
+
+	/*OUT*/
+	args.exitted = FALSE;
+	args.ret = 1;
+
+	int ret = 1;
+	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcForwardMails, (LPVOID)(FORWARD_MAILS_ARGS*)&args);
+
+	INT_PTR nResult = Dlg.DoModal();
+
+	if (!nResult) { // should never be true ?
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+	int retResult = LOWORD(nResult);
+
+	if (retResult != IDOK)
+	{  // IDOK==1, IDCANCEL==2
+		// We should be here when user selects Cancel button
+		//ASSERT(cancelledbyUser == TRUE);
+		int loopCnt = 20;
+		DWORD tc_start = GetTickCount();
+		while ((loopCnt-- > 0) && (args.exitted == FALSE))
+		{
+			Sleep(25);
+		}
+		DWORD tc_end = GetTickCount();
+		DWORD delta = tc_end - tc_start;
+		TRACE("(ForwardSelectedMails_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+
+		ret = -2;
+	}
+	else
+		ret = args.ret;
+
+	MboxMail::pCUPDUPData = NULL;
+
+	if (ret == -2)
+		return 1; // IDCANCEL
+
+	CString ForwardMailOSuccessFilePath = appDataPath + "ForwardMailSuccess.txt";
+	CString ForwardMailErrorFilePath = appDataPath + "ForwardMailError.txt";
+	BOOL ForwardMailOSuccess = FALSE;
+	BOOL ForwardMailError = FALSE;
+
+	if (FileUtils::PathFileExist(ForwardMailOSuccessFilePath))
+		ForwardMailOSuccess = TRUE;
+
+	SimpleString errorTxt;
+	if (FileUtils::PathFileExist(ForwardMailErrorFilePath))
+	{
+		BOOL rval = FileUtils::ReadEntireFile(ForwardMailErrorFilePath, errorTxt);
+		ForwardMailError = TRUE;
+	}
+
+	if ((ForwardMailOSuccess == TRUE) && (ForwardMailError == TRUE))
+	{
+		// Should nver happen -:)
+		MboxMail::assert_unexpected();
+	}
+
+	if ((ret == 0) && (ForwardMailError == TRUE))
+		MboxMail::assert_unexpected();
+
+	if (ForwardMailError == TRUE)
+	{
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, errorTxt.Data(), _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	// We rely on errorTxt; wea are not consistent
+	if (ret > 0)
+	{
+		if (args.errorText.IsEmpty())
+		{
+			int deb = 1;
+		}
+		else
+		{
+			MboxMail::assert_unexpected();
+			HWND h = NULL;
+			int answer = ::MessageBox(h, args.errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			MboxMail::assert_unexpected();
+			return -1;
+		}
+	}
+	else if (ret < 0) 
+	{
+		if (!args.errorText.IsEmpty())
+		{
+			HWND h = NULL;
+			int answer = ::MessageBox(h, args.errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+		else
+			MboxMail::assert_unexpected();
+	}
+	return 1;
+}
+
+int NListView::DeleteForwardEmlFiles(CString &targetPath)
+{
+	CString filePath;
+	BOOL delStatus;
+	int fileCnt = 0;
+	CString fn;
+
+	CString fw = targetPath + "\\*.eml";
+	WIN32_FIND_DATA	wf;
+	HANDLE f = FindFirstFile(fw, &wf);
+	if (f != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if ((wf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+				continue;
+			fileCnt++;
+			fn = wf.cFileName;
+			filePath = targetPath + "\\" + fn;
+			delStatus = DeleteFile(filePath);
+			if (delStatus == FALSE) {
+				DWORD error = GetLastError();
+			}
+
+		} while (FindNextFile(f, &wf));
+		FindClose(f);
+	}
+
+	return fileCnt;
+}
+
+int NListView::ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexList *selectedMailIndexList, CString &errorText)
+{
+	BOOL progressBar = TRUE;
+
+	CString appDataPath = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+	int retdel = NListView::DeleteForwardEmlFiles(appDataPath);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if (selectedMailIndexList->GetCount() <= 0)
+		return 1;
+
+	double delta = (double)(selectedMailIndexList->GetCount());
+	if (delta <= 0) delta = 1;
+	double step = delta / 100;
+	double curstep = 1;
+	double newstep = 0;
+	CString fileNum;
+	int nFileNum;
+
+	if (progressBar && MboxMail::pCUPDUPData)
+	{
+		//fileNum.Format(_T("Forwarding mails to %s  ... "), mailData.m_MailService);
+		;// MboxMail::pCUPDUPData->SetProgress(fileNum, 1);
+	}
+
+	if (progressBar && MboxMail::pCUPDUPData)
+		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
+
+	int i;
+	int cnt = selectedMailIndexList->GetCount();
+	BOOL progress_Bar = TRUE;
+	for (int j = 0; j < cnt; j++)
+	{
+		i = (*selectedMailIndexList)[j];
+		if (progressBar && MboxMail::pCUPDUPData)
+		{
+			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
+				break;
+			}
+
+			newstep = ((double)(j - 0 + 1)) / step;
+			if (newstep >= curstep)
+			{
+				curstep = newstep;
+			}
+			curstep = 1;
+			nFileNum = (j + 1);
+			fileNum.Format(_T("Forwarding mails to %s  ... %d of %d"), mailData.m_MailService, nFileNum, cnt);
+			if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(curstep));
+		}
+		int retval = ForwardSingleMail(i, progress_Bar, fileNum, errorText);
+		if (retval < 0)
+			return -1;
+	}
+	nFileNum = cnt;
+	newstep = 100;
+	fileNum.Format(_T("Forwarding mails to %s ... %d of %d"), mailData.m_MailService, nFileNum, cnt);
+	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
+	int deb = 1;
+	return 1;
+}
+
+CString NListView::FixCommandLineArgument(CString &in)
+{
+	CString out;
+	CString arg(in);
+	arg.Replace("\"", "\"\"");
+	out = "\"" + arg + "\"";
+	return out;
+}
+
+CString NListView::FixCommandLineArgument(int in)
+{
+	CString out;
+	out.Format("\"%d\"", in);
+	return out;
+}
+
+INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if (AfxSocketInit() == FALSE)
+	{
+		errorText.Append("Sockets Could Not Be Initialized");
+		return -1;
+	}
+
+	// TODO: Duplicate check, done already in _Thread function calls 
+	CString forwardEmlFileExePath;
+	if (pFrame)
+	{
+		int ret = VerifyPathToForwardEmlFileExecutable(forwardEmlFileExePath, errorText);
+		if (ret < 0)
+		{
+			if (errorText.IsEmpty())
+				MboxMail::assert_unexpected();
+			return -1;
+		}
+	}
+	else
+	{
+		errorText.Append("Internal error. Try again.");
+		return -1;
+	}
+
+	CString appDataPath = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+	CString smtpConfigFilePath = appDataPath + "SMTP.ini";
+	CString smtProtocolFilePath = appDataPath + "SMTPLog.txt";
+	CString loggerFilePath = appDataPath +  "ForwardMailLog.txt";
+	CString textFilePath = appDataPath + "MailText.txt";
+
+	CString args;
+	args = args + " --smtp-cnf " + FixCommandLineArgument(smtpConfigFilePath);
+	args = args + " --to " + FixCommandLineArgument(mailData.m_To);
+	if (!mailData.m_CC.IsEmpty())
+		args = args + " --cc " + FixCommandLineArgument(mailData.m_CC);
+	if (!mailData.m_BCC.IsEmpty())
+		args = args + " --bcc " + FixCommandLineArgument(mailData.m_BCC);
+	args = args + " --eml-file " + FixCommandLineArgument(emlFile);
+	if (!textFilePath.IsEmpty())
+		args = args + " --mail-text-file " + FixCommandLineArgument(textFilePath);
+	args = args + " --tcp-port " + FixCommandLineArgument(tcpPort);
+	if (!instanceId.IsEmpty())
+		args = args + " --instance-id " + FixCommandLineArgument(instanceId);
+	//
+	if (m_enbaleForwardMailsLog)
+	{
+		if (!loggerFilePath.IsEmpty())
+			args = args + " --logger-file " + FixCommandLineArgument(loggerFilePath);
+	}
+	if (m_enbaleSMTPProtocolLog)
+	{
+		if (!smtProtocolFilePath.IsEmpty())
+			args = args + " --smtp-protocol-logger " + FixCommandLineArgument(smtProtocolFilePath);
+	}
+
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = forwardEmlFileExePath;
+	ShExecInfo.lpParameters = args;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE)
+	{
+		DWORD err = GetLastError();
+		int ret = CMainFrame::CheckShellExecuteResult(ShExecInfo.hInstApp, errorText);
+		if (errorText.IsEmpty())
+			MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	DWORD procId = GetProcessId(ShExecInfo.hProcess);
+	CString processName("ForwardEmlFile.exe");
+	CString errText;
+
+	int step = 10;
+	int stepCnt = 0;
+	int nSeconds = 0;
+	CString secondsBar;
+
+	DWORD msec = 100;
+	BOOL failed = FALSE;
+	BOOL passwordAlreadySend = FALSE;
+	int delaySendingPasswod = 20;
+	for (;;)
+	{
+		msec = 100;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_ABANDONED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_OBJECT_0:
+		{
+			INT64 exitcode = -1;
+			DWORD dwExitStatus = 0;
+			if (ShExecInfo.hProcess)
+			{
+				BOOL retval = GetExitCodeProcess(ShExecInfo.hProcess, &dwExitStatus);
+				exitcode = (int)dwExitStatus;
+				CloseHandle(ShExecInfo.hProcess);
+				//  ??
+				dwExitStatus = GetLastError();
+				CString errorText = GetLastErrorAsString();
+			}
+			return exitcode;
+		}
+		case WAIT_FAILED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_TIMEOUT: 
+		{
+			if (delaySendingPasswod-- > 0)
+			{
+				;
+			}
+			else if (!passwordAlreadySend)
+			{
+				// FIX: Make client non blocking
+				MyTcpClient tcpClient(tcpPort);
+				int error = tcpClient.ConnectSendClose(password, errorText);
+				if (error == 0)
+					passwordAlreadySend = TRUE;
+			}
+			if (MboxMail::pCUPDUPData)
+			{
+				if (MboxMail::pCUPDUPData->ShouldTerminate())
+				{
+					if (ShExecInfo.hProcess)
+					{
+						TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+						CloseHandle(ShExecInfo.hProcess);
+					}
+					else
+						INT64 retstatus = NListView::ExecCommand_KillProcess(processName, errText, FALSE, progressText);
+					if (errorText.IsEmpty())
+						MboxMail::assert_unexpected();
+					return -1;
+				}
+				if (progressBar)
+				{
+					if (stepCnt % 10 == 0)
+					{
+						nSeconds++;
+						if (progressText.IsEmpty())
+							MboxMail::pCUPDUPData->SetProgress(step);
+						else {
+							secondsBar.Format(_T("%s     %d seconds"), progressText, nSeconds);
+							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
+						}
+						step += 10;
+						if (step > 100)
+							step = 10;
+					}
+					stepCnt++;
+				}
+			}
+			break;
+		}
+		default: {
+			failed = TRUE;
+			break;
+		}
+		}
+		if (failed)
+		{
+			break;
+		}
+	}
+
+	DWORD dwExitStatus = GetLastError();
+	errorText = GetLastErrorAsString();
+
+	INT64 retstatus = NListView::ExecCommand_KillProcess(processName, errText, FALSE, progressText);
+	return -1;
+}
+
+INT64 NListView::ExecCommand_KillProcess(CString processName, CString &errorText, BOOL progressBar, CString &progressText)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = "C:\\Windows\\System32\\taskkill.exe";
+	ShExecInfo.lpParameters = "/F /IM" + processName + "/T";
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE)
+	{
+		DWORD err = GetLastError();
+		int ret = CMainFrame::CheckShellExecuteResult(ShExecInfo.hInstApp, errorText);
+		return -1;
+	}
+
+	DWORD procId = GetProcessId(ShExecInfo.hProcess);
+
+	int step = 10;
+	int stepCnt = 0;
+	int nSeconds = 0;
+	CString secondsBar;
+
+	DWORD msec = 100;
+	BOOL failed = FALSE;
+	int waitTimeout = 30; // don't wait forever
+	for (;;)
+	{
+		msec = 100;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_OBJECT_0: {
+			INT64 exitcode = -1;
+			DWORD dwExitStatus = 0;
+			if (ShExecInfo.hProcess)
+			{
+				BOOL retval = GetExitCodeProcess(ShExecInfo.hProcess, &dwExitStatus);
+				exitcode = (int)dwExitStatus;
+				CloseHandle(ShExecInfo.hProcess);
+				//  ??
+				dwExitStatus = GetLastError();
+				CString errorText = GetLastErrorAsString();
+			}
+			return exitcode;
+		}
+		case WAIT_TIMEOUT: 
+		{
+			if (waitTimeout-- < 0)
+			{
+				if (ShExecInfo.hProcess)
+				{
+					CloseHandle(ShExecInfo.hProcess);
+				}
+				failed = TRUE;
+				break;
+			}
+			if (MboxMail::pCUPDUPData)
+			{
+				if (MboxMail::pCUPDUPData->ShouldTerminate())
+				{
+					if (ShExecInfo.hProcess)
+					{
+						TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+						CloseHandle(ShExecInfo.hProcess);
+					}
+					failed = TRUE;
+					break;
+				}
+				if (progressBar)
+				{
+					if (stepCnt % 10 == 0)
+					{
+						nSeconds++;
+						if (progressText.IsEmpty())
+							MboxMail::pCUPDUPData->SetProgress(step);
+						else {
+							secondsBar.Format(_T("%s     %d seconds"), progressText, nSeconds);
+							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
+						}
+						step += 10;
+						if (step > 100)
+							step = 10;
+					}
+					stepCnt++;
+				}
+			}
+			break;
+		}
+		default: {
+			failed = TRUE;
+			break;
+		}
+		}
+		if (failed)
+		{
+			break;
+		}
+	}
+
+	DWORD dwExitStatus = GetLastError();
+	errorText = GetLastErrorAsString();
+	return -1;
+}
+
+int NListView::VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePath , CString &errorText)
+{
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+
+	if (m_developmentMode)
+	{
+#if _DEBUG
+		processDir = "G:\\MailKit\\ForwardEmlFile\\bin\\Debug\\netcoreapp3.1";
+		processDir = "G:\\Documents\\GIT1.0.3.21 - Copy\\mboxviewer\\ForwardEmlFile\\bin\\Debug\\netcoreapp3.1";
+#else
+		processDir = "G:\\MailKit\\ForwardEmlFile\\bin\\Rekease\\netcoreapp3.1";
+		processDir = "G:\\Documents\\GIT1.0.3.21 - Copy\\mboxviewer\\ForwardEmlFile\\bin\\Rekease\\netcoreapp3.1";
+#endif
+	}
+	CString filePath = processDir + "\\ForwardMails\\ForwardEmlFile.exe";
+
+	ForwardEmlFileExePath = filePath;
+
+	if (!FileUtils::PathFileExist(filePath))
+	{
+		CString dir = processDir + "\\ForwardMails";
+		errorText = _T("ForwardEmlFile.exe not found in ");
+		errorText.Append(dir);
+		errorText.Append(" directory. ");
+		errorText.Append("MBox Viewer will not be able to forward emails until ForwardEmlFile.exe is reinstalled.\n");
+		return -1;
+	}
+	return 1;
+}
+
 
 

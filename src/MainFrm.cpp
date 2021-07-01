@@ -44,6 +44,7 @@
 #include "PrintConfigDlg.h"
 #include "OpenContainingFolderDlg.h"
 #include "ColorStyleConfigDlg.h"
+#include "SMTPMailServerConfigDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -182,6 +183,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_RESTOREHINTMESSAGES, &CMainFrame::OnFileRestorehintmessages)
 	ON_COMMAND(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, &CMainFrame::OnMessageheaderpanelayoutDefault)
 	ON_COMMAND(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, &CMainFrame::OnMessageheaderpanelayoutExpanded)
+	ON_COMMAND(ID_FILE_SMTPMAILSERVERCONFIG, &CMainFrame::OnFileSmtpmailserverconfig)
+	ON_COMMAND(ID_HELP_USERGUIDE, &CMainFrame::OnHelpUserguide)
+	ON_COMMAND(ID_HELP_README, &CMainFrame::OnHelpReadme)
+	ON_COMMAND(ID_HELP_LICENSE, &CMainFrame::OnHelpLicense)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -393,6 +398,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		else
 			int deb = 1;
 	}
+
+	m_mailDB.Initialize();
 
 	return 0;
 }
@@ -3045,6 +3052,7 @@ void CMainFrame::PrintMailArchiveToPDF()
 	OnPrinttoPdf();
 }
 
+
 int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 {
 	CString path;
@@ -4327,4 +4335,111 @@ BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 		return TRUE;
 	else
 		return FALSE;
+}
+
+
+void CMainFrame::OnFileSmtpmailserverconfig()
+{
+	// TODO: Add your command handler code here
+
+	SMTPMailServerConfigDlg dlg;
+
+	dlg.m_mailDB.Copy(m_mailDB);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		int deb = 1;
+	}
+	else
+	{
+		int deb = 1;
+	}
+	m_mailDB.Copy(dlg.m_mailDB);
+
+	CString appDataPath = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+	CString smtpConfigFilePath = appDataPath + "SMTP.ini";
+
+	CreateMailDbFile(m_mailDB, smtpConfigFilePath);
+
+	int deb = 1;
+}
+
+
+void CMainFrame::OnHelpUserguide()
+{
+	// TODO: Add your command handler code here
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\UserGuide.pdf";
+
+	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CMainFrame::OnHelpReadme()
+{
+	// TODO: Add your command handler code here
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\README.txt";
+
+	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CMainFrame::OnHelpLicense()
+{
+	// TODO: Add your command handler code here
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\LICENSE.txt";
+
+	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+}
+
+BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
+{
+	CFile fp;
+	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate)) 
+	{
+		return FALSE;
+	}
+	CString section = "[MailService]\r\n";
+	fp.Write(section, section.GetLength());
+	CString fld = "ActiveMailService=" + m_mailDB.ActiveMailService + "\r\n";
+	fp.Write(fld, fld.GetLength());
+
+	WriteMTPServerConfig(m_mailDB.GmailSMTPConfig, fp);
+	WriteMTPServerConfig(m_mailDB.YahooSMTPConfig, fp);
+	WriteMTPServerConfig(m_mailDB.OutlookSMTPConfig, fp);
+	WriteMTPServerConfig(m_mailDB.CustomSMTPConfig, fp);
+
+	return TRUE;
+}
+
+BOOL CMainFrame::WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp)
+{
+	CString CR = "\r\n";
+	CString section = "[" + serverConfig.MailServiceName + "]" + CR;
+	fp.Write(section, section.GetLength());
+	CString fld = "MailServiceName=" + serverConfig.MailServiceName + CR;
+	fp.Write(fld, fld.GetLength());
+	fld = "SmtpServerAddress=" + serverConfig.SmtpServerAddress + CR;
+	fp.Write(fld, fld.GetLength());
+	fld.Format("SmtpServerPort=%d\r\n", serverConfig.SmtpServerPort);
+	fp.Write(fld, fld.GetLength());
+	fld = "UserAccount=" + serverConfig.UserAccount + CR;
+	fp.Write(fld, fld.GetLength());
+	fld = "UserPassword=" + serverConfig.UserPassword + CR;
+	fp.Write(fld, fld.GetLength());
+	fld.Format("EncryptionType=%d\r\n", serverConfig.EncryptionType);
+	fp.Write(fld, fld.GetLength());
+
+	return TRUE;
 }

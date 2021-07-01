@@ -73,6 +73,7 @@ BEGIN
         MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
         MENUITEM "Attachments Config...",       ID_FILE_ATTACHMENTSCONFIG
         MENUITEM "Color Style Config",          ID_FILE_COLORCONFIG
+        MENUITEM "SMTP Mail Server Config",     ID_FILE_SMTPMAILSERVERCONFIG
         POPUP "Print To"
         BEGIN
             MENUITEM "CSV...",                      ID_PRINTTO_CSV
@@ -139,6 +140,9 @@ BEGIN
     BEGIN
         MENUITEM "Mboxview Help",               ID_HELP_MBOXVIEWHELP
         MENUITEM "&About mboxview...",          ID_APP_ABOUT
+        MENUITEM "User Guide",                  ID_HELP_USERGUIDE
+        MENUITEM "Change History",              ID_HELP_README
+        MENUITEM "License",                     ID_HELP_LICENSE
     END
 END
 
@@ -659,6 +663,61 @@ BEGIN
     LTEXT           "Created Archive File can't be viewed from ArchiveCache folder",IDC_STATIC,15,13,269,8
 END
 
+IDD_SMTP_DLG DIALOGEX 0, 0, 189, 271
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "SMTP Mail Server Configuration"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Close",IDOK,26,250,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,132,250,50,14
+    GROUPBOX        "Mail Service",IDC_STATIC,7,42,175,33
+    CONTROL         "Gmail",IDC_GMAIL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,58,33,10
+    CONTROL         "Yahoo",IDC_YAHOO,"Button",BS_AUTORADIOBUTTON,51,58,36,10
+    CONTROL         "Outlook",IDC_OUTLOOK,"Button",BS_AUTORADIOBUTTON,89,58,41,10
+    CONTROL         "Custom",IDC_CUSTOM,"Button",BS_AUTORADIOBUTTON,133,58,40,10
+    EDITTEXT        IDC_SMTP_SERVER_ADDR,55,91,112,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SMTP_SERVER_PORT,55,108,54,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_USER_ACCOUNT,55,179,112,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_USER_PASSWORD,55,198,111,14,ES_AUTOHSCROLL
+    GROUPBOX        "SMTP Server Addres",IDC_STATIC,7,79,175,50
+    LTEXT           "Name",IDC_STATIC,15,95,22,8
+    LTEXT           "Port",IDC_STATIC,15,108,30,8
+    GROUPBOX        "User",IDC_STATIC,7,169,175,51
+    LTEXT           "Account",IDC_STATIC,15,181,35,8
+    LTEXT           "Password",IDC_STATIC,15,200,34,8
+    COMBOBOX        IDC_TLS_OPTION,55,144,52,26,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "SMTP Server Connection Encryption Type",IDC_STATIC,7,132,175,30
+    PUSHBUTTON      "Save",IDC_BBUTTON_SAVE,79,250,50,14
+    PUSHBUTTON      "Help",IDC_SMTP_SERVER_HELP,125,18,50,14
+    LTEXT           "Please read the overview first -->",IDC_STATIC,14,20,109,8
+    EDITTEXT        IDC_MAX_MAIL_SIZE,86,227,79,14,ES_AUTOHSCROLL
+    LTEXT           "Max Mail Size in KB",IDC_FORWARD_MAX_MAIL_SIZE_LABEL,15,230,63,8
+END
+
+IDD_FORWARD_EMAIL DIALOGEX 0, 0, 313, 275
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_MAXIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Forward Mail"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Send",IDOK,198,254,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,253,254,50,14
+    LTEXT           "To:",IDC_FORWARD_TO,16,79,12,8
+    LTEXT           "CC:",IDC_SSL_ON,16,102,13,8
+    LTEXT           "BCC:",IDC_SSL_OPTION,16,126,17,8
+    EDITTEXT        IDC_EDIT_FORWARD_TO,46,77,257,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_FORWARD_CC,46,100,257,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_FORWARD_BCC,46,124,257,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_FORWARD_TEXT,17,167,284,75,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
+    LTEXT           "User Text:",IDC_FORWARD_USER_TEXT,15,150,64,8
+    EDITTEXT        IDC_EDIT_FORWARD_SUBJECT,46,33,258,14,ES_AUTOHSCROLL | ES_NOHIDESEL | ES_READONLY
+    LTEXT           "Subject:",IDC_STATIC,13,37,26,8
+    PUSHBUTTON      "Clear",IDC_FORWARD_CLEAR,18,254,50,14
+    EDITTEXT        IDC_EDIT_FORWARD_FROM,45,55,258,14,ES_AUTOHSCROLL | ES_NOHIDESEL | ES_READONLY
+    LTEXT           "From:",IDC_STATIC,16,58,20,8
+    LTEXT           "Service:",IDC_STATIC,14,15,27,8
+    EDITTEXT        IDC_EDIT_FORWARD_SERVICE,46,14,81,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -666,7 +725,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,20
+ FILEVERSION 1,0,3,21
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -683,7 +742,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.20"
+            VALUE "FileVersion", "1.0.3.21"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -861,6 +920,22 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 146
     END
+
+    IDD_SMTP_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 182
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 264
+    END
+
+    IDD_FORWARD_EMAIL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 310
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 268
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1007,6 +1082,33 @@ BEGIN
     0, 0, 100, 0,
     0, 0, 100, 0,
     0, 0, 100, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
+END
+
+IDD_SMTP_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_FORWARD_EMAIL AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    100, 100, 0, 0,
+    100, 100, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 100, 0,
+    0, 0, 100, 0,
+    0, 0, 100, 0,
+    0, 0, 100, 100,
+    0, 0, 0, 0,
+    0, 0, 100, 0,
+    0, 0, 0, 0,
+    100, 100, 0, 0,
+    0, 0, 100, 0,
+    0, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0
 END

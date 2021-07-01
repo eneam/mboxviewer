@@ -46,6 +46,8 @@
 
 #include "ExceptionUtil.h"
 
+int JsonTest();
+
 //#include "afxglobals.h"
 
 #ifdef _DEBUG
@@ -304,6 +306,8 @@ CmboxviewApp::CmboxviewApp()
 		TRACE("%s", errorMessage);
 	}
 #endif
+
+	//JsonTest();
 
 	//bool ret = TextUtilities::TestAll();
 
@@ -623,6 +627,9 @@ void* __cdecl malloc(size_t size)
 }
 #endif
 
+
+#include "afxsock.h"
+
 BOOL CmboxviewApp::InitInstance()
 {
 	HANDLE procHandle = GetCurrentProcess();
@@ -788,6 +795,12 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 	MboxMail::LoadHintBitmap();
+
+	if (AfxSocketInit() == FALSE)
+	{
+		AfxMessageBox("Sockets Could Not Be Initialized");
+		return FALSE;
+	}
 
 #if 0
 	// TEST if file name can be longet than 260 characters
@@ -1053,6 +1066,79 @@ int next_fake_prime(int L)
 		return i;
 	else
 		return L;
+}
+#endif
+
+CString GetLastErrorAsString()
+{
+	//Get the error message, if any.
+	CString emptyMsg;
+	DWORD errorMessageID = ::GetLastError();
+	if (errorMessageID == 0)
+		return emptyMsg; //No error message has been recorded
+
+	LPSTR messageBuffer = nullptr;
+	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+	CString message(messageBuffer, size);
+
+	//Free the buffer.
+	LocalFree(messageBuffer);
+
+	return message;
+}
+
+#if 0
+#include "json/json.h"
+#include <iostream>
+/** \brief Write a Value object to a string.
+ * Example Usage:
+ * $g++ stringWrite.cpp -ljsoncpp -std=c++11 -o stringWrite
+ * $./stringWrite
+ * {
+ *     "action" : "run",
+ *     "data" :
+ *     {
+ *         "number" : 1
+ *     }
+ * }
+ */
+int JsonTest()
+{
+	Json::Value root;
+	Json::Value data;
+	root["action"] = "run";
+	data["number"] = 1;
+	root["data"] = data;
+
+	Json::StreamWriterBuilder builder;
+	const std::string json_file = Json::writeString(builder, root);
+	TRACE("XXXXXXXXXXXXXXXXXXXXXXXX\n%s\n", json_file.c_str());
+
+	{
+		const std::string rawJson = R"({"Age": 20, "Name": "colin"})";
+		const auto rawJsonLength = static_cast<int>(rawJson.length());
+		JSONCPP_STRING err;
+		Json::Value root;
+
+
+		Json::CharReaderBuilder builder;
+		const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+		if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root,
+			&err)) {
+			std::cout << "error" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		const std::string name = root["Name"].asString();
+		const int age = root["Age"].asInt();
+
+		TRACE("%s\n", name.c_str());
+		TRACE("%d\n", age);
+	}
+
+	return EXIT_SUCCESS;
 }
 #endif
 

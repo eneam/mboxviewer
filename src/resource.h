@@ -46,6 +46,8 @@
 #define IDD_FIND_FILTER_DLG             223
 #define IDD_DIALOG1                     225
 #define IDD_OPEN_ARCHIVE_DLG            225
+#define IDD_SMTP_DLG                    226
+#define IDD_FORWARD_EMAIL               228
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -94,6 +96,7 @@
 #define IDC_COLOR_CHECK                 1059
 #define IDC_FLD_NAME_BOLD               1059
 #define IDC_FILTER_NUMBER2              1059
+#define IDC_SSL_ON                      1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060
@@ -178,17 +181,22 @@
 #define IDC_EDIT3                       1116
 #define IDC_EDIT_SUBJECT                1116
 #define IDC_CHROME_EXE_PATH             1116
+#define IDC_USER_ACCOUNT                1116
+#define IDC_EDIT_FORWARD_BCC            1116
 #define IDC_MATCH_WORD3                 1117
 #define IDC_EDIT_SUBJECT_WHOLE          1117
 #define IDC_REGULAR_EXPR3               1118
 #define IDC_EDIT4                       1119
 #define IDC_EDIT_MESSAGE                1119
 #define IDC_HTML2PDF_SCRIPT_PATH        1119
+#define IDC_USER_PASSWORD               1119
+#define IDC_EDIT_FORWARD_TEXT           1119
 #define IDC_MATCH_WORD4                 1120
 #define IDC_EDIT_MESSAGE_WHOLE          1120
 #define IDC_REGULAR_EXPR4               1121
 #define IDC_EDIT5                       1122
 #define IDC_EDIT_ATTACHMENT             1122
+#define IDC_EDIT_FORWARD_SERVICE        1122
 #define IDC_MATCH_WORD5                 1123
 #define IDC_EDIT_ATTACHMENT_WHOLE       1123
 #define IDC_REGULAR_EXPR5               1124
@@ -284,6 +292,27 @@
 #define IDC_EDIT_DFLT_FOLDER            1243
 #define IDC_CHECK4                      1244
 #define IDC_HEADER_AND_FOOTER           1244
+#define IDC_GMAIL                       1245
+#define IDC_YAHOO                       1246
+#define IDC_OUTLOOK                     1247
+#define IDC_CUSTOM                      1248
+#define IDC_SMTP_SERVER_ADDR            1249
+#define IDC_SMTP_SERVER_PORT            1250
+#define IDC_TLS_OPTION                  1251
+#define IDC_SSL_OPTION                  1252
+#define IDC_RADIO3                      1253
+#define IDC_BBUTTON_SAVE                1254
+#define IDC_SMTP_SERVER_HELP            1256
+#define IDC_FORWARD_TO                  1257
+#define IDC_EDIT_FORWARD_TO             1258
+#define IDC_EDIT_FORWARD_CC             1259
+#define IDC_FORWARD_USER_TEXT           1261
+#define IDC_EDIT_FORWARD_SUBJECT        1262
+#define IDC_FORWARD_CLEAR               1263
+#define IDC_EDIT_FORWARD_FROM           1264
+#define IDC_FORWARD_MAX_MAIL_SIZE       1265
+#define IDC_FORWARD_MAX_MAIL_SIZE_LABEL 1265
+#define IDC_MAX_MAIL_SIZE               1266
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -328,6 +357,10 @@
 #define ID_VIEW_MESSAGEHEADERPANELAYOUT 32896
 #define ID_MESSAGEHEADERPANELAYOUT_DEFAULT 32897
 #define ID_MESSAGEHEADERPANELAYOUT_EXPANDED 32898
+#define ID_FILE_SMTPMAILSERVERCONFIG    32899
+#define ID_HELP_USERGUIDE               32900
+#define ID_HELP_README                  32901
+#define ID_HELP_LICENSE                 32902
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -336,9 +369,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        226
-#define _APS_NEXT_COMMAND_VALUE         32899
-#define _APS_NEXT_CONTROL_VALUE         1245
+#define _APS_NEXT_RESOURCE_VALUE        230
+#define _APS_NEXT_COMMAND_VALUE         32903
+#define _APS_NEXT_CONTROL_VALUE         1267
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

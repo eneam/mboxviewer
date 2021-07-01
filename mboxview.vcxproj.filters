@@ -169,6 +169,18 @@
     <ClCompile Include="src\OpenArchiveFileDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\SMTPMailServerConfigDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MyTcpClient.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ForwardMailDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Thirdparty\jsoncpp\jsoncpp.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -346,6 +358,21 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\IHashTable.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SMTPMailServerConfigDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyTcpClient.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ForwardMailDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Thirdparty\jsoncpp\json\json.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Thirdparty\jsoncpp\json\json-forwards.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

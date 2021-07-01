@@ -251,6 +251,39 @@ DWORD TextUtilsEx::Str2Ansi(CString &str, UINT strCodePage)
 	return 0;
 }
 
+BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff)
+{
+	int buffLen = strlen * 4 + 2;
+	workBuff->ClearAndResize(buffLen);
+	LPWSTR buff = (LPWSTR)workBuff->Data();  // or  we could call MultiByteToWideChar first to get the required length
+	int wlen = MultiByteToWideChar(inCodePage, 0, str, strlen, buff, buffLen);
+	if (wlen == 0) {
+		result->Clear();
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		return FALSE;
+	}
+
+	int outLen = wlen * 4 + 2;
+	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
+	if (outCodePage == 0)
+		outCodePage = CP_UTF8;
+	//int utf8Len = WideCharToMultiByte(CP_UTF8,     0, buff, wlen, result->Data(), outLen, NULL, NULL);
+	int utf8Len = WideCharToMultiByte(outCodePage, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
+	if (utf8Len == 0) {
+		result->Clear();
+		// error - implement error log file
+		const DWORD error = ::GetLastError();
+		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
+		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
+		return FALSE;
+	}
+	result->SetCount(utf8Len);
+	return TRUE;
+}
+
 BOOL TextUtilsEx::Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff)
 {
 	int buffLen = str->Count() * 4 + 2;

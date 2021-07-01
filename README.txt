@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.21
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for forwarding of mails directly form MBox Viewer via Gmail, Outlook or Yahoo SMTP server;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.20
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

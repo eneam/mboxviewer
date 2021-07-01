@@ -73,6 +73,8 @@ public:
 	static void MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bReplaceWhiteWithUnderscore);
 	static BOOL Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength);
+	static BOOL Write2File(CString &cStrNamePath, const unsigned char *data, int dataLength);
+	static BOOL ReadEntireFile(CString &cStrNamePath, SimpleString &data);
 	static int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten);
 	static BOOL NormalizeFilePath(CString &filePath);
 	static BOOL CreateDirectory(const char *path);
