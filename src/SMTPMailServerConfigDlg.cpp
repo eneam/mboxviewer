@@ -151,7 +151,7 @@ void SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp()
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\" + "UserGuide.pdf";
+	CString filePath = processDir + "\\ForwardMails.pdf";
 
 	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
 	int deb = 1;
