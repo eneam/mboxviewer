@@ -218,24 +218,24 @@ void MailDB::InitConfigsToDflts()
 	GmailSMTPConfig.MailServiceName = "Gmail";
 	GmailSMTPConfig.SmtpServerAddress = "smtp.gmail.com";
 	GmailSMTPConfig.SmtpServerPort = 587;
-	//GmailSMTPConfig.UserAccount = "zbigniew.minciel@gmail.com";
-	//GmailSMTPConfig.UserPassword = "iWigury131";
+	GmailSMTPConfig.UserAccount = "";
+	GmailSMTPConfig.UserPassword = "";
 	GmailSMTPConfig.EncryptionType = StartTls;
 	GmailSMTPConfig.MaxMailSize = 25590;
 
 	YahooSMTPConfig.MailServiceName = "Yahoo";
 	YahooSMTPConfig.SmtpServerAddress = "smtp.mail.yahoo.com";
 	YahooSMTPConfig.SmtpServerPort = 587;
-	//YahooSMTPConfig.UserAccount = "ziggym57@yahoo.com";
-	//YahooSMTPConfig.UserPassword = "yiwawbriajfxvfkg";
+	YahooSMTPConfig.UserAccount = "";
+	YahooSMTPConfig.UserPassword = "";
 	YahooSMTPConfig.EncryptionType = StartTls;
 	YahooSMTPConfig.MaxMailSize = 25590;
 
 	OutlookSMTPConfig.MailServiceName = "Outlook";
 	OutlookSMTPConfig.SmtpServerAddress = "smtp-mail.outlook.com";
 	OutlookSMTPConfig.SmtpServerPort = 587;
-	//OutlookSMTPConfig.UserAccount = "zminciel@outlook.com";
-	//OutlookSMTPConfig.UserPassword = "MySzczecin";
+	OutlookSMTPConfig.UserAccount = "";
+	OutlookSMTPConfig.UserPassword = "";
 	OutlookSMTPConfig.EncryptionType = StartTls;
 	OutlookSMTPConfig.MaxMailSize = 35830;
 
