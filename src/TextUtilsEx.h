@@ -99,6 +99,9 @@ public:
 		while ((*p == ' ') || (*p == '\t') || (*p == '"')) p++;
 		return p;
 	}
+	static void SplitString(const CString &strIn, const CString &delim, CStringArray &a);
+	static int Tokenize(CString str, CStringArray &a, char del = ',');
+	static void TraceStringArray(CStringArray &a);
 };
 
 typedef struct {

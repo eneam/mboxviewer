@@ -304,7 +304,11 @@ public:
 	bool m_isOnUserSelectedMailList;
 	int m_DetermineEmbeddedImagesDone;
 //
+
+	CFile fp;
+	BOOL GetBody(CFile fp, CString &str);
 	BOOL GetBody(CString &str);
+	BOOL GetBody(CFile &fp, SimpleString *str, int maxLength = -1);
 	BOOL GetBody(SimpleString *str, int maxLength = -1);
 	int DumpMailBox(MboxMail *mailBox, int which);
 	int SingleMailSizeof();
@@ -376,6 +380,7 @@ public:
 	static CString s_datapath;  //current root directory for .mboxview and index files and many temp files
 	static void SetLastPath(CString &path);
 	static CString GetLastPath();
+	static CString GetDataPath(CString &path);
 	//
 	static CString GetLastDataPath();
 	static CString SetLastDataPath(CString *lastMboxDirPath = 0);
@@ -396,6 +401,7 @@ public:
 	static MailArray s_mails_find;
 	static MailArray s_mails_edit;  // TODO: rename to User Selected List
 	static MailArray s_mails_folder;
+	static MailArray s_mails_label;
 	//
 	static MailArray s_mails_selected;
 	static MailArray s_mails_merged;
@@ -406,6 +412,7 @@ public:
 	static MailList m_findMails;
 	static MailList m_editMails;
 	static MailList m_folderMails;
+	static MailList m_labelMails;
 
 	static DLLIST(MailList, m_listLink) m_folderList;
 
@@ -413,11 +420,13 @@ public:
 	static BOOL IsFindMailsSelected();
 	static BOOL IsUserMailsSelected();
 	static BOOL IsFolderMailsSelected();
+	static BOOL IsLabelMailsSelected();
 
 	static int AllMailsSelectedId();
 	static int FindMailsSelectedId();
 	static int UserMailsSelectedId();
 	static int FolderMailsSelectedId();
+	static int LabelMailsSelectedId();
 
 	static bool b_mails_sorted;
 	static int b_mails_which_sorted;

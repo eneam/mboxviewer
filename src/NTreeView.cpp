@@ -37,6 +37,8 @@
 #include "InputBox.h"
 #include "CheckListBoxDlg.h"
 #include "OpenContainingFolderDlg.h"
+#include "TextUtilsEx.h"
+#include "MimeParser.h"
 
 
 #ifdef _DEBUG
@@ -52,8 +54,13 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
 // TODO: Must find time, some code is messy and  needs cleanup !!!
 
+
 NTreeView::NTreeView()
 {
+	m_labelHT = new GmailLableMapType(37);
+	m_labelView = FALSE;
+	m_labelSeqNumb = 0;
+
 	m_bIsDataDirty = FALSE;
 	m_fileSizes.InitHashTable(37);
 	fileSizes = &m_fileSizes;
@@ -78,6 +85,24 @@ NTreeView::NTreeView()
 NTreeView::~NTreeView()
 {
 	ClearGlobalFileSizeMap();
+	ClearLabelHT();
+
+	delete m_labelHT;
+}
+
+void NTreeView::ClearLabelHT()
+{
+	GmailLableMapType::IHashMapIter iter = m_labelHT->first();
+	int totalCnt = 0;
+	for (; !m_labelHT->last(iter); )
+	{
+		//m_labelHT->next(iter);
+		GmailLabel *l = iter.element;
+		m_labelHT->remove(iter);
+		delete l;
+
+	}
+	m_labelHT->clear();
 }
 
 void NTreeView::ClearGlobalFileSizeMap()
@@ -135,6 +160,9 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_WM_TIMER()
 	ON_MESSAGE(WM_CMD_PARAM_FILE_NAME_MESSAGE, OnCmdParam_FileName)
 	ON_MESSAGE(WM_CMD_PARAM_GENERAL_HINT_MESSAGE, OnCmdParam_GeneralHint)
+	ON_COMMAND(ID_GMAILLABELS_CREATE, &NTreeView::OnGmaillabelsCreate)
+	ON_COMMAND(ID_GMAILLABELS_DELETE, &NTreeView::OnGmaillabelsDelete)
+	ON_COMMAND(ID_GMAILLABELS_REFRESH, &NTreeView::OnGmaillabelsRefresh)
 END_MESSAGE_MAP()
 
 
@@ -318,6 +346,25 @@ void NTreeView::LoadFolders()
 				pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 			FillCtrl(expand);
+#if 0
+			// Create per tree node object with all key info
+			// Move below to FillCtrl 
+			HTREEITEM hFolder;
+			if (hFolder = HasFolder(path))
+			{
+				CString lastDataPath = MboxMail::GetLastDataPath();
+				CString lastPath = MboxMail::GetLastPath();
+
+				//int nId = m_labelInfoStore.GetNextId();
+				// m_tree.SetItemData(hFolder, nId);
+				int nId = m_tree.GetItemData(hFolder);
+
+				LabelInfo *linfo = new LabelInfo(nId, path, lastDataPath);
+				m_labelInfoStore.Add(linfo, nId);
+
+				LabelInfo *linfo2 = m_labelInfoStore.Find(nId);
+			}
+#endif
 
 			sText.Format("Ready");
 			if (pFrame)
@@ -348,6 +395,25 @@ void NTreeView::LoadFolders()
 	if (hFolder = HasFolder(pathLast))
 	{
 		m_tree.Expand(hFolder, TVE_EXPAND);
+#if 0
+		// Create per tree node object with all key info
+		// Move below to FillCtrl 
+		//HTREEITEM hFolder;
+		//if (hFolder = HasFolder(pathLast))
+		{
+			CString lastDataPath = MboxMail::GetLastDataPath();
+			CString lastPath = MboxMail::GetLastPath();
+
+			//int nId = m_labelInfoStore.GetNextId();
+			// m_tree.SetItemData(hFolder, nId);
+			int nId = m_tree.GetItemData(hFolder);
+
+			LabelInfo *linfo = new LabelInfo(nId, pathLast, lastDataPath);
+			m_labelInfoStore.Add(linfo, nId);
+
+			LabelInfo *linfo2 = m_labelInfoStore.Find(nId);
+		}
+#endif
 	}
 }
 
@@ -566,6 +632,12 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 						{
 							//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
 							CString txt = m_tree.GetItemText(hItem);
+
+							int nId = m_labelInfoStore.GetNextId();
+							m_tree.SetItemData(hItem, nId);
+
+							LabelInfo *linfo = new LabelInfo(nId, mboxFilePath);
+							m_labelInfoStore.Add(linfo, nId);
 						}
 					}
 				}
@@ -790,6 +862,85 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		pListView->m_which = NULL;
 		pListView->ResetSize();
 		pListView->FillCtrl();
+
+		m_labelView = FALSE;
+		return;
+	}
+
+
+	if (hParent != hRoot)   // label
+	{
+		DWORD nId = m_tree.GetItemData(hNewItem);
+
+		// Set global variables - nightmare -:)
+		CString mboxFileNamePath = MboxMail::s_path;
+		CString lastPath = MboxMail::GetLastPath();
+		CString lastDataPath = MboxMail::GetLastDataPath();
+
+		LabelInfo *linfo = m_labelInfoStore.Find(nId);
+		if ((linfo == 0) || linfo->m_listFilePath.IsEmpty())
+		{
+			return;
+		}
+
+		int paneId = 0;
+		CString sText;
+		sText.Format("Opening Label %s ...", linfo->m_label);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+		CString driveName;
+		CString mboxFileDirectory;
+		CString mboxFileNameBase;
+		CString mboxFileNameExtention;
+
+		FileUtils::SplitFilePath(linfo->m_filePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
+		CString newLastPath = driveName + mboxFileDirectory;
+
+		if (mboxFileNamePath.Compare(linfo->m_filePath))
+		{
+			MboxMail::SetLastPath(newLastPath);
+			CString lastPath = MboxMail::GetLastPath();
+			CString lastDataPath = MboxMail::GetLastDataPath();
+
+			pListView->m_path = linfo->m_filePath;
+			MboxMail::s_path = linfo->m_filePath;
+
+			CString errorText;
+			int rval = pListView->MailFileFillCtrl(errorText);
+			MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
+		}
+
+		lastPath = MboxMail::GetLastPath();
+		lastDataPath = MboxMail::GetLastDataPath();
+
+		//MboxMail::nWhichMailList = IDC_FOLDER_LIST;
+		int retval = pListView->LoadLabelListFile_v2(linfo->m_listFilePath, linfo->m_label);
+
+		if (MboxMail::s_mails.GetCount() > 0)
+		{
+			pListView->SelectItemFound(0);
+		}
+
+		if (hOldItem > 0)
+		{
+			CString text = m_tree.GetItemText(hOldItem);
+			m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
+		}
+		m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
+
+		m_labelView = TRUE;
+
+		nId = IDC_ARCHIVE_LIST;
+		pFrame->SetMailList(nId);
+
+		MboxMail::s_mails_find.SetSizeKeepData(0);
+		MboxMail::m_findMails.m_lastSel = -1;
+		MboxMail::m_findMails.b_mails_which_sorted = 1;
+
+		sText.Format("Ready");
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+
+		int deb = 1;
 		return;
 	}
 
@@ -843,6 +994,49 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	}
 
+#if 0
+	int nId = IDC_ARCHIVE_LIST;
+	BOOL enable = TRUE;
+	pFrame->EnableMailList(nId, enable);
+#endif
+
+	LabelInfo *linfoOld = 0;
+	LabelInfo *linfoNew = 0;
+	DWORD nIdOld = -1;
+	DWORD nIdNew = -1;
+
+
+	if (hOldItem)
+	{
+		nIdOld = m_tree.GetItemData(hOldItem);
+		linfoOld = m_labelInfoStore.Find(nIdOld);
+	}
+
+	nIdNew = m_tree.GetItemData(hNewItem);
+	linfoNew = m_labelInfoStore.Find(nIdNew);
+
+	if (linfoOld && linfoNew)
+	{
+		if (linfoNew->m_filePath.Compare(linfoOld->m_filePath) == 0)
+		{
+			m_labelView = FALSE;
+
+			pFrame->OnBnClickedArchiveList();
+
+			if (hOldItem > 0)
+			{
+				CString text = m_tree.GetItemText(hOldItem);
+				m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
+			}
+			m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
+
+			MboxMail::s_mails_find.SetSizeKeepData(0);
+			MboxMail::m_findMails.m_lastSel = -1;
+			MboxMail::m_findMails.b_mails_which_sorted = 1; 
+			return;
+		}
+	}
+
 	CString str = m_tree.GetItemText(hNewItem);
 
 	CString folderPath;
@@ -871,6 +1065,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
 
+
+	// TODO: relying on m_which is risky. 
+	// Consider to eliminate and rely on strings and searches, assuming minimum impact on performance
 	pListView->m_which = hNewItem;
 
 	pListView->ResetSize();
@@ -899,6 +1096,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	//pListView->ScanAllMailsInMbox();
 	//pListView->ScanAllMailsInMbox_NewParser();
+
+	m_labelView = FALSE;
 
 	ShowMemStatus();
 }
@@ -1384,8 +1583,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		break;
 		case M_FolderPath_Id: 
 		{
-			CString path = MboxMail::GetLastPath();
-			path.TrimRight("\\");
+			CString pathLast = MboxMail::GetLastPath();
+			pathLast.TrimRight("\\");
+			int nId = m_tree.GetItemData(hItem);
+			CString path = m_folderArray.m_array.GetAt(nId);
+			if (path.Compare(pathLast))
+				int deb = 1;
 			HWND h = wnd->GetSafeHwnd();
 			int answer = ::MessageBox(h, path, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 		}
@@ -1419,6 +1622,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 
 		return;
+	}
+
+	BOOL isLabel = FALSE;
+	if (hItem)
+	{
+		DWORD nId = m_tree.GetItemData(hItem);
+		LabelInfo *linfo = m_labelInfoStore.Find(nId);
+		if (linfo && !linfo->m_listFilePath.IsEmpty())
+			isLabel = TRUE;
 	}
 
 	CMenu menu;
@@ -1492,13 +1704,30 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&menu, M_EmlCache_Id, _T("Export All Mails as Eml"));
 
 	const UINT M_Reload_Id = 16;
-	AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
-
 	const UINT M_Remove_Id = 17;
-	AppendMenu(&menu, M_Remove_Id, _T("Remove File"));
+	const UINT S_Labels_Create_Id = 18;
+	const UINT S_Labels_Delete_Id = 19;
+	const UINT S_Labels_Refresh_Id = 20;
+	const UINT M_CreateFolder_Id = 21;
 
-	const UINT M_CreateFolder_Id = 18;
-	//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
+	CMenu labelsSubMenu;
+	labelsSubMenu.CreatePopupMenu();
+
+	if (isLabel == FALSE)
+	{
+		AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
+
+		AppendMenu(&menu, M_Remove_Id, _T("Remove File"));
+
+		AppendMenu(&labelsSubMenu, S_Labels_Create_Id, _T("Create..."));
+		AppendMenu(&labelsSubMenu, S_Labels_Delete_Id, _T("Delete..."));
+		AppendMenu(&labelsSubMenu, S_Labels_Refresh_Id, _T("Refresh..."));
+
+		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)labelsSubMenu.GetSafeHmenu(), _T("Gmail Labels"));
+		menu.AppendMenu(MF_SEPARATOR);
+
+		AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
+	}
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -1725,8 +1954,24 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		RemoveFileFromTreeView(hItem, *fileSizes);
 	}
 	break;
-	
 
+	case S_Labels_Create_Id:
+	{
+		//int retval = CreateLabelFilesForSingleMailFile(hItem);
+		int retval = RefreshLabelsForSingleMailFile(hItem);
+	}
+	break;
+	case S_Labels_Delete_Id:
+	{
+		int retval = DeleteLabelsForSingleMailFile(hItem);
+	}
+	break;
+	case S_Labels_Refresh_Id:
+	{
+		int retval = RefreshLabelsForSingleMailFile(hItem);
+	}
+	break;
+	
 	default: {
 		int deb = 1;
 	}
@@ -1743,11 +1988,33 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NMTREEVIEW *pNm = (LPNMTREEVIEW)pNMHDR;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	BOOL res = *pResult;
+	*pResult = FALSE;
+
 	if (pFrame == NULL)
 		return;
 	NListView *pListView = pFrame->GetListView();
 	if (!pListView)
 		return;
+	HTREEITEM hNewItem = pNm->itemNew.hItem;
+	HTREEITEM hOldItem = pNm->itemOld.hItem;
+
+	DWORD nIdNew = m_tree.GetItemData(hNewItem);
+	LabelInfo *linfoNew = m_labelInfoStore.Find(nIdNew);
+
+	if (hOldItem == 0)
+		return;
+
+	DWORD nIdOld = m_tree.GetItemData(hOldItem);
+	LabelInfo *linfoOld = m_labelInfoStore.Find(nIdOld);
+
+	if (linfoNew && linfoOld)
+	{
+		if (linfoNew->m_filePath.Compare(linfoOld->m_filePath) == 0)
+			return;
+	}
+
 	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if (!pListView->IsUserSelectedMailListEmpty())
 	{
@@ -1863,6 +2130,9 @@ BOOL NTreeView::DeleteItemChildren(HTREEITEM hItem)
 	if (hItem == 0)
 		return FALSE;
 
+	UINT nCode = TVE_COLLAPSE;
+	m_tree.Expand(hItem, nCode);
+
 	CString itemTxt;
 	itemTxt = m_tree.GetItemText(hItem);
 
@@ -1874,9 +2144,7 @@ BOOL NTreeView::DeleteItemChildren(HTREEITEM hItem)
 		hNextNextItem = m_tree.GetNextSiblingItem(hNextItem);
 		if (m_tree.ItemHasChildren(hNextItem))
 		{
-			HTREEITEM hChild = m_tree.GetChildItem(hNextItem);
-			if (hChild)
-				NTreeView::DeleteItem(hChild);
+			NTreeView::DeleteItem(hNextItem);
 		}
 		else
 		{
@@ -1886,6 +2154,7 @@ BOOL NTreeView::DeleteItemChildren(HTREEITEM hItem)
 		}
 		hNextItem = hNextNextItem;
 	}
+
 	return TRUE;
 }
 
@@ -1895,8 +2164,10 @@ BOOL NTreeView::DeleteItem(HTREEITEM hItem)
 		return FALSE;
 
 	CString itemTxt;
-	UINT nCode = TVE_COLLAPSE;
-	m_tree.Expand(hItem, nCode);
+	//UINT nCode = TVE_COLLAPSE;
+	//m_tree.Expand(hItem, nCode);
+
+	itemTxt = m_tree.GetItemText(hItem);
 
 	HTREEITEM hNextNextItem;
 	HTREEITEM hNextItem = m_tree.GetChildItem(hItem);
@@ -1904,11 +2175,13 @@ BOOL NTreeView::DeleteItem(HTREEITEM hItem)
 	while (hNextItem != NULL)
 	{
 		hNextNextItem = m_tree.GetNextSiblingItem(hNextItem);
+		itemTxt = m_tree.GetItemText(hItem);
+		if (hNextItem)
+			itemTxt = m_tree.GetItemText(hNextItem);
+
 		if (m_tree.ItemHasChildren(hNextItem))
 		{
-			HTREEITEM hChild = m_tree.GetChildItem(hNextItem);
-			if (hChild)
-				NTreeView::DeleteItem(hChild);
+			NTreeView::DeleteItem(hNextItem);
 		}
 		else
 		{
@@ -2079,7 +2352,8 @@ int NTreeView::CreateEmptyFolder(HTREEITEM hItem)
 	}
 		
 
-	HTREEITEM newItem = m_tree.InsertItem(newFolderName, hItem, TVI_SORT);
+	//HTREEITEM newItem = m_tree.InsertItem(newFolderName, hItem, TVI_SORT);
+	HTREEITEM newItem = m_tree.InsertItem(newFolderName, 6,6,hItem, TVI_SORT);
 	if (newItem == 0) 
 	{
 		return 0;
@@ -2506,7 +2780,13 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 	FileSizeMap::CPair *pCurVal;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	CString path = MboxMail::GetLastPath();
+	CString pathLast = MboxMail::GetLastPath();
+
+	int nId = m_tree.GetItemData(hItem);
+	CString path = m_folderArray.m_array.GetAt(nId);
+	if (path.Compare(pathLast))
+		int deb = 1;
+
 	path.TrimRight("\\");
 	path.AppendChar('\\');
 
@@ -2536,6 +2816,17 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 			fileSizes[s].bShow = 1;
 
 			HTREEITEM hItemRet = m_tree.InsertItem(s, 4, 5, hItem);
+
+			int nId = m_labelInfoStore.GetNextId();
+			m_tree.SetItemData(hItemRet, nId);
+
+
+			LabelInfo *linfo = new LabelInfo(nId, filePath);
+			m_labelInfoStore.Add(linfo, nId);
+
+
+			// TODO: resolve later; manual action is required for now
+			//DisplayGmailLabels(hItem);
 			int deb = 1;
 		}
 		SaveData(hItem);
@@ -2549,5 +2840,1097 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 	return 1;
 }
 
+BOOL NTreeView::RecreateGmailLabels(HTREEITEM hItem)
+{
+	int ret = CreateGmailLabelFiles(hItem);
+	ret = DisplayGmailLabels(hItem);
+	return ret;
+}
+
+int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
+{
+	HWND h = GetSafeHwnd();
+	//MboxMail::ShowHint(HintConfig::MessageRemoveFileHint, h);
+
+	static const char *cLabels = "x-gmail-labels";
+	static const int cLabelsLen = strlen(cLabels);
+	static const char *cOsobiste = "osobiste";
+	static const int cOsobisteLen = strlen(cOsobiste);
+
+	CString comma = ",";
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NListView *pListView = 0;
+	if (pFrame)
+		pListView = pFrame->GetListView();
+
+	if (pListView == 0) {
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	ClearLabelHT();
+
+	CString mailFile = m_tree.GetItemText(hItem);
+	int mailCnt = MboxMail::s_mails.GetCount();
+
+	const int buffSmallSize = 256;
+	SimpleString buff(buffSmallSize + 1);
+	CString validFileName;
+	//MboxMail *m_s;
+	MboxMail *m;
+	CString labels;
+	CString val;
+	CString v;
+	CString el;
+	CString line;
+	int i;
+
+	int maxNoLabelCnt = 100;
+	BOOL foundLabels = FALSE;
+
+	char *p = buff.Data();
+	char *e = p + buff.Count();
+
+	CFile fp;
+	if (!fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+		return -1;
+	}
+
+	if (MboxMail::s_mails.GetCount() != MboxMail::s_mails_ref.GetCount())
+		int deb = 1;
+
+	for (i = 0; i < mailCnt; i++)
+	{
+		//m_s = MboxMail::s_mails[i];
+		m = MboxMail::s_mails_ref[i];
+
+		m->GetBody(fp, &buff, buffSmallSize);
+
+		p = buff.Data();
+		e = p + buff.Count();
+
+		val.Empty();
+		while (p < e)
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, cLabels, cLabelsLen) == 0)
+			{
+				foundLabels = TRUE;
+				p = MimeParser::GetMultiLine(p, e, line);
+				val = line.Mid(cLabelsLen);
+				val.TrimLeft(": ");
+				val.TrimRight(" ");
+				//TRACE("Labels=%s\n", val);
+				break;
+			}
+			p = MimeParser::EatNewLine(p, e);
+		}
+
+		if ((foundLabels == FALSE) && val.IsEmpty() && (i > maxNoLabelCnt))  // it looks like it is not gmail  file
+		{
+			fp.Close();
+			return 1;
+		}
+
+		CStringArray a;
+		TextUtilsEx::Tokenize(val, a);
+
+		// remove duplicate labels
+		int first = 0;
+		while (first < a.GetSize())
+		{
+			el = a.ElementAt(first);
+			for (int i = first + 1; i < a.GetSize(); i++)
+			{
+				v = a.ElementAt(i);
+				if (el.Compare(v) == 0)
+				{
+					a.RemoveAt(i);
+					break;
+				}
+			}
+			first++;
+		}
+
+		// iterate all labels and add mail ptr to respectfull list/array
+		for (int i = 0; i < a.GetSize(); i++)
+		{
+			v = a.ElementAt(i);
+			v.Trim();
+			//TRACE("|%s|\n", v);
+
+#if 1
+			char *pp = (char*)(LPCSTR)v;
+			char *ee = pp + v.GetLength();
+			if (TextUtilsEx::strncmpUpper2Lower(pp, ee, cOsobiste, cOsobisteLen) == 0)
+				int deb = 1;
+#endif
+
+			validFileName = v;
+
+			FileUtils::MakeValidFilePath(v, FALSE);
+			if (validFileName.Compare(v))
+			{
+				CString seqNumb;
+				seqNumb.Format(" %d", m_labelSeqNumb++);
+				v += seqNumb;
+			}
+			{
+
+				CString delim = "/";
+				CStringArray va;
+				TextUtilsEx::SplitString(v, delim, va);
+
+				v.Empty();
+				for (int i = 0; i < va.GetSize(); i++)
+				{
+					el = va.ElementAt(i);
+					el.Trim();
+					if (i == 0)
+						v += el;
+					else
+						v += "/" + el;
+				}
+
+				// va array no longer needed
+				int deb = 1;
+			}
+
+			GmailLabel *glabel = m_labelHT->find(&v);
+
+			//TRACE("%u\n", glabel);
+			if (glabel == 0)
+			{
+				glabel = new GmailLabel(v);
+				glabel->m_ptrList->Add(m);
+				m_labelHT->insert(&glabel->m_label, glabel);
+			}
+			else
+			{
+				glabel->m_ptrList->Add(m);
+			}
+			int deb = 1;
+		}
+	}
+	fp.Close();
+
+	CString labelsCachePath;
+	CString rootPrintSubFolder = "LabelCache";
+	CString errorText;
+	CString targetPrintSubFolder;
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText);
+	if (retval == FALSE) {
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	GmailLableMapType::IHashMapIter iter = m_labelHT->first();
+
+	// find the size of largest list of mails
+	int maxCnt = 0;
+	for (; !m_labelHT->last(iter); )
+	{
+		int cnt = iter.element->m_ptrList->Count();
+		if (cnt > maxCnt)
+			maxCnt = cnt;
+		m_labelHT->next(iter);
+	}
+
+	MboxMail::s_mails_label.SetSizeKeepData(maxCnt);
+
+	// iterate labels and create folder and .mboxlist files for each label
+	iter = m_labelHT->first();
+	int totalCnt = 0;
+	for (; !m_labelHT->last(iter); )
+	{
+		iter.element->m_ptrList->Assert();
+		TRACE("Name=%s  cnt=%d\n", iter.element->m_label, iter.element->m_ptrList->Count());
+
+		int cnt = iter.element->m_ptrList->Count();
+		totalCnt += cnt;
+
+		MboxMail::s_mails_label.SetSizeKeepData(cnt);
+		for (i = 0; i < cnt; i++)
+		{
+			MboxMail::s_mails_label[i] = iter.element->m_ptrList->Get(i);
+		}
+
+		ASSERT(MboxMail::s_mails_label.GetCount() <= mailCnt);
+
+		int r = pListView->SaveAsLabelFile(&MboxMail::s_mails_label, labelsCachePath, iter.element->m_label, errorText);
+		if (r < 0) {
+			MboxMail::assert_unexpected();
+			return -1;
+		}
+
+		m_labelHT->next(iter);
+	}
+	return 1;
+}
+
+int NTreeView::DisplayGmailLabels(HTREEITEM hItem)
+{
+	CString name;
+	LabelInfo *linfo;
+
+	// add labels to Tree
+	DWORD nId = m_tree.GetItemData(hItem);
+
+	linfo = m_labelInfoStore.Find(nId);
+	if (linfo == 0)
+		return -1;
+
+	if (!linfo->m_filePath.IsEmpty())
+	{
+		name = m_tree.GetItemText(hItem);
+		//nId = m_tree.GetItemData(hItem);
+
+		//linfo = m_labelInfoStore.Find(nId);
+
+		CString labelsCachePath;
+		CString rootPrintSubFolder = "LabelCache";
+		CString errorText;
+		CString targetPrintSubFolder;
+
+		MboxMail::s_path = linfo->m_filePath;
+
+		CString driveName;
+		CString directory;
+		CString fileNameBase;
+		CString fileNameExtention;
+		FileUtils::SplitFilePath(linfo->m_filePath, driveName, directory, fileNameBase, fileNameExtention);
+
+		CString lastPath = driveName + directory;
+
+		MboxMail::SetLastPath(lastPath);
+
+		BOOL retval = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText, &linfo->m_filePath);
+		if (retval == FALSE) {
+			return -1;
+		}
+		if (!labelsCachePath.IsEmpty())
+		{
+			ShowGmailLabels(hItem, labelsCachePath, linfo->m_filePath);
+			CString inbox("Inbox");
+			CString sent("Sent");
+			MoveLabelItem(linfo->m_filePath, sent);
+			MoveLabelItem(linfo->m_filePath, inbox);
+		}
+	}
+	//ASSERT(totalCnt >= mailCnt);
+	return 1;
+}
+
+GmailLabel::GmailLabel(CString &str)
+{
+	m_label = str;
+	m_ptrList = new MySimpleDeque;
+}
+
+GmailLabel::~GmailLabel()
+{
+	delete m_ptrList;
+}
+
+MySimpleDeque::MySimpleDeque()
+{
+	m_ar = 0;
+	m_arcnt = 0;
+}
+
+MySimpleDeque::~MySimpleDeque()
+{
+	std::vector <LabelArray*>::iterator it;
+	LabelArray *l;
+	for (it = m_arList.begin(); it != m_arList.end(); it++)
+	{
+		l = *it;
+		delete l;
+	}
+	delete m_ar;
+}
+
+BOOL MySimpleDeque::Assert()
+{
+	int cnt = 0;
+	if (m_ar == 0)
+		return TRUE;
+
+	std::vector <LabelArray*>::iterator it;
+	LabelArray *l;
+	for (it = m_arList.begin(); it != m_arList.end(); it++)
+	{
+		l = *it;
+		//ASSERT(m_arcnt == LSIZE);
+	}
+	int lcnt = Count();
+	int mailCnt = MboxMail::s_mails.GetCount();
+	//ASSERT(lcnt <= mailCnt);
+	return TRUE;
+}
+
+void  MySimpleDeque::Clear()
+{
+	m_arcnt = 0;
+	std::vector <LabelArray*>::iterator it;
+	LabelArray *l;
+	for (it = m_arList.begin(); it != m_arList.end(); it++)
+	{
+		l = *it;
+		delete l;
+	}
+	m_arList.clear();
+}
+
+int MySimpleDeque::Count()
+{
+	int cnt = 0;
+	if (m_ar == 0)
+		return 0;
+
+	cnt = m_arList.size() * LSIZE + m_arcnt;
+
+	//this->Assert();
+
+	return cnt;
+}
+
+void MySimpleDeque::Add(MboxMail* m)
+{
+	if (m_ar == 0)
+	{
+		m_ar = new LabelArray;
+		m_arcnt = 0;
+	}
+
+	if (m_arcnt >= LSIZE)
+	{
+		m_arList.push_back(m_ar);
+		m_ar = new LabelArray;
+		m_arcnt = 0;
+	}
+	(*m_ar)[m_arcnt++] = m;
+}
+
+MboxMail* MySimpleDeque::Get(int position)
+{
+	LabelArray *ar;
+	int arpos;
+
+	int arListCount = m_arList.size() *LSIZE;
+	int arCount = arListCount + m_arcnt;
+	if (position >= arCount)
+		return 0; // error
+
+	if (position < arListCount)
+	{
+		int index = position / LSIZE;
+		ar = m_arList[index];
+		arListCount = index * LSIZE;
+		arpos = position - arListCount;
+	}
+	else
+	{
+		ar = m_ar;
+		arpos = position - arListCount;
+	}
+
+	if (arpos >= LSIZE)
+		int deb = 1;
+		
+	MboxMail *m = (*ar)[arpos];
+
+	if (m == 0)
+		int deb = 1;
+
+	if (m->m_startOff)
+		int deb = 1;
+
+	return m;
+}
+
+int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath)
+{
+	CString errorText;
+	CFileFind finder;
+	if (hItem == 0)
+		return 1;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NListView *pListView = 0;
+	if (pFrame)
+		pListView = pFrame->GetListView();
+
+	if (pListView == 0)
+	{
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	CString itemName = m_tree.GetItemText(hItem);
+
+	// build a string with wildcards
+	CString strWildcard(listFilePath);
+	strWildcard += _T("\\*.*");
+
+	// start working for files
+	BOOL bWorking = finder.FindFile(strWildcard);
+
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+
+		// skip . and .. files; otherwise, we'd
+		// recur infinitely!
+
+		if (finder.IsDots())
+			continue;
+
+		CString fPath = finder.GetFilePath();
+		CString fName = finder.GetFileName();
+		CString label;
+		FileUtils::GetFileBaseName(fName, label);
+		//TRACE("fPath=|%s| fName=|%s|\n", fPath, fName);
+
+#if 0
+		if (label.Compare("Osobiste") == 0)
+		{
+			if (finder.IsDirectory())
+				int deb = 1;
+			int deb = 1;
+		}
+#endif
+
+#if 0
+		// Make sure the directory  and file order doesn't matter
+		if (finder.IsDirectory())
+		{
+			if (label.Compare("Osobiste") == 0)
+			{
+				CString filePath = finder.GetFilePath();
+				CString fileName = finder.GetFileName();
+				//TRACE("%s\n", (LPCTSTR)filePath);
+
+				CString label;
+				FileUtils::GetFileBaseName(fileName, label);
+
+				HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
+				if (found_hItem == 0)
+				{
+					HTREEITEM newItem = m_tree.InsertItem(label, 6, 6, hItem, TVI_SORT);
+					if (newItem == 0)
+					{
+						MboxMail::assert_unexpected();
+						return -1;
+					}
+					int nId = m_labelInfoStore.GetNextId();
+					m_tree.SetItemData(newItem, nId);
+
+					CString listFilePath = filePath + ".mboxlist";
+					LabelInfo *linfo = new LabelInfo(nId, dataFilePath, label, listFilePath);
+					m_labelInfoStore.Add(linfo, nId);
+				}
+				else
+				{
+					DWORD nId = m_tree.GetItemData(found_hItem);
+					LabelInfo *linfo = m_labelInfoStore.Find(nId);
+
+					if (linfo->m_listFilePath.Compare(filePath) == 0) // should be true
+						int deb = 1;
+					if (linfo)
+					{
+						linfo->m_listFilePath = filePath;
+					}
+				}
+			}
+			int deb = 1;
+		}
+#endif
+
+		// if it's a directory, recursively search it
+		if (finder.IsDirectory())
+		{
+			CString folderPath = finder.GetFilePath();
+			CString folderName = finder.GetFileName();
+			CString label;
+			FileUtils::GetFileBaseName(folderName, label);
+			//TRACE("%s\n", (LPCTSTR)folderPath);
+
+			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
+			if (found_hItem == 0)
+			{
+				HTREEITEM newItem = m_tree.InsertItem(folderName, 6, 6, hItem, TVI_SORT);
+				if (newItem == 0)
+				{
+					MboxMail::assert_unexpected();
+					return -1;
+				}
+
+				int nId = m_labelInfoStore.GetNextId();
+				m_tree.SetItemData(newItem, nId);
+
+				CString emptyPath = folderPath + ".mboxlist";
+
+				if (!FileUtils::PathFileExist(emptyPath))
+				{
+					MboxMail::s_mails_label.SetCountKeepData(0);
+					_int64 mailFileSize = FileUtils::FileSize(dataFilePath);
+					int r = pListView->WriteMboxListFile_v2(&MboxMail::s_mails_label, emptyPath, mailFileSize, errorText);
+					if (r < 0) {
+						MboxMail::assert_unexpected();
+						return -1;
+					}
+				}
+
+				LabelInfo *linfo = new LabelInfo(nId, dataFilePath, label, emptyPath);
+				m_labelInfoStore.Add(linfo, nId);
+
+				int r = NTreeView::ShowGmailLabels(newItem, folderPath, dataFilePath);
+				if (r < 0) {
+					MboxMail::assert_unexpected();
+					return -1;
+				}
+			}
+			else
+			{
+				int r = NTreeView::ShowGmailLabels(found_hItem, folderPath, dataFilePath);
+				if (r < 0) {
+					MboxMail::assert_unexpected();
+					return -1;
+				}
+			}
+		}
+		else
+		{
+			CString filePath = finder.GetFilePath();
+			CString fileName = finder.GetFileName();
+			//TRACE("%s\n", (LPCTSTR)filePath);
+
+			CString label;
+			FileUtils::GetFileBaseName(fileName, label);
+
+			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
+			if (found_hItem == 0)
+			{
+				HTREEITEM newItem = m_tree.InsertItem(label, 6, 6, hItem, TVI_SORT);
+				if (newItem == 0)
+				{
+					MboxMail::assert_unexpected();
+					return -1;
+				}
+				int nId = m_labelInfoStore.GetNextId();
+				m_tree.SetItemData(newItem, nId);
+
+				LabelInfo *linfo = new LabelInfo(nId, dataFilePath, label, filePath);
+				m_labelInfoStore.Add(linfo, nId);
+			}
+			else
+			{
+				DWORD nId = m_tree.GetItemData(found_hItem);
+				LabelInfo *linfo = m_labelInfoStore.Find(nId);
+
+				if (linfo->m_listFilePath.Compare(filePath) == 0) // should be true
+					int deb = 1;
+				if (linfo)
+				{
+					linfo->m_listFilePath = filePath;
+				}
+			}
+		}
+	}
+	finder.Close();
+	return 1;
+}
+
+HTREEITEM NTreeView::HasLabel(HTREEITEM hItem, CString &label)
+{
+	CString name;
+	if (hItem != NULL)
+	{
+		HTREEITEM hChild = m_tree.GetChildItem(hItem);
+		while (hChild)
+		{
+			name = m_tree.GetItemText(hChild);
+			if (name.Compare(label) == 0)
+				return hChild;
+			hChild = m_tree.GetNextSiblingItem(hChild);
+		}
+	}
+	return 0;
+}
+
+LabelInfo::LabelInfo(int nId, CString &mailFolderPath, CString &mailDataFolderPath)
+{
+	m_nodeType = MailFolder;
+
+	m_nId = nId;
+	m_mailFolderPath = mailFolderPath;
+	m_mailDataFolderPath = mailDataFolderPath;
+}
+
+LabelInfo::LabelInfo(int nId, CString &mailFilePath)
+{
+	m_nodeType = MailFile;
+	m_nId = nId;
+	m_filePath = mailFilePath;
+}
+
+LabelInfo::LabelInfo(int nId, CString &mailFilePath, CString &label, CString &listFilePath)
+{
+	m_nodeType = MailLabel;
+	m_nId = nId;
+	m_label = label;
+	m_listFilePath = listFilePath;
+	m_filePath = mailFilePath;
+}
+
+LabelInfo::~LabelInfo() 
+{
+	;
+}
+
+
+GlobalLabelInfo::GlobalLabelInfo()
+{
+	m_nId = 100000;  // base id
+	m_labelInfoHT = new GlobalLableInfoMapType(311);
+}
+
+GlobalLabelInfo::~GlobalLabelInfo()
+{
+	Clear();
+	delete m_labelInfoHT;
+}
+
+LabelInfo* GlobalLabelInfo::Find(int key)
+{
+	LabelInfo *linfo = m_labelInfoHT->find(&key);
+	return linfo;
+}
+
+int GlobalLabelInfo::GetNextId()
+{
+	m_nId++;
+	if (m_nId == 0x7fffffff)  // that might a problem; try rand() ??
+	{
+		// ASSERT(0);
+		m_nId = 100000;
+	}
+
+	return m_nId;
+}
+
+int GlobalLabelInfo::Add(LabelInfo *linfo, int key)
+{
+	DWORD_PTR n = 0;
+
+	// No check. User must call Find() first
+	m_labelInfoHT->insert(&key, linfo);
+	return m_nId;
+}
+
+void GlobalLabelInfo::Clear()
+{
+	GlobalLableInfoMapType::IHashMapIter iter = m_labelInfoHT->first();
+	int totalCnt = 0;
+	for (; !m_labelInfoHT->last(iter); )
+	{
+		LabelInfo *l = iter.element;
+		m_labelInfoHT->remove(iter);
+		delete l;
+
+	}
+	m_labelInfoHT->clear();
+}
+
+int NTreeView::LoadLabels()
+{
+	CString sText;
+	int paneId = 0;
+	CString path;
+	CString name;
+	CString name2;
+	DWORD nId;
+	DWORD nId2;
+	LabelInfo *linfo;
+	LabelInfo *linfo2;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) {
+		sText.Format("Loading labels %s ...");
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+	}
+
+	HTREEITEM hItem = m_tree.GetRootItem();
+	name = m_tree.GetItemText(hItem);
+
+	hItem = 0;
+	HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	while (hChild)
+	{
+		name = m_tree.GetItemText(hChild);
+		nId = m_tree.GetItemData(hChild);
+
+		linfo = m_labelInfoStore.Find(nId);
+
+		HTREEITEM hChild2 = m_tree.GetChildItem(hChild);
+		while (hChild2)
+		{
+			name2 = m_tree.GetItemText(hChild2);
+			nId2 = m_tree.GetItemData(hChild2);
+
+			linfo2 = m_labelInfoStore.Find(nId2);
+			if (linfo2 == 0) {
+				MboxMail::assert_unexpected();
+				hChild2 = m_tree.GetNextSiblingItem(hChild2);
+				continue;
+			}
+
+			CString labelsCachePath;
+			CString rootPrintSubFolder = "LabelCache";
+			CString errorText;
+			CString targetPrintSubFolder;
+
+			MboxMail::s_path = path;
+
+			CString driveName;
+			CString directory;
+			CString fileNameBase;
+			CString fileNameExtention;
+			FileUtils::SplitFilePath(linfo2->m_filePath, driveName, directory, fileNameBase, fileNameExtention);
+
+			CString lastPath = driveName + directory;
+
+			MboxMail::SetLastPath(lastPath);
+
+			BOOL retval = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText, &linfo2->m_filePath);
+			if (retval == FALSE) {
+				MboxMail::assert_unexpected();
+				sText.Format("Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+				return -1;  // goto instead ?
+			}
+			if (!labelsCachePath.IsEmpty())
+			{
+				int ret = ShowGmailLabels(hChild2, labelsCachePath, linfo2->m_filePath);
+				if (ret < 0) {
+					MboxMail::assert_unexpected();
+					sText.Format("Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+					return -1;  // goto instead ?
+				}
+				CString inbox("Inbox");
+				CString sent("Sent");
+				MoveLabelItem(linfo2->m_filePath, sent);
+				MoveLabelItem(linfo2->m_filePath, inbox);
+			}
+			hChild2 = m_tree.GetNextSiblingItem(hChild2);
+		}
+		hChild = m_tree.GetNextSiblingItem(hChild);
+	}
+	sText.Format("Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	return 1;
+}
+
+HTREEITEM NTreeView::HasMailFile(CString &mailFilePath)
+{
+	CString name;
+	CString name2;
+	DWORD nId;
+	DWORD nId2;
+	LabelInfo *linfo;
+	LabelInfo *linfo2;
+
+	HTREEITEM hItem = m_tree.GetRootItem();
+	name = m_tree.GetItemText(hItem);
+
+	hItem = 0;
+	HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	while (hChild)
+	{
+		name = m_tree.GetItemText(hChild);
+		nId = m_tree.GetItemData(hChild);
+
+		linfo = m_labelInfoStore.Find(nId);
+		HTREEITEM hChild2 = m_tree.GetChildItem(hChild);
+		while (hChild2)
+		{
+			name2 = m_tree.GetItemText(hChild2);
+			nId2 = m_tree.GetItemData(hChild2);
+
+			linfo2 = m_labelInfoStore.Find(nId2);
+			if (linfo2 == 0) {
+				MboxMail::assert_unexpected();
+				hChild2 = m_tree.GetNextSiblingItem(hChild2);
+				continue;
+			}
+
+			if (linfo2->m_filePath.Compare(mailFilePath) == 0)
+				return hChild2;
+			hChild2 = m_tree.GetNextSiblingItem(hChild2);
+		}
+		hChild = m_tree.GetNextSiblingItem(hChild);
+	}
+	return 0;
+}
+
+void NTreeView::MoveLabelItem(CString &mailFilePath, CString &label)
+{
+	HTREEITEM hRoot = HasMailFile(mailFilePath);
+	HTREEITEM hitemToBeMoved = HasLabel(hRoot, label);
+	if (hitemToBeMoved == 0)
+		return;
+	CString name = m_tree.GetItemText(hitemToBeMoved);
+	DWORD nId = m_tree.GetItemData(hitemToBeMoved);
+
+	HTREEITEM parent = m_tree.GetParentItem(hitemToBeMoved);
+	m_tree.DeleteItem(hitemToBeMoved);
+	HTREEITEM hItem = m_tree.InsertItem(name, 6, 6, parent, TVI_FIRST);
+	m_tree.SetItemData(hItem, nId);
+}
+
+void NTreeView::MoveItem(HTREEITEM hitemToBeMoved, HTREEITEM hitemInsertAfter)
+{
+#if 0
+	TV_INSERTSTRUCT tvStruct;
+	TCHAR cBuffer[50];
+	HTREEITEM hNewItem;
+
+	tvStruct.item.hItem = hitemToBeMoved;
+	tvStruct.item.cchTextMax = 49;
+	tvStruct.item.pszText = cBuffer;
+	tvStruct.item.mask = TVIF_CHILDREN | TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT | TVIF_PARAM;
+	GetItem(&tvStruct.item);
+	tvStruct.hParent = GetParentItem(hitemInsertAfter);
+	tvStruct.hInsertAfter = hitemInsertAfter;
+	tvStruct.item.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT | TVIF_PARAM;
+
+	hNewItem = InsertItem(&tvStruct);
+	HTREEITEM hChild = GetChildItem(hitemToBeMoved);
+	while (hChild != NULL)
+	{
+		TransferItem(hChild, hNewItem);
+		DeleteItem(hChild);
+		hChild = GetChildItem(hitemToBeMoved);
+	}
+	DeleteItem(hitemToBeMoved);
+#endif
+}
+
 //
+void NTreeView::OnGmaillabelsCreate()
+{
+	// TODO: Add your command handler code here
+
+	CString name;
+	CString name2;
+	DWORD nId;
+	DWORD nId2;
+	LabelInfo *linfo;
+	LabelInfo *linfo2;
+
+	HTREEITEM hItem = m_tree.GetRootItem();
+	name = m_tree.GetItemText(hItem);
+
+	hItem = 0;
+	HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	while (hChild)
+	{
+		name = m_tree.GetItemText(hChild);
+		nId = m_tree.GetItemData(hChild);
+
+		linfo = m_labelInfoStore.Find(nId);
+		HTREEITEM hChild2 = m_tree.GetChildItem(hChild);
+		while (hChild2)
+		{
+			name2 = m_tree.GetItemText(hChild2);
+			nId2 = m_tree.GetItemData(hChild2);
+
+			linfo2 = m_labelInfoStore.Find(nId2);
+			if (linfo2 == 0) {
+				MboxMail::assert_unexpected();
+				hChild2 = m_tree.GetNextSiblingItem(hChild2);
+				continue;
+			}
+
+			if (!linfo2->m_filePath.IsEmpty())
+			{
+				int ret = CreateGmailLabelFiles(hChild2);
+				if (ret < 0)
+				{
+					MboxMail::assert_unexpected();
+					return;
+				}
+			}
+
+			hChild2 = m_tree.GetNextSiblingItem(hChild2);
+		}
+		hChild = m_tree.GetNextSiblingItem(hChild);
+	}
+	BOOL ret = LoadLabels();
+	int deb = 1;
+	return;
+}
+
+
+void NTreeView::OnGmaillabelsDelete()
+{
+	// TODO: Add your command handler code here
+#if 1
+	int paneId = 0;
+	CString lastDataPath;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	BOOL lastPathLoaded = FALSE;
+	BOOL expand = FALSE;
+	int ii = 0;
+	for (ii = 0; ii < m_folderArray.m_array.GetCount(); ii++)
+	{
+		CString path = m_folderArray.m_array.GetAt(ii);
+		if (!FileUtils::PathDirExists(path))
+			continue;
+
+		if (!path.IsEmpty())
+		{
+			lastDataPath = MboxMail::GetDataPath(path);
+			CString labelsDir = lastDataPath + "LabelCache";
+			BOOL retval = FileUtils::RemoveDir(labelsDir, true, true);
+
+			int deb = 1;
+		}
+	}
+
+#else
+
+	DWORD errorCode;
+	CString name;
+	CString name2;
+	DWORD nId;
+	DWORD nId2;
+	LabelInfo *linfo;
+	LabelInfo *linfo2;
+
+	HTREEITEM hItem = m_tree.GetRootItem();
+	name = m_tree.GetItemText(hItem);
+
+	hItem = 0;
+	HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	while (hChild)
+	{
+		name = m_tree.GetItemText(hChild);
+		nId = m_tree.GetItemData(hChild);
+
+		linfo = m_labelInfoStore.Find(nId);
+
+		if (linfo == 0) {
+			MboxMail::assert_unexpected();
+			hChild = m_tree.GetNextSiblingItem(hChild);
+			continue;
+		}
+
+		CString labelsDir = linfo->m_mailDataFolderPath + "LabelCache";
+		BOOL retval = FileUtils::RemoveDir(labelsDir, true, true);
+		//BOOL retval = FileUtils::RemoveDirectory(labelsDir, errorCode);
+
+		hChild = m_tree.GetNextSiblingItem(hChild);
+	}
+#endif
+	return;
+}
+
+
+void NTreeView::OnGmaillabelsRefresh()
+{
+	// TODO: Add your command handler code here
+	OnGmaillabelsDelete();
+	OnGmaillabelsCreate();
+
+	int deb = 1;
+}
+
+// It wil create lable files and update the Tree
+// Label files should be remoced before calling thsi function
+int NTreeView::CreateLabelsForSingleMailFile(HTREEITEM hItem)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	int paneId = 0;
+	CString sText;
+	CString mailFile = m_tree.GetItemText(hItem);
+
+	sText.Format("Creating Gmail Labels for %s ...", mailFile);
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+	RecreateGmailLabels(hItem);
+
+	sText.Format("Ready");
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+
+	int labelsEnabled = 1;
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "labelsEnabled", labelsEnabled);
+
+	return 1;
+}
+
+
+// Deletes all label files
+int NTreeView::DeleteLabelsForSingleMailFile(HTREEITEM hItem)
+{
+	if (!hItem)
+		return -1;
+
+	CString labelsCachePath;
+	CString rootPrintSubFolder = "LabelCache";
+	CString errorText;
+	CString targetPrintSubFolder;
+
+	CString name = m_tree.GetItemText(hItem);
+	int nId = m_tree.GetItemData(hItem);
+
+	LabelInfo *linfo = m_labelInfoStore.Find(nId);
+
+	if (linfo)
+	{
+		BOOL retval = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText, &linfo->m_filePath);
+		if (retval == FALSE) {
+			MboxMail::assert_unexpected();
+			return -1;
+		}
+	}
+	else
+	{
+		BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText);
+		if (retval == FALSE) {
+			MboxMail::assert_unexpected();
+			return -1;
+		}
+	}
+
+	CString lastDataPath = MboxMail::GetLastDataPath();
+	if (FileUtils::PathDirExists(labelsCachePath))
+	{
+		// TODO: remove files, keep tree item
+		if (hItem) {
+			DeleteItemChildren(hItem);
+		}
+		BOOL retval = FileUtils::RemoveDir(labelsCachePath, true, true);
+		int deb = 1;
+	}
+	return 1;
+}
+
+int NTreeView::RefreshLabelsForSingleMailFile(HTREEITEM hItem)
+{
+	int retD = DeleteLabelsForSingleMailFile(hItem);
+	int retC = CreateLabelsForSingleMailFile(hItem);
+
+	int labelsEnabled = 1;
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "labelsEnabled", labelsEnabled);
+	
+	return retC;
+}
 

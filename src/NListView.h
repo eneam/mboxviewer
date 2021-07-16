@@ -260,6 +260,7 @@ public:
 	//
 	int LoadMails(LPCSTR cache, MailArray *mails = 0);
 	void FillCtrl();
+	int  MailFileFillCtrl(CString &errorText);
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
 	int DumpSelectedItem(int which);
@@ -288,7 +289,7 @@ public:
 	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
-	int PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
+	int PopulateMailArray(SerializerHelper &sz, MailArray &mArray, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int OpenMailListFileLocation();
 	int RemoveDuplicateMails();
@@ -302,7 +303,10 @@ public:
 	int CreateEmptyFolderListFile(CString &path, CString &folderListFile);
 	int LoadFolderListFile_v2(CString &folderPath, CString &folderName);
 	int CopyMailsToFolders();
-
+	//
+	int SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString &errorText);
+	int LoadLabelListFile_v2(CString &folderPath, CString &folderName);
+	int WriteMboxListFile_v2(MailArray *mailsArray, CString &listFilePath, _int64 mboxFileSize, CString &errorText);
 
 	int VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePath, CString &errorText);
 
@@ -343,6 +347,7 @@ public:
 
 	void PostMsgCmdParamAttachmentHint();
 	//
+	
 	static int ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDirectory, CString &emlFile, CString &errorText);
 	static int PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile);
 	static int PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB);

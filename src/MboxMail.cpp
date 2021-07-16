@@ -98,6 +98,7 @@ MailArray MboxMail::s_mails_all;
 MailArray MboxMail::s_mails_find;
 MailArray MboxMail::s_mails_edit;
 MailArray MboxMail::s_mails_folder;
+MailArray MboxMail::s_mails_label;
 
 MailList *MboxMail::m_mailList = &MboxMail::m_allMails;
 
@@ -107,6 +108,7 @@ MailList MboxMail::m_allMails(IDC_ARCHIVE_LIST);
 MailList MboxMail::m_findMails(IDC_FIND_LIST);
 MailList MboxMail::m_editMails(IDC_EDIT_LIST);
 MailList MboxMail::m_folderMails(IDC_FOLDER_LIST);
+MailList MboxMail::m_labelMails(IDC_LABEL_LIST);
 
 MailArray MboxMail::s_mails_selected;
 MailArray MboxMail::s_mails_merged;
@@ -281,6 +283,13 @@ void MboxMail::SetLastPath(CString &path)
 	}
 
 	// Set database path; Verify that the default mbox folder is not Read-Only
+	CString TestFile = path + "\\" + ".WriteSupported";
+	if (FileUtils::CreateDirectory(TestFile))
+	{
+		BOOL retD = FileUtils::RemoveDir(TestFile, true, true);
+		s_datapath = path;
+	}
+#if 0
 	CString PrintCache = path + "\\" + "PrintCache";
 	if (FileUtils::CreateDirectory(PrintCache))
 	{
@@ -289,6 +298,7 @@ void MboxMail::SetLastPath(CString &path)
 			s_datapath = path;
 		}
 	}
+#endif
 	if (s_datapath.IsEmpty())
 	{
 		s_datapath = MboxMail::SetLastDataPath();
@@ -299,6 +309,27 @@ void MboxMail::SetLastPath(CString &path)
 		int deb = 1;
 	if (path.Compare(s_datapath))
 		int deb = 1;
+}
+
+
+// This is very expensive; Need to determine once per current selection
+CString MboxMail::GetDataPath(CString &path)
+{
+	if (path.IsEmpty())
+	{
+		return path;
+	}
+
+	// Set database path; Verify that the default mbox folder is not Read-Only
+	CString TestFile = path + "\\" + ".WriteSupported";
+	if (FileUtils::CreateDirectory(TestFile))
+	{
+			BOOL retD = FileUtils::RemoveDir(TestFile, true, true);
+			return path;
+	}
+
+	CString dataPath = MboxMail::SetLastDataPath(&path);
+	return dataPath;
 }
 
 CString MboxMail::GetLastPath()
@@ -366,6 +397,49 @@ CString MboxMail::GetDateFormat(int i)
 	return format;
 }
 
+BOOL MboxMail::GetBody(CFile fp, CString &res)
+{
+	BOOL ret = TRUE;
+	//CFile fp;
+	//if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite))
+	{
+		char *p = res.GetBufferSetLength(m_length);
+		//TRACE("offset = %lld\n", m_startOff);
+		ULONGLONG pos = fp.Seek(m_startOff, SEEK_SET);  // TODO: handle errors
+		int retR = fp.Read(p, m_length);   // TODO: handle errors
+		char *ms = strchr(p, '\n'); //"-Version: 1.0");  // TODO: optimize for some cases
+		if (ms) {
+			BOOL bAddCR = FALSE;
+			if (*(ms - 1) != '\r')
+				bAddCR = TRUE;
+			int pos = ms - p + 1;
+			//res = res.Mid(pos); // - 4);
+			if (bAddCR) // for correct mime parsing
+			{
+				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)res, res.GetLength(), tmpbuf);
+				res.Empty();
+				res.Append(tmpbuf->Data(), tmpbuf->Count());
+				MboxMail::rel_tmpbuf();
+
+				//res.Replace("\n", "\r\n");
+			}
+			else
+				int deb = 1;
+		}
+		//fp.Close();  // TODO: verify why Close() was not called
+	}
+#if 0
+	else
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+		ret = FALSE;
+	}
+#endif
+	return ret;
+};
+
 BOOL MboxMail::GetBody(CString &res)
 {
 	BOOL ret = TRUE;
@@ -404,6 +478,39 @@ BOOL MboxMail::GetBody(CString &res)
 		TRACE("Open Mail File failed err=%ld\n", err);
 		ret = FALSE;
 	}
+	return ret;
+};
+
+BOOL MboxMail::GetBody(CFile &fp, SimpleString *res, int maxLength)
+{
+	BOOL ret = TRUE;
+	//CFile fp;
+	//res->Clear();
+	int bytes2Read = m_length;
+	if (maxLength > 0)
+	{
+		if (maxLength < m_length)
+			bytes2Read = maxLength;
+	}
+	//if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite))
+	{
+		res->Resize(bytes2Read);
+		//TRACE("offset = %lld\n", m_startOff);
+		fp.Seek(m_startOff, SEEK_SET);
+		UINT readLength = fp.Read(res->Data(), bytes2Read);
+		if (readLength != bytes2Read)
+			int deb = 1;
+		res->SetCount(bytes2Read);
+		//fp.Close();
+	}
+#if 0
+	else
+	{
+		DWORD err = GetLastError();
+		TRACE("Open Mail File failed err=%ld\n", err);
+		ret = FALSE;
+	}
+#endif
 	return ret;
 };
 
@@ -6838,6 +6945,9 @@ BOOL MboxMail::IsUserMailsSelected() {
 BOOL MboxMail::IsFolderMailsSelected() {
 	return (nWhichMailList == IDC_FOLDER_LIST);
 }
+BOOL MboxMail::IsLabelMailsSelected() {
+	return (nWhichMailList == IDC_LABEL_LIST);
+}
 
 int MboxMail::AllMailsSelectedId() {
 	return (IDC_ARCHIVE_LIST);
@@ -6850,6 +6960,9 @@ int MboxMail::UserMailsSelectedId() {
 }
 int MboxMail::FolderMailsSelectedId() {
 	return (IDC_FOLDER_LIST);
+}
+int MboxMail::LabelMailsSelectedId() {
+	return (IDC_LABEL_LIST);
 }
 
 //void *bsearch(const void *key, const void *base, size_t num, size_t width, int(__cdecl *compare) (const void *key, const void *datum));

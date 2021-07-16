@@ -49,9 +49,9 @@ public:
 	static CString CreateMboxviewLocalAppDataPath(const char *name = 0);
 	static CStringW CreateMboxviewLocalAppDataPathW(const wchar_t *name = 0);
 	//
-	BOOL RemoveDirectory(CString &dir, DWORD &error);
-	BOOL RemoveDirectoryW(CStringW &dir, DWORD &error);
-	static BOOL RemoveDir(CString & dir, bool recursive = false);
+	static BOOL RemoveDirectory(CString &dir, DWORD &error);
+	static BOOL RemoveDirectoryW(CStringW &dir, DWORD &error);
+	static BOOL RemoveDir(CString & dir, bool recursive = false, bool removeFolders = false);
 	static BOOL RemoveDirW(CString & dir, bool recursive = false);
 	static BOOL RemoveDirW(CStringW & dir, bool recursive = false);
 	static CString CreateTempFileName(CString ext = "htm");
@@ -69,6 +69,8 @@ public:
 	static _int64 FileSize(LPCSTR fileName);
 	static BOOL BrowseToFileW(LPCWSTR filename);
 	static BOOL BrowseToFile(LPCTSTR filename);
+	static void MakeValidFilePath(CString &path, BOOL bReplaceWhiteWithUnderscore = TRUE);
+	static void MakeValidFilePath(SimpleString &path, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bReplaceWhiteWithUnderscore);

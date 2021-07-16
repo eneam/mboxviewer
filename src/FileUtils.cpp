@@ -249,13 +249,21 @@ BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
 			CString fileFound = dir + "\\" + CString(FileData.cFileName);
 			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
 			{
-				BOOL retR = RemoveDirectory(fileFound, error);
-				if (retR == FALSE)
+				BOOL retR = FileUtils::RemoveDirectory(fileFound, error);
+				if (retR == FALSE) {
 					bFinished = TRUE;
+					break;
+				}
+			}
+			else
+			{
+				BOOL retF = ::DeleteFile(fileFound);
 			}
 		}
-		if (!FindNextFile(hSearch, &FileData))
+		if (!FindNextFile(hSearch, &FileData)) {
 			bFinished = TRUE;
+			break;
+		}
 	}
 	FindClose(hSearch);
 	// dir must be empty
@@ -305,7 +313,7 @@ BOOL FileUtils::RemoveDirectoryW(CStringW &dir, DWORD &error)
 }
 
 // Removes files only
-BOOL FileUtils::RemoveDir(CString & dir, bool recursive)
+BOOL FileUtils::RemoveDir(CString & dir, bool recursive, bool removeFolders)
 {
 	WIN32_FIND_DATA FileData;
 	HANDLE hSearch;
@@ -323,15 +331,27 @@ BOOL FileUtils::RemoveDir(CString & dir, bool recursive)
 		{
 			CString	fileFound = dir + "\\" + FileData.cFileName;
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-				DeleteFile((LPCSTR)fileFound);
+			{
+				BOOL retF = DeleteFile((LPCSTR)fileFound);
+				// handle error
+			}
 			else if (recursive)
-				RemoveDir(fileFound, recursive);
+			{
+				BOOL retB = FileUtils::RemoveDir(fileFound, recursive, removeFolders);
+				if (removeFolders) {
+					BOOL retD = ::RemoveDirectory(dir);
+					// handle error
+				}
+			}
 		}
 		if (!FindNextFile(hSearch, &FileData))
+		{
 			bFinished = TRUE;
+		}
 	}
 	FindClose(hSearch);
-	//RemoveDirectory( dir );
+	if (removeFolders)
+		:: RemoveDirectory(dir);
 	return TRUE;
 }
 
@@ -504,9 +524,9 @@ void FileUtils::GetFileBaseName(CString &fileName, CString &fileBaseName)
 {
 	CString driveName;
 	CString directory;
-	CString fileNameBase;
+	//CString fileNameBase;
 	CString fileNameExtention;
-	SplitFilePath(fileName, driveName, directory, fileNameBase, fileNameExtention);
+	SplitFilePath(fileName, driveName, directory, fileBaseName, fileNameExtention);
 }
 
 void FileUtils::GetFileExtension(CString &fileName, CString &fileNameExtention)
@@ -596,6 +616,67 @@ BOOL FileUtils::BrowseToFileW(LPCWSTR filename)
 	else
 		retval = FALSE;
 	return retval;
+}
+
+void  FileUtils::MakeValidFilePath(CString &name, BOOL bReplaceWhiteWithUnderscore)
+{
+	SimpleString validName(name.GetLength());
+	validName.Append((LPCSTR)name, name.GetLength());
+	FileUtils::MakeValidFilePath(validName, bReplaceWhiteWithUnderscore);
+	name.Empty();
+	name.Append(validName.Data(), validName.Count());
+}
+
+void  FileUtils::MakeValidFilePath(SimpleString &name, BOOL bReplaceWhiteWithUnderscore)
+{
+	// Always merge consecutive underscore characters
+	int csLen = name.Count();
+	char* str = name.Data();
+	int i;
+	int j = 0;
+	char c;
+	BOOL allowUnderscore = TRUE;
+	for (i = 0; i < csLen; i++)
+	{
+		c = str[i];
+		if (
+			(c == '?') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters
+			(c == '*') || (c == '|') || (c == '"') || (c == '\\')    // not valid file name characters
+			// I seem to remember that browser would not open a file with name with these chars, 
+			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
+			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
+			|| (c == '%')
+			)
+		{
+			if (allowUnderscore)
+			{
+				allowUnderscore = FALSE;
+				str[j++] = '_';
+			}
+		}
+		else if (bReplaceWhiteWithUnderscore && ((c == ' ') || (c == '\t')))
+		{
+			if (allowUnderscore)
+			{
+				str[j++] = '_';
+				allowUnderscore = FALSE;
+			}
+		}
+		else if ((c < 32) || (c > 126))
+		{
+			if (allowUnderscore)
+			{
+				str[j++] = '_';
+				allowUnderscore = FALSE;
+			}
+		}
+		else
+		{
+			str[j++] = c;
+			allowUnderscore = TRUE;
+		}
+	}
+	name.SetCount(j);
 }
 
 void  FileUtils::MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore)

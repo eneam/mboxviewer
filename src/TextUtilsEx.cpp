@@ -1070,3 +1070,133 @@ BOOL TextUtilsEx::isWhiteLine(const char* p, const char* e)
 	else
 		return FALSE;
 }
+
+// Very inefficient
+void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStringArray &a) 
+{
+	int position = 0;
+	CString strToken;
+
+	a.RemoveAll();
+	strToken = strIn.Tokenize(delim, position);
+	while (!strToken.IsEmpty()) {
+		a.Add(strToken);
+		strToken = strIn.Tokenize(delim, position);
+	}
+}
+
+// Simple tokenizer, heavy
+// Will support: a bc d, xy z, "k l, n,'"'","a b", "a,b"
+// '"' escapes " character
+
+int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
+{
+	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes};
+
+	int state = inHunt;
+	CString token;
+
+	int strLength = str.GetLength();
+	for (int i = 0; i < strLength; i++)
+	{
+		char c = str.GetAt(i);
+		if (state == inHunt)
+		{
+			if ((c == ' ') || (c == '\t'))
+				continue;
+			else if (c == '\'') 
+			{
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
+				{
+					token.AppendChar('"');
+					i += 2;
+				}
+				else
+					token.AppendChar(c);
+				state = notInsideDoubleQuotes;
+				continue;
+			}
+			else if (c == del)
+				state = notInsideDoubleQuotes;
+			else if (c == '"')
+				state = insideDoubleQuotes;
+			else if ((c != del) && (c != '"'))
+			{
+				state = notInsideDoubleQuotes;
+				token.AppendChar(c);
+			}
+			continue;
+		}
+		if (state == notInsideDoubleQuotes)
+		{
+			if (c == '\'')
+			{
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
+				{
+					token.AppendChar('"');
+					i += 2;
+				}
+				else
+					token.AppendChar(c);
+				continue;
+			}
+			else if (c != del)
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				token.Trim(" \t");
+				a.Add(token);
+				token.Empty();
+				state = inHunt;
+			}
+			continue;
+		}
+		else  // state == insideDoubleQuotes
+		{
+			if (c == '\'')
+			{
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
+				{
+					token.AppendChar('"');
+					i += 2;
+				}
+				else
+					token.AppendChar(c);
+				continue;
+			}
+			else if (c != '"')
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				token.Trim(" \t");
+				a.Add(token);
+				token.Empty();
+				state = inHunt;
+			}
+		}
+	}
+	
+	token.Trim(" \t");
+	if (!token.IsEmpty())
+		a.Add(token);
+	return 1;
+}
+
+void TextUtilsEx::TraceStringArray(CStringArray &a)
+{
+	CString el;
+	int first = 0;
+	TRACE(_T("StringArray:\n"));
+	for (int i = 0; i < a.GetSize(); i++)
+	{
+		el = a.ElementAt(i);
+		TRACE(_T("\t|%s|\n"), el);
+	}
+}

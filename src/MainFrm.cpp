@@ -1561,6 +1561,7 @@ void CMainFrame::SetupMailListsToInitialState()
 	MboxMail::s_mails_find.SetSizeKeepData(0);
 	MboxMail::s_mails_edit.SetSizeKeepData(0);
 	MboxMail::s_mails_folder.SetSizeKeepData(0);
+	MboxMail::s_mails_label.SetSizeKeepData(0);
 
 
 	if (MboxMail::b_mails_which_sorted != 1)
@@ -1575,6 +1576,8 @@ void CMainFrame::SetupMailListsToInitialState()
 	MboxMail::m_editMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
 	MboxMail::m_folderMails.m_lastSel = -1;
 	MboxMail::m_folderMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
+	MboxMail::m_labelMails.m_lastSel = -1;
+	MboxMail::m_labelMails.b_mails_which_sorted = 1; // not really, shuld be unknown yet
 
 	CMenu *menu = this->GetMenu();
 
@@ -1647,13 +1650,21 @@ void CMainFrame::EnableAllMailLists(BOOL enable)  // enable/disable
 void CMainFrame::OnBnClickedArchiveList()
 {
 	// TODO: Add your control notification handler code here
+
+
 	int nID = IDC_ARCHIVE_LIST;
+	NTreeView * pTreeView = GetTreeView();
+	if (pTreeView && pTreeView->m_labelView)
+		nID = IDC_LABEL_LIST;
 	if (MboxMail::nWhichMailList == nID)
 		return; // do nothing
 
 	NListView * pListView = GetListView();
 	if (pListView) {
 		pListView->SwitchToMailList(nID);
+		if (pTreeView && pTreeView->m_labelView) {
+			SetMailList(IDC_ARCHIVE_LIST);
+		}
 	}
 	int deb = 1;
 }
@@ -3872,6 +3883,10 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	if (pTreeView)
 	{
 		pTreeView->LoadFolders();
+
+		DWORD labelsEnabled = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("labelsEnabled"));
+		if (labelsEnabled)
+			pTreeView->LoadLabels();
 
 		CString mboxFilePath;
 		CString mboxFileName;

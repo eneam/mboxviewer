@@ -38,7 +38,12 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <vector>
+#include <array>
+#include <deque>
 #include "WheelTreeCtrl.h"
+#include "dllist.h"
+#include "IHashTable.h"
 //#include <afxtempl.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +98,126 @@ public:
 
 typedef unordered_map<std::string, ArchiveFileInfoMap*> GlobalFileSizeMap;
 
+unsigned long StrHash(const char* buf, const UINT length);
+
+class MySimpleDeque;
+
+class GmailLabel
+{
+public:
+	GmailLabel(CString &str);
+	~GmailLabel();
+
+	dlink_node<GmailLabel> m_hashMapLink;
+	CString m_label;
+	MySimpleDeque *m_ptrList;
+};
+
+struct GmailLabelHelper 
+{
+	size_t operator()(const CString *key) const
+	{
+		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		return hashsum;
+	}
+	bool operator()(CString *key1, CString *key2) const
+	{
+		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+	bool operator()(CString *key1, GmailLabel *key2) const
+	{
+		if (*key1 == key2->m_label)
+			return true;
+		else
+			return false;
+	}
+};
+
+#define LSIZE 512
+
+typedef std::array<MboxMail*, 512> LabelArray;
+
+class MySimpleDeque
+{
+public:
+	MySimpleDeque();
+	~MySimpleDeque();
+//
+	std::vector<LabelArray*> m_arList;
+	int Count();
+	void Add(MboxMail* l);
+	MboxMail* Get(int position);
+	void Clear();
+	BOOL Assert();
+	LabelArray *m_ar;
+	int m_arcnt;
+};
+
+using GmailLableMapType = IHashMap<CString, GmailLabel, GmailLabelHelper, GmailLabelHelper, &GmailLabel::m_hashMapLink>;
+
+
+// TODO:  Rename LabelInfo to TreeNodeInfo
+class LabelInfo
+{
+public:
+	enum {
+		MailFolder = 1,
+		MailFile = 2,
+		MailLabel = 3
+	};
+
+	LabelInfo() {};
+	// User: Watch order of CString params
+	LabelInfo(int nId, CString &mailFilePath, CString &label, CString &listFilePath);
+	LabelInfo(int nId, CString &mailFilePath);
+	LabelInfo(int nId, CString &mailFolderPath, CString &mailDataFolderPath);
+	~LabelInfo();
+
+	dlink_node<LabelInfo> m_hashMapLink;
+	int m_nId;
+	int m_nodeType;
+	CString m_label;
+	CString m_listFilePath;
+	CString m_filePath;
+	CString m_mailFolderPath;
+	CString m_mailDataFolderPath;
+};
+
+struct LabelInfoHelper
+{
+	size_t operator()(const int *key) const
+	{
+		size_t hashsum = *key;
+		return hashsum;
+	}
+	bool operator()(int *key1, LabelInfo *key2) const
+	{
+		if (*key1 == key2->m_nId)
+			return true;
+		else
+			return false;
+	}
+};
+
+using GlobalLableInfoMapType = IHashMap<int, LabelInfo, LabelInfoHelper, LabelInfoHelper, &LabelInfo::m_hashMapLink>;
+
+class GlobalLabelInfo
+{
+public:
+	GlobalLabelInfo();
+	~GlobalLabelInfo();
+
+	GlobalLableInfoMapType *m_labelInfoHT;
+	LabelInfo* Find(int key);
+	int GetNextId();
+	int Add(LabelInfo *linfo, int key);  // add and return key
+	void Clear();
+	int m_nId;
+};
+
 
 class NTreeView : public CWnd
 {
@@ -106,6 +231,11 @@ public:
 	DECLARE_DYNCREATE(NTreeView)
 	CWheelTreeCtrl	m_tree;
 	//
+	GmailLableMapType *m_labelHT;
+	GlobalLabelInfo m_labelInfoStore;
+	BOOL m_labelView;
+	int m_labelSeqNumb;
+
 	//  TODO: consider to create class
 	FileSizeMap	*fileSizes; // plus other data
 	FileSizeMap	m_fileSizes; // plus other data
@@ -142,6 +272,7 @@ public:
 
 // Implementation
 public:
+	void ClearLabelHT();
 	void ClearGlobalFileSizeMap();
 	BOOL RemoveFileSizeMap(CString path);
 	BOOL SetupFileSizeMap(CString &path);
@@ -169,6 +300,21 @@ public:
 	void StartTimer();
 	void PostMsgCmdParamFileName(CString *fileName = 0);
 	BOOL RefreshFolder(HTREEITEM hItem);
+
+
+	int CreateLabelsForSingleMailFile(HTREEITEM hItem);
+	int DeleteLabelsForSingleMailFile(HTREEITEM hItem);
+	int RefreshLabelsForSingleMailFile(HTREEITEM hItem);
+
+	BOOL RecreateGmailLabels(HTREEITEM hItem);
+	int CreateGmailLabelFiles(HTREEITEM hItem);
+	BOOL DisplayGmailLabels(HTREEITEM hItem);
+	int ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath);
+	HTREEITEM HasLabel(HTREEITEM hItem, CString &label);
+	BOOL LoadLabels();
+	void MoveItem(HTREEITEM hitemToBeMoved, HTREEITEM hitemInsertAfter);
+	void MoveLabelItem(CString &mailFilePath, CString &label);
+	HTREEITEM HasMailFile(CString &mailFilePath);
 
 	// Folder related
 	int CreateEmptyFolder(HTREEITEM hItem);
@@ -200,6 +346,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnGmaillabelsCreate();
+	afx_msg void OnGmaillabelsDelete();
+	afx_msg void OnGmaillabelsRefresh();
 };
 
 /////////////////////////////////////////////////////////////////////////////

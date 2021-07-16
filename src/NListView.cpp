@@ -674,7 +674,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT S_COPY_ALL_Id = 17;
 	const UINT S_COPY_SELECTED_Id = 18;
-	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected()) && pFrame->IsUserMailsListEnabled()) {
+	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsLabelMailsSelected() || MboxMail::IsFindMailsSelected()) && pFrame->IsUserMailsListEnabled()) {
 			menu.AppendMenu(MF_SEPARATOR);
 			AppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
 			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
@@ -1042,7 +1042,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	const UINT S_COPY_SELECTED_Id = 22;
-	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected())) {
+	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected() || MboxMail::IsLabelMailsSelected())) {
 		if (pFrame->IsUserMailsListEnabled()) {
 			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 		}
@@ -2998,6 +2998,9 @@ void NListView::FillCtrl()
 	m_list.EnsureVisible(ni, FALSE);
 	m_list.SetRedraw(TRUE);
 	BOOL retval;
+	if (m_which == 0)
+		int deb = 1;
+	// m_which == 0 is legal, no exceptiomn will be thrown
 	retval = pTreeView->m_tree.SelectItem(m_which);
 	CString mboxFileName = pTreeView->m_tree.GetItemText(m_which);
 
@@ -3006,6 +3009,7 @@ void NListView::FillCtrl()
 	CString fileName;
 	FileUtils::GetFolderPathAndFileName(m_path, folderPath, fileName);
 
+	// This doesn't have any sense. What I am trying to do here
 	if (fileName.Compare(mboxFileName) != 0)
 		_ASSERT(fileName.Compare(mboxFileName) != 0);
 
@@ -3014,6 +3018,93 @@ void NListView::FillCtrl()
 
 	if (pFrame)
 		pFrame->SetupMailListsToInitialState();
+}
+
+int NListView::MailFileFillCtrl(CString &errorText)
+{
+	ClearDescView();
+	m_lastFindPos = -1;
+
+	// Don't reset below vars. It helps user to keep thse while searching amd sorting
+	//m_lastStartDate = 0;
+	//m_lastEndDate = 0;
+	//m_searchString.Empty();
+
+	MboxMail::Destroy();
+	m_list.SetRedraw(FALSE);
+	m_list.DeleteAllItems();
+	if (m_path.IsEmpty())
+		return -1;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (!pFrame)
+		return -1;
+	NTreeView *pTreeView = pFrame->GetTreeView();
+	if (!pTreeView)
+		return -1;
+
+	NMsgView *pMsgView = pFrame->GetMsgView();
+	if (pMsgView)
+		pMsgView->DisableMailHeader();
+
+
+	// TODO: MessageBox ??
+	// m_path is set to mboxFilePath not just to mboxFileName
+	if (FileUtils::PathFileExist(m_path) == FALSE)
+		return -1;
+
+	CString cache;
+	BOOL ret = MboxMail::GetMboxviewFilePath(m_path, cache);
+
+	int ni = 0;
+	if (FileUtils::fileExists(cache))
+	{
+		MboxMail::s_path = m_path;
+		// it populates s_mails from mail index/mboxview file
+		ni = LoadMails(cache);
+		if (ni < 0) {
+			ni = 0;
+			DeleteFile(cache);
+		}
+		else
+			m_list.SetItemCount(ni);
+
+		int deb = 1;
+	}
+	if (!FileUtils::fileExists(cache))
+	{
+		return -1;
+	}
+
+	MboxMail::s_mails_ref.SetSizeKeepData(MboxMail::s_mails.GetSize());
+	MboxMail::s_mails_ref.Copy(MboxMail::s_mails);
+	MboxMail::b_mails_sorted = true;
+	MboxMail::b_mails_which_sorted = 1;
+	MboxMail::SortByDate();
+
+	MarkColumns();
+	m_bEditFindFirst = TRUE;  // must call OnEditFind() first and not OnEditFindAgain()
+
+	if (m_which == 0)
+		int deb = 1;
+
+	//BOOL retval;
+	// m_which == 0 is legal, no exceptiomn will be thrown
+	//retval = pTreeView->m_tree.SelectItem(m_which);
+	CString mboxFileName = pTreeView->m_tree.GetItemText(m_which);
+
+	_int64 fSize = FileUtils::FileSize(MboxMail::s_path);
+	CString folderPath;
+	CString fileName;
+	FileUtils::GetFolderPathAndFileName(m_path, folderPath, fileName);
+
+	// This doesn't have any sense. What I am trying to do here
+	if (fileName.Compare(mboxFileName) != 0)
+		_ASSERT(fileName.Compare(mboxFileName) != 0);
+
+	if (pFrame)
+		pFrame->SetupMailListsToInitialState();
+
+	return 1;
 }
 
 static int CALLBACK
@@ -6045,6 +6136,11 @@ void NListView::SwitchToMailList(int nID, BOOL force)
 			MboxMail::m_editMails.m_lastSel = m_lastSel;
 			MboxMail::m_editMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
 		}
+		else if (nWhichMailList == IDC_LABEL_LIST) {
+			MboxMail::s_mails_label.CopyKeepData(MboxMail::s_mails);
+			MboxMail::m_labelMails.m_lastSel = m_lastSel;
+			MboxMail::m_labelMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
+		}
 		else if (nWhichMailList == IDC_FOLDER_LIST) {
 			MboxMail::s_mails_folder.CopyKeepData(MboxMail::s_mails);
 			MboxMail::m_folderMails.m_lastSel = m_lastSel;
@@ -6073,10 +6169,16 @@ void NListView::SwitchToMailList(int nID, BOOL force)
 		MboxMail::m_mailList = &MboxMail::m_editMails;
 		MboxMail::b_mails_which_sorted = MboxMail::m_editMails.b_mails_which_sorted;
 	}
+	else if (nID == IDC_LABEL_LIST) {
+		MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_label);
+		m_lastSel = MboxMail::m_labelMails.m_lastSel;
+		MboxMail::m_mailList = &MboxMail::m_labelMails;
+		MboxMail::b_mails_which_sorted = MboxMail::m_labelMails.b_mails_which_sorted;
+	}
 	else if (nID == IDC_FOLDER_LIST) {
 		MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_folder);
 		m_lastSel = MboxMail::m_folderMails.m_lastSel;
-		MboxMail::m_mailList = &MboxMail::m_editMails;
+		MboxMail::m_mailList = &MboxMail::m_folderMails;
 		MboxMail::b_mails_which_sorted = MboxMail::m_folderMails.b_mails_which_sorted;
 	}
 	else
@@ -14075,7 +14177,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	{
 		int deb = 1;
 	}
-	ret = PopulateFolderMailArray(sz, mailListCnt, verifyOnly);
+	ret = PopulateMailArray(sz, MboxMail::s_mails_folder, mailListCnt, verifyOnly);
 	if (ret > 0) 
 	{
 		verifyOnly = FALSE;
@@ -14084,7 +14186,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		{
 			int deb = 1;
 		}
-		ret = PopulateFolderMailArray(sz, mailListCnt, verifyOnly);
+		ret = PopulateMailArray(sz, MboxMail::s_mails_folder, mailListCnt, verifyOnly);
 	}
 	else
 	{
@@ -14128,7 +14230,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	return ret;
 }
 
-int NListView::PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly)
+int NListView::PopulateMailArray(SerializerHelper &sz, MailArray &mArray, int mailListCnt, BOOL verifyOnly)
 {
 	int ret = 1;
 
@@ -14140,7 +14242,7 @@ int NListView::PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BO
 	int contentDetailsArrayCnt;
 
 	if (!verifyOnly)
-		MboxMail::s_mails_folder.SetSize(mailListCnt);
+		mArray.SetSize(mailListCnt);
 
 	int i = 0;
 	for (i = 0; i < mailListCnt; i++)
@@ -14171,7 +14273,7 @@ int NListView::PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BO
 		}
 
 		if (!verifyOnly)
-			MboxMail::s_mails_folder[i] = m;
+			mArray[i] = m;
 
 		int deb = 1;
 	}
@@ -14179,9 +14281,9 @@ int NListView::PopulateFolderMailArray(SerializerHelper &sz, int mailListCnt, BO
 	if (!verifyOnly)
 	{
 		if (ret > 0)
-			MboxMail::s_mails_folder.SetSizeKeepData(i);
+			mArray.SetSizeKeepData(i);
 		else
-			MboxMail::s_mails_folder.SetSizeKeepData(0);
+			mArray.SetSizeKeepData(0);
 	}
 
 
@@ -15741,9 +15843,320 @@ int NListView::VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePa
 		errorText.Append(dir);
 		errorText.Append(" directory. ");
 		errorText.Append("MBox Viewer will not be able to forward emails until ForwardEmlFile.exe is reinstalled.\n");
+		MboxMail::assert_unexpected();
 		return -1;
 	}
 	return 1;
+}
+
+int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _int64 mboxFileSize, CString &errorText)
+{
+	SerializerHelper sz(filePath);
+	if (!sz.open(TRUE))
+	{
+		CString lastError = GetLastErrorAsString();
+		CString txt = _T("Could not create \"") + filePath + _T("\"\n");
+		txt += _T("Error: ") + lastError + "\n";
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	// Create mboxlist file to allow reload of archive file list
+
+	sz.writeInt(MAIL_LIST_VERSION2);			// version
+	//sz.writeString(mboxFile);  // TODO: ??
+	// main mbox mail file size other mbox files are derived/contain subset
+	sz.writeInt64(mboxFileSize);
+	// we don't always create new mail archive corresponding to mboxListFile/mail list
+	// mailFileSize is mboxMailFileSize corresponding to mboxListFile
+	_int64 mailFileSize = -1;  //  FileSize(mboxFilePath);  
+	sz.writeInt64(mailFileSize);	// file size
+	sz.writeInt(mailsArray->GetSize());
+
+	MboxMail *m;
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		sz.writeInt64(m->m_startOff);
+		sz.writeInt(m->m_length);
+		sz.writeInt(m->m_index);
+		sz.writeInt(m->m_ContentDetailsArray.size());
+	}
+	sz.close();
+
+	return 1;
+}
+
+int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString &errorText)
+{
+	static const char* cCategory = "category ";
+	static const int cCategoryLength = strlen(cCategory);
+
+	MailArray *mailsArray = marray;
+
+#if 1
+	CString mailFile = MboxMail::s_path;
+
+	if (MboxMail::s_path.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+
+	CString path = MboxMail::GetLastPath();
+	CString datapath = MboxMail::GetLastDataPath();
+	if (path.IsEmpty()) {
+		MboxMail::assert_unexpected();
+		return -1;  // Hopefully s_path wil fail first
+	}
+#endif
+
+	CString labelsCachePath;
+	CString rootPrintSubFolder = "LabelCache";
+	//CString errorText;
+	CString targetPrintSubFolder;
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText);
+	if (retval == FALSE) {
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (labelName.GetLength() >= cCategoryLength)
+	{
+		char *p = (char*)(LPCSTR)labelName;
+		char *e = p + labelName.GetLength();
+		if (TextUtilsEx::strncmpUpper2Lower(p, e, cCategory, cCategoryLength) == 0)
+			labelName.SetAt(cCategoryLength-1, '/');
+	}
+
+	CString delim = "/";
+	CStringArray l;
+	TextUtilsEx::SplitString(labelName, delim, l);
+
+	int lcnt = l.GetSize();
+	CString label = l.GetAt(lcnt-1);
+	if (l.GetSize() > 1)
+	{
+		for (int i = 0; i < lcnt-1; i++)
+		{
+			CString ll = l.ElementAt(i);
+			labelsCachePath = labelsCachePath + "\\" + ll;
+			//TRACE("    |%s|\n", ll);
+		}
+	}
+
+	BOOL cret = FileUtils::CreateDirectory(labelsCachePath);
+
+	CFile fp;
+	CString labelListFilePath = labelsCachePath + "\\" + label + ".mboxlist";
+
+	_int64 mailFileSize = MboxMail::s_fSize;
+	int wret = NListView::WriteMboxListFile_v2(marray, labelListFilePath, mailFileSize, errorText);
+	if (wret < 0)
+	{
+		return -1;
+	}
+
+	return 1;
+}
+
+int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
+{
+	int ret = 1;  //OK
+
+	MailArray *mailsArray = &MboxMail::s_mails;
+
+#if 0
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		// should never be here
+		return -1;
+	}
+#endif
+
+#if 0
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		CString txt = _T("Folder Selected Mails List not empty. Overwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+#endif
+
+	CString mboxFileNamePath = MboxMail::s_path;
+
+	if (mboxFileNamePath.IsEmpty()) {
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	CString path = MboxMail::GetLastPath();
+	if (path.IsEmpty())
+	{
+		MboxMail::assert_unexpected();
+		return -1;  // Hopefully s_path will fail first
+	}
+
+
+	if (!FileUtils::PathFileExist(listFilePath))
+	{
+		CString txt = _T("Mail List File \"") + listFilePath;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	SerializerHelper sz(listFilePath);
+	if (!sz.open(FALSE)) {
+		CString lastError = GetLastErrorAsString();
+		CString txt = _T("Could not create \"") + listFilePath + _T("\"\n");
+		txt += _T("Error: ") + lastError + "\n";
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	int version;
+	_int64 mailFileSize;
+	_int64 mboxFileSize;
+	int mailListCnt;
+
+	CString txt = _T("Mail list file\n\"") + listFilePath;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease remove the file.");
+
+	if (!sz.readInt(&version)) {
+		sz.close();
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (version != MAIL_LIST_VERSION2)
+	{
+		sz.close();
+
+		CString text = _T("Mail list file\n\"") + listFilePath;
+		CString strVersion;
+		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
+		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
+		text += strVersion + "\".\nCan't reload.\nPlease remove the file.";
+
+		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt64(&mailFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt64(&mboxFileSize)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt(&mailListCnt)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	_int64 nMailFileSize = FileUtils::FileSize(mboxFileNamePath);
+
+
+	if ((mailListCnt < 0) || (mailListCnt > MboxMail::s_mails_ref.GetCount()) ||
+		(mailFileSize != nMailFileSize))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	BOOL errorDoNothing = FALSE;
+	BOOL verifyOnly = TRUE;
+	__int64 pos = 0;
+	BOOL retval = sz.GetReadPointer(pos);
+	if (retval == FALSE)
+	{
+		int deb = 1;
+	}
+	ret = PopulateMailArray(sz, MboxMail::s_mails_label, mailListCnt, verifyOnly);
+	if (ret > 0)
+	{
+		verifyOnly = FALSE;
+		BOOL retval = sz.SetReadPointer(pos);
+		if (retval == FALSE)
+		{
+			int deb = 1;
+		}
+		ret = PopulateMailArray(sz, MboxMail::s_mails_label, mailListCnt, verifyOnly);
+	}
+	else
+	{
+		sz.close();
+		CString txt = _T("Mail list file\n\"") + listFilePath;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1; // do nothing
+	}
+
+	sz.close();
+
+	if (ret < 0)
+	{
+		MboxMail::s_mails_folder.SetSizeKeepData(0);
+
+		CString txt = _T("Mail list file\n\"") + listFilePath;
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+	}
+	else
+	{
+		MboxMail::SortByDate(&MboxMail::s_mails_label);
+		if (MboxMail::s_mails_label.GetCount() > 0)
+			MboxMail::m_labelMails.m_lastSel = 0;
+		else
+			MboxMail::m_labelMails.m_lastSel = -1;
+		MboxMail::m_labelMails.b_mails_which_sorted = 1;
+
+#if 1
+		SwitchToMailList(IDC_LABEL_LIST, TRUE);
+#else
+
+		if (MboxMail::IsLabelMailsSelected())
+		{
+			SwitchToMailList(IDC_LABEL_LIST, TRUE);
+		}
+		else if (MboxMail::IsAllMailsSelected())
+		{
+			SwitchToMailList(IDC_LABEL_LIST, FALSE);
+		}
+#endif
+	}
+
+	int ni = MboxMail::s_mails.GetCount();
+
+	m_list.EnsureVisible(ni, FALSE);
+	m_list.SetRedraw(TRUE);
+
+	return ret;
 }
 
 

@@ -307,6 +307,10 @@ CmboxviewApp::CmboxviewApp()
 	}
 #endif
 
+	//void TokenizerTest();
+	//TokenizerTest();
+	int deb = 1;
+
 	//JsonTest();
 
 	//bool ret = TextUtilities::TestAll();
@@ -1139,6 +1143,16 @@ int JsonTest()
 	}
 
 	return EXIT_SUCCESS;
+}
+#endif
+#if 0
+void TokenizerTest()
+{
+	CString str = "\"my \'\"\' \'\"\', ala/mama,\"alal/ma vs jan, ziggy ero\" , tata, \tlala\",	a \'\"\'  \'\" \'\', \"my \'\"\' \'\"\',\'\"\'";
+	//CString str = "\'\"\'z";
+	CStringArray a;
+	int retval = TextUtilsEx::Tokenize(str, a);
+	TextUtilsEx::TraceStringArray(a);
 }
 #endif
 
