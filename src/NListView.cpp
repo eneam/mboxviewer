@@ -675,9 +675,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_COPY_ALL_Id = 17;
 	const UINT S_COPY_SELECTED_Id = 18;
 	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsLabelMailsSelected() || MboxMail::IsFindMailsSelected()) && pFrame->IsUserMailsListEnabled()) {
-			menu.AppendMenu(MF_SEPARATOR);
-			AppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
-			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
+		menu.AppendMenu(MF_SEPARATOR);
+		AppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
+		AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 	}
 
 	const UINT S_SAVE_AS_ARCHIVE_Id = 19;
@@ -705,7 +705,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	const UINT M_REMOVE_DUPLICATE_MAILS_Id = 25;
-	if (pFrame && MboxMail::IsUserMailsSelected()) {
+	if (pFrame && (MboxMail::IsUserMailsSelected() || MboxMail::IsLabelMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
 		AppendMenu(&menu, M_REMOVE_DUPLICATE_MAILS_Id, _T("Remove Duplicate Mails"));
 	}
@@ -937,8 +937,21 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 	case M_REMOVE_DUPLICATE_MAILS_Id: {
-		RemoveDuplicateMails();
-		RefreshMailsOnUserSelectsMailListMark();
+		if (MboxMail::IsLabelMailsSelected())
+		{
+			RemoveDuplicateMails(MboxMail::s_mails_label);
+			if (pFrame) {
+				NTreeView *pTreeView = pFrame->GetTreeView();
+				int retval = pTreeView->UpdateLabelMailListFile(0);
+			}
+			int deb = 1;
+		}
+		else
+		{
+			RemoveDuplicateMails(MboxMail::s_mails_edit);
+			MboxMail::m_editMails.m_bIsDirty = TRUE;
+			RefreshMailsOnUserSelectsMailListMark();
+		}
 	}
 	break;
 	case M_COPY_MAILS_TO_FOLDERS_Id: {
@@ -7112,11 +7125,11 @@ int NListView::OpenMailListFileLocation()
 }
 
 // Below ADDED in 1.0.3.1
-int NListView::RemoveDuplicateMails()
+int NListView::RemoveDuplicateMails(MailArray &s_mails_array)
 {
 	m_list.SetRedraw(FALSE);
 
-	MboxMail::RemoveDuplicateMails();
+	MboxMail::RemoveDuplicateMails(s_mails_array);
 
 	RedrawMails();
 

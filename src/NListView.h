@@ -244,6 +244,7 @@ public:
 	int m_bStartSearchAtSelectedItem;
 	int m_gmtTime;
 	CString m_path;
+	CString m_path_label;
 	int m_findAllCount;
 	// Used in Custom Draw
 	SimpleString *m_name;
@@ -292,7 +293,7 @@ public:
 	int PopulateMailArray(SerializerHelper &sz, MailArray &mArray, int mailListCnt, BOOL verifyOnly);
 	int OpenArchiveFileLocation();
 	int OpenMailListFileLocation();
-	int RemoveDuplicateMails();
+	int RemoveDuplicateMails(MailArray &s_mails_array);
 	BOOL IsUserSelectedMailListEmpty();
 	int ReloadMboxListFile_v2(CString *mboxListFile=0);
 	int SaveAsMboxListFile_v2();

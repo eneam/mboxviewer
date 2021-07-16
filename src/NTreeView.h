@@ -305,6 +305,7 @@ public:
 	int CreateLabelsForSingleMailFile(HTREEITEM hItem);
 	int DeleteLabelsForSingleMailFile(HTREEITEM hItem);
 	int RefreshLabelsForSingleMailFile(HTREEITEM hItem);
+	int UpdateLabelMailListFile(HTREEITEM hItem);
 
 	BOOL RecreateGmailLabels(HTREEITEM hItem);
 	int CreateGmailLabelFiles(HTREEITEM hItem);

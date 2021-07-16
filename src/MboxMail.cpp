@@ -116,6 +116,7 @@ MailArray MboxMail::s_mails_merged;
 _int64 MboxMail::s_fSize = 0;
 _int64 MboxMail::s_oSize = 0;
 CString MboxMail::s_path;
+CString MboxMail::s_path_label;
 CString MboxMail::s_datapath;  // root directory for files created by mbox viewer such as index file, PrintCache
 int MboxMail::nWhichMailList = -1;
 
@@ -206,6 +207,7 @@ public:
 		if ((key1->m_timeDate == key2->m_timeDate) &&
 			(key1->m_messageId == key2->m_messageId) &&
 			(key1->m_from == key2->m_from) &&
+			(key1->m_threadId == key2->m_threadId) &&  // works for Gmails; works for non-gmail since m_threadId are empty
 			(key1->m_to == key2->m_to) )
 			return true;
 		else
@@ -7637,7 +7639,7 @@ BOOL MboxMail::TemplateFormatHasLabel(CString &label, CArray<CString> &labelArra
 	return FALSE;
 }
 
-int MboxMail::RemoveDuplicateMails()
+int MboxMail::RemoveDuplicateMails(MailArray &s_mails_array)
 {
 	MboxMail *m;
 	MboxMail *m_found;
@@ -7647,8 +7649,8 @@ int MboxMail::RemoveDuplicateMails()
 	DWORD tc_start = GetTickCount();
 
 	// Remove duplicate mails
-	if (s_mails.GetCount() > s_mails_edit.GetCount())
-		s_mails_edit.SetSizeKeepData(s_mails.GetCount());
+	if (s_mails.GetCount() > s_mails_array.GetCount())
+		s_mails_array.SetSizeKeepData(s_mails.GetCount());
 
 	if (s_mails.GetCount() > s_mails_find.GetCount())
 		s_mails_find.SetSizeKeepData(s_mails.GetCount());
@@ -7671,7 +7673,7 @@ int MboxMail::RemoveDuplicateMails()
 		{
 			insertMboxMail(m, m);
 
-			s_mails_edit[to_i] = s_mails[i];
+			s_mails_array[to_i] = s_mails[i];
 			to_i++;
 			m->m_duplicateId = false;
 		}
@@ -7683,17 +7685,18 @@ int MboxMail::RemoveDuplicateMails()
 		}
 	}
 
-	s_mails_edit.SetSizeKeepData(to_i);
+	s_mails_array.SetSizeKeepData(to_i);
 
 	s_mails_find.SetSizeKeepData(to_dup_i);
 	MboxMail::m_findMails.m_lastSel = -1;
 	MboxMail::m_findMails.b_mails_which_sorted = MboxMail::b_mails_which_sorted;
 
-	int dupCnt = s_mails.GetSize() - s_mails_edit.GetSize();
+	int dupCnt = s_mails.GetSize() - s_mails_array.GetSize();
 
-	s_mails.CopyKeepData(s_mails_edit);
+	s_mails.CopyKeepData(s_mails_array);
 
-	MboxMail::m_editMails.m_bIsDirty = TRUE;
+	// moved to NListView::OnRClickSingleSelect
+	//MboxMail::m_editMails.m_bIsDirty = TRUE;
 
 	DWORD tc_clear_start = GetTickCount();
 

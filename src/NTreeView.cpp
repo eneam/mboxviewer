@@ -883,6 +883,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			return;
 		}
 
+		pListView->m_path_label = linfo->m_listFilePath;
+		MboxMail::s_path_label = linfo->m_listFilePath;
+
 		int paneId = 0;
 		CString sText;
 		sText.Format("Opening Label %s ...", linfo->m_label);
@@ -3560,7 +3563,7 @@ int NTreeView::LoadLabels()
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame) {
-		sText.Format("Loading labels %s ...");
+		sText.Format("Loading labels ...");
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
@@ -3612,7 +3615,8 @@ int NTreeView::LoadLabels()
 				sText.Format("Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 				return -1;  // goto instead ?
 			}
-			if (!labelsCachePath.IsEmpty())
+
+			if (!labelsCachePath.IsEmpty() && FileUtils::PathDirExists(labelsCachePath))
 			{
 				int ret = ShowGmailLabels(hChild2, labelsCachePath, linfo2->m_filePath);
 				if (ret < 0) {
@@ -3932,5 +3936,40 @@ int NTreeView::RefreshLabelsForSingleMailFile(HTREEITEM hItem)
 	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "labelsEnabled", labelsEnabled);
 	
 	return retC;
+}
+
+int NTreeView::UpdateLabelMailListFile(HTREEITEM hItem)
+{
+	CString errorText;
+	CString mboxFileNamePath = MboxMail::s_path;
+	CString labelListFileNamePath = MboxMail::s_path_label;
+	CString lastPath = MboxMail::GetLastPath();
+	CString lastDataPath = MboxMail::GetLastDataPath();
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NListView *pListView = 0;
+	if (pFrame)
+		pListView = pFrame->GetListView();
+
+	if (pListView == 0)
+	{
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+	if (!labelListFileNamePath.IsEmpty())
+	{
+		_int64 mailFileSize = MboxMail::s_fSize;
+		int wret = pListView->WriteMboxListFile_v2(&MboxMail::s_mails, labelListFileNamePath, mailFileSize, errorText);
+		if (wret < 0)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+	return 1;
 }
 

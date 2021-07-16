@@ -377,6 +377,7 @@ public:
 	static _int64 s_fSize; // current File size
 	static _int64 s_oSize; // old file size
 	static CString s_path; // current archive file path
+	static CString s_path_label; // current label list
 	static CString s_datapath;  //current root directory for .mboxview and index files and many temp files
 	static void SetLastPath(CString &path);
 	static CString GetLastPath();
@@ -525,7 +526,7 @@ public:
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
 	static CString GetDateFormat(int i);
-	static int RemoveDuplicateMails();
+	static int RemoveDuplicateMails(MailArray &s_mails_array);
 
 	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
 	static int MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
