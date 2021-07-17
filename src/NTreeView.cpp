@@ -2906,6 +2906,7 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	if (MboxMail::s_mails.GetCount() != MboxMail::s_mails_ref.GetCount())
 		int deb = 1;
 
+	int noLabelCnt = 0;
 	for (i = 0; i < mailCnt; i++)
 	{
 		//m_s = MboxMail::s_mails[i];
@@ -2930,6 +2931,12 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 				break;
 			}
 			p = MimeParser::EatNewLine(p, e);
+		}
+
+		if (foundLabels == FALSE)
+		{
+			noLabelCnt++;
+			int deb = 1;
 		}
 
 		if ((foundLabels == FALSE) && val.IsEmpty() && (i > maxNoLabelCnt))  // it looks like it is not gmail  file

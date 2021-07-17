@@ -8864,6 +8864,14 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"\n"
 			);
 		}
+		else if (hintNumber == HintConfig::LabelsHint)
+		{
+			hintText.Append(
+				"Gmail Labels are supported by performing a separate step on a active mail folder.\n\n"
+				"Right click on the folder and select \"File->Gmail Labels->Create\" option.\n\n"
+				"\n"
+			);
+		}
 
 		if (!hintText.IsEmpty())
 		{

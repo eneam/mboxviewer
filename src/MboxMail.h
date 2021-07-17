@@ -130,7 +130,8 @@ public:
 		MessageHeaderConfigHint = 10,
 		MessageRemoveFolderHint = 11,
 		MessageRemoveFileHint = 12,
-		MergeFilesHint = 13
+		MergeFilesHint = 13,
+		LabelsHint = 14
 	};
 };
 

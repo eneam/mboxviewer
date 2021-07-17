@@ -3156,6 +3156,9 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	if (!pMsgView)
 		return;
 
+	HWND h = GetSafeHwnd();
+	MboxMail::ShowHint(HintConfig::LabelsHint, h);
+
 	m_lastSel = iItem;
 
 	if (pFrame->m_bViewMessageHeaders == TRUE)
