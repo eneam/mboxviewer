@@ -4451,7 +4451,8 @@ BOOL CMainFrame::WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp)
 	fp.Write(fld, fld.GetLength());
 	fld = "UserAccount=" + serverConfig.UserAccount + CR;
 	fp.Write(fld, fld.GetLength());
-	fld = "UserPassword=" + serverConfig.UserPassword + CR;
+	//fld = "UserPassword=" + serverConfig.UserPassword + CR;
+	fld = "UserPassword=" + CR;
 	fp.Write(fld, fld.GetLength());
 	fld.Format("EncryptionType=%d\r\n", serverConfig.EncryptionType);
 	fp.Write(fld, fld.GetLength());
