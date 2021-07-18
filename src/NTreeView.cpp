@@ -1729,7 +1729,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)labelsSubMenu.GetSafeHmenu(), _T("Gmail Labels"));
 		menu.AppendMenu(MF_SEPARATOR);
 
-		AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
+		//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
 	}
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);

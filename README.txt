@@ -2,6 +2,19 @@
 Changes
 ---
 
+v 1.0.3.24
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for Gmail Labels. User must run a separate step on active mail archive to recreate Gmail labels. See User Guide for details and limitations to be addressed in the next realese.;
+ - Disable "Create Folder" unfinished option left enabled by mistake while working on Gmail Labels support;
+ - Updated User Manual to describe new and updated features;
+
+v 1.0.3.23
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for Gmail Labels. User must run a separate step on active mail archive to recreate Gmail labels. See User Guide for details and limitations to be addressed in the next realese.;
+ - Updated User Manual to describe new and updated features;
+
 v 1.0.3.22
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
