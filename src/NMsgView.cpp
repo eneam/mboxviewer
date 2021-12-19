@@ -1424,9 +1424,16 @@ int NMsgView::PreTranslateMessage(MSG* pMsg)
 {
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 	{
-		if (pMsg->wParam == VK_ESCAPE)
+		if ((pMsg->message & 0xffff) == WM_MOUSEMOVE)
 		{
-			AfxGetMainWnd()->PostMessage(WM_CLOSE);            // Do not process further
+			int deb = 1;
+		}
+		else if ((pMsg->message & 0xffff) == WM_KEYDOWN)
+		{
+			if (pMsg->wParam == VK_ESCAPE)
+			{
+				AfxGetMainWnd()->PostMessage(WM_CLOSE);            // Do not process further
+			}
 		}
 	}
 	return CWnd::PreTranslateMessage(pMsg);

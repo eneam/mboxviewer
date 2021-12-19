@@ -265,6 +265,8 @@ public:
 
 	static ColorStylesDB m_ColorStylesDB;
 
+	//BOOL PreTranslateMessage(MSG* pMsg);
+
 // Generated message map functions
 protected:
 	//{{AFX_MSG(CMainFrame)
@@ -276,6 +278,7 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnTreeHide();
 	afx_msg void OnActivateApp(BOOL bActive, DWORD dwThreadID);
+	//afx_msg void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

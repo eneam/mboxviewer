@@ -124,6 +124,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//{{AFX_MSG_MAP(CMainFrame)
+	//ON_WM_KEYDOWN()
 	ON_WM_ACTIVATEAPP()
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
@@ -401,6 +402,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 
 	m_mailDB.Initialize();
+
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	{
+		// TODO: ESC not accepted until window is selected
+		// How to fix that so app is ready to accept ESC from keyboard upon startup
+		; // SetFocus();
+		//OnSetFocus(0);
+	}
 
 	return 0;
 }
@@ -4556,3 +4565,42 @@ BOOL CMainFrame::WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp)
 
 	return TRUE;
 }
+
+#if 0
+void CMainFrame::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVKEYDOWN* pLVKeyDow = (NMLVKEYDOWN*)pNMHDR;
+	*pResult = 0;
+
+	switch (pLVKeyDow->wVKey) {
+	case VK_ESCAPE:
+	{
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		{
+			AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		}
+	}
+	}
+}
+
+BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
+{
+	if ((pMsg->message & 0xffff) == WM_MOUSEMOVE)
+	{
+		SetFocus();
+		int deb = 1;
+	}
+	else if ((pMsg->message & 0xffff) == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_ESCAPE)
+		{
+			if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+			{
+				AfxGetMainWnd()->PostMessage(WM_CLOSE);
+			}
+		}
+	}
+
+	return CWnd::PreTranslateMessage(pMsg);
+}
+#endif
