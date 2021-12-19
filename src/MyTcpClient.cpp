@@ -28,9 +28,8 @@
 
 
 #include "stdafx.h"
+#include "FileUtils.h"
 #include "MyTcpClient.h"
-
-CString GetLastErrorAsString();
 
 MyTcpClient::MyTcpClient(int port)
 {
@@ -80,7 +79,7 @@ int  MyTcpClient::ConnectSendClose(CString &msg, CString &errorText)
 	{
 		error = GetLastError();
 		TRACE("Error: %d\n", error);
-		CString msg = GetLastErrorAsString();
+		CString msg = FileUtils::GetLastErrorAsString();
 		TRACE("Error Msg: %s\n", msg);
 	}
 	s.Close();

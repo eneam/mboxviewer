@@ -85,14 +85,14 @@ void ColorStyleConfigDlg::OnClose()
 
 void ColorStyleConfigDlg::LoadData()
 {
-	m_listBox.AddString("MailArchiveTree");
-	m_listBox.AddString("MailSummary");
-	m_listBox.AddString("MailMessage");
-	m_listBox.AddString("MailAttachments");
-	m_listBox.AddString("MailSummaryColumnTitles");
-	m_listBox.AddString("MailMessageHeaderFields");
-	m_listBox.AddString("MailConversation1");
-	m_listBox.AddString("MailConversation2");
+	m_listBox.AddString(_T("MailArchiveTree"));
+	m_listBox.AddString(_T("MailSummary"));
+	m_listBox.AddString(_T("MailMessage"));
+	m_listBox.AddString(_T("MailAttachments"));
+	m_listBox.AddString(_T("MailSummaryColumnTitles"));
+	m_listBox.AddString(_T("MailMessageHeaderFields"));
+	m_listBox.AddString(_T("MailConversation1"));
+	m_listBox.AddString(_T("MailConversation2"));
 
 	ColorStyleConfig &customColorStyle = CMainFrame::m_ColorStylesDB.m_customColorStyles;
 
@@ -308,7 +308,7 @@ void ColorStyleConfigDlg::OnBnClickedColorCheck()
 		p->RedrawWindow();
 	}
 	if (m_MainFrameWnd)
-		m_MainFrameWnd->PostMessageA(WM_CMD_PARAM_NEW_COLOR_MESSAGE, ColorStylesDB::ColorCustom, 0);
+		m_MainFrameWnd->PostMessage(WM_CMD_PARAM_NEW_COLOR_MESSAGE, ColorStylesDB::ColorCustom, 0);
 
 	int deb = 1;
 }

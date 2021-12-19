@@ -275,6 +275,7 @@ protected:
 	afx_msg void OnFileOptions();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnTreeHide();
+	afx_msg void OnActivateApp(BOOL bActive, DWORD dwThreadID);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

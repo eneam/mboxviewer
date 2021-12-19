@@ -5120,7 +5120,7 @@ void NListView::OnEditVieweml()
 			// Get raw mail body
 			CString bdy;   m->GetBody(bdy);
 			// Save mail
-			CFile fp(FileUtils::GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
+			CFile fp(FileUtils::GetmboxviewTempPath() + "mime-message.eml", CFile::modeWrite | CFile::modeCreate);
 			fp.Write(bdy, bdy.GetLength());
 			fp.Close();
 		}
@@ -14862,7 +14862,7 @@ int NListView::SaveAsEmlFile(CString &bdy)
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = strlen(cFromMailBegin);
 	// Save mail
-	CFile fp(FileUtils::GetmboxviewTempPath() + "message.eml", CFile::modeWrite | CFile::modeCreate);
+	CFile fp(FileUtils::GetmboxviewTempPath() + "mime-message.eml", CFile::modeWrite | CFile::modeCreate);
 	char *pb = (char*)((LPCSTR)bdy);
 	int len = bdy.GetLength();
 	char *e = pb + len;
@@ -15642,7 +15642,7 @@ INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CStri
 				CloseHandle(ShExecInfo.hProcess);
 				//  ??
 				dwExitStatus = GetLastError();
-				CString errorText = GetLastErrorAsString();
+				CString errorText = FileUtils::GetLastErrorAsString();
 			}
 			return exitcode;
 		}
@@ -15711,7 +15711,7 @@ INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CStri
 	}
 
 	DWORD dwExitStatus = GetLastError();
-	errorText = GetLastErrorAsString();
+	errorText = FileUtils::GetLastErrorAsString();
 
 	INT64 retstatus = NListView::ExecCommand_KillProcess(processName, errText, FALSE, progressText);
 	return -1;
@@ -15768,7 +15768,7 @@ INT64 NListView::ExecCommand_KillProcess(CString processName, CString &errorText
 				CloseHandle(ShExecInfo.hProcess);
 				//  ??
 				dwExitStatus = GetLastError();
-				CString errorText = GetLastErrorAsString();
+				CString errorText = FileUtils::GetLastErrorAsString();
 			}
 			return exitcode;
 		}
@@ -15827,7 +15827,7 @@ INT64 NListView::ExecCommand_KillProcess(CString processName, CString &errorText
 	}
 
 	DWORD dwExitStatus = GetLastError();
-	errorText = GetLastErrorAsString();
+	errorText = FileUtils::GetLastErrorAsString();
 	return -1;
 }
 
@@ -15870,7 +15870,7 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 	SerializerHelper sz(filePath);
 	if (!sz.open(TRUE))
 	{
-		CString lastError = GetLastErrorAsString();
+		CString lastError = FileUtils::GetLastErrorAsString();
 		CString txt = _T("Could not create \"") + filePath + _T("\"\n");
 		txt += _T("Error: ") + lastError + "\n";
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -16032,7 +16032,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 
 	SerializerHelper sz(listFilePath);
 	if (!sz.open(FALSE)) {
-		CString lastError = GetLastErrorAsString();
+		CString lastError = FileUtils::GetLastErrorAsString();
 		CString txt = _T("Could not create \"") + listFilePath + _T("\"\n");
 		txt += _T("Error: ") + lastError + "\n";
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);

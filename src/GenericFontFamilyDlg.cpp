@@ -37,11 +37,11 @@ END_MESSAGE_MAP()
 
 void GenericFontFamilyDlg::LoadData()
 {
-	m_listBox.AddString("serif");
-	m_listBox.AddString("sans-serif");
-	m_listBox.AddString("monospace");
-	m_listBox.AddString("cursive");
-	m_listBox.AddString("fantasy");
+	m_listBox.AddString(_T("serif"));
+	m_listBox.AddString(_T("sans-serif"));
+	m_listBox.AddString(_T("monospace"));
+	m_listBox.AddString(_T("cursive"));
+	m_listBox.AddString(_T("fantasy"));
 }
 
 BOOL GenericFontFamilyDlg::OnInitDialog()

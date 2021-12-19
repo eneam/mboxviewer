@@ -417,6 +417,46 @@ void NTreeView::LoadFolders()
 	}
 }
 
+void NTreeView::DeleteMBoxAllWorkFolders(CString &mboxFileName)
+{
+	// Make sure the last pah and last data path are already set
+	//MboxMail::SetLastPath(pathLast);
+
+	CString path = MboxMail::GetLastPath();
+	CString dataPath = MboxMail::GetLastDataPath();
+
+	CString fileNameExtention;
+	CString fileBaseName;
+	FileUtils::GetFileBaseNameAndExtension(mboxFileName, fileBaseName, fileNameExtention);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	// TODO: Make this list global
+	CArray<CString> cacheFolderList;
+	cacheFolderList.Add("PrintCache");
+	cacheFolderList.Add("ImageCache");
+	cacheFolderList.Add("AttachmentCache");
+	cacheFolderList.Add("EmlCache");
+	cacheFolderList.Add("LabelCache");
+	cacheFolderList.Add("ArchiveCache");
+
+	int iCnt = cacheFolderList.GetCount();
+	int i;
+	for (i = 0; i < iCnt; i++)
+	{
+		CString &cacheFolderName = cacheFolderList[i];
+
+		CString cacheFolderPath = dataPath + "\\" + cacheFolderName + "\\" + fileBaseName;
+		if (FileUtils::PathDirExists(cacheFolderPath))
+		{
+			bool recursive = true;
+			bool removeFolders = true;
+			BOOL retRD = FileUtils::RemoveDir(cacheFolderPath, recursive, removeFolders);
+			int deb = 1;
+		}
+		int deb = 1;
+	}
+}
+
 void  NTreeView::ExpandOrCollapseTree(BOOL expand)
 {
 	CString path = MboxMail::GetLastPath();
@@ -899,6 +939,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		FileUtils::SplitFilePath(linfo->m_filePath, driveName, mboxFileDirectory, mboxFileNameBase, mboxFileNameExtention);
 		CString newLastPath = driveName + mboxFileDirectory;
 
+		CString mboxFileName = mboxFileNameBase + mboxFileNameExtention;
+
 		if (mboxFileNamePath.Compare(linfo->m_filePath))
 		{
 			MboxMail::SetLastPath(newLastPath);
@@ -918,6 +960,14 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		//MboxMail::nWhichMailList = IDC_FOLDER_LIST;
 		int retval = pListView->LoadLabelListFile_v2(linfo->m_listFilePath, linfo->m_label);
+		if (retval < 0)
+		{
+			HTREEITEM hFolder = HasFolder(lastPath);
+			HTREEITEM hMboxFolder = FindItem(hFolder, mboxFileName);
+
+			int retR = NTreeView::RefreshLabelsForSingleMailFile(hMboxFolder);
+			return;
+		}
 
 		if (MboxMail::s_mails.GetCount() > 0)
 		{
@@ -2928,6 +2978,11 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 				val.TrimLeft(": ");
 				val.TrimRight(" ");
 				//TRACE("Labels=%s\n", val);
+				CString charset;
+				UINT charsetId;
+				UINT toCharacterId = 20127;  // us-ascii
+				CString decodedVal = TextUtilsEx::DecodeString(val, charset, charsetId, toCharacterId);
+				val = decodedVal;
 				break;
 			}
 			p = MimeParser::EatNewLine(p, e);
@@ -2972,7 +3027,7 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 			v.Trim();
 			//TRACE("|%s|\n", v);
 
-#if 1
+#if 0
 			char *pp = (char*)(LPCSTR)v;
 			char *ee = pp + v.GetLength();
 			if (TextUtilsEx::strncmpUpper2Lower(pp, ee, cOsobiste, cOsobisteLen) == 0)

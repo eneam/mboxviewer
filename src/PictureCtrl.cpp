@@ -512,7 +512,7 @@ void CPictureCtrl::GetStringProperty(PROPID propid, Gdiplus::Image &image, CStri
 		int valueLength = item->length - 1;
 		if (valueLength <= 0)
 			return;
-		LPCSTR buf = str.GetBuffer(valueLength);
+		LPCTSTR buf = str.GetBuffer(valueLength);
 
 		memcpy((char*)buf, (LPCSTR)item->value, valueLength); // to porotect if not NULL terminated
 		str.ReleaseBuffer(valueLength);
@@ -570,7 +570,7 @@ void CPictureCtrl::GetPropertyEquipMake(Gdiplus::Image &image, CString &equipMak
 		int valueCount = item->length - 1;
 		if (valueCount <= 0)
 			return;
-		LPCSTR buf = equipMake.GetBuffer(item->length-1);
+		LPCTSTR buf = equipMake.GetBuffer(item->length-1);
 		memcpy((char*)buf, (LPCSTR)item->value, item->length - 1); // to porotect if not NULL terminated
 		equipMake.ReleaseBuffer(item->length - 1);
 		int deb = 1; 

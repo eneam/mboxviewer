@@ -113,7 +113,7 @@ void CFindDlg::OnOK()
 	m_params.m_string.TrimRight();
 	g_tu.MakeLower(m_params.m_string);
 	if (m_params.m_string.IsEmpty()) {
-		AfxMessageBox("Cannot search for an empty string!", MB_OK | MB_ICONHAND);
+		AfxMessageBox(_T("Cannot search for an empty string!"), MB_OK | MB_ICONHAND);
 		return;
 	}
 

@@ -540,7 +540,7 @@ public:
 	static BOOL GetMboxviewFilePath(CString &mboxFilePath, CString &mboxviewFilePath);
 	static BOOL GetFileCachePathWithoutExtension(CString &mboxFilePath, CString &mboxBaseFileCachePath);
 	//
-	static void ReleaseResources();
+	static void ReleaseResources(BOOL upadteRegistry = TRUE);
 	static void assert_unexpected();
 
 	static HintConfig m_HintConfig;

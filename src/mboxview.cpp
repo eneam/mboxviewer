@@ -187,7 +187,7 @@ void __cdecl InvalidParameterHandler(
 
 
 // It looks by AddVectoredExceptionHandler() will catch all kinds of exceptions,
-// However, some of them must be ignored be ignored and it is difficult to know which exceptions
+// However, some of them must be ignored and it is difficult to know which exceptions
 // must be ignored. Unfortunatelly, in rare unknown cases program will be terminated incorrectly.
 
 PVOID vectorHandle = 0;
@@ -302,7 +302,11 @@ CmboxviewApp::CmboxviewApp()
 		DWORD dwErrorCode = ERROR_REQ_NOT_ACCEP;
 		//dwErrorCode = i;
 		BOOL ret = GetErrorMessage(dwErrorCode, errorMessage);
+		CString errTextA = FileUtils::GetLastErrorAsString();
+		CString errTextB = FileUtils::GetLastErrorAsStringW();
 
+		TRACE("%s", errTextA);
+		TRACE("%s", errTextB);
 		TRACE("%s", errorMessage);
 	}
 #endif
@@ -636,6 +640,21 @@ void* __cdecl malloc(size_t size)
 
 BOOL CmboxviewApp::InitInstance()
 {
+	// Check if MBox Viewer can write to registry
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);
+	if (ret == FALSE)
+	{
+		HWND h = NULL; // we don't have any window yet 
+		CString txt = "Could not write to Windows registry likely  due to lack of permission. "
+			"Please resolve the issue and run the MBox Viewer again\n";
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		// To stop memory leaks reports by debugger
+		MboxMail::ReleaseResources(FALSE);
+		return FALSE;
+	}
+
+
 	HANDLE procHandle = GetCurrentProcess();
 	BOOL priClass = SetPriorityClass(procHandle, ABOVE_NORMAL_PRIORITY_CLASS);
 	DWORD err = GetLastError();
@@ -1072,26 +1091,6 @@ int next_fake_prime(int L)
 		return L;
 }
 #endif
-
-CString GetLastErrorAsString()
-{
-	//Get the error message, if any.
-	CString emptyMsg;
-	DWORD errorMessageID = ::GetLastError();
-	if (errorMessageID == 0)
-		return emptyMsg; //No error message has been recorded
-
-	LPSTR messageBuffer = nullptr;
-	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
-
-	CString message(messageBuffer, size);
-
-	//Free the buffer.
-	LocalFree(messageBuffer);
-
-	return message;
-}
 
 #if 0
 #include "json/json.h"

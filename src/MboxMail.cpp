@@ -6562,7 +6562,7 @@ int MboxMail::LoadMail(const char* pszData, int nDataSize)
 	return 1;
 }
 
-void MboxMail::ReleaseResources()
+void MboxMail::ReleaseResources(BOOL updateRegistry)
 {
 	TextUtilsEx::delete_charset2Id();
 	TextUtilsEx::delete_id2charset();
@@ -6591,17 +6591,19 @@ void MboxMail::ReleaseResources()
 	delete m_pThreadIdTable;
 	m_pThreadIdTable = 0;
 
-	MboxMail::m_HintConfig.SaveToRegistry();
-
-	CString processpath = "";
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), processpath);
-
-
 	MyStackWalker *sw = MboxMail::glStackWalker;
 	MboxMail::glStackWalker = 0;
 #ifdef USE_STACK_WALKER
 	delete sw;
 #endif
+
+	if (updateRegistry)
+	{
+		MboxMail::m_HintConfig.SaveToRegistry();
+
+		CString processpath = "";
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), processpath);
+	}
 }
 
 void ShellExecuteError2Text(UINT errorCode, CString &errorText) {

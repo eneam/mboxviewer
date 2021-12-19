@@ -41,6 +41,7 @@ public:
 	static BOOL PathFileExist(LPCSTR path);
 	static BOOL PathFileExistW(LPCWSTR path);
 	static __int64 FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod);
+	//
 	static CString GetmboxviewTempPath(const char *name = 0);
 	static CStringW GetmboxviewTempPathW(const wchar_t *name = 0);
 	//
@@ -51,15 +52,19 @@ public:
 	//
 	static BOOL RemoveDirectory(CString &dir, DWORD &error);
 	static BOOL RemoveDirectoryW(CStringW &dir, DWORD &error);
+	//
 	static BOOL RemoveDir(CString & dir, bool recursive = false, bool removeFolders = false);
-	static BOOL RemoveDirW(CString & dir, bool recursive = false);
-	static BOOL RemoveDirW(CStringW & dir, bool recursive = false);
+	static BOOL RemoveDirW(CString & dir, bool recursive = false, bool removeFolders = false);
+	static BOOL RemoveDirW(CStringW & dir, bool recursive = false, bool removeFolders = false);
 	static CString CreateTempFileName(CString ext = "htm");
+	//
 	static void CPathStripPath(const char *path, CString &fileName);
 	static void CPathStripPathW(const wchar_t *path, CStringW &fileName);
 	static BOOL CPathGetPath(const char *path, CString &filePath);
+	//
 	static void SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
 	static void SplitFilePathW(CStringW &fileName, CStringW &driveName, CStringW &directory, CStringW &fileNameBase, CStringW &fileNameExtention);
+	//
 	static void GetFolderPathAndFileNameW(CStringW &fileNamePath, CStringW &folderPath, CStringW &fileName);
 	static void GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName);
 	static void GetFileBaseNameAndExtension(CString &fileName, CString &fileNameExtention, CString &fileBaseName);
@@ -67,23 +72,36 @@ public:
 	static void GetFileExtension(CString &fileName, CString &fileNameExtention);
 	static void UpdateFileExtension(CString &fileName, CString &newExtension);
 	static _int64 FileSize(LPCSTR fileName);
+	//
 	static BOOL BrowseToFileW(LPCWSTR filename);
 	static BOOL BrowseToFile(LPCTSTR filename);
+	//
 	static void MakeValidFilePath(CString &path, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFilePath(SimpleString &path, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore = TRUE);
 	static void MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bReplaceWhiteWithUnderscore);
+	//
 	static BOOL Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength);
 	static BOOL Write2File(CString &cStrNamePath, const unsigned char *data, int dataLength);
 	static BOOL ReadEntireFile(CString &cStrNamePath, SimpleString &data);
 	static int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten);
 	static BOOL NormalizeFilePath(CString &filePath);
+	// Create all subfolders if they don't exist
 	static BOOL CreateDirectory(const char *path);
-	static DWORD CreateDirectoryW(const wchar_t *path);
+	static BOOL CreateDirectoryW(const wchar_t *path);
+	//
 	static BOOL DeleteFile(const char *path);
 	static BOOL DeleteFileW(const wchar_t *path);
 	//
+	static CString CopyDirectory(const char *cFromPath, const char* cToPath, BOOL bFailIfExists = FALSE, BOOL removeFolderAfterCopy = FALSE);
+	static CStringW CopyDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath, BOOL bFailIfExists = FALSE, BOOL removeFolderAfterCopy = FALSE);
+	//
+	static CString MoveDirectory(const char *cFromPath, const char *cToPath);
+	static CStringW MoveDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath);
+	//
+	static CString GetLastErrorAsString();
+	static CStringW GetLastErrorAsStringW();
 	void UnitTest();
 };
 

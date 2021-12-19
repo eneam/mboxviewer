@@ -328,25 +328,25 @@ void CCPictureCtrlDemoDlg::EnableZoom(BOOL enableZoom)
 	m_bZoomEnabled = enableZoom;
 }
 
-BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCSTR file)
+BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCTSTR file)
 {
 	PTSTR ext = PathFindExtension(file);
 	CString cext = ext;
-	if ((cext.CompareNoCase(".png") == 0) ||
-		(cext.CompareNoCase(".jpg") == 0) ||
-		(cext.CompareNoCase(".pjpg") == 0) ||
-		(cext.CompareNoCase(".jpeg") == 0) ||
-		(cext.CompareNoCase(".pjpeg") == 0) ||
-		(cext.CompareNoCase(".jpe") == 0) ||
-		(cext.CompareNoCase(".bmp") == 0) ||
-		(cext.CompareNoCase(".tif") == 0) ||
-		(cext.CompareNoCase(".tiff") == 0) ||
-		(cext.CompareNoCase(".dib") == 0) ||
-		(cext.CompareNoCase(".jfif") == 0) ||
-		(cext.CompareNoCase(".emf") == 0) ||
-		(cext.CompareNoCase(".wmf") == 0) ||
-		(cext.CompareNoCase(".ico") == 0) ||
-		(cext.CompareNoCase(".gif") == 0))
+	if ((cext.CompareNoCase(_T(".png")) == 0) ||
+		(cext.CompareNoCase(_T(".jpg")) == 0) ||
+		(cext.CompareNoCase(_T(".pjpg")) == 0) ||
+		(cext.CompareNoCase(_T(".jpeg")) == 0) ||
+		(cext.CompareNoCase(_T(".pjpeg")) == 0) ||
+		(cext.CompareNoCase(_T(".jpe")) == 0) ||
+		(cext.CompareNoCase(_T(".bmp")) == 0) ||
+		(cext.CompareNoCase(_T(".tif")) == 0) ||
+		(cext.CompareNoCase(_T(".tiff")) == 0) ||
+		(cext.CompareNoCase(_T(".dib")) == 0) ||
+		(cext.CompareNoCase(_T(".jfif")) == 0) ||
+		(cext.CompareNoCase(_T(".emf")) == 0) ||
+		(cext.CompareNoCase(_T(".wmf")) == 0) ||
+		(cext.CompareNoCase(_T(".ico")) == 0) ||
+		(cext.CompareNoCase(_T(".gif")) == 0))
 	{
 		return TRUE;
 	}

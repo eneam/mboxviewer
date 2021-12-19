@@ -124,6 +124,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//{{AFX_MSG_MAP(CMainFrame)
+	ON_WM_ACTIVATEAPP()
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
 	ON_UPDATE_COMMAND_UI(ID_FILE_OPEN, OnUpdateFileOpen)
@@ -444,6 +445,23 @@ void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 	m_wndView.SetFocus();
 }
 
+void CMainFrame::OnActivateApp(BOOL bActive, DWORD dwThreadID)
+{
+	if (bActive)
+	{
+		TRACE("OnActivateApp: ACTIVE\n");
+		int deb = 1;
+	}
+	else
+	{
+		TRACE("OnActivateApp: INACTIVE\n");
+		// Hack to prevent selected text from being erased when switching to differnt application
+		// Doesn't work when you minimize window via minimize button
+		m_wndView.SetFocus();
+		int deb = 1;
+	}
+}
+
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
 	// let the view have first crack at the command
@@ -584,7 +602,7 @@ void CMainFrame::OnFileOptions()
 	}
 }
 
-void CMainFrame::OnFileOpen() 
+void CMainFrame::OnFileOpen()
 {
 	CString fileName;
 	CString driveName;
@@ -602,7 +620,7 @@ void CMainFrame::OnFileOpen()
 			bff.SetDefaultFolder(path);
 
 		bff.SetFlags(BIF_RETURNONLYFSDIRS);
-		if (bff.SelectFolder()) 
+		if (bff.SelectFolder())
 		{
 			path = bff.GetSelectedFolder();
 			path.TrimRight("\\");
@@ -2599,12 +2617,28 @@ restart:
 			FileUtils::CreateDirectory(inFolderPath);
 		}
 		BOOL ret = SaveFileDialog(fileName, fileNameFilter, dfltExtension, inFolderPath, outFolderPath, title);
-		CString filePath = outFolderPath + "\\" + fileName;
-		CString fileExtension = ::PathFindExtension(fileName);
-		CString fileName2 = ::PathFindFileName(filePath);
-		//FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
-		if (ret == TRUE) 
+		if (ret == TRUE)
 		{
+			CString filePath = outFolderPath + "\\" + fileName;
+			CString fileExtension = ::PathFindExtension(fileName);
+			CString fileName2 = ::PathFindFileName(filePath);
+			//FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention);
+
+#if 1
+			//CString dataFolder = outFolderPath + "\\" + CMainFrame::m_ViewerGlobalDB.GetDBFolder();
+			CString dataFolder = outFolderPath;
+			CString viewFile = dataFolder + "\\" + fileName + ".mboxview";
+			if (FileUtils::PathFileExist(viewFile))
+			{
+				if (FileUtils::DeleteFile(viewFile))
+				{
+					int deb = 1;
+				}
+				int deb = 1;
+			}
+			int deb = 1;
+#endif
+
 			CFile fp;
 			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
 				CString txt = _T("Could not create \"") + filePath;
@@ -2624,7 +2658,7 @@ restart:
 				{
 					CFile fp_input;
 					if (!fp_input.Open(strFilePath, CFile::modeRead)) {
-						CString txt = _T("Could not create \"") + strFilePath;
+						CString txt = _T("Could not open \"") + strFilePath;
 						txt += _T("\" file.\nMake sure file is not open on other applications.");
 						HWND h = NULL; // we don't have any window yet
 						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -2659,14 +2693,49 @@ restart:
 				}
 				TRACE("FILE=%s\n", strFilePath);
 			}
+			fp.Flush();
 			fp.Close();
 
-			if (FileUtils::BrowseToFile(filePath) == FALSE) {
-				HWND h = GetSafeHwnd();
-				HINSTANCE result = ShellExecute(h, _T("open"), outFolderPath, NULL, NULL, SW_SHOWNORMAL);
-				CheckShellExecuteResult(result, h);
+			/// Encapsulate as function, refersh single file only instead of entire folder
+			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+			NTreeView *pTreeView = pFrame->GetTreeView();
+			HTREEITEM hFolder = pTreeView->HasFolder(outFolderPath);
+			HTREEITEM hItem = 0;
+			if (hFolder)
+				hItem = pTreeView->FindItem(hFolder, fileName);
+
+			if (pFrame && pTreeView && hFolder && hItem)
+			{
+				MboxMail::SetLastPath(outFolderPath);
+				pTreeView->DeleteMBoxAllWorkFolders(fileName);
+
+				BOOL ret = pTreeView->RefreshFolder(hFolder);
+
+				hFolder = pTreeView->HasFolder(outFolderPath);
+				hItem = pTreeView->FindItem(hFolder, fileName);
+
+				UINT nCode = TVGN_CARET;
+				BOOL retval = pTreeView->m_tree.Select(hItem, nCode);
+
+				NListView *pListView = pFrame->GetListView();
+				if (pListView)
+				{
+					if (MboxMail::s_mails.GetCount() > 0)
+					{
+						pListView->SelectItemFound(0);
+					}
+					pListView->SetListFocus();
+				}
 			}
-			int deb = 1;
+			else
+			{
+				if (FileUtils::BrowseToFile(filePath) == FALSE) {
+					HWND h = GetSafeHwnd();
+					HINSTANCE result = ShellExecute(h, _T("open"), outFolderPath, NULL, NULL, SW_SHOWNORMAL);
+					CheckShellExecuteResult(result, h);
+				}
+			}
 		}
 	}
 	else
@@ -2780,9 +2849,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CFileException exMergeTo;
 	if (!fpMergeTo.Open(mergedMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
-		DWORD dwErrorCode = GetLastError();
-		CString errorMessage;
-		GetErrorMessage(dwErrorCode, errorMessage);
+		CString errorMessage = FileUtils::GetLastErrorAsString();
 
 		TCHAR szError[1024];
 		exMergeTo.GetErrorMessage(szError, 1022);
@@ -4389,7 +4456,17 @@ void CMainFrame::OnHelpUserguide()
 	FileUtils::CPathGetPath(processPath, processDir);
 	CString filePath = processDir + "\\UserGuide.pdf";
 
-	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format("User Guide file \"%s\" doesn't exist", filePath);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
 }
 
 
@@ -4402,7 +4479,17 @@ void CMainFrame::OnHelpReadme()
 	FileUtils::CPathGetPath(processPath, processDir);
 	CString filePath = processDir + "\\README.txt";
 
-	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format("Change History file \"%s\" doesn't exist", filePath);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
 }
 
 
@@ -4415,7 +4502,17 @@ void CMainFrame::OnHelpLicense()
 	FileUtils::CPathGetPath(processPath, processDir);
 	CString filePath = processDir + "\\LICENSE.txt";
 
-	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format("License file \"%s\" doesn't exist", filePath);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
 }
 
 BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)

@@ -82,19 +82,19 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	BOOL ret = MboxMail::ParseTemplateFormat(m_nameTemplateCnf.m_TemplateFormat, labelArray);
 	if (labelArray.GetCount() == 0)
 	{
-		AfxMessageBox("Template format can't be empty!", MB_OK | MB_ICONHAND);
+		AfxMessageBox(_T("Template format can't be empty!"), MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bFromUsername == FALSE) && (m_nameTemplateCnf.m_bFromDomain == FALSE))
 	{
-		AfxMessageBox("Either From User Account Name or From Domain must be checked!", MB_OK | MB_ICONHAND);
+		AfxMessageBox(_T("Either From User Account Name or From Domain must be checked!"), MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bToUsername == FALSE) && (m_nameTemplateCnf.m_bToDomain == FALSE))
 	{
-		AfxMessageBox("Either To User Account Name or To Domain must be checked!", MB_OK | MB_ICONHAND);
+		AfxMessageBox(_T("Either To User Account Name or To Domain must be checked!"), MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -116,8 +116,8 @@ void NameTemplateCnf::ClearParts()
 void NameTemplateCnf::SetDflts()
 {
 
-	m_TemplateFormat = "%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%";
-	m_DateFormat = "%Y-%m-%d";
+	m_TemplateFormat = _T("%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%");
+	m_DateFormat = _T("%Y-%m-%d");
 
 	m_bReplaceWhiteWithUnderscore = FALSE;
 	m_bFromUsername = TRUE;

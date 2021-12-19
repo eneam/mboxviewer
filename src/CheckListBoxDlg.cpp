@@ -114,7 +114,7 @@ void CCheckListBoxDlg::OnBnClickedOk()
 	}
 
 	if (m_OutList.GetCount() <= 0) {
-		AfxMessageBox("No folders selected!", MB_OK | MB_ICONHAND);
+		AfxMessageBox(_T("No folders selected!"), MB_OK | MB_ICONHAND);
 		return;
 	}
 

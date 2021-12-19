@@ -38,18 +38,23 @@
 #ifdef WINVER
 #undef WINVER
 #endif
-#define WINVER 0x0501
+
+
+#define SUPPORTED_WINVER _WIN32_WINNT_WINXP
+//#define SUPPORTED_WINVER NTDDI_VISTA
+
+#define WINVER SUPPORTED_WINVER
 
 #ifdef _WIN32_WINNT
 #undef _WIN32_WINNT
 #endif
-#define _WIN32_WINNT 0x0501
+#define _WIN32_WINNT SUPPORTED_WINVER
              
 
 #ifdef _WIN32_WINDOWS  
 #undef _WIN32_WINDOWS
 #endif
-#define _WIN32_WINDOWS 0x0501
+#define _WIN32_WINDOWS SUPPORTED_WINVER
 
 
 #ifndef _WIN32_IE

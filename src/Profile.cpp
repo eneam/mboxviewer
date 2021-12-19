@@ -126,12 +126,17 @@ BOOL CProfile::_GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &in
 	CString	path = (char *)section;
 	if (ERROR_SUCCESS == RegOpenKeyEx(hKey, (LPCTSTR)path, NULL, KEY_READ | KEY_QUERY_VALUE, &myKey))
 	{
-		res = RegQueryValueEx(myKey, (LPCTSTR)key, NULL, NULL, (BYTE *)&result, &size);
-		RegCloseKey(myKey);
-		if (res == ERROR_SUCCESS) {
-			intval = result;
-			return TRUE;
+		if (key)
+		{
+			res = RegQueryValueEx(myKey, (LPCTSTR)key, NULL, NULL, (BYTE *)&result, &size);
+			RegCloseKey(myKey);
+			if (res == ERROR_SUCCESS) {
+				intval = result;
+				return TRUE;
+			}
 		}
+		else
+			return TRUE;
 	}
 	return FALSE;
 }

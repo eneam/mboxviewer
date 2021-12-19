@@ -103,7 +103,7 @@ public:
 	int m_sliderRange;
 	int m_sliderFreq;
 
-	static BOOL isSupportedPictureFile(LPCSTR file);
+	static BOOL isSupportedPictureFile(LPCTSTR file);
 	afx_msg void OnBnClickedButtonPrt();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);

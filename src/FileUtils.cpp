@@ -32,7 +32,6 @@
 #include "TextUtilsEx.h"
 #include "SimpleString.h"
 
-
 bool FileUtils::PathDirExists(LPCSTR path)
 {
 	DWORD dwFileAttributes = GetFileAttributes(path);
@@ -228,6 +227,7 @@ CStringW FileUtils::CreateMboxviewLocalAppDataPathW(const wchar_t *name)
 	return folderPath;
 }
 
+// Remove directory and all sub-directories
 BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
 {
 	error = 0;
@@ -257,7 +257,7 @@ BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
 			}
 			else
 			{
-				BOOL retF = ::DeleteFile(fileFound);
+				BOOL retF = FileUtils::DeleteFile(fileFound);
 			}
 		}
 		if (!FindNextFile(hSearch, &FileData)) {
@@ -267,13 +267,15 @@ BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
 	}
 	FindClose(hSearch);
 	// dir must be empty
-	BOOL retRD = ::RemoveDirectory(dir);
+	BOOL retRD = ::RemoveDirectory(dir); // must be global functions
 	if (!retRD)
 		return FALSE;
 	else
 		return TRUE;
 }
 
+
+// Remove directory and all sub-directories
 BOOL FileUtils::RemoveDirectoryW(CStringW &dir, DWORD &error)
 {
 	error = 0;
@@ -295,9 +297,13 @@ BOOL FileUtils::RemoveDirectoryW(CStringW &dir, DWORD &error)
 			CStringW	fileFound = dir + L"\\" + CStringW(FileData.cFileName);
 			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
 			{
-				BOOL retR = RemoveDirectoryW(fileFound, error);
+				BOOL retR = FileUtils::RemoveDirectoryW(fileFound, error);
 				if (retR == FALSE)
 					bFinished = TRUE;
+			}
+			else
+			{
+				BOOL retF = FileUtils::DeleteFileW(fileFound);
 			}
 		}
 		if (!FindNextFileW(hSearch, &FileData))
@@ -305,14 +311,14 @@ BOOL FileUtils::RemoveDirectoryW(CStringW &dir, DWORD &error)
 	}
 	FindClose(hSearch);
 	// dir must be empty
-	BOOL retRD = ::RemoveDirectoryW( dir );
+	BOOL retRD = ::RemoveDirectoryW( dir ); // must be global functions
 	if (!retRD)
 		return FALSE;
 	else
 		return TRUE;
 }
 
-// Removes files only
+// Removes files and optionally folders
 BOOL FileUtils::RemoveDir(CString & dir, bool recursive, bool removeFolders)
 {
 	WIN32_FIND_DATA FileData;
@@ -332,16 +338,12 @@ BOOL FileUtils::RemoveDir(CString & dir, bool recursive, bool removeFolders)
 			CString	fileFound = dir + "\\" + FileData.cFileName;
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 			{
-				BOOL retF = DeleteFile((LPCSTR)fileFound);
+				BOOL retF = FileUtils::DeleteFile((LPCSTR)fileFound);
 				// handle error
 			}
 			else if (recursive)
 			{
 				BOOL retB = FileUtils::RemoveDir(fileFound, recursive, removeFolders);
-				if (removeFolders) {
-					BOOL retD = ::RemoveDirectory(dir);
-					// handle error
-				}
 			}
 		}
 		if (!FindNextFile(hSearch, &FileData))
@@ -349,23 +351,26 @@ BOOL FileUtils::RemoveDir(CString & dir, bool recursive, bool removeFolders)
 			bFinished = TRUE;
 		}
 	}
-	FindClose(hSearch);
+	BOOL retFC = FindClose(hSearch);
 	if (removeFolders)
-		:: RemoveDirectory(dir);
+	{
+		// Will fail if recursive=false and sub-directories exist
+		BOOL retRD = ::RemoveDirectory(dir); // must be global functions
+	}
 	return TRUE;
 }
 
-BOOL FileUtils::RemoveDirW(CString & dir, bool recursive)
+BOOL FileUtils::RemoveDirW(CString & dir, bool recursive, bool removeFolders)
 {
 	CStringW dirW;
 	DWORD error;
 	BOOL retA2W = TextUtilsEx::Ansi2Wide(dir, dirW, error);
-	BOOL ret = RemoveDirW(dirW, recursive);
+	BOOL ret = FileUtils::RemoveDirW(dirW, recursive, removeFolders);
 	return ret;
 }
 
-// Removes files only
-BOOL FileUtils::RemoveDirW(CStringW & dir, bool recursive)
+// Removes files and optionally folders
+BOOL FileUtils::RemoveDirW(CStringW & dir, bool recursive, bool removeFolders)
 {
 	WIN32_FIND_DATAW FileData;
 	HANDLE hSearch;
@@ -383,15 +388,19 @@ BOOL FileUtils::RemoveDirW(CStringW & dir, bool recursive)
 		{
 			CStringW	fileFound = dir + L"\\" + CStringW(FileData.cFileName);
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-				DeleteFileW((LPCWSTR)fileFound);
+				FileUtils::DeleteFileW((LPCWSTR)fileFound);
 			else if (recursive)
-				RemoveDirW(fileFound, recursive);
+				FileUtils::RemoveDirW(fileFound, recursive, removeFolders);
 		}
 		if (!FindNextFileW(hSearch, &FileData))
 			bFinished = TRUE;
 	}
 	FindClose(hSearch);
-	//RemoveDirectoryW( dir );
+	if (removeFolders)
+	{
+		// Will fail if recursive=false and sub-directories exist
+		::RemoveDirectoryW( dir ); // must be global functions
+	}
 	return TRUE;
 }
 
@@ -972,6 +981,8 @@ BOOL FileUtils::NormalizeFilePath(CString &filePath)
 		return FALSE;
 }
 
+
+// create all subfolders if they don't exist
 BOOL FileUtils::CreateDirectory(const char *path)
 {
 	CList<CString, CString &> folderList;
@@ -982,7 +993,8 @@ BOOL FileUtils::CreateDirectory(const char *path)
 
 	int i;
 	BOOL foundValidSubFolder = FALSE;
-	for (i = 0; i < 100; i++)
+	int maxSubfolderDepth = 1000;
+	for (i = 0; i < maxSubfolderDepth; i++)
 	{
 		if (FileUtils::PathDirExists(subFolderPath))
 		{
@@ -998,7 +1010,9 @@ BOOL FileUtils::CreateDirectory(const char *path)
 		folderList.AddHead(folderName);
 	}
 	if (!foundValidSubFolder)
+	{
 		return FALSE;
+	}
 	if (folderList.IsEmpty())
 		return TRUE;
 
@@ -1010,16 +1024,20 @@ BOOL FileUtils::CreateDirectory(const char *path)
 		folderName = folderList.RemoveHead();
 		folderPath.Append(folderName);
 		folderPath.Append("\\");
-		if (!::CreateDirectory(folderPath, NULL))
+		if (!::CreateDirectory(folderPath, NULL)) // must be global function
+		{
 			return FALSE;
+		}
 		if (!FileUtils::PathDirExists(folderPath))
+		{
 			return FALSE;
+		}
 	}
 
 	return TRUE;
 }
 
-DWORD FileUtils::CreateDirectoryW(const wchar_t *path)
+BOOL FileUtils::CreateDirectoryW(const wchar_t *path)
 {
 	CList<CStringW, CStringW &> folderList;
 
@@ -1029,7 +1047,8 @@ DWORD FileUtils::CreateDirectoryW(const wchar_t *path)
 
 	int i;
 	BOOL foundValidSubFolder = FALSE;
-	for (i = 0; i < 100; i++)
+	int maxSubfolderDepth = 1000;
+	for (i = 0; i < maxSubfolderDepth; i++)
 	{
 		if (FileUtils::PathDirExistsW(subFolderPath))
 		{
@@ -1045,7 +1064,9 @@ DWORD FileUtils::CreateDirectoryW(const wchar_t *path)
 		folderList.AddHead(folderName);
 	}
 	if (!foundValidSubFolder)
+	{
 		return FALSE;
+	}
 	if (folderList.IsEmpty())
 		return TRUE;
 
@@ -1057,10 +1078,14 @@ DWORD FileUtils::CreateDirectoryW(const wchar_t *path)
 		folderName = folderList.RemoveHead();
 		folderPath.Append(folderName);
 		folderPath.Append(L"\\");
-		if (!::CreateDirectoryW(folderPath, NULL))
+		if (!::CreateDirectoryW(folderPath, NULL))  // must be global function
+		{
 			return FALSE;
+		}
 		if (!FileUtils::PathDirExistsW(folderPath))
+		{
 			return FALSE;
+		}
 	}
 
 	return TRUE;
@@ -1076,6 +1101,272 @@ BOOL FileUtils::DeleteFileW(const wchar_t *path)
 	return ::DeleteFileW(path);
 }
 
+// Optimistic Copy, ignores many errors
+// TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
+// Try to copy first and remove from directory only if no errors ??
+CString FileUtils::CopyDirectory(const char *cFromPath, const char* cToPath, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
+{
+	WIN32_FIND_DATA FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+	CString errorText;
+
+	CString fromPath = cFromPath;
+	if (!FileUtils::PathDirExists(cFromPath))
+	{
+		CString errorText;
+		errorText.Format("CopyDirectory: Invalid from directory path %s", fromPath);
+		//errorText = FileUtils::GetLastErrorAsString();
+		TRACE("%s", errorText);
+		return errorText;
+	}
+
+	CString toPath = cToPath;
+	if (!FileUtils::CreateDirectory(cToPath))
+	{
+		errorText.Format("CopyDirectory: Create To directory %s failed.", toPath);
+		//errorText = FileUtils::GetLastErrorAsString();
+		TRACE("%s", errorText);
+		return errorText;
+	}
+
+	// Start searching for all files in the From directory.
+	CString searchPath = fromPath + "*.*";
+	hSearch = FindFirstFile(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE) 
+	{
+		CString errText;
+		errText.Format("CopyDirectory: Didn't find files in %s", fromPath);
+		//CString errText = FileUtils::GetLastErrorAsString();
+		TRACE("%s", errText);
+		return errorText;  // Success, return empty error string
+	}
+
+	while (!bFinished)
+	{
+		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
+		{
+			CString	fileFound = fromPath + FileData.cFileName;
+			CString toFilePath = toPath  + FileData.cFileName;
+			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (!::CopyFile(fileFound, toFilePath, bFailIfExists))
+				{
+					CString errText = FileUtils::GetLastErrorAsString();
+					TRACE("CopyDirectory: %s", errText);
+				}
+				else if (removeFolderAfterCopy)
+				{
+					if (!FileUtils::DeleteFile((LPCSTR)fileFound))
+					{
+						CString errText = FileUtils::GetLastErrorAsString();
+						TRACE("CopyDirectory: %s", errText);
+					}
+				}
+			}
+			else // recursive
+			{
+				CString fromPath = fileFound + "\\";
+				CString toPath = toFilePath + "\\";
+				errorText = FileUtils::CopyDirectory(fromPath, toPath, bFailIfExists, removeFolderAfterCopy);
+				if (!errorText.IsEmpty())
+				{
+					TRACE("CopyDirectory: %s", errorText);
+				}
+			}
+		}
+		if (!FindNextFile(hSearch, &FileData))
+		{
+			bFinished = TRUE;
+		}
+	}
+
+	FindClose(hSearch);
+	if (removeFolderAfterCopy)
+	{
+		BOOL retRD = ::RemoveDirectory(fromPath);
+		if (!retRD)
+		{
+			errorText = FileUtils::GetLastErrorAsString();
+			TRACE("CopyDirectory: %s", errorText);
+		}
+	}
+	return errorText;
+}
+
+// Optimistic Copy, ignores many errors
+// TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
+// Try to copy first and remove from directory only if no errors ??
+CStringW FileUtils::CopyDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
+{
+	WIN32_FIND_DATAW FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+	CStringW errorText;
+
+	CStringW fromPath = cFromPath;
+	if (!FileUtils::PathDirExistsW(cFromPath))
+	{
+		errorText.Format(L"CopyDirectoryW: Invalid from directory path %s", fromPath);
+		//errorText = FileUtils::GetLastErrorAsStringW();
+		TRACE("%s", errorText);
+		return errorText;
+	}
+
+	CStringW toPath = cToPath;
+	if (!FileUtils::CreateDirectoryW(cToPath))
+	{
+		errorText.Format(L"CopyDirectoryW: Create To directory %s failed.", toPath);
+		//errorText = FileUtils::GetLastErrorAsStringW();
+		TRACE("%s", errorText);
+		return errorText;
+	}
+
+	// Start searching for all files in the from directory.
+	CStringW searchPath = fromPath + "*.*";
+	hSearch = FindFirstFileW(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE)
+	{
+		CStringW errText;
+		errText.Format(L"CopyDirectoryW: Didn't find files in %s", fromPath);
+		//CStringW errText = FileUtils::GetLastErrorAsStringW();
+		TRACE("%s", errText);
+		return errorText;   // Success, return empty error string
+	}
+
+	while (!bFinished)
+	{
+		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
+		{
+			CStringW	fileFound = fromPath + FileData.cFileName;
+			CStringW toFilePath = toPath + FileData.cFileName;
+			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (!::CopyFileW(fileFound, toFilePath, bFailIfExists))
+				{
+					CStringW errText = FileUtils::GetLastErrorAsStringW();
+					TRACE("CopyDirectoryW: %s", errText);
+				}
+				else if (removeFolderAfterCopy)
+				{
+					if (!FileUtils::DeleteFileW((LPCWSTR)fileFound))
+					{
+						CStringW errText = FileUtils::GetLastErrorAsStringW();
+						TRACE("CopyDirectoryW: %s", errText);
+					}
+				}
+			}
+			else // recursive
+			{
+				CStringW fromPath = fileFound + "\\";
+				CStringW toPath = toFilePath + "\\";
+				errorText = FileUtils::CopyDirectoryW(fromPath, toPath, bFailIfExists, removeFolderAfterCopy);
+				if (!errorText.IsEmpty())
+				{
+					TRACE("CopyDirectoryW: %s", errorText);
+				}
+			}
+		}
+		if (!FindNextFileW(hSearch, &FileData))
+		{
+			bFinished = TRUE;
+		}
+	}
+
+	FindClose(hSearch);
+	if (removeFolderAfterCopy)
+	{
+		BOOL retRD = ::RemoveDirectoryW(fromPath);
+		if (!retRD)
+		{
+			errorText = FileUtils::GetLastErrorAsStringW();
+			TRACE("CopyDirectoryW: %s", errorText);
+		}
+	}
+	return errorText;
+}
+
+CString FileUtils::MoveDirectory(const char *cFromPath, const char *cToPath)
+{
+#if 1
+	BOOL removeFolderAfterCopy = TRUE;
+	BOOL bFailIfExists = FALSE;
+	CString errorText = FileUtils::CopyDirectory(cFromPath, cToPath, bFailIfExists, removeFolderAfterCopy);
+	return errorText;
+#else
+	//  MoveFileEx seem to fail if one of the files or subfolders can't be moved
+	// Is this preferble in our case ??
+	CString errorText;
+	CString fromPath = cFromPath;
+	CString toPath = cToPath;
+	DWORD  dwFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH;
+	BOOL ret = MoveFileEx(fromPath, toPath, dwFlags);
+	if (!ret)
+		errorText = GetLastErrorAsString();
+	return errorText;
+#endif
+}
+
+CStringW FileUtils::MoveDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath)
+{
+	BOOL removeFolderAfterCopy = TRUE;
+	BOOL bFailIfExists = FALSE;
+	CStringW errorText = FileUtils::CopyDirectoryW(cFromPath, cToPath, bFailIfExists, removeFolderAfterCopy);
+	return errorText;
+}
+
+CString FileUtils::GetLastErrorAsString()
+{
+	//Get the error message, if any.
+	CString emptyMsg;
+	DWORD errorMessageID = ::GetLastError();
+	//DWORD errorMessageID = ERROR_REQ_NOT_ACCEP;
+	if (errorMessageID == 0)
+		return emptyMsg; //No error message has been recorded
+
+	LPSTR messageBuffer = nullptr;
+	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+	CString message(messageBuffer, size);
+
+	CString errorMessage;
+	message.TrimRight(" \t\r\n");
+	errorMessage.Format("Error Code %u \"%s\"\n", errorMessageID, message);
+
+	//Free the buffer.
+	LocalFree(messageBuffer);
+
+	return errorMessage;
+}
+
+CStringW FileUtils::GetLastErrorAsStringW()
+{
+	//Get the error message, if any.
+	CStringW emptyMsg;
+	DWORD errorMessageID = ::GetLastError();
+	//DWORD errorMessageID = ERROR_REQ_NOT_ACCEP;
+	if (errorMessageID == 0)
+		return emptyMsg; //No error message has been recorded
+
+	LPWSTR messageBuffer = nullptr;
+	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
+
+	CStringW message(messageBuffer, size);
+
+	CStringW errorMessage;
+	message.TrimRight(L" \t\r\n");
+	errorMessage.Format(L"Error Code %u \"%s\"\n", errorMessageID, message);
+
+	//Free the buffer.
+	LocalFree(messageBuffer);
+
+	return errorMessage;
+}
+
+
+// TODO: update test to test chnages to RemoveDir, new CopyDirectory and MoveDirectory
 void FileUtils::UnitTest()
 {
 	DWORD error;

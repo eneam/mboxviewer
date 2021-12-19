@@ -114,6 +114,11 @@ bool return_false() {
 
 bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int dateFormatType)
 {
+	// dateFormatType == 1
+// Date: Sun, 5 Nov 2017 22:42:43 -0600 (CST)
+// dateFormatType == 2
+// From 1583290388308606088@xxx Mon Nov 06 04:42:58 +0000 2017 
+
 	if (dateFormatType != 1)
 		return false;   // TODO: dateFormatType ==2 needs some work
 

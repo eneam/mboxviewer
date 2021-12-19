@@ -130,9 +130,9 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wpr, cb);
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, _T("MainFrame_EmlPreviewMode"), (LPBYTE)&wpr, cb);
 	else
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, _T("MainFrame"), (LPBYTE)&wpr, cb);
 	int cx = -1;
 	int cy = -1;
 	if (ret && (cb == sizeof(wpr)))
@@ -155,12 +155,12 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	int tree_frameCx = 177;
 	int tree_frameCy = 200;
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", tree_frameCx);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("TreeFrameWidth"), tree_frameCx);
 	
 	if (ret)
 		treeSize.cx = tree_frameCx;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", tree_frameCy);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("TreeFrameHeight"), tree_frameCy);
 	if (ret)
 		treeSize.cy = tree_frameCy;
 
@@ -181,8 +181,8 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	int msg_frameCx_TreeNotInHide = 700;
 	int msg_frameCy_TreeNotInHide = 200;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", msg_frameCx_TreeNotInHide);
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", msg_frameCy_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("MsgFrameTreeNotHiddenWidth"), msg_frameCx_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("MsgFrameTreeNotHiddenHeight"), msg_frameCy_TreeNotInHide);
 
 	if (m_msgViewPosition == 1)   // windows on top
 	{
@@ -213,8 +213,8 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	int list_frameCx_TreeNotInHide = 700;
 	int list_frameCy_TreeNotInHide = 200;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", list_frameCx_TreeNotInHide);;
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", list_frameCy_TreeNotInHide);;
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("ListFrameTreeNotHiddenWidth"), list_frameCx_TreeNotInHide);;
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("ListFrameTreeNotHiddenHeight"), list_frameCy_TreeNotInHide);;
 
 	if (m_msgViewPosition == 1)   // windows on top
 	{

@@ -96,14 +96,14 @@ void AttachmentConfigParams::UpdateRegistry(AttachmentConfigParams &current, Att
 		return;
 
 	if (updated.m_attachmentWindowMaxSize != current.m_attachmentWindowMaxSize) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "attachmentWindowMaxSize", updated.m_attachmentWindowMaxSize);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("attachmentWindowMaxSize"), updated.m_attachmentWindowMaxSize);
 	}
 
 	if (updated.m_bShowAllAttachments_Window != current.m_bShowAllAttachments_Window) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showAllAttachments_Window", updated.m_bShowAllAttachments_Window);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showAllAttachments_Window"), updated.m_bShowAllAttachments_Window);
 	}
 	if (updated.m_bAnyAttachment_Indicator != current.m_bAnyAttachment_Indicator) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "anyAttachment_Indicator", updated.m_bAnyAttachment_Indicator);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("anyAttachment_Indicator"), updated.m_bAnyAttachment_Indicator);
 	}
 }
 
@@ -132,7 +132,7 @@ void AttachmentsConfig::OnBnClickedOk()
 	if ((m_attachmentConfigParams.m_attachmentWindowMaxSize < 0) || (m_attachmentConfigParams.m_attachmentWindowMaxSize > 100))
 	{
 		CString txt;
-			txt.Format("Invalid max size for Attachment Window. Valid size is 0-100 !");
+			txt.Format(_T("Invalid max size for Attachment Window. Valid size is 0-100 !"));
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}

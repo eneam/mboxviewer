@@ -286,6 +286,7 @@ public:
 	void FillCtrl(BOOL expand = TRUE);
 	void ExpandOrCollapseTree(BOOL expand);
 	void LoadFolders();
+	void DeleteMBoxAllWorkFolders(CString &mboxFileName);
 	HTREEITEM HasFolder(CString &path);
 	void SelectMailFile(CString *fileName = 0); // based on -MBOX= command line argument
 	void InsertMailFile(CString &mailFile);

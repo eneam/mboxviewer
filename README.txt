@@ -2,6 +2,14 @@
 Changes
 ---
 
+v 1.0.3.25
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added support for Ctrl-C to Copy text in the message pane.;
+ - Added code to check whether a user has permission to write to registry. Mbox Viewer will not work if the user can’t write to Window’s registry.;
+ - Changed the file name of exported mail as eml file from message.eml to mime-message.eml to minimize potential conflict with mail’s attachment name.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.24
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

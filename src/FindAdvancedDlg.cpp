@@ -45,13 +45,13 @@
 
 const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments", "Attachment Name" };
 
-const char  *ruleText[] = {
-	"((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
-	"(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
+const TCHAR  *ruleText[] = {
+	_T("((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
+	_T("(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
+	_T("((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name"),
+	_T("((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
+	_T("(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
+	_T("(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name")
 };
 
 
@@ -167,7 +167,7 @@ void CFindAdvancedDlg::OnOK()
 	if (i == FILTER_FIELDS_NUMB)
 	{
 		CString txt;
-		txt.Format("No filter fields are checked!");
+		txt.Format(_T("No filter fields are checked!"));
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -180,7 +180,7 @@ void CFindAdvancedDlg::OnOK()
 
 		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty()) {
 			CString txt;
-			txt.Format("%s field is checked but search string is empty!", FindFields[i]);
+			txt.Format(_T("%s field is checked but search string is empty!"), FindFields[i]);
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 			return;
 		}
@@ -498,7 +498,7 @@ void CFindAdvancedDlg::SetRuleInfoText()
 		{
 			CString RuleNumberText;
 
-			RuleNumberText.Format("Rule %d is selected !!!", m_params.m_filterNumb + 1);
+			RuleNumberText.Format(_T("Rule %d is selected !!!"), m_params.m_filterNumb + 1);
 
 			p->SetWindowText(RuleNumberText);
 			p->EnableWindow(TRUE);

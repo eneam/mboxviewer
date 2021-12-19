@@ -87,7 +87,7 @@ END_MESSAGE_MAP()
 void COptionsDlg::OnBnClickedOk()
 {
 	if (UpdateData(TRUE)) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format", m_format);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("format"), m_format);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), m_barDelay);
 		if (m_exportEML == 1)
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), CString(_T("y")));
@@ -99,7 +99,7 @@ void COptionsDlg::OnBnClickedOk()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), m_subj_charsetId);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), m_show_charsets);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), m_bImageViewer);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType", m_bTimeType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), m_bTimeType);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"), m_bEnhancedSelectFolderDlg);
 
 		CDialog::OnOK();
@@ -111,7 +111,7 @@ BOOL COptionsDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_format = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
+	m_format = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("format"));
 	DWORD barDelay = 0;
 	BOOL retval;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay))
@@ -129,13 +129,13 @@ BOOL COptionsDlg::OnInitDialog()
 	else
 		m_exportEML = 0;  // we should not be here; it should be initialized in NListView::NListView()
 
-	m_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
-	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
-	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
-	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
-	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "imageViewer");
-	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "timeType");
-	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
+	m_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"));
+	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"));
+	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"));
+	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"));
+	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"));
+	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"));
+	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"));
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control

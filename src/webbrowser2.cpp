@@ -534,12 +534,56 @@ void CWebBrowser2::SetResizable(BOOL bNewValue)
 
 BOOL CWebBrowser2::PreTranslateMessage(MSG* pMsg)
 {
-	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+	if (pMsg->wParam == VK_ESCAPE)
 	{
-		if (pMsg->wParam == VK_ESCAPE)
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		{
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		}
+	}
+	else if ((pMsg->wParam == 'C') || (pMsg->wParam == 'c'))
+	{
+		SHORT ctrlState = GetAsyncKeyState(VK_CONTROL);
+		SHORT CState = GetAsyncKeyState('C');
+		BOOL CtrlKeyDown = FALSE;
+		BOOL CKeyDown = FALSE;
+
+		if ((ctrlState & 0x8000) != 0) {
+			CtrlKeyDown = TRUE;
+		}
+
+		if ((CState & 0x8000) != 0) {
+			CKeyDown = TRUE;
+		}
+
+		if (CKeyDown && CtrlKeyDown)
+		{
+			DWORD nCmdID = OLECMDID_COPY;
+			DWORD nCmdOption = OLECMDEXECOPT_DONTPROMPTUSER;
+
+			IOleCommandTarget  *lpOleCommandTarget = 0;
+			LPDISPATCH lpd = GetDocument();
+			if (lpd)
+			{
+				HRESULT hr = lpd->QueryInterface(IID_IOleCommandTarget, (VOID**)&lpOleCommandTarget);
+				if (lpOleCommandTarget)
+				{
+					VARIANT val;
+					VariantInit(&val);
+					VARIANT valOut;
+					VariantInit(&valOut);
+
+					hr = lpOleCommandTarget->Exec(NULL, nCmdID, nCmdOption, &val, &valOut);
+
+					hr = VariantClear(&val);
+					hr = VariantClear(&valOut);
+
+					lpOleCommandTarget->Release();
+				}
+				lpd->Release();
+			}
+		}
+		int deb = 1;
 	}
 
 	return CWnd::PreTranslateMessage(pMsg);
