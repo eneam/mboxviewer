@@ -3834,9 +3834,18 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 
 	// Get temporary file name with correct extension for IE to display
 	m_curFile = FileUtils::CreateTempFileName(ext);
-	CFile fp(m_curFile, CFile::modeWrite | CFile::modeCreate);
-	fp.Write(data, datalen);
-	fp.Close();
+	CFileException ExError;
+	CFile fp;
+	if (fp.Open(m_curFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		fp.Write(data, datalen);
+		fp.Close();
+	}
+	else
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+		;
+	}
 
 	if (datalen == 0)
 		int deb = 1;
@@ -5115,14 +5124,25 @@ void NListView::OnEditVieweml()
 		POSITION pos = m_list.GetFirstSelectedItemPosition();
 		int nItem = m_list.GetNextSelectedItem(pos);
 		MboxMail *m = 0;
-		if (nItem >= 0) {
+		if (nItem >= 0) 
+		{
 			m = MboxMail::s_mails[nItem];
 			// Get raw mail body
 			CString bdy;   m->GetBody(bdy);
 			// Save mail
-			CFile fp(FileUtils::GetmboxviewTempPath() + "mime-message.eml", CFile::modeWrite | CFile::modeCreate);
-			fp.Write(bdy, bdy.GetLength());
-			fp.Close();
+			CString emlFile = FileUtils::GetmboxviewTempPath() + "mime-message.eml";
+			CFileException ExError;
+			CFile fp;
+			if (fp.Open(emlFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+			{
+				fp.Write(bdy, bdy.GetLength());
+				fp.Close();
+			}
+			else
+			{
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
+				;
+			}
 		}
 	}
 
@@ -5632,7 +5652,8 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 				else if (printToPrinter)
 				{
 					CFile fp;
-					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) 
+					CFileException ExError;
+					if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 					{
 						ULONGLONG ll = fp.GetLength();
 						SimpleString *inbuf = MboxMail::m_inbuf;
@@ -5649,6 +5670,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					}
 					else {
 						// MessageBox ??
+						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  //TODO
 						int deb = 1;
 					}
 				}
@@ -9302,9 +9324,15 @@ int NListView::SaveAsMboxArchiveFile_v2()
 			return -1;
 	}
 
-	if (!fp.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + mboxFilePath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -10019,12 +10047,15 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 			{
 				//imageFilePath = imageCachePath + mailIndex + imageFileName;
 				imageFilePath = imageCachePath + imageFileName;
-				CFileException ex;
+				CFileException ExError;
 				CFile fp;
-				if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ex))
+				if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 				{
+					CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+
+
 					TCHAR szError[1024];
-					ex.GetErrorMessage(szError, 1024);
+					ExError.GetErrorMessage(szError, 1024);
 					CFileStatus rStatus;
 					BOOL ret = fp.GetStatus(rStatus);
 					CString errorText(szError);
@@ -10208,9 +10239,19 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	CString cidName;
 
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		// TODO: ??
-		//errorText = _T("Could not open mail archive \"") + MboxMail::s_path;
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		//errorText = txt;
+
 		fpm.Close();
 		return -1;
 	}
@@ -10466,12 +10507,14 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 				{
 					;// TRACE(_T("UpdateInlineSrcImgPath: NOT FOUND image %s\n"), imgFile);
 					imageFilePath = imgFile;
-					CFileException ex;
+					CFileException ExError;
 					CFile fp;
 
 					BOOL retryOpen = FALSE;
-					if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ex))
+					if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 					{
+						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+
 						CString errorText;
 						CString imageCachePath;
 						CString rootPrintSubFolder = "ImageCache";
@@ -10489,13 +10532,14 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 						retryOpen = TRUE;
 					}
 
-					if (retryOpen && !fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ex))
+					if (retryOpen && !fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 					{
-						TCHAR szError[1024];
-						ex.GetErrorMessage(szError, 1024);
+						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+
 						CFileStatus rStatus;
 						BOOL ret = fp.GetStatus(rStatus);
-						CString errorText(szError);
+
+						CString errorText(exErrorStr);
 
 						HWND h = NULL;
 						// Ignore for now
@@ -12110,9 +12154,20 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 BOOL CreateAttachmentCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText)
 {
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		// TODO: critical failure
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
+
 		return FALSE;
 	}
 
@@ -12329,9 +12384,19 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText)
 {
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		// TODO: critical failure
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		return FALSE;
 	}
 
@@ -12437,6 +12502,8 @@ BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorTe
 		}
 	}
 
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
 	MboxMail *m;
 	CString emlFile;
 	for (int i = 0; i < ni; i++)
@@ -12445,6 +12512,7 @@ BOOL CreateEmlCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorTe
 		m = MboxMail::s_mails[i];
 
 		int mailPosition = i;
+		NamePatternParams *pNamePP = &pFrame->m_NamePatternParams;
 		NListView::PrintAsEmlFile(&fpm, mailPosition, emlFile);
 
 		if (!mainThread && MboxMail::pCUPDUPData)
@@ -12567,12 +12635,21 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 BOOL CreateInlineImageCache_WorkerThread(LPCSTR cache, BOOL mainThread, CString &errorText)
 {
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		// TODO: critical failure
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		return FALSE;
 	}
-
 
 	CString mailFileName;
 	FileUtils::CPathStripPath((char*)(LPCSTR)MboxMail::s_path, mailFileName);
@@ -13026,9 +13103,18 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -13153,6 +13239,9 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 //
 int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 {
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NamePatternParams *pNamePP = &pFrame->m_NamePatternParams;
+
 	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
 		return -1;
 
@@ -13167,15 +13256,21 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
 			return FALSE;
 		}
 		fpm = &mboxFp;
 	}
-
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	CString mailFileNameBase;
 	if (!pFrame->m_NamePatternParams.m_bCustomFormat)
@@ -13191,26 +13286,35 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	if (retval == FALSE) {
 		return -1;
 	}
+
+	int emlCachePathLength = emlCachePath.GetLength();
+	int mailFileNameBaseLength = mailFileNameBase.GetLength();
+	int total = emlCachePathLength + mailFileNameBaseLength;
 	CString fileName = emlCachePath + "\\" + mailFileNameBase + ".eml";
+	int fileNamePathLength = fileName.GetLength();
+	if (fileNamePathLength > _MAX_FNAME)
+		int deb = 1;
 
 	SimpleString *outbuf = MboxMail::m_outbuf;
 	outbuf->ClearAndResize(10000);
 
 	CFile fp;
-
-	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate)) 
+	CFileException ExError;
+	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + fileName;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" eml file.\n");
+		txt += exErrorStr;
+
 		// PrintAsEmlFile is the static function. Must use global MessageBox
 		// Not ideal because program is not blocked. TODO: invetsigate and change 
-
 		HWND h = NULL;
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
-		// continue for now.
+		// continue for now ??
 		return -1;
 	}
-
 
 	BOOL ret;
 	outbuf->Clear();
@@ -13261,10 +13365,18 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
-			errorText = _T("Could not open \"") + MboxMail::s_path;
-			errorText += _T("\" file.\nMake sure file is not open on other applications.");
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+
+			errorText = txt;
 			return -1;
 		}
 		fpm = &mboxFp;
@@ -13284,10 +13396,18 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	outbuf->ClearAndResize(10000);
 
 	CFile fp;
-	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate))
+	CFileException ExError;
+	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
-		errorText = _T("Could not create \"") + fileName;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + fileName;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 #if 0
 		// ExportAsEmlFile is the static function. Must use global MessageBox
 		// It can be called from non main thread and need to figure whether calling
@@ -13867,8 +13987,17 @@ int NListView::ScanAllMailsInMbox_NewParser()
 	MboxMail::m_EmbededImagesNotFoundLocalFile = 0;
 
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not open mail archive \"") + MboxMail::s_path;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
@@ -14862,19 +14991,34 @@ int NListView::SaveAsEmlFile(CString &bdy)
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = strlen(cFromMailBegin);
 	// Save mail
-	CFile fp(FileUtils::GetmboxviewTempPath() + "mime-message.eml", CFile::modeWrite | CFile::modeCreate);
-	char *pb = (char*)((LPCSTR)bdy);
-	int len = bdy.GetLength();
-	char *e = pb + len;
-	char *p = MimeParser::SkipEmptyLines(pb, e);
-	if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+	CFile fp;
+	CFileException ExError;
+	CString emlFile = FileUtils::GetmboxviewTempPath() + "mime-message.eml";
+	if (fp.Open(emlFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
-		p = MimeParser::EatNewLine(p, e);
+		char *pb = (char*)((LPCSTR)bdy);
+		int len = bdy.GetLength();
+		char *e = pb + len;
+		char *p = MimeParser::SkipEmptyLines(pb, e);
+		if (TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+		{
+			p = MimeParser::EatNewLine(p, e);
+		}
+		int eml_len = len - (p - pb);
+		fp.Write(p, eml_len);
+		//fp.Write(bdy, bdy.GetLength());
+		fp.Close();
 	}
-	int eml_len = len - (p - pb);
-	fp.Write(p, eml_len);
-	//fp.Write(bdy, bdy.GetLength());
-	fp.Close();
+	else
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + emlFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+	}
 	return  1;
 }
 
@@ -14987,10 +15131,18 @@ int NListView::ForwardSingleMail(int iItem, BOOL progressBar, CString &progressT
 	//CString progressText;
 
 	CFile fpm;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
-		errorText = _T("Could not open \"") + MboxMail::s_path;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		return -1;
 	}
 

@@ -265,6 +265,9 @@ public:
 
 	static ColorStylesDB m_ColorStylesDB;
 
+
+	void OpenFolder(CString &path);
+	void OpenFolderAndSubfolders(CString &path);
 	//BOOL PreTranslateMessage(MSG* pMsg);
 
 // Generated message map functions
@@ -340,6 +343,7 @@ public:
 	afx_msg void OnHelpUserguide();
 	afx_msg void OnHelpReadme();
 	afx_msg void OnHelpLicense();
+	afx_msg void OnFileSelectrootfolder();
 };
 
 /////////////////////////////////////////////////////////////////////////////

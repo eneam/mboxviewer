@@ -163,6 +163,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_COMMAND(ID_GMAILLABELS_CREATE, &NTreeView::OnGmaillabelsCreate)
 	ON_COMMAND(ID_GMAILLABELS_DELETE, &NTreeView::OnGmaillabelsDelete)
 	ON_COMMAND(ID_GMAILLABELS_REFRESH, &NTreeView::OnGmaillabelsRefresh)
+	ON_NOTIFY(TVN_GETINFOTIP, IDC_TREE, OnTvnGetInfoTip)
 END_MESSAGE_MAP()
 
 
@@ -174,7 +175,7 @@ int NTreeView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
-	if( !m_tree.Create(WS_CHILD|WS_VISIBLE|
+	if( !m_tree.Create(WS_CHILD|WS_VISIBLE| TVS_INFOTIP |
 			TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS |
 			TVS_SHOWSELALWAYS | TVS_EDITLABELS, // TVS_EDITLABELS | TVS_DISABLEDRAGDROP,
 			CRect(0,0,0,0), this, IDC_TREE))
@@ -225,18 +226,119 @@ void NTreeView::PostNcDestroy()
 //	CWnd::PostNcDestroy();
 }
 
-#define BUFF_PREVIEW_SIZE	10240
+#define BUFF_PREVIEW_SIZE	6144
 
 // This function checks whether file archive is valid
 // TODO: add MessageBox to report an error
-BOOL ImboxviewFile(CString & fName)
+BOOL NTreeView::ImboxviewFile(CString & fName)
 {
+#if 0
+	if (fName.Compare("F:\\MBOX\\MailTkout1\\message-inline2.eml") == 0)
+		int deb = 1;
+
+	if (fName.Compare("G:\\GMAIL\\takeout-20210705T072046Z-001.zip") == 0)
+		int deb = 1;
+
+	if (fName.Compare("G:\\GMAIL\\takeout-20210713T143614Z-001.zip") == 0)
+		int deb = 1;
+#endif
+
 	LPCSTR fileName = fName;
 
 	// need better validation check; may need to parse the file
-	BOOL bRet = FALSE;
+	  // 0=not valid, 1=valid, -1=end of header not found and not valid yet so allocate larger buffer and redo
 	CFile fp;
 
+#if 1
+	int retval = 0;
+	CString fileNameExtention;
+	FileUtils::GetFileExtension(fName, fileNameExtention);
+
+	if (fileNameExtention.CompareNoCase(".mboxview") == 0)
+		return FALSE;
+
+	if (fileNameExtention.CompareNoCase(".mboxlist") == 0)
+		return FALSE;
+
+	CFileException ExError;
+	if (!fp.Open(fileName, CFile::modeRead, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
+		return FALSE;
+	}
+
+	char buffer[BUFF_PREVIEW_SIZE + 1];
+	char *buff = &buffer[0];
+	char *mallocbuff = 0;
+	char *newMallocbuff = 0;
+	char *data;
+	int datalen;
+	UINT nCount;
+	int i;
+	// TODO: Not the most efficient
+	for (i = 0; i < 20; i++)
+	{
+		nCount = fp.Read(buff, BUFF_PREVIEW_SIZE);
+		if (nCount == 0) {
+			break;
+		}
+
+		if (i == 0)
+		{
+			data = &buff[0];
+			datalen = nCount;
+		}
+		else
+		{
+			datalen = i*BUFF_PREVIEW_SIZE;
+			memcpy(&mallocbuff[datalen], buff, nCount);
+			datalen += nCount;
+			data = mallocbuff;
+		}
+
+		retval = NTreeView::IsValidMailFile(data, datalen);
+
+		if (nCount < BUFF_PREVIEW_SIZE)
+			break;
+
+		if (retval == -1)
+		{
+			if (i > 0)
+				int deb = 1;
+			// Allocate extra space for next file read
+			newMallocbuff = (char*)malloc((i + 1 + 1)*BUFF_PREVIEW_SIZE);
+			if (newMallocbuff == 0)
+				break;
+
+			datalen = 0;
+			if (mallocbuff) // i > 0
+			{
+				datalen = i * BUFF_PREVIEW_SIZE;
+				memcpy(&newMallocbuff[0], &mallocbuff[0], datalen);
+				free(mallocbuff);
+			}
+
+			memcpy(&newMallocbuff[datalen], buff, nCount);
+			mallocbuff = newMallocbuff;
+			datalen += nCount;
+			continue;
+		}
+		else
+			break;
+	}
+	if (i > 0)
+		int deb = 1;
+
+	fp.Close();
+	if (mallocbuff)
+		free(mallocbuff);
+
+	if (retval == 1)
+		return TRUE;
+	else
+		return FALSE;
+#else
+	BOOL bRet = FALSE;
 	CString fileNameExtention;
 	FileUtils::GetFileExtension(fName, fileNameExtention);
 	if (fileNameExtention.CompareNoCase(".eml") == 0)
@@ -251,20 +353,19 @@ BOOL ImboxviewFile(CString & fName)
 	if (fileNameExtentionRoot.CompareNoCase(".mbox") != 0)
 		return FALSE;
 
-	char *buff = (char*)malloc(BUFF_PREVIEW_SIZE + 1);
-	if( buff == NULL )
-		return FALSE;
 
-	if( ! fp.Open(fileName, CFile::modeRead) ) {
-		free(buff);
+	CFileException ExError;
+	if (!fp.Open(fileName, CFile::modeRead, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 		return FALSE;
 	}
-	// Could do better -:)
-	for (int i = 0; i < 5000; i++)
+	// TODO: Could do better ??)
+	char buff[BUFF_PREVIEW_SIZE + 1];
+	for (int i = 0; i < 10; i++)
 	{
 		UINT nCount = fp.Read(buff, BUFF_PREVIEW_SIZE);
 		if (nCount == 0) {
-			free(buff);
 			fp.Close();
 			return FALSE;
 		}
@@ -274,7 +375,7 @@ BOOL ImboxviewFile(CString & fName)
 			bRet = TRUE;
 			break;
 		}
-		else 
+		else
 		{
 			char * p = strstr(buff, "\nFrom ");
 			if (p != NULL)
@@ -284,9 +385,158 @@ BOOL ImboxviewFile(CString & fName)
 			}
 		}
 	}
-	free(buff);
 	fp.Close();
+
 	return bRet;
+#endif
+}
+
+int NTreeView::IsValidMailFile(char *data, int datalen)
+{
+	static const char *cFromMailBegin = "from ";
+	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const char *cFrom = "from:";
+	static const int cFromLen = strlen(cFrom);
+	static const char *cTo = "to:";
+	static const int cToLen = strlen(cTo);
+	static const char *cSubject = "subject:";
+	static const int cSubjectLen = strlen(cSubject);
+	static const char *cDate = "date:";
+	static const int cDateLen = strlen(cDate);
+	static const char *cMimeVersion = "mime-version:";
+	static const int cMimeVersionLen = strlen(cMimeVersion);
+	static const char *cMessageID = "message-id:";
+	static const int cMessageIDLen = strlen(cMessageID);
+
+	BOOL bMboxFrom = FALSE;
+	BOOL bFrom = FALSE;
+	BOOL bTo = FALSE;
+	BOOL bSubject = FALSE;
+	BOOL bMimeVersion = FALSE;
+	BOOL bMessageID = FALSE;
+
+	char *p = data;
+	char *e = data + datalen;
+	char *psave = p;
+
+
+	// Simple approach, not bullet prove but should work just fine I think
+	//
+	// Empty line indicates the end of mime mail header
+	// Ignore lines that start with white spaces (space and tab) i.e. folded lines
+	// Except first "From " line if present
+	// lines must contain ':" character to indicate end of header field
+	// Lines must not be longer then lets say 2000 characters
+	//
+	// Header must contain the following fields: 
+	// Mime-Version: and From: fields
+	// to be valid mime mail header
+	// What about Subject:, To:, Date:, Received:, Nessage-ID fields ???
+	// TODO: Should list of required fileds be configrable?
+
+
+	int maxLineLenght = 2000;
+	int maxLineLen = maxLineLenght;
+
+	p = MimeParser::SkipEmptyLines(p, e);
+	if (p >= e)
+		return 0;
+
+	if (TextUtilsEx::strncmpUpper2Lower(p, e, cFromMailBegin, cFromMailBeginLen) == 0)
+	{
+		bMboxFrom = TRUE;
+		maxLineLen = maxLineLenght;
+		p = MimeParser::EatNewLine(p, e, maxLineLen);
+		if (maxLineLen <= 0)
+			return 0;
+		else if (p >= e)
+			return -1;
+	}
+	else
+	{
+		int deb = 1;
+	}
+
+	int allFieldCnt = 0;
+	BOOL endOfHeaderFound = FALSE;
+
+	while (p < e)
+	{
+		if ((*p == '\n') || ((*p == '\r') && (*(p + 1) == '\n')))  // empty line
+		{
+			endOfHeaderFound = TRUE;
+			break;
+		}
+		else
+		{
+			if ((*p == ' ') || (*p == '\t'))
+			{
+				maxLineLen = maxLineLenght;
+				p = MimeParser::EatNewLine(p, e, maxLineLen);
+				if (maxLineLen <= 0)
+					return 0;
+				continue;
+			}
+
+			psave = p;
+			maxLineLen = 100;
+			while ((p < e) && (*p != '\n') && (*p != ':') && (maxLineLen-- > 0))
+			{
+				p++;
+			}
+			if (maxLineLen <= 0)
+				return 0;
+			else if (p >= e)  // TODO: didn't find ':' character
+				break;
+
+			allFieldCnt++;
+			if (TextUtilsEx::strncmpUpper2Lower(psave, e, cFrom, cFromLen) == 0)
+			{
+				bFrom = TRUE;
+				// TODO: should I check here if valid header ??
+				// or continue to scan the entire header
+				// From, To, Subject are usually at the end  of header anyway
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cMimeVersion, cMimeVersionLen) == 0)
+			{
+				bMimeVersion = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cMessageID, cMessageIDLen) == 0)
+			{
+				bMessageID = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cTo, cToLen) == 0)
+			{
+				bTo = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cSubject, cSubjectLen) == 0)
+			{
+				bSubject = TRUE;
+			}
+
+			maxLineLen = maxLineLenght;
+			p = MimeParser::EatNewLine(p, e, maxLineLen);
+			if (maxLineLen <= 0)
+				return 0;
+		}
+	}
+
+	// messageID is always present in my test mail files
+	// Not sure I can assume that
+	if (!bMessageID)
+		int deb = 1;
+
+	if (bFrom)
+	{
+		if ((bMimeVersion && (bMboxFrom || bMessageID)) ||
+			(bMboxFrom && bMessageID) ||
+			((bTo && bSubject) && (bMimeVersion || bMessageID)))
+			return 1;
+	}
+	if (endOfHeaderFound == FALSE)
+		return -1;
+	else
+		return 0;
 }
 
 HTREEITEM NTreeView::HasFolder(CString &path)
@@ -313,6 +563,48 @@ HTREEITEM NTreeView::HasFolder(CString &path)
 	}
 	else
 		return 0;
+}
+
+BOOL NTreeView::HasFolder(HTREEITEM hItem, CString &folderPath)
+{
+	HTREEITEM hRoot = m_tree.GetRootItem();
+	if (hRoot)
+	{
+		HTREEITEM hNext = hRoot;
+		while (hNext)
+		{
+			if (hNext == hItem)
+			{
+				int retIndex = m_tree.GetItemData(hNext);
+				m_folderArray.GetAt(retIndex, folderPath);
+				folderPath.TrimRight("\\");
+				return TRUE;
+			}
+
+			hNext = m_tree.GetNextItem(hNext, TVGN_NEXT);
+		}
+	}
+	return FALSE;
+}
+
+void NTreeView::PrintFolderNames()
+{
+	CString folderPath;
+	HTREEITEM hRoot = m_tree.GetRootItem();
+	if (hRoot)
+	{
+		HTREEITEM hNext = hRoot;
+		while (hNext)
+		{
+			int retIndex = m_tree.GetItemData(hNext);
+			m_folderArray.GetAt(retIndex, folderPath);
+			folderPath.TrimRight("\\");
+			TRACE(_T("Folder Data=%d Name=%s HTREEITEM=%lx\n"), retIndex, folderPath, hNext);
+
+			hNext = m_tree.GetNextItem(hNext, TVGN_NEXT);
+		}
+	}
+	return;
 }
 
 void NTreeView::LoadFolders()
@@ -346,6 +638,7 @@ void NTreeView::LoadFolders()
 				pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 			FillCtrl(expand);
+
 #if 0
 			// Create per tree node object with all key info
 			// Move below to FillCtrl 
@@ -388,8 +681,8 @@ void NTreeView::LoadFolders()
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
-	m_tree.SortChildren(0);
-	// or m_tree.SortChildren(TVI_ROOT);
+	SortChildren(0);
+	// or SortChildren(TVI_ROOT);
 
 	HTREEITEM hFolder;
 	if (hFolder = HasFolder(pathLast))
@@ -525,27 +818,33 @@ BOOL NTreeView::SetupFileSizeMap(CString &path)
 	}
 	else
 	{
-		_ASSERT(it != m_gFileSizes.end());
+		_ASSERT(it == m_gFileSizes.end());
 		return FALSE;
 	}
 }
 
+
+// Iterate all files in the path folder, validate and insert into Mail Tree
+// dontUpdateTree not used currently
 void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUpdateTree)
 {
 	CString mboxFilePath;
 	CString registry_lastPath;
 	CString root;
 	path.TrimRight("\\");
-	char *last_slash = (char*)strrchr(path, '\\');
+	//char *last_slash = (char*)strrchr(path, '\\');
+	FileUtils::CPathStripPath(path, root);
 
 	// Read first file index file if it exists from previous runs
 	// and add to the filesSize hash table
-	// new archive files might be discovered and added ??
+	// new archive files might be discovered and added 
 	m_bIsDataDirty = FALSE;
 	fileSizes.RemoveAll();
 	CString datapath = MboxMail::GetLastDataPath();
 	CStdioFile fp;
-	if (fp.Open(datapath + "\\.mboxview", CFile::modeRead | CFile::typeText))
+	CFileException ExError;
+	CString viewFile = datapath + ".mboxview";
+	if (fp.Open(viewFile, CFile::modeRead | CFile::typeText, &ExError))
 	{
 		CString line;
 		while (fp.ReadString(line))
@@ -577,6 +876,7 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 			{
 				fileSizes[mboxFileName].fSize = fSize;
 				fileSizes[mboxFileName].bShow = bShow;
+				fileSizes[mboxFileName].bNeedsValidation = FALSE;
 			}
 			else
 				m_bIsDataDirty = TRUE;
@@ -586,13 +886,27 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 	}
 	else
 	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + viewFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE("%s\n", txt);
+
 		// TODO: verify implications
 		fileSizes.RemoveAll();
 	}
 
-	root = last_slash + 1;
+	//root = last_slash + 1;
 
-	HTREEITEM hRoot = m_tree.InsertItem(root, 0, 0, TVI_ROOT);
+	HTREEITEM hFolder = HasFolder(root);
+	if (hFolder)  // TODO: should never be true, ASSERT ??
+		int deb = 1;
+
+	HTREEITEM hRoot = 0;
+#if 0
+	hRoot = m_tree.InsertItem(root, 4, 4, TVI_ROOT);
 	if (hRoot == 0)
 		return;
 
@@ -617,14 +931,14 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 
 	UINT nCode = TVGN_CARET;
 	BOOL retval = m_tree.Select(hRoot, nCode);
+#endif
 
 	CString fw = path + "\\*.*";
 	WIN32_FIND_DATA	wf;
 	BOOL found;
-	// Iterate all archive mbox or eml files in the lastPath folder
-	// New archives file is addedd to CTree but not to fileSizes hash table
-	// TODO: explain why the size is not added to fileSizes hash table
-	// Index file is removed however to force parsing to create new index file
+	// Iterate all files in the lastPath folder
+	// Valid new archives file is addedd  to fileSizes hash table and
+	// Index file.mboxview file is removed  to force parsing to create new index file
 	//
 	HANDLE f = FindFirstFile(fw, &wf);
 	if (f != INVALID_HANDLE_VALUE)
@@ -636,15 +950,50 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 				CString fn = wf.cFileName;
 				CString mboxFilePath = path + "\\" + fn;
 
-				if (ImboxviewFile(mboxFilePath))
-				{
-					_int64 fSize = 0;
-					ArchiveFileInfo info;
-					_int64 realFSize = FileUtils::FileSize(mboxFilePath);
-					found = fileSizes.Lookup(fn, info);
+				CString fileNameExtention;
+				CString fileNameBase;
+				FileUtils::GetFileBaseNameAndExtension(fn, fileNameBase, fileNameExtention);
 
+				TCHAR c = fileNameBase.GetAt(fileNameBase.GetLength() - 1);
+				if ((c == ' ') || (c == '\t'))
+				{
+					CString txt = _T("Invalid mail file name \n\n\"") + fn;
+					txt += _T("\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n");
+					int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+					continue;
+				}
+
+				_int64 fSize = 0;
+				ArchiveFileInfo info;
+				_int64 realFSize = FileUtils::FileSize(mboxFilePath);
+				found = fileSizes.Lookup(fn, info);
+				if (found)
+				{
+					if (info.fSize != realFSize)
+					{
+						//TRACE("File=%s FileSize=%lld StoredFileSize=%lld\n", fn, realFSize, fSize);
+						CString cache;
+						BOOL retval = MboxMail::GetMboxviewFilePath(mboxFilePath, cache);
+
+						FileUtils::DeleteFile(cache);
+						// Delete List Files
+						CString listFileName;
+						int ret = NListView::DetermineListFileName(fn, listFileName);
+						if (!listFileName.IsEmpty())
+							FileUtils::DeleteFile(listFileName);
+
+						fileSizes[fn].fSize = realFSize;
+						fileSizes[fn].bNeedsValidation = TRUE;
+						m_bIsDataDirty = TRUE;
+						int deb = 1;
+					}
+				}
+
+				else if (NTreeView::ImboxviewFile(mboxFilePath))
+				{
+#if 0
 					// if found ==  FALSE, the fn is a new file and therefore fSize != realFSize
-					// if found ==  TRUE, the fn file exists and fSize == realFSize should match but the fn was changed somehow
+					// if found ==  TRUE, the fn file exists and fSize == realFSize may or may not
 					// Currently only the file size is used to make sure the file didn't change, do we need to add checksum ??
 					// mboxview will likely crash if file was changed and we didn't detect the change
 					if (info.fSize != realFSize)
@@ -661,13 +1010,20 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 							FileUtils::DeleteFile(listFileName);
 
 						fileSizes[fn].fSize = realFSize;
+						fileSizes[fn].bNeedsValidation = TRUE;
 						m_bIsDataDirty = TRUE;
 						int deb = 1;
 					}
-
+#else
+					fileSizes[fn].fSize = realFSize;
+					fileSizes[fn].bNeedsValidation = TRUE;
+					m_bIsDataDirty = TRUE;
+					int deb = 1;
+#endif
+#if 0
 					if (info.bShow)
 					{
-						HTREEITEM hItem = m_tree.InsertItem(fn, 4, 5, hRoot);
+						HTREEITEM hItem = m_tree.InsertItem(fn, 8, 9, hRoot);
 						if (hItem)
 						{
 							//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
@@ -680,15 +1036,76 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 							m_labelInfoStore.Add(linfo, nId);
 						}
 					}
+#endif
 				}
 			}
 		} while (FindNextFile(f, &wf));
 		FindClose(f);
 
+#if 1
+		if (fileSizes.GetCount() > 0)
+		{
+			hRoot = m_tree.InsertItem(root, 4, 4, TVI_ROOT);
+			if (hRoot == 0)
+			{
+				//ClearViewFile();
+				fileSizes.RemoveAll();
+				return;
+			}
+
+			CString itemName = m_tree.GetItemText(hRoot);
+
+			registry_lastPath = path;
+			registry_lastPath.TrimRight("\\");
+			registry_lastPath.Append("\\");
+
+			int index = m_folderArray.Add(registry_lastPath);
+
+			HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
+			if (hCurrentSelectedItem > 0)
+			{
+				itemName = m_tree.GetItemText(hCurrentSelectedItem);
+				m_tree.SetItemState(hCurrentSelectedItem, 0, TVIS_BOLD);
+			}
+
+			m_tree.SetItemData(hRoot, index);
+			DWORD_PTR retIndex = m_tree.GetItemData(hRoot);
+
+			UINT nCode = TVGN_CARET;
+			BOOL retval = m_tree.Select(hRoot, nCode);
+			//
+
+			ArchiveFileInfo info;
+			POSITION pos = fileSizes.GetStartPosition();
+			CString fn;
+			while (pos)
+			{
+				fileSizes.GetNextAssoc(pos, fn, info);
+				if (info.bShow)
+				{
+					HTREEITEM hItem = m_tree.InsertItem(fn, 8, 9, hRoot);
+					if (hItem)
+					{
+						//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
+						CString txt = m_tree.GetItemText(hItem);
+
+						int nId = m_labelInfoStore.GetNextId();
+						m_tree.SetItemData(hItem, nId);
+
+						CString mboxFilePath = path + "\\" + fn;
+						LabelInfo *linfo = new LabelInfo(nId, mboxFilePath);
+						m_labelInfoStore.Add(linfo, nId);
+					}
+				}
+			}
+			SortChildren(hRoot);
+		}
+#endif
+
 		CString datapath = MboxMail::GetLastDataPath();
 		fw = datapath + "*.mboxview";
 
-		// Delete *.mbox.mboxview and *.eml.mboxview files without associated  mbox or eml archive files
+		// Delete *.mbox.mboxview and *.eml.mboxview files without associated  valid mail archive files
 		HANDLE f = FindFirstFile(fw, &wf);
 		if (f != INVALID_HANDLE_VALUE)
 		{
@@ -725,8 +1142,11 @@ void NTreeView::LoadFileSizes(CString &path, FileSizeMap &fileSizes, BOOL dontUp
 	}
 	if (m_bIsDataDirty)
 	{
-		CString itemName = m_tree.GetItemText(hRoot);
-		SaveData(hRoot);
+		if (hRoot)
+		{
+			CString itemName = m_tree.GetItemText(hRoot);
+			SaveData(hRoot);
+		}
 		m_bIsDataDirty = FALSE;
 	}
 }
@@ -776,6 +1196,7 @@ void NTreeView::FillCtrl(BOOL expand)
 	HTREEITEM hFolder;
 	if (hFolder = HasFolder(path))
 	{
+		// This will happen when user tries to select folder which already is inserted into Tree
 		HTREEITEM hCurrentSelectedItem = m_tree.GetSelectedItem();
 		if (hCurrentSelectedItem)
 			itemName = m_tree.GetItemText(hCurrentSelectedItem);
@@ -799,10 +1220,17 @@ void NTreeView::FillCtrl(BOOL expand)
 	CString tmppath = path;
 	path.TrimRight("\\");
 	std::string stdPath = path;
-	if (m_gFileSizes.find(stdPath) == m_gFileSizes.end()) 
+	GlobalFileSizeMap::iterator it = m_gFileSizes.find(stdPath);
+	ArchiveFileInfoMap *infoMap;
+	if (it == m_gFileSizes.end()) 
 	{
-		ArchiveFileInfoMap *infoMap = new ArchiveFileInfoMap(path);
+		infoMap = new ArchiveFileInfoMap(path);
 		m_gFileSizes.insert(GlobalFileSizeMap::value_type(stdPath, infoMap));
+	}
+	else
+	{
+		infoMap = it->second;
+		int deb = 1;
 	}
 
 	// TODO: globals
@@ -907,9 +1335,13 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	}
 
-
+	CString parentName = m_tree.GetItemText(hParent);
+	NamePatternParams *pNamePP = &pFrame->m_NamePatternParams;
 	if (hParent != hRoot)   // label
 	{
+		// TODO: set here or see below
+		pListView->m_which = hRoot;
+
 		DWORD nId = m_tree.GetItemData(hNewItem);
 
 		// Set global variables - nightmare -:)
@@ -943,6 +1375,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		if (mboxFileNamePath.Compare(linfo->m_filePath))
 		{
+			// or set here. Likely it doesn't matter
+			// pListView->m_which = hRoot;
 			MboxMail::SetLastPath(newLastPath);
 			CString lastPath = MboxMail::GetLastPath();
 			CString lastDataPath = MboxMail::GetLastDataPath();
@@ -992,6 +1426,12 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		sText.Format("Ready");
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+
+		pNamePP = &pFrame->m_NamePatternParams;
+
+		pFrame->UpdateFilePrintconfig();
+
+		pNamePP = &pFrame->m_NamePatternParams;
 
 		int deb = 1;
 		return;
@@ -1343,7 +1783,7 @@ void NTreeView::InsertMailFile(CString &mailFile)
 				BOOL retval = MboxMail::GetMboxviewFilePath(pListView->m_path, mboxIndexFilepath);
 				BOOL ret = FileUtils::DeleteFile(mboxIndexFilepath);
 
-				HTREEITEM hItem = m_tree.InsertItem(mailFileName, 4, 5, hFolder);
+				HTREEITEM hItem = m_tree.InsertItem(mailFileName, 8, 9, hFolder);
 				if (hItem)
 					BOOL retval = m_tree.Select(hItem, nCode);
 				int deb = 1;
@@ -1453,10 +1893,22 @@ void NTreeView::SaveData(HTREEITEM m_which)
 	FileUtils::CreateDirectory(datapath);
 	datapath.TrimRight("\\");
 
-	if( fp.Open(datapath+"\\.mboxview", CFile::modeWrite | CFile::modeCreate) ) 
+	CFileException ExError;
+	CString viewFile = datapath + "\\.mboxview";
+	if( fp.Open(viewFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		Traverse(hRoot, fp, *fileSizes);
 		fp.Close();
+	}
+	else
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + viewFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
 	}
 #if 0
 	// Test
@@ -1468,6 +1920,16 @@ void NTreeView::SaveData(HTREEITEM m_which)
 		TRACE("File=%s FileSize=%lld\n", path, fSize);
 	}
 #endif
+}
+
+// Clear .mboxview file
+void NTreeView::ClearData()
+{
+	CString datapath = MboxMail::GetLastDataPath();
+	datapath.TrimRight("\\");
+
+	CString viewFile = datapath + "\\.mboxview";
+	BOOL bRetval = ::DeleteFile(viewFile);
 }
 
 
@@ -2147,6 +2609,31 @@ BOOL NTreeView::DeleteFolder(HTREEITEM hItem)
 	return ret;
 }
 
+void NTreeView::SortChildren(HTREEITEM hItem, BOOL recursive)
+{
+	if (!recursive)
+	{
+		m_tree.SortChildren(hItem);
+	}
+	else
+	{
+		if (hItem == NULL)
+			hItem = TVI_ROOT;
+		if (hItem == TVI_ROOT || m_tree.ItemHasChildren(hItem))
+		{
+			HTREEITEM child = m_tree.GetChildItem(hItem);
+
+			while (child != NULL)
+			{
+				SortChildren(child, recursive);
+				child = m_tree.GetNextItem(child, TVGN_NEXT);
+			}
+
+			m_tree.SortChildren(hItem);
+		}
+	}
+}
+
 int NTreeView::GetChildrenCount(HTREEITEM hItem, BOOL recursive)
 {
 	if (hItem == 0)
@@ -2406,7 +2893,7 @@ int NTreeView::CreateEmptyFolder(HTREEITEM hItem)
 		
 
 	//HTREEITEM newItem = m_tree.InsertItem(newFolderName, hItem, TVI_SORT);
-	HTREEITEM newItem = m_tree.InsertItem(newFolderName, 6,6,hItem, TVI_SORT);
+	HTREEITEM newItem = m_tree.InsertItem(newFolderName, 6,7,hItem, TVI_SORT);
 	if (newItem == 0) 
 	{
 		return 0;
@@ -2809,12 +3296,12 @@ BOOL NTreeView::RefreshFolder(HTREEITEM hItem)
 
 	FillCtrl();
 
-	m_tree.SortChildren(0);
+	SortChildren(0);
 
 	HTREEITEM hFolder;
 	if (hFolder = HasFolder(path))
 	{
-		m_tree.SortChildren(hFolder);
+		SortChildren(hFolder);
 		m_tree.Expand(hFolder, TVE_EXPAND);
 	}
 
@@ -2868,7 +3355,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 			CString filePath = path + s;
 			fileSizes[s].bShow = 1;
 
-			HTREEITEM hItemRet = m_tree.InsertItem(s, 4, 5, hItem);
+			HTREEITEM hItemRet = m_tree.InsertItem(s, 8, 9, hItem);
 
 			int nId = m_labelInfoStore.GetNextId();
 			m_tree.SetItemData(hItemRet, nId);
@@ -2883,7 +3370,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes)
 			int deb = 1;
 		}
 		SaveData(hItem);
-		m_tree.SortChildren(hItem);
+		SortChildren(hItem);
 	}
 	else if (nResponse == IDCANCEL)
 	{
@@ -2946,10 +3433,16 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	char *e = p + buff.Count();
 
 	CFile fp;
-	if (!fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (!fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" label file.\n");
+		txt += exErrorStr;
+
+		TRACE("%s\n", txt);
 		return -1;
 	}
 
@@ -3385,7 +3878,7 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 				HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
 				if (found_hItem == 0)
 				{
-					HTREEITEM newItem = m_tree.InsertItem(label, 6, 6, hItem, TVI_SORT);
+					HTREEITEM newItem = m_tree.InsertItem(label, 6, 7, hItem, TVI_SORT);
 					if (newItem == 0)
 					{
 						MboxMail::assert_unexpected();
@@ -3427,7 +3920,7 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
 			if (found_hItem == 0)
 			{
-				HTREEITEM newItem = m_tree.InsertItem(folderName, 6, 6, hItem, TVI_SORT);
+				HTREEITEM newItem = m_tree.InsertItem(folderName, 6, 7, hItem, TVI_SORT);
 				if (newItem == 0)
 				{
 					MboxMail::assert_unexpected();
@@ -3480,7 +3973,7 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
 			if (found_hItem == 0)
 			{
-				HTREEITEM newItem = m_tree.InsertItem(label, 6, 6, hItem, TVI_SORT);
+				HTREEITEM newItem = m_tree.InsertItem(label, 6, 7, hItem, TVI_SORT);
 				if (newItem == 0)
 				{
 					MboxMail::assert_unexpected();
@@ -3752,7 +4245,7 @@ void NTreeView::MoveLabelItem(CString &mailFilePath, CString &label)
 
 	HTREEITEM parent = m_tree.GetParentItem(hitemToBeMoved);
 	m_tree.DeleteItem(hitemToBeMoved);
-	HTREEITEM hItem = m_tree.InsertItem(name, 6, 6, parent, TVI_FIRST);
+	HTREEITEM hItem = m_tree.InsertItem(name, 6, 7, parent, TVI_FIRST);
 	m_tree.SetItemData(hItem, nId);
 }
 
@@ -4033,5 +4526,68 @@ int NTreeView::UpdateLabelMailListFile(HTREEITEM hItem)
 		return -1;
 	}
 	return 1;
+}
+
+BOOL NTreeView::DeleteFolderIfEmpty(CString &path)
+{
+	NTreeView *pTreeView = this;
+
+	HTREEITEM hFolder = pTreeView->HasFolder(path);
+	if (hFolder)
+	{
+		int cnt = pTreeView->GetChildrenCount(hFolder, FALSE);
+		if (cnt == 0)
+		{
+			pTreeView->DeleteFolder(hFolder);
+
+			CString txt = "No valid mail archive files found in \n\n\"";
+			txt.Append(path);
+			txt.Append("\"\n\nfolder. Ignoring.\n");
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int deb = 1;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void NTreeView::OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//return;
+
+	LPNMTVGETINFOTIP pGetInfoTip = (LPNMTVGETINFOTIP)pNMHDR;
+
+	HTREEITEM hItem = pGetInfoTip->hItem;
+	if (hItem)
+	{
+#if 1
+		DWORD_PTR index = m_tree.GetItemData(hItem);
+		if (index < 100000)  // 100000 is base namber for label ID
+		{
+			CString csItemTxt = m_tree.GetItemText(hItem);
+			CString folderPath = m_folderArray.m_array.GetAt(index);
+			int len = folderPath.GetLength();
+			if (len > (pGetInfoTip->cchTextMax - 2))
+				len = pGetInfoTip->cchTextMax - 2;
+
+			strncpy(pGetInfoTip->pszText, folderPath, len);
+			pGetInfoTip->pszText[len] = 0;
+		}
+#else
+		//PrintFolderNames();
+		CString folderPath;
+		if (NTreeView::HasFolder(hItem, folderPath))
+		{
+			CString csItemTxt = m_tree.GetItemText(hItem);
+
+			DWORD_PTR index = m_tree.GetItemData(hItem);
+			CString path = m_folderArray.m_array.GetAt(index);
+			strcpy(pGetInfoTip->pszText, path);
+			int deb = 1;
+		}
+#endif
+	}
+	*pResult = 0;
 }
 

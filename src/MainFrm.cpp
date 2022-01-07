@@ -189,6 +189,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_HELP_USERGUIDE, &CMainFrame::OnHelpUserguide)
 	ON_COMMAND(ID_HELP_README, &CMainFrame::OnHelpReadme)
 	ON_COMMAND(ID_HELP_LICENSE, &CMainFrame::OnHelpLicense)
+	ON_COMMAND(ID_FILE_SELECTROOTFOLDER, &CMainFrame::OnFileSelectrootfolder)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -409,6 +410,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		// How to fix that so app is ready to accept ESC from keyboard upon startup
 		; // SetFocus();
 		//OnSetFocus(0);
+	}
+
+	CToolTipCtrl* toolTpis = m_pTreeView->m_tree.GetToolTips();
+	if (toolTpis)
+	{
+		int w = toolTpis->GetMaxTipWidth();
+		DWORD dwDuration = TTDT_INITIAL;
+		int d = toolTpis->GetDelayTime(dwDuration);
+		dwDuration = TTDT_RESHOW;
+		d = toolTpis->GetDelayTime(dwDuration);
+		dwDuration = TTDT_AUTOPOP;
+		d = toolTpis->GetDelayTime(dwDuration);
+		int deb = 1;
 	}
 
 	return 0;
@@ -632,7 +646,7 @@ void CMainFrame::OnFileOpen()
 		if (bff.SelectFolder())
 		{
 			path = bff.GetSelectedFolder();
-			path.TrimRight("\\");
+			path.TrimRight(_T("\\"));
 		}
 		else
 		{
@@ -645,7 +659,7 @@ void CMainFrame::OnFileOpen()
 		INT_PTR ret = SelectFolder(path);
 		if (ret == IDOK)
 		{
-			path.TrimRight("\\");
+			path.TrimRight(_T("\\"));
 		}
 		else
 		{
@@ -654,7 +668,7 @@ void CMainFrame::OnFileOpen()
 		}
 	}
 
-	path.Append("\\");
+	path.Append(_T("\\"));
 
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
 	if (directory.GetLength() <= 1)
@@ -665,20 +679,29 @@ void CMainFrame::OnFileOpen()
 		return;
 	}
 
-	path.TrimRight("\\");
-	AfxGetApp()->AddToRecentFileList(path);
+	path.TrimRight(_T("\\"));
+	//AfxGetApp()->AddToRecentFileList(path);
 
-	path.Append("\\");
+	path.Append(_T("\\"));
 	MboxMail::SetLastPath(path);
 
 	int paneId = 0;
 	CString sText;
-	sText.Format("Opening new mail folder ...");
+	sText.Format(_T("Opening new mail folder ..."));
 	SetStatusBarPaneText(paneId, sText, TRUE);
 
-	GetTreeView()->FillCtrl();
+	NTreeView *pTreeView = GetTreeView();
 
-	GetTreeView()->m_tree.SortChildren(0);
+	pTreeView->FillCtrl();
+
+	if (!pTreeView->DeleteFolderIfEmpty(path))
+	{
+		CString filePath = path;
+		filePath.TrimRight(_T("\\"));
+		AfxGetApp()->AddToRecentFileList(filePath);
+	}
+
+	pTreeView->SortChildren(0);
 
 #if 0
 	CString path = MboxMail::GetLastPath();
@@ -706,7 +729,130 @@ void CMainFrame::OnFileOpen()
 	}
 #endif
 
-	sText.Format("Ready");
+	sText.Format(_T("Ready"));
+	SetStatusBarPaneText(paneId, sText, FALSE);
+}
+
+void CMainFrame::OpenFolderAndSubfolders(CString &path)
+{
+	CString rootFolder = path;
+	CList<CString, CString &> folderList;
+	CString errorText;
+	int maxDepth = 10;
+
+	BOOL bRetVal = FileUtils::GetFolderList(rootFolder, folderList, errorText, maxDepth);
+
+
+	// TODO: Hash Table ??
+	CArray<CString> cacheFolderList;
+	cacheFolderList.Add("PrintCache");
+	cacheFolderList.Add("ImageCache");
+	cacheFolderList.Add("AttachmentCache");
+	cacheFolderList.Add("EmlCache");
+	cacheFolderList.Add("LabelCache");
+	cacheFolderList.Add("ArchiveCache");
+	cacheFolderList.Add("MBOXV");
+
+
+	CString folderPath;
+	CString cacheFolderName;
+	CString folderName;
+	BOOL ignoreFolder;
+	while (folderList.GetCount() > 0)
+	{
+		folderPath = folderList.RemoveHead();
+		TRACE(_T("Folder Path: \"%s\"\n"), folderPath);
+
+		FileUtils::CPathStripPath(folderPath, folderName);
+		ignoreFolder = FALSE;
+		for (int i = 0; i < cacheFolderList.GetCount(); i++)
+		{
+			CString &cacheFolderName = cacheFolderList[i];
+			if (folderName.Compare(cacheFolderName) == 0)
+			{
+				ignoreFolder = TRUE;
+				break;
+			}
+		}
+		if (ignoreFolder)
+			continue;
+
+		OpenFolder(folderPath);
+	}
+}
+
+void CMainFrame::OpenFolder(CString &path)
+{
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+
+	path.TrimRight(_T("\\"));
+	path.Append(_T("\\"));
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+	if (directory.GetLength() <= 1)
+	{
+		CString txt = _T("The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		return;
+	}
+
+	path.TrimRight(_T("\\"));
+	//AfxGetApp()->AddToRecentFileList(path);
+
+	path.Append(_T("\\"));
+	MboxMail::SetLastPath(path);
+
+	int paneId = 0;
+	CString sText;
+	sText.Format(_T("Opening new mail folder ..."));
+	SetStatusBarPaneText(paneId, sText, TRUE);
+
+	NTreeView *pTreeView = GetTreeView();
+
+	pTreeView->FillCtrl();
+
+	if (!pTreeView->DeleteFolderIfEmpty(path))
+	{
+		CString filePath = path;
+		filePath.TrimRight(_T("\\"));
+		AfxGetApp()->AddToRecentFileList(filePath);
+	}
+
+	pTreeView->SortChildren(0);
+
+#if 0
+	CString path = MboxMail::GetLastPath();
+
+	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	CFolderPickerDialog fdlg(path);
+
+	INT_PTR ret = fdlg.DoModal();
+	if (ret == IDOK)
+	{
+		CString path = fdlg.GetPathName();
+		if (path.GetLength() > 0)
+		{
+			if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+				path.AppendChar(_T('\\'));
+		}
+		MboxMail::SetLastPath(path);
+		GetTreeView()->FillCtrl();
+		AfxGetApp()->AddToRecentFileList(path);
+		int deb = 1;
+	}
+	else
+	{
+		int deb = 1;
+	}
+#endif
+
+	sText.Format(_T("Ready"));
 	SetStatusBarPaneText(paneId, sText, FALSE);
 }
 
@@ -747,6 +893,7 @@ void CMainFrame::OnTreeHide()
 	pListView = pFrame->GetListView();
 	if (m_pListView)
 	{
+		// TODO: m_pListView->m_which needs clarification; there is potential for big trouble
 		if ((m_pListView->m_which == 0) && !m_bIsTreeHidden)
 			return;
 	}
@@ -872,7 +1019,7 @@ void CMainFrame::DoOpen(CString& fpath)
 	MboxMail::SetLastPath(path);
 	GetTreeView()->FillCtrl();
 
-	GetTreeView()->m_tree.SortChildren(0);
+	GetTreeView()->SortChildren(0);
 
 	sText.Format("Ready");
 	SetStatusBarPaneText(paneId, sText, FALSE);
@@ -1231,7 +1378,9 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 					else if (printToPrinter)
 					{
 						CFile fp;
-						if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite)) {
+						CFileException ExError;
+						if (fp.Open(textFileName, CFile::modeRead | CFile::shareDenyWrite, &ExError))
+						{
 							ULONGLONG ll = fp.GetLength();
 							SimpleString *inbuf = MboxMail::m_inbuf;
 							SimpleString *workbuf = MboxMail::m_workbuf;
@@ -1245,7 +1394,15 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 
 							int deb = 1;
 						}
-						else {
+						else
+						{
+							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+							CString txt = _T("Could not open \"") + textFileName;
+							txt += _T("\" mail file.\n");
+							txt += exErrorStr;
+
+							TRACE(_T("%s\n"), txt);
 							// MessageBox ??
 							int deb = 1;
 						}
@@ -1812,9 +1969,17 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 	CString fullPath = HelpPath + "\\" + codePageIdsFile;
 
 	CFile fp;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
@@ -2063,9 +2228,17 @@ void CMainFrame::OnHelpMboxviewhelp()
 	CString fullPath = HelpPath + "\\" + codePageIdsFile;
 
 	CFile fp;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
@@ -2649,11 +2822,20 @@ restart:
 #endif
 
 			CFile fp;
-			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+			CFileException ExError;
+			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+			{
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 				CString txt = _T("Could not create \"") + filePath;
-				txt += _T("\" file.\nMake sure file is not open on other applications.");
+				txt += _T("\" file.\n");
+				txt += exErrorStr;
+
+				//TRACE(_T("%s\n"), txt);
+
 				HWND h = NULL; // we don't have any window yet
 				int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
 				MboxMail::m_outbuf->Clear();
 				return -1;
 			}
@@ -2666,13 +2848,18 @@ restart:
 				if (FileUtils::PathFileExist(strFilePath))
 				{
 					CFile fp_input;
-					if (!fp_input.Open(strFilePath, CFile::modeRead)) {
+					CFileException ExError;
+					if (!fp_input.Open(strFilePath, CFile::modeRead, &ExError))
+					{
+						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+
 						CString txt = _T("Could not open \"") + strFilePath;
 						txt += _T("\" file.\nMake sure file is not open on other applications.");
 						HWND h = NULL; // we don't have any window yet
 						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 						fp.Close();
+
 						MboxMail::m_outbuf->Clear();
 						return -1;
 					}
@@ -2762,13 +2949,18 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CFileException exList;
 	if (!fpList.Open(mboxListFilePath, CFile::typeText | CFile::modeRead | CFile::shareDenyNone, &exList))
 	{
-		TCHAR szError[1024];
-		exList.GetErrorMessage(szError, 1024);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = _T("Could not open list file \"") + mboxListFilePath;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
 		CFileStatus rStatus;
 		BOOL ret = fpList.GetStatus(rStatus);
 
-		CString txt = _T("Could not open list file \"") + mboxListFilePath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
@@ -2858,22 +3050,19 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CFileException exMergeTo;
 	if (!fpMergeTo.Open(mergedMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
-		CString errorMessage = FileUtils::GetLastErrorAsString();
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
-		TCHAR szError[1024];
-		exMergeTo.GetErrorMessage(szError, 1022);
+		CString txt = _T("Could not create Merge To File \"") + mergedMboxFilePath;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+
 		CFileStatus rStatus;
-		BOOL ret = fpMergeTo.GetStatus(rStatus);
-
-		CString txt = _T("Could not create Merge To File\"") + mergedMboxFilePath;
-		//txt += _T("\" file.\nMake sure file is not open on other applications.");
-		txt += _T("\" file.\n\n");
-		txt += CString(szError);
+		BOOL ret = fpMergeTo.GetStatus(rStatus);;
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
-
-		//answer = MessageBox(errorMessage, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 		fpList.Close();
 		return -1;
@@ -2955,10 +3144,18 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath)
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
 		CFile fp_input;
-		if (!fp_input.Open(mboxFilePath, CFile::modeRead)) 
+		CFileException ExError;
+		if (!fp_input.Open(mboxFilePath, CFile::modeRead, &ExError))
 		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 			CString txt = _T("Could not open \"") + mboxFilePath;
-			txt += _T("\" file.\nMake sure file is not open on other applications.");
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
@@ -4527,10 +4724,20 @@ void CMainFrame::OnHelpLicense()
 BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 {
 	CFile fp;
-	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate)) 
+	CFileException ExError;
+	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + fileName;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		return FALSE;
 	}
+
 	CString section = "[MailService]\r\n";
 	fp.Write(section, section.GetLength());
 	CString fld = "ActiveMailService=" + m_mailDB.ActiveMailService + "\r\n";
@@ -4604,3 +4811,68 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 	return CWnd::PreTranslateMessage(pMsg);
 }
 #endif
+
+
+void CMainFrame::OnFileSelectrootfolder()
+{
+	// TODO: Add your command handler code here
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	CString path;
+
+	if (m_bEnhancedSelectFolderDlg == FALSE)
+	{
+		path = MboxMail::GetLastPath();
+		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
+		if (!path.IsEmpty())
+			bff.SetDefaultFolder(path);
+
+		bff.SetFlags(BIF_RETURNONLYFSDIRS);
+		if (bff.SelectFolder())
+		{
+			path = bff.GetSelectedFolder();
+			path.TrimRight(_T("\\"));
+		}
+		else
+		{
+			int deb = 1;
+			return;
+		}
+	}
+	else
+	{
+		INT_PTR ret = SelectFolder(path);
+		if (ret == IDOK)
+		{
+			path.TrimRight(_T("\\"));
+		}
+		else
+		{
+			int deb = 1;
+			return;
+		}
+	}
+
+	path.Append(_T("\\"));
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+	if (directory.GetLength() <= 1)
+	{
+		CString txt = _T("The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		return;
+	}
+
+	path.TrimRight(_T("\\"));
+	//AfxGetApp()->AddToRecentFileList(path);
+
+	path.Append(_T("\\"));
+	MboxMail::SetLastPath(path);
+
+	OpenFolderAndSubfolders(path);
+}

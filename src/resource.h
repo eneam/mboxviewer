@@ -366,6 +366,7 @@
 #define ID_GMAILLABELS_CREATE           32904
 #define ID_GMAILLABELS_DELETE           32905
 #define ID_GMAILLABELS_REFRESH          32906
+#define ID_FILE_SELECTROOTFOLDER        32907
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -375,7 +376,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        230
-#define _APS_NEXT_COMMAND_VALUE         32907
+#define _APS_NEXT_COMMAND_VALUE         32908
 #define _APS_NEXT_CONTROL_VALUE         1267
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

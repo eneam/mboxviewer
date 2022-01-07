@@ -63,6 +63,11 @@ public:
 		while ((p < e) && (*p++ != '\n'));
 		return p;
 	}
+	inline static char *EatNewLine(char* p, char*e, int &maxLineLength)
+	{
+		while ((p < e) && (*p++ != '\n') && (maxLineLength-- > 0));
+		return p;
+	}
 };
 
 class MailHeader

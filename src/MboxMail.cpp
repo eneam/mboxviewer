@@ -446,14 +446,16 @@ BOOL MboxMail::GetBody(CString &res)
 {
 	BOOL ret = TRUE;
 	CFile fp;
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		char *p = res.GetBufferSetLength(m_length);
 		//TRACE("offset = %lld\n", m_startOff);
 		fp.Seek(m_startOff, SEEK_SET);
 		fp.Read(p, m_length);
 		char *ms = strchr(p, '\n'); //"-Version: 1.0");
-		if (ms) {
+		if (ms) 
+		{
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
@@ -476,8 +478,15 @@ BOOL MboxMail::GetBody(CString &res)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
 		ret = FALSE;
 	}
 	return ret;
@@ -527,7 +536,8 @@ BOOL MboxMail::GetBody(SimpleString *res, int maxLength)
 		if (maxLength < m_length)
 			bytes2Read = maxLength;
 	}
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		res->Resize(bytes2Read);
 		//TRACE("offset = %lld\n", m_startOff);
@@ -540,8 +550,15 @@ BOOL MboxMail::GetBody(SimpleString *res, int maxLength)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
 		ret = FALSE;
 	}
 
@@ -3237,9 +3254,22 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 	if (!progressBar)
 	{
-		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+		CFileException ExError;
+		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 			CString txt = _T("Could not create \"") + csvFile;
-			txt += _T("\" file.\nMake sure file is not open on other applications.");
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+
+			CFileStatus rStatus;
+			BOOL ret = fp.GetStatus(rStatus);
+
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
@@ -3248,10 +3278,21 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		CFile fpm;
 		if (csvConfig.m_bContent)
 		{
-			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-				CString txt = _T("Could not open mail archive \"") + s_path;
-				HWND h = NULL; // we don't have any window yet ??
+			CFileException ExError;
+			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
+			{
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+				CString txt = _T("Could not open \"") + MboxMail::s_path;
+				txt += _T("\" mail file.\n");
+				txt += exErrorStr;
+
+				//TRACE(_T("%s\n"), txt);
+				//errorText = txt;
+
+				HWND h = NULL; // we don't have any window yet
 				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
 				fp.Close();
 				return -1;
 			}
@@ -3956,9 +3997,19 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4108,9 +4159,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite), &ExError)
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4244,9 +4297,19 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4963,10 +5026,39 @@ bool ALongRightProcessProcPrintMailArchive(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
+BOOL MboxMail::GetLongestCachePath(CString &longestCachePath)
+{
+	CString rootCacheSubFolder = "AttachmentCache";
+	rootCacheSubFolder = "PrintCache";
+
+	CString datapath = MboxMail::GetLastDataPath();
+	if (datapath.IsEmpty())
+		return FALSE;
+
+	CString fileDataPath = MboxMail::s_datapath;
+	CString filePath = MboxMail::s_path;
+	if (s_path.GetLength() == 0)
+		return FALSE;
+
+	longestCachePath = datapath + rootCacheSubFolder;
+
+	CString errorText;
+	CString targetPrintSubFolder;
+
+	longestCachePath.Empty();
+
+	BOOL ret = CreateCachePath(rootCacheSubFolder, targetPrintSubFolder, longestCachePath, errorText);
+	if (ret)
+		return TRUE;
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
 BOOL MboxMail::GetPrintCachePath(CString &prtCachePath)
 {
 	CString errorText;
-	CString printCachePath;
 	CString rootPrintSubFolder = "PrintCache";
 	CString targetPrintSubFolder;
 
@@ -5045,17 +5137,40 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 	if (!progressBar) // no worker thread
 	{
-		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+		CFileException ExError;
+		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 			CString txt = _T("Could not create \"") + textFile;
-			txt += _T("\" file.\nMake sure file is not open on other applications.");
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+
+			CFileStatus rStatus;
+			BOOL ret = fp.GetStatus(rStatus);
+
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 
 		CFile fpm;
-		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-			CString txt = _T("Could not open mail archive \"") + s_path;
+		CFileException ExError2;
+		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			fp.Close();
@@ -5194,21 +5309,38 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 		return -1;
 	}
 
-	CFileException ex;
+	CFileException ExError;;
 	CFile fp;
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ex)) {
-		TCHAR szError[1024];
-		ex.GetErrorMessage(szError, 1024);
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		CFileStatus rStatus;
 		BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path + _T("\"");
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		fp.Close();
 		return -1;
 	}
@@ -5327,16 +5459,22 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		return -1;
 	}
 
-	CFileException ex;
+	CFileException ExError;
 	CFile fp;
-	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ex)) 
+	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
-		TCHAR szError[1024];
-		ex.GetErrorMessage(szError, 1024);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + csvFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		CFileStatus rStatus;
 		BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + csvFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+
+		errorText = txt;
 		return -1;
 	}
 
@@ -5344,9 +5482,18 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	BOOL isFpmOpen = FALSE;
 	//if (csvConfig.m_bContent) // open regardless; required by 
 	{
-		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+		CFileException ExError;
+		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
-			errorText = _T("Could not open mail archive \"") + s_path + _T("\"");
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+
+			errorText = txt;
 			fp.Close();
 			return -1;
 		}
@@ -5853,9 +6000,23 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		}
 
 		const char *fileName = (LPCSTR)body->m_attachmentName;
-		CFile fp(fileName, CFile::modeWrite | CFile::modeCreate);
-		fp.Write(data, dataLen);
-		fp.Close();
+		CFile fp;
+		CFileException ExError;
+		if (fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
+		{
+			fp.Write(data, dataLen);
+			fp.Close();
+		}
+		else
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not create \"") + body->m_attachmentName;
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+		}
 	}
 
 	return outbuf->Count();
@@ -5988,18 +6149,32 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 
 	CFile fp;
 	CString csvFile = datapath + fileNameBase + ".csv";
+	CFileException ExError;
+	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate)) {
 		CString txt = _T("Could not create \"") + csvFile;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
 	CFile fpm;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		return -1;
 	}
 
@@ -6652,16 +6827,32 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 	CFile fp;
 	CString statsFile = datapath + fileNameBase + "_stats.txt";
 
-	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + statsFile;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
-	CFile fpm;  
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+	CFile fpm;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		return -1;
 	}
 
@@ -7243,7 +7434,8 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	fileName.Append((LPCSTR)crc32, crc32.GetLength());
 #endif
 
-	if (fileName.GetLength() > namePatternParams->m_nFileNameFormatSizeLimit)
+	int fileNameLength = fileName.GetLength();
+	if (fileNameLength > namePatternParams->m_nFileNameFormatSizeLimit)
 	{
 		fileName.Truncate(namePatternParams->m_nFileNameFormatSizeLimit);
 	}
@@ -7978,7 +8170,7 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 	return 1;
 }
 
-int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString errorText)
+int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString &errorText)
 {
 	CFile fp;
 	CString textFile;
@@ -8006,23 +8198,35 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	CFileException ex;
-	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone), &ex)
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
 	{
-		DWORD er = GetLastError();
-		//TCHAR szError[1024];
-		//ex.GetErrorMessage(szError, 1024);
-		//CFileStatus rStatus;
-		//BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		errorText = txt;
+		// TODO:
 		//return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
+
 		fp.Close();
 		return -1;
 	}
@@ -8087,15 +8291,34 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create file \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		fp.Close();
 		return -1;
 	}
@@ -8222,15 +8445,33 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
+
 		fp.Close();
 		return -1;
 	}
@@ -9019,7 +9260,8 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	SimpleString *res = MboxMail::m_outdata;
 	res->Clear();
 
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		res->Resize(bytes2Read);
 		//TRACE("offset = %lld\n", m_startOff);
@@ -9032,8 +9274,13 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
 		return;
 	}
 
