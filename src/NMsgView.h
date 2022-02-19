@@ -116,7 +116,7 @@ public:
 	int HideMailHeader(int iItem);
 	int ShowMailHeader(int iItem);
 	int FindMailHeader(char *data, int datalen);
-	static char *EatFldLine(char *p, char *e);
+	char *EatFldLine(char *p, char *e);
 
 	int m_frameCx_TreeNotInHide;
 	int m_frameCy_TreeNotInHide;

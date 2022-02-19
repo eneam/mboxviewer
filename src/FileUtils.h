@@ -102,13 +102,6 @@ public:
 	//
 	static CString GetLastErrorAsString();
 	static CStringW GetLastErrorAsStringW();
-
-	static CString GetFileExceptionErrorAsString(CFileException &ExError);
-	// Generic text
-	static CString GetOpenForReadFileExceptionErrorAsString(CString &fileName, CFileException &exError);
-
-	static BOOL GetFolderList(CString &rootFolder, CList<CString, CString &> &folderList, CString &errorText, int maxDepth);
-
 	void UnitTest();
 };
 

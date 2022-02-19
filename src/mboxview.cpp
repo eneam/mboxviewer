@@ -290,55 +290,10 @@ BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
 	return (cchMsg > 0);
 }
 
-#include <iostream>
-
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
-#if 0
-	int _snwprintf_s(
-		wchar_t *buffer,
-		size_t sizeOfBuffer,
-		size_t count,
-		const wchar_t *format[,
-		argument] ...
-	);
-#endif
-
-#if 0
-	wchar_t c = L'S';
-	CStringW wstr = c;
-	//wstr.Format(L"The wide character value 'S' is: %c", c);
-	//wstr.Format(L"%c", c);
-	//print the character value
-	//TRACE("The wide character value 'S' is: %S", c);
-	TRACE(L"%s\n", wstr);
-
-	//print the size of wide character
-	TRACE("Wide character size is %d\n", sizeof(c));
-	TRACE("Wide character size is %d\n", wstr.GetLength());
-
-	int deb1 = 1;
-#endif
-
-#if 0
-	CString rootFolder = "G:\\MboxViewer";
-	CList<CString, CString &> folderList;
-	CString errorText;
-	int maxDepth = 10;
-
-	BOOL bRetVal = FileUtils::GetFolderList(rootFolder, folderList, errorText, maxDepth);
-
-		// Print all folders, i.e. not empty folder path
-	CString folderPath;
-	TRACE(_T("List of non empty folders:\n"));
-	while (folderList.GetCount() > 0)
-	{
-		folderPath = folderList.RemoveHead();
-		TRACE(_T("Folder Path: \"%s\"\n"), folderPath);
-	}
-#endif
 
 #if 0
 	for (int i = 0; i < 1; i++)

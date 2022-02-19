@@ -641,17 +641,9 @@ void HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp()
 	CString fullPath = HelpPath + "\\" + htmlHelpFileFile;
 
 	CFile fp;
-	CFileException ExError;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
-	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
 		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
-		txt += exErrorStr;
-
-		//TRACE(_T("%s\n"), txt);
-
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;

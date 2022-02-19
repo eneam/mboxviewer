@@ -5,10 +5,8 @@ Changes
 v 1.0.3.26
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
- - Added "File->Select root folder" menu option to traverse root folder and subfolders looking for mail archive files.;
- - Enhanced to ignore file extensions and examine all files to determine whether they are vaild mbox mail archives. This is to provide btter support for exported Thunderbird mail archive files.;
- - Changed icons to better represent Windows folders and mail archive files.;
- - Enanced to allow user to hover over the folder icon to see the folder path.;
+ - Fixed the case MBox Viewer could create separate Gmail Label per each email in some cases.;
+ - Fixed incorrect links to attachments in PDF mail document. Note that links are clickable in Edge and Chrome but not in Firefox browser;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.25

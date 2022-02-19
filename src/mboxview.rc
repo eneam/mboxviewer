@@ -68,7 +68,6 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "Select &folder...\tF2",       ID_FILE_OPEN
-        MENUITEM "Select root folder",          ID_FILE_SELECTROOTFOLDER
         MENUITEM "Refresh\tF5",                 ID_FILE_REFRESH
         MENUITEM "Options...",                  ID_FILE_OPTIONS
         MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
@@ -1234,7 +1233,6 @@ END
 STRINGTABLE
 BEGIN
     ID_TREE_EXPAND          "Expand tree containing folders\nExpand/Collapse mail folders"
-    ID_TREE_HIDE            "Hide/Restore Mail Archive Tree\nHide/Restore mail tree"
     ID_VIEW_USERSELECTEDMAILS 
                             "Enable or Disable User Selected Mail List/Toggle the list"
 END

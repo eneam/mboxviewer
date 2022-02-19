@@ -80,15 +80,13 @@ public:
 class ArchiveFileInfo
 {
 public:
-	ArchiveFileInfo() { fSize = 0; bShow = 1; bNeedsValidation = TRUE; };
+	ArchiveFileInfo() { fSize = 0; bShow = 1; };
 	_int64 fSize;
 	_int64 bShow;
-	BOOL bNeedsValidation;
 };
 
 typedef CMap<CString, LPCSTR, ArchiveFileInfo, ArchiveFileInfo> FileSizeMap;
 
-// Folder name plus table of mail archive names and sizes
 class ArchiveFileInfoMap
 {
 public:
@@ -98,7 +96,6 @@ public:
 	FileSizeMap m_fileSizes;
 };
 
-// table of tables. Table of all folders info, i.e table of FileSizeMap info
 typedef unordered_map<std::string, ArchiveFileInfoMap*> GlobalFileSizeMap;
 
 unsigned long StrHash(const char* buf, const UINT length);
@@ -108,11 +105,13 @@ class MySimpleDeque;
 class GmailLabel
 {
 public:
-	GmailLabel(CString &str);
+	GmailLabel(CString &label, CString &mappedToLabel);
 	~GmailLabel();
 
 	dlink_node<GmailLabel> m_hashMapLink;
+	dlink_node<GmailLabel> m_hashMapLinkToMappedLabel;
 	CString m_label;
+	CString m_mappedToLabel;
 	MySimpleDeque *m_ptrList;
 };
 
@@ -139,6 +138,28 @@ struct GmailLabelHelper
 	}
 };
 
+struct GmailMappedLabelHelper
+{
+	size_t operator()(const CString *key) const
+	{
+		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		return hashsum;
+	}
+	bool operator()(CString *key1, CString *key2) const
+	{
+		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+	bool operator()(CString *key1, GmailLabel *key2) const
+	{
+		if (*key1 == key2->m_mappedToLabel)
+			return true;
+		else
+			return false;
+	}
+};
 #define LSIZE 512
 
 typedef std::array<MboxMail*, 512> LabelArray;
@@ -160,6 +181,7 @@ public:
 };
 
 using GmailLableMapType = IHashMap<CString, GmailLabel, GmailLabelHelper, GmailLabelHelper, &GmailLabel::m_hashMapLink>;
+using GmailMappedLabelMapType = IHashMap<CString, GmailLabel, GmailMappedLabelHelper, GmailMappedLabelHelper, &GmailLabel::m_hashMapLinkToMappedLabel>;
 
 
 // TODO:  Rename LabelInfo to TreeNodeInfo
@@ -235,14 +257,16 @@ public:
 	CWheelTreeCtrl	m_tree;
 	//
 	GmailLableMapType *m_labelHT;
+	GmailMappedLabelMapType *m_mappedToLabelHT;
 	GlobalLabelInfo m_labelInfoStore;
 	BOOL m_labelView;
 	int m_labelSeqNumb;
 
 	//  TODO: consider to create class
-	FileSizeMap	*fileSizes; // Folder name plus table of mail archive names and sizes 
-	FileSizeMap	m_fileSizes; // Folder name plus table of mail archive names and sizes 
-	GlobalFileSizeMap m_gFileSizes;  // table of all folders info, i.e table of FileSizeMap
+	FileSizeMap	*fileSizes; // plus other data
+	FileSizeMap	m_fileSizes; // plus other data
+	GlobalFileSizeMap m_gFileSizes;  // fileSizes of all folders
+	//
 	BOOL m_bIsDataDirty;  // if true, folder data/file sizes needs to be saved to .mboxview
 	//
 	BOOL m_bSelectMailFileDone;
@@ -275,7 +299,6 @@ public:
 // Implementation
 public:
 	void ClearLabelHT();
-	// File Size Map
 	void ClearGlobalFileSizeMap();
 	BOOL RemoveFileSizeMap(CString path);
 	BOOL SetupFileSizeMap(CString &path);
@@ -283,34 +306,27 @@ public:
 	int OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes);
 	void RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes);
 	void DetermineFolderPath(HTREEITEM hItem, CString &folderPath);
-	//
 	HTREEITEM DetermineRootItem(HTREEITEM hItem);
 	void Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes);
-	void SaveData(HTREEITEM hItem);  // save data to per folder .mboxview file
-	void ClearData();
+	void SaveData(HTREEITEM hItem);
 	void FillCtrl(BOOL expand = TRUE);
 	void ExpandOrCollapseTree(BOOL expand);
 	void LoadFolders();
 	void DeleteMBoxAllWorkFolders(CString &mboxFileName);
 	HTREEITEM HasFolder(CString &path);
-	BOOL HasFolder(HTREEITEM hItem, CString &path);
 	void SelectMailFile(CString *fileName = 0); // based on -MBOX= command line argument
 	void InsertMailFile(CString &mailFile);
 	void ForceParseMailFile(HTREEITEM hItem);
 	void UpdateFileSizesTable(CString &path, _int64 fSize, FileSizeMap &fileSizes);
 
-
-	void SortChildren(HTREEITEM hItem, BOOL recursive = FALSE);
 	int GetChildrenCount(HTREEITEM hItem, BOOL recursive);
 	HTREEITEM FindItem(HTREEITEM hItem, CString &mailFileName);
 	BOOL DeleteItem(HTREEITEM hItem);
 	BOOL DeleteItemChildren(HTREEITEM hItem);
 	BOOL DeleteFolder(HTREEITEM hItem);
-	BOOL DeleteFolderIfEmpty(CString &path);
 	void StartTimer();
 	void PostMsgCmdParamFileName(CString *fileName = 0);
 	BOOL RefreshFolder(HTREEITEM hItem);
-	void PrintFolderNames();
 
 
 	int CreateLabelsForSingleMailFile(HTREEITEM hItem);
@@ -338,10 +354,6 @@ public:
 
 	static void FindAllDirs(LPCTSTR pstr);
 
-
-	static BOOL ImboxviewFile(CString & fName);
-	static int IsValidMailFile(char *data, int datalen);
-
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(NTreeView)
@@ -359,7 +371,6 @@ protected:
 	afx_msg LRESULT OnCmdParam_FileName(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnCmdParam_GeneralHint(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-	afx_msg void OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

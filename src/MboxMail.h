@@ -497,7 +497,7 @@ public:
 	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
 	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, BOOL progressBar, CString &errorText);
 	//
-	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString &errorText);
+	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString errorText);
 	static int PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString errorText);
 	//
 	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
@@ -535,8 +535,6 @@ public:
 	static BOOL CreateCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 	static BOOL GetCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText, CString *mboxFilePath=NULL);
 
-
-	static BOOL GetLongestCachePath(CString &longestCachePath);
 	static BOOL GetPrintCachePath(CString &printCachePath);
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 	static BOOL GetMboxviewFilePath(CString &mboxFilePath, CString &mboxviewFilePath);
@@ -558,6 +556,10 @@ public:
 	static int printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
 
 	static void DumpMailParseException(_int64 msgOffset);
+
+	static void encodeTextAsHtml(SimpleString &txt);
+	static void encodeTextAsHtmlLink(SimpleString &txt);
+	static void encodeTextAsHtmlLinkLabel(SimpleString &txt);
 
 	static void mbassert();
 };

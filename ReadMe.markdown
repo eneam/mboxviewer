@@ -46,6 +46,13 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.26
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Fixed the case MBox Viewer could create separate Gmail Label per each email on some cases.;
+ - Fixed incorrect links to attachments in PDF mail document. Note that links are clickable in Edge and Chrome but not in Firefox browser;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.25
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

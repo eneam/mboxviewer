@@ -524,7 +524,7 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 		if (cnt > (MAX_BUFF - (N_CHARS*20)))
 		{
 			buff[cnt] = '\0';
-			TRACE(_T("%s"), buff);
+			TRACE("%s", buff);
 			cnt = 0;
 			(void *)sprintf(&buff[cnt], "\n");
 			n = strlen(&buff[cnt]);
@@ -540,7 +540,7 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 	if (cnt >= 0)
 	{
 		buff[cnt] = '\0';
-		TRACE(_T("%s"), buff);
+		TRACE("%s", buff);
 	}
 }
 

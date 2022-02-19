@@ -473,11 +473,9 @@ void NamePatternParams::LoadFromRegistry()
 
 void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)
 {
-	CString longestCacheName;
-	MboxMail::GetLongestCachePath(longestCacheName);
-	int cachePathLength = longestCacheName.GetLength();
-	//int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
-	int maxFileSize = _MAX_FNAME - cachePathLength - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
+	CString printCacheName;
+	MboxMail::GetPrintCachePath(printCacheName);
+	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
 	if (maxFileSize < 0)
 		maxFileSize = 0;
 

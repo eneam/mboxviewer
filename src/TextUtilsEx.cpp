@@ -742,7 +742,7 @@ UINT TextUtilsEx::charset2Id(const char *char_set)
 	}
 #if 0
 	for (it = cids->begin(); it != cids->end(); it++) {
-		TRACE(_T("%d %s\n"), it->second, it->first);
+		TRACE("%d %s\n", it->second, it->first);
 	}
 #endif
 	std::string charset = char_set;
@@ -796,7 +796,7 @@ BOOL TextUtilsEx::id2charset(UINT id, std::string &charset)
 	}
 #if 0
 	for (it = ids->begin(); it != ids->end(); it++) {
-		TRACE(_T("%d %s\n"), it->first, it->second);
+		TRACE("%d %s\n", it->first, it->second);
 	}
 #endif
 	if ((it = ids->find(id)) != ids->end()) {
@@ -812,17 +812,10 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	CString fullPath = path + "\\" + codePageIdsFile;
 
 	CFile fp;
-	CFileException ExError;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
-	{
-		TCHAR szCause[2048];
-		ExError.GetErrorMessage(szCause, 2048);
-
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
 		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
-		txt += szCause;
-
-		HWND h = NULL; // we don't have any window yet ??
+		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
