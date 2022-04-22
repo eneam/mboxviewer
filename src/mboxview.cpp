@@ -64,6 +64,10 @@ int JsonTest();
 
 static int unhandledExceptionsCnt = 0;
 
+DWORD CmboxviewApp::m_versionMS = 0;
+DWORD CmboxviewApp::m_versionLS = 0;
+CString CmboxviewApp::m_savedVer = "";
+
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
 	// Do something, for example generate error report
@@ -219,6 +223,7 @@ const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
 BEGIN_MESSAGE_MAP(CmboxviewApp, CWinApp)
 	//{{AFX_MSG_MAP(CmboxviewApp)
 	ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
+	ON_COMMAND(ID_HELP_DONATE, OnHelpDonate)
 		// NOTE - the ClassWizard will add and remove mapping macros here.
 		//    DO NOT EDIT what you see in these blocks of generated code!
 	//}}AFX_MSG_MAP
@@ -238,6 +243,33 @@ void Com_Initialize()
 	int deb = 1;
 }
 
+void CmboxviewApp::AddToRecentFileList(LPCTSTR lpszPathName)
+{
+	ASSERT_VALID(this);
+	ASSERT(m_pRecentFileList != NULL);
+
+	CString pathName = lpszPathName;
+	pathName.TrimRight("\\");
+	CString filePathName;
+	int count;
+	int i;
+	BOOL removed = FALSE;
+	count = m_pRecentFileList->GetSize();
+	for (i = 0; i < count; i++)
+	{
+		filePathName = m_pRecentFileList->m_arrNames[i];
+		filePathName.TrimRight("\\");
+		if (filePathName.Compare(pathName) == 0)
+		{
+			m_pRecentFileList->Remove(i);
+			int newCount = m_pRecentFileList->GetSize();
+			removed = TRUE;
+		}
+	}
+	this->CWinApp::AddToRecentFileList(lpszPathName);
+	if (removed)
+		m_pRecentFileList->WriteList();
+}
 
 void CmboxviewApp::MyMRUFileHandler(UINT i)
 {
@@ -290,10 +322,79 @@ BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
 	return (cchMsg > 0);
 }
 
+#include <iostream>
+#include <commctrl.h>
+
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+#if 0
+	// TaskDialog or MFC wrapper CTaskDialog are supported on Vista and higher. 
+	// TODO: Implies XP will not be supported. Do we stil need support for XP ??
+	int nButtonPressed = 0;
+	HINSTANCE hInst = 0;
+	TaskDialog(NULL, hInst, L"Hello", L"Box", L"Mail  xxxx   xxxxxxxxxxxxx   xxxxxx \nmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx nnnnnnnnnnnnnnnnnnnnnnn",
+		//MAKEINTRESOURCE(IDS_APPLICATION_TITLE),
+		//MAKEINTRESOURCE(IDS_DOSOMETHING),
+		//MAKEINTRESOURCE(IDS_SOMECONTENT),
+		TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON,
+		TD_WARNING_ICON,
+		&nButtonPressed);
+
+	if (IDOK == nButtonPressed)
+	{
+		// OK button pressed
+	}
+	else if (IDCANCEL == nButtonPressed)
+	{
+		// Cancel pressed
+	}
+#endif
+#if 0
+	int _snwprintf_s(
+		wchar_t *buffer,
+		size_t sizeOfBuffer,
+		size_t count,
+		const wchar_t *format[,
+		argument] ...
+	);
+#endif
+
+#if 0
+	wchar_t c = L'S';
+	CStringW wstr = c;
+	//wstr.Format(L"The wide character value 'S' is: %c", c);
+	//wstr.Format(L"%c", c);
+	//print the character value
+	//TRACE("The wide character value 'S' is: %S", c);
+	TRACE(L"%s\n", wstr);
+
+	//print the size of wide character
+	TRACE("Wide character size is %d\n", sizeof(c));
+	TRACE("Wide character size is %d\n", wstr.GetLength());
+
+	int deb1 = 1;
+#endif
+
+#if 0
+	CString rootFolder = "G:\\MboxViewer";
+	CList<CString, CString &> folderList;
+	CString errorText;
+	int maxDepth = 10;
+
+	BOOL bRetVal = FileUtils::GetFolderList(rootFolder, folderList, errorText, maxDepth);
+
+		// Print all folders, i.e. not empty folder path
+	CString folderPath;
+	TRACE(_T("List of non empty folders:\n"));
+	while (folderList.GetCount() > 0)
+	{
+		folderPath = folderList.RemoveHead();
+		TRACE(_T("Folder Path: \"%s\"\n"), folderPath);
+	}
+#endif
 
 #if 0
 	for (int i = 0; i < 1; i++)
@@ -311,9 +412,11 @@ CmboxviewApp::CmboxviewApp()
 	}
 #endif
 
-	//void TokenizerTest();
-	//TokenizerTest();
+#if 1
+	void TokenizerTest();
+	TokenizerTest();
 	int deb = 1;
+#endif
 
 	//JsonTest();
 
@@ -372,7 +475,7 @@ void SetBrowserEmulation()
 
 #pragma comment(linker, "/defaultlib:version.lib")
 
-BOOL GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls)
+BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls)
 {
 	// get module handle
 	TCHAR filename[_MAX_PATH];
@@ -482,6 +585,10 @@ void CmboxviewApp::OnAppAbout()
 	aboutDlg.DoModal();
 }
 
+void CmboxviewApp::OnHelpDonate()
+{
+	HINSTANCE result = ShellExecute(NULL, _T("open"), "https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp message handlers
@@ -490,7 +597,11 @@ BOOL CAboutDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	DWORD ms, ls;
-    if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls)) {
+    if (CmboxviewApp::GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
+	{
+		CmboxviewApp::m_versionMS = ms;
+		CmboxviewApp::m_versionLS = ls;
+
 		CString txt;
         // display file version from VS_FIXEDFILEINFO struct
         txt.Format("Version %d.%d.%d.%d", 
@@ -654,7 +765,6 @@ BOOL CmboxviewApp::InitInstance()
 		return FALSE;
 	}
 
-
 	HANDLE procHandle = GetCurrentProcess();
 	BOOL priClass = SetPriorityClass(procHandle, ABOVE_NORMAL_PRIORITY_CLASS);
 	DWORD err = GetLastError();
@@ -713,7 +823,7 @@ BOOL CmboxviewApp::InitInstance()
 			MboxMail::ReleaseResources();
 			return FALSE;
 		}
-		else if (retCode == -2)  // error but continue; probably overkill
+		else if (retCode == -2)  // error but continue; probably overkill  // no longer true option
 		{
 			CMainFrame::m_commandLineParms.Clear();
 		}
@@ -804,15 +914,19 @@ BOOL CmboxviewApp::InitInstance()
 	pFrame->UpdateWindow();
 	
 	DWORD ms, ls;
-	if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls)) {
-		CString txt;
+	if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
+	{
+		CmboxviewApp::m_versionMS = ms;
+		CmboxviewApp::m_versionLS = ls;
+
+		CString newVer;
 		// display file version from VS_FIXEDFILEINFO struct
-		txt.Format("%d.%d.%d.%d",
+		newVer.Format("%d.%d.%d.%d",
 			HIWORD(ms), LOWORD(ms),
 			HIWORD(ls), LOWORD(ls));
-		CString savedVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version");
-		if (savedVer.Compare(txt) != 0) {
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version", txt);
+		m_savedVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version");
+		if (m_savedVer.Compare(newVer) != 0) {
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version", newVer);
 			pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
 		}
 	}
@@ -1144,14 +1258,46 @@ int JsonTest()
 	return EXIT_SUCCESS;
 }
 #endif
-#if 0
+#if 1
 void TokenizerTest()
 {
-	CString str = "\"my \'\"\' \'\"\', ala/mama,\"alal/ma vs jan, ziggy ero\" , tata, \tlala\",	a \'\"\'  \'\" \'\', \"my \'\"\' \'\"\',\'\"\'";
+	CStringArray list;
+	CString str;
+
+	str = "\"home \"\"\"\" x\", Home/kitchen \"\" x, \"Inbox\", \"Sent\"";
+	list.Add(str);
+
+
+	str = "Archived,Important,Opened,Category Updates,Osobiste/amex/jan";
+	str.Append("\"\"lucyna\"\"");
+
+	str.Append("william,Osobiste/amex/amex,Osobiste/amex/ala/ala,Osobiste/amex/\"\"''' \"\" '''");
+	str.Append("' '' ''' \"\" \"\"\"\" \"\"\"\" ''\"\" '''\"\",\"Osobiste/amex/*?<>|:\\//\\\"\"  \\\"\" \'");
+	str.Append("\\,\",Osobiste/amex/jan \"\"lucyna robert,Osobiste/amex/a\b\\c a/b/c a\\b\\c");
+	str.Append("a;b,\"Osobiste/amex/tata,tata\",Osobiste/amex/mama mama");
+	list.Add(str);
+
+	//str = "Osobiste/amex/*?<>|:\\//\""  \\"" \' \,";
+
+
+	str = "\"my \'\"\' \'\"\', ala/mama,\"alal/ma vs jan, ziggy ero\" , tata, \tlala\",	a \'\"\'  \'\" \'\', \"my \'\"\' \'\"\',\'\"\'";
+	//list.Add(str);
+
+	str = "Archived, Important, Starred, \"American Cobalt/American Cobalt vs.Diehl, Hastie, EOI, ERT\", \"Sent\", ala";
+	//list.Add(str);
+
 	//CString str = "\'\"\'z";
-	CStringArray a;
-	int retval = TextUtilsEx::Tokenize(str, a);
-	TextUtilsEx::TraceStringArray(a);
+
+	int i;
+	for (i = 0; i < list.GetCount(); i++)
+	{
+		CString l = list.GetAt(i);
+		TRACE("\nLabel: %s\n", l);
+
+		CStringArray a;
+		int retval = TextUtilsEx::Tokenize(l, a);
+		TextUtilsEx::TraceStringArray(a);
+	}
 }
 #endif
 

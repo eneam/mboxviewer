@@ -176,7 +176,8 @@ BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNum
 		BOOL retC = CreateDumpFilePath(fileName, filePath);
 
 		CFile fp;
-		if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate))
+		CFileException ExError;
+		if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 		{
 #if 0
 			CString txt = _T("Could not create Stack Dump File\"") + procFullPath;
@@ -272,10 +273,17 @@ BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosit
 	BOOL retC = CreateDumpFilePath(fileName, filePath);
 
 	CFile fp;
-	if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate))
+	CFileException ExError;
+	if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
-		ret = FALSE;
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
+		CString txt = _T("Could not create \"") + filePath;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		ret = FALSE;
 	}
 	else
 	{

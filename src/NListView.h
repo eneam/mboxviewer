@@ -65,6 +65,32 @@ typedef MyMailArray MailArray;
 /////////////////////////////////////////////////////////////////////////////
 // NListView window
 
+class HtmlAttribInfo
+{
+public:
+	HtmlAttribInfo(CString &name)
+	{
+		m_name = name; m_quoted = FALSE; m_separator = 0; m_terminator = ' ';
+	}
+	HtmlAttribInfo()
+	{
+		m_quoted = FALSE; m_separator = 0; m_terminator = ' ';
+	}
+	~HtmlAttribInfo() {}
+
+	void Reset()
+	{
+		m_name.Empty(); m_value.Empty(); m_quoted = FALSE;  m_separator = 0; m_terminator = ' '; m_attribString.Empty();
+	}
+
+	CString m_name;
+	CString m_value;
+	BOOL m_quoted;
+	char m_separator;
+	char m_terminator;
+	CString m_attribString;
+};
+
 class MailBodyInfo
 {
 public:
@@ -190,6 +216,7 @@ public:
 	void CloseMailFile();
 	void ResetFileMapView();
 	void SortByColumn(int colNumber, BOOL sortByPosition = FALSE);
+	void SortBySubjectBasedConversasions(BOOL justRefresh = FALSE);
 	void RefreshSortByColumn();
 	BOOL HasAnyAttachment(MboxMail *m);
 	// end of vars
@@ -199,6 +226,7 @@ public:
 	BOOL m_bCaseSensInMail;
 	BOOL m_bWholeWordInMail;
 
+	int m_subjectSortType;
 	BOOL m_bExportEml;
 	BOOL m_bFindNext;
 	BOOL m_bInFind;
@@ -257,10 +285,12 @@ public:
 	std::vector <MailBodyInfo*> m_BodyInfoArray;
 	//
 	int SaveAsEmlFile(CString &bdy);
+	int SaveAsEmlFile(char *bdy, int bdylen);
 	void FindImageFileName(CString &cid);
 	//
 	int LoadMails(LPCSTR cache, MailArray *mails = 0);
 	void FillCtrl();
+	int FillCtrl_ParseMbox(CString &mboxPath);
 	int  MailFileFillCtrl(CString &errorText);
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
@@ -330,6 +360,8 @@ public:
 
 	MailIndexList * PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
+	void FindFirstAndLastMailOfMailThreadConversation(int iItem, int &firstMail, int &lastMail);
+	void FindFirstAndLastMailOfSubjectConversation(int iItem, int &firstMail, int &lastMail);
 	int RefreshMailsOnUserSelectsMailListMark();
 	int VerifyMailsOnUserSelectsMailListMarkCounts();
 	//
@@ -458,7 +490,16 @@ public:
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
 	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
+	
+
+	static int FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tagDataLen);
+	static int FindBodyBackgroundColor(char *inData, int indDataLen, char *&attribTag, int &attribTagLen, CString &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib);
+	static int FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int tagLen, /*out*/ char *&attribTag, int &attribTagLen, CString &attribVal, HtmlAttribInfo &bodyAttrib);
 	static int RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor);
+	static int RemoveBodyBackgroundColorAndWidth(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor, 
+		CString &bodyWidth, BOOL removeBgColor, BOOL removeWidth);
+	static int SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor);
+
 	static int Color2Str(DWORD color, CString &colorStr);
 
 	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CString &extension);
@@ -481,6 +522,7 @@ protected:
 	afx_msg void OnEditFindAgain();
 	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDividerdblclick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnItemchangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult);

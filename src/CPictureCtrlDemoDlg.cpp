@@ -64,7 +64,7 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pPare
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
-	CStringW fpath = FileUtils::GetmboxviewTempPathW();
+	CStringW fpath = FileUtils::GetMboxviewTempPathW();
 	LoadImageFileNames(fpath);
 	for (int i = 0; i < m_ImageFileNameArray.GetSize(); i++)
 	{
@@ -373,7 +373,7 @@ BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CStringW & dir)
 	CStringW searchPath = dir + CStringW(L"*.*");
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE(_T("No files found."));
+		TRACE(_T("CCPictureCtrlDemoDlg: No files found.\n"));
 		return FALSE;
 	}
 	while (!bFinished) {

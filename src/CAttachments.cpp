@@ -125,7 +125,7 @@ void CAttachments::OnPaint()
 		}
 
 		mboxFileName = m_attachmentTbl[ii]->m_nameW;
-		mboxFolderPath = FileUtils::GetmboxviewTempPathW();
+		mboxFolderPath = FileUtils::GetMboxviewTempPathW();
 		mboxFilePath = mboxFolderPath + mboxFileName;
 
 		int iIcon = 0;
@@ -242,7 +242,7 @@ void CAttachments::Complete()
 	for (int i = 0; i < m_attachmentTbl.GetCount(); i++)
 	{
 		CStringW nameW = m_attachmentTbl[i]->m_nameW;
-		CStringW cStrNamePath = FileUtils::GetmboxviewTempPathW() + nameW;
+		CStringW cStrNamePath = FileUtils::GetMboxviewTempPathW() + nameW;
 
 		int iIcon = 0;
 		SHFILEINFOW shFinfo;
@@ -325,7 +325,7 @@ BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
 		int deb = 1;
 	}
 
-	CStringW cStrNamePathW = FileUtils::GetmboxviewTempPathW() + validNameW;
+	CStringW cStrNamePathW = FileUtils::GetMboxviewTempPathW() + validNameW;
 	CString cStrNamePathA;
 	DWORD error;
 	BOOL retW2A = TextUtilsEx::Wide2Ansi(cStrNamePathW, cStrNamePathA, error);
@@ -408,7 +408,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
 	if (command == M_PRINT_Id)
 	{
-		CStringW path = FileUtils::GetmboxviewTempPathW();
+		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOWNORMAL);
 		if ((UINT)result <= MaxShellExecuteErrorCode) {
@@ -424,7 +424,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	if ((command == M_OPEN_Id) || forceOpen)
 	{
-		CStringW path = FileUtils::GetmboxviewTempPathW();
+		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 
 		DWORD binaryType = 0;
@@ -438,7 +438,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else if (command == M_OpenFileLocation_Id)
 	{
-		CStringW path = FileUtils::GetmboxviewTempPathW();
+		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 
 		if (FileUtils::BrowseToFileW(filePath) == FALSE) {
@@ -495,7 +495,7 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else
 	{
-		CStringW path = FileUtils::GetmboxviewTempPathW();
+		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentNameW;
 		// Photos application doesn't show next/prev photo even with path specified
 		// Buils in Picture Viewer is set as deafault

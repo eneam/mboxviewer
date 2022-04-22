@@ -62,6 +62,7 @@ public:
 	int m_bImageViewer;
 	int m_bTimeType;
 	int m_bEnhancedSelectFolderDlg;
+	int m_bSubjectSortType;
 	afx_msg void OnBnClickedRadio2();
 };
 

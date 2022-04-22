@@ -854,7 +854,7 @@ void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point)
 #if 1
 	ClearSearchResultsInIHTMLDocument(m_searchID);
 #else
-	CString path = FileUtils::GetmboxviewTempPath();
+	CString path = FileUtils::GetMboxviewTempPath();
 	HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
 	/*
 	if (m_rcCaption.PtInRect(point))
@@ -1223,7 +1223,22 @@ int NMsgView::ShowMailHeader(int mailPosition)
 		return 1;
 	}
 
-	m->GetBody(&m_hdrDataTmp, 128*1024);
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+	}
+
+	if (pListView && pListView->m_bExportEml)
+	{
+		// Get raw mail body
+		m->GetBody(&m_hdrDataTmp, 0);
+		pListView->SaveAsEmlFile(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
+	}
+	else
+		m->GetBody(&m_hdrDataTmp, 128*1024);
 
 	int headerlen = 0;
 	if (m->m_headLength > 0)
@@ -1272,9 +1287,9 @@ int NMsgView::ShowMailHeader(int mailPosition)
 	Invalidate();
 	UpdateLayout();
 
-	NListView *pListView = 0;
-	NMsgView *pMsgView = 0;
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	//NListView *pListView = 0;
+	//NMsgView *pMsgView = 0;
+	//CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame)
 	{
 		pListView = pFrame->GetListView();
@@ -1289,7 +1304,6 @@ int NMsgView::ShowMailHeader(int mailPosition)
 			}
 			else
 				m_hdr.SetBkColor(COLOR_WHITE);
-
 		}
 	}
 	return 1;

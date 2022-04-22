@@ -75,6 +75,17 @@ public:
 	 {}
 	~dllist() { clear(); }
 
+	bool find(T* elem)
+	{
+		T *e;
+		for (e = head_ptr; e != 0; (&(item->*NODE))->next)
+		{
+			if (e == elem)
+				return true;
+		}
+		return false;
+	}
+
 	/**
 	 * insert item at the head of dllist.
 	 * @param item item to insert in dllist.

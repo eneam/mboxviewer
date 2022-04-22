@@ -181,6 +181,9 @@
     <ClCompile Include="Thirdparty\jsoncpp\jsoncpp.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\DataFolderConfigDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -373,6 +376,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Thirdparty\jsoncpp\json\json-forwards.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DataFolderConfigDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -447,9 +447,18 @@ int CMimeHeader::Load(const char* pszData, int nDataSize)
 		nInput += nSize;
 		m_listFields.push_back(fd);	// don't use SetField in case of same name fields
 	}
+	const char *p = &pszData[nInput];
+	// TODO: original code is is suspect
+	// Consider below instead
+#if 1
+	while (pszData[nInput] != 0 && (pszData[nInput] == '\r') || (pszData[nInput] == '\n'))
+		nInput++;
+#else
+	// original
 	nInput ++;
 	if( pszData[nInput-1] == '\r' && pszData[nInput] == '\n' )
 		nInput ++;
+#endif
 	return nInput;				// skip the ending CRLF
 }
 

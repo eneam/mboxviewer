@@ -935,9 +935,10 @@ char* MimeParser::SkipEmptyLines(const char* p, const char* e)
 	return (char*)p;
 }
 
-char *MimeParser::EatNewLine(char* p, const char* e, BOOL &isEmpty)
+#if 0
+char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 {
-	isEmpty = TRUE;
+	isEmpty = true;
 	while ((p < e) && (*p++ != '\n'))
 	{
 		if (isEmpty)
@@ -945,8 +946,114 @@ char *MimeParser::EatNewLine(char* p, const char* e, BOOL &isEmpty)
 			if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
 				;
 			else
-				isEmpty = FALSE;
+				isEmpty = false;
 		}
 	}
+	return p;
+}
+
+#else
+
+char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
+{
+	isEmpty = true;
+	while (p < e)
+	{
+		while ((p < e) && (*p != '\n') && (*p != '\r'))
+		{
+			if (isEmpty)
+			{
+				if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
+					;
+				else
+					isEmpty = false;
+			}
+			p++;
+		}
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // jst NL nor CR NL
+			return ++p;
+
+		// Found CR, skip
+		p++;
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // CR NL
+			return ++p;
+
+		if (*p != '\r')  // CR no NL
+			return p;
+
+		// *p == '\r'  continue to discard multiple CRs
+	}
+
+	return p;
+}
+
+#endif
+
+char *MimeParser::EatNewLine(char* p, char*e)
+{
+	while (p < e)
+	{
+		while ((p < e) && (*p != '\n') && (*p != '\r')) { p++; }
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // jst NL nor CR NL
+			return ++p;
+
+		// Found CR, skip
+		p++;
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // CR NL
+			return ++p;
+
+		if (*p != '\r')  // CR no NL
+			return p;
+
+		// *p == '\r'  continue to discard multiple CRs
+	}
+
+	return p;
+}
+
+char *MimeParser::EatNewLine(char* p, char*e, int &maxLineLength)
+{
+	while (p < e)
+	{
+		while ((p < e) && (*p != '\n') && (*p != '\r') && (maxLineLength > 0))
+		{
+			p++;
+			maxLineLength--;
+		}
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // jst NL nor CR NL
+			return ++p;
+
+		// Found CR, skip
+		p++;
+		maxLineLength--;
+
+		if (p >= e)
+			return p;
+
+		if (*p == '\n')  // CR NL
+			return ++p;
+
+		if (*p != '\r')  // CR no NL
+			return p;
+
+		// *p == '\r'  continue to discard multiple CRs
+	}
+	if (maxLineLength <= 0)
+		int deb = 1;
 	return p;
 }

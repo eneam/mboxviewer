@@ -72,14 +72,15 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_HTML2PDF_SCRIPT_PATH, m_NamePatternParams.m_UserDefinedScriptPath);
 	DDX_Check(pDX, IDC_SEPARATE_PDF, m_NamePatternParams.m_bPrintToSeparatePDFFiles);
 	DDX_Check(pDX, IDC_SEPARATE_HTML, m_NamePatternParams.m_bPrintToSeparateHTMLFiles);
+	DDX_Check(pDX, IDC_SEPARATE_TEXT, m_NamePatternParams.m_bPrintToSeparateTEXTFiles);
 	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
 	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
+	DDX_Check(pDX, IDC_THREAD_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailConversationThreadInPDF);
 	DDX_Check(pDX, IDC_KEEP_BODY_BKGRND_COLOR, m_NamePatternParams.m_bKeepMailBodyBackgroundColor);
 	DDX_Check(pDX, IDC_HEADER_AND_FOOTER, m_NamePatternParams.m_bHeaderAndFooter);
 	DDX_Check(pDX, IDC_CUSTOM_TEMPLATE, m_NamePatternParams.m_bCustomFormat);
 	int deb = 1;
 }
-
 
 BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &PrintConfigDlg::OnBnClickedOk)
@@ -91,11 +92,11 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedCustomTemplate)
 	ON_BN_CLICKED(IDC_SET_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedSetCustomTemplate)
 	ON_BN_CLICKED(IDC_HTML_PDF_CNF, &PrintConfigDlg::OnBnClickedHtmlPdfCnf)
+	ON_BN_CLICKED(IDC_PAGE_BREAK, &PrintConfigDlg::OnBnClickedPageBreak)
+	ON_BN_CLICKED(IDC_THREAD_BREAK, &PrintConfigDlg::OnBnClickedThreadBreak)
 END_MESSAGE_MAP()
 
-
 // PrintConfigDlg message handlers
-
 
 void PrintConfigDlg::OnBnClickedOk()
 {
@@ -181,13 +182,19 @@ BOOL PrintConfigDlg::OnInitDialog()
 			}
 		}
 
-		p = 0;
 		p = GetDlgItem(IDC_SET_CUSTOM_TEMPLATE);
 		if (p)
 		{
 			if (m_NamePatternParams.m_bCustomFormat)
 				p->EnableWindow(TRUE);
 			else
+				p->EnableWindow(FALSE);
+		}
+
+		
+		p = GetDlgItem(IDC_SEPARATE_TEXT);
+		if (p)
+		{
 				p->EnableWindow(FALSE);
 		}
 
@@ -198,7 +205,6 @@ BOOL PrintConfigDlg::OnInitDialog()
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
-
 
 void PrintConfigDlg::OnEnChangeFileNameMaxSize()
 {
@@ -259,6 +265,7 @@ void NamePatternParams::SetDflts()
 
 	m_bAddBackgroundColorToMailHeader = TRUE;
 	m_bAddBreakPageAfterEachMailInPDF = FALSE;
+	m_bAddBreakPageAfterEachMailConversationThreadInPDF = FALSE;
 	m_bKeepMailBodyBackgroundColor = TRUE;
 	m_bHeaderAndFooter = FALSE;
 	m_bCustomFormat = FALSE;
@@ -267,7 +274,6 @@ void NamePatternParams::SetDflts()
 
 	AddressParts2Bitmap();
 
-	
 	char *pValue;
 	errno_t  er = _get_pgmptr(&pValue);
 	CString procFullPath;
@@ -313,6 +319,7 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bPrintToSeparateTEXTFiles = src.m_bPrintToSeparateTEXTFiles;
 	m_bAddBackgroundColorToMailHeader = src.m_bAddBackgroundColorToMailHeader;
 	m_bAddBreakPageAfterEachMailInPDF = src.m_bAddBreakPageAfterEachMailInPDF;
+	m_bAddBreakPageAfterEachMailConversationThreadInPDF = src.m_bAddBreakPageAfterEachMailConversationThreadInPDF;
 	m_bKeepMailBodyBackgroundColor = src.m_bKeepMailBodyBackgroundColor;
 	m_bHeaderAndFooter = src.m_bHeaderAndFooter;
 	m_bCustomFormat = src.m_bCustomFormat;
@@ -372,6 +379,9 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	if (updated.m_bAddBreakPageAfterEachMailInPDF != current.m_bAddBreakPageAfterEachMailInPDF) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMail", updated.m_bAddBreakPageAfterEachMailInPDF);
 	}
+	if (updated.m_bAddBreakPageAfterEachMailConversationThreadInPDF != current.m_bAddBreakPageAfterEachMailConversationThreadInPDF) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMailConversationThread", updated.m_bAddBreakPageAfterEachMailConversationThreadInPDF);
+	}
 	if (updated.m_bKeepMailBodyBackgroundColor != current.m_bKeepMailBodyBackgroundColor) {
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailBodyBackgroundColor", updated.m_bKeepMailBodyBackgroundColor);
 	}
@@ -401,6 +411,7 @@ void NamePatternParams::LoadFromRegistry()
 	BOOL retval;
 	DWORD bDate, bTime, bFrom, bTo, bSubject, bPrintDialog, bScriptType, nWantedFileNameFormatSizeLimit;
 	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF, bKeepMailBodyBackgroundColor, bHeaderAndFooter;
+	DWORD bAddBreakPageAfterEachMailConversationThreadInPDF;
 	DWORD nAddressPartsBitmap;
 	CString chromeBrowserPath;
 	CString msedgeBrowserPath;
@@ -436,6 +447,8 @@ void NamePatternParams::LoadFromRegistry()
 		m_bAddBackgroundColorToMailHeader = bAddBackgroundColorToMailHeader;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPDFPageBreakAfterEachMail"), bAddBreakPageAfterEachMailInPDF))
 		m_bAddBreakPageAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPDFPageBreakAfterEachMailConversationThread"), bAddBreakPageAfterEachMailConversationThreadInPDF))
+		m_bAddBreakPageAfterEachMailConversationThreadInPDF = bAddBreakPageAfterEachMailConversationThreadInPDF;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailBodyBackgroundColor"), bKeepMailBodyBackgroundColor))
 		m_bKeepMailBodyBackgroundColor = bKeepMailBodyBackgroundColor;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPageHeaderAndFooter"), bHeaderAndFooter))
@@ -450,6 +463,15 @@ void NamePatternParams::LoadFromRegistry()
 	{
 		m_nAddressPartsBitmap = nAddressPartsBitmap;
 		Bitmap2AddressParts();
+	}
+
+	if (m_bAddBreakPageAfterEachMailInPDF)
+	{
+		if (m_bAddBreakPageAfterEachMailConversationThreadInPDF)
+		{
+			m_bAddBreakPageAfterEachMailConversationThreadInPDF = 0;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMailConversationThread", m_bAddBreakPageAfterEachMailConversationThreadInPDF);
+		}
 	}
 
 	if (m_bScriptType == 0)
@@ -473,9 +495,11 @@ void NamePatternParams::LoadFromRegistry()
 
 void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatternParams)
 {
-	CString printCacheName;
-	MboxMail::GetPrintCachePath(printCacheName);
-	int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
+	CString longestCacheName;
+	MboxMail::GetLongestCachePath(longestCacheName);
+	int cachePathLength = longestCacheName.GetLength();
+	//int maxFileSize = _MAX_PATH - printCacheName.GetLength() - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
+	int maxFileSize = _MAX_FNAME - cachePathLength - 1 - 4 - 14; // -1 for flder separatorr, -4 for suffix, -14 for fudge factor (HTML_GROUP and PDF_GROUP)
 	if (maxFileSize < 0)
 		maxFileSize = 0;
 
@@ -488,13 +512,11 @@ void NamePatternParams::UpdateFilePrintconfig(struct NamePatternParams &namePatt
 
 }
 
-
 void PrintConfigDlg::OnBnClickedPrtPageSetp()
 {
 	// TODO: Add your control notification handler code here
 	HtmlUtils::PrintToPrinterPageSetup(this);
 }
-
 
 void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
 {
@@ -553,7 +575,6 @@ void PrintConfigDlg::OnBnClickedMSEdge()
 	int deb = 1;
 }
 
-
 void PrintConfigDlg::OnBnClickedUserDefinedScript()
 {
 	// TODO: Add your control notification handler code here
@@ -575,7 +596,6 @@ void PrintConfigDlg::OnBnClickedUserDefinedScript()
 	}
 	int deb = 1;
 }
-
 
 void PrintConfigDlg::OnBnClickedCustomTemplate()
 {
@@ -621,7 +641,6 @@ void PrintConfigDlg::OnBnClickedCustomTemplate()
 	UpdateData(TRUE);
 }
 
-
 void PrintConfigDlg::OnBnClickedSetCustomTemplate()
 {
 	// TODO: Add your control notification handler code here
@@ -639,7 +658,6 @@ void PrintConfigDlg::OnBnClickedSetCustomTemplate()
 
 	int deb = 1;
 }
-
 
 void PrintConfigDlg::EnableNonCustomWindows(BOOL enable)
 {
@@ -666,7 +684,8 @@ void PrintConfigDlg::EnableNonCustomWindows(BOOL enable)
 
 	p = GetDlgItem(IDC_FILE_UNIQUE_ID);
 	if (p)
-		p->EnableWindow(enable);
+		p->EnableWindow(FALSE);
+		//p->EnableWindow(enable);
 }
 
 void NamePatternParams::AddressParts2Bitmap()
@@ -696,7 +715,6 @@ void NamePatternParams::Bitmap2AddressParts()
 	if (m_nAddressPartsBitmap & (1 << TemplReplaceWhiteWithUnderscore))  m_nameTemplateCnf.m_bReplaceWhiteWithUnderscore = TRUE;
 }
 
-
 void PrintConfigDlg::OnBnClickedHtmlPdfCnf()
 {
 	// TODO: Add your control notification handler code here
@@ -712,5 +730,25 @@ void PrintConfigDlg::OnBnClickedHtmlPdfCnf()
 			pFrame->m_HdrFldConfig.LoadFromRegistry();
 		}
 		int deb = 1;
+	}
+}
+
+void PrintConfigDlg::OnBnClickedPageBreak()
+{
+	// TODO: Add your control notification handler code here
+	CWnd *p = GetDlgItem(IDC_THREAD_BREAK);
+	if (p) {
+		((CButton*)p)->SetCheck(0);
+		//p->EnableWindow(FALSE);
+	}
+}
+
+void PrintConfigDlg::OnBnClickedThreadBreak()
+{
+	// TODO: Add your control notification handler code here
+	CWnd *p = GetDlgItem(IDC_PAGE_BREAK);
+	if (p) {
+		((CButton*)p)->SetCheck(0);
+		//p->EnableWindow(FALSE);
 	}
 }

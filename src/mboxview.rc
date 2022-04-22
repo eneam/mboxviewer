@@ -68,26 +68,14 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "Select &folder...\tF2",       ID_FILE_OPEN
-        MENUITEM "Refresh\tF5",                 ID_FILE_REFRESH
+        MENUITEM "Select as root folder...",    ID_FILE_SELECTASROOTFOLDER
+        MENUITEM "Select root folder for merging ...", ID_FILE_MERGEROOTFOLDERSUB
         MENUITEM "Options...",                  ID_FILE_OPTIONS
         MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
         MENUITEM "Attachments Config...",       ID_FILE_ATTACHMENTSCONFIG
-        MENUITEM "Color Style Config",          ID_FILE_COLORCONFIG
-        POPUP "Gmail Labels", INACTIVE
-        BEGIN
-            MENUITEM "Create",                      ID_GMAILLABELS_CREATE
-            MENUITEM "Delete",                      ID_GMAILLABELS_DELETE
-            MENUITEM "Refresh",                     ID_GMAILLABELS_REFRESH
-        END
-        MENUITEM "SMTP Mail Server Config",     ID_FILE_SMTPMAILSERVERCONFIG
-        POPUP "Print To"
-        BEGIN
-            MENUITEM "CSV...",                      ID_PRINTTO_CSV
-            MENUITEM "Text...",                     ID_PRINTTO_TEXT
-            MENUITEM "HTML...",                     ID_PRINTTO_HTML
-            MENUITEM "PDF...",                      ID_PRINTTO_PDF
-        END
-        MENUITEM "Merge Archive Files...",      ID_FILE_MERGEARCHIVEFILES
+        MENUITEM "Color Style Config...",       ID_FILE_COLORCONFIG
+        MENUITEM "Data Folder Config...",       ID_FILE_DATAFOLDERCONFIG
+        MENUITEM "SMTP Mail Server Config...",  ID_FILE_SMTPMAILSERVERCONFIG
         MENUITEM "Restore Hint Messages",       ID_FILE_RESTOREHINTMESSAGES
         POPUP "Development Options"
         BEGIN
@@ -149,6 +137,7 @@ BEGIN
         MENUITEM "User Guide",                  ID_HELP_USERGUIDE
         MENUITEM "Change History",              ID_HELP_README
         MENUITEM "License",                     ID_HELP_LICENSE
+        MENUITEM "Donate",                      ID_HELP_DONATE
     END
 END
 
@@ -182,7 +171,7 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 215, 128
+IDD_ABOUTBOX DIALOGEX 0, 0, 215, 107
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About mboxview"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -194,7 +183,6 @@ BEGIN
     LTEXT           "If you like this program please consider making a donation",IDC_DONATION,7,86,201,12,SS_NOTIFY
     LTEXT           "This program is free to use under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE version 3.",IDC_LICENSE,7,36,193,22
     LTEXT           "The executable, associated source code files and User Guide  can be downloaded from  Github and Sourceforge sites.",IDC_STATIC,7,60,201,27
-    LTEXT           "NOTE that the donation page is in Italian by default. The option at the bottom right corner allows to change to English.",IDC_STATIC,7,100,193,18
 END
 
 IDD_CONTROLS_DLG DIALOGEX 0, 0, 394, 239
@@ -248,7 +236,7 @@ BEGIN
     LTEXT           "Left click on month, day or year field and type new value",IDC_STATIC,16,142,210,8
 END
 
-IDD_OPTIONS DIALOGEX 0, 0, 167, 222
+IDD_OPTIONS DIALOGEX 0, 0, 167, 254
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -277,12 +265,15 @@ BEGIN
     CONTROL         "yes",IDC_SHOW_CHARSETS_Y,"Button",BS_AUTORADIOBUTTON,98,139,27,10
     GROUPBOX        "",IDC_PICTURE_VIEWER,7,154,153,16
     CONTROL         "Picture Viewer",IDC_IMAGE_VIEWER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,158,62,8
-    DEFPUSHBUTTON   "OK",IDOK,27,198,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,86,198,50,14
+    DEFPUSHBUTTON   "OK",IDOK,27,228,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,86,228,50,14
     GROUPBOX        "Search progress bar startup delay in seconds",IDC_GROUP_PROGRES_BAR,7,50,153,29
     GROUPBOX        "",IDC_STATIC,7,174,153,18
     CONTROL         "Enhanced Select Mail Folder Dialog",IDC_ENHANCED_SELECT_FOLDER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,180,126,10
+    GROUPBOX        "Subject Sort Type",IDC_STATIC,7,198,153,27
+    CONTROL         "alphanumeric",IDC_SUBJECT_SORT_TYPE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,15,210,58,10
+    CONTROL         "time ordered threads",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,74,210,81,10
 END
 
 IDD_CPICTURECTRLDEMO_DIALOG DIALOGEX 0, 0, 591, 356
@@ -443,7 +434,7 @@ BEGIN
     PUSHBUTTON      "Help",IDC_BUTTON2,276,0,50,14
 END
 
-IDD_PRINT_DLG DIALOGEX 0, 0, 243, 358
+IDD_PRINT_DLG DIALOGEX 0, 0, 243, 372
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Print Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -479,16 +470,19 @@ BEGIN
     GROUPBOX        "Print selected mails to separate files",IDC_PRINT_TO_SEPARATE_FILES,7,256,227,24
     CONTROL         "PDF",IDC_SEPARATE_PDF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,267,29,10
     CONTROL         "HTML",IDC_SEPARATE_HTML,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,58,267,33,10
-    GROUPBOX        "PDF document options",IDC_STATIC_PDF_OPTIONS,7,282,224,36
+    GROUPBOX        "PDF document options",IDC_STATIC_PDF_OPTIONS,7,282,224,53
     CONTROL         "Mail Hdr Background Color",IDC_ADD_HDR_COLOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,294,99,10
     CONTROL         "Mail Body Background Color",IDC_KEEP_BODY_BKGRND_COLOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,121,294,104,10
     CONTROL         "Page Break After Each Mail",IDC_PAGE_BREAK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,306,102,10
-    GROUPBOX        "",IDC_STATIC,7,319,224,23
-    PUSHBUTTON      "HTML/PDF Mail Header Configuration",IDC_HTML_PDF_CNF,13,324,125,15
-    DEFPUSHBUTTON   "OK",IDOK,123,343,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,178,343,50,14
+    CONTROL         "Page Break After Each Conversation Thread",IDC_THREAD_BREAK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,318,184,10
     CONTROL         "Header and Footer",IDC_HEADER_AND_FOOTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,121,306,77,10
+    GROUPBOX        "",IDC_STATIC,7,334,224,23
+    PUSHBUTTON      "HTML/PDF Mail Header Configuration",IDC_HTML_PDF_CNF,13,339,125,15
+    DEFPUSHBUTTON   "OK",IDOK,123,357,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,178,357,50,14
+    CONTROL         "Text",IDC_SEPARATE_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,95,267,31,10
 END
 
 IDD_INPUT_BOX_DLG DIALOGEX 0, 0, 369, 97
@@ -724,6 +718,24 @@ BEGIN
     EDITTEXT        IDC_EDIT_FORWARD_SERVICE,46,14,81,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
 END
 
+IDD_DATA_FOLDER_DLG DIALOGEX 0, 0, 455, 225
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Data Folder Configuration"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,342,204,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,398,204,50,14
+    CONTROL         "     Default. Per folder containing mbox files if writeable otherwise Standard Windows Created Application Folder",IDC_CONFIG_FOLDER_STYLE_1,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,24,71,414,22
+    CONTROL         "     Standard Windows Created Application Folder",IDC_CONFIG_FOLDER_STYLE_2,
+                    "Button",BS_AUTORADIOBUTTON,24,100,173,10
+    CONTROL         "",IDC_CONFIG_FOLDER_STYLE_3,"Button",BS_AUTORADIOBUTTON,24,143,16,10
+    EDITTEXT        IDC_EDIT_WIN_APP_DATA_FOLDER,45,116,368,19,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_USER_SELECTED_FOLDER_PATH,45,162,367,19,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "Select Data Folder",IDC_SELECT_DATA_FOLDER_BUTTON,45,140,82,14
+    EDITTEXT        IDC_EDIT_INTRO,22,20,412,41,ES_MULTILINE | ES_READONLY | NOT WS_BORDER
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -731,7 +743,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,26
+ FILEVERSION 1,0,3,27
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -747,8 +759,8 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "mboxview MFC Application"
-            VALUE "FileVersion", "1.0.3.26"
+            VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
+            VALUE "FileVersion", "1.0.3.27"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -776,7 +788,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 208
         TOPMARGIN, 7
-        BOTTOMMARGIN, 125
+        BOTTOMMARGIN, 104
     END
 
     IDD_CONTROLS_DLG, DIALOG
@@ -799,7 +811,7 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 160
-        BOTTOMMARGIN, 215
+        BOTTOMMARGIN, 247
     END
 
     IDD_CPICTURECTRLDEMO_DIALOG, DIALOG
@@ -852,7 +864,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 234
         TOPMARGIN, 7
-        BOTTOMMARGIN, 357
+        BOTTOMMARGIN, 371
     END
 
     IDD_INPUT_BOX_DLG, DIALOG
@@ -941,6 +953,14 @@ BEGIN
         RIGHTMARGIN, 310
         TOPMARGIN, 7
         BOTTOMMARGIN, 268
+    END
+
+    IDD_DATA_FOLDER_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 448
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 218
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1088,7 +1108,7 @@ BEGIN
     0, 0, 100, 0,
     0, 0, 100, 0,
     0, 0, 100, 0,
-    0, 0, 0, 0,
+    0, 0, 100, 0,
     0, 0, 0, 0
 END
 
@@ -1117,6 +1137,11 @@ BEGIN
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0
+END
+
+IDD_DATA_FOLDER_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
 END
 
 
@@ -1233,6 +1258,7 @@ END
 STRINGTABLE
 BEGIN
     ID_TREE_EXPAND          "Expand tree containing folders\nExpand/Collapse mail folders"
+    ID_TREE_HIDE            "Hide/Restore Mail Archive Tree\nHide/Restore mail tree"
     ID_VIEW_USERSELECTEDMAILS 
                             "Enable or Disable User Selected Mail List/Toggle the list"
 END

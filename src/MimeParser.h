@@ -57,12 +57,21 @@ public:
 	static int GetFilenameParamPartValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset);
 	static BOOL isEmptyLine(const char* p, const char* e);
 	static char* SkipEmptyLines(const char* p, const char* e);
-	static char *EatNewLine(char* p, const char* e, BOOL &isEmpty);
+	static char *EatNewLine(char* p, const char* e, bool &isEmpty);
+	static char *EatNewLine(char* p, char*e);
+	static char *EatNewLine(char* p, char*e, int &maxLineLength);
+#if 0
 	inline static char *EatNewLine(char* p, char*e)
 	{
 		while ((p < e) && (*p++ != '\n'));
 		return p;
 	}
+	inline static char *EatNewLine(char* p, char*e, int &maxLineLength)
+	{
+		while ((p < e) && (*p++ != '\n') && (maxLineLength-- > 0));
+		return p;
+	}
+#endif
 };
 
 class MailHeader

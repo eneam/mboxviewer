@@ -432,6 +432,7 @@ BOOL TextUtilsEx::Str2CurrentCodepage(SimpleString *str, UINT strCodePage, Simpl
 
 #include "MimeCode.h"
 
+// TODO: toCharacterId is ignored for now
 CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId)
 {
 	CFieldCodeText tfc;
@@ -742,7 +743,7 @@ UINT TextUtilsEx::charset2Id(const char *char_set)
 	}
 #if 0
 	for (it = cids->begin(); it != cids->end(); it++) {
-		TRACE("%d %s\n", it->second, it->first);
+		TRACE(_T("%d %s\n"), it->second, it->first);
 	}
 #endif
 	std::string charset = char_set;
@@ -796,7 +797,7 @@ BOOL TextUtilsEx::id2charset(UINT id, std::string &charset)
 	}
 #if 0
 	for (it = ids->begin(); it != ids->end(); it++) {
-		TRACE("%d %s\n", it->first, it->second);
+		TRACE(_T("%d %s\n"), it->first, it->second);
 	}
 #endif
 	if ((it = ids->find(id)) != ids->end()) {
@@ -812,10 +813,17 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	CString fullPath = path + "\\" + codePageIdsFile;
 
 	CFile fp;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		TCHAR szCause[2048];
+		ExError.GetErrorMessage(szCause, 2048);
+
 		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
-		HWND h = NULL; // we don't have any window yet
+		txt += _T("\" file.\n");
+		txt += szCause;
+
+		HWND h = NULL; // we don't have any window yet ??
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -1091,7 +1099,7 @@ void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStrin
 
 int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 {
-	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes};
+	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes };
 
 	int state = inHunt;
 	CString token;
@@ -1104,43 +1112,28 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 		{
 			if ((c == ' ') || (c == '\t'))
 				continue;
-			else if (c == '\'') 
-			{
-				int bytesLeft = strLength - i;
-				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
-				{
-					token.AppendChar('"');
-					i += 2;
-				}
-				else
-					token.AppendChar(c);
-				state = notInsideDoubleQuotes;
-				continue;
-			}
-			else if (c == del)
-				state = notInsideDoubleQuotes;
+			else if (c == del)  // separator
+				; // state = notInsideDoubleQuotes;  // stay inHunt
 			else if (c == '"')
 				state = insideDoubleQuotes;
-			else if ((c != del) && (c != '"'))
+			else if ((c != del) && (c != '"'))  // No need to check just Append
 			{
 				state = notInsideDoubleQuotes;
 				token.AppendChar(c);
 			}
-			continue;
 		}
-		if (state == notInsideDoubleQuotes)
+		else if (state == notInsideDoubleQuotes)
 		{
-			if (c == '\'')
+			int bytesLeft = strLength - i;
+			if (c == '"')
 			{
-				int bytesLeft = strLength - i;
-				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == '"'))
 				{
 					token.AppendChar('"');
-					i += 2;
+					i += 1;
 				}
 				else
 					token.AppendChar(c);
-				continue;
 			}
 			else if (c != del)
 			{
@@ -1153,36 +1146,32 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 				token.Empty();
 				state = inHunt;
 			}
-			continue;
 		}
 		else  // state == insideDoubleQuotes
 		{
-			if (c == '\'')
-			{
-				int bytesLeft = strLength - i;
-				if ((bytesLeft >= 3) && (str.GetAt(i + 1) == '\"') && (str.GetAt(i + 2) == '\''))
-				{
-					token.AppendChar('"');
-					i += 2;
-				}
-				else
-					token.AppendChar(c);
-				continue;
-			}
-			else if (c != '"')
+			if (c != '"')
 			{
 				token.AppendChar(c);
 			}
 			else
 			{
-				token.Trim(" \t");
-				a.Add(token);
-				token.Empty();
-				state = inHunt;
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == '"'))
+				{
+					token.AppendChar('"');
+					i += 1;
+				}
+				else
+				{
+					token.Trim(" \t");
+					a.Add(token);
+					token.Empty();
+					state = inHunt;
+				}
 			}
 		}
 	}
-	
+
 	token.Trim(" \t");
 	if (!token.IsEmpty())
 		a.Add(token);

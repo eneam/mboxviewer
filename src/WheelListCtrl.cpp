@@ -136,10 +136,20 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		int which_sorted = m_list->MailsWhichColumnSorted();
 		if ((lpDrawItemStruct->itemID == abs(which_sorted)) || ((lpDrawItemStruct->itemID == 0) && (abs(which_sorted) == 99)))
 		{
-			if (which_sorted > 0)
-				txtW += L'\x2191';
+			if (abs(which_sorted) == 5)
+			{
+				if (which_sorted > 0)
+					txtW += L'\x2191';
+				else
+					txtW += L'\x2193';
+			}
 			else
-				txtW += L'\x2193';
+			{
+				if (which_sorted < 0)
+					txtW += L'\x2191';
+				else
+					txtW += L'\x2193';
+			}
 		}
 
 		::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, &rect, (LPCWSTR)txtW, txtW.GetLength(), NULL);

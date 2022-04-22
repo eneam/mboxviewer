@@ -627,6 +627,7 @@
     </ClCompile>
     <ClCompile Include="src\CustomCheckListBox.cpp" />
     <ClCompile Include="src\CustomNameTemplDlg.cpp" />
+    <ClCompile Include="src\DataFolderConfigDlg.cpp" />
     <ClCompile Include="src\DateParser.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -937,6 +938,7 @@
     <ClInclude Include="src\CPictureCtrlDemoDlg.h" />
     <ClInclude Include="src\CustomCheckListBox.h" />
     <ClInclude Include="src\CustomNameTemplDlg.h" />
+    <ClInclude Include="src\DataFolderConfigDlg.h" />
     <ClInclude Include="src\DateParser.h" />
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExceptionUtil.h" />

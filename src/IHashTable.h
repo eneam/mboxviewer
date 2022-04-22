@@ -75,20 +75,22 @@ public:
 	using IHashMapIter = IHashMapIterator<K, T, HASH, EQUAL, NODE>;
 
 	IHashMap(
-		unsigned long size,
+		int size,
 		HASH hash = HASH{},
 		EQUAL equal = EQUAL{},
 		bool makeSizeAsPrime = true)
 		:
 		m_hashMapSize(size),
-		m_Hash(hash), 
+		m_Hash(hash),
 		m_Equal(equal)
 	{
 		m_ar = new dllist<T, NODE>[m_hashMapSize];
 		m_count = 0;
 	};
 
-	~IHashMap() { delete[] m_ar; };
+	~IHashMap() {
+		delete[] m_ar;
+	};
 
 protected:
 
@@ -108,6 +110,40 @@ protected:
 	}
 
 public:
+	bool isequal(K *elem1, K *elem2) {  return m_Equal(elem1, elem2);  }
+
+	dllist<T, NODE> *get_collision_list(K *key)
+	{
+		unsigned long hashsum = m_Hash(key);
+		dllist<T, NODE> *list = &m_ar[hashsum%m_hashMapSize];
+		return list;
+	}
+
+	dllist<T, NODE> *get_collision_list(unsigned long hashsum)
+	{
+		dllist<T, NODE> *list = &m_ar[hashsum%m_hashMapSize];
+		return list;
+	}
+
+	inline bool has_elem(K *elem, unsigned long hashsum)
+	{
+		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
+		T *iter;
+		for (iter = list.head(); iter != 0; iter = list.next(iter))
+		{
+			if (elem == iter)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	inline bool has_elem(K *key, T *elem)
+	{
+		unsigned long hashsum = m_Hash(key);
+		return has_elem(key, hashsum);
+	}
 
 	inline void insert(unsigned long hashsum, T *elem)
 	{
@@ -139,6 +175,16 @@ public:
 		return(find(key, m_Hash(key)));
 	};
 
+	inline T *remove(unsigned long hashsum, T *elem)
+	{
+		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
+		assert(list.find(elem));
+		list.remove(elem);
+		m_count--;
+		assert(!list.find(elem));
+		return elem;
+	}
+
 	inline T *remove(K *key, unsigned long hashsum)
 	{
 		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
@@ -162,22 +208,16 @@ public:
 
 	inline void clear()
 	{
-		int count_sv = m_count;
-		dllist<T, NODE> *list = 0;
+		int count = 0;
+		dllist<T, NODE> *list;
 		int index;
 		for (index = 0; index < m_hashMapSize; index++)
 		{
 			list = &m_ar[index];
-			count_sv += list->count();
-		}
-		count_sv = m_count;
-		for (index = 0; index < m_hashMapSize; index++)
-		{
-			list = &m_ar[index];
-			count_sv -= list->count();
+			count += list->count();
 			list->clear();
 		}
-		assert(count_sv == 0);
+		assert(count == m_count);
 		m_count = 0;
 	}
 
@@ -246,6 +286,13 @@ public:
 		}
 	}
 
+	inline void first(IHashMapIter &it)
+	{
+		it.hashMap = this;
+		next_helper(it);
+		return;
+	}
+
 	inline IHashMapIter first()
 	{
 		IHashMapIter it;
@@ -271,7 +318,7 @@ public:
 
 protected:
 	dllist<T, NODE> *m_ar;
-	unsigned long m_hashMapSize;
+	int m_hashMapSize;
 	int m_count;
 	HASH m_Hash;
 	EQUAL m_Equal;

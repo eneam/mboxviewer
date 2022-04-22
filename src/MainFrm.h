@@ -46,6 +46,35 @@
 #include "SMTPMailServerConfigDlg.h"
 
 
+class MBoxViewerDB
+{
+public:
+	MBoxViewerDB();
+
+	CString GetDBFolder();
+	CString GetLocalDBFolder();
+	CString GetPrintSubFolder();
+	CString GetImageSubFolder();
+	CString GetAttachmentSubFolder();
+	CString GetArchiveSubFolder();
+	CString GetLabelSubFolder();
+	CString GetEmlSubFolder();
+	CString GetMergedSubFolder();
+	BOOL IsReadOnlyMboxDataMedia(CString *path = 0);
+
+	CString m_rootDBFolder;
+	CString m_rootLocalDBFolder;
+	CString m_rootPrintSubFolder;
+	CString m_rootImageSubFolder;
+	CString m_rootAttachmentSubFolder;
+	CString m_rootArchiveSubFolder;
+	CString m_rootLabelSubFolder;
+	CString m_rootEmlSubFolder;
+	CString m_rootMergedSubFolder;
+	int m_isReadOnlyMboxDataMedia;
+
+};
+
 typedef CArray<CString, CString> MboxFileList;
 
 struct CommandLineParms
@@ -123,6 +152,24 @@ public:
 
 	virtual BOOL OnFileNameOK();
 };
+
+class MergeFileInfo
+{
+public:
+	MergeFileInfo()
+	{
+		mboxFileType = -1;
+	}
+	MergeFileInfo(CString &filePath, int mboxFileType)
+	{
+		m_filepath = filePath;
+		mboxFileType = mboxFileType;
+	}
+	CString m_filepath;
+	int mboxFileType;
+};
+
+
 
 class CMainFrame : public CFrameWnd
 {
@@ -209,11 +256,14 @@ public:
 	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);
 	void SortByColumn(int column);
 
+
+	int MergeMboxArchiveFiles(CArray<MergeFileInfo> &mboxFilePathList, CString &mergedMboxFilePath);
 	int MergeMboxArchiveFiles(CString &mboxListFilePath, CString &mergedMboxFilePath);
-	int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath);
+	int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath, BOOL firstFile);
 
 	static BOOL CanMboxBeSavedInFolder(CString &destinationFolder);
 
+	static MBoxViewerDB m_ViewerGlobalDB;
 	static CommandLineParms m_commandLineParms;
 	static AttachmentConfigParams *GetAttachmentConfigParams();
 
@@ -252,6 +302,7 @@ protected:  // control bar embedded members
 	HICON m_UnHideIcon;
 
 public:
+	CString m_lastPath;
 	BOOL m_bIsTreeHidden;
 	HdrFldConfig m_HdrFldConfig;
 	NamePatternParams m_NamePatternParams;
@@ -264,6 +315,14 @@ public:
 	BOOL WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp);
 
 	static ColorStylesDB m_ColorStylesDB;
+
+	void OpenFolderAndSubfolders(CString &path);
+	void OpenRootFolderAndSubfolders(CString &path);
+
+	void OpenRootFolderAndSubfolders_LabelView(CString &path);
+	//
+	int FileSelectrootfolder(int treeType);
+
 
 	//BOOL PreTranslateMessage(MSG* pMsg);
 
@@ -340,6 +399,9 @@ public:
 	afx_msg void OnHelpUserguide();
 	afx_msg void OnHelpReadme();
 	afx_msg void OnHelpLicense();
+	afx_msg void OnFileDatafolderconfig();
+	afx_msg void OnFileMergerootfoldersub();
+	afx_msg void OnFileSelectasrootfolder();
 };
 
 /////////////////////////////////////////////////////////////////////////////

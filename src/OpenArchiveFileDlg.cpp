@@ -64,7 +64,9 @@ BOOL OpenArchiveFileDlg::OnInitDialog()
 		p = GetDlgItem(IDC_EDIT_TARGET_FOLDER);
 		if (p)
 		{
-			p->SetWindowText(m_targetFolder);
+			CString targetFolder = m_targetFolder;
+			targetFolder.TrimRight("\\");
+			p->SetWindowText(targetFolder);
 			p->EnableWindow(FALSE);
 		}
 		p = GetDlgItem(IDC_EDIT_ARCHIVE_FILE_NAME);
@@ -75,7 +77,7 @@ BOOL OpenArchiveFileDlg::OnInitDialog()
 		}
 	}
 
-	UpdateData(TRUE);
+	//UpdateData(TRUE);
 
 	//SetDlgItemText(IDC_STATIC, "Desired Text String")
 
@@ -125,7 +127,6 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 		if (answer == IDNO)
 			return;
 	}
-
 
 	CDialogEx::OnOK();
 }

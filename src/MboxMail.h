@@ -89,13 +89,18 @@ typedef CArray<int, int> MailIndexList;
 class MyMailArray : public CArray<MboxMail*, MboxMail*>
 {
 public:
+	MyMailArray()
+	{
+		SetSize(1024);
+		SetCountKeepData(0);
+	}
 	// Kludge to prevent CArray from deleting data buffer
 	// Otherwise will need to reimplement array
 	// This will set count of items. if nNewSize == 0, array data segment is not changed.
 	// If nNewSize >  0, SetSize() is called and both count and count of items is set
-	void SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
+	void SetSizeKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = 1024);
 	// This will set count of items and will not touch array data segment
-	void SetCountKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = -1);
+	void SetCountKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = 1024);
 	void CopyKeepData(const MyMailArray& src);
 	INT_PTR MaxSize();
 };
@@ -131,7 +136,8 @@ public:
 		MessageRemoveFolderHint = 11,
 		MessageRemoveFileHint = 12,
 		MergeFilesHint = 13,
-		LabelsHint = 14
+		LabelsHint = 14,
+		SubjectSortingHint = 15
 	};
 };
 
@@ -247,11 +253,70 @@ class CMBodyHdr;
 #define AntiqueWhite3 RGB(205,192,176)
 
 
+// TODO: review redundant structures
+class FolderContext
+{
+public:
+	FolderContext() {}
+	~FolderContext() {}
+
+	void SetFolderPath(CString &folderPath);
+	void GetFolderPath(CString &folderpath);
+	void GetDataPath(CString &dataFolderPath);
+	// 
+	BOOL LoadFromRegistry();
+	BOOL SaveToRegistry();
+
+	int m_setPathCount;
+	CString m_folderPath;
+	CString m_dataFolderPath;
+	CString m_rootDataFolderPath;
+	CString m_rootDataFolderPathConfig;
+	CString m_rootDataFolderPathSubFolderConfig;
+	CString m_mboxFileName;
+	int m_emailPosition;
+	int m_emailSortType;
+};
+
+#if 0
+class SubjectThreadInfo
+{
+public:
+	dlink_node<GmailLabel> m_hashMapLink;
+	MboxMail *m_mail;
+	int m_index;
+	int m_count;
+};
+
+struct SubjectThreadHelper
+{
+	size_t operator()(const CString *key) const
+	{
+		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		return hashsum;
+	}
+	bool operator()(CString *key1, CString *key2) const
+	{
+		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+	bool operator()(CString *key1, SubjectThreadInfo *key2) const
+	{
+		if (*key1 == key2->m_mail->m_subj)
+			return true;
+		else
+			return false;
+	}
+};
+#endif
+
 class MboxMail
 {
 public:
-	
-	MboxMail() 
+
+	MboxMail()
 	{
 		m_startOff = m_length = m_hasAttachments = m_headLength = 0;
 		m_from_charsetId = m_to_charsetId = m_subj_charsetId = 0;
@@ -264,7 +329,9 @@ public:
 		m_duplicateId = false;
 		m_done = false;
 		m_groupColor = 0;
-		m_index = -1;
+		m_index = -1;      // index to s_mails_ref, can't be reused
+		//m_mail_index = -1; // index to s_mails_*, can be reused with care
+		//m_mail_cnt = 0;    // can be reused with care
 		m_headLength = 0;
 		m_isOnUserSelectedMailList = false;
 		m_DetermineEmbeddedImagesDone = 0;
@@ -282,7 +349,8 @@ public:
 	//
 	_int64 m_startOff;
 	int m_hasAttachments;
-	int m_length, m_headLength, m_recv;
+	int m_length, m_headLength;
+	int m_recv;         // TODO: check if it can be reused
 	time_t m_timeDate;
 	CString m_from, m_to, m_subj;
 	//CString m_from_name, m_to_name;  // TODO: should we precalculate ? or calculate run time ?
@@ -295,18 +363,31 @@ public:
 	CString m_replyId;
 	CString m_threadId;
 	//unsigned _int64 m_threadId; // conversation thread id
-	int m_groupId;
-	int m_groupColor;
-	int m_nextMail;
-	int m_prevMail;
-	bool m_duplicateId;
-	bool m_done;
-	int m_index; // serves as unique id == index
-	bool m_isOnUserSelectedMailList;
-	int m_DetermineEmbeddedImagesDone;
+	int m_groupId;       // can't be reused
+	int m_groupColor;    // TODO: can't be reused practicaly
+#if 1
+	union {
+		int m_nextMail;
+		int m_mail_index;
+	};
+	union {
+		int m_prevMail;
+		int m_mail_cnt;
+	};
+#else
+	int m_nextMail;      // can be reused after parsing og mbox and sorting
+	int m_prevMail;      // can be reused after parsing og mbox and sorting
+	int m_mail_index;    // index to MailArray, to s_mails_*, can be reused with care
+	int m_mail_cnt;      // count of mails with same subject, can be reused with care
+#endif
+	bool m_duplicateId;  // Used druring processing conversations only, can be reused !!!
+	bool m_done;         // Used during processing conversations only, can be reused  !!!
+	int m_index;         // serves as unique id == index
+	bool m_isOnUserSelectedMailList;    // TODO: check if and/or when it can be reused
+	int m_DetermineEmbeddedImagesDone;  // can't be reused  !!!
 //
 
-	CFile fp;
+	//CFile fp;
 	BOOL GetBody(CFile fp, CString &str);
 	BOOL GetBody(CString &str);
 	BOOL GetBody(CFile &fp, SimpleString *str, int maxLength = -1);
@@ -319,6 +400,7 @@ public:
 	static MessageIdTableType *m_pMessageIdTable;
 	static MboxMailTableType *m_pMboxMailTable;
 	using MboxMailMapType = IHashMap<MboxMail, MboxMail, MboxHash, MboxEqual, &MboxMail::m_hashMapLink>;
+	using MboxMailMapCollionList = dllist<MboxMail, &MboxMail::m_hashMapLink>;
 	static MboxMailMapType *m_pMboxMailMap;
 	//
 	static UINT createMessageIdTable(UINT count);
@@ -338,6 +420,9 @@ public:
 	static bool insertMboxMail(MboxMail *key, MboxMail *mbox);
 	static UINT createMboxMailTable(UINT count);
 	static void clearMboxMailTable();
+	static MboxMailMapCollionList* MboxMail::getCollisionList(MboxMail *key);
+	static MboxMailMapCollionList* MboxMail::getCollisionList(unsigned long hashsum);
+	static bool equal(MboxMail *elem1, MboxMail *elem2);
 	//
 	static int m_nextGroupId;
 	// Tricky to use to avoid ownership conflict when two function on stack use the same buffer; Asking for trouble :) Big Yes
@@ -386,18 +471,24 @@ public:
 	//
 	static CString GetLastDataPath();
 	static CString SetLastDataPath(CString *lastMboxDirPath = 0);
+
+	static FolderContext s_folderContext;  // current folder context, data folder, etc
+
+	static void SetMboxFilePath(CString &filepath, BOOL ignoreCheck = FALSE);
 	
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCSTR path);
-	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset);
+	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
+	//
+	static void Parse_LabelView(LPCSTR path);
 
 	static BOOL m_seExceptionMsgBox;
 	static BOOL m_cppExceptionMsgBox;
 	
 
 	// TODO:  need to rewrite, encapsulate in objects, etc
-	static MailArray s_mails_ref;  // original cache
+	static MailArray s_mails_ref;  // original master cache. elemenyt order must not change !!!!!
 	static MailArray s_mails;  // other lists need to be copied here since that is how initial implementation works, would need to change in too many places
 	static MailArray s_mails_all;
 	static MailArray s_mails_find;
@@ -457,6 +548,7 @@ public:
 	static int m_EmbededImagesNotFoundData;
 	static int m_EmbededImagesNotFoundLocalFile;
 
+	static void SortBySubjectBasedConversasions(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByDate(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByFrom(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByTo(MailArray *s_mails = 0, bool bDesc = false);
@@ -468,7 +560,7 @@ public:
 	static void SortByIndex(MailArray *s_mails = 0, bool bDesc = false);
 	static void assignColor2ConvesationGroups();
 	static void assignColor2ConvesationGroups(MailArray *mails);
-	static void Destroy();
+	static void Destroy(MailArray *marray = 0);
 	static bool preprocessConversationsByThreadId();
 	static bool HasGMThreadId();
 	static bool preprocessConversations();
@@ -483,10 +575,13 @@ public:
 	//
 	static int CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameFontStyle, CString &fldTextFontStyle);
 	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
-	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail);
-	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig);
+	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded);
+	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded);
 	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
 	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
+	static BOOL PageBreakNeeded(int mailPosition, int nextMailPosition, bool singleMail);
+	static BOOL PageBreakNeeded(MailIndexList *selectedMailIndexList, int mailPosition, bool singleMail);
+	
 	//
 	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
 	static int printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig);
@@ -497,7 +592,7 @@ public:
 	static int printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, BOOL progessBar, CString &errorText);
 	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, BOOL progressBar, CString &errorText);
 	//
-	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString errorText);
+	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString &errorText);
 	static int PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString errorText);
 	//
 	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
@@ -528,6 +623,7 @@ public:
 	//
 	static CString GetDateFormat(int i);
 	static int RemoveDuplicateMails(MailArray &s_mails_array);
+	static int LinkDuplicateMails(MailArray &s_mails_array);
 
 	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
 	static int MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
@@ -535,6 +631,8 @@ public:
 	static BOOL CreateCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 	static BOOL GetCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText, CString *mboxFilePath=NULL);
 
+
+	static BOOL GetLongestCachePath(CString &longestCachePath);
 	static BOOL GetPrintCachePath(CString &printCachePath);
 	static bool GetPrintCachePath(CString &rootPrintSubFolder, CString &targetPrintSubFolder, CString &prtCachePath, CString &errorText);
 	static BOOL GetMboxviewFilePath(CString &mboxFilePath, CString &mboxviewFilePath);

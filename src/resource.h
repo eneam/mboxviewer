@@ -48,6 +48,7 @@
 #define IDD_OPEN_ARCHIVE_DLG            225
 #define IDD_SMTP_DLG                    226
 #define IDD_FORWARD_EMAIL               228
+#define IDD_DATA_FOLDER_DLG             230
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -114,7 +115,10 @@
 #define IDC_MSEDGE                      1066
 #define IDC_SUBJ_ID                     1070
 #define IDC_FROM_ID                     1071
+#define IDC_CONFIG_FOLDER_STYLE_1       1071
 #define IDC_TO_ID                       1072
+#define IDC_CONFIG_FOLDER_STYLE_2       1072
+#define IDC_CONFIG_FOLDER_STYLE_3       1073
 #define IDC_SHOW_CHARSETS               1074
 #define IDC_SHOW_CHARSETS_Y             1075
 #define IDC_COLOR_STYLE4                1075
@@ -125,6 +129,7 @@
 #define IDC_CHECK6                      1080
 #define IDC_CHECK_ATTACHMENT            1080
 #define IDC_EDIT_CC_CASE                1080
+#define IDC_SEPARATE_TEXT               1080
 #define IDC_SEARCH_NEXT                 1081
 #define IDC_BUTTON_ZOOM                 1083
 #define IDC_CHECK3                      1085
@@ -314,6 +319,12 @@
 #define IDC_FORWARD_MAX_MAIL_SIZE       1265
 #define IDC_FORWARD_MAX_MAIL_SIZE_LABEL 1265
 #define IDC_MAX_MAIL_SIZE               1266
+#define IDC_SELECT_DATA_FOLDER_BUTTON   1268
+#define IDC_EDIT_WIN_APP_DATA_FOLDER    1269
+#define IDC_USER_SELECTED_FOLDER_PATH   1270
+#define IDC_EDIT_INTRO                  1275
+#define IDC_SUBJECT_SORT_TYPE           1276
+#define IDC_THREAD_BREAK                1277
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -366,6 +377,13 @@
 #define ID_GMAILLABELS_CREATE           32904
 #define ID_GMAILLABELS_DELETE           32905
 #define ID_GMAILLABELS_REFRESH          32906
+#define ID_FILE_SELECTROOTFOLDER        32907
+#define ID_FILE_DATAFOLDERCONFIG        32908
+#define ID_HELP_DONATE                  32909
+#define ID_SELECTASROOTFOLDER_LABELTREEV 32910
+#define ID_SELECTASROOTFOLDER_FOLDERTREEVIEW 32911
+#define ID_FILE_MERGEROOTFOLDERSUB      32912
+#define ID_FILE_SELECTASROOTFOLDER      32913
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -374,9 +392,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        230
-#define _APS_NEXT_COMMAND_VALUE         32907
-#define _APS_NEXT_CONTROL_VALUE         1267
+#define _APS_NEXT_RESOURCE_VALUE        232
+#define _APS_NEXT_COMMAND_VALUE         32914
+#define _APS_NEXT_CONTROL_VALUE         1278
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

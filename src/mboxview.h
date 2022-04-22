@@ -53,6 +53,7 @@ extern const char *sz_Software_mboxview;
 #define WM_CMD_PARAM_GENERAL_HINT_MESSAGE  (WM_APP + 3)
 #define WM_CMD_PARAM_NEW_COLOR_MESSAGE  (WM_APP + 4)
 #define WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE  (WM_APP + 5)
+#define WM_CMD_PARAM_RESET_TREE_POS_MESSAGE  (WM_APP + 6)
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:
@@ -69,16 +70,22 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CmboxviewApp)
-	public:
+public:
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
+	virtual void AddToRecentFileList(LPCTSTR lpszPathName);
 	//}}AFX_VIRTUAL
 
 // Implementation
+	static BOOL GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls);
+	static DWORD m_versionMS;
+	static DWORD m_versionLS;
+	static CString m_savedVer;
 
 public:
 	//{{AFX_MSG(CmboxviewApp)
 	afx_msg void OnAppAbout();
+	afx_msg void OnHelpDonate();
 		// NOTE - the ClassWizard will add and remove member functions here.
 		//    DO NOT EDIT what you see in these blocks of generated code !
 	//}}AFX_MSG

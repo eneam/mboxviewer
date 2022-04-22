@@ -61,6 +61,7 @@ struct NamePatternParams
 	int m_bPrintToSeparateTEXTFiles;
 	int m_bAddBackgroundColorToMailHeader;
 	int m_bAddBreakPageAfterEachMailInPDF;
+	int m_bAddBreakPageAfterEachMailConversationThreadInPDF;
 	int m_bKeepMailBodyBackgroundColor;
 	int m_bHeaderAndFooter;
 	int m_bCustomFormat;
@@ -120,6 +121,8 @@ public:
 	afx_msg void OnBnClickedCustomTemplate();
 	afx_msg void OnBnClickedSetCustomTemplate();
 	afx_msg void OnBnClickedHtmlPdfCnf();
+	afx_msg void OnBnClickedPageBreak();
+	afx_msg void OnBnClickedThreadBreak();
 };
 
 #endif _PRINT_CONFIG_DLG_

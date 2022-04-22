@@ -119,6 +119,7 @@ CString MboxMail::s_path;
 CString MboxMail::s_path_label;
 CString MboxMail::s_datapath;  // root directory for files created by mbox viewer such as index file, PrintCache
 int MboxMail::nWhichMailList = -1;
+FolderContext MboxMail::s_folderContext;
 
 int MboxMail::m_EmbededImagesNoMatch = 0;
 
@@ -275,42 +276,132 @@ public:
 	}
 };
 
-void MboxMail::SetLastPath(CString &path)
+void FolderContext::SetFolderPath(CString &folderPath)
 {
+	CString path = folderPath;
+	path.TrimRight("\\");
+	if (path.IsEmpty())
+	{
+		MboxMail::assert_unexpected();
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+		m_folderPath = "";
+		m_dataFolderPath = "";
+		return;
+	}
+
+	path.Append("\\");
+
+	if (m_folderPath.Compare(path) == 0)
+	{
+		m_setPathCount++;  // redundant calls count
+		return;
+	}
+
+	if (m_setPathCount > 1)
+		TRACE("SetFolderPath: SetPathCount=%d\n", m_setPathCount);
+
+	m_setPathCount = 0;
+
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+
+	m_folderPath = path;
+
+	if (m_rootDataFolderPathConfig.IsEmpty())
+		m_rootDataFolderPath.Empty();
+	else
+		m_rootDataFolderPath = m_rootDataFolderPathConfig;
+
+	if (m_rootDataFolderPath.IsEmpty())
+	{
+		m_dataFolderPath = path + "MBoxViewer\\";
+		BOOL isReadOnly = FileUtils::IsReadonlyFolder(m_dataFolderPath);
+		if (!isReadOnly)
+		{
+			return;
+		}
+		else
+		{
+			m_rootDataFolderPath = FileUtils::CreateMboxviewLocalAppPath();
+			m_dataFolderPath = m_rootDataFolderPath + "MBoxViewer\\";
+			BOOL isReadOnly = FileUtils::IsReadonlyFolder(m_rootDataFolderPath);
+			if (isReadOnly)
+			{
+				MboxMail::assert_unexpected();
+				// start dialog ??
+			}
+
+		}
+	}
+	else
+	{
+		m_dataFolderPath = m_rootDataFolderPath + "MBoxViewer\\";
+		if (!m_rootDataFolderPathSubFolderConfig.IsEmpty())
+			m_dataFolderPath.Append(m_rootDataFolderPathSubFolderConfig);
+	}
+
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+
+	driveName.TrimRight(":");
+	m_dataFolderPath = m_dataFolderPath + driveName + directory;
+
+	int deb = 1;
+}
+void FolderContext::GetFolderPath(CString &folderpath)
+{
+	folderpath = m_folderPath;
+}
+void FolderContext::GetDataPath(CString &dataFolderPath)
+{
+	dataFolderPath = m_dataFolderPath;
+}
+// 
+BOOL FolderContext::LoadFromRegistry()
+{
+	return TRUE;
+}
+BOOL FolderContext::SaveToRegistry()
+{
+	return TRUE;
+}
+
+void MboxMail::SetMboxFilePath(CString &filePath, BOOL ignoreCheck)
+{
+	if (!ignoreCheck && filePath.IsEmpty())
+	{
+		assert_unexpected();
+	}
+	s_path = filePath;
+
+};
+
+void MboxMail::SetLastPath(CString &lastPath)
+{
+	CString path = lastPath;
+	path.TrimRight("\\");
+	path.Append("\\");
 	MboxMail::s_datapath = "";
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "lastPath", path);
+	s_folderContext.SetFolderPath(lastPath);
+
 	if (path.IsEmpty())
 	{
 		return;
 	}
 
-	// Set database path; Verify that the default mbox folder is not Read-Only
-	CString TestFile = path + "\\" + ".WriteSupported";
-	if (FileUtils::CreateDirectory(TestFile))
+	if (!s_folderContext.m_rootDataFolderPath.IsEmpty())
 	{
-		BOOL retD = FileUtils::RemoveDir(TestFile, true, true);
-		s_datapath = path;
+		if (strncmp(s_folderContext.m_dataFolderPath, s_folderContext.m_rootDataFolderPath, s_folderContext.m_rootDataFolderPath.GetLength()))
+			MboxMail::assert_unexpected();
 	}
-#if 0
-	CString PrintCache = path + "\\" + "PrintCache";
-	if (FileUtils::CreateDirectory(PrintCache))
-	{
-		if (FileUtils::PathDirExists(PrintCache))
-		{
-			s_datapath = path;
-		}
-	}
-#endif
-	if (s_datapath.IsEmpty())
-	{
-		s_datapath = MboxMail::SetLastDataPath();
-	}
+	s_datapath = s_folderContext.m_dataFolderPath;
 
-	//MboxMail::mbassert();
-	if (!path.IsEmpty() && s_datapath.IsEmpty())
-		int deb = 1;
-	if (path.Compare(s_datapath))
-		int deb = 1;
+	int deb = 1;
 }
 
 
@@ -326,7 +417,7 @@ CString MboxMail::GetDataPath(CString &path)
 	CString TestFile = path + "\\" + ".WriteSupported";
 	if (FileUtils::CreateDirectory(TestFile))
 	{
-			BOOL retD = FileUtils::RemoveDir(TestFile, true, true);
+			BOOL retD = FileUtils::RemoveDirW(TestFile, true, true);
 			return path;
 	}
 
@@ -446,14 +537,19 @@ BOOL MboxMail::GetBody(CString &res)
 {
 	BOOL ret = TRUE;
 	CFile fp;
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		char *p = res.GetBufferSetLength(m_length);
 		//TRACE("offset = %lld\n", m_startOff);
 		fp.Seek(m_startOff, SEEK_SET);
 		fp.Read(p, m_length);
 		char *ms = strchr(p, '\n'); //"-Version: 1.0");
-		if (ms) {
+		// TODO: Should we always make sure lines are terminated with CR LF
+		// Sometimes mail files have different  line ending at the end  of a file, etc.
+		// Or enhance mime parser to handle line ending with CR or NL only
+		if (ms) 
+		{
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
@@ -476,8 +572,15 @@ BOOL MboxMail::GetBody(CString &res)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
 		ret = FALSE;
 	}
 	return ret;
@@ -527,7 +630,8 @@ BOOL MboxMail::GetBody(SimpleString *res, int maxLength)
 		if (maxLength < m_length)
 			bytes2Read = maxLength;
 	}
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		res->Resize(bytes2Read);
 		//TRACE("offset = %lld\n", m_startOff);
@@ -540,8 +644,15 @@ BOOL MboxMail::GetBody(SimpleString *res, int maxLength)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
 		ret = FALSE;
 	}
 
@@ -552,7 +663,67 @@ int MboxMail::SingleMailSizeof()
 {
 	int cstringSz = sizeof(CString);
 
-	int allocExtra = 28;
+	int thisSize = 0;
+	{
+		thisSize = sizeof(m_startOff);
+		thisSize += sizeof(m_length);
+		thisSize += sizeof(m_hasAttachments);
+		thisSize += sizeof(m_headLength);
+
+		thisSize += sizeof(m_from_charsetId);
+		thisSize += sizeof(m_to_charsetId);
+		thisSize = sizeof(m_subj_charsetId);
+
+		thisSize += sizeof(m_cc_charsetId);
+		thisSize += sizeof(m_bcc_charsetId);
+
+
+		thisSize += sizeof(m_timeDate);
+		thisSize += sizeof(m_recv);
+		thisSize += sizeof(m_groupId);
+		thisSize += sizeof(m_nextMail);
+		thisSize += sizeof(m_prevMail);
+
+		thisSize += sizeof(m_duplicateId);
+		thisSize += sizeof(m_done);
+		thisSize += sizeof(m_groupColor);
+		thisSize += sizeof(m_index);
+		thisSize += sizeof(m_headLength);
+
+		//m_crc32 = 0xffffffff;
+
+		thisSize += sizeof(m_isOnUserSelectedMailList);
+		thisSize += sizeof(m_DetermineEmbeddedImagesDone);
+
+
+		//thisSize += sizeof(fp);
+		thisSize += sizeof(m_ContentDetailsArray);
+
+		thisSize += sizeof(m_hashMapLink);
+
+		thisSize += sizeof(m_from);
+		thisSize += sizeof(m_to);
+		thisSize += sizeof(m_subj);
+		thisSize += sizeof(m_cc);
+		thisSize += sizeof(m_bcc);
+
+		thisSize += sizeof(m_from_charset);
+		thisSize += sizeof(m_to_charset);
+		thisSize += sizeof(m_subj_charset);
+		thisSize += sizeof(m_cc_charset);
+		thisSize += sizeof(m_bcc_charset);
+
+		thisSize += sizeof(m_messageId);
+		thisSize += sizeof(m_replyId);
+		thisSize += sizeof(m_threadId);
+
+		int thisSizeof = sizeof(*this);
+		int delta = thisSizeof - thisSize;
+		// delta = 33 we are missing some overhead, class overhead ?
+		int deb = 1;
+	}
+
+	int allocExtra = 28;  // TODO: try to do better than just a guess
 	int fieldsSz = sizeof(*this) + allocExtra;
 	fieldsSz += m_from.GetAllocLength() + allocExtra;
 	fieldsSz += m_to.GetAllocLength() + allocExtra;
@@ -709,7 +880,7 @@ char szFrom6[] = "\nFrom ";
 char	*g_szFrom;
 int		g_szFromLen;
 
-bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset)
+bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent)
 {
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = strlen(cFromMailBegin);
@@ -729,6 +900,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	static const int cReceivedLen = strlen(cReceived);
 	static const char *cContentType = "content-type:";  // some mails such as from Apple don't seem to have blank line to separate header from body
 	static const int cContentTypeLen = strlen(cContentType);
+	static const char *cThreadId = "x-gm-thrid:";
+	static const int cThreadIdLen = strlen(cThreadId);
+	static const char *cMsgId = "message-id:";
+	static const int cMsgIdLen = strlen(cMsgId);
 
 	char *orig = p;
 	register char *e = p + bufSize - 1;
@@ -741,9 +916,11 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	CString to, from, subject, date;
 	CString date_fromField;
 	CString cc, bcc;
+	CString msgId, thrdId;
 	time_t tdate = -1;
 	time_t tdate_fromField = 1;
-	bool	bTo = true, bFrom = true, bSubject = true, bDate = true, bRcvDate = true; // indicates not found, false means found 
+	bool	bTo = true, bFrom = true, bSubject = true, bDate = true, bRcvDate = true; // indicates not found, false means found
+	bool bMsgId = true, bThrdId = true;
 	bool bCC = true, bBCC = true;
 	char *msgStart = NULL;
 	int recv = TRUE;
@@ -751,8 +928,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	CString line;
 	CString rcved;
 
+	int mailCnt = s_mails.GetCount();
 	char *badPtr = 0;
-
 	
 #if 1
 	if (bFirstView) 
@@ -892,6 +1069,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							m->m_to = TextUtilsEx::DecodeString(to, m->m_to_charset, m->m_to_charsetId);
 							m->m_from = TextUtilsEx::DecodeString(from, m->m_from_charset, m->m_from_charsetId);
 							m->m_subj = TextUtilsEx::DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
+							m->m_subj.Trim();
 							m->m_cc = TextUtilsEx::DecodeString(cc, m->m_cc_charset, m->m_cc_charsetId);
 							m->m_bcc = TextUtilsEx::DecodeString(bcc, m->m_bcc_charset, m->m_bcc_charsetId);
 							if (!bcc.IsEmpty())
@@ -903,12 +1081,15 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							m->m_timeDate = tdate;
 							m->m_recv = recv;
 							m->m_headLength = 0;  // set in ParseContent()
+							m->m_messageId = msgId;
+							m->m_threadId = thrdId;
 
 							//m->m_crc32 = TextUtilities::CalcCRC32(msgStart, m->m_length);
 
 							char *bodyStart = msgStart;
 							char *bodyEnd = msgStart + m->m_length;
-							char *nextStart = ParseContent(m, bodyStart, bodyEnd);
+							if (parseContent)
+								char *nextStart = ParseContent(m, bodyStart, bodyEnd);
 							if (m->m_ContentDetailsArray.size() == 0) {
 								int deb = 1;
 							}
@@ -929,7 +1110,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 							if ((s_mails.GetCount() % 100) == 0)
 							{
 								CString mailNum;
-								mailNum.Format(_T("Parsing archive file to create index file ... %d"), s_mails.GetCount());
+								if (statusText.IsEmpty())
+									mailNum.Format(_T("Parsing archive file to create index file ... %d"), s_mails.GetCount());
+								else
+									mailNum.Format(_T("%s ... %d"), statusText, s_mails.GetCount());
 
 								_int64 curOff = startOffset + (p - orig);
 								int step = (int)(curOff / s_step);
@@ -937,7 +1121,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(step));
 							}
 
-							if (pCUPDUPData->ShouldTerminate())
+							if (pCUPDUPData && pCUPDUPData->ShouldTerminate())
 								break;
 						}
 					}
@@ -949,8 +1133,10 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					date.Empty();
 					cc.Empty();
 					bcc.Empty();
+					msgId.Empty();
+					thrdId.Empty();
 					tdate = -1;
-					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = true;
+					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = bMsgId  = bThrdId  = true;
 				}
 				p += 5;
 				p = MimeParser::EatNewLine(p, e);
@@ -1049,6 +1235,20 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					else
 						int deb = 1;
 				}
+				else if (bMsgId && TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0)
+				{
+					bMsgId = false;
+					p = MimeParser::GetMultiLine(p, e, line);
+					msgId = line.Mid(cMsgIdLen);
+					msgId.Trim();
+				}
+				else if (bThrdId && TextUtilsEx::strncmpUpper2Lower(p, e, cThreadId, cThreadIdLen) == 0)
+				{
+					bThrdId = false;
+					p = MimeParser::GetMultiLine(p, e, line);
+					thrdId = line.Mid(cThreadIdLen);
+					thrdId.Trim();
+				}
 #if 0
 				// doesn't quite work; looking for empty lines seem to work best
 				else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentType, cContentTypeLen) == 0)
@@ -1073,7 +1273,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 #endif
 				else
 				{
-					BOOL isEmpty = FALSE;
+					bool isEmpty = false;
+					char *psave = p;
 					p = MimeParser::EatNewLine(p, e, isEmpty);
 					// TODO:  This check may not completely reliable and may need better check and likley more expensive check
 					// Without the end of header check, we could pickup CC and BCC fiekds from mail text
@@ -1136,6 +1337,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					m->m_to = TextUtilsEx::DecodeString(to, m->m_to_charset, m->m_to_charsetId);
 					m->m_from = TextUtilsEx::DecodeString(from, m->m_from_charset, m->m_from_charsetId);
 					m->m_subj = TextUtilsEx::DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
+					m->m_subj.Trim();
 					m->m_cc = TextUtilsEx::DecodeString(cc, m->m_cc_charset, m->m_cc_charsetId);
 					m->m_bcc = TextUtilsEx::DecodeString(bcc, m->m_bcc_charset, m->m_bcc_charsetId);
 					if (!bcc.IsEmpty())
@@ -1147,13 +1349,16 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					m->m_recv = recv;
 					m->m_timeDate = tdate;
 					m->m_headLength = 0; // set in ParseContent()
+					m->m_messageId = msgId;
+					m->m_threadId = thrdId;
 
 					//m->m_crc32 = TextUtilities::CalcCRC32(msgStart, m->m_length);
 
 					MailBodyContent body;
 					char *bodyStart = msgStart;
 					char *bodyEnd = msgStart + m->m_length;
-					char *nextStart = ParseContent(m, bodyStart, bodyEnd);
+					if (parseContent)
+						char *nextStart = ParseContent(m, bodyStart, bodyEnd);
 
 					s_mails.Add(m);
 
@@ -1207,6 +1412,7 @@ bool cmpAllMbox(bool desc) {
 bool cmpMbox(MboxMail* a, MboxMail *b) {
 	return a->m_startOff < b->m_startOff;
 }
+
 void MboxMail::Parse(LPCSTR path)
 {
 	Destroy();
@@ -1233,10 +1439,11 @@ void MboxMail::Parse(LPCSTR path)
 	bool ret2 = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, imageCachePath, errorText, &cpath);
 	if (errorText.IsEmpty() && FileUtils::PathDirExists(imageCachePath)) {
 		pCUPDUPData->SetProgress(_T("Deleting all related files in the ImageCache directory ..."), 0);
-		FileUtils::RemoveDir(imageCachePath, true);
+		FileUtils::RemoveDirW(imageCachePath, true);
 	}
 
-	MboxMail::s_path = path;
+	//MboxMail::s_path = path;
+	MboxMail::SetMboxFilePath(CString(path));
 	CString lastPath = MboxMail::GetLastPath();
 	CString lastDataPath = MboxMail::GetLastDataPath();
 
@@ -1298,6 +1505,7 @@ void MboxMail::Parse(LPCSTR path)
 	_int64 delta = 0;
 
 	// TODO:  Need to consider to redo reading and create  Character Stream for reading
+	CString statusText;
 	_int64 lastStartOffset = 0;
 	while  ((lastView == false) && !pCUPDUPData->ShouldTerminate()) 
 	{
@@ -1335,7 +1543,7 @@ void MboxMail::Parse(LPCSTR path)
 		try
 		{
 #endif
-			MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset);
+			MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, statusText);
 #ifdef USE_STACK_WALKER
 		}
 		catch (...)
@@ -1417,10 +1625,157 @@ void MboxMail::Parse(LPCSTR path)
 #endif
 }
 
+
+void MboxMail::Parse_LabelView(LPCSTR path)
+{
+	MboxMail::SetMboxFilePath(CString(path));
+	CString lastPath = MboxMail::GetLastPath();
+	CString lastDataPath = MboxMail::GetLastDataPath();
+
+	bool	bEml = false;
+
+	HANDLE hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+		OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+		return;
+
+	unsigned _int64 fSize = 0;
+	MboxMail::s_oSize = MboxMail::s_fSize;
+	MboxMail::s_fSize = fSize;
+	LARGE_INTEGER li;
+	GetFileSizeEx(hFile, &li);
+	fSize = li.QuadPart;
+	s_step = fSize / 100;
+	_int64 mappingSize = (_int64)MAPPING_SIZE;
+
+	int mappingsInFile = (int)((fSize - 1) / mappingSize) + 1;
+	HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, (DWORD)(fSize >> 32), (DWORD)fSize, NULL);
+	if (hFileMap == NULL) {
+		CloseHandle(hFile);
+		return;
+	}
+
+	SYSTEM_INFO systemInfo;
+	GetSystemInfo(&systemInfo);
+	DWORD dwPageSize = systemInfo.dwPageSize;
+	DWORD dwAllocationGranularity = systemInfo.dwAllocationGranularity;
+
+#ifdef _DEBUG
+	DWORD tc = GetTickCount();
+#endif
+	g_szFrom = szFrom5;
+	g_szFromLen = 5;
+	TRACE("fSize = %lld\n", fSize);
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	CString mailFilePath = path;
+	FileUtils::SplitFilePath(mailFilePath, driveName, directory, fileNameBase, fileNameExtention);
+
+	CString mailFile = fileNameBase + fileNameExtention;
+	CString parsingFileText = _T("Parsing \"") + mailFile + _T("\"");
+
+	if (pCUPDUPData)
+		pCUPDUPData->SetProgress(parsingFileText, 0);  // works but doesn't always fit into progress bar
+	//pCUPDUPData->SetProgress(_T("Parsing archive file to create index file ..."), 0);
+
+	// TODO: due to breaking the file into multiple chunks, it looks some emails can be lost : Fixed
+
+	bool firstView = true;;
+	bool lastView = false;
+	DWORD bufSize = 0;
+	_int64 aligned_offset = 0;
+	_int64 delta = 0;
+
+	// TODO:  Need to consider to redo reading and create  Character Stream for reading
+	_int64 lastStartOffset = 0;
+	while ((lastView == false) && !(pCUPDUPData && pCUPDUPData->ShouldTerminate()))
+	{
+		s_curmap = lastStartOffset;
+		aligned_offset = (s_curmap / dwAllocationGranularity) * dwAllocationGranularity;
+		delta = s_curmap - aligned_offset;
+		bufSize = ((fSize - aligned_offset) < mappingSize) ? (DWORD)(fSize - aligned_offset) : (DWORD)mappingSize;
+
+		TRACE("offset=%lld, bufsize=%ld, fSize-curmap=%lld, end=%lld\n", s_curmap, bufSize, fSize - s_curmap, s_curmap + bufSize);
+		char * pview = (char *)MapViewOfFileEx(hFileMap, FILE_MAP_READ, (DWORD)(aligned_offset >> 32), (DWORD)aligned_offset, bufSize, NULL);
+
+		if (pview == 0)
+		{
+			DWORD err = GetLastError();
+			CString txt = _T("Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.");
+			HWND h = NULL; // we don't have any window yet ??
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int deb = 1;
+			break;
+		}
+
+		if ((aligned_offset + bufSize) < fSize)
+			lastView = false;
+		else
+			lastView = true;
+
+		lastStartOffset = aligned_offset + bufSize;
+
+		char *p = pview + delta;
+		int viewBufSize = bufSize - (DWORD)delta;
+		_int64 viewOffset = s_curmap;
+		_int64 msgOffset = viewOffset;
+		BOOL processException = FALSE;
+#ifdef USE_STACK_WALKER
+		try
+		{
+#endif
+			MboxMail::Process(p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, parsingFileText, FALSE);
+#ifdef USE_STACK_WALKER
+		}
+		catch (...)
+		{
+			processException = TRUE;
+		}
+#endif
+		firstView = false;
+		UnmapViewOfFile(p);
+
+#ifdef USE_STACK_WALKER
+		if (processException)
+		{
+			DumpMailParseException(msgOffset);
+			exit(0);
+			//AfxAbort();
+			//break;
+		}
+#endif
+	}
+
+#ifdef _DEBUG
+	tc = (GetTickCount() - tc);
+	CString out;
+	out.Format("Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
+	OutputDebugString(out);
+	out.Format("Found %d mails\n", MboxMail::s_mails.GetSize());
+	OutputDebugString(out);
+	//	TRACE("Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
+	//	TRACE("Found %d mails\n", MboxMail::s_mails.GetSize());
+#endif
+
+	CloseHandle(hFileMap);
+	CloseHandle(hFile);
+}
+
+
 #include <algorithm>
 
-bool sortByDate(MboxMail *cr1, MboxMail *cr2) { return (cr1->m_timeDate < cr2->m_timeDate); }
-bool sortByDateDesc(MboxMail *cr1, MboxMail *cr2) { return (cr1->m_timeDate > cr2->m_timeDate); }
+bool sortByDate(MboxMail *cr1, MboxMail *cr2)
+{
+	return (cr1->m_timeDate < cr2->m_timeDate);
+}
+bool sortByDateDesc(MboxMail *cr1, MboxMail *cr2)
+{
+	return (cr1->m_timeDate > cr2->m_timeDate);
+}
 
 bool sortByFrom(MboxMail *cr1, MboxMail *cr2) {
 	int cmp = cr1->m_from.Compare(cr2->m_from);
@@ -1452,125 +1807,122 @@ bool sortByToDesc(MboxMail *cr1, MboxMail *cr2) {
 		return (cmp > 0);
 }
 
-bool sortBySubject(MboxMail *cr1, MboxMail *cr2) {
-	unsigned char *subj1 = (unsigned char *)(LPCSTR)cr1->m_subj;
-	unsigned char *subj2 = (unsigned char *)(LPCSTR)cr2->m_subj;
-	int subjlen1 = cr1->m_subj.GetLength();
-	int subjlen2 = cr2->m_subj.GetLength();
+int ExtractSubject(CString &subject, char *&subjectText) 
+{
+	char *subj = (char *)(LPCSTR)subject;
+	int subjlen = subject.GetLength();
 
-	// Not 100% correct without using from and to fields
-	if (subj1[0] == 'R') {
-		if (subjlen1 >= 4) {
-			if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
-				subj1 += 4; subjlen1 -= 4;
+	//TODO: should I skip white spaces 
+	// should compare
+
+	while (subjlen >= 4)
+	{
+		if (subj[0] == 'R')
+		{
+			if ((strncmp((char*)subj, "Re: ", 4) == 0) || (strncmp((char*)subj, "RE: ", 4) == 0)) {
+				subj += 4; subjlen -= 4;
 			}
+			else
+				break;
 		}
-	}
-	else if (subj1[0] == 'F') {
-		if (subjlen1 >= 5) {
-			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
-				subj1 += 5; subjlen1 -= 5;
+		else if (subj[0] == 'F')
+		{
+			if (subjlen >= 5)
+			{
+				if ((strncmp((char*)subj, "Fwd: ", 5) == 0) || (strncmp((char*)subj, "FWD: ", 5) == 0)) {
+					subj += 5; subjlen -= 5;
+				}
+				else
+					break;
 			}
+			else
+				break;
 		}
+		else
+			break;
 	}
-	if (subj2[0] == 'R') {
-		if (subjlen2 >= 4) {
-			if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
-				subj2 += 4; subjlen2 -= 4;
-			}
-		}
-	}
-	else if (subj2[0] == 'F') {
-		if (subjlen2 >= 5) {
-			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
-				subj2 += 5; subjlen2 -= 5;
-			}
-		}
-	}
+
+	subjectText = subj;
+	return subjlen;
+}
+
+
+bool sortBySubjectAsc(MboxMail *cr1, MboxMail *cr2)
+{
+	char *subj1;
+	char *subj2;
+	int subjlen1 = ExtractSubject(cr1->m_subj, subj1);
+	int subjlen2 = ExtractSubject(cr2->m_subj, subj2);
 
 	if ((subjlen1 == subjlen2) && (strncmp((char*)subj1, (char*)subj2, subjlen1) == 0))
 	{
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate);
 	}
 	else
 	{
-		if (strcmp((char*)subj1, (char*)subj2) < 0)
-			return true;
-		else
-			return false;
+		return (strcmp((char*)subj1, (char*)subj2) < 0);
 	}
 }
-bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2) {
-	unsigned char *subj1 = (unsigned char *)(LPCSTR)cr1->m_subj;
-	unsigned char *subj2 = (unsigned char *)(LPCSTR)cr2->m_subj;
-	int subjlen1 = cr1->m_subj.GetLength();
-	int subjlen2 = cr2->m_subj.GetLength();
 
-	// Not 100% correct  without using from and to fields
-	if (subj1[0] == 'R') {
-		if (subjlen1 >= 4) {
-			if ((strncmp((char*)subj1, "Re: ", 4) == 0) || (strncmp((char*)subj1, "RE: ", 4) == 0)) {
-				subj1 += 4; subjlen1 -= 4;
-			}
-		}
-	}
-	else if (subj1[0] == 'F') {
-		if (subjlen1 >= 5) {
-			if ((strncmp((char*)subj1, "Fwd: ", 5) == 0) || (strncmp((char*)subj1, "FWD: ", 5) == 0)) {
-				subj1 += 5; subjlen1 -= 5;
-			}
-		}
-	}
-	if (subj2[0] == 'R') {
-		if (subjlen2 >= 4) {
-			if ((strncmp((char*)subj2, "Re: ", 4) == 0) || (strncmp((char*)subj2, "RE: ", 4) == 0)) {
-				subj2 += 4; subjlen2 -= 4;
-			}
-		}
-	}
-	else if (subj2[0] == 'F') {
-		if (subjlen2 >= 5) {
-			if ((strncmp((char*)subj2, "Fwd: ", 5) == 0) || (strncmp((char*)subj2, "FWD: ", 5) == 0)) {
-				subj2 += 5; subjlen2 -= 5;
-			}
-		}
-	}
+bool sortBySubjectDesc(MboxMail *cr1, MboxMail *cr2)
+{
+	char *subj1;
+	char *subj2;
+	int subjlen1 = ExtractSubject(cr1->m_subj, subj1);
+	int subjlen2 = ExtractSubject(cr2->m_subj, subj2);
 
 	if ((subjlen1 == subjlen2) && (strncmp((char*)subj1, (char*)subj2, subjlen1) == 0))
 	{
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate);
 	}
 	else
 	{
-		if (strcmp((char*)subj1, (char*)subj2) > 0)
-			return true;
-		else
-			return false;
+		return  (strcmp((char*)subj1, (char*)subj2) > 0);
 	}
+}
+
+bool CompBySubject(MboxMail *cr1, MboxMail *cr2)
+{
+	char *subj1;
+	char *subj2;
+	int subjlen1 = ExtractSubject(cr1->m_subj, subj1);
+	int subjlen2 = ExtractSubject(cr2->m_subj, subj2);
+
+	return (strcmp((char*)subj1, (char*)subj2) == 0);
+}
+
+int CompareBySubject(MboxMail *cr1, MboxMail *cr2)
+{
+	char *subj1;
+	char *subj2;
+	int subjlen1 = ExtractSubject(cr1->m_subj, subj1);
+	int subjlen2 = ExtractSubject(cr2->m_subj, subj2);
+
+	return strcmp((char*)subj1, (char*)subj2);
 }
 
 bool sortByGroupId(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_groupId == cr2->m_groupId)
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate); 
 	else
 		return (cr1->m_groupId < cr2->m_groupId);
 }
 bool sortByGroupIdDesc(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_groupId == cr2->m_groupId)
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate); 
 	else
 		return (cr1->m_groupId > cr2->m_groupId);
 }
 
 bool sortBySize(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_length == cr2->m_length)
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate);
 	else
 		return (cr1->m_length < cr2->m_length);
 }
 bool sortBySizeDesc(MboxMail *cr1, MboxMail *cr2) {
 	if (cr1->m_length == cr2->m_length)
-		return (cr1->m_timeDate < cr2->m_timeDate); // make stable sort
+		return (cr1->m_timeDate < cr2->m_timeDate);
 	else
 		return (cr1->m_length > cr2->m_length);
 }
@@ -1594,6 +1946,7 @@ void MboxMail::SortByDate(MailArray *s_m, bool bDesc)
 	if (s_m == 0) s_m = &MboxMail::s_mails;
 	std::stable_sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortByDateDesc : sortByDate);
 }
+
 void MboxMail::SortByFrom(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
@@ -1607,7 +1960,7 @@ void MboxMail::SortByTo(MailArray *s_m, bool bDesc)
 void MboxMail::SortBySubject(MailArray *s_m, bool bDesc)
 {
 	if (s_m == 0) s_m = &MboxMail::s_mails;
-	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySubjectDesc : sortBySubject);
+	std::sort(s_m->GetData(), s_m->GetData() + s_m->GetSize(), bDesc ? sortBySubjectDesc : sortBySubjectAsc);
 }
 void MboxMail::SortBySize(MailArray *s_m, bool bDesc)
 {
@@ -1971,6 +2324,18 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 	char *mailBegin = startPos;
 	char *bodyDataOrigin = mailBegin;
 
+#if 0
+	// helper when testing root merging
+	MailBody *mBody = MailBody::CreateMailBody();
+	int nSize = mBody->MailHeader::Load(mailBegin, mailLength);
+	if (nSize <= 0)
+		int deb = 0;
+
+	m->m_messageId = mBody->m_MessageId;
+	m->m_replyId = mBody->m_InReplyId;
+	m->m_threadId = mBody->m_ThreadId;
+
+#else
 	MailBody *mBody = MailBody::CreateMailBody();
 	mBody->Load(bodyDataOrigin, mailBegin, mailLength);
 
@@ -2026,32 +2391,37 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 			m->m_ContentDetailsArray.push_back(contentDetails);
 		}
 	}
+#endif
 	// now it is save to free mBody
 	MailBody::FreeMailBody(mBody);
 	return mailBegin;  // not used, what should we return ?
 }
 
-void MboxMail::Destroy() 
+void MboxMail::Destroy(MailArray *array)
 {
-
 	clearMboxMailTable();
 	clearMessageIdTable();
 
-	int cnt = s_mails_ref.GetSize();
-	if (cnt < s_mails_ref.MaxSize())
+	if (array == 0)
+		array = &s_mails_ref;
+
+	MailArray &mails = *array;
+
+	int cnt = mails.GetSize();
+	if (cnt < mails.MaxSize())
 	{
-		MboxMail **e = s_mails_ref.GetData();
+		MboxMail **e = mails.GetData();
 		if (e[cnt])
 			int deb = 1;
 	}
 	for (int i = 0; i < cnt; i++)
 	{
-		for (int j = 0; j < s_mails_ref[i]->m_ContentDetailsArray.size(); j++) {
-			delete s_mails_ref[i]->m_ContentDetailsArray[j];
-			s_mails_ref[i]->m_ContentDetailsArray[j] = 0;
+		for (int j = 0; j < mails[i]->m_ContentDetailsArray.size(); j++) {
+			delete mails[i]->m_ContentDetailsArray[j];
+			mails[i]->m_ContentDetailsArray[j] = 0;
 		}
-		delete s_mails_ref[i];
-		s_mails_ref[i] = 0;
+		delete mails[i];
+		mails[i] = 0;
 	}
 
 	s_mails.SetSizeKeepData(0);
@@ -2063,7 +2433,8 @@ void MboxMail::Destroy()
 	s_mails_folder.SetSizeKeepData(0);
 
 	b_mails_sorted = false;
-	MboxMail::s_path = "";
+	//MboxMail::s_path = "";
+	MboxMail::SetMboxFilePath(CString(""), TRUE);
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame)
@@ -2263,7 +2634,7 @@ bool MboxMail::preprocessConversationsByThreadId()
 			}
 			else
 			{
-				m_reply_to = s_mails[rId];
+				m_reply_to = s_mails[rId];  // find root mail of the conversation thread
 				if (m_reply_to == m)
 					continue;
 
@@ -2274,7 +2645,10 @@ bool MboxMail::preprocessConversationsByThreadId()
 					m_reply_to = s_mails[rId];
 				}
 				//link this mail to conversation list
-				m_reply_to->m_nextMail = i;
+				// we use indexes to array to link mails, therfore order of the array elements must not change
+				// Using m_nextMail and m_prevMail we can always find all related mails
+
+				m_reply_to->m_nextMail = i;  
 				m->m_prevMail = rId;
 
 				int deb = 1;
@@ -2387,6 +2761,104 @@ bool MboxMail::preprocessConversations()
 
 // traverse s_mails by conversations and copy mail groups into s_mails_ref.
 // Finally, copy result from s_mails_ref to s_mails. Upon return, both s_mails and s_mails_ref are equal.
+#if 0
+// Two versions; different sort order
+bool MboxMail::sortConversations()
+{
+	MboxMail *m;
+	int i_ref = 0;
+
+	s_mails_ref.SetSizeKeepData(s_mails.GetSize());
+
+	int refSize = s_mails_ref.GetSize();
+
+#if 0
+	if (!validateSortConversations()) {
+		//s_mails is already left sorted by date
+		return false;
+	}
+#endif
+
+	int currentGroupColor = 0; // TODO; white , not used currently, remove ?
+	m_nextGroupId = 0;
+
+	int refCnt = 0;
+	// init s_mails_ref by conversation groups
+	int i;
+	for (i = 0; i < s_mails.GetSize(); i++)
+	{
+		m = s_mails[i];
+		if (m->m_done)
+			continue;
+
+		if (m->m_prevMail >= 0)
+		{
+			MboxMail::assert_unexpected();
+			continue;  // root mail of the list
+		}
+
+		if (m->m_nextMail < 0)
+		{
+			m->m_groupId = m_nextGroupId;
+			m->m_groupColor = currentGroupColor;
+			m->m_done = true;
+
+			s_mails_ref[i_ref++] = m;
+			refCnt++;
+
+			m_nextGroupId++;
+			currentGroupColor++;
+			if (currentGroupColor > 2)
+				currentGroupColor = 1;
+		}
+		else if (m->m_nextMail >= 0)
+		{
+			m->m_groupId = m_nextGroupId;
+			m->m_groupColor = currentGroupColor;
+			m->m_done = true;
+
+			s_mails_ref[i_ref++] = m;
+			refCnt++;
+
+			while (m->m_nextMail >= 0)
+			{
+				m = s_mails[m->m_nextMail];
+				if (m->m_done)
+					continue; // should never be here ??
+
+				m->m_groupId = m_nextGroupId;
+				m->m_groupColor = currentGroupColor;
+				m->m_done = true;
+
+				s_mails_ref[i_ref++] = m;
+				refCnt++;
+			}
+
+			m_nextGroupId++;
+			currentGroupColor++;
+			if (currentGroupColor > 2)
+				currentGroupColor = 1;
+		}
+	}
+
+	if (refCnt != refSize)
+	{
+		int deb = 1;
+		s_mails_ref.Copy(s_mails);
+		_ASSERT(refCnt == refSize);
+	}
+
+	MboxMail::SortByFileOffset(&MboxMail::s_mails_ref);
+
+	for (int i = 0; i < refSize; i++)
+	{
+		m = s_mails_ref[i];
+		m->m_index = i;
+	}
+	s_mails.Copy(s_mails_ref);
+	return true;
+}
+#else
 bool MboxMail::sortConversations()
 {
 	MboxMail *m;
@@ -2477,9 +2949,8 @@ bool MboxMail::sortConversations()
 	}
 	s_mails.Copy(s_mails_ref);
 	return true;
-
-
 }
+#endif
 
 // verify that after all mails are accounted after sorting by group
 // i.e. all mails will end up in s_mails_ref
@@ -2532,6 +3003,81 @@ bool MboxMail::validateSortConversations()
 		return false; // failure
 	else
 		return true;
+}
+
+void MboxMail::SortBySubjectBasedConversasions(MailArray *s_mails, bool bDesc)
+{
+	MboxMail::SortBySubject(0, bDesc);
+
+	MboxMail *m_thread_oldest;
+	MboxMail *m_thread;
+	MboxMail *m;
+	MboxMail *m_prev = 0;
+
+	int mailCount = MboxMail::s_mails.GetCount();
+	s_mails_selected.SetSizeKeepData(mailCount);
+	s_mails_selected.SetSizeKeepData(0);
+
+	int i = 0;
+	for (i = 0; i < mailCount; i++)
+	{
+		m = MboxMail::s_mails[i];
+		if (m_prev != 0)
+		{
+			if (CompBySubject(m, m_prev))
+			{
+				m_thread_oldest->m_mail_cnt++;
+			}
+			else
+			{
+				m_thread_oldest = m;
+				m->m_mail_cnt = 1;
+				m->m_mail_index = i;
+				MboxMail::s_mails_selected.Add(m);
+			}
+		}
+		else
+		{
+			m_thread_oldest = m;
+			m->m_mail_cnt = 1;
+			m->m_mail_index = i;
+			MboxMail::s_mails_selected.Add(m);
+		}
+		m_prev = m;
+	}
+
+	SortByDate(&s_mails_selected, bDesc);
+
+	s_mails_merged.SetSizeKeepData(mailCount);
+	s_mails_merged.SetSizeKeepData(0);
+
+	int j = 0;
+	int groupId = 0;
+	int groupColor = 0;
+	int mCount = MboxMail::s_mails_selected.GetCount();
+	for (i = 0; i < mCount; i++)
+	{
+		m = MboxMail::s_mails_selected[i];
+		int k = m->m_mail_index;
+		int cnt = m->m_mail_cnt;
+		for (j = 0; j < cnt; j++)
+		{
+			m_thread = MboxMail::s_mails[k++];
+			m_thread->m_mail_index = groupId;
+			m_thread->m_groupColor = groupColor;
+			MboxMail::s_mails_merged.Add(m_thread);
+		}
+		groupId++;
+		groupColor++;
+		if (groupColor > 1)
+			groupColor = 0;
+	}
+
+	_ASSERT(mailCount == MboxMail::s_mails_merged.GetCount());
+
+	MboxMail::s_mails.CopyKeepData(MboxMail::s_mails_merged);
+
+	int deb = 1;
 }
 
 
@@ -3237,9 +3783,22 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 	if (!progressBar)
 	{
-		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+		CFileException ExError;
+		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 			CString txt = _T("Could not create \"") + csvFile;
-			txt += _T("\" file.\nMake sure file is not open on other applications.");
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+
+			CFileStatus rStatus;
+			BOOL ret = fp.GetStatus(rStatus);
+
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
@@ -3248,10 +3807,21 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		CFile fpm;
 		if (csvConfig.m_bContent)
 		{
-			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-				CString txt = _T("Could not open mail archive \"") + s_path;
-				HWND h = NULL; // we don't have any window yet ??
+			CFileException ExError;
+			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
+			{
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+				CString txt = _T("Could not open \"") + MboxMail::s_path;
+				txt += _T("\" mail file.\n");
+				txt += exErrorStr;
+
+				//TRACE(_T("%s\n"), txt);
+				//errorText = txt;
+
+				HWND h = NULL; // we don't have any window yet
 				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
 				fp.Close();
 				return -1;
 			}
@@ -3734,7 +4304,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	return 1;
 }
 
-int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig)
+int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded)
 {
 	UINT pageCode;
 
@@ -3846,15 +4416,12 @@ int MboxMail::printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	outbuf->Append("\r\n");
 	fp.Write(outbuf->Data(), outbuf->Count());
 
-	if (pFrame)
+	if (pageBreakNeeded)
 	{
-		if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF)
-		{
-			char formFeed = 12;
-			outbuf->Clear();
-			outbuf->Append(formFeed);
-			fp.Write(outbuf->Data(), outbuf->Count());
-		}
+		char formFeed = 12;
+		outbuf->Clear();
+		outbuf->Append(formFeed);
+		fp.Write(outbuf->Data(), outbuf->Count());
 	}
 
 	return 1;
@@ -3956,9 +4523,19 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4082,7 +4659,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 
 			//outbuf->Append("\r\n<a href=\"file:../../AttachmentCache/");
 			//outbuf->Append((char*)(LPCSTR)mboxFileNameBase, mboxFileNameBase.GetLength());
-			outbuf->Append("\r\n<a href=\"file://");
+			outbuf->Append("\r\n<a href=\"file:///");
 
 			href.Clear();
 			href.Append(attachmentCachePath, attachmentCachePath.GetLength());
@@ -4117,9 +4694,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite), &ExError)
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4253,9 +4832,19 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 	CFile *fpm_save = fpm;
 	if (fpm == 0)
 	{
-		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite))
+		CFileException ExError;
+		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			// TODO: critical failure
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -4341,7 +4930,75 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 	return 1;
 }
 
-int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in - mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail)
+BOOL MboxMail::PageBreakNeeded(MailIndexList *selectedMailIndexList, int index, bool singleMail)
+{
+	int cnt = selectedMailIndexList->GetCount();
+	if ((index + 1) >= cnt)
+		return FALSE;
+
+	int mailPosition = (*selectedMailIndexList)[index];
+	int nextMailPosition = (*selectedMailIndexList)[index+1];
+
+	BOOL breakNeeded = PageBreakNeeded(mailPosition, nextMailPosition, singleMail);
+	return breakNeeded;
+}
+
+BOOL MboxMail::PageBreakNeeded(int mailPosition, int nextMailPosition, bool singleMail)
+{
+	if (singleMail)
+		return FALSE;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame == 0)
+		return FALSE;
+
+	NListView *pListView = pFrame->GetListView();
+	if (pListView == 0)
+		return FALSE;
+
+	if ((abs(MboxMail::b_mails_which_sorted) != 99) && ((abs(MboxMail::b_mails_which_sorted) != 5) && (pListView->m_subjectSortType != 1)))
+		return FALSE;
+
+	if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles == TRUE)
+		return FALSE;
+	else
+	{
+		if ((pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF == FALSE) && 
+			(pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailConversationThreadInPDF == FALSE))
+			return FALSE;
+
+		if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF)
+			return TRUE;
+	}
+
+	if (nextMailPosition >= s_mails.GetCount())
+		return FALSE;
+
+	BOOL addPageBreak = FALSE;
+	if (nextMailPosition < s_mails.GetCount())
+	{
+		MboxMail *m = s_mails[mailPosition];
+		MboxMail *m_next = s_mails[nextMailPosition];
+
+		if (abs(MboxMail::b_mails_which_sorted) == 99)
+		{
+			if (m_next->m_groupId != m->m_groupId)
+			{
+				addPageBreak = TRUE;
+			}
+		}
+		else if (abs(MboxMail::b_mails_which_sorted) == 4)
+		{
+			if (m_next->m_mail_index != m->m_mail_index)
+			{
+				addPageBreak = TRUE;
+			}
+		}
+	}
+	return addPageBreak;
+}
+
+int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in - mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL addPageBreak)
 {
 	char *token = 0;
 	int tokenlen = 0;
@@ -4392,6 +5049,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		htmlHdrFldNameStyle.Format("<style>\r\n.hdrfldname{%s}\r\n.hdrfldtext{%s}\r\n</style>", fldNameFontStyle, fldTextFontStyle);
 	}
 
+	//CString bdyy = "\r\n<br><article>";
+	CString bdyy = "<br><article>";
+	fp.Write(bdyy, bdyy.GetLength());
+
 	if (outbuflarge->Count() != 0)
 	{
 		//int retBG = NListView::RemoveBackgroundColor(outbuflarge->Data(), outbuflarge->Count(), &tmpbuf, mailPosition);
@@ -4407,40 +5068,44 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		outbuflarge->Copy(*workbuf);
 
 		CString bodyBackgroundColor;
-		if (!singleMail)
+		CString bodyWidth;
+		// if (!singleMail)    // TODO: do it for single mail also
 		{
-			workbuf->SetCount(0);
-			int retSet = NListView::RemoveBodyBackgroundColor((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf, bodyBackgroundColor);
+			BOOL removeBackgroundColor = TRUE;
+			BOOL removeWidth = TRUE;
 
-			if (!bodyBackgroundColor.IsEmpty())
+			int retval = NListView::RemoveBodyBackgroundColorAndWidth((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf,
+				bodyBackgroundColor, bodyWidth, removeBackgroundColor, removeWidth);
+
+			if (!bodyWidth.IsEmpty() || !bodyBackgroundColor.IsEmpty())
 			{
 				outbuflarge->Copy(*workbuf);
 			}
 		}
-		bdy = "\r\n\r\n<div style=\'position:initial;background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
 
 		fp.Write(bdy, bdy.GetLength());
 
 		CString font = "\">\r\n";
-		
+
 		if (pFrame)
 		{
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"width:100%;margin-left:5px;text-align:left;background-color:#eee9e9" + font;
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;margin-left:0px;text-align:left;background-color:#eee9e9" + font;
 			}
 			else
 			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + 
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"width:100%;font-weight:normal" + font;
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;font-weight:normal" + font;
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"width:100%;margin-left:5px;text-align:left;background-color:#eee9e9" + font;
+				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;margin-left:0px;text-align:left;background-color:#eee9e9" + font;
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -4456,9 +5121,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		if (!singleMail)
+		// if (!singleMail)  // do it for single and multiple mails
+		if (1)
 		{
-			CString fontColor;
+			CString fontColor = "black";  // TODO: probably no harm done setting to black always
 			if (bodyBackgroundColor.IsEmpty())
 			{
 				bodyBackgroundColor = "#FFFFFF";
@@ -4467,17 +5133,17 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 			if (!bodyBackgroundColor.IsEmpty())
 			{
-				bdy = "\r\n\r\n<div style=\'width:initial;background-color:";
+				bdy = "\r\n\r\n<div style=\'width:100%;position:initial;float:left;background-color:";
 				bdy.Append(bodyBackgroundColor);
 				bdy.Append(";color:");
 				bdy.Append(fontColor);
 				bdy.Append("; margin-left:5px; text-align:left\'><br>\r\n");
 			}
 			else
-				bdy = "\r\n<div style=\'width:initial;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
+				bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
 		}
 		else
-			bdy = "\r\n<div style=\'width:initial;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
+			bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
 
 
 		fp.Write(bdy, bdy.GetLength());
@@ -4488,7 +5154,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (outbuflarge->FindNoCase(0, "<body", 5) < 0) // didn't find if true
 			{
 				extraHtmlHdr = true;
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>\r\n";
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body bgColor=#ffffff>\r\n";
 				fp.Write(bdy, bdy.GetLength());
 			}
 			else
@@ -4531,21 +5197,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
-
-		if (pFrame)
-		{
-			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
-			{
-				bdy = "\r\n<div style=\"page-break-before:always\"></div>";
-				fp.Write(bdy, bdy.GetLength());
-			}
-		}
 	}
 	else
 	{
 		outbuflarge->Clear();
 		pageCode = 0;
-		textType = 0; // no Html, try to get Plain
+		textType = 0; // !!!!!!!!  no Html, try to get Plain  !!!!!!
 		textlen = GetMailBody_mboxview(fpm, mailPosition, outbuflarge, pageCode, textType);  // returns pageCode
 		if (textlen != outbuflarge->Count())
 			int deb = 1;
@@ -4554,7 +5211,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		CString bdycharset = "UTF-8";
 
-		bdy = "\r\n\r\n<div style=\'background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		bdy = "\r\n<div style=\'width:100%;background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
 		CString font = "\">\r\n";
@@ -4564,19 +5221,19 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;background-color:#eee9e9" + font;
 			}
 			else
 			{
 				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"font-weight:normal" + font;
+					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;font-weight:normal" + font;
 			}
 			fp.Write(bdy, bdy.GetLength());
 		}
 		else
 		{
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body>\r\n<div style=\"background-color:#eee9e9" + font;
+				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;background-color:#eee9e9" + font;
 
 			fp.Write(bdy, bdy.GetLength());
 		}
@@ -4591,10 +5248,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "\r\n<div style=\'width:initial;color:black;background-color:#FFFFFF;margin-left:5px;text-align:left\'>\r\n";
+		bdy = "\r\n<div style=\'width:100%;position:initial;float:left;color:black;background-color:#FFFFFF;margin-left:5px;text-align:left\'>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n";
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body bgColor=#ffffff><br>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
 		char *inData = outbuflarge->Data();
@@ -4632,16 +5289,6 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
-
-
-		if (pFrame)
-		{
-			if (pFrame->m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF && !pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
-			{
-				bdy = "<div style=\"page-break-before:always\"></div>";
-				fp.Write(bdy, bdy.GetLength());
-			}
-		}
 	}
 
 #if 0
@@ -4652,8 +5299,26 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	fp.Write(htmlbuf.Data(), htmlbuf.Count());
 #endif
 
-	CString bdy = "\r\n<div><br></div>";
+	CString bdy;
+	//bdy = "\r\n<div>&nbsp;</div>";
+	//fp.Write(bdy, bdy.GetLength());
+
+	bdy = "\r\n</article>";
 	fp.Write(bdy, bdy.GetLength());
+
+	bdy = "\r\n<div>&nbsp;</div>";
+	fp.Write(bdy, bdy.GetLength());
+
+	if (addPageBreak)
+	{
+		bdy = "\r\n<div style=\"page-break-before:always\"></div>";
+		fp.Write(bdy, bdy.GetLength());
+	}
+	else
+	{
+		; //CString bdy = "\r\n<div>&nbsp;</div>";
+		//fp.Write(bdy, bdy.GetLength());
+	}
 
 	return 1;
 }
@@ -5005,10 +5670,39 @@ bool ALongRightProcessProcPrintMailArchive(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
+BOOL MboxMail::GetLongestCachePath(CString &longestCachePath)
+{
+	CString rootCacheSubFolder = "AttachmentCache";
+	rootCacheSubFolder = "PrintCache";
+
+	CString datapath = MboxMail::GetLastDataPath();
+	if (datapath.IsEmpty())
+		return FALSE;
+
+	CString fileDataPath = MboxMail::s_datapath;
+	CString filePath = MboxMail::s_path;
+	if (s_path.GetLength() == 0)
+		return FALSE;
+
+	longestCachePath = datapath + rootCacheSubFolder;
+
+	CString errorText;
+	CString targetPrintSubFolder;
+
+	longestCachePath.Empty();
+
+	BOOL ret = CreateCachePath(rootCacheSubFolder, targetPrintSubFolder, longestCachePath, errorText);
+	if (ret)
+		return TRUE;
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
 BOOL MboxMail::GetPrintCachePath(CString &prtCachePath)
 {
 	CString errorText;
-	CString printCachePath;
 	CString rootPrintSubFolder = "PrintCache";
 	CString targetPrintSubFolder;
 
@@ -5087,17 +5781,40 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 	if (!progressBar) // no worker thread
 	{
-		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
+		CFileException ExError;
+		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 			CString txt = _T("Could not create \"") + textFile;
-			txt += _T("\" file.\nMake sure file is not open on other applications.");
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+
+			CFileStatus rStatus;
+			BOOL ret = fp.GetStatus(rStatus);
+
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 
 		CFile fpm;
-		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-			CString txt = _T("Could not open mail archive \"") + s_path;
+		CFileException ExError2;
+		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			fp.Close();
@@ -5123,8 +5840,12 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{
 			for (int i = firstMail; i <= lastMail; i++)
 			{
+				BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+				BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
 				if (textType == 0)
-					printSingleMailToTextFile(fp, i, fpm, textConfig);
+				{
+					printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+				}
 				else
 				{
 					if (printAttachments)
@@ -5132,9 +5853,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 						attachmentDB.Clear();
 						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 					}
-
-					BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
-					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 				}
 			}
 		}
@@ -5143,13 +5862,18 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			int i;
 			firstMail = (*selectedMailIndexList)[0];
 			int cnt = selectedMailIndexList->GetCount();
+
 			for (int j = 0; j < cnt; j++)
 			{
-				//i = selectedMailIndexList->ElementAt(j);
 				i = (*selectedMailIndexList)[j];
 
+				BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+				BOOL addPageBreak = MboxMail::PageBreakNeeded(selectedMailIndexList, j, singleMail);
+
 				if (textType == 0)
-					printSingleMailToTextFile(fp, i, fpm, textConfig);
+				{
+					printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+				}
 				else 
 				{
 					if (printAttachments)
@@ -5157,9 +5881,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 						attachmentDB.Clear();
 						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 					}
-
-					BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
-					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 				}
 			}
 		}
@@ -5236,21 +5958,38 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 		return -1;
 	}
 
-	CFileException ex;
+	CFileException ExError;;
 	CFile fp;
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ex)) {
-		TCHAR szError[1024];
-		ex.GetErrorMessage(szError, 1024);
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		CFileStatus rStatus;
 		BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path + _T("\"");
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		fp.Close();
 		return -1;
 	}
@@ -5295,8 +6034,12 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		if (textType == 0) {
-			printSingleMailToTextFile(fp, i, fpm, textConfig);
+		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
+
+		if (textType == 0)
+		{
+			printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 		else 
 		{
@@ -5305,9 +6048,7 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-
-			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -5369,16 +6110,22 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		return -1;
 	}
 
-	CFileException ex;
+	CFileException ExError;
 	CFile fp;
-	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ex)) 
+	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
-		TCHAR szError[1024];
-		ex.GetErrorMessage(szError, 1024);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + csvFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		CFileStatus rStatus;
 		BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + csvFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+
+		errorText = txt;
 		return -1;
 	}
 
@@ -5386,9 +6133,18 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	BOOL isFpmOpen = FALSE;
 	//if (csvConfig.m_bContent) // open regardless; required by 
 	{
-		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) 
+		CFileException ExError;
+		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
-			errorText = _T("Could not open mail archive \"") + s_path + _T("\"");
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+
+			errorText = txt;
 			fp.Close();
 			return -1;
 		}
@@ -5823,7 +6579,7 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 	char *data;
 	int dataLen;
 
-	FileUtils::RemoveDirW(FileUtils::GetmboxviewTempPathW());
+	FileUtils::RemoveDirW(FileUtils::GetMboxviewTempPathW());
 
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
@@ -5895,9 +6651,23 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		}
 
 		const char *fileName = (LPCSTR)body->m_attachmentName;
-		CFile fp(fileName, CFile::modeWrite | CFile::modeCreate);
-		fp.Write(data, dataLen);
-		fp.Close();
+		CFile fp;
+		CFileException ExError;
+		if (fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
+		{
+			fp.Write(data, dataLen);
+			fp.Close();
+		}
+		else
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not create \"") + body->m_attachmentName;
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			TRACE(_T("%s\n"), txt);
+		}
 	}
 
 	return outbuf->Count();
@@ -6030,18 +6800,32 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 
 	CFile fp;
 	CString csvFile = datapath + fileNameBase + ".csv";
+	CFileException ExError;
+	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate)) {
 		CString txt = _T("Could not create \"") + csvFile;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
 	CFile fpm;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		return -1;
 	}
 
@@ -6694,16 +7478,32 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 	CFile fp;
 	CString statsFile = datapath + fileNameBase + "_stats.txt";
 
-	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate)) {
+	CFileException ExError;
+	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
 		CString txt = _T("Could not create \"") + statsFile;
-		txt += _T("\" file.\nMake sure file is not open on other applications.");
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
-	CFile fpm;  
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
+	CFile fpm;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
 		return -1;
 	}
 
@@ -7285,7 +8085,8 @@ int MboxMail::MakeFileName(MboxMail *m, struct NamePatternParams *namePatternPar
 	fileName.Append((LPCSTR)crc32, crc32.GetLength());
 #endif
 
-	if (fileName.GetLength() > namePatternParams->m_nFileNameFormatSizeLimit)
+	int fileNameLength = fileName.GetLength();
+	if (fileNameLength > namePatternParams->m_nFileNameFormatSizeLimit)
 	{
 		fileName.Truncate(namePatternParams->m_nFileNameFormatSizeLimit);
 	}
@@ -7694,10 +8495,14 @@ int MboxMail::RemoveDuplicateMails(MailArray &s_mails_array)
 
 	// Remove duplicate mails
 	if (s_mails.GetCount() > s_mails_array.GetCount())
+	{
 		s_mails_array.SetSizeKeepData(s_mails.GetCount());
+	}
 
 	if (s_mails.GetCount() > s_mails_find.GetCount())
+	{
 		s_mails_find.SetSizeKeepData(s_mails.GetCount());
+	}
 
 
 	int i = 0;
@@ -7757,6 +8562,75 @@ int MboxMail::RemoveDuplicateMails(MailArray &s_mails_array)
 	return dupCnt;
 }
 
+int MboxMail::LinkDuplicateMails(MailArray &s_mails_array)
+{
+	MboxMail *m;
+	MboxMail *m_found;
+
+	// !! s_mails is already populated from mboxview file
+
+	DWORD tc_start = GetTickCount();
+
+	// Remove duplicate mails
+	if (s_mails.GetCount() > s_mails_array.GetCount())
+	{
+		s_mails_array.SetSizeKeepData(s_mails.GetCount());
+	}
+
+	if (s_mails.GetCount() > s_mails_find.GetCount())
+	{
+		s_mails_find.SetSizeKeepData(s_mails.GetCount());
+	}
+
+
+	int i = 0;
+	int to_dup_i = 0;
+	int to_i = 0;
+
+	for (i = 0; i < s_mails.GetSize(); i++)
+	{
+		m = s_mails[i];
+
+		//if (m->m_subj.Find("[Customer Support - Query #537] (In Progress) RE: log issue related to AdvanceSubscriber") >= 0)
+			//int deb = 1;
+
+		m_found = getMboxMail(m);
+
+		if (m_found == 0)
+		{
+			to_i++;
+			m->m_duplicateId = false;
+		}
+		else
+		{
+			to_dup_i++;
+			m->m_duplicateId = true;
+		}
+		insertMboxMail(m, m);
+	}
+
+	//s_mails_array.SetSizeKeepData(to_i);
+
+	//s_mails_find.SetSizeKeepData(to_dup_i);
+
+	int dupCnt = s_mails.GetSize() - s_mails_array.GetSize();
+
+	//s_mails.CopyKeepData(s_mails_array);
+
+	DWORD tc_clear_start = GetTickCount();
+
+	//clearMboxMailTable();
+	DWORD tc_clear_end = GetTickCount();
+	DWORD delta_clear = tc_clear_end - tc_clear_start;
+
+	DWORD tc_end = GetTickCount();
+	DWORD delta = tc_end - tc_start;
+
+	TRACE("LinkDuplicateMails: total time=%d !!!!!!!!!!!!.\n", delta);
+	TRACE("LinkDuplicateMails: clear time=%d !!!!!!!!!!!!.\n", delta_clear);
+
+	return dupCnt;
+}
 
 //
 
@@ -7798,6 +8672,32 @@ void MboxMail::clearMboxMailTable()
 		m_pMboxMailMap->clear();
 
 	int deb = 1;
+}
+
+dllist<MboxMail, &MboxMail::m_hashMapLink>* MboxMail::getCollisionList(MboxMail *key)
+{
+	if (m_pMboxMailMap == 0)
+		createMboxMailTable(HASH_ARRAY_SIZE);
+
+	dllist<MboxMail, &MboxMail::m_hashMapLink> *list = m_pMboxMailMap->get_collision_list(key);
+	return list;
+}
+
+dllist<MboxMail, &MboxMail::m_hashMapLink>* MboxMail::getCollisionList(unsigned long hashsum)
+{
+	if (m_pMboxMailMap == 0)
+		createMboxMailTable(HASH_ARRAY_SIZE);
+
+	dllist<MboxMail, &MboxMail::m_hashMapLink> *list = m_pMboxMailMap->get_collision_list(hashsum);
+	return list;
+}
+
+bool MboxMail::equal(MboxMail *elem1, MboxMail *elem2)
+{
+	if (m_pMboxMailMap == 0)
+		createMboxMailTable(HASH_ARRAY_SIZE);
+
+	return m_pMboxMailMap->isequal(elem1, elem2);
 }
 
 #else
@@ -7884,8 +8784,11 @@ BOOL MboxMail::GetCachePath(CString &rootPrintSubFolder, CString &targetPrintSub
 	CString mailArchiveFileName;
 	FileUtils::CPathStripPath((char*)(LPCSTR)mailArchiveFilePath, mailArchiveFileName);
 
-	int position = mailArchiveFileName.ReverseFind('.');
 	CString baseFileArchiveName;
+	// TODO: verify and enable below
+	//FileUtils::GetFileBaseName(mailArchiveFileName, baseFileArchiveName);
+
+	int position = mailArchiveFileName.ReverseFind('.');
 	if (position >= 0)
 		baseFileArchiveName = mailArchiveFileName.Mid(0, position);
 	else
@@ -8020,7 +8923,7 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 	return 1;
 }
 
-int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString errorText)
+int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString &errorText)
 {
 	CFile fp;
 	CString textFile;
@@ -8048,23 +8951,35 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	CFileException ex;
-	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone), &ex)
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
 	{
-		DWORD er = GetLastError();
-		//TCHAR szError[1024];
-		//ex.GetErrorMessage(szError, 1024);
-		//CFileStatus rStatus;
-		//BOOL ret = fp.GetStatus(rStatus);
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		errorText = txt;
+		// TODO:
 		//return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
+
 		fp.Close();
 		return -1;
 	}
@@ -8086,8 +9001,13 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
+		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
+
 		if (textType == 0)
-			printSingleMailToTextFile(fp, i, fpm, textConfig);
+		{
+			printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+		}
 		else 
 		{
 			if (printAttachments)
@@ -8095,9 +9015,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-
-			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 	}
 
@@ -8129,15 +9047,34 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create file \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
 		fp.Close();
 		return -1;
 	}
@@ -8182,8 +9119,13 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	AttachmentMgr attachmentDB;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
+		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
+
 		if (textType == 0)
-			printSingleMailToTextFile(fp, i, fpm, textConfig);
+		{
+			printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+		}
 		else 
 		{
 			if (printAttachments)
@@ -8191,9 +9133,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-
-			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -8264,15 +9204,33 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	int textFileLength = textFile.GetLength();
 	int maxPath = _MAX_PATH;
 
-	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone)) {
-		errorText = _T("Could not create \"") + textFile;
-		errorText += _T("\" file.\nMake sure file is not open on other applications.");
+	CFileException ExError;
+	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not create \"") + textFile;
+		txt += _T("\" file.\n");
+		txt += exErrorStr;
+
+		errorText = txt;
 		return -1;
 	}
 
 	CFile fpm;
-	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite)) {
-		errorText = _T("Could not open mail archive \"") + s_path;
+	CFileException ExError2;
+	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+
+		errorText = txt;
+
 		fp.Close();
 		return -1;
 	}
@@ -8316,8 +9274,14 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	for (int j = 0; j < cnt; j++)
 	{
 		i = (*selectedMailIndexList)[j];
+
+		BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+		BOOL addPageBreak = MboxMail::PageBreakNeeded(selectedMailIndexList, j, singleMail);
+
 		if (textType == 0)
-			printSingleMailToTextFile(fp, i, fpm, textConfig);
+		{
+			printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+		}
 		else 
 		{
 			if (printAttachments)
@@ -8325,9 +9289,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-
-			BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail);
+			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -8378,9 +9340,11 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 void MboxMail::assert_unexpected()
 {
 #ifdef _DEBUG
-	ASSERT(0);
-#endif
 	int deb = 1;
+	//ASSERT(0);
+#else
+	int deb = 1;
+#endif
 }
 
 int MboxMail::EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit)
@@ -8777,10 +9741,10 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"the local folder and then select \"File->Select Folder...\"\n"
 				"menu option to open that folder.\n"
 				"\n"
-				"Left click on one of the loaded mbox file to view all associated mails.\n"
+				"Left-click on one of the loaded mbox file to view all associated mails.\n"
 				"\n"
 				"Please review the User Guide provided with the package\n"
-				"and/or right/left single and double click on any item\n"
+				"and/or single and double right-click/left-click on any item\n"
 				"within the Mbox Viewer window and try all presented options."
 			);
 		}
@@ -8803,7 +9767,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"\n"
 				"You can also select \"File->Print Config->User Defined Script\" to "
 				"use free wkhtmltopdf tool to remove header and footer\n"
-				"and evalute if wkhtmltopdf works for you."
+				"and evalute whether wkhtmltopdf works for you."
 			);
 		}
 		else if (hintNumber == HintConfig::PrintToPrinterHint)
@@ -8817,11 +9781,11 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		{
 			hintText.Append(
 				"You can select multiple mails using standard Windows methods: "
-				"\"Shift-Left Click\", \"Ctrl-Left Click\" and \"Ctrl-A\".\n\n"
-				"Right click on a single or multiple selected mails to see all available options.\n\n"
-				"Right click on a mail attachment to see all available options.\n\n"
-				"Left double click on a mail to open folder with all associated files for that mail.\n\n"
-				"Right click on the Header Pane at the top of the Message Window to see additional context menu options.\n\n"
+				"\"Shift+Left-Click\", \"Ctrl+Left-Click\" and \"Ctrl+A\".\n\n"
+				"Right-click on a single or multiple selected mails to see all available options.\n\n"
+				"Right-click on a mail attachment to see all available options.\n\n"
+				"Double Left-click on a mail to open folder with all associated files for that mail.\n\n"
+				"Right-click on the Header Pane at the top of the Message Window to see additional context menu options.\n\n"
 				"You can expand list of fields in the message header pane by setting \"View -> Message Header Pane Layout\" to Expanded.\n\n"
 			);
 		}
@@ -8878,7 +9842,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"By default the mail text is shown in Message Window.\n"
 				"Enable global \"View -> View Message Headers\" option to show the message header instead of the text.\n\n"
 				"To switch between text and headers of the selected mail\n"
-				"right click on the header pane in Message Window and check/uncheck the \"View Message Header\" option.\n"
+				"right-click on the header pane in Message Window and check/uncheck the \"View Message Header\" option.\n"
 				"\n"
 			);
 		}
@@ -8912,7 +9876,16 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		{
 			hintText.Append(
 				"Gmail Labels are supported by performing a separate step on a active mail folder.\n\n"
-				"Right click on the folder and select \"File->Gmail Labels->Create\" option.\n\n"
+				"Right-click on the folder and select \"File->Gmail Labels->Create\" option.\n\n"
+				"\n"
+			);
+		}
+		else if (hintNumber == HintConfig::SubjectSortingHint)
+		{
+			hintText.Append(
+				"Sorting by subject creates subject threads. Emails within each subject thread are sorted by time.\n\n"
+				"By default subject threads are sorted alphanumerically. "
+				"Subject threads can be sorted by time by selecting  \"File->Options->time ordered threads\" option.\n"
 				"\n"
 			);
 		}
@@ -9061,7 +10034,8 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	SimpleString *res = MboxMail::m_outdata;
 	res->Clear();
 
-	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite))
+	CFileException ExError;
+	if (fp.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		res->Resize(bytes2Read);
 		//TRACE("offset = %lld\n", m_startOff);
@@ -9074,8 +10048,13 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	}
 	else
 	{
-		DWORD err = GetLastError();
-		TRACE("Open Mail File failed err=%ld\n", err);
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
 		return;
 	}
 
