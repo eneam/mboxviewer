@@ -55,7 +55,8 @@ v 1.0.3.27
  - MBox Viewer was enhanced to examine file content to discover mbox files rather than relying on the mbox and eml file extensions.;
  - Added option to configure data folder as the target folder for all files created by MBox Viewer.;
  - Added option to sort subject threads by the time in addition to the alphanumeric sort.;
- - Added option to issue page break after the last mail in the email thread.;
+ - Added option to issue page break after the last mail in the email conversation/subject thread.;
+ - MBox Viewer will remeber last selection, that is, last folder, mail file, label and index and restore upon startup.;
  - Resolved number of smaller issues.;
  - Updated User Manual to describe new and updated features.;
 
