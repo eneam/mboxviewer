@@ -68,7 +68,7 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "Select &folder...\tF2",       ID_FILE_OPEN
-        MENUITEM "Select as root folder...",    ID_FILE_SELECTASROOTFOLDER
+        MENUITEM "Select folder as root folder...", ID_FILE_SELECTASROOTFOLDER
         MENUITEM "Select root folder for merging ...", ID_FILE_MERGEROOTFOLDERSUB
         MENUITEM "Options...",                  ID_FILE_OPTIONS
         MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
@@ -119,15 +119,6 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "View Raw Message Headers",    ID_VIEW_MESSAGEHEADERS
         MENUITEM "View EML",                    ID_EDIT_VIEWEML
-        POPUP "Sort By"
-        BEGIN
-            MENUITEM "Date",                        ID_SORTBY_DATE
-            MENUITEM "From",                        ID_SORTBY_FROM
-            MENUITEM "To",                          ID_SORTBY_TO
-            MENUITEM "Subject",                     ID_SORTBY_SUBJECT
-            MENUITEM "Size",                        ID_SORTBY_SIZE
-            MENUITEM "Conversation",                ID_SORTBY_CONVERSATION
-        END
         MENUITEM "View Code Page Ids",          ID_VIEW_CODEPAGEIDS
     END
     POPUP "&Help"
@@ -1267,6 +1258,7 @@ STRINGTABLE
 BEGIN
     IDS_TITLE_CC            "CC:"
     IDS_TITLE_BCC           "BCC:"
+    IDS_TITLE_MAIL_HEADER   "HEADER:"
 END
 
 #endif    // English (United States) resources

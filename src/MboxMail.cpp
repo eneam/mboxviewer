@@ -8800,6 +8800,11 @@ BOOL MboxMail::GetCachePath(CString &rootPrintSubFolder, CString &targetPrintSub
 
 	printCachePath.Append("\\");
 	printCachePath.Append(baseFileArchiveName);
+	//printCachePath.Append(mailArchiveFileName);
+	printCachePath.TrimRight("\\");
+	fileNameExtention.TrimLeft(".");
+	printCachePath.Append("-");
+	printCachePath.Append(fileNameExtention);
 
 	if (!targetPrintSubFolder.IsEmpty())
 	{

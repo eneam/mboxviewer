@@ -80,6 +80,17 @@ public:
 	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_cc_charsetId, m_bcc_charsetId, m_body_charsetId;
 	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId, m_cnf_cc_charsetId, m_cnf_bcc_charsetId;
 	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_cc_charset, m_bcc_charset, m_body_charset;
+	//
+	CString m_strMailHeader;
+	//
+	CString m_mail_header_charset;
+	UINT m_mail_header_charsetId;
+	//
+	CString m_body_text_charset;
+	UINT m_body_text_charsetId;
+	//
+	CString m_body_html_charset;
+	UINT m_body_html_charsetId;
 
 	int m_show_charsets;
 	int m_bImageViewer;

@@ -1,12 +1,8 @@
-1. Remove duplicate code due to cut and paste
+1. Remove duplicate code
 2. Remove death code
-3. Port to UNICODE to address existing limitations
-4. Consider using relative inline and external attachment file paths to support export of files to explore on different computers
-5. Implement html index files of mails in addition to CSV
-6. Explore adding global mail database. Database would hold encoded and normalized mails for searching and display
-7. Explore to use WebView2 or Chrome instead of old Internet Explorer/CWebBrowser  used currently
-8. Consider port to different desktop development platform such as WPF or cross-platorm instead of current legacy MFC ??
-9. Drop use of Registry for configuration
-10. 
+3. Drop use of Registry for configuration
+4. Port to UNICODE to address existing limitations
+5. Explore use of WebView2 or Chrome instead of old Internet Explorer/CWebBrowser
+6. And many more
 
 

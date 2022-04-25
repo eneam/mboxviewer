@@ -39,6 +39,7 @@
 #define IDD_NAME_TEMPL_DLG              208
 #define IDS_TITLE_CC                    208
 #define IDS_TITLE_BCC                   209
+#define IDS_TITLE_MAIL_HEADER           210
 #define IDD_COLOR_STYLE_DLG             216
 #define IDD_HTML_PDF_HDR_DLG            218
 #define IDD_GENERIC_FONT_DLG            220

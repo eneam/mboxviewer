@@ -3587,7 +3587,18 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	bool alreadyFoundPlain = false; 
 	bool alreadyFoundHTML = false;  // prefer HTML Text over Plain Text
 	int partsCnt = 0;
+	CString charset_text;
+	CString charset_htm;
+	CString charset_hdr;
 
+	CString contentType_hdr; 
+	MboxCMimeHelper::GetContentType(&mail, contentType_hdr);
+
+	if (contentType_hdr.Find("text") == 0)
+		MboxCMimeHelper::GetCharset(&mail, charset_hdr);
+
+	if (!charset_hdr.IsEmpty())
+		int deb = 1;
 
 	// Please please find time and stop making small changes and rewrite.
 	CString ext = "";
@@ -3634,6 +3645,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			// Check content type to get mail extension TODO: encapsulate in function
 			if (_stricmp(fname, "Content-Type") == 0 && _strnicmp(fval, "text/", 5) == 0) 
 			{
+				//pMsgView->m_strBody = fname;
+
 				const char *p = fd.GetValue() + 5;
 				if (_strnicmp(p, "plain", 5) == 0)
 					curExt = "txt";
@@ -3655,6 +3668,20 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 						charsetLength = strlen(fval + pc + 8);
 					strncpy(charset.GetBufferSetLength(charsetLength), fval + pc + 8, charsetLength);
 					charset.Trim("\"\\");
+				}
+				if (!charset.IsEmpty())
+				{
+					if (isPlainText == false)  // html
+					{
+						if (charset_htm.IsEmpty())
+							charset_htm = charset;
+
+					}
+					else if (handleAsAttachment == false)  // text
+					{
+						if (charset_text.IsEmpty())
+							charset_text = charset;
+					}
 				}
 				break;
 			}
@@ -3761,6 +3788,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					ext = curExt;
 					if (!charset.IsEmpty())
 						bdycharset = charset;
+
+					pMsgView->m_strBody = contentType;
 				}
 			}
 			else
@@ -3790,6 +3819,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				ext = curExt;
 				if (!charset.IsEmpty())
 					bdycharset = charset;
+
+				pMsgView->m_strBody = contentType;
 			}
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);
 		}

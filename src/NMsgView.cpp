@@ -115,6 +115,7 @@ NMsgView::NMsgView()
 	m_strTitleBCC.LoadString(IDS_TITLE_BCC);
 	m_strTo.LoadString(IDS_DESC_NONE);
 	m_strTitleBody.LoadString(IDS_TITLE_BODY);
+	m_strMailHeader.LoadString(IDS_TITLE_MAIL_HEADER);
 
 	// set by SelectItem in NListView
 	m_subj_charsetId = 0;
@@ -122,6 +123,10 @@ NMsgView::NMsgView()
 	m_date_charsetId = 0;
 	m_to_charsetId = 0;
 	m_body_charsetId = 0;
+	//
+	m_mail_header_charsetId = 0;
+	m_body_text_charsetId = 0;
+	m_body_html_charsetId = 0;
 
 	m_cnf_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
 	m_cnf_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
@@ -829,6 +834,13 @@ void NMsgView::OnPaint()
 				xpos = 0;
 				ypos += 3 + 18;
 				xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleDate, m_strDate, m_date_charset, localCP, m_cnf_date_charsetId);
+				//xpos += TEXT_BOLD_LEFT;
+
+				if (m_show_charsets) {
+					xpos = 0;
+					ypos += 3 + 18;
+					xpos = PaintHdrField(dc, r, xpos, ypos, largeFont, m_strTitleBody, m_strBody, m_body_charset, m_body_charsetId, m_body_charsetId);
+				}
 				xpos += TEXT_BOLD_LEFT;
 			}
 
@@ -1400,6 +1412,10 @@ int NMsgView::CalculateHigthOfMsgHdrPane()
 			+ 3 + m_otherTextHight  // from
 			+ 3 + m_otherTextHight  // to
 			;
+
+		if (m_show_charsets)
+			pane_Hight += 3 + m_otherTextHight;  // body
+
 		if (!m_strCC.IsEmpty())
 			pane_Hight += 3 + m_otherTextHight;  // cc
 

@@ -32,6 +32,7 @@ Features
 * view raw mail header;
 * forward mails directly from MBox Viewer;
 * support for Gmail Labels;
+* support for Thunderbird exported mail files;
 
 License
 -----
@@ -45,6 +46,18 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+
+v 1.0.3.27
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added option to open selected root folder and sub-folders as a folder hierachy under Mail Tree.;
+ - Added option to merge selected root folder and all sub-folders and open as a label hierachy under Mail Tree.;
+ - MBox Viewer was enhanced to examine file content to discover mbox files rather than relying on the mbox and eml file extensions.;
+ - Added option to configure data folder as the target folder for all files created by MBox Viewer.;
+ - Added option to sort subject threads by the time in addition to the alphanumeric sort.;
+ - Added option to issue page break after the last mail in the email thread.;
+ - Resolved number of smaller issues.;
+ - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.26
 

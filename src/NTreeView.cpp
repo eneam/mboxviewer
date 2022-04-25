@@ -3242,7 +3242,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&sortSubMenu, S_SORT_BY_SUBJ_Id, _T("Subject"));
 
 	const UINT S_SORT_BY_DATE_AND_SUBJ_Id = 22;
-	AppendMenu(&sortSubMenu, S_SORT_BY_DATE_AND_SUBJ_Id, _T("Subject and Date"));
+	//AppendMenu(&sortSubMenu, S_SORT_BY_DATE_AND_SUBJ_Id, _T("Subject and Date"));
 
 	const UINT S_SORT_BY_SIZE_Id = 8;
 	AppendMenu(&sortSubMenu, S_SORT_BY_SIZE_Id, _T("Size"));
@@ -8702,6 +8702,11 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree &tree, CString &errorText)
 	CString outFolderPath;
 
 	retval = SaveMergedFileDialog(saveFileName, fileNameFilter, dfltExtention, inFolderPath, outFolderPath, title);
+	if (retval == FALSE)
+		return -1;
+
+	if (outFolderPath.IsEmpty())
+		return -1;
 
 	CString filePath = outFolderPath + saveFileName;
 
@@ -9343,5 +9348,6 @@ BOOL NTreeView::SaveMergedFileDialog(CString &fileName, CString &fileNameFilter,
 		}
 		break;
 	}
+	outFolderPath.Empty();
 	return FALSE;
 }
