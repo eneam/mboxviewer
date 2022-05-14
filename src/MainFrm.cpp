@@ -46,6 +46,7 @@
 #include "ColorStyleConfigDlg.h"
 #include "SMTPMailServerConfigDlg.h"
 #include "DataFolderConfigDlg.h"
+#include "MergeRootFolderAndSubfolders.h"
 
 #include "NTreeView.h"
 
@@ -3157,7 +3158,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 
@@ -3242,7 +3243,6 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 
 		fp_input.Close();
 	}
-
 	return 1;
 }
 
@@ -4824,6 +4824,27 @@ void CMainFrame::OnHelpLicense()
 	}
 }
 
+void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
+{
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\HelpFiles\\" + helpFileName;
+
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format("Help file \"%s\" doesn't exist", filePath);
+		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
+	int deb = 1;
+}
+
 BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 {
 	CFile fp;
@@ -4973,6 +4994,56 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		return -1;
 	}
 
+	if (treeType == 2)
+	{
+		if ((m_mergeRootFolderStyle == 1) && (m_labelAssignmentStyle == 1))  // labels per mbox file
+		{
+			BOOL recursive = TRUE;
+
+			int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
+			if (fileCnt > 1000)
+			{
+				CString txt;
+				txt.Format(_T("Found [%d] files under the root folder and sub-folders.\n\n"
+					"Content of files was not examined to determine if all files are of the mbox type.\n\n"
+					"In case all/most of files found are of the mbox type,"
+					" this will create very large number of labels under Mail Tree which could make viewing of mails very challenging.\n\n"
+					"Do you want to continue, cancel or retry Merge Configuration?"
+				), fileCnt);
+
+				int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+				if (answer == IDCANCEL)
+					return -1;
+				else if (answer == IDTRYAGAIN)
+					return -2;
+				// else IDCONTINUE
+			}
+		}
+	}
+	else if (treeType == 1)
+	{
+		BOOL recursive = TRUE;
+
+		int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
+		if (fileCnt > 1000)
+		{
+			CString txt;
+			txt.Format(_T("Found [%d] files under the root folder and sub-folders.\n\n"
+				"Content of files was not examined to determine if all files are of the mbox type.\n\n"
+				"In case all/most of files found are of the mbox type,"
+				" this will create very large number of items under Mail Tree which could make viewing of mails very challenging.\n\n"
+				"Do you want to continue, cancel or retry Select root folder dialog?"
+			), fileCnt);
+
+			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+			if (answer == IDCANCEL)
+				return -1;
+			else if (answer == IDTRYAGAIN)
+				return -2;
+			// else IDCONTINUE
+		}
+	}
+
 	path.Append(_T("\\"));
 
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
@@ -5064,6 +5135,7 @@ void CMainFrame::OpenRootFolderAndSubfolders_LabelView(CString &path)
 void CMainFrame::OnFileMergerootfoldersub()
 {
 	// TODO: Add your command handler code here
+#if 0
 	CString txt = _T("MBox Viewer will traverse selected root folder and all sub-folders and merge all mbox files found into a single mbox file.\n\n"
 		"MBox Viewer will assign a label to each folder and each mbox file and create Tree of Labels View\n\n"
 		"Do you want to continue?\n");
@@ -5072,6 +5144,29 @@ void CMainFrame::OnFileMergerootfoldersub()
 	{
 		FileSelectrootfolder(2);
 	}
+#else
+	int wantsToRetry = -2;
+	MergeRootFolderAndSubfolders dlg;
+
+	while (wantsToRetry == -2)
+	{
+		INT_PTR retCode = dlg.DoModal();
+		if (retCode == IDOK)
+		{
+			m_mergeRootFolderStyle = dlg.m_mergeRootFolderStyle;
+			m_labelAssignmentStyle = dlg.m_labelAssignmentStyle;
+
+			wantsToRetry = FileSelectrootfolder(2); // retry == -2, cancel == -1, continue == 1
+			int deb = 1;
+		}
+		else if (retCode == IDCANCEL)
+		{
+			break;
+		}
+		else
+			break;
+	}
+#endif
 }
 
 
@@ -5080,9 +5175,22 @@ void CMainFrame::OnFileSelectasrootfolder()
 	// TODO: Add your command handler code here
 	CString txt = _T("MBox Viewer will traverse selected root folder and all sub-folders and create Tree of Folders View.\n\n"
 		"Do you want to continue?\n");
+#if 0
 	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		FileSelectrootfolder(1);
 	}
+#else
+	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	if (answer == IDYES)
+	{
+		int wantsToRetry = -2;
+		while (wantsToRetry == -2)
+		{
+			wantsToRetry = FileSelectrootfolder(1); // retry == -2, cancel == -1, continue == 1
+			int deb = 1;
+		}
+	}
+#endif
 }

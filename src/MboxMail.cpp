@@ -1137,6 +1137,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					thrdId.Empty();
 					tdate = -1;
 					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = bMsgId  = bThrdId  = true;
+					//Sleep(10);
 				}
 				p += 5;
 				p = MimeParser::EatNewLine(p, e);
@@ -2454,13 +2455,13 @@ unsigned long StrHash(const char* buf, const UINT length)
 	}
 	return hash;
 }
-
+#define HASH_ARRAY_SIZE 50013
 //
 int MboxMail::getMessageId(CString *key)
 {
 	MessageIdTableType::iterator it;
 	if (m_pMessageIdTable == 0)
-		createMessageIdTable(50000);
+		createMessageIdTable(HASH_ARRAY_SIZE);
 
 	it = m_pMessageIdTable->find(key);
 	if (it != m_pMessageIdTable->cend()) {
@@ -2473,7 +2474,7 @@ int MboxMail::getMessageId(CString *key)
 bool MboxMail::insertMessageId(CString *key, int val)
 {
 	if (m_pMessageIdTable == 0)
-		createMessageIdTable(50000);
+		createMessageIdTable(HASH_ARRAY_SIZE);
 
 	CString *mapKey = new CString;
 	*mapKey = *key;
@@ -2509,7 +2510,7 @@ int MboxMail::getThreadId(CString *key)
 {
 	ThreadIdTableType::iterator it;
 	if (m_pThreadIdTable == 0)
-		createThreadIdTable(50000);
+		createThreadIdTable(HASH_ARRAY_SIZE);
 
 	it = m_pThreadIdTable->find(key);
 	if (it != m_pThreadIdTable->cend()) {
@@ -2522,7 +2523,7 @@ int MboxMail::getThreadId(CString *key)
 bool MboxMail::insertThreadId(CString *key, int val)
 {
 	if (m_pThreadIdTable == 0)
-		createThreadIdTable(50000);
+		createThreadIdTable(HASH_ARRAY_SIZE);
 
 	CString *mapKey = new CString;
 	*mapKey = *key;
@@ -4998,6 +4999,44 @@ BOOL MboxMail::PageBreakNeeded(int mailPosition, int nextMailPosition, bool sing
 	return addPageBreak;
 }
 
+int RemoveString(char *data, int datalen, CString &str, SimpleString *outbuf)
+{
+	BOOL m_bCaseSens = FALSE;
+	char *p = data;
+	int len = datalen;
+
+	int pos = 0;
+	while (pos >= 0)
+	{
+		int pos = g_tu.BMHSearch((unsigned char *)p, len, (unsigned char *)(LPCSTR)str, str.GetLength(), m_bCaseSens);
+		if (pos >= 0)
+		{
+			outbuf->Append(p, pos);
+			p += pos + str.GetLength();
+			len -= pos + str.GetLength();
+		}
+		else
+			break;
+	}
+	return  outbuf->Count();
+}
+
+int MboxMail::printDummyMailToHtmlFile(/*out*/CFile &fp)
+{
+#if 0
+	// Commented out. Didn't fix small font issue
+	CString bdyy;
+
+	bdyy.Append("\r\n\r\n<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
+	bdyy.Append("<article style = \"float:left;position:left;width:100%;background-color:#FFFFFF;margin: 0mm 0mm 0mm 0mm;\">");
+	bdyy.Append("<style>@page {size: auto; margin: 12mm 4mm 12mm 12mm;}; * {font-size:100% !important;};</style>");
+
+	fp.Write(bdyy, bdyy.GetLength());
+#endif
+
+	return 1;
+}
+
 int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in - mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL addPageBreak)
 {
 	char *token = 0;
@@ -5024,7 +5063,26 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	if (textlen != outbuflarge->Count())
 		int deb = 1;
 
+	workbuf->ClearAndResize(outbuflarge->Count() * 2);
+#if 0
+	CString searchString = "!important";
+	int retcnt = RemoveString(outbuflarge->Data(), outbuflarge->Count(), searchString, workbuf);
+	if (retcnt > 0)
+	{
+		outbuflarge->Copy(*workbuf);
+		//return -1;
+	}
+#endif
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	int fontSizePDF = 0;
+	if (pFrame)
+	{
+		NListView *pListView = pFrame->GetListView();
+		if (pListView)
+			fontSizePDF = pListView->m_fontSizePDF;
+	}
+
 
 	//CString marginLeft = "margin-left:5px;";
 	//CString backgroundColor = "background-color:transparent;";
@@ -5049,8 +5107,32 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		htmlHdrFldNameStyle.Format("<style>\r\n.hdrfldname{%s}\r\n.hdrfldtext{%s}\r\n</style>", fldNameFontStyle, fldTextFontStyle);
 	}
 
-	//CString bdyy = "\r\n<br><article>";
-	CString bdyy = "<br><article>";
+	CString bdyy;
+	bdyy.Append("\r\n\r\n<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
+	bdyy.Append("<article style=\"float:left;position:left;width:100%;background-color:#FFFFFF;margin: 0mm 0mm 0mm 0mm;\">");
+	bdyy.Append("<style>@page {size: auto; margin: 12mm 4mm 12mm 12mm;}; * {font-size:100% !important;};</style>");
+	
+
+	if (fontSizePDF == 0)
+	{
+		; // bdyy.Append("</style>");
+	}
+
+	else if (singleMail == false)
+	{
+		if (fontSizePDF == 16)
+			bdyy.Append("<style> * {font-size:16px !important;}</style>");
+		else if (fontSizePDF == 20)
+			bdyy.Append("<style> * {font-size:20px !important;}</style>");
+		else if (fontSizePDF == 24)
+			bdyy.Append("<style> * {font-size:24px !important;}</style>");
+
+	}
+
+
+	CString margin = "margin:0mm 8mm 0mm 12mm;";
+	margin = "margin-left:5px;";
+
 	fp.Write(bdyy, bdyy.GetLength());
 
 	if (outbuflarge->Count() != 0)
@@ -5067,6 +5149,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		NListView::UpdateInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 		outbuflarge->Copy(*workbuf);
 
+
+		// Remove color and width from body tag, add later
 		CString bodyBackgroundColor;
 		CString bodyWidth;
 		// if (!singleMail)    // TODO: do it for single mail also
@@ -5082,30 +5166,31 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				outbuflarge->Copy(*workbuf);
 			}
 		}
-		bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		//bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;" + margin + "text-align:left\'>\r\n";
+		CString newBodyWidth = "width:100%;";
+		CString newBodyMargin = margin;
+		bdy = "\r\n<div style=\"position:initial;float:left;background-color:transparent;text-align:left;"
+			+ newBodyWidth + newBodyMargin
+			+ "\">\r\n";   // div #1
 
 		fp.Write(bdy, bdy.GetLength());
 
 		CString font = "\">\r\n";
 
+		// Setp mail header
+		CString hdrBackgroundColor = "background-color:#eee9e9;";
+		if (pFrame && (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader == FALSE))
+			hdrBackgroundColor == "";
+
+		CString hdrWidth = "width:100%;";
+		CString hdrMargin = "";
 		if (pFrame)
 		{
-			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
-			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;margin-left:0px;text-align:left;background-color:#eee9e9" + font;
-			}
-			else
-			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;font-weight:normal" + font;
-			}
-			fp.Write(bdy, bdy.GetLength());
-		}
-		else
-		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;margin-left:0px;text-align:left;background-color:#eee9e9" + font;
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">"
+				+ htmlHdrFldNameStyle + "</head>\r\n"
+				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;float:left;text-align:left;font-weight:normal;"   // div #2
+				+ hdrWidth + hdrMargin + hdrBackgroundColor
+				+ font;
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -5115,59 +5200,59 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			ret = printMailHeaderToHtmlFile(fp, mailPosition, fpm, textConfig, pFrame->m_HdrFldConfig);
 		}
 
-		bdy = "</div></body></html>";
+		bdy = "</div></body></html>";   // --> end of div #2
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "\r\n</div>";
+		bdy = "\r\n</div>";   // --> end of div #1
 		fp.Write(bdy, bdy.GetLength());
 
+		// ---> Setup mail header done
+
+		// General body setup, is this needed ??
 		// if (!singleMail)  // do it for single and multiple mails
+		bodyWidth = "width:98%;";
 		if (1)
 		{
 			CString fontColor = "black";  // TODO: probably no harm done setting to black always
 			if (bodyBackgroundColor.IsEmpty())
 			{
-				bodyBackgroundColor = "#FFFFFF";
-				fontColor = "black";
+				bodyBackgroundColor = "background-color:#FFFFFF;color:black;";
 			}
-
-			if (!bodyBackgroundColor.IsEmpty())
+			else // if (!bodyBackgroundColor.IsEmpty())
 			{
-				bdy = "\r\n\r\n<div style=\'width:100%;position:initial;float:left;background-color:";
 				bdy.Append(bodyBackgroundColor);
 				bdy.Append(";color:");
 				bdy.Append(fontColor);
-				bdy.Append("; margin-left:5px; text-align:left\'><br>\r\n");
+				bdy.Append(";");
 			}
-			else
-				bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
+
+			bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;"
+				+ bodyWidth + margin + bodyBackgroundColor
+				+ "\"><br>\r\n";
+
+			fp.Write(bdy, bdy.GetLength());
 		}
-		else
-			bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;margin-left:5px;text-align:left\'><br>\r\n";
+
+		// --> Done with general Body Setup
 
 
-		fp.Write(bdy, bdy.GetLength());
-
+		// Setup if no html and body tags
 		bool extraHtmlHdr = false;
 		if (outbuflarge->FindNoCase(0, "<html", 5) < 0) // didn't find if true
 		{
 			if (outbuflarge->FindNoCase(0, "<body", 5) < 0) // didn't find if true
 			{
 				extraHtmlHdr = true;
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body bgColor=#ffffff>\r\n";
-				fp.Write(bdy, bdy.GetLength());
-			}
-			else
-			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html>\r\n";
-				fp.Write(bdy, bdy.GetLength());
 			}
 		}
+
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\"></head>";
+		if (extraHtmlHdr == false)
+			bdy.Append("</html>\r\n");
 		else
-		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html>\r\n";
-			fp.Write(bdy, bdy.GetLength());
-		}
+			bdy.Append("<body bgColor=#ffffff>\r\n");  // append </html> after message text
+
+		fp.Write(bdy, bdy.GetLength());
 
 		std::string charSet;
 		if (pageCode == 0) {
@@ -5211,30 +5296,31 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		CString bdycharset = "UTF-8";
 
-		bdy = "\r\n<div style=\'width:100%;background-color:transparent;margin-left:5px;text-align:left\'>\r\n";
+		CString newBodyWidth = "width:100%;";
+		CString newBodyMargin = margin;
+		bdy = "\r\n<div style=\"position:initial;float:left;background-color:transparent;text-align:left;"
+			+ newBodyWidth + newBodyMargin
+			+ "\">\r\n";   // div #1
+
 		fp.Write(bdy, bdy.GetLength());
 
 		CString font = "\">\r\n";
 
+
+		// Setp mail header
+		CString hdrBackgroundColor = "background-color:#eee9e9;";
+		if (pFrame && (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader == FALSE))
+			hdrBackgroundColor == "";
+
+		CString hdrWidth = "width:100%;";
+		CString hdrMargin = "";
 		if (pFrame)
 		{
-			if (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader)
-			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;background-color:#eee9e9" + font;
-			}
-			else
-			{
-				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-					"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;font-weight:normal" + font;
-			}
-			fp.Write(bdy, bdy.GetLength());
-		}
-		else
-		{
-			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset +
-				"\">" + htmlHdrFldNameStyle + "</head>\r\n<body bgColor=#ffffff>\r\n<div style=\"width:100%;float:left;background-color:#eee9e9" + font;
-
+			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">"
+				+ htmlHdrFldNameStyle + "</head>\r\n"
+				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;float:left;text-align:left;font-weight:normal;"   // div #2
+				+ hdrWidth + hdrMargin + hdrBackgroundColor
+				+ font;
 			fp.Write(bdy, bdy.GetLength());
 		}
 
@@ -5248,7 +5334,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "\r\n<div style=\'width:100%;position:initial;float:left;color:black;background-color:#FFFFFF;margin-left:5px;text-align:left\'>\r\n";
+		CString bodyWidth = "width:98%;";
+		CString bodyBackgroundColor = "background-color:#FFFFFF;";
+		//bdy = "\r\n<div style=\'width:auto;position:initial;float:left;color:black;background-color:#FFFFFF;" + margin + "text-align:left\'>\r\n";
+		bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;color:black;"
+			+ bodyWidth + margin + bodyBackgroundColor
+			+ "\">\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body bgColor=#ffffff><br>\r\n";
@@ -5300,13 +5391,11 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 #endif
 
 	CString bdy;
-	//bdy = "\r\n<div>&nbsp;</div>";
-	//fp.Write(bdy, bdy.GetLength());
 
 	bdy = "\r\n</article>";
 	fp.Write(bdy, bdy.GetLength());
 
-	bdy = "\r\n<div>&nbsp;</div>";
+	bdy = "\r\n<div>&nbsp;<br></div>";
 	fp.Write(bdy, bdy.GetLength());
 
 	if (addPageBreak)
@@ -5838,9 +5927,10 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		AttachmentMgr attachmentDB;
 		if (selectedMailIndexList == 0) 
 		{
+			BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 			for (int i = firstMail; i <= lastMail; i++)
 			{
-				BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+				//BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 				BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
 				if (textType == 0)
 				{
@@ -5853,9 +5943,13 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 						attachmentDB.Clear();
 						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 					}
-					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+					int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+					if (pos < 0)
+						continue;
 				}
 			}
+			if ((textType == 1) && (singleMail == FALSE))
+				printDummyMailToHtmlFile(fp);
 		}
 		else 
 		{
@@ -5863,11 +5957,12 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			firstMail = (*selectedMailIndexList)[0];
 			int cnt = selectedMailIndexList->GetCount();
 
+			BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 			for (int j = 0; j < cnt; j++)
 			{
 				i = (*selectedMailIndexList)[j];
 
-				BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+				//BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 				BOOL addPageBreak = MboxMail::PageBreakNeeded(selectedMailIndexList, j, singleMail);
 
 				if (textType == 0)
@@ -5881,9 +5976,13 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 						attachmentDB.Clear();
 						NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 					}
-					printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+					int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+					if (pos < 0)
+						continue;
 				}
 			}
+			if ((textType == 1) && (singleMail == FALSE))
+				printDummyMailToHtmlFile(fp);
 		}
 
 		fp.Close();
@@ -6032,9 +6131,10 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	}
 
 	AttachmentMgr attachmentDB;
+	BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		//BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
 
 		if (textType == 0)
@@ -6048,7 +6148,9 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			if (pos < 0)
+				continue;
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -6087,6 +6189,9 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 			}
 		}
 	}
+
+	if ((textType == 1) && (singleMail == FALSE))
+		printDummyMailToHtmlFile(fp);
 
 	fp.Close();
 	fpm.Close();
@@ -8484,6 +8589,64 @@ BOOL MboxMail::TemplateFormatHasLabel(CString &label, CArray<CString> &labelArra
 	return FALSE;
 }
 
+
+// global s_mails is the source array, s_mails_array is the destination work array
+int MboxMail::RemoveDuplicateMails_Generic(MailArray &s_mails_array)
+{
+	MboxMail *m;
+	MboxMail *m_found;
+
+	// !! s_mails is already populated from mboxview file
+
+	DWORD tc_start = GetTickCount();
+
+	// Remove duplicate mails
+	if (s_mails.GetCount() > s_mails_array.GetCount())
+	{
+		s_mails_array.SetSizeKeepData(s_mails.GetCount());
+	}
+
+	int i = 0;
+	int to_dup_i = 0;
+	int to_i = 0;
+
+	for (i; i < s_mails.GetSize(); i++)
+	{
+		m = s_mails[i];
+
+		m_found = getMboxMail(m);
+		if (m_found == 0)
+		{
+			insertMboxMail(m, m);
+
+			s_mails_array[to_i] = s_mails[i];
+			to_i++;
+			m->m_duplicateId = false;
+		}
+	}
+
+	s_mails_array.SetSizeKeepData(to_i);
+
+	int dupCnt = s_mails.GetSize() - s_mails_array.GetSize();
+
+	s_mails.CopyKeepData(s_mails_array);
+
+	DWORD tc_clear_start = GetTickCount();
+
+	clearMboxMailTable();
+
+	DWORD tc_clear_end = GetTickCount();
+	DWORD delta_clear = tc_clear_end - tc_clear_start;
+
+	DWORD tc_end = GetTickCount();
+	DWORD delta = tc_end - tc_start;
+
+	TRACE("RemoveDuplicateMails_Generic: total time=%d !!!!!!!!!!!!.\n", delta);
+	TRACE("RemoveDuplicateMails_Generic: clear time=%d !!!!!!!!!!!!.\n", delta_clear);
+
+	return dupCnt;
+}
+
 int MboxMail::RemoveDuplicateMails(MailArray &s_mails_array)
 {
 	MboxMail *m;
@@ -8639,7 +8802,7 @@ int MboxMail::LinkDuplicateMails(MailArray &s_mails_array)
 // Will increate MboxMail by 8 bytes
 // Performance will be better, no allocation and deallocation required
 // For 200,000 email it will use 1.6 Mbytes plus extra overhead for collisiomn lists
-#define HASH_ARRAY_SIZE 50000
+//#define HASH_ARRAY_SIZE 50013
 MboxMail* MboxMail::getMboxMail(MboxMail *key)
 {
 	MboxMailTableType::iterator it;
@@ -8706,7 +8869,7 @@ MboxMail* MboxMail::getMboxMail(MboxMail *key)
 {
 	MboxMailTableType::iterator it;
 	if (m_pMboxMailTable == 0)
-		createMboxMailTable(50000);
+		createMboxMailTable(HASH_ARRAY_SIZE);
 
 	it = m_pMboxMailTable->find(key);
 	if (it != m_pMboxMailTable->cend()) {
@@ -8719,7 +8882,7 @@ MboxMail* MboxMail::getMboxMail(MboxMail *key)
 bool MboxMail::insertMboxMail(MboxMail *key, MboxMail *mbox)
 {
 	if (m_pMboxMailTable == 0)
-		createMboxMailTable(50000);
+		createMboxMailTable(HASH_ARRAY_SIZE);
 
 	std::pair<MboxMailTableType::iterator, bool> result = m_pMboxMailTable->insert(MboxMailTableType::value_type(key, mbox));
 	return result.second;
@@ -9004,9 +9167,10 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	}
 
 	AttachmentMgr attachmentDB;
+	BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		//BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
 
 		if (textType == 0)
@@ -9020,9 +9184,14 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			if (pos < 0)
+				continue;
 		}
 	}
+
+	if ((textType == 1) && (singleMail == FALSE))
+		printDummyMailToHtmlFile(fp);
 
 	fp.Close();
 	fpm.Close();
@@ -9122,9 +9291,10 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	}
 
 	AttachmentMgr attachmentDB;
+	BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 	for (int i = firstMail; i <= lastMail; i++)
 	{
-		BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
+		//BOOL singleMail = (firstMail == lastMail) ? TRUE : FALSE;
 		BOOL addPageBreak = MboxMail::PageBreakNeeded(i, i + 1, singleMail);
 
 		if (textType == 0)
@@ -9138,7 +9308,9 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			if (pos < 0)
+				continue;
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -9176,6 +9348,9 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 			}
 		}
 	}
+
+	if ((textType == 1) && (singleMail == FALSE))
+		printDummyMailToHtmlFile(fp);
 
 	newstep = 100;
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress((UINT_PTR)(newstep));
@@ -9276,11 +9451,12 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	AttachmentMgr attachmentDB;
 	int i;
 	int cnt = selectedMailIndexList->GetCount();
+	BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 	for (int j = 0; j < cnt; j++)
 	{
 		i = (*selectedMailIndexList)[j];
 
-		BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+		//BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 		BOOL addPageBreak = MboxMail::PageBreakNeeded(selectedMailIndexList, j, singleMail);
 
 		if (textType == 0)
@@ -9294,7 +9470,9 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 				attachmentDB.Clear();
 				NListView::PrintMailAttachments(&fpm, i, attachmentDB);
 			}
-			printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			if (pos < 0)
+				continue;
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
@@ -9322,6 +9500,9 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 #endif
 		}
 	}
+
+	if ((textType == 1) && (singleMail == FALSE))
+		printDummyMailToHtmlFile(fp);
 	
 	newstep = 100;
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress((UINT_PTR)(newstep));

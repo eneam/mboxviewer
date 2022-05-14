@@ -184,6 +184,9 @@
     <ClCompile Include="src\DataFolderConfigDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\MergeRootFolderAndSubfolders.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -379,6 +382,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\DataFolderConfigDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MergeRootFolderAndSubfolders.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

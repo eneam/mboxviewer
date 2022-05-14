@@ -85,6 +85,7 @@ public:
 	static void UpdateFileExtension(CString &fileName, CString &newExtension);
 	static _int64 FileSize(LPCSTR fileName);
 	static _int64 FolderSize(LPCSTR folderPath);
+	static int GetFolderFileCount(CString &folderPath, BOOL recursive = FALSE);
 	//
 	static BOOL BrowseToFileW(LPCWSTR filename);
 	static BOOL BrowseToFile(LPCTSTR filename);

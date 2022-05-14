@@ -1820,6 +1820,56 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 
 }
 
+int FileUtils::GetFolderFileCount(CString &rootFolderPath, BOOL recursive)
+{
+	int fileCnt = 0;
+
+	CString folderPath = rootFolderPath;
+	folderPath.TrimRight("\\");
+
+	WIN32_FIND_DATA FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+
+	// Start searching for all folders in the current directory.
+	CString searchPath = folderPath + "\\*.*";
+	hSearch = FindFirstFile(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE) {
+		return 0;
+	}
+
+	CString fileName;
+	while (!bFinished)
+	{
+		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
+		{
+			fileName = CString(FileData.cFileName);
+			CString fileFound = folderPath + "\\" + fileName;
+
+			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (recursive == TRUE)
+				{
+					BOOL cnt = FileUtils::GetFolderFileCount(fileFound, recursive);
+					fileCnt += cnt;
+				}
+			}
+			else
+			{
+				fileCnt++;
+			}
+		}
+
+		if (!FindNextFile(hSearch, &FileData)) {
+			bFinished = TRUE;
+			break;
+		}
+	}
+	FindClose(hSearch);
+
+	return fileCnt;
+}
+
 _int64 FileUtils::FolderSize(LPCSTR fPath)
 {
 	WIN32_FIND_DATA data;

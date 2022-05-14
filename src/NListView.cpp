@@ -437,6 +437,7 @@ NListView::NListView() : m_list(this), m_lastStartDate((time_t)-1), m_lastEndDat
 	m_enbaleForwardMailsLog = FALSE;
 	m_enbaleSMTPProtocolLog = FALSE;
 	m_developmentMode = FALSE;
+	m_fontSizePDF = 0;
 }
 
 NListView::~NListView()
@@ -1128,6 +1129,33 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+
+void NListView::PrintToPDFMultipleSelect(int fontSize)
+{
+	m_fontSizePDF = fontSize;
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());
+		if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles)
+		{
+			CString targetPrintSubFolderName = "PDF_GROUP";
+			CString targetPrintFolderPath;
+			int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath);
+		}
+		else
+		{
+			CString targetPrintSubFolderName;
+			CString targetPrintFolderPath;
+			int ret = PrintMailSelectedToSinglePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath);
+			int deb = 1;
+		}
+		int deb = 1;
+	}
+	int deb = 1;
+}
+
 void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -1155,6 +1183,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
+	CMenu printPDFGroupToSubMenu;
+	printPDFGroupToSubMenu.CreatePopupMenu();
+
 	// Create enums or replace switch statment with if else ..
 
 	const UINT S_TEXT_GROUP_Id = 4;
@@ -1167,13 +1198,31 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 28;
-	AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+
+	const UINT S_PDF_DIRECT_DEFAULT_Id = 30;
+	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_DEFAULT_Id, _T("Default"));
+
+	const UINT S_PDF_DIRECT_FONT_16_Id = 31;
+	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_16_Id, _T("Set Font Size to 16px"));
+
+	const UINT S_PDF_DIRECT_FONT_20_Id = 32;
+	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_20_Id, _T("Set Font Size to 20px"));
+
+	const UINT S_PDF_DIRECT_FONT_24_Id = 33;
+	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_24_Id, _T("Set Font Size to 24px"));
+
+	const UINT S_PDF_DIRECT_HELP_Id = 34;
+	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_HELP_Id, _T("Help"));
 
 	const UINT S_CSV_GROUP_Id = 29;
 	AppendMenu(&printGroupToSubMenu, S_CSV_GROUP_Id, _T("CSV..."));
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
+
+	printGroupToSubMenu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printPDFGroupToSubMenu.GetSafeHmenu(), _T("PDF.."));
+	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_HTML_OPEN_RELATED_Id = 7;
 	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Selected Mails in Browser"));
@@ -1208,6 +1257,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	BOOL multipleSelectedMails = TRUE;
 	BOOL itemSelected = FALSE;
+	m_fontSizePDF = 0;
 	switch (command)
 	{
 	case S_HTML_GROUP_Id: {
@@ -1262,7 +1312,36 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		PrintMailGroupToText(multipleSelectedMails, iItem, 1, FALSE, TRUE);
 	}
 	break;
-	case S_PDF_DIRECT_Id: {
+	case S_PDF_DIRECT_DEFAULT_Id:
+	{
+		PrintToPDFMultipleSelect(0);
+	}
+	break;
+	case S_PDF_DIRECT_FONT_16_Id:
+	{
+		PrintToPDFMultipleSelect(16);
+	}
+	break;
+	case S_PDF_DIRECT_FONT_20_Id:
+	{
+		PrintToPDFMultipleSelect(20);
+	}
+	break;
+	case S_PDF_DIRECT_FONT_24_Id:
+	{
+		PrintToPDFMultipleSelect(24);
+	}
+	break;
+	case S_PDF_DIRECT_HELP_Id:
+	{
+		CString helpFileName = "PrintMultipleMailsToSinglePDF.htm";
+		HWND h = GetSafeHwnd();
+		CMainFrame::OpenHelpFile(helpFileName, h);
+		int deb = 1;
+	}
+	break;
+	case S_PDF_DIRECT_Id:  // dead code, remove
+	{
 		if (pFrame)
 		{
 			MboxMail::ShowHint(HintConfig::PrintToPDFHint, GetSafeHwnd());

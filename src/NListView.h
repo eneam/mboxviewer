@@ -200,6 +200,8 @@ public:
 		//
 	_int64 m_MapViewOfFileExCount;
 		//
+	int m_fontSizePDF;
+		//
 	BOOL SetupFileMapView(_int64 offset, DWORD length, BOOL findNext);
 
 	// TESTING
@@ -311,6 +313,7 @@ public:
 	void PrintSelected();
 	void OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult);
 	void OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult);
+	void PrintToPDFMultipleSelect(int fontSize);
 	int RemoveSelectedMails();
 	int RemoveAllMails();
 	int CopySelectedMails();

@@ -50,6 +50,7 @@
 #define IDD_SMTP_DLG                    226
 #define IDD_FORWARD_EMAIL               228
 #define IDD_DATA_FOLDER_DLG             230
+#define IDD_MERGE_FOLDER_AND_SUBFOLDERS 232
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -87,6 +88,7 @@
 #define IDC_EXPORT_EML_Y                1057
 #define IDC_FIND_LIST                   1057
 #define IDC_FILTER_NUMBER1              1057
+#define IDC_MERGE_ROOT_FOLDER_AND_SUBFOLDERS 1057
 #define IDC_FILTER_NUMBER3              1058
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
@@ -326,6 +328,11 @@
 #define IDC_EDIT_INTRO                  1275
 #define IDC_SUBJECT_SORT_TYPE           1276
 #define IDC_THREAD_BREAK                1277
+#define IDC_MERGE_ROOT_FOLDER           1278
+#define IDC_LABEL_PER_MBOX_FILE         1279
+#define IDC_ASSIGN_LABEL_PER_FOLDER     1280
+#define IDC_LABEL_PER_FOLDER            1280
+#define IDC_LABEL_NONE                  1281
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -393,9 +400,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        232
+#define _APS_NEXT_RESOURCE_VALUE        234
 #define _APS_NEXT_COMMAND_VALUE         32914
-#define _APS_NEXT_CONTROL_VALUE         1278
+#define _APS_NEXT_CONTROL_VALUE         1282
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

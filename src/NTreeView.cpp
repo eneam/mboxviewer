@@ -1605,19 +1605,6 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 						continue;
 				}
 
-				CString fileNameExtention;
-				CString fileNameBase;
-				FileUtils::GetFileBaseNameAndExtension(fn, fileNameBase, fileNameExtention);
-
-				TCHAR c = fileNameBase.GetAt(fileNameBase.GetLength() - 1);
-				if ((c == ' ') || (c == '\t'))
-				{
-					CString txt = _T("Invalid mail file name \n\n\"") + fn;
-					txt += _T("\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n");
-					int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-					continue;
-				}
-
 				_int64 fSize = 0;
 				ArchiveFileInfo info;
 				_int64 realFSize = FileUtils::FileSize(mboxFilePath);
@@ -1646,10 +1633,32 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 
 				else if (NTreeView::ImboxviewFile(mboxFilePath))
 				{
+#if 0
+					// No longer needed. Folder names are now created by keeping extension. Howver. dot is replaced with - char
+					// That may still create an issue but it is very unlikely. Didn't want to create folder names that looks like mbox file type
+					// May pay price for this -:)
+					CString fileNameExtention;
+					CString fileNameBase;
+					FileUtils::GetFileBaseNameAndExtension(fn, fileNameBase, fileNameExtention);
+
+					TCHAR c = fileNameBase.GetAt(fileNameBase.GetLength() - 1);
+					if ((c == ' ') || (c == '\t'))
+					{
+						CString txt = _T("Invalid mail file name \n\n\"") + fn;
+						txt += _T("\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n");
+						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+						continue;
+					}
+#endif
+
 					fileSizes[fn].fSize = realFSize;
 					fileSizes[fn].bNeedsValidation = TRUE;
 					m_bIsDataDirty = TRUE;
 					int deb = 1;
+				}
+				else
+				{
+					; // ignore non mbox files
 				}
 
 				if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
@@ -2132,7 +2141,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		if (retval < 0)
 		{
 #if 1
-			int retR = NTreeView::RefreshLabelsForSingleMailFile(hParent);
+			int retR = NTreeView::RefreshLabelsForSingleMailFile(hParent);  // TODO!!!: verify, hParent should point to mail file and to direct parent whicj could be a label
 #else
 			HTREEITEM hFolder = FindFolder(hRoot, lastPath);
 			if (hFolder)
@@ -3864,6 +3873,8 @@ void NTreeView::SortChildren(HTREEITEM hItem, BOOL recursive)
 #endif
 }
 
+// Root item is not included into the children count
+// TODO!!!: verify. Doesn't look good. Unnecessary code. Add recursion
 int NTreeView::GetChildrenCount(HTREEITEM hItem, BOOL recursive)
 {
 	if (hItem == 0)
@@ -5207,6 +5218,15 @@ MboxMail* MySimpleDeque::Get(int position)
 // Iterate folder and sub-folders, Insert Label into TreeCtrl, create xx.mboxlist for folders, add to label store
 int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath)
 {
+	m_treeCtrlInfoDB.Clear();
+	int ret = ShowGmailLabels_internal(hItem, listFilePath, dataFilePath);
+	m_treeCtrlInfoDB.Clear();
+	return ret;
+}
+
+
+int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath)
+{
 	CString errorText;
 	CFileFind finder;
 	if (hItem == 0)
@@ -5232,6 +5252,14 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 	// start working for files
 	BOOL bWorking = finder.FindFile(strWildcard);
 
+	// NTreeView::HasLabel(hItem, label);  used below but it is extremely ineffcient trying to insert lets say 20,000 labels
+	// We should not try to built the tree with 20,000 items in the first place but it can happen in case of mistake
+	// Implemented m_treeCtrlInfoDB instead to keep track of file path to HTREEITEM
+
+	HTREEITEM hChild = m_tree.GetChildItem(hItem);
+	if (hChild)
+		int deb = 1;
+
 	while (bWorking)
 	{
 		bWorking = finder.FindNextFile();
@@ -5254,14 +5282,25 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			CString folderPath = finder.GetFilePath();
 			CString folderName = finder.GetFileName();
 			CString label;
-			//FileUtils::GetFileBaseName(folderName, label);
+
 			label = folderName;
 			//TRACE("%s\n", (LPCTSTR)folderPath);
 
-			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
+			CString emptyPath = folderPath + ".mboxlist";
+
+			size_t hashsum = TreeCtrlInfoDB::GetHashsum(&emptyPath);
+			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&emptyPath, hashsum);
+
+			HTREEITEM found_hItem = 0;
+			if (tinfo)
+				found_hItem = tinfo->m_hItem;
+
+			//HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
 			if (found_hItem == 0)
 			{
-				//HTREEITEM newItem = m_tree.InsertItem(folderName, 6, 7, hItem); // TODO: TVI_SORT ?? optimize
+				if (tinfo)
+					int deb = 1;
+
 				HTREEITEM newItem = InsertTreeItem(folderName, 6, 7, hItem);
 				if (newItem == 0)
 				{
@@ -5272,7 +5311,10 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 				int nId = m_labelInfoStore.GetNextId();
 				m_tree.SetItemData(newItem, nId);
 
-				CString emptyPath = folderPath + ".mboxlist";
+				//CString emptyPath = folderPath + ".mboxlist";
+
+				tinfo = new TreeCtrlInfo(emptyPath, newItem, TreeCtrlInfo::MailFolder);
+				m_treeCtrlInfoDB.Add(hashsum, tinfo);
 
 				if (!FileUtils::PathFileExist(emptyPath))
 				{
@@ -5297,6 +5339,12 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			}
 			else
 			{
+				// Folder related item was created by file
+				// It depends on ordre of file and folder discovery while traversing
+				// It is possible we never be here
+				if (tinfo == 0)
+					int deb = 1;
+
 				int r = NTreeView::ShowGmailLabels(found_hItem, folderPath, dataFilePath);
 				if (r < 0) {
 					MboxMail::assert_unexpected();
@@ -5311,18 +5359,33 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			//TRACE("%s\n", (LPCTSTR)filePath);
 
 			CString label;
-			FileUtils::GetFileBaseName(fileName, label);
 
-			HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
+			FileUtils::GetFileBaseName(fileName, label);  
+
+			size_t hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
+			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&filePath, hashsum);
+
+			HTREEITEM found_hItem = 0;
+			if (tinfo)
+				found_hItem = tinfo->m_hItem;
+
+			//HTREEITEM found_hItem = NTreeView::HasLabel(hItem, label);
 			if (found_hItem == 0)
 			{
-				//HTREEITEM newItem = m_tree.InsertItem(label, 6, 7, hItem);  // TVI_SORT ?? optimize
+				if (tinfo)
+					int deb = 1;
+
 				HTREEITEM newItem = InsertTreeItem(label, 6, 7, hItem);
 				if (newItem == 0)
 				{
 					MboxMail::assert_unexpected();
 					return -1;
 				}
+
+
+				tinfo = new TreeCtrlInfo(filePath, newItem, TreeCtrlInfo::MailLabel);
+				m_treeCtrlInfoDB.Add(hashsum, tinfo);
+
 				int nId = m_labelInfoStore.GetNextId();
 				m_tree.SetItemData(newItem, nId);
 
@@ -5331,6 +5394,9 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 			}
 			else
 			{
+				if (tinfo == 0)
+					int deb = 1;
+
 				DWORD nId = m_tree.GetItemData(found_hItem);
 				LabelInfo *linfo = m_labelInfoStore.Find(nId);
 
@@ -5347,6 +5413,8 @@ int NTreeView::ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &
 	return 1;
 }
 
+// only called by NTreeView::ShowGmailLabels; it is expensive if number of children is very large
+// 05/14/2022 no longer called
 HTREEITEM NTreeView::HasLabel(HTREEITEM hItem, CString &label)
 {
 	CString name;
@@ -7699,19 +7767,6 @@ int NTreeView::RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder)
 				CString fn = wf.cFileName;
 				CString mboxFilePath = folderPath + "\\" + fn;
 
-				CString fileNameExtention;
-				CString fileNameBase;
-				FileUtils::GetFileBaseNameAndExtension(fn, fileNameBase, fileNameExtention);
-
-				TCHAR c = fileNameBase.GetAt(fileNameBase.GetLength() - 1);
-				if ((c == ' ') || (c == '\t'))
-				{
-					CString txt = _T("Invalid mail file name \n\n\"") + fn;
-					txt += _T("\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n");
-					int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-					continue;
-				}
-
 				_int64 realFSize = FileUtils::FileSize(mboxFilePath);
 
 				ArchiveFileInfoMap *fileSizesMap = SetupFileSizeMap(mboxFilePath);
@@ -7735,6 +7790,22 @@ int NTreeView::RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder)
 					}
 					else if (NTreeView::ImboxviewFile(mboxFilePath))
 					{
+#if 0
+						// No longer needed
+						CString fileNameExtention;
+						CString fileNameBase;
+						FileUtils::GetFileBaseNameAndExtension(fn, fileNameBase, fileNameExtention);
+
+						TCHAR c = fileNameBase.GetAt(fileNameBase.GetLength() - 1);
+						if ((c == ' ') || (c == '\t'))
+						{
+							CString txt = _T("Invalid mail file name \n\n\"") + fn;
+							txt += _T("\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n");
+							int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+							continue;
+						}
+#endif
+
 						(*fileSizes)[fn].fSize = realFSize;
 						(*fileSizes)[fn].bShow = TRUE;
 						(*fileSizes)[fn].bNeedsValidation = TRUE;
@@ -7745,7 +7816,9 @@ int NTreeView::RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder)
 					}
 				}
 				else
-					MboxMail::assert_unexpected();
+				{
+					; // ignore  MboxMail::assert_unexpected();
+				}
 			}
 		} while (FindNextFile(f, &wf));
 		FindClose(f);
@@ -8455,6 +8528,135 @@ void GlobalFolderInfoDB::DeleteAll()
 	m_allRootFoldersTable = 0;
 }
 
+/////
+
+//
+
+CString TreeCtrlInfo::TreeCtrlTypeToStr()
+{
+	if (m_fileType == MailFolder)
+		return "MailFolder";
+	if (m_fileType == MailSubFolder)
+		return "MailSubFolder";
+	if (m_fileType == MailFile)
+		return "MailFile";
+	if (m_fileType == MailLabel)
+		return "MailLabelFile";
+	else
+		return "Unknown File Type";
+}
+
+TreeCtrlInfoDB::TreeCtrlInfoDB()
+{
+	m_treeCtrlTable = new TreeCtrlInfoHashTable(50013);
+};
+
+TreeCtrlInfoDB::~TreeCtrlInfoDB()
+{
+	DeleteAll();
+};
+
+void TreeCtrlInfoDB::Print()
+{
+#ifdef _DEBUG
+	TreeCtrlInfoHashTable::IHashMapIter iter = m_treeCtrlTable->first();
+	int totalCnt = 0;
+	CString txt;
+	CString fileType;
+
+	//
+	fileType.Empty();
+
+	TRACE("+++ GLOBAL TreeCtrl Table\n");
+	iter = m_treeCtrlTable->first();
+	for (; !m_treeCtrlTable->last(iter); )
+	{
+		fileType = "Unknown";
+		TreeCtrlInfo *l = iter.element;
+
+		fileType = l->TreeCtrlTypeToStr();
+
+		txt.Format("Type=%s FolderPath=%s\n", fileType, l->m_filePath);
+		TRACE("%s", txt);
+		m_treeCtrlTable->next(iter);
+		int deb = 1;
+	}
+#endif
+}
+
+size_t TreeCtrlInfoDB::GetHashsum(CString * key)
+{
+	size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+	return hashsum;
+};
+
+TreeCtrlInfo* TreeCtrlInfoDB::Remove(CString * key)
+{
+	size_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
+	TreeCtrlInfo* finfo = Remove(key, hashsum);
+	return finfo;
+}
+
+TreeCtrlInfo* TreeCtrlInfoDB::Remove(CString * key, size_t hashsum)
+{
+
+	TreeCtrlInfo* finfo = m_treeCtrlTable->remove(key);
+
+	return finfo;
+}
+
+TreeCtrlInfo* TreeCtrlInfoDB::Find(CString * key)
+{
+	TreeCtrlInfo *finfo = m_treeCtrlTable->find(key);
+	return finfo;
+}
+
+TreeCtrlInfo* TreeCtrlInfoDB::Find(CString * key, size_t hashsum)
+{
+	TreeCtrlInfo *finfo = m_treeCtrlTable->find(key, hashsum);
+	return finfo;
+}
+
+void TreeCtrlInfoDB::Add(CString * key, TreeCtrlInfo *info)
+{
+	m_treeCtrlTable->insert(key, info);
+}
+
+
+void TreeCtrlInfoDB::Add(size_t hashsum, TreeCtrlInfo *info)
+{
+	m_treeCtrlTable->insert(hashsum, info);
+}
+
+void TreeCtrlInfoDB::Clear()
+{
+	if (m_treeCtrlTable == 0)
+	{
+		MboxMail::assert_unexpected();
+		return;
+	}
+
+	TreeCtrlInfoHashTable::IHashMapIter iter = m_treeCtrlTable->first();
+	for (; !m_treeCtrlTable->last(iter); )
+	{
+		TreeCtrlInfo *l = iter.element;
+		m_treeCtrlTable->remove(iter);
+		delete l;
+	}
+	m_treeCtrlTable->clear();
+}
+
+void TreeCtrlInfoDB::DeleteAll()
+{
+	Clear();
+	//
+	delete m_treeCtrlTable;
+	m_treeCtrlTable = 0;
+}
+
+
+/////
+
 
 MySaveFileDialog::MySaveFileDialog(
 	BOOL bOpenFileDialog, LPCTSTR lpszDefExt, LPCTSTR lpszFileName,
@@ -8562,6 +8764,7 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString &path, BOOL select
 	MboxMail::SetLastPath(path);
 
 	errorText.Empty();
+	// TODO: Investigate if seprate MergeTreeFolders_NoLabels() would be cleaner solution
 	int retM = MergeTreeFolders(tree, errorText);
 	if (retM < 0)
 		return;
@@ -8682,14 +8885,19 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree &tree, CString &errorText)
 	CString sText;
 	CString fname;
 	FileUtils::CPathStripPath(m_rootMboxFilePath, fname);
+	int retval;
+
 	sText.Format(_T("Parsing intermediate merge raw mbox file ..."), fname);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	MboxMail::SetLastPath(lastPath);
-	int retval = pListView->FillCtrl_ParseMbox(m_rootMboxFilePath);
+	retval = pListView->FillCtrl_ParseMbox(m_rootMboxFilePath);
 
-	int cnt = MboxMail::LinkDuplicateMails(MboxMail::s_mails);
+	if (pFrame->m_labelAssignmentStyle != 0)
+	{
+		int cnt = MboxMail::LinkDuplicateMails(MboxMail::s_mails);
+	}
 
 	CString saveFileName = fileName + ".mbox";
 	CString title = "Enter Name for Merged Archive File";
@@ -8712,8 +8920,9 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree &tree, CString &errorText)
 
 	MboxMail::SetLastPath(outFolderPath);
 	CString lDataPath = MboxMail::GetLastDataPath();
-	if (FileUtils::PathFileExist(filePath))
+	//if (FileUtils::PathFileExist(filePath))
 		DeleteMBoxAllWorkFolders(filePath);
+
 
 	if (!m_rootMboxCfile.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
@@ -8739,11 +8948,15 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree &tree, CString &errorText)
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
-	MergeMailsRemoveDuplicates();
+	if (pFrame->m_labelAssignmentStyle != 0)
+		MergeMailsRemoveDuplicates();
+	else
+		ArchiveMailsRemoveDuplicates(m_rootMboxCfile, filePath);
 
 	MboxMail::Destroy(&MboxMail::s_mails);
 
 	m_rootMboxCfile.Close();
+
 
 	FileUtils::DeleteFile(m_rootMboxFilePath);
 
@@ -8817,7 +9030,7 @@ public:
 	BOOL m_isMbox;
 };
 
-int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList, BOOL expand)
+int NTreeView::MergeRootSubFolder_NoLabels(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList, BOOL expand)
 {
 	CString fileName;
 	CString driveName;
@@ -8826,6 +9039,109 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 	CString fileNameExtention;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	NListView *pListView = pFrame->GetListView();
+
+	path.TrimRight(_T("\\"));
+	path.Append(_T("\\"));
+
+	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+	if (directory.GetLength() <= 1)
+	{
+		CString txt = _T("The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.");
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		return -1;
+	}
+
+	path.TrimRight(_T("\\"));
+
+	int paneId = 0;
+	CString sText;
+	CString folderName;
+	FileUtils::CPathStripPath(path, folderName);
+
+	sText.Format(_T("Merging mbox files in folder %s ..."), folderName);
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+	path.Append(_T("\\"));
+	MboxMail::SetLastPath(path);
+	//
+	CString mboxFilePath = path;
+
+	// build a string with wildcards
+	CString strWildcard(mboxFilePath);
+	strWildcard += _T("\\*.*");
+
+	// start working on files
+	CFileFind finder;
+	BOOL bWorking = finder.FindFile(strWildcard);
+
+	CString fPath;
+	CString fName;
+
+	MergeFileAttr item;
+	int i = 0;
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+
+		// skip . and .. files; otherwise, we'd
+		// recur infinitely!
+
+		if (finder.IsDots())
+			continue;
+
+		if (finder.IsDirectory())
+			continue;
+
+		fPath = finder.GetFilePath();
+		fName = finder.GetFileName();
+
+		if (fPath.Compare(m_rootMboxFilePath) == 0)
+			continue;
+
+		if (!NTreeView::ImboxviewFile(fPath))
+			continue;
+
+		TRACE("FilePath=%s\n", fPath);
+
+		_int64 fileSize = FileUtils::FileSize(fPath);
+
+		sText.Format("Merging %s (%lld bytes) ...", fName, fileSize);
+		TRACE("%s\n", sText);
+		if (pFrame)
+			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
+		int ret = CMainFrame::MergeMboxArchiveFile(m_rootMboxCfile, fPath, i == 0);
+		i++;
+	}
+	finder.Close();
+
+	TRACE("");
+	TRACE("MergeRootSubFolder: done\n");
+	//m_globalFolderInfoDB.Print();
+
+	return 1;
+}
+
+int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList, BOOL expand)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if (pFrame && pFrame->m_labelAssignmentStyle == 0)  // no Labels
+	{
+		int retval = MergeRootSubFolder_NoLabels(relativeFolderPath, path, addToRecentFileList, expand);
+		return retval;
+	}
+
+	CString fileName;
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+
 	NListView *pListView = pFrame->GetListView();
 
 	path.TrimRight(_T("\\"));
@@ -8981,21 +9297,31 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 		int retval = pListView->FillCtrl_ParseMbox(fPath);
 
 		FileUtils::GetFileName(fPath, fName);
-
-		if (foundCollision)
-		{
-			labelName = fName;
-		}
-		else
-		{
-			FileUtils::GetFileBaseName(fName, labelName);
-		}
-
 		CString labels = "X-Gmail-Labels: \"";
-		if (relativeFolderPath.IsEmpty())
-			labels += labelName + "\"\r\n";
+		if (pFrame->m_labelAssignmentStyle == 2)
+		{
+			if (relativeFolderPath.IsEmpty())
+				labels += folderName + "\"\r\n";
+			else
+				labels += relativeFolderPath + "\"\r\n";
+			//labels += relativeFolderPath + "/" + folderName + "\"\r\n";
+		}
 		else
-			labels += relativeFolderPath + "/" + labelName + "\"\r\n";
+		{
+			if (foundCollision)
+			{
+				labelName = fName;
+			}
+			else
+			{
+				FileUtils::GetFileBaseName(fName, labelName);
+			}
+
+			if (relativeFolderPath.IsEmpty())
+				labels += labelName + "\"\r\n";
+			else
+				labels += relativeFolderPath + "/" + labelName + "\"\r\n";
+		}
 
 		MergeMails(labels);
 
@@ -9101,7 +9427,7 @@ int NTreeView::MergeMails(CString &label)
 	return 1;
 }
 
-int NTreeView::MergeMailsRemoveDuplicates()
+int NTreeView::MergeMailsRemoveDuplicates()   // remove duplicate mails by  merging labels
 {
 	static const char *cLabels = "x-gmail-labels";
 	static const int cLabelsLen = strlen(cLabels);
@@ -9267,6 +9593,48 @@ int NTreeView::MergeMailsRemoveDuplicates()
 	}
 	return 1;
 }
+
+int NTreeView::ArchiveMailsRemoveDuplicates(CFile &fp, CString &filePath)
+{
+	MailArray &s_mails_array = MboxMail::s_mails_all;
+	int dupCnt = MboxMail::RemoveDuplicateMails_Generic(s_mails_array);
+	if (dupCnt == 0)
+	{
+		DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+		BOOL retMove = MoveFileEx(m_rootMboxFilePath, filePath, nFlags);
+		if (retMove == FALSE)
+		{
+			CString errorText = FileUtils::GetLastErrorAsString();
+			TRACE("ArchiveMailsRemoveDuplicates: MoveFileEx failed \"%s\"\n", errorText);
+
+			CString txt = _T("Failed to move file \"") + m_rootMboxFilePath;
+			txt += _T("\" file.\n\n");
+			txt.Append(errorText);
+
+			HWND h = NULL; // we don't have any window yet
+			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+	}
+	else
+	{
+		SimpleString *outbuf = MboxMail::m_outbuf;
+		outbuf->ClearAndResize(10000);
+
+		BOOL ret;
+		MboxMail *m;
+		for (int i = 0; i < s_mails_array.GetSize(); i++)
+		{
+			m = s_mails_array[i];
+			outbuf->Clear();
+			ret = m->GetBody(outbuf);
+			// TODO: may need to validate last mail, i.e check for From presence
+			fp.Write(outbuf->Data(), outbuf->Count());
+		}
+	}
+	return 1;
+}
+
 
 BOOL NTreeView::SaveMergedFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title)
 {

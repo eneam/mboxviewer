@@ -581,6 +581,7 @@ public:
 	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
 	static BOOL PageBreakNeeded(int mailPosition, int nextMailPosition, bool singleMail);
 	static BOOL PageBreakNeeded(MailIndexList *selectedMailIndexList, int mailPosition, bool singleMail);
+	static int printDummyMailToHtmlFile(/*out*/CFile &fp);
 	
 	//
 	static int exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile &fp);
@@ -622,6 +623,7 @@ public:
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
 	static CString GetDateFormat(int i);
+	static int RemoveDuplicateMails_Generic(MailArray &s_mails_array);
 	static int RemoveDuplicateMails(MailArray &s_mails_array);
 	static int LinkDuplicateMails(MailArray &s_mails_array);
 

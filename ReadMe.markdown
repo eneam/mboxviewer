@@ -47,6 +47,13 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.28
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Added option to set the font size when printing multiple mails to single PDF file.;
+ - Enhanced "Select root folder for merging.." option to support large number of eml files.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.27
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

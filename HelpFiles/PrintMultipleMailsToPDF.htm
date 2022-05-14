@@ -1,0 +1,17 @@
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=US-ASCII"></head><body><br><br><font size="+2"><b>Print Multiple Mails into Single PDF<br><br</font>
+<p style='font-size:18px;font-weight: normal;'>
+MBox Viewer's solution to Print multiple mails to single PDF is non-standard and can affect font sizes in all mails. MBox Viewer concatenates content of all mails and headers in HTML format and ask Edge or Chrome Web Browser to convert HTML document into PDF.
+<br><br>
+Some of mails may have complex style definitions and "pollute" environment of other mails. Frequently, font sizes become smaller and may need to be zoomed in by the PDF viewer. There is no similar solution for zooming when printing generated PDF documents to paper.
+<br><br>
+<span><b>The following approach is suggested when printing multiple mails into a single PDF.</b></span>
+<br><br>
+1. Print mails using default mode. Right-click on selected mails and select "Print Selected Mails to --> PDF --> Default". Evaluate generated PDF document and if not acceptable, follow step 2.
+<br><br>
+2. Set font size to 16px, 20px or 24px for printing. Right-click on selected mails and select "Print Selected Mails to --> PDF --> 16px". This will force font size of every text to be set to 16px. This may not work well for mails  with tables. Font size for text in tables is typically set to smaller to fit into table cells.
+<br><br>
+Note that you can configure MBox Viewer to print page break after each mail or after each conversation thread of mails. Select "File-->Print Config-->PDF document options->Page Break After Each Mail/Page Break After Each Conversation Thread".
+<br><br><br>
+If none of the above print solutions works for you, you need to print each mail to a separate PDF file and use a professional tool such as PDF-XChange Editor or a free tool such as PDFBox to merge generated PDF files into a single PDF file. Reliability of these tools was not evaluated. PDFBox usage is described in the User Guide. To generate mails to separate PDF files, select "File-->Print Config-->Print selected mails to separate files-->PDF".
+</p>
+</body></html>

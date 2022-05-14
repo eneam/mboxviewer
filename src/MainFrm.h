@@ -259,13 +259,15 @@ public:
 
 	int MergeMboxArchiveFiles(CArray<MergeFileInfo> &mboxFilePathList, CString &mergedMboxFilePath);
 	int MergeMboxArchiveFiles(CString &mboxListFilePath, CString &mergedMboxFilePath);
-	int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath, BOOL firstFile);
+	static int MergeMboxArchiveFile(CFile &fpMergeTo, CString & mboxFilePath, BOOL firstFile);
 
 	static BOOL CanMboxBeSavedInFolder(CString &destinationFolder);
 
 	static MBoxViewerDB m_ViewerGlobalDB;
 	static CommandLineParms m_commandLineParms;
 	static AttachmentConfigParams *GetAttachmentConfigParams();
+
+	static void OpenHelpFile(CString &filePath, HWND h = NULL);
 
 #ifdef _DEBUG
 	virtual void AssertValid() const;
@@ -302,6 +304,10 @@ protected:  // control bar embedded members
 	HICON m_UnHideIcon;
 
 public:
+	// From MergeFolderAndSubfolders
+	int m_mergeRootFolderStyle;
+	int m_labelAssignmentStyle;
+
 	CString m_lastPath;
 	BOOL m_bIsTreeHidden;
 	HdrFldConfig m_HdrFldConfig;

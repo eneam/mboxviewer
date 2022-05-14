@@ -427,6 +427,88 @@ public:
 	BOOL m_deleteConflictingFolders;
 };
 
+// Yet Another HashTable, shame on me
+// Used  by ShoeGmailLabels only
+class TreeCtrlInfoDB;
+
+class TreeCtrlInfo
+{
+public:
+	enum {
+		MailFolder = 1,
+		MailSubFolder = 2,
+		MailFile = 4,
+		MailLabel = 8
+	};
+
+	TreeCtrlInfo(CString &filePath, HTREEITEM hItem, int fileType = 0)
+	{
+		m_filePath = filePath;
+		m_fileType = fileType;
+		m_hItem = hItem;
+	}
+	~TreeCtrlInfo() {}
+
+	CString TreeCtrlTypeToStr();
+
+	dlink_node<TreeCtrlInfo> m_hashMapLink;
+
+	// TODO: file path can be up 255 chars long, so this is not the most efficient solution. FIX later
+	// Enhance to have two hash tables. Hash first by folder path and then hash by file name
+	CString m_filePath;
+	int m_fileType;
+	HTREEITEM m_hItem;
+};
+
+struct TreeCtrlInfoHelper
+{
+	size_t operator()(const CString *key) const
+	{
+		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		return hashsum;
+	}
+	bool operator()(CString *key1, CString *key2) const
+	{
+		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+	bool operator()(CString *key1, TreeCtrlInfo *key2) const
+	{
+		if (*key1 == key2->m_filePath)
+			return true;
+		else
+			return false;
+	}
+};
+
+using TreeCtrlInfoHashTable = IHashMap<CString, TreeCtrlInfo, TreeCtrlInfoHelper, TreeCtrlInfoHelper, &TreeCtrlInfo::m_hashMapLink>;
+
+class TreeCtrlInfoDB
+{
+public:
+	TreeCtrlInfoDB();
+	~TreeCtrlInfoDB();
+
+	void Print();
+	TreeCtrlInfo* Find(CString * key);
+	TreeCtrlInfo* Find(CString * key, size_t hashsum);
+	void Add(CString * key, TreeCtrlInfo *info);
+	void Add(size_t hashsum, TreeCtrlInfo *info);
+	TreeCtrlInfo* Remove(CString * key);
+	TreeCtrlInfo* Remove(CString * key, size_t hashsum);
+
+
+	static size_t GetHashsum(CString * key);
+
+	void Clear();
+	void DeleteAll();  // delete content and allocated hash table
+
+	TreeCtrlInfoHashTable *m_treeCtrlTable;
+	//
+};
+
 class MailSelectionInfo
 {
 public:
@@ -461,6 +543,7 @@ public:
 	CWheelTreeCtrl	m_tree;
 	// TODO: Consider consolidating m_globalFolderInfoDB and m_labelInfoStore i none table
 	GlobalFolderInfoDB m_globalFolderInfoDB;
+	TreeCtrlInfoDB m_treeCtrlInfoDB;
 	//
 	// Transient during parsing gmail files to create list of labels.
 	GmailLableMapType *m_labelHT;
@@ -582,6 +665,7 @@ public:
 	int CreateGmailLabelFiles(HTREEITEM hItem);
 	BOOL DisplayGmailLabels(HTREEITEM hItem);
 	int ShowGmailLabels(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath);
+	int ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, CString &dataFilePath);
 	HTREEITEM HasLabel(HTREEITEM hItem, CString &label);
 	BOOL LoadLabels();
 	BOOL LoadLabels(HTREEITEM hItem);
@@ -620,9 +704,11 @@ public:
 	void DoOpenRootFolderAndSubfolders_LabelView(CString &path, BOOL selectFolder = FALSE);
 	int MergeTreeNode(MBoxFolderNode *node);
 	int MergeTreeFolders(MBoxFolderTree &tree, CString &errorText);
+	int MergeRootSubFolder_NoLabels(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList = FALSE, BOOL expand = TRUE);
 	int MergeRootSubFolder(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList = FALSE, BOOL expand = TRUE);
 	int MergeMails(CString &labels);
 	int MergeMailsRemoveDuplicates();
+	int ArchiveMailsRemoveDuplicates(CFile &fp, CString &filePath);
 	BOOL SaveMergedFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
 
 	BOOL FolderHasAtLeastOneMboxFile(CString &mboxFilePath);
