@@ -10054,7 +10054,8 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"Mbox and eml mail files can also be merged via two command line options:\n\n"
 				"-MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n\n"
 				"-MBOX_MERGE_TO_FILE=Path to File to save merge results\n\n"
-				"List of files to merge supports widcard file names\n"
+				"List of files to merge supports widcard file names\n\n\n"
+				"Use \"Select root folder for merging..\" folder option to merge root folder and subfolders\n"
 				"\n"
 			);
 		}

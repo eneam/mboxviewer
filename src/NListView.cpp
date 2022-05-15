@@ -1334,7 +1334,8 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	break;
 	case S_PDF_DIRECT_HELP_Id:
 	{
-		CString helpFileName = "PrintMultipleMailsToSinglePDF.htm";
+		//CString helpFileName = "PrintMultipleMailsToSinglePDF.htm";
+		CString helpFileName = "PrintMultipleMailsToPDF.htm";
 		HWND h = GetSafeHwnd();
 		CMainFrame::OpenHelpFile(helpFileName, h);
 		int deb = 1;
