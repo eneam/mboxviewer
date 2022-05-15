@@ -80,7 +80,7 @@ MBoxViewerDB::MBoxViewerDB()
 	m_rootArchiveSubFolder = "ArchiveCache";
 	m_rootLabelSubFolder = "LabelCache";
 	m_rootEmlSubFolder = "EmlCache";
-	m_rootMergedSubFolder = "MergedMboxRepo";
+	m_rootMergedSubFolder = "MergeCache";
 	m_isReadOnlyMboxDataMedia = 2;  // Unknown, not set
 };
 
@@ -2634,6 +2634,8 @@ void CMainFrame::UpdateFilePrintconfig()
 	NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
 }
 
+
+// TODO: Dead code; to be removed
 int CMainFrame::MergeArchiveFiles()
 {
 	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
@@ -4588,31 +4590,13 @@ int CommandLineParms::VerifyParameters()
 
 		if (!CMainFrame::CanMboxBeSavedInFolder(mboxFolderPath))
 		{
-			// Simplified; see CanMboxBeSavedInFolder
 #if 0
-			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
-			CString validFolder = appFolderPath + "MboxRepo";
-
-			CString txt;
-			mboxFolderPath.TrimRight(_T("\\"));
-			appFolderPath.TrimRight(_T("\\"));
-			txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n"),
-				m_mergeToFilePath, mboxFolderPath);
-			txt.Append(_T("\nSaving the mbox archive mail file is allowed in \n\n"));
-			txt.Append(validFolder);
-			txt.Append(_T("\n\nor in subfolders of MboxRepo"));
-			txt.Append(_T("\nor in folders other than under the root folder\n\n"));
-			txt.Append(appFolderPath);
-			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			CString txt = _T("The \"MBoxViewer\" name is reserved and it can't appear in the file path.\n"
+				"Please create different name and try again.");
+			HWND h = NULL;
+			int answer = MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 #endif
 			return -1;
-		}
-		else
-		{
-			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
-			CString validFolder = appFolderPath + "MboxRepo";
-			///if (mboxFolderPath.CompareNoCase(validFolder)
 		}
 
 		BOOL ret = FileUtils::PathDirExists(mboxFolderPath);
@@ -4692,7 +4676,6 @@ int CommandLineParms::VerifyParameters()
 // TODO: 
 BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 {
-#if 1
 	// Imposed more restrictions to simplify
 	if ((destinationFolder.Find("\\MBoxViewer\\") >= 0) || (destinationFolder.Find("\\MBoxViewer") >= 0))
 	{
@@ -4706,27 +4689,6 @@ BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 	}
 	else
 		return TRUE;
-#else
-	// Should I just run MesageBox here ??
-	CString mboxFolder;
-	CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
-
-	CString validFolderPath = appFolderPath + "MboxRepo";
-	int validFolderPathLength = validFolderPath.GetLength();
-
-	appFolderPath.TrimRight("\\");
-	int appFolderPathLength = appFolderPath.GetLength();
-
-	CString front = destinationFolder.Left(appFolderPathLength);
-	if (front.CompareNoCase(appFolderPath))
-		return TRUE;
-
-	front = destinationFolder.Left(validFolderPathLength);
-	if (front.CompareNoCase(validFolderPath) == 0)
-		return TRUE;
-	else
-		return FALSE;
-#endif
 }
 
 void CMainFrame::OnFileSmtpmailserverconfig()

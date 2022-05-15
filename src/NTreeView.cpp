@@ -9187,8 +9187,10 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 	mboxFileList.reserve(8);
 
 	MergeFileAttr item;
+	int jj = 0;
 	while (bWorking)
 	{
+		jj++;
 		bWorking = finder.FindNextFile();
 
 		// skip . and .. files; otherwise, we'd
@@ -9205,37 +9207,56 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 
 		item.m_path = fPath;
 		item.m_isDir = finder.IsDirectory();
+		item.m_isMbox = FALSE;
 
-		mboxFileList.push_back(item);
+		if (item.m_isDir)
+		{
+			mboxFileList.push_back(item);
+		}
+		else
+		{
+			if (NTreeView::ImboxviewFile(fPath))
+			{
+				item.m_isMbox = TRUE;
+				mboxFileList.push_back(item);
 
+				if ((jj%1000) == 0)
+				{
+					sText.Format(_T("Discovered mbox file %s ..."), fName);
+					if (pFrame)
+						pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+				}
+			}
+		}
 	}
 	finder.Close();
 
 	MergeFileAttr *ar = mboxFileList.data();
 	MergeFileAttr *el;
-	int j;
-	for (j = 0; j < mboxFileList.size(); j++)
-	{
-		el = &ar[j];
-		if (el->m_isDir)
-			continue;
 
-		if (NTreeView::ImboxviewFile(el->m_path))
-		{
-			el->m_isMbox = TRUE;
-		}
-	}
+	int j;
+
+	MessageBeep(MB_OK);
+
+	sText.Format(_T("Discovery of mbox files completed ..."));
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	// Check for duplication of base file and folder names
 	// Keep it simple for now. Stop if any collision is found
+	// This is a source o problems. Should we just rely on the full name instead of base name
 
 	CString baseName1;
 	CString baseName2;
 	MergeFileAttr *el1;
 	MergeFileAttr *el2;
 	BOOL foundCollision = FALSE;
-	
-	for (j = 0; j < mboxFileList.size(); j++)
+	if (mboxFileList.size() > 128)
+	{
+		foundCollision = TRUE;
+	}
+	// very inefficient for large number of files
+	else for (j = 0; j < mboxFileList.size(); j++)
 	{
 		el1 = &ar[j];
 
@@ -9271,11 +9292,22 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 			break;
 	}
 
+
+	MessageBeep(MB_OK);
+	sText.Format(_T("Detection of name collisions is completed ..."));
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+
 	for (j = 0; j < mboxFileList.size(); j++)
 	{
 		el = &mboxFileList[j];
 		TRACE("MergeRootSubFolder: found mbox file=%s\n", el->m_path);
 	}
+
+	MessageBeep(MB_OK);
+	sText.Format(_T("Merging mbox files ..."));
+	if (pFrame)
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	CString labelName;
 	for (j = 0; j < mboxFileList.size(); j++)
