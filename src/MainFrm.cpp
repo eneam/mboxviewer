@@ -4162,16 +4162,6 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	NTreeView *pTreeView = GetTreeView();
 	NListView *pListView = GetListView();
 
-	if (pTreeView)
-	{
-		//pTreeView->SimplyTest();  // just a test
-
-			// Move legacy folders created by older versions under a single folder
-		BOOL anwer = pTreeView->MoveMBoxViewerCreatedLegacyFolders();
-		if (anwer == FALSE)
-			return 0;
-	}
-
 	CString saveDataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
 
 	int selectedDataFolderConfigMethod = -1;
@@ -4197,6 +4187,16 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
 	MboxMail::s_folderContext.m_rootDataFolderPathConfig = dataFolder;
+
+	if (pTreeView)
+	{
+		//pTreeView->SimplyTest();  // just a test
+
+			// Move legacy folders created by older versions under a single folder
+		BOOL anwer = pTreeView->MoveMBoxViewerCreatedLegacyFolders();
+		if (anwer == FALSE)
+			return 0;
+	}
 
 	if (pTreeView)
 	{
