@@ -5288,7 +5288,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 			CString emptyPath = folderPath + ".mboxlist";
 
-			size_t hashsum = TreeCtrlInfoDB::GetHashsum(&emptyPath);
+			unsigned long hashsum = TreeCtrlInfoDB::GetHashsum(&emptyPath);
 			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&emptyPath, hashsum);
 
 			HTREEITEM found_hItem = 0;
@@ -5331,7 +5331,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				LabelInfo *linfo = new LabelInfo(nId, dataFilePath, label, emptyPath); // MailLabel
 				m_labelInfoStore.Add(linfo, nId);
 
-				int r = NTreeView::ShowGmailLabels(newItem, folderPath, dataFilePath);
+				int r = NTreeView::ShowGmailLabels_internal(newItem, folderPath, dataFilePath);
 				if (r < 0) {
 					MboxMail::assert_unexpected();
 					return -1;
@@ -5345,7 +5345,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				if (tinfo == 0)
 					int deb = 1;
 
-				int r = NTreeView::ShowGmailLabels(found_hItem, folderPath, dataFilePath);
+				int r = NTreeView::ShowGmailLabels_internal(found_hItem, folderPath, dataFilePath);
 				if (r < 0) {
 					MboxMail::assert_unexpected();
 					return -1;
@@ -5362,7 +5362,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 			FileUtils::GetFileBaseName(fileName, label);  
 
-			size_t hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
+			unsigned long hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
 			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&filePath, hashsum);
 
 			HTREEITEM found_hItem = 0;
