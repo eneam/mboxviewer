@@ -586,7 +586,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			menu.AppendMenu(MF_SEPARATOR);
 
 			const UINT M_Reload_Id = 1;
-			AppendMenu(&menu, M_Reload_Id, _T("Restore User Selected Mails from saved Mail List file"));
+			MyAppendMenu(&menu, M_Reload_Id, _T("Restore User Selected Mails from saved Mail List file"));
 
 			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -667,82 +667,82 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	// Create enums or replace switch statment with if else ..
 	// XXX_GROUP_Id represents group of related emails, related == convesation
 	const UINT S_TEXT_Id = 1;
-	AppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
+	MyAppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
 
 	const UINT S_HTML_Id = 2;
-	AppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML..."));
+	MyAppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML..."));
 
 	const UINT S_PRINTER_Id = 3;
-	AppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
+	MyAppendMenu(&printToSubMenu, S_PRINTER_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 4;
-	AppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
+	MyAppendMenu(&printToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_TEXT_GROUP_Id = 5;
-	AppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
+	MyAppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
 
 	const UINT S_HTML_GROUP_Id = 6;
-	AppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
+	MyAppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
 
 	const UINT S_PRINTER_GROUP_Id = 7;
-	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
+	MyAppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_GROUP_Id = 8;
-	AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_GROUP_Id, _T("PDF..."));
+	MyAppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_GROUP_Id, _T("PDF..."));
 
 	const UINT S_CSV_GROUP_Id = 9;
-	AppendMenu(&printGroupToSubMenu, S_CSV_GROUP_Id, _T("CSV..."));
+	MyAppendMenu(&printGroupToSubMenu, S_CSV_GROUP_Id, _T("CSV..."));
 
 	if (abs(MboxMail::b_mails_which_sorted) == 99)
 	{
-		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Conversation Thread Mails To"));
+		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)printGroupToSubMenu.GetSafeHmenu(), _T("Print Conversation Thread Mails To"));
 		menu.AppendMenu(MF_SEPARATOR);
 	}
 
 	const UINT S_HTML_OPEN_Id = 10;
-	AppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
+	MyAppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
 
 	const UINT S_HTML_OPEN_RELATED_Id = 11;
 	if (abs(MboxMail::b_mails_which_sorted) == 99)
-		AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Conversation Thread Mails in Browser"));
+		MyAppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Conversation Thread Mails in Browser"));
 
 	const UINT S_HTML_OPEN_RELATED_FILES_Id = 12;
-	AppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
+	MyAppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
 
 	const UINT S_HTML_FIND_Id = 13;
-	AppendMenu(&menu, S_HTML_FIND_Id, _T("Find Text"));
+	MyAppendMenu(&menu, S_HTML_FIND_Id, _T("Find Text"));
 
 	const UINT S_ADVANCED_FIND_Id = 14;
-	AppendMenu(&menu, S_ADVANCED_FIND_Id, _T("Find Advanced"));
+	MyAppendMenu(&menu, S_ADVANCED_FIND_Id, _T("Find Advanced"));
 
 	const UINT S_REMOVE_Id = 15;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_REMOVE_Id, _T("Remove Selected Mail"));
+		MyAppendMenu(&menu, S_REMOVE_Id, _T("Remove Selected Mail"));
 	}
 
 	const UINT S_REMOVE_ALL_Id = 16;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || (MboxMail::IsUserMailsSelected()) && (pFrame->IsUserMailsListEnabled()))) {
-		AppendMenu(&menu, S_REMOVE_ALL_Id, _T("Remove All Mails"));
+		MyAppendMenu(&menu, S_REMOVE_ALL_Id, _T("Remove All Mails"));
 	}
 
 	const UINT S_COPY_ALL_Id = 17;
 	const UINT S_COPY_SELECTED_Id = 18;
 	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsLabelMailsSelected() || MboxMail::IsFindMailsSelected()) && pFrame->IsUserMailsListEnabled()) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
-		AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
+		MyAppendMenu(&menu, S_COPY_ALL_Id, _T("Copy All into User Selected Mails"));
+		MyAppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 	}
 
 	const UINT S_SAVE_AS_ARCHIVE_Id = 19;
 	const UINT M_ARCHIVE_LOCATION_Id = 20;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save as Mbox Mail Archive file"));
-		AppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mbox Mail Archive Location"));
+		MyAppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save as Mbox Mail Archive file"));
+		MyAppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mbox Mail Archive Location"));
 	}
 
 	const UINT S_SAVE_AS_LIST_Id = 21;
@@ -750,36 +750,36 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_LIST_LOCATION_Id = 23;
 	if (pFrame && (MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_SAVE_AS_LIST_Id, _T("Save as Mail List file"));
-		AppendMenu(&menu, S_RELOAD_LIST_Id, _T("Reload from Mail List file"));
-		AppendMenu(&menu, M_LIST_LOCATION_Id, _T("Open Mail List Location"));
+		MyAppendMenu(&menu, S_SAVE_AS_LIST_Id, _T("Save as Mail List file"));
+		MyAppendMenu(&menu, S_RELOAD_LIST_Id, _T("Reload from Mail List file"));
+		MyAppendMenu(&menu, M_LIST_LOCATION_Id, _T("Open Mail List Location"));
 	}
 
 	const UINT S_RESTORE_LIST_Id = 24;
 	if (pFrame && MboxMail::IsAllMailsSelected() && pFrame->IsUserMailsListEnabled() && (MboxMail::s_mails_edit.GetCount() == 0)) {
 		//menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, S_RESTORE_LIST_Id, _T("Restore User Selected Mails from saved Mail List file"));
+		MyAppendMenu(&menu, S_RESTORE_LIST_Id, _T("Restore User Selected Mails from saved Mail List file"));
 	}
 
 	const UINT M_REMOVE_DUPLICATE_MAILS_Id = 25;
 	//if (pFrame && (MboxMail::IsUserMailsSelected() || MboxMail::IsLabelMailsSelected())) {
 	if (pFrame && (MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		AppendMenu(&menu, M_REMOVE_DUPLICATE_MAILS_Id, _T("Remove Duplicate Mails"));
+		MyAppendMenu(&menu, M_REMOVE_DUPLICATE_MAILS_Id, _T("Remove Duplicate Mails"));
 	}
 
 	const UINT M_COPY_MAILS_TO_FOLDERS_Id = 26;
 	if (pFrame && !MboxMail::IsFolderMailsSelected()) {
 		//menu.AppendMenu(MF_SEPARATOR);
-		//AppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
+		//MyAppendMenu(&menu, M_COPY_MAILS_TO_FOLDERS_Id, _T("Copy to Folders"));
 		;
 	}
 
 	const UINT M_FORWARD_MAIL_Id = 27;
-	AppendMenu(&menu, M_FORWARD_MAIL_Id, _T("Forward Mail"));
+	MyAppendMenu(&menu, M_FORWARD_MAIL_Id, _T("Forward Mail"));
 
 	const UINT M_FORWARD_RELATED_MAILS_Id = 28;
-	AppendMenu(&menu, M_FORWARD_RELATED_MAILS_Id, _T("Forward Related Mails"));
+	MyAppendMenu(&menu, M_FORWARD_RELATED_MAILS_Id, _T("Forward Related Mails"));
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -1189,60 +1189,60 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	// Create enums or replace switch statment with if else ..
 
 	const UINT S_TEXT_GROUP_Id = 4;
-	AppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
+	MyAppendMenu(&printGroupToSubMenu, S_TEXT_GROUP_Id, _T("Text.."));
 
 	const UINT S_HTML_GROUP_Id = 5;
-	AppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
+	MyAppendMenu(&printGroupToSubMenu, S_HTML_GROUP_Id, _T("HTML..."));
 
 	const UINT S_PRINTER_GROUP_Id = 6;
-	AppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
+	MyAppendMenu(&printGroupToSubMenu, S_PRINTER_GROUP_Id, _T("Printer..."));
 
 	const UINT S_PDF_DIRECT_Id = 28;
 	//AppendMenu(&printGroupToSubMenu, S_PDF_DIRECT_Id, _T("PDF..."));
 
 	const UINT S_PDF_DIRECT_DEFAULT_Id = 30;
-	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_DEFAULT_Id, _T("Default"));
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_DEFAULT_Id, _T("Default"));
 
 	const UINT S_PDF_DIRECT_FONT_16_Id = 31;
-	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_16_Id, _T("Set Font Size to 16px"));
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_16_Id, _T("Set Font Size to 16px"));
 
 	const UINT S_PDF_DIRECT_FONT_20_Id = 32;
-	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_20_Id, _T("Set Font Size to 20px"));
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_20_Id, _T("Set Font Size to 20px"));
 
 	const UINT S_PDF_DIRECT_FONT_24_Id = 33;
-	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_24_Id, _T("Set Font Size to 24px"));
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_24_Id, _T("Set Font Size to 24px"));
 
 	const UINT S_PDF_DIRECT_HELP_Id = 34;
-	AppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_HELP_Id, _T("Help"));
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_HELP_Id, _T("Help"));
 
 	const UINT S_CSV_GROUP_Id = 29;
-	AppendMenu(&printGroupToSubMenu, S_CSV_GROUP_Id, _T("CSV..."));
+	MyAppendMenu(&printGroupToSubMenu, S_CSV_GROUP_Id, _T("CSV..."));
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)printGroupToSubMenu.GetSafeHmenu(), _T("Print Selected Mails To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
-	printGroupToSubMenu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printPDFGroupToSubMenu.GetSafeHmenu(), _T("PDF.."));
+	printGroupToSubMenu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)printPDFGroupToSubMenu.GetSafeHmenu(), _T("PDF.."));
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_HTML_OPEN_RELATED_Id = 7;
-	AppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Selected Mails in Browser"));
+	MyAppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Selected Mails in Browser"));
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	const UINT S_REMOVE_SELECTED_Id = 8;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
-		AppendMenu(&menu, S_REMOVE_SELECTED_Id, _T("Remove Selected Mails"));
+		MyAppendMenu(&menu, S_REMOVE_SELECTED_Id, _T("Remove Selected Mails"));
 	}
 
 	const UINT S_COPY_SELECTED_Id = 22;
 	if (pFrame && (MboxMail::IsAllMailsSelected() || MboxMail::IsFindMailsSelected() || MboxMail::IsLabelMailsSelected())) {
 		if (pFrame->IsUserMailsListEnabled()) {
-			AppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
+			MyAppendMenu(&menu, S_COPY_SELECTED_Id, _T("Copy Selected into User Selected Mails"));
 		}
 	}
 
 	const UINT S_FORWARD_SELECTED_MAILS_Id = 23;
-	AppendMenu(&menu, S_FORWARD_SELECTED_MAILS_Id, _T("Forward Selected Mails"));
+	MyAppendMenu(&menu, S_FORWARD_SELECTED_MAILS_Id, _T("Forward Selected Mails"));
 	
 
 	// Used above for printing to PDF and CSV
@@ -2192,7 +2192,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	NMCUSTOMDRAW   &nmcd = lplvcd->nmcd;
 	MboxMail *m;
 
-	DWORD dwItemSpec = nmcd.dwItemSpec;
+	DWORD_PTR dwItemSpec = nmcd.dwItemSpec;
 	int iSubItem = lplvcd->iSubItem;
 	DWORD dwItemType = lplvcd->dwItemType;
 	DWORD dwDrawStage = nmcd.dwDrawStage;
@@ -2247,7 +2247,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		LVITEM rItem;
 		ZeroMemory(&rItem, sizeof(LVITEM));
 		rItem.mask = LVIF_IMAGE | LVIF_STATE;
-		rItem.iItem = dwItemSpec;
+		rItem.iItem = (int)dwItemSpec;
 		rItem.stateMask = LVIS_SELECTED;
 		m_list.GetItem(&rItem);
 
@@ -2714,7 +2714,7 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 		sz.writeString(m->m_messageId);
 		//sz.writeInt(m->m_crc32);
 
-		int count = m->m_ContentDetailsArray.size();
+		int count = (int)m->m_ContentDetailsArray.size();
 		sz.writeInt(count);
 
 		MailBodyContent *body;
@@ -3699,7 +3699,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		bool handleAsAttachment = false;
 
 		bool imgFileDone = false;
-		int count = fileImgAlreadyCreatedArray.GetCount();
+		int count = (int)fileImgAlreadyCreatedArray.GetCount();
 		if (bodyIndex < count)
 		{
 			imgFileDone = fileImgAlreadyCreatedArray.GetAt(bodyIndex);
@@ -3745,7 +3745,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				if (pc != -1) {
 					int charsetLength = CString(fval + pc + 8).FindOneOf(";\n\r");
 					if (charsetLength < 0)
-						charsetLength = strlen(fval + pc + 8);
+						charsetLength = istrlen(fval + pc + 8);
 					strncpy(charset.GetBufferSetLength(charsetLength), fval + pc + 8, charsetLength);
 					charset.Trim("\"\\");
 				}
@@ -4571,7 +4571,7 @@ int NListView::DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile)
 					DWORD retval = GetLastError();
 				}
 				char *CRLF = "\n\n";
-				if (!WriteFile(hFile, CRLF, strlen(CRLF), &nwritten, NULL)) {
+				if (!WriteFile(hFile, CRLF, (DWORD)strlen(CRLF), &nwritten, NULL)) {
 					DWORD retval = GetLastError();
 				}
 			}
@@ -8429,7 +8429,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
 	int i;
-	int cnt = selectedMailIndexList->GetCount();
+	int cnt = (int)selectedMailIndexList->GetCount();
 	BOOL progress_Bar = FALSE;
 	for (int j = 0; j < cnt; j++)
 	{
@@ -9322,7 +9322,7 @@ int NListView::PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selec
 
 	int i;
 	int retval = 1;
-	int cnt = selectedMailIndexList->GetCount();
+	int cnt = (int)selectedMailIndexList->GetCount();
 	for (int j = 0; j < cnt; j++)
 	{
 		i = (*selectedMailIndexList)[j];
@@ -9771,7 +9771,7 @@ int NListView::SaveAsMboxListFile_v2()
 		sz.writeInt64(m->m_startOff);
 		sz.writeInt(m->m_length);
 		sz.writeInt(m->m_index);
-		sz.writeInt(m->m_ContentDetailsArray.size());
+		sz.writeInt((int)m->m_ContentDetailsArray.size());
 	}
 	sz.close();
 
@@ -10287,25 +10287,25 @@ int NListView::DetermineImageFileName(MboxMail *m, CString &cidName, CString &im
 int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath, bool runInvestigation)
 {
 	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
+	static int img_patternLen = istrlen(img_pattern);
 
 	static char * src_pattern = "src=";
-	static int src_patternLen = strlen(src_pattern);
+	static int src_patternLen = istrlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
-	static int cid_patternLen = strlen(cid_pattern);
+	static int cid_patternLen = istrlen(cid_pattern);
 
 	static char * http_pattern = "http:";
-	static int http_patternLen = strlen(http_pattern);
+	static int http_patternLen = istrlen(http_pattern);
 
 	static char * https_pattern = "https:";
-	static int https_patternLen = strlen(https_pattern);
+	static int https_patternLen = istrlen(https_pattern);
 
 	static char * mhtml_pattern = "mhtml:";
-	static int mhtml_patternLen = strlen(mhtml_pattern);
+	static int mhtml_patternLen = istrlen(mhtml_pattern);
 
 	static char * data_pattern = "data:";
-	static int data_patternLen = strlen(data_pattern);
+	static int data_patternLen = istrlen(data_pattern);
 
 	MboxMail *m = 0;
 	if ((mailPosition < MboxMail::s_mails.GetCount()) && (mailPosition >= 0))
@@ -10530,7 +10530,7 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 			cidEnd = pos;
 		}
 
-		cid.Copy(cidBegin, cidEnd - cidBegin);
+		cid.Copy(cidBegin, IntPtr2Int(cidEnd - cidBegin));
 		if (foundHTTP) {
 			int retLen = TextUtilsEx::DecodeURL(cid.Data(), cid.Count());
 			cid.SetCount(retLen);
@@ -10663,25 +10663,25 @@ int NListView::CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &ima
 int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition, bool runInvestigation)
 {
 	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
+	static int img_patternLen = istrlen(img_pattern);
 
 	static char * src_pattern = "src=";
-	static int src_patternLen = strlen(src_pattern);
+	static int src_patternLen = istrlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
-	static int cid_patternLen = strlen(cid_pattern);
+	static int cid_patternLen = istrlen(cid_pattern);
 
 	static char * http_pattern = "http:";
-	static int http_patternLen = strlen(http_pattern);
+	static int http_patternLen = istrlen(http_pattern);
 
 	static char * https_pattern = "https:";
-	static int https_patternLen = strlen(https_pattern);
+	static int https_patternLen = istrlen(https_pattern);
 
 	static char * mhtml_pattern = "mhtml:";
-	static int mhtml_patternLen = strlen(mhtml_pattern);
+	static int mhtml_patternLen = istrlen(mhtml_pattern);
 
 	static char * data_pattern = "data:";
-	static int data_patternLen = strlen(data_pattern);
+	static int data_patternLen = istrlen(data_pattern);
 
 	char *input = inData;
 	int inputLength = indDataLen;
@@ -10796,7 +10796,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	{
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, img_pattern, img_patternLen);
 		if (pos == 0) {
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
 		pos += img_patternLen;
@@ -10809,7 +10809,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 		// find end of <img src ...>
 		srcImgEnd = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, ">", 1);
 		if (srcImgEnd == 0) { // TODO: corrupted file ?
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
 		srcImgEnd++; // jump over
@@ -10866,7 +10866,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 				MboxMail::m_EmbededImagesFoundMHtml++;
 				pos = TextUtilsEx::strchar(pos, srcImgEnd, '!');
 				if (pos) {
-					mhtmlIntroLen = pos - cidBegin + 1;
+					mhtmlIntroLen = IntPtr2Int(pos - cidBegin + 1);
 					cidBegin = pos + 1;
 					pos = 0;
 					foundHTTP = TRUE;
@@ -10935,7 +10935,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			}
 			if (pos == 0)
 			{
-				outbuf->Append(fromBegin, srcImgEnd - fromBegin);
+				outbuf->Append(fromBegin, IntPtr2Int(srcImgEnd - fromBegin));
 				pos = srcImgEnd;  // jump over this <img .. > since no cid:
 				fromBegin = pos;
 				continue;
@@ -10967,7 +10967,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 				int deb = 1;
 		}
 
-		cid.Copy(cidBegin, cidEnd - cidBegin);
+		cid.Copy(cidBegin, IntPtr2Int(cidEnd - cidBegin));
 		if (foundHTTP) {
 			int retLen = TextUtilsEx::DecodeURL(cid.Data(), cid.Count());
 			cid.SetCount(retLen);
@@ -11012,7 +11012,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 				MboxMail::m_EmbededImagesFoundLocalFile++;
 			}
 
-			int length = srcEnd - fromBegin;
+			int length = IntPtr2Int(srcEnd - fromBegin);
 			outbuf->Append(fromBegin, length);
 
 			outbuf->Append("\"file:\\\\\\");
@@ -11162,25 +11162,25 @@ int NListView::DetermineEmbeddedImages(char *inData, int indDataLen, int mailPos
 int NListView::DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m)
 {
 	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
+	static int img_patternLen = istrlen(img_pattern);
 
 	static char * src_pattern = "src=";
-	static int src_patternLen = strlen(src_pattern);
+	static int src_patternLen = istrlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
-	static int cid_patternLen = strlen(cid_pattern);
+	static int cid_patternLen = istrlen(cid_pattern);
 
 	static char * http_pattern = "http:";
-	static int http_patternLen = strlen(http_pattern);
+	static int http_patternLen = istrlen(http_pattern);
 
 	static char * https_pattern = "https:";
-	static int https_patternLen = strlen(https_pattern);
+	static int https_patternLen = istrlen(https_pattern);
 
 	static char * mhtml_pattern = "mhtml:";
-	static int mhtml_patternLen = strlen(mhtml_pattern);
+	static int mhtml_patternLen = istrlen(mhtml_pattern);
 
 	static char * data_pattern = "data:";
-	static int data_patternLen = strlen(data_pattern);
+	static int data_patternLen = istrlen(data_pattern);
 
 	char *input = inData;
 	int inputLength = indDataLen;
@@ -11287,7 +11287,7 @@ int NListView::DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m
 				MboxMail::m_EmbededImagesFoundMHtml++;
 				pos = TextUtilsEx::strchar(pos, srcImgEnd, '!');
 				if (pos) {
-					mhtmlIntroLen = pos - cidBegin + 1;
+					mhtmlIntroLen = IntPtr2Int(pos - cidBegin + 1);
 					cidBegin = pos + 1;
 					pos = 0;
 					foundHTTP = TRUE;
@@ -11382,7 +11382,7 @@ int NListView::DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m
 				int deb = 1;
 		}
 
-		cid.Copy(cidBegin, cidEnd - cidBegin);
+		cid.Copy(cidBegin, IntPtr2Int(cidEnd - cidBegin));
 		if (foundHTTP) {
 			int retLen = TextUtilsEx::DecodeURL(cid.Data(), cid.Count());
 			cid.SetCount(retLen);
@@ -11399,7 +11399,7 @@ int NListView::DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m
 		{
 			pBodyFound->m_isEmbeddedImage = true;
 
-			int length = srcEnd - fromBegin;
+			int length = IntPtr2Int(srcEnd - fromBegin);
 
 			fromBegin = cidEnd;
 			if (*cidEnd == '\"')
@@ -11461,7 +11461,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 
 	for (it = bodies.begin(); it != bodies.end(); it++, bodyIndex++)
 	{
-		int count = fileImgAlreadyCreatedArray.GetCount();
+		int count = (int)fileImgAlreadyCreatedArray.GetCount();
 		if (bodyIndex > (count - 1))
 			fileImgAlreadyCreatedArray.Add(false);
 
@@ -11806,7 +11806,7 @@ int NListView::DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies,
 
 	if (*foundBody)
 	{
-		int count = fileImgAlreadyCreatedArray.GetCount();
+		int count = (int)fileImgAlreadyCreatedArray.GetCount();
 		if (bodyIndex > (count - 1))
 			int deb = 1;
 		else
@@ -11903,25 +11903,25 @@ int NListView::GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody*
 int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray, bool runInvestigation)
 {
 	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
+	static int img_patternLen = istrlen(img_pattern);
 
 	static char * src_pattern = "src=";
-	static int src_patternLen = strlen(src_pattern);
+	static int src_patternLen = istrlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
-	static int cid_patternLen = strlen(cid_pattern);
+	static int cid_patternLen = istrlen(cid_pattern);
 
 	static char * http_pattern = "http:";
-	static int http_patternLen = strlen(http_pattern);
+	static int http_patternLen = istrlen(http_pattern);
 
 	static char * https_pattern = "https:";
-	static int https_patternLen = strlen(https_pattern);
+	static int https_patternLen = istrlen(https_pattern);
 
 	static char * mhtml_pattern = "mhtml:";
-	static int mhtml_patternLen = strlen(mhtml_pattern);
+	static int mhtml_patternLen = istrlen(mhtml_pattern);
 
 	static char * data_pattern = "data:";
-	static int data_patternLen = strlen(data_pattern);
+	static int data_patternLen = istrlen(data_pattern);
 
 	MboxMail *m = 0;
 	if ((mailPosition < MboxMail::s_mails.GetCount()) && (mailPosition >= 0))
@@ -12161,7 +12161,7 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 				cidEnd = pos;
 			}
 
-			cid.Copy(cidBegin, cidEnd - cidBegin);
+			cid.Copy(cidBegin, IntPtr2Int(cidEnd - cidBegin));
 			if (foundHTTP) {
 				int retLen = TextUtilsEx::DecodeURL(cid.Data(), cid.Count());
 				cid.SetCount(retLen);
@@ -12306,25 +12306,25 @@ int NListView::CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies,
 int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray)
 {
 	static char * img_pattern = "<img";
-	static int img_patternLen = strlen(img_pattern);
+	static int img_patternLen = istrlen(img_pattern);
 
 	static char * src_pattern = "src=";
-	static int src_patternLen = strlen(src_pattern);
+	static int src_patternLen = istrlen(src_pattern);
 
 	static char * cid_pattern = "cid:";
-	static int cid_patternLen = strlen(cid_pattern);
+	static int cid_patternLen = istrlen(cid_pattern);
 
 	static char * http_pattern = "http:";
-	static int http_patternLen = strlen(http_pattern);
+	static int http_patternLen = istrlen(http_pattern);
 
 	static char * https_pattern = "https:";
-	static int https_patternLen = strlen(https_pattern);
+	static int https_patternLen = istrlen(https_pattern);
 
 	static char * mhtml_pattern = "mhtml:";
-	static int mhtml_patternLen = strlen(mhtml_pattern);
+	static int mhtml_patternLen = istrlen(mhtml_pattern);
 
 	static char * data_pattern = "data:";
-	static int data_patternLen = strlen(data_pattern);
+	static int data_patternLen = istrlen(data_pattern);
 
 	char *input = inData;
 	int inputLength = indDataLen;
@@ -12361,7 +12361,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 	{
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, img_pattern, img_patternLen);
 		if (pos == 0) {
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
 		pos += img_patternLen;
@@ -12374,7 +12374,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 		// find end of <img src ...>
 		srcImgEnd = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, ">", 1);
 		if (srcImgEnd == 0) { // TODO: corrupted file ?
-			outbuf->Append(fromBegin, inputEnd - fromBegin);
+			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
 		srcImgEnd++; // jump over
@@ -12418,7 +12418,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 			if (pos) { 
 				pos = TextUtilsEx::strchar(pos, srcImgEnd, '!');
 				if (pos) {
-					mhtmlIntroLen = pos - cidBegin + 1;
+					mhtmlIntroLen = IntPtr2Int(pos - cidBegin + 1);
 					cidBegin = pos + 1;
 					pos = 0;
 					foundHTTP = TRUE;
@@ -12506,7 +12506,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 				int deb = 1;
 		}
 
-		cid.Copy(cidBegin, cidEnd - cidBegin);
+		cid.Copy(cidBegin, IntPtr2Int(cidEnd - cidBegin));
 		if (foundHTTP) {
 			int retLen = TextUtilsEx::DecodeURL(cid.Data(), cid.Count());
 			cid.SetCount(retLen);
@@ -12537,7 +12537,7 @@ int NListView::UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen,
 
 			imgFile = info->m_imgFileName;
 
-			int length = srcEnd - fromBegin;
+			int length = IntPtr2Int(srcEnd - fromBegin);
 			outbuf->Append(fromBegin, length);
 
 			outbuf->Append("\"file:\\\\\\");
@@ -13850,7 +13850,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	// Remove From line at the begining of mail body
 
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	char *p = outbuf->Data();
 	int bodyCnt = outbuf->Count();
@@ -13861,7 +13861,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		// Can From line be splitted ?
 		//p = MimeParser::GetMultiLine(p, e, line);
 		p = MimeParser::EatNewLine(p, e);
-		bodyCnt -= p - outbuf->Data();
+		bodyCnt -= IntPtr2Int(p - outbuf->Data());
 		if (bodyCnt < 0)
 			bodyCnt = 0;
 	}
@@ -13955,7 +13955,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	// Remove From line at the begining of mail body
 
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	char *p = outbuf->Data();
 	int bodyCnt = outbuf->Count();
@@ -13966,7 +13966,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 		// Can From line be splitted ?
 		//p = MimeParser::GetMultiLine(p, e, line);
 		p = MimeParser::EatNewLine(p, e);
-		bodyCnt -= p - outbuf->Data();
+		bodyCnt -= IntPtr2Int(p - outbuf->Data());
 		if (bodyCnt < 0)
 			bodyCnt = 0;
 	}
@@ -14148,9 +14148,9 @@ int NListView::FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWhol
 int NListView::RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition)
 {
 	static char *bgColorPat1 = "bgcolor=";
-	static int bgColorPat1_len = strlen(bgColorPat1);
+	static int bgColorPat1_len = istrlen(bgColorPat1);
 	static char *bgColorPat2 = "background-color:";
-	static int bgColorPat2_len = strlen(bgColorPat2);
+	static int bgColorPat2_len = istrlen(bgColorPat2);
 
 
 	char *input = inData;
@@ -14173,11 +14173,11 @@ int NListView::RemoveBackgroundColor(char *inData, int indDataLen, SimpleString 
 				char *c_pos_end = TextUtilsEx::findOneOf(c_pos_color, inputEnd, " \"");
 				if (c_pos_end)
 				{
-					int lenData = c_pos_color - c_pos_last;
+					int lenData = IntPtr2Int(c_pos_color - c_pos_last);
 					outbuf->Append(c_pos_last, lenData);
 
 					CString color;
-					int lenColor = c_pos_end - c_pos_color;
+					int lenColor = IntPtr2Int(c_pos_end - c_pos_color);
 					color.Append(c_pos_color, lenColor);
 					color.Trim();
 					color = "#FFFFFF";
@@ -14199,11 +14199,11 @@ int NListView::RemoveBackgroundColor(char *inData, int indDataLen, SimpleString 
 					char *c_pos_end = TextUtilsEx::findOneOf(c_pos_color, inputEnd, ";\"");
 					if (c_pos_end)
 					{
-						int lenData = c_pos_color - c_pos_last;
+						int lenData = IntPtr2Int(c_pos_color - c_pos_last);
 						outbuf->Append(c_pos_last, lenData);
 
 						CString color;
-						int lenColor = c_pos_end - c_pos_color;
+						int lenColor = IntPtr2Int(c_pos_end - c_pos_color);
 						color.Append(c_pos_color, lenColor);
 						color.Trim();
 						color = "#FFFFFF";
@@ -14222,7 +14222,7 @@ int NListView::RemoveBackgroundColor(char *inData, int indDataLen, SimpleString 
 	}
 	if (c_pos_last != inputEnd)
 	{
-		int lenData = inputEnd - c_pos_last;
+		int lenData = IntPtr2Int(inputEnd - c_pos_last);
 		outbuf->Append(c_pos_last, lenData);
 	}
 	return 1;
@@ -14990,7 +14990,7 @@ int NListView::CopyMailsToFolders()
 
 	dlg.m_InList.Copy(folderList);
 
-	int nResponse = dlg.DoModal();
+	int nResponse = (int)dlg.DoModal();
 	if (nResponse == IDOK)
 	{
 		int i;
@@ -15124,22 +15124,22 @@ BOOL NListView::loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CStri
 int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
 {
 	static char *bodyTag = "<body ";
-	static int bodyTagLen = strlen(bodyTag);
+	static int bodyTagLen = istrlen(bodyTag);
 
 	static char *styleTag = " style";
-	static int styleTagLen = strlen(styleTag);
+	static int styleTagLen = istrlen(styleTag);
 
 	static char *bgColorTag = "bgcolor";
-	static int bgColorTagLen = strlen(bgColorTag);
+	static int bgColorTagLen = istrlen(bgColorTag);
 
 	static char *backgroundColorTag = "background-color";
-	static int backgroundColorTagLen = strlen(backgroundColorTag);
+	static int backgroundColorTagLen = istrlen(backgroundColorTag);
 
 	static char *backgroundTag = "background";
-	static int backgroundTagLen = strlen(backgroundTag);
+	static int backgroundTagLen = istrlen(backgroundTag);
 
 	static char *bodyTagEnd = ">";
-	static int bodyTagEndLen = strlen(bodyTagEnd);
+	static int bodyTagEndLen = istrlen(bodyTagEnd);
 
 	outbuf->ClearAndResize(indDataLen + 128);
 
@@ -15180,7 +15180,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 			return 0;
 
 		p = pBodyBeg + bodyTagLen;
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		if (count <= 0)
 			return 0;
 
@@ -15190,12 +15190,12 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 
 		e = pBodyEnd+1;
 
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		if (count <= 0)
 			return 0;
 	}
 
-	outbuf->Append(inData, p - inData);
+	outbuf->Append(inData, IntPtr2Int(p - inData));
 
 	p_mark = p;
 
@@ -15210,7 +15210,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 		pBackgroundColorTagBeg = 0;
 		pBackgroundColorTagEnd = 0;
 
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		p = TextUtilsEx::findNoCaseP(p, count, "b", 1);
 		if (p == 0)
 			break;
@@ -15305,7 +15305,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 		CString pBackgroundColorTagVal;
 		if (pBackgroundColorTagBeg && pBackgroundColorTagEnd)
 		{
-			int tagLength = pBackgroundColorTagEnd - pBackgroundColorTagBeg;
+			int tagLength = IntPtr2Int(pBackgroundColorTagEnd - pBackgroundColorTagBeg);
 			char *b = pBackgroundColorTagVal.GetBufferSetLength(tagLength);
 			::memcpy(b, pBackgroundColorTagBeg, tagLength);
 			pBackgroundColorTagVal.ReleaseBuffer();
@@ -15314,7 +15314,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 				|| (pBackgroundColorTagVal.CompareNoCase("ffffff") == 0)
 				)
 			{
-				outbuf->Append(p_mark, pBackgroundColorTagBeg - p_mark);
+				outbuf->Append(p_mark, IntPtr2Int(pBackgroundColorTagBeg - p_mark));
 				outbuf->Append(colorStr, colorStr.GetLength());
 				p_mark = pBackgroundColorTagEnd;
 			}
@@ -15324,7 +15324,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 				)
 			{
 				outbuf->Append('#');
-				outbuf->Append(p_mark, pBackgroundColorTagBeg - p_mark);
+				outbuf->Append(p_mark, IntPtr2Int(pBackgroundColorTagBeg - p_mark));
 				outbuf->Append(colorStr, colorStr.GetLength());
 				p_mark = pBackgroundColorTagEnd;
 			}
@@ -15335,7 +15335,7 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 		}
 		p++;
 	}
-	outbuf->Append(p_mark, e_data - p_mark);
+	outbuf->Append(p_mark, IntPtr2Int(e_data - p_mark));
 
 	return 1;
 }
@@ -15345,10 +15345,10 @@ int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *ou
 int NListView::FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tagDataLen)
 {
 	static char *bodyTag = "<body ";
-	static int bodyTagLen = strlen(bodyTag);
+	static int bodyTagLen = istrlen(bodyTag);
 
 	static char *bodyTagEnd = ">";
-	static int bodyTagEndLen = strlen(bodyTagEnd);
+	static int bodyTagEndLen = istrlen(bodyTagEnd);
 
 	tagBeg = 0;
 	tagDataLen = 0;
@@ -15366,7 +15366,7 @@ int NListView::FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tag
 		return 0;
 
 	p = pBodyBeg + bodyTagLen;
-	count = e - p;
+	count = IntPtr2Int(e - p);
 	if (count <= 0)
 		return 0;
 
@@ -15374,7 +15374,7 @@ int NListView::FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tag
 	if (pBodyEnd == 0)
 		return 0;
 
-	tagDataLen = pBodyEnd + 1 - pBodyBeg;
+	tagDataLen = IntPtr2Int(pBodyEnd + 1 - pBodyBeg);
 	if (tagDataLen <= 0)
 		tagDataLen = 0;
 	else
@@ -15387,10 +15387,10 @@ int NListView::RemoveBodyBackgroundColorAndWidth(char *inData, int inDataLen, Si
 	BOOL removeBgColor, BOOL removeWidth)
 {
 	static char *widthTag = "width";
-	static int widthTagLen = strlen(widthTag);
+	static int widthTagLen = istrlen(widthTag);
 
 	static char *bgColorTag = "bgcolor";
-	static int bgColorTagLen = strlen(bgColorTag);
+	static int bgColorTagLen = istrlen(bgColorTag);
 
 #if 0
 	DWORD clr = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
@@ -15446,26 +15446,26 @@ int NListView::RemoveBodyBackgroundColorAndWidth(char *inData, int inDataLen, Si
 	{
 		if (bgTagBeg < widthTagBeg)
 		{
-			outbuf->Append(inData, bgTagBeg - inData);
-			outbuf->Append(bgTagEnd, widthTagBeg - bgTagEnd);
-			outbuf->Append(widthTagEnd, inDataEnd - widthTagEnd);
+			outbuf->Append(inData, IntPtr2Int(bgTagBeg - inData));
+			outbuf->Append(bgTagEnd, IntPtr2Int(widthTagBeg - bgTagEnd));
+			outbuf->Append(widthTagEnd, IntPtr2Int(inDataEnd - widthTagEnd));
 		}
 		else
 		{
-			outbuf->Append(inData, widthTagBeg - inData);
-			outbuf->Append(widthTagEnd, bgTagBeg - widthTagEnd);
-			outbuf->Append(bgTagEnd, inDataEnd - bgTagEnd);
+			outbuf->Append(inData, IntPtr2Int(widthTagBeg - inData));
+			outbuf->Append(widthTagEnd, IntPtr2Int(bgTagBeg - widthTagEnd));
+			outbuf->Append(bgTagEnd, IntPtr2Int(inDataEnd - bgTagEnd));
 		}
 	}
 	else if (bgTagDataLen)
 	{
-		outbuf->Append(inData, bgTagBeg - inData);
-		outbuf->Append(bgTagEnd, inDataEnd - bgTagEnd);
+		outbuf->Append(inData, IntPtr2Int(bgTagBeg - inData));
+		outbuf->Append(bgTagEnd, IntPtr2Int(inDataEnd - bgTagEnd));
 	}
 	else if (widthTagDataLen)
 	{
-		outbuf->Append(inData, widthTagBeg - inData);
-		outbuf->Append(widthTagEnd, inDataEnd - widthTagEnd);
+		outbuf->Append(inData, IntPtr2Int(widthTagBeg - inData));
+		outbuf->Append(widthTagEnd, IntPtr2Int(inDataEnd - widthTagEnd));
 	}
 	if (outbuf->Count())
 		int deb = 1;
@@ -15549,7 +15549,7 @@ int NListView::FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int ta
 	}
 
 	CString val;
-	int tagLength = pAtribValEnd - pAttribValBeg;
+	int tagLength = IntPtr2Int(pAtribValEnd - pAttribValBeg);
 	char *b = val.GetBufferSetLength(tagLength);
 	::memcpy(b, pAttribValBeg, tagLength);
 	val.ReleaseBuffer();
@@ -15558,7 +15558,7 @@ int NListView::FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int ta
 	bodyAttrib.m_value = val;
 
 	tagBeg = pTagBeg;
-	tagDataLen = pTagEnd - pTagBeg;
+	tagDataLen = IntPtr2Int(pTagEnd - pTagBeg);
 
 	if (tagBeg && (tagDataLen > 0))
 		bodyAttrib.m_attribString.Append(tagBeg, tagDataLen);
@@ -15569,22 +15569,22 @@ int NListView::FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int ta
 int NListView::FindBodyBackgroundColor(char *inData, int inDataLen, char *&tagBeg, int &tagDataLen, CString &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib)
 {
 	static char *bodyTag = "<body ";
-	static int bodyTagLen = strlen(bodyTag);
+	static int bodyTagLen = istrlen(bodyTag);
 
 	static char *styleTag = " style";
-	static int styleTagLen = strlen(styleTag);
+	static int styleTagLen = istrlen(styleTag);
 
 	static char *bgColorTag = "bgcolor";
-	static int bgColorTagLen = strlen(bgColorTag);
+	static int bgColorTagLen = istrlen(bgColorTag);
 
 	static char *backgroundColorTag = "background-color";
-	static int backgroundColorTagLen = strlen(backgroundColorTag);
+	static int backgroundColorTagLen = istrlen(backgroundColorTag);
 
 	static char *backgroundTag = "background";
-	static int backgroundTagLen = strlen(backgroundTag);
+	static int backgroundTagLen = istrlen(backgroundTag);
 
 	static char *bodyTagEnd = ">";
-	static int bodyTagEndLen = strlen(bodyTagEnd);
+	static int bodyTagEndLen = istrlen(bodyTagEnd);
 
 	char *p_mark;
 	char *p = inData;
@@ -15630,7 +15630,7 @@ int NListView::FindBodyBackgroundColor(char *inData, int inDataLen, char *&tagBe
 
 		bodyBackgroundColorAttrib.Reset();
 
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		p = TextUtilsEx::findNoCaseP(p, count, "b", 1);
 		if (p == 0)
 			break;
@@ -15727,13 +15727,13 @@ int NListView::FindBodyBackgroundColor(char *inData, int inDataLen, char *&tagBe
 		pBackgroundColorTagVal.Empty();
 		if (pBackgroundColorTagValBeg && pBackgroundColorTagValEnd)
 		{
-			int tagLength = pBackgroundColorTagValEnd - pBackgroundColorTagValBeg;
+			int tagLength = IntPtr2Int(pBackgroundColorTagValEnd - pBackgroundColorTagValBeg);
 			char *b = pBackgroundColorTagVal.GetBufferSetLength(tagLength);
 			::memcpy(b, pBackgroundColorTagValBeg, tagLength);
 			pBackgroundColorTagVal.ReleaseBuffer();
 
 			tagBeg = pBgTag;
-			tagDataLen = pBgTagEnd - pBgTag;
+			tagDataLen = IntPtr2Int(pBgTagEnd - pBgTag);
 
 			if (pBackgroundTag)
 			{
@@ -15771,22 +15771,22 @@ int NListView::FindBodyBackgroundColor(char *inData, int inDataLen, char *&tagBe
 int NListView::RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor)
 {
 	static char *bodyTag = "<body ";
-	static int bodyTagLen = strlen(bodyTag);
+	static int bodyTagLen = istrlen(bodyTag);
 
 	static char *styleTag = " style";
-	static int styleTagLen = strlen(styleTag);
+	static int styleTagLen = istrlen(styleTag);
 
 	static char *bgColorTag = "bgcolor";
-	static int bgColorTagLen = strlen(bgColorTag);
+	static int bgColorTagLen = istrlen(bgColorTag);
 
 	static char *backgroundColorTag = "background-color";
-	static int backgroundColorTagLen = strlen(backgroundColorTag);
+	static int backgroundColorTagLen = istrlen(backgroundColorTag);
 
 	static char *backgroundTag = "background";
-	static int backgroundTagLen = strlen(backgroundTag);
+	static int backgroundTagLen = istrlen(backgroundTag);
 
 	static char *bodyTagEnd = ">";
-	static int bodyTagEndLen = strlen(bodyTagEnd);
+	static int bodyTagEndLen = istrlen(bodyTagEnd);
 
 	outbuf->ClearAndResize(indDataLen + 128);
 
@@ -15965,28 +15965,28 @@ int NListView::RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleStr
 int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyWidth)
 {
 	static char *bodyTag = "<body ";
-	static int bodyTagLen = strlen(bodyTag);
+	static int bodyTagLen = istrlen(bodyTag);
 
 	static char *widthTag = " width";
-	static int widthTagLen = strlen(widthTag);
+	static int widthTagLen = istrlen(widthTag);
 
 	static char *widthTag2 = ";width";
-	static int widthTag2Len = strlen(widthTag2);
+	static int widthTag2Len = istrlen(widthTag2);
 
 	static char *styleTag = " style";
-	static int styleTagLen = strlen(styleTag);
+	static int styleTagLen = istrlen(styleTag);
 
 	static char *bgColorTag = "bgcolor";
-	static int bgColorTagLen = strlen(bgColorTag);
+	static int bgColorTagLen = istrlen(bgColorTag);
 
 	static char *backgroundColorTag = "background-color";
-	static int backgroundColorTagLen = strlen(backgroundColorTag);
+	static int backgroundColorTagLen = istrlen(backgroundColorTag);
 
 	static char *backgroundTag = "background";
-	static int backgroundTagLen = strlen(backgroundTag);
+	static int backgroundTagLen = istrlen(backgroundTag);
 
 	static char *bodyTagEnd = ">";
-	static int bodyTagEndLen = strlen(bodyTagEnd);
+	static int bodyTagEndLen = istrlen(bodyTagEnd);
 
 	outbuf->ClearAndResize(indDataLen + 128);
 
@@ -16016,7 +16016,7 @@ int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, 
 			return 1;
 
 		p = pBodyBeg + bodyTagLen;
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		if (count <= 0)
 			return 1;
 
@@ -16026,7 +16026,7 @@ int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, 
 
 		e = pBodyEnd + 1;
 
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		if (count <= 0)
 			return 1;
 	}
@@ -16044,7 +16044,7 @@ int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, 
 		pWidthTagBeg = 0;
 		pWidthTagEnd = 0;
 
-		count = e - p;
+		count = IntPtr2Int(e - p);
 		p = TextUtilsEx::findNoCaseP(p, count, "w", 1);
 		if (p == 0)
 			break;
@@ -16097,7 +16097,7 @@ int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, 
 		pWidthTagVal.Empty();
 		if (pWidthTagBeg && pWidthTagEnd)
 		{
-			int tagLength = pWidthTagEnd - pWidthTagBeg;
+			int tagLength = IntPtr2Int(pWidthTagEnd - pWidthTagBeg);
 			char *b = pWidthTagVal.GetBufferSetLength(tagLength);
 			::memcpy(b, pWidthTagBeg, tagLength);
 			pWidthTagVal.ReleaseBuffer();
@@ -16116,9 +16116,9 @@ int NListView::SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, 
 				}
 			}
 #endif
-			outbuf->Append(inData, pWidthTag - inData);
+			outbuf->Append(inData, IntPtr2Int(pWidthTag - inData));
 			p_mark = pWidthTagEnd;
-			outbuf->Append(p_mark, e_data - p_mark);
+			outbuf->Append(p_mark, IntPtr2Int(e_data - p_mark));
 			break;
 		}
 		p++;
@@ -16152,7 +16152,7 @@ int NListView::SaveAsEmlFile(CString &bdy)
 int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 {
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 	// Save mail
 	CFile fp;
 	CFileException ExError;
@@ -16167,7 +16167,7 @@ int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 		{
 			p = MimeParser::EatNewLine(p, e);
 		}
-		int eml_len = len - (p - pb);
+		int eml_len = len - IntPtr2Int(p - pb);
 		fp.Write(p, eml_len);
 		fp.Close();
 	}
@@ -16207,7 +16207,7 @@ BOOL NListView::MatchIfFieldFolded(int mailPosition, char *fldName)
 	char *p = data;
 	char *e = data + datalen;
 
-	int fldNameLength = strlen(fldName);
+	int fldNameLength = istrlen(fldName);
 
 	while (p < e)
 	{
@@ -16451,7 +16451,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 		int MaxMailSize = pFrame->m_mailDB.SMTPConfig.MaxMailSize * 1024;
 		int largeMailsCnt = 0;
 		int i;
-		int cnt = m_selectedMailsList.GetCount();
+		int cnt = (int)m_selectedMailsList.GetCount();
 		for (int j = 0; j < cnt; j++)
 		{
 			i = m_selectedMailsList[j];
@@ -16497,7 +16497,7 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 	if (PopulateSelectedMailsList() <= 0)
 		return 0;
 
-	int selectedCnt = m_selectedMailsList.GetCount();
+	int selectedCnt = (int)m_selectedMailsList.GetCount();
 	if (selectedCnt > 100)
 	{
 		CString txt = _T("Mail sending limit imposed by Mail Service is not well defined.\n"
@@ -16519,7 +16519,7 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 		int MaxMailSize = pFrame->m_mailDB.SMTPConfig.MaxMailSize * 1024;
 		int largeMailsCnt = 0;
 		int i;
-		int cnt = m_selectedMailsList.GetCount();
+		int cnt = (int)m_selectedMailsList.GetCount();
 		for (int j = 0; j < cnt; j++)
 		{
 			i = m_selectedMailsList[j];
@@ -16790,7 +16790,7 @@ int NListView::ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexLis
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
 	int i;
-	int cnt = selectedMailIndexList->GetCount();
+	int cnt = (int)selectedMailIndexList->GetCount();
 	BOOL progress_Bar = TRUE;
 	for (int j = 0; j < cnt; j++)
 	{
@@ -17210,7 +17210,7 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 		sz.writeInt64(m->m_startOff);
 		sz.writeInt(m->m_length);
 		sz.writeInt(m->m_index);
-		sz.writeInt(m->m_ContentDetailsArray.size());
+		sz.writeInt((int)m->m_ContentDetailsArray.size());
 	}
 	sz.close();
 
@@ -17220,7 +17220,7 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString &errorText)
 {
 	static const char* cCategory = "category ";
-	static const int cCategoryLength = strlen(cCategory);
+	static const int cCategoryLength = istrlen(cCategory);
 
 	MailArray *mailsArray = marray;
 
@@ -17269,7 +17269,7 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &l
 	CStringArray l;
 	TextUtilsEx::SplitString(labelName, delim, l);
 
-	int lcnt = l.GetSize();
+	int lcnt = (int)l.GetSize();
 	CString label = l.GetAt(lcnt-1);
 	if (l.GetSize() > 1)
 	{

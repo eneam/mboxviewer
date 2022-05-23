@@ -607,6 +607,11 @@ BOOL CAboutDlg::OnInitDialog()
         txt.Format("Version %d.%d.%d.%d", 
                  HIWORD(ms), LOWORD(ms),
                  HIWORD(ls), LOWORD(ls));
+
+		if (sizeof(INT_PTR) == 4)
+			txt.Append(" 32bit");
+		else if (sizeof(INT_PTR) == 8)
+			txt.Append(" 64bit");
 		GetDlgItem(IDC_STATIC1)->SetWindowText(txt);
 	}
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -919,15 +924,32 @@ BOOL CmboxviewApp::InitInstance()
 		CmboxviewApp::m_versionMS = ms;
 		CmboxviewApp::m_versionLS = ls;
 
+		CString savedPlatform;
+		CString newPlatform;
 		CString newVer;
 		// display file version from VS_FIXEDFILEINFO struct
 		newVer.Format("%d.%d.%d.%d",
 			HIWORD(ms), LOWORD(ms),
 			HIWORD(ls), LOWORD(ls));
 		m_savedVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version");
-		if (m_savedVer.Compare(newVer) != 0) {
+		if (m_savedVer.Compare(newVer) != 0)
+		{
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version", newVer);
 			pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
+		}
+		else
+		{
+			if (sizeof(INT_PTR) == 4)
+				newPlatform.Append("32bit");
+			else if (sizeof(INT_PTR) == 8)
+				newPlatform.Append("64bit");
+
+			savedPlatform = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "platform");
+			if (savedPlatform.Compare(newPlatform) != 0)
+			{
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "platform", newPlatform);
+				pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
+			}
 		}
 	}
 
@@ -1031,12 +1053,12 @@ bool IHashMapTest()
 	struct ItemHash {
 		unsigned long operator()(const Item *key) const
 		{
-			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
 		};
 		unsigned long operator()(Item *key) const
 		{
-			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
 		};
 	};
@@ -1123,13 +1145,13 @@ bool IHashMapTest()
 	Item *item;
 	if ((item = hashMap.find(it2)) != nullptr)
 	{
-		unsigned long hashsum = ItemHash{}(it2);
+		hashsum_t hashsum = ItemHash{}(it2);
 		hashMap.remove(item, hashsum);
 	}
 	assert(hashMap.count() == 2);
 
 	// Add back
-	unsigned long hashsum = ItemHash{}(it2);
+	hashsum_t hashsum = ItemHash{}(it2);
 	if (hashMap.find(it2, hashsum) == nullptr)
 		hashMap.insert(hashsum, it2);
 	assert(hashMap.count() == 3);

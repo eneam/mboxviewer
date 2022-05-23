@@ -87,53 +87,53 @@ void MailHeader::Clear()
 int MailHeader::Load(const char* pszData, int nDataSize)
 {
 	static const char *cType = "content-type:";
-	static const int cTypeLen = strlen(cType);
+	static const int cTypeLen = istrlen(cType);
 	static const char *cContentLocation = "content-location:";
-	static const int cContentLocationLen = strlen(cContentLocation);
+	static const int cContentLocationLen = istrlen(cContentLocation);
 	static const char *cContentId = "content-id:";
-	static const int cContentIdLen = strlen(cContentId);
+	static const int cContentIdLen = istrlen(cContentId);
 	static const char *cTransferEncoding = "content-transfer-encoding:";
-	static const int cTransferEncodingLen = strlen(cTransferEncoding);
+	static const int cTransferEncodingLen = istrlen(cTransferEncoding);
 	static const char *cDisposition = "content-disposition:";
-	static const int cDispositionLen = strlen(cDisposition);
+	static const int cDispositionLen = istrlen(cDisposition);
 	static const char *cAttachment = "attachment";
-	static const int cAttachmentLen = strlen(cAttachment);
+	static const int cAttachmentLen = istrlen(cAttachment);
 	static const char *cName = "name";
-	static const int cNameLen = strlen(cName);
+	static const int cNameLen = istrlen(cName);
 	static const char *cFileName = "filename";
-	static const int cFileNameLen = strlen(cFileName);
+	static const int cFileNameLen = istrlen(cFileName);
 	static const char *cFileNameStar = "filename*";
-	static const int cFileNameStarLen = strlen(cFileNameStar);
+	static const int cFileNameStarLen = istrlen(cFileNameStar);
 
 	static const char *cMsgId = "message-id:";
-	static const int cMsgIdLen = strlen(cMsgId);
+	static const int cMsgIdLen = istrlen(cMsgId);
 
 	static const char *cReferences = "references:";
-	static const int cReferencesLen = strlen(cReferences);
+	static const int cReferencesLen = istrlen(cReferences);
 
 	static const char *cReplyId = "reply-to:";
-	static const int cReplyIdLen = strlen(cReplyId);
+	static const int cReplyIdLen = istrlen(cReplyId);
 
 	static const char *cInReplyId = "in-reply-to:";
-	static const int cInReplyIdLen = strlen(cInReplyId);
+	static const int cInReplyIdLen = istrlen(cInReplyId);
 
 	static const char *cAlternative = "alternative";
-	static const int cAlternativeLen = strlen(cAlternative);
+	static const int cAlternativeLen = istrlen(cAlternative);
 
 	static const char *cMultipart = "multipart";
-	static const int cMultipartLen = strlen(cMultipart);
+	static const int cMultipartLen = istrlen(cMultipart);
 
 	static const char *cBoundary = "boundary";
-	static const int cBoundaryLen = strlen(cBoundary);
+	static const int cBoundaryLen = istrlen(cBoundary);
 
 	static const char *cText = "text";
-	static const int cTextLen = strlen(cText);
+	static const int cTextLen = istrlen(cText);
 
 	static const char *cCharset = "charset";
-	static const int cCharsetLen = strlen(cCharset);
+	static const int cCharsetLen = istrlen(cCharset);
 
 	static const char *cThreadId = "x-gm-thrid:";
-	static const int cThreadIdLen = strlen(cThreadId);
+	static const int cThreadIdLen = istrlen(cThreadId);
 
 	int contentIndex = 0;
 	int contentLength = 0;
@@ -155,7 +155,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		if (((*p == '\r') && (*(p + 1) == '\n')) || (*p == '\n')) {
 
 			p = EatNLine(p, e);
-			int headLength = p - pszData;
+			int headLength = IntPtr2Int(p - pszData);
 			return headLength;
 			break;  // end of header
 		}
@@ -366,7 +366,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 	}
 	if ((m_PageCode == 0) && m_IsTextHtml)
 		int deb = 1;
-	int headLength = p - pszData;
+	int headLength = IntPtr2Int(p - pszData);
 	return headLength;
 }
 
@@ -425,7 +425,7 @@ int MailBody::Load(char *& pszDataBase, const char* pszData, int nDataSize)
 	if (nSize > 0)
 	{
 		// save offset and length of body data
-		m_bodyDataOffset = pszData - pszDataBase;
+		m_bodyDataOffset = IntPtr2Int(pszData - pszDataBase);
 		m_bodyDataLength = nSize;
 		pszData += nSize;
 		nDataSize -= nSize;
@@ -585,7 +585,7 @@ void MailBody::DeleteAll()
 // search for string2 in string1 (strstr)
 const char* MailBody::FindString(const char* pszStr1, const char* pszStr2, const char* pszEnd)
 {
-	pszEnd -= ::strlen(pszStr2);
+	pszEnd -= istrlen(pszStr2);
 	const char *s1, *s2;
 	while (pszStr1 <= pszEnd)
 	{
@@ -626,7 +626,7 @@ char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
 	char *p_beg = p;
 	p = EatNewLine(p, e);
 
-	char *ss = line.GetBufferSetLength(p - p_beg);
+	char *ss = line.GetBufferSetLength(IntPtr2Int(p - p_beg));
 	::memcpy(ss, p_beg, p - p_beg);
 
 	line.TrimLeft();
@@ -645,7 +645,7 @@ char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
 		p = EatNewLine(p, e);
 
 		CString nextLine;
-		char *ss = nextLine.GetBufferSetLength(p - p_next_beg);
+		char *ss = nextLine.GetBufferSetLength(IntPtr2Int(p - p_next_beg));
 		::memcpy(ss, p_next_beg, p - p_next_beg);
 		nextLine.TrimLeft();
 		nextLine.TrimRight("\r\n");
@@ -749,7 +749,7 @@ int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *para
 	char *posBegin = p;
 	char *posEnd = pend;
 
-	value = fieldLine.Mid(posBegin - pbegin_sv, posEnd - posBegin);
+	value = fieldLine.Mid(IntPtr2Int(posBegin - pbegin_sv), IntPtr2Int(posEnd - posBegin));
 
 	value.Trim("\"\t ");
 
@@ -873,7 +873,7 @@ int MimeParser::GetFilenameParamPartValue(CString &fieldLine, int startPos, cons
 	else
 		pend = pend_sv;
 
-	nextPos = pend - pbegin_sv;
+	nextPos = IntPtr2Int(pend - pbegin_sv);
 
 	while (p < pend)
 	{
@@ -897,7 +897,7 @@ int MimeParser::GetFilenameParamPartValue(CString &fieldLine, int startPos, cons
 	char *posBegin = p;
 	char *posEnd = pend;
 
-	CString part = fieldLine.Mid(posBegin - pbegin_sv, posEnd - posBegin);
+	CString part = fieldLine.Mid(IntPtr2Int(posBegin - pbegin_sv), IntPtr2Int(posEnd - posBegin));
 	value.Append(part);
 
 	value.Trim("\"");

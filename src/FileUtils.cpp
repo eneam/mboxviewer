@@ -532,7 +532,7 @@ ripeti:
 
 void FileUtils::CPathStripPath(const char *path, CString &fileName)
 {
-	int pathlen = strlen(path);
+	int pathlen = istrlen(path);
 	char *pathbuff = new char[pathlen + 1];
 	strcpy(pathbuff, path);
 	PathStripPath(pathbuff);
@@ -543,7 +543,7 @@ void FileUtils::CPathStripPath(const char *path, CString &fileName)
 
 void FileUtils::CPathStripPathW(const wchar_t *path, CStringW &fileName)
 {
-	int pathlen = wcslen(path);
+	int pathlen = (int)wcslen(path);
 	wchar_t *pathbuff = new wchar_t[pathlen + 1];
 	wcscpy(pathbuff, path);
 	PathStripPathW(pathbuff);
@@ -554,7 +554,7 @@ void FileUtils::CPathStripPathW(const wchar_t *path, CStringW &fileName)
 
 BOOL FileUtils::CPathGetPath(const char *path, CString &filePath)
 {
-	int pathlen = strlen(path);
+	int pathlen = istrlen(path);
 	char *pathbuff = new char[2 * pathlen + 1];  // to avoid overrun ?? see microsoft docs
 	strcpy(pathbuff, path);
 	BOOL ret = PathRemoveFileSpec(pathbuff);
@@ -740,7 +740,7 @@ BOOL FileUtils::BrowseToFile(LPCTSTR filename)
 	// It appears m_ie.Create  in CBrowser::OnCreate calls CoInitilize
 	//Com_Initialize();
 
-	ITEMIDLIST *pidl = ILCreateFromPath(filename);
+	__unaligned  ITEMIDLIST *pidl = ILCreateFromPath(filename);
 	if (pidl) {
 		HRESULT  ret = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
 		if (ret != S_OK)
@@ -759,7 +759,7 @@ BOOL FileUtils::BrowseToFileW(LPCWSTR filename)
 	// It appears m_ie.Create  in CBrowser::OnCreate calls CoInitilize
 	//Com_Initialize();
 
-	ITEMIDLIST *pidl = ILCreateFromPathW(filename);
+	__unaligned ITEMIDLIST *pidl = ILCreateFromPathW(filename);
 	if (pidl) {
 		HRESULT  ret = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
 		if (ret != S_OK)
@@ -1665,7 +1665,7 @@ CString FileUtils::GetLastErrorAsString()
 		return emptyMsg; //No error message has been recorded
 
 	LPSTR messageBuffer = nullptr;
-	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 
 	CString message(messageBuffer, size);
@@ -1690,7 +1690,7 @@ CStringW FileUtils::GetLastErrorAsStringW()
 		return emptyMsg; //No error message has been recorded
 
 	LPWSTR messageBuffer = nullptr;
-	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	DWORD size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
 
 	CStringW message(messageBuffer, size);

@@ -129,7 +129,7 @@ void HtmlUtils::MergeWhiteLines(SimpleString *workbuf, int maxOutLines)
 			outLineCnt++;
 		}
 
-		len = p_end_data - p_beg_data;
+		len = IntPtr2Int(p_end_data - p_beg_data);
 		//g_tu.hexdump("Data:\n", p_beg_data, len);
 
 		if (len > 0) {
@@ -379,7 +379,7 @@ BOOL HtmlUtils::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *in
 	OLECHAR *oledata = (OLECHAR*)workbuf->Data();
 	BSTR  bstr = SysAllocString(oledata);
 	int bstrLen = SysStringByteLen(bstr);
-	int wlen = wcslen(bstr);
+	int wlen = (int)wcslen(bstr);
 #endif
 
 	hr = CoCreateInstance(CLSID_HTMLDocument, NULL, CLSCTX_INPROC_SERVER,

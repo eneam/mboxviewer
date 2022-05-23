@@ -166,24 +166,24 @@ bool MailBodyContent::IsAttachment()
 
 struct MsgIdHash {
 public:
-	size_t operator()(const MboxMail *key) const
+	hashsum_t operator()(const MboxMail *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)key->m_messageId, key->m_messageId.GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)key->m_messageId, key->m_messageId.GetLength());
 		return hashsum;
 	}
 };
 
 struct MboxHash {
 public:
-	size_t operator()(const MboxMail *key) const
+	hashsum_t operator()(const MboxMail *key) const
 	{
-		size_t hashsum;
+		hashsum_t hashsum;
 		if (key->m_messageId.GetLength() > 0)
 			hashsum = StrHash((const char*)(LPCSTR)key->m_messageId, key->m_messageId.GetLength());
 		else
 		{
-			size_t hashsum1 = StrHash((const char*)(LPCSTR)key->m_from, key->m_from.GetLength());
-			size_t hashsum2 = StrHash((const char*)(LPCSTR)key->m_to, key->m_to.GetLength());
+			hashsum_t hashsum1 = StrHash((const char*)(LPCSTR)key->m_from, key->m_from.GetLength());
+			hashsum_t hashsum2 = StrHash((const char*)(LPCSTR)key->m_to, key->m_to.GetLength());
 			hashsum = hashsum1 + hashsum2 + (0xffff & key->m_timeDate);
 		}
 		return hashsum;
@@ -218,9 +218,9 @@ public:
 
 struct MessageIdHash {
 public:
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 };
@@ -238,9 +238,9 @@ public:
 
 struct ThrdIdHash {
 public:
-	size_t operator()(const MboxMail *key) const
+	hashsum_t operator()(const MboxMail *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)key->m_threadId, key->m_threadId.GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)key->m_threadId, key->m_threadId.GetLength());
 		return hashsum;
 	}
 };
@@ -258,9 +258,9 @@ public:
 
 struct ThreadIdHash {
 public:
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 };
@@ -505,7 +505,7 @@ BOOL MboxMail::GetBody(CFile fp, CString &res)
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
-			int pos = ms - p + 1;
+			int pos = IntPtr2Int(ms - p + 1);
 			//res = res.Mid(pos); // - 4);
 			if (bAddCR) // for correct mime parsing
 			{
@@ -553,7 +553,7 @@ BOOL MboxMail::GetBody(CString &res)
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
-			int pos = ms - p + 1;
+			int pos = IntPtr2Int(ms - p + 1);
 			//res = res.Mid(pos); // - 4);
 			if (bAddCR) // for correct mime parsing
 			{
@@ -763,11 +763,11 @@ int MboxMail::SingleMailSizeof()
 	return  sz;
 };
 
-int MboxMail::AllMailsSizeof(int mailCount)
+size_t MboxMail::AllMailsSizeof(int mailCount)
 {
 	MboxMail *m;
 	int singleMailsMemorySz = 0;
-	int allMailsMemorySz = 0;
+	size_t allMailsMemorySz = 0;
 
 	int maxCnt = s_mails.GetCount();
 	if (mailCount > maxCnt)
@@ -799,7 +799,7 @@ int MboxMail::AllMailsSizeof(int mailCount)
 	if (m_largebuf)
 		bufSz += m_largebuf->Capacity();
 
-	int mailArraysSz = 0;
+	size_t mailArraysSz = 0;
 	mailArraysSz += sizeof(s_mails_ref);
 	mailArraysSz += sizeof(s_mails);
 	mailArraysSz += sizeof(s_mails_all);
@@ -883,27 +883,27 @@ int		g_szFromLen;
 bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent)
 {
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 	static const char *cFrom = "from:";
-	static const int cFromLen = strlen(cFrom);
+	static const int cFromLen = istrlen(cFrom);
 	static const char *cTo = "to:";
-	static const int cToLen = strlen(cTo);
+	static const int cToLen = istrlen(cTo);
 	static const char *cCC = "cc:";
-	static const int cCCLen = strlen(cCC);
+	static const int cCCLen = istrlen(cCC);
 	static const char *cBCC = "bcc:";
-	static const int cBCCLen = strlen(cBCC);
+	static const int cBCCLen = istrlen(cBCC);
 	static const char *cSubject = "subject:";
-	static const int cSubjectLen = strlen(cSubject);
+	static const int cSubjectLen = istrlen(cSubject);
 	static const char *cDate = "date:";
-	static const int cDateLen = strlen(cDate);
+	static const int cDateLen = istrlen(cDate);
 	static const char *cReceived = "received:";
-	static const int cReceivedLen = strlen(cReceived);
+	static const int cReceivedLen = istrlen(cReceived);
 	static const char *cContentType = "content-type:";  // some mails such as from Apple don't seem to have blank line to separate header from body
-	static const int cContentTypeLen = strlen(cContentType);
+	static const int cContentTypeLen = istrlen(cContentType);
 	static const char *cThreadId = "x-gm-thrid:";
-	static const int cThreadIdLen = strlen(cThreadId);
+	static const int cThreadIdLen = istrlen(cThreadId);
 	static const char *cMsgId = "message-id:";
-	static const int cMsgIdLen = strlen(cMsgId);
+	static const int cMsgIdLen = istrlen(cMsgId);
 
 	char *orig = p;
 	register char *e = p + bufSize - 1;
@@ -966,7 +966,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	BOOL exceptionDone = FALSE;
 
 	char *pat = "From:  XXXX";
-	int patLen = strlen(pat);
+	int patLen = istrlen(pat);
 
 	BOOL headerDone = FALSE;
 	while (p < (e - 4))   // TODO: why (e - 4) ?? chaneg 4 -> 5
@@ -1065,7 +1065,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 						{
 							MboxMail *m = new MboxMail();
 							m->m_startOff = startOffset + (_int64)(msgStart - orig);
-							m->m_length = p - msgStart;
+							m->m_length = IntPtr2Int(p - msgStart);
 							m->m_to = TextUtilsEx::DecodeString(to, m->m_to_charset, m->m_to_charsetId);
 							m->m_from = TextUtilsEx::DecodeString(from, m->m_from_charset, m->m_from_charsetId);
 							m->m_subj = TextUtilsEx::DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
@@ -1334,7 +1334,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					MboxMail *m = new MboxMail();
 					//		TRACE("start: %d length: %d\n", msgStart - orig, p - msgStart);
 					m->m_startOff = startOffset + (_int64)(msgStart - orig);
-					m->m_length = p - msgStart;
+					m->m_length = IntPtr2Int(p - msgStart);
 					m->m_to = TextUtilsEx::DecodeString(to, m->m_to_charset, m->m_to_charsetId);
 					m->m_from = TextUtilsEx::DecodeString(from, m->m_from_charset, m->m_from_charsetId);
 					m->m_subj = TextUtilsEx::DecodeString(subject, m->m_subj_charset, m->m_subj_charsetId);
@@ -1449,7 +1449,7 @@ void MboxMail::Parse(LPCSTR path)
 	CString lastDataPath = MboxMail::GetLastDataPath();
 
 	bool	bEml = false;
-	int l = strlen(path);
+	int l = istrlen(path);
 	if (l > 4 && _strnicmp(path + l - 4, ".eml", 4) == 0)
 		bEml = true;
 	HANDLE hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL,
@@ -1983,7 +1983,7 @@ void MboxMail::SortByFileOffset(MailArray *s_m, bool bDesc)
 void MboxMail::SortByConverstionGroups(MailArray *s_m, bool bDesc)
 {
 	// Assumption here is that s_mails_ref array is already ordered by groups
-	int arraySize = s_mails_ref.GetSize();
+	int arraySize = (int)s_mails_ref.GetSize();
 	MboxMail::s_mails.SetSizeKeepData(arraySize);
 	if (bDesc) // descending order
 	{
@@ -2169,7 +2169,7 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 				DWORD retval = GetLastError();
 			}
 
-			if (!FileUtils::Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+			if (!FileUtils::Write2File(hFile, CRLF, istrlen(CRLF), &nwritten)) {
 				DWORD retval = GetLastError();
 			}
 			deb = 1;
@@ -2193,7 +2193,7 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 				DWORD retval = GetLastError();
 			}
 
-			if (!FileUtils::Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+			if (!FileUtils::Write2File(hFile, CRLF, istrlen(CRLF), &nwritten)) {
 				DWORD retval = GetLastError();
 			}
 			deb = 1;
@@ -2208,7 +2208,7 @@ int MboxMail::DumpMailBox(MboxMail *mailBox, int which)
 		}
 	}
 	nwritten = 0;
-	if (!FileUtils::Write2File(hFile, CRLF, strlen(CRLF), &nwritten)) {
+	if (!FileUtils::Write2File(hFile, CRLF, istrlen(CRLF), &nwritten)) {
 		DWORD retval = GetLastError();
 	}
 
@@ -2320,7 +2320,7 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 	MboxMail *m = mail;
 
 	int mailLength = m->m_length;
-	int mLength = endPos - startPos; // mailLength and mLength should be equal
+	int mLength = (int)(endPos - startPos); // mailLength and mLength should be equal
 
 	char *mailBegin = startPos;
 	char *bodyDataOrigin = mailBegin;
@@ -2408,7 +2408,7 @@ void MboxMail::Destroy(MailArray *array)
 
 	MailArray &mails = *array;
 
-	int cnt = mails.GetSize();
+	int cnt = (int)mails.GetSize();
 	if (cnt < mails.MaxSize())
 	{
 		MboxMail **e = mails.GetData();
@@ -2489,7 +2489,7 @@ UINT MboxMail::createMessageIdTable(UINT count)
 		m_pMessageIdTable = new MessageIdTableType;
 		m_pMessageIdTable->reserve(count);
 	}
-	return m_pMessageIdTable->size();
+	return (UINT)m_pMessageIdTable->size();
 }
 
 void MboxMail::clearMessageIdTable()
@@ -2538,7 +2538,7 @@ UINT MboxMail::createThreadIdTable(UINT count)
 		m_pThreadIdTable = new ThreadIdTableType;
 		m_pThreadIdTable->reserve(count);
 	}
-	return m_pThreadIdTable->size();
+	return (UINT)m_pThreadIdTable->size();
 }
 
 void MboxMail::clearThreadIdTable()
@@ -2566,7 +2566,7 @@ bool MboxMail::HasGMThreadId()
 
 	int gmThreadIdCnt = 0;
 	int maxMails = 1000;
-	if (s_mails.GetSize() < maxMails)
+	if ((int)s_mails.GetSize() < maxMails)
 		maxMails = s_mails.GetSize();
 
 	for (int i = 0; i < maxMails; i++)
@@ -3252,7 +3252,7 @@ int MboxMail::DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit)
 		p = MimeParser::EatNewLine(p, e);
 		maxLinesTextLimit--;
 	}
-	int limitedLength = p - str->Data();
+	int limitedLength = (int)(p - str->Data());
 	if (limitedLength > str->Count())
 		limitedLength = str->Count();
 
@@ -3322,7 +3322,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 
 		int begCount = outbuf.Count();
 
-		int datelen = strlen(datebuff);
+		int datelen = istrlen(datebuff);
 		if (charCount(datebuff, '"') > 0)
 		{
 			tmpbuf.ClearAndResize(2 * datelen);
@@ -3450,7 +3450,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			seppos = _tcschr(atpos, sepchar);
 			if (seppos == 0)
 			{
-				tokenlen = last - token;
+				tokenlen = IntPtr2Int(last - token);
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
 				splitMailAddress(token, tokenlen, &name, &addr);
@@ -3459,7 +3459,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			else
 			{
 				*seppos = 0;
-				tokenlen = seppos - token;
+				tokenlen = IntPtr2Int(seppos - token);
 
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
@@ -3567,7 +3567,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			seppos = _tcschr(atpos, sepchar);
 			if (seppos == 0)
 			{
-				tokenlen = last - token;
+				tokenlen = IntPtr2Int(last - token);
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
 				splitMailAddress(token, tokenlen, &name, &addr);
@@ -3576,7 +3576,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			else
 			{
 				*seppos = 0;
-				tokenlen = seppos - token;
+				tokenlen = IntPtr2Int(seppos - token);
 
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
@@ -3646,7 +3646,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			seppos = _tcschr(atpos, sepchar);
 			if (seppos == 0)
 			{
-				tokenlen = last - token;
+				tokenlen = IntPtr2Int(last - token);
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
 				splitMailAddress(token, tokenlen, &name, &addr);
@@ -3655,7 +3655,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 			else
 			{
 				*seppos = 0;
-				tokenlen = seppos - token;
+				tokenlen = IntPtr2Int(seppos - token);
 
 				name.ClearAndResize(tokenlen);
 				addr.ClearAndResize(tokenlen);
@@ -3843,7 +3843,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		{
 			int i;
 			firstMail = (*selectedMailsIndexList)[0];
-			int cnt = selectedMailsIndexList->GetCount();
+			int cnt = (int)selectedMailsIndexList->GetCount();
 			for (int j = 0; j < cnt; j++)
 			{
 				//i = selectedMailIndexList->ElementAt(j);
@@ -4122,7 +4122,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (fldNumb == HdrFldList::HDR_FLD_SUBJECT)
 			{
 				fldName = "SUBJECT: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_subj.GetLength();
 				fldText = (char *)(LPCSTR)m->m_subj;
 				pageCode = m->m_subj_charsetId;
@@ -4130,7 +4130,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_FROM)
 			{
 				fldName = "FROM: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_from.GetLength();
 				fldText = (char *)(LPCSTR)m->m_from;
 				pageCode = m->m_from_charsetId;
@@ -4138,7 +4138,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_TO)
 			{
 				fldName = "TO: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_to.GetLength();
 				fldText = (char *)(LPCSTR)m->m_to;
 				pageCode = m->m_to_charsetId;
@@ -4146,7 +4146,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_CC)
 			{
 				fldName = "CC: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_cc.GetLength();
 				fldText = (char *)(LPCSTR)m->m_cc;
 				pageCode = m->m_cc_charsetId;
@@ -4156,7 +4156,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_BCC)
 			{
 				fldName = "BCC: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_bcc.GetLength();
 				fldText = (char *)(LPCSTR)m->m_bcc;
 				pageCode = m->m_bcc_charsetId;
@@ -4166,7 +4166,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_DATE)
 			{
 				fldName = "DATE: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = 0;
 				fldText = "";
 				continue;
@@ -4174,7 +4174,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_ATTACHMENTS)
 			{
 				fldName = "DATE: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = 0;
 				fldText = "";
 				continue;
@@ -4237,13 +4237,13 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			outbuf.Append("\r\n");
 
 		fldName = "DATE: ";
-		fldNameLength = strlen(fldName);
+		fldNameLength = istrlen(fldName);
 		fldTxtLength = m->m_subj.GetLength();
 		fldText = (char *)datebuff;
 
 		outbuf.Append(fldName, fldNameLength);
 
-		int datelen = strlen(datebuff);
+		int datelen = istrlen(datebuff);
 		outbuf.Append(datebuff, datelen);
 
 		fldCnt++;
@@ -4433,7 +4433,7 @@ UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset)
 	char *pat = "charset=";
 	charset.assign("");
 	UINT codePage = 0;
-	int patlen = strlen(pat);
+	int patlen = istrlen(pat);
 	int posEnd = -1;
 	int posBegin = buffer->FindNoCase(0, pat, patlen);
 	if (posBegin >= 0)
@@ -4933,7 +4933,7 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 
 BOOL MboxMail::PageBreakNeeded(MailIndexList *selectedMailIndexList, int index, bool singleMail)
 {
-	int cnt = selectedMailIndexList->GetCount();
+	int cnt = (int)selectedMailIndexList->GetCount();
 	if ((index + 1) >= cnt)
 		return FALSE;
 
@@ -5415,7 +5415,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 void MboxMail::encodeTextAsHtml(SimpleString &txt)
 {
 	SimpleString buffer(256);
-	for (size_t pos = 0; pos != txt.Count(); ++pos) {
+	for (int pos = 0; pos != txt.Count(); ++pos) {
 		char c = txt.GetAt(pos);
 		switch (c) {
 		case '&':  buffer.Append("&amp;");       break;
@@ -5432,7 +5432,7 @@ void MboxMail::encodeTextAsHtml(SimpleString &txt)
 void MboxMail::encodeTextAsHtmlLink(SimpleString &txt)
 {
 	SimpleString buffer(256);
-	for (size_t pos = 0; pos != txt.Count(); ++pos) {
+	for (int pos = 0; pos != txt.Count(); ++pos) {
 		char c = txt.GetAt(pos);
 		switch (c) {
 		case ' ':  buffer.Append("%20");         break;
@@ -5445,7 +5445,7 @@ void MboxMail::encodeTextAsHtmlLink(SimpleString &txt)
 void MboxMail::encodeTextAsHtmlLinkLabel(SimpleString &txt)
 {
 	SimpleString buffer(256);
-	for (size_t pos = 0; pos != txt.Count(); ++pos) {
+	for (int pos = 0; pos != txt.Count(); ++pos) {
 		char c = txt.GetAt(pos);
 		switch (c) {
 		case '&':  buffer.Append("&amp;");       break;
@@ -5558,7 +5558,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (fldNumb == HdrFldList::HDR_FLD_SUBJECT)
 			{
 				fldName = "SUBJECT: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_subj.GetLength();
 				fldText = (char *)(LPCSTR)m->m_subj;
 				pageCode = m->m_subj_charsetId;
@@ -5566,7 +5566,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_FROM)
 			{
 				fldName = "FROM: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_from.GetLength();
 				fldText = (char *)(LPCSTR)m->m_from;
 				pageCode = m->m_from_charsetId;
@@ -5574,7 +5574,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_TO)
 			{
 				fldName = "TO: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_to.GetLength();
 				fldText = (char *)(LPCSTR)m->m_to;
 				pageCode = m->m_to_charsetId;
@@ -5582,7 +5582,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_CC)
 			{
 				fldName = "CC: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_cc.GetLength();
 				fldText = (char *)(LPCSTR)m->m_cc;
 				pageCode = m->m_cc_charsetId;
@@ -5592,7 +5592,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_BCC)
 			{
 				fldName = "BCC: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = m->m_bcc.GetLength();
 				fldText = (char *)(LPCSTR)m->m_bcc;
 				pageCode = m->m_bcc_charsetId;
@@ -5602,7 +5602,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_DATE)
 			{
 				fldName = "DATE: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = 0;
 				fldText = "";
 				continue;
@@ -5610,7 +5610,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			else if (fldNumb == HdrFldList::HDR_FLD_ATTACHMENTS)
 			{
 				fldName = "DATE: ";
-				fldNameLength = strlen(fldName);
+				fldNameLength = istrlen(fldName);
 				fldTxtLength = 0;
 				fldText = "";
 				continue;
@@ -5680,7 +5680,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		}
 
 		fldName = "DATE: ";
-		fldNameLength = strlen(fldName);
+		fldNameLength = istrlen(fldName);
 		fldTxtLength = m->m_subj.GetLength();
 		fldText = (char *)datebuff;
 
@@ -5692,7 +5692,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		txt.Format("<span class=\'hdrfldtext\'>");
 		outbuf.Append(txt, txt.GetLength());
 
-		int datelen = strlen(datebuff);
+		int datelen = istrlen(datebuff);
 		outbuf.Append(datebuff, datelen);
 
 		outbuf.Append("</span>");
@@ -5955,7 +5955,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{
 			int i;
 			firstMail = (*selectedMailIndexList)[0];
-			int cnt = selectedMailIndexList->GetCount();
+			int cnt = (int)selectedMailIndexList->GetCount();
 
 			BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 			for (int j = 0; j < cnt; j++)
@@ -6323,7 +6323,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	else
 	{
 		int i;
-		int cnt = selectedMailIndexList->GetCount();
+		int cnt = (int)selectedMailIndexList->GetCount();
 
 		double delta = (double)(cnt);
 		if (delta <= 0) delta = 1;
@@ -6409,7 +6409,7 @@ int MboxMail::splitMailAddress(const char *buff, int bufflen, SimpleString *name
 	token_begin = token_end + 1;
 	token_end = token_end_sv;
 
-	int addrlen = token_end - token_begin + 1;
+	int addrlen = IntPtr2Int(token_end - token_begin + 1);
 	int n = 0;
 	char *to_addr = addr->Data();
 	for (char *pos = token_begin; pos <= token_end; pos++, n++) 
@@ -6435,7 +6435,7 @@ int MboxMail::splitMailAddress(const char *buff, int bufflen, SimpleString *name
 		)
 		token_begin++;
 
-	int namelen = token_end - token_begin + 1;
+	int namelen = IntPtr2Int(token_end - token_begin + 1);
 	name->Copy(token_begin, namelen);
 
 	return 1;
@@ -6447,7 +6447,7 @@ int MboxMail::nstrcpy(register char *dst, register char *src)
 	char c;
 	while ((c = *src++)) { *dst++ = c; }
 	*dst = 0;
-	int len = src - src_sv - 1;
+	int len = IntPtr2Int(src - src_sv - 1);
 	return len;
 }
 
@@ -7075,7 +7075,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 
 			outbuf.Append('"');
 
-			int datelen = strlen(datebuff);
+			int datelen = istrlen(datebuff);
 			if (charCount(datebuff, '"') > 0)
 			{
 				tmpbuf.ClearAndResize(2 * datelen);
@@ -7168,7 +7168,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 				seppos = _tcschr(atpos, sepchar);
 				if (seppos == 0)
 				{
-					tokenlen = last - token;
+					tokenlen = IntPtr2Int(last - token);
 					name.ClearAndResize(tokenlen);
 					addr.ClearAndResize(tokenlen);
 					splitMailAddress(token, tokenlen, &name, &addr);
@@ -7177,7 +7177,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)
 				else
 				{
 					*seppos = 0;
-					tokenlen = seppos - token;
+					tokenlen = IntPtr2Int(seppos - token);
 
 					name.ClearAndResize(tokenlen);
 					addr.ClearAndResize(tokenlen);
@@ -7537,7 +7537,7 @@ void MboxMail::ReleaseResources(BOOL updateRegistry)
 	}
 }
 
-void ShellExecuteError2Text(UINT errorCode, CString &errorText) {
+void ShellExecuteError2Text(UINT_PTR errorCode, CString &errorText) {
 	errorText.Format("Error code: %u", errorCode);
 	if ((errorCode == SE_ERR_FNF) || (errorCode == ERROR_FILE_NOT_FOUND))
 		errorText = "File not found";
@@ -7969,7 +7969,7 @@ void MyMailArray::SetCountKeepData(INT_PTR nNewSize, INT_PTR nGrowBy)
 
 void MyMailArray::CopyKeepData(const MyMailArray& src)
 {
-	if (src.GetSize() == 0) 
+	if (((MyMailArray&)src).GetSize() == 0)
 		m_nSize = 0;
 	else
 		Copy(src);
@@ -8512,8 +8512,8 @@ CString MboxMail::MatchFldLabel(char *p, char *e)
 	}
 
 
-	int left = e - p;
-	int fldCnt = FldLabelTable.GetCount();
+	int left = IntPtr2Int(e - p);
+	int fldCnt = (int)FldLabelTable.GetCount();
 	int labelLength;
 	char *labelData;
 	int i;
@@ -8846,7 +8846,7 @@ dllist<MboxMail, &MboxMail::m_hashMapLink>* MboxMail::getCollisionList(MboxMail 
 	return list;
 }
 
-dllist<MboxMail, &MboxMail::m_hashMapLink>* MboxMail::getCollisionList(unsigned long hashsum)
+dllist<MboxMail, &MboxMail::m_hashMapLink>* MboxMail::getCollisionList(hashsum_t hashsum)
 {
 	if (m_pMboxMailMap == 0)
 		createMboxMailTable(HASH_ARRAY_SIZE);
@@ -9450,7 +9450,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 
 	AttachmentMgr attachmentDB;
 	int i;
-	int cnt = selectedMailIndexList->GetCount();
+	int cnt = (int)selectedMailIndexList->GetCount();
 	BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
 	for (int j = 0; j < cnt; j++)
 	{
@@ -9847,7 +9847,7 @@ void MboxMail::LoadHintBitmap()
 BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 {
 	static char *tm = "Thu Oct 27 09:02:59 +0000 2011";
-	static int tmlen = strlen(tm);
+	static int tmlen = istrlen(tm);
 
 	BOOL r = p < end;
 
@@ -10203,7 +10203,7 @@ void MboxMail::rel_largebuf()
 void MboxMail::DumpMailParseException(_int64 msgOffset)
 {
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	CString progDir;
 	BOOL retDir = GetProgramDir(progDir);
@@ -10277,7 +10277,7 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	}
 
 	data = msgStart;
-	datalen = msgEnd - msgStart;
+	datalen = IntPtr2Int(msgEnd - msgStart);
 
 	if (datalen < 0)
 		datalen = 0;

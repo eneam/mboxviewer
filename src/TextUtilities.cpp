@@ -450,7 +450,7 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 {
 	char	buff[MAX_BUFF + 1];
 	char	tmp[128];
-	size_t	cnt, n, len;
+	int	cnt, n, len;
 	int	m_length = length;
 	int	jj, ii;
 	char	ch;
@@ -459,9 +459,9 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 
 	if (strlen(title) > 0)
 	{
-		(void *)sprintf(tmp, "%s (length=%d)", title, length);
-		(void *)sprintf(&buff[cnt], "%-22s = \n", tmp);
-		n = strlen(&buff[cnt]);
+		sprintf(tmp, "%s (length=%d)", title, length);
+		sprintf(&buff[cnt], "%-22s = \n", tmp);
+		n = istrlen(&buff[cnt]);
 		if (n > 0) cnt += n;
 	}
 
@@ -471,20 +471,20 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 		if (len > N_CHARS)
 			len = N_CHARS;
 
-		(void *)sprintf(&buff[cnt], "%04d  ", (jj % 10000));
-		n = strlen(&buff[cnt]);
+		sprintf(&buff[cnt], "%04d  ", (jj % 10000));
+		n = istrlen(&buff[cnt]);
 		if (n > 0) cnt += n;
 
 		for (ii = 0; ii < len; ++ii)			/* N_CHARS bytes hex */
 		{
 			if (ii == N_CHARS / 2)
 			{
-				(void *)sprintf(&buff[cnt], "| ");
-				n = strlen(&buff[cnt]);
+				sprintf(&buff[cnt], "| ");
+				n = istrlen(&buff[cnt]);
 				if (n > 0) cnt += n;
 			}
-			(void *)sprintf(&buff[cnt], "%02x ", (unsigned char)area[jj + ii]);
-			n = strlen(&buff[cnt]);
+			sprintf(&buff[cnt], "%02x ", (unsigned char)area[jj + ii]);
+			n = istrlen(&buff[cnt]);
 			if (n > 0) cnt += n;
 		}
 
@@ -492,17 +492,17 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 		{
 			if (ii == N_CHARS / 2)
 			{
-				(void *)sprintf(&buff[cnt], "  ");
-				n = strlen(&buff[cnt]);
+				sprintf(&buff[cnt], "  ");
+				n = istrlen(&buff[cnt]);
 				if (n > 0) cnt += n;
 			}
-			(void *)sprintf(&buff[cnt], "   ");
-			n = strlen(&buff[cnt]);
+			sprintf(&buff[cnt], "   ");
+			n = istrlen(&buff[cnt]);
 			if (n > 0) cnt += n;
 		}
 
-		(void *)sprintf(&buff[cnt], "      ");		/* 6 spaces */
-		n = strlen(&buff[cnt]);
+		sprintf(&buff[cnt], "      ");		/* 6 spaces */
+		n = istrlen(&buff[cnt]);
 		if (n > 0) cnt += n;
 
 		for (ii = 0; ii < len; ii++)			/* N_CHARS bytes ascii */
@@ -511,13 +511,13 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 			if (ch < ' ' || ch > '~')
 				ch = '_';
 
-			(void *)sprintf(&buff[cnt], "%c", ch);
-			n = strlen(&buff[cnt]);
+			sprintf(&buff[cnt], "%c", ch);
+			n = istrlen(&buff[cnt]);
 			if (n > 0) cnt += n;
 		}
 
-		(void *)sprintf(&buff[cnt], "\n");
-		n = strlen(&buff[cnt]);
+		sprintf(&buff[cnt], "\n");
+		n = istrlen(&buff[cnt]);
 		if (n > 0) cnt += n;
 
 		/* print accumulated characters */
@@ -526,8 +526,8 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 			buff[cnt] = '\0';
 			TRACE(_T("%s"), buff);
 			cnt = 0;
-			(void *)sprintf(&buff[cnt], "\n");
-			n = strlen(&buff[cnt]);
+			sprintf(&buff[cnt], "\n");
+			n = istrlen(&buff[cnt]);
 			if (n > 0) cnt += n;
 		}
 	}
@@ -550,15 +550,15 @@ bool TextUtilities::TestAll()
 {
 	char *s1 = "mbox viewer bigniewZxyz";
 	s1 = "mboxview";
-	int s1Len = strlen(s1);
+	int s1Len = istrlen(s1);
 
 	char *pat1 = "ewer";
 	char *pat2 = "zbigniewZ";
 	pat1 = s1;
 	pat2 = "z";
 
-	int pat1Len = strlen(pat1);
-	int pat2Len = strlen(pat2);
+	int pat1Len = istrlen(pat1);
+	int pat2Len = istrlen(pat2);
 
 	char *s11 = new char[s1Len];
 	memcpy(s11, s1, s1Len);

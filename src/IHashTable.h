@@ -30,6 +30,8 @@
 
 #include "dllist.h"
 
+typedef unsigned __int64 hashsum_t;
+
 template <typename K, typename T, typename HASH, typename EQUAL, dlink_node<T> T::*NODE>
 class IHashMap;
 
@@ -114,18 +116,18 @@ public:
 
 	dllist<T, NODE> *get_collision_list(K *key)
 	{
-		unsigned long hashsum = m_Hash(key);
+		hashsum_t hashsum = m_Hash(key);
 		dllist<T, NODE> *list = &m_ar[hashsum%m_hashMapSize];
 		return list;
 	}
 
-	dllist<T, NODE> *get_collision_list(unsigned long hashsum)
+	dllist<T, NODE> *get_collision_list(hashsum_t hashsum)
 	{
 		dllist<T, NODE> *list = &m_ar[hashsum%m_hashMapSize];
 		return list;
 	}
 
-	inline bool has_elem(K *elem, unsigned long hashsum)
+	inline bool has_elem(K *elem, hashsum_t hashsum)
 	{
 		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
 		T *iter;
@@ -141,11 +143,11 @@ public:
 
 	inline bool has_elem(K *key, T *elem)
 	{
-		unsigned long hashsum = m_Hash(key);
+		hashsum_t hashsum = m_Hash(key);
 		return has_elem(key, hashsum);
 	}
 
-	inline void insert(unsigned long hashsum, T *elem)
+	inline void insert(hashsum_t hashsum, T *elem)
 	{
 		//int mcount;
 		m_ar[hashsum%m_hashMapSize].insert_head(elem);
@@ -158,7 +160,7 @@ public:
 		insert(m_Hash(key), elem);
 	}
 
-	inline T *find(K *key, unsigned long hashsum) const
+	inline T *find(K *key, hashsum_t hashsum) const
 	{
 		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
 		T *iter;
@@ -175,7 +177,7 @@ public:
 		return(find(key, m_Hash(key)));
 	};
 
-	inline T *remove(unsigned long hashsum, T *elem)
+	inline T *remove(hashsum_t hashsum, T *elem)
 	{
 		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
 		assert(list.find(elem));
@@ -185,7 +187,7 @@ public:
 		return elem;
 	}
 
-	inline T *remove(K *key, unsigned long hashsum)
+	inline T *remove(K *key, hashsum_t hashsum)
 	{
 		dllist<T, NODE> &list = m_ar[hashsum%m_hashMapSize];
 		T *iter;
@@ -341,14 +343,14 @@ bool IHashMapTest()
 	};
 
 	struct ItemHash {
-		unsigned long operator()(const Item *key) const
+		hashsum_t operator()(const Item *key) const
 		{
-			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
 		};
-		unsigned long operator()(Item *key) const
+		hashsum_t operator()(Item *key) const
 		{
-			unsigned long  hashsum = std::hash<std::string>{}(key->name);
+			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
 		};
 	};
@@ -435,13 +437,13 @@ bool IHashMapTest()
 	Item *item;
 	if ((item = hashMap.find(it2)) != nullptr)
 	{
-		unsigned long hashsum = ItemHash{}(it2);
+		hashsum_t hashsum = ItemHash{}(it2);
 		hashMap.remove(item, hashsum);
 	}
 	assert(hashMap.count() == 2);
 
 	// Add back
-	unsigned long hashsum = ItemHash{}(it2);
+	hashsum_t hashsum = ItemHash{}(it2);
 	if (hashMap.find(it2, hashsum) == nullptr)
 		hashMap.insert(hashsum, it2);
 	assert(hashMap.count() == 3);

@@ -133,7 +133,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	strncpy(&str[0],str1,299);
 	str[299] = '\0';
 
-	int slen = strlen(s);
+	int slen = istrlen(s);
 	s_end = &str[slen];
 
 	// Convert to lowercase.

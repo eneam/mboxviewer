@@ -373,7 +373,7 @@ void CMimeHeader::SetBoundary(const char* pszBoundary/*=NULL*/)
 	char buf[80];
 	if (!pszBoundary)				// generate a new boundary delimeter
 	{
-		::srand(((unsigned)::time(NULL)) ^ (unsigned)this);
+		::srand(((unsigned int)::time(NULL)) ^ (unsigned int)((INT_PTR)this));
 		::sprintf(buf, "__=_Part_Boundary_%03d_%06d.%06d", ++s_nPartNumber, rand(), rand());
 		if (s_nPartNumber >= 9)
 			s_nPartNumber = 0;
@@ -930,7 +930,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 	nSize = (int)(pszEnd - pszData);
 	if (nSize > 0)
 	{
-		m_bodyDataOffset = pszData - pszDataBase;
+		m_bodyDataOffset = IntPtr2Int(pszData - pszDataBase);
 		m_bodyDataLength = nSize;
 
 

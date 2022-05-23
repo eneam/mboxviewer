@@ -276,7 +276,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedNext()
 
 	m_ImageFileNameArrayPos++;
 	if (m_ImageFileNameArrayPos >= m_ImageFileNameArray.GetCount()) {
-		m_ImageFileNameArrayPos = m_ImageFileNameArray.GetCount() - 1;
+		m_ImageFileNameArrayPos = IntPtr2Int(m_ImageFileNameArray.GetCount() - 1);
 		MessageBeep(MB_OK);
 	}
 
@@ -432,9 +432,9 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 	{
 		const wchar_t *filePath = m_ImageFileNameArray[m_ImageFileNameArrayPos]->operator LPCWSTR();
 		HINSTANCE result = ShellExecuteW(NULL, L"print", filePath, NULL, NULL, SW_SHOWNORMAL);
-		if ((UINT)result <= MaxShellExecuteErrorCode) {
+		if ((UINT_PTR)result <= MaxShellExecuteErrorCode) {
 			CString errorText;
-			ShellExecuteError2Text((UINT)result, errorText);
+			ShellExecuteError2Text((UINT_PTR)result, errorText);
 			HWND h = GetSafeHwnd();
 			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		}

@@ -96,8 +96,8 @@ public:
 
 extern CmboxviewApp theApp;
 
-void ShellExecuteError2Text(UINT errorCode, CString &errorText);
-void AppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark = FALSE);
+void ShellExecuteError2Text(UINT_PTR errorCode, CString &errorText);
+void MyAppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark = FALSE);
 int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
 void Com_Initialize();
 void SetMyExceptionHandler();

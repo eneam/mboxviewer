@@ -99,7 +99,7 @@ void CAttachments::OnPaint()
 	int ypos;
 	int rectLen = 0;
 
-	int iCnt = m_attachmentTbl.GetCount();
+	int iCnt = (int)m_attachmentTbl.GetCount();
 	for (int ii = 0; ii < iCnt; ii++)
 	{
 		GetItemRect(ii, &rect, LVIR_BOUNDS);
@@ -186,7 +186,7 @@ int CAttachments::FindAttachmentByName(CString &name)
 
 int CAttachments::FindAttachmentByNameW(CStringW &name)
 {
-	int iCnt = m_attachmentTbl.GetCount();
+	int iCnt = (int)m_attachmentTbl.GetCount();
 	for (int ii = 0; ii < iCnt; ii++)
 	{
 		CStringW attachmentFileName = m_attachmentTbl[ii]->m_nameW;
@@ -385,13 +385,13 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_SEPARATOR);
 
 	const UINT M_OPEN_Id = 1;
-	AppendMenu(&menu, M_OPEN_Id, Open);
+	MyAppendMenu(&menu, M_OPEN_Id, Open);
 
 	const UINT M_PRINT_Id = 2;
-	AppendMenu(&menu, M_PRINT_Id, Print);
+	MyAppendMenu(&menu, M_PRINT_Id, Print);
 
 	const UINT M_OpenFileLocation_Id = 3;
-	AppendMenu(&menu, M_OpenFileLocation_Id, OpenFileLocation);
+	MyAppendMenu(&menu, M_OpenFileLocation_Id, OpenFileLocation);
 
 	CBitmap  printMap;
 	int retval = AttachIcon(&menu, Print, IDB_PRINT, printMap);
@@ -411,9 +411,9 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOWNORMAL);
-		if ((UINT)result <= MaxShellExecuteErrorCode) {
+		if ((UINT_PTR)result <= MaxShellExecuteErrorCode) {
 			CString errorText;
-			ShellExecuteError2Text((UINT)result, errorText);
+			ShellExecuteError2Text((UINT_PTR)result, errorText);
 			errorText += _T(".\nOk to try to open this file ?");
 			HWND h = GetSafeHwnd();
 			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);

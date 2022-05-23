@@ -55,7 +55,7 @@ void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out
 			}
 			else if (*(p - 1) != '\r')
 			{
-				len = p - p_beg;
+				len = IntPtr2Int(p - p_beg);
 				if (len > 0)
 					out->Append(p_beg, len);
 
@@ -69,7 +69,7 @@ void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out
 		else
 			p++;
 	}
-	len = p - p_beg;
+	len = IntPtr2Int(p - p_beg);
 	if (len > 0)
 	{
 		out->Append(p_beg, len);
@@ -142,7 +142,7 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 		// TODO: implement as table and evalute performance
 		if ((c == '>') || (c == '<') || (c == '\"') || (c == '&') || (c == '\''))
 		{
-			len = p - p_beg;
+			len = IntPtr2Int(p - p_beg);
 			if (len > 0) out->Append(p_beg, len);
 			switch (c) {
 			case '&':  out->Append("&amp;"); break;
@@ -157,7 +157,7 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 		}
 		else if (*p == '\r')
 		{
-			len = p - p_beg;
+			len = IntPtr2Int(p - p_beg);
 			if (len > 0)  out->Append(p_beg, len);
 
 			p++;  // jump over '\r'
@@ -178,7 +178,7 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 		}
 		else if (*p == '\n')
 		{
-			len = p - p_beg;
+			len = IntPtr2Int(p - p_beg);
 			if (len > 0)  out->Append(p_beg, len);
 			out->Append("<br>\n", 5);
 			p++;
@@ -187,7 +187,7 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 		else
 			p++;
 	}
-	len = p - p_beg;
+	len = IntPtr2Int(p - p_beg);
 	if (len > 0)
 	{
 		out->Append(p_beg, len);
@@ -492,7 +492,7 @@ int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UI
 			return 0;
 		}
 
-		charset.Append(p_beg, p - p_beg);
+		charset.Append(p_beg, IntPtr2Int(p - p_beg));
 		charsetId = TextUtilsEx::Str2PageCode(charset);
 
 		// skip first '\''
@@ -1036,7 +1036,7 @@ int TextUtilsEx::DecodeURL(char *URL, int urlLen)
 
 			if (escapedCharLen > 0)
 			{
-				int blockLen = p - p_beg + 1;
+				int blockLen = IntPtr2Int(p - p_beg + 1);
 				memcpy(p_out, p_beg, blockLen);
 				p_out += blockLen;
 				outLen += blockLen;
@@ -1048,14 +1048,14 @@ int TextUtilsEx::DecodeURL(char *URL, int urlLen)
 
 	if (p != p_beg)
 	{
-		int blockLen = p - p_beg + 1;
+		int blockLen = IntPtr2Int(p - p_beg + 1);
 		memcpy(p_out, p_beg, blockLen);
 		outLen += blockLen;
 		p_out += blockLen;
 
 	}
 
-	retLen = p_out - URL;
+	retLen = IntPtr2Int(p_out - URL);
 	if (outLen != retLen)
 		int deb = 1;
 

@@ -93,27 +93,27 @@ public:
 		m_data[m_count] = 0;
 	}
 
-	void Copy(void const* Src, size_t  Size) {
-		if (Size > (size_t)m_capacity) Resize(Size);  // Not good; you are mixing signed and unsigned
+	void Copy(void const* Src, int  Size) {
+		if (Size > m_capacity) Resize(Size);  // Not good; you are mixing signed and unsigned
 		::memcpy(m_data, Src, Size);
 		SetCount(Size);
 	}
 
-	void append_internal(void const* Src, size_t  Size);
+	void append_internal(void const* Src, int  Size);
 
-	void Append(void const* Src, size_t  Size) {
+	void Append(void const* Src, int  Size) {
 		if (!CanAdd(Size))
 			Resize(m_count + Size);
 		append_internal(Src, Size);
 	}
 
 	void Copy(register char *src) {
-		int slen = strlen(src);
+		int slen = (int)strlen(src);
 		SimpleString::Copy(src, slen);
 	}
 
 	void Append(register char *src) {
-		int slen = strlen(src);
+		int slen = (int)strlen(src);
 		SimpleString::Append(src, slen);
 	}
 

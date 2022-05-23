@@ -994,13 +994,13 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	menu.AppendMenu(MF_SEPARATOR);
 
 	const UINT M_CLEAR_FIND_TEXT_Id = 1;
-	AppendMenu(&menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
+	MyAppendMenu(&menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
 
 	const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
-	AppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, pListView->m_bApplyColorStyle);
+	MyAppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, pListView->m_bApplyColorStyle);
 
 	const UINT M_SHOW_MAIL_HEADER_Id = 3;
-	AppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen > 0);
+	MyAppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen > 0);
 
 #if 0
 	// Added global option under View
@@ -1009,10 +1009,10 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	hdrLayout.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_DEFAULT_LAYOUT_Id = 4;
-	AppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, _T("Default"), m_hdrPaneLayout == 0);
+	MyAppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, _T("Default"), m_hdrPaneLayout == 0);
 
 	const UINT S_EXPANDED_LAYOUT_Id = 5;
-	AppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, _T("Expanded"), m_hdrPaneLayout == 1);
+	MyAppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, _T("Expanded"), m_hdrPaneLayout == 1);
 
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), _T("Header Fields Layout"));
 	menu.AppendMenu(MF_SEPARATOR);
@@ -1102,7 +1102,7 @@ char * NMsgView::EatFldLine(char *p, char *e)
 int NMsgView::FindMailHeader(char *data, int datalen)
 {
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	char *p = data;
 	char *e = data + datalen;
@@ -1134,7 +1134,7 @@ int NMsgView::FindMailHeader(char *data, int datalen)
 		}
 		int headerLength = -1;
 		if (p < e)
-			headerLength = p - data;
+			headerLength = IntPtr2Int(p - data);
 		return headerLength;
 	}
 	else
@@ -1218,7 +1218,7 @@ int NMsgView::FindMailHeader(char *data, int datalen)
 
 		int headerLength = -1;
 		if (pend < e)
-			headerLength = pend - data;
+			headerLength = IntPtr2Int(pend - data);
 		return headerLength;
 	}
 }
@@ -1271,7 +1271,7 @@ int NMsgView::ShowMailHeader(int mailPosition)
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
-			int pos = ms - p + 1;
+			int pos = IntPtr2Int(ms - p + 1);
 			if (bAddCR)
 			{
 				SimpleString *tmpbuf = MboxMail::get_tmpbuf();

@@ -412,19 +412,19 @@ int NTreeView::ImboxviewFile(CString & fName)
 int NTreeView::IsValidMailFile(char *data, int datalen)
 {
 	static const char *cFromMailBegin = "from ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 	static const char *cFrom = "from:";
-	static const int cFromLen = strlen(cFrom);
+	static const int cFromLen = istrlen(cFrom);
 	static const char *cTo = "to:";
-	static const int cToLen = strlen(cTo);
+	static const int cToLen = istrlen(cTo);
 	static const char *cSubject = "subject:";
-	static const int cSubjectLen = strlen(cSubject);
+	static const int cSubjectLen = istrlen(cSubject);
 	static const char *cDate = "date:";
-	static const int cDateLen = strlen(cDate);
+	static const int cDateLen = istrlen(cDate);
 	static const char *cMimeVersion = "mime-version:";
-	static const int cMimeVersionLen = strlen(cMimeVersion);
+	static const int cMimeVersionLen = istrlen(cMimeVersion);
 	static const char *cMessageID = "message-id:";
-	static const int cMessageIDLen = strlen(cMessageID);
+	static const int cMessageIDLen = istrlen(cMessageID);
 
 	BOOL bMboxFrom = FALSE;
 	BOOL bFrom = FALSE;
@@ -579,7 +579,7 @@ HTREEITEM NTreeView::HasFolder(CString &path)
 	HTREEITEM hNext = m_tree.GetRootItem();
 	while (hNext)
 	{
-		int retIndex = m_tree.GetItemData(hNext);
+		int retIndex = (DWORD)m_tree.GetItemData(hNext);
 		name = m_tree.GetItemText(hNext);
 		TRACE("HasFolder(CString &path): name=%s\n", name);
 
@@ -604,7 +604,7 @@ HTREEITEM NTreeView::HasFolder(HTREEITEM hItem, CString &path)
 	HTREEITEM hNext = m_tree.GetRootItem();
 	while (hNext)
 	{
-		int retIndex = m_tree.GetItemData(hNext);
+		int retIndex = (DWORD)m_tree.GetItemData(hNext);
 		m_folderArray.GetAt(retIndex, folderPath);
 		folderPath.TrimRight("\\");
 		if (normalizedPath.CompareNoCase(folderPath) == 0)
@@ -628,7 +628,7 @@ HTREEITEM NTreeView::IsFolderOpen(CString &path)
 	HTREEITEM hNext = m_tree.GetRootItem();;
 	while (hNext)
 	{
-		int retIndex = m_tree.GetItemData(hNext);
+		int retIndex = (DWORD)m_tree.GetItemData(hNext);
 		LabelInfo *linfo = m_labelInfoStore.Find(retIndex);
 		if ((linfo->m_nodeType != LabelInfo::MailFolder) && (linfo->m_nodeType != LabelInfo::MailSubFolder))
 			MboxMail::assert_unexpected();
@@ -672,7 +672,7 @@ HTREEITEM NTreeView::FindFolder(CString &folderPath)
 	HTREEITEM hFolder = 0;
 	CString path = folderPath;
 	//path.Append("\\");
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 	FolderInfo *finfo = m_globalFolderInfoDB.Find(&path);
 	if (finfo == 0)
 	{
@@ -703,7 +703,7 @@ HTREEITEM NTreeView::FindFolder(HTREEITEM hRoot, CString &path)
 	if (hRoot == 0)
 		return 0;
 
-	int index = m_tree.GetItemData(hRoot);
+	int index = (DWORD)m_tree.GetItemData(hRoot);
 	CString iteName = m_tree.GetItemText(hRoot);
 	LabelInfo *linfo = m_labelInfoStore.Find(index);
 	if (linfo == 0)
@@ -747,7 +747,7 @@ BOOL NTreeView::FindFolder(HTREEITEM hRoot, CString &path, HTREEITEM &hFolder)
 	if (hFolder)
 		return TRUE;
 
-	int index = m_tree.GetItemData(hRoot);
+	int index = (DWORD)m_tree.GetItemData(hRoot);
 	CString iteName = m_tree.GetItemText(hRoot);
 	LabelInfo *linfo = m_labelInfoStore.Find(index);
 	if (linfo == 0)
@@ -797,7 +797,7 @@ void NTreeView::PrintFolderNames()
 		HTREEITEM hNext = hRoot;
 		while (hNext)
 		{
-			int retIndex = m_tree.GetItemData(hNext);
+			int retIndex = (DWORD)m_tree.GetItemData(hNext);
 			m_folderArray.GetAt(retIndex, folderPath);
 			folderPath.TrimRight("\\");
 			name = m_tree.GetItemText(hNext);
@@ -923,7 +923,7 @@ BOOL NTreeView::CheckIfLegacyMBoxViewerCreatedFoldersAndFilesExists()
 			if (!FileUtils::PathDirExists(path))
 				continue;
 
-			int iCnt = cacheFolderList.GetCount();
+			int iCnt = (int)cacheFolderList.GetCount();
 			int i;
 			for (i = 0; i < iCnt; i++)
 			{
@@ -1140,6 +1140,15 @@ BOOL NTreeView::MoveMBoxViewerCreatedLegacyFolders()
 	if (answer == IDNO)
 	{
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version", savedVer);
+
+		CString newPlatform;
+		if (sizeof(INT_PTR) == 4)
+			newPlatform.Append("32bit");
+		else if (sizeof(INT_PTR) == 8)
+			newPlatform.Append("64bit");
+
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "platform", newPlatform);
+
 		AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		return FALSE;
 	}
@@ -1205,7 +1214,7 @@ BOOL NTreeView::MoveMBoxViewerCreatedLegacyFolders()
 				// TODO: check if read only
 				int deb = 1;
 			}
-			int iCnt = cacheFolderList.GetCount();
+			int iCnt = (int)cacheFolderList.GetCount();
 			int i;
 			for (i = 0; i < iCnt; i++)
 			{
@@ -1235,7 +1244,7 @@ BOOL NTreeView::MoveMBoxViewerCreatedLegacyFolders()
 				int deb = 1;
 			}
 
-			iCnt = cacheFoldersCompleteList.GetCount();
+			iCnt = (int)cacheFoldersCompleteList.GetCount();
 			for (i = 0; i < iCnt; i++)
 			{
 				CString &cacheFolderName = cacheFoldersCompleteList[i];
@@ -1329,7 +1338,7 @@ void NTreeView::DeleteMBoxAllWorkFolders(CString &mboxFileName)
 	cacheFolderList.Add("ArchiveCache");
 	cacheFolderList.Add("MergeCache");
 
-	int iCnt = cacheFolderList.GetCount();
+	int iCnt = (int)cacheFolderList.GetCount();
 	int i;
 	for (i = 0; i < iCnt; i++)
 	{
@@ -1915,7 +1924,7 @@ HTREEITEM NTreeView::FillCtrl_Internal(HTREEITEM hParent, BOOL unconditionalFold
 
 	hItem = LoadFileSizes(hParent, path, *fileSizes, unconditionalFolderInsert);
 
-	int count = fileSizes->GetCount();
+	int count = (int)fileSizes->GetCount();
 	int deb = 1;
 	
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1995,11 +2004,11 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if (hOldItem)
 	{
-		nIdOld = m_tree.GetItemData(hOldItem);
+		nIdOld = (DWORD)m_tree.GetItemData(hOldItem);
 		linfoOld = m_labelInfoStore.Find(nIdOld);
 	}
 
-	nIdNew = m_tree.GetItemData(hNewItem);
+	nIdNew = (DWORD)m_tree.GetItemData(hNewItem);
 	linfoNew = m_labelInfoStore.Find(nIdNew);
 
 	// This is called when tree is closed
@@ -2038,7 +2047,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		ArchiveFileInfoMap *fileSizesMap = SetupFileSizeMap(folderPath);
 		m_fileSizesMap = fileSizesMap;
 
-		int count = fileSizes->GetCount();
+		int count = (int)fileSizes->GetCount();
 
 		if (fileSizesMap == 0)
 			int deb = 1;
@@ -2267,7 +2276,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	ArchiveFileInfoMap *fileSizesMap = SetupFileSizeMap(path);
 	m_fileSizesMap = fileSizesMap;
 
-	int count = fileSizes->GetCount();
+	int count = (int)fileSizes->GetCount();
 
 	if (fileSizesMap == 0)
 		int deb = 1;
@@ -2401,7 +2410,7 @@ HTREEITEM NTreeView::FindLabelItemByLabelPath(HTREEITEM hRoot, CString &path)
 	if (hRoot == 0)
 		return 0;
 
-	int index = m_tree.GetItemData(hRoot);
+	int index = (DWORD)m_tree.GetItemData(hRoot);
 	CString iteName = m_tree.GetItemText(hRoot);
 	LabelInfo *linfo = m_labelInfoStore.Find(index);
 	if (linfo == 0)
@@ -2663,7 +2672,7 @@ void NTreeView::InsertMailFile(CString &mailFile)
 	else
 	{
 		path.Append("\\");
-		size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+		hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 		FolderInfo *finfo = m_globalFolderInfoDB.Find(&path);
 		if (finfo == 0)
 		{
@@ -2799,7 +2808,7 @@ void NTreeView::SaveData(HTREEITEM hItem)
 		CString ParentItemName = m_tree.GetItemText(hParent);
 		hFolder = hParent;
 
-		DWORD nId = m_tree.GetItemData(hParent);
+		DWORD nId = (DWORD)m_tree.GetItemData(hParent);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 	}
 
@@ -2909,7 +2918,7 @@ void NTreeView::OnFileRefresh()
 	return;
 }
 
-void AppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark)
+void MyAppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark)
 {
 	UINT nFlags = MF_STRING;
 	if (checkMark)
@@ -2994,7 +3003,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if (hItem)
 	{
-		DWORD nId = m_tree.GetItemData(hItem);
+		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 		if (linfo)
 		{
@@ -3006,15 +3015,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 
 				const UINT M_FolderPath_Id = 1;
-				AppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
+				MyAppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
 				const UINT M_FolderLocation_Id = 2;
-				AppendMenu(&menu, M_FolderLocation_Id, _T("Open Folder Location"));
+				MyAppendMenu(&menu, M_FolderLocation_Id, _T("Open Folder Location"));
 				const UINT M_RefreshSubFolder_Id = 3;
-				AppendMenu(&menu, M_RefreshSubFolder_Id, _T("Refresh Folder"));
+				MyAppendMenu(&menu, M_RefreshSubFolder_Id, _T("Refresh Folder"));
 				const UINT M_OpenHiddenFiles_Id = 4;
-				AppendMenu(&menu, M_OpenHiddenFiles_Id, _T("Restore Removed Files"));
+				MyAppendMenu(&menu, M_OpenHiddenFiles_Id, _T("Restore Removed Files"));
 				const UINT M_MergeMailArchiveFiles_Id = 5;
-				AppendMenu(&menu, M_MergeMailArchiveFiles_Id, _T("Merge Mail Archive Files"));
+				MyAppendMenu(&menu, M_MergeMailArchiveFiles_Id, _T("Merge Mail Archive Files"));
 
 				CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3030,7 +3039,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					CString pathLast = MboxMail::GetLastPath();
 					pathLast.TrimRight("\\");
-					int nId = m_tree.GetItemData(hItem);
+					int nId = (DWORD)m_tree.GetItemData(hItem);
 					//CString path = m_folderArray.m_array.GetAt(nId);
 					CString path = linfo->m_mailFolderPath;
 					if (path.Compare(pathLast))
@@ -3100,17 +3109,17 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		//
 		const UINT M_FolderPath_Id = 1;
-		AppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
+		MyAppendMenu(&menu, M_FolderPath_Id, _T("Show Folder Path"));
 		const UINT M_FolderLocation_Id = 2;
-		AppendMenu(&menu, M_FolderLocation_Id, _T("Open Folder Location"));
+		MyAppendMenu(&menu, M_FolderLocation_Id, _T("Open Folder Location"));
 		const UINT M_DeleteItem_Id = 3;
-		AppendMenu(&menu, M_DeleteItem_Id, _T("Remove Folder"));
+		MyAppendMenu(&menu, M_DeleteItem_Id, _T("Remove Folder"));
 		const UINT M_FolderRefresh_Id = 4;
-		AppendMenu(&menu, M_FolderRefresh_Id, _T("Refresh Folder"));
+		MyAppendMenu(&menu, M_FolderRefresh_Id, _T("Refresh Folder"));
 		const UINT M_OpenHiddenFiles_Id = 5;
-		AppendMenu(&menu, M_OpenHiddenFiles_Id, _T("Restore Removed Files"));
+		MyAppendMenu(&menu, M_OpenHiddenFiles_Id, _T("Restore Removed Files"));
 		const UINT M_MergeMailArchiveFiles_Id = 6;
-		AppendMenu(&menu, M_MergeMailArchiveFiles_Id, _T("Merge Mail Archive Files"));
+		MyAppendMenu(&menu, M_MergeMailArchiveFiles_Id, _T("Merge Mail Archive Files"));
 
 		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3137,7 +3146,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			CString pathLast = MboxMail::GetLastPath();
 			pathLast.TrimRight("\\");
-			int nId = m_tree.GetItemData(hItem);
+			int nId = (DWORD)m_tree.GetItemData(hItem);
 			CString path = m_folderArray.m_array.GetAt(nId);
 			if (path.Compare(pathLast))
 				int deb = 1;
@@ -3203,7 +3212,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	BOOL isLabel = FALSE;
 	if (hItem)
 	{
-		DWORD nId = m_tree.GetItemData(hItem);
+		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 		if (linfo && !linfo->m_listFilePath.IsEmpty())
 			isLabel = TRUE;
@@ -3219,18 +3228,18 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_CSV_Id = 1;
-	AppendMenu(&printToSubMenu, S_CSV_Id, _T("CSV..."));
+	MyAppendMenu(&printToSubMenu, S_CSV_Id, _T("CSV..."));
 
 	const UINT S_TEXT_Id = 2;
-	AppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
+	MyAppendMenu(&printToSubMenu, S_TEXT_Id, _T("Text.."));
 
 	const UINT S_HTML_Id = 3;
-	AppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML.."));
+	MyAppendMenu(&printToSubMenu, S_HTML_Id, _T("HTML.."));
 
 	const UINT S_PDF_Id = 33;
-	AppendMenu(&printToSubMenu, S_PDF_Id, _T("PDF.."));
+	MyAppendMenu(&printToSubMenu, S_PDF_Id, _T("PDF.."));
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)printToSubMenu.GetSafeHmenu(), _T("Print To"));
+	menu.AppendMenu(MF_POPUP | MF_STRING, (INT_PTR)printToSubMenu.GetSafeHmenu(), _T("Print To"));
 	menu.AppendMenu(MF_SEPARATOR);
 
 	//
@@ -3239,48 +3248,48 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	sortSubMenu.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_SORT_BY_DATE_Id = 4;
-	AppendMenu(&sortSubMenu, S_SORT_BY_DATE_Id, _T("Date"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_DATE_Id, _T("Date"));
 
 	const UINT S_SORT_BY_FROM_Id = 5;
-	AppendMenu(&sortSubMenu, S_SORT_BY_FROM_Id, _T("From"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_FROM_Id, _T("From"));
 
 	const UINT S_SORT_BY_TO_Id = 6;
-	AppendMenu(&sortSubMenu, S_SORT_BY_TO_Id, _T("To"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_TO_Id, _T("To"));
 
 	const UINT S_SORT_BY_SUBJ_Id = 7;
-	AppendMenu(&sortSubMenu, S_SORT_BY_SUBJ_Id, _T("Subject"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_SUBJ_Id, _T("Subject"));
 
 	const UINT S_SORT_BY_DATE_AND_SUBJ_Id = 22;
 	//AppendMenu(&sortSubMenu, S_SORT_BY_DATE_AND_SUBJ_Id, _T("Subject and Date"));
 
 	const UINT S_SORT_BY_SIZE_Id = 8;
-	AppendMenu(&sortSubMenu, S_SORT_BY_SIZE_Id, _T("Size"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_SIZE_Id, _T("Size"));
 
 	const UINT S_SORT_BY_CONVERSATION_Id = 9;
-	AppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
+	MyAppendMenu(&sortSubMenu, S_SORT_BY_CONVERSATION_Id, _T("Conversation"));
 
 	const UINT S_SORT_BY_POSITION_Id = 10;
 	// Sort by position in the archive file. Enabled for debugging only
 	//AppendMenu(&sortSubMenu, S_SORT_BY_POSITION_Id, _T("Mail ID"));
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
+	menu.AppendMenu(MF_POPUP | MF_STRING, (INT_PTR)sortSubMenu.GetSafeHmenu(), _T("Sort By"));
 	menu.AppendMenu(MF_SEPARATOR);
 	//
 
 	const UINT M_FileLocation_Id = 11;
-	AppendMenu(&menu, M_FileLocation_Id, _T("Open File Location"));
+	MyAppendMenu(&menu, M_FileLocation_Id, _T("Open File Location"));
 
 	const UINT M_DatabaseLocation_Id = 12;
-	AppendMenu(&menu, M_DatabaseLocation_Id, _T("Open Database Folder Location"));
+	MyAppendMenu(&menu, M_DatabaseLocation_Id, _T("Open Database Folder Location"));
 
 	const UINT M_Properties_Id = 13;
-	AppendMenu(&menu, M_Properties_Id, _T("Properties"));
+	MyAppendMenu(&menu, M_Properties_Id, _T("Properties"));
 
 	const UINT M_AttachmentCache_Id = 14;
-	AppendMenu(&menu, M_AttachmentCache_Id, _T("Export All Mail Attachments"));
+	MyAppendMenu(&menu, M_AttachmentCache_Id, _T("Export All Mail Attachments"));
 
 	const UINT M_EmlCache_Id = 15;
-	AppendMenu(&menu, M_EmlCache_Id, _T("Export All Mails as Eml"));
+	MyAppendMenu(&menu, M_EmlCache_Id, _T("Export All Mails as Eml"));
 
 	const UINT M_Reload_Id = 16;
 	const UINT M_Remove_Id = 17;
@@ -3297,15 +3306,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if (isLabel == FALSE)
 	{
-		AppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
+		MyAppendMenu(&menu, M_Reload_Id, _T("Refresh Index File"));
 
-		AppendMenu(&menu, M_Remove_Id, _T("Remove File"));
+		MyAppendMenu(&menu, M_Remove_Id, _T("Remove File"));
 
-		AppendMenu(&labelsSubMenu, S_Labels_Create_Id, _T("Create..."));
-		AppendMenu(&labelsSubMenu, S_Labels_Delete_Id, _T("Delete..."));
-		AppendMenu(&labelsSubMenu, S_Labels_Refresh_Id, _T("Refresh..."));
+		MyAppendMenu(&labelsSubMenu, S_Labels_Create_Id, _T("Create..."));
+		MyAppendMenu(&labelsSubMenu, S_Labels_Delete_Id, _T("Delete..."));
+		MyAppendMenu(&labelsSubMenu, S_Labels_Refresh_Id, _T("Refresh..."));
 
-		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)labelsSubMenu.GetSafeHmenu(), _T("Gmail Labels"));
+		menu.AppendMenu(MF_POPUP | MF_STRING, (INT_PTR)labelsSubMenu.GetSafeHmenu(), _T("Gmail Labels"));
 		menu.AppendMenu(MF_SEPARATOR);
 
 		//AppendMenu(&menu, M_CreateFolder_Id, _T("Create Folder"));  // TODO: later
@@ -3578,8 +3587,8 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 	NMTREEVIEW *pNm = (LPNMTREEVIEW)pNMHDR;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
-	BOOL res = *pResult;
-	*pResult = FALSE;
+	__int64 res = *pResult;
+	*pResult = 0;
 
 	if (pFrame == NULL)
 		return;
@@ -3589,13 +3598,13 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 	HTREEITEM hNewItem = pNm->itemNew.hItem;
 	HTREEITEM hOldItem = pNm->itemOld.hItem;
 
-	DWORD nIdNew = m_tree.GetItemData(hNewItem);
+	DWORD nIdNew = (DWORD)m_tree.GetItemData(hNewItem);
 	LabelInfo *linfoNew = m_labelInfoStore.Find(nIdNew);
 
 	if (hOldItem == 0)
 		return;
 
-	DWORD nIdOld = m_tree.GetItemData(hOldItem);
+	DWORD nIdOld = (DWORD)m_tree.GetItemData(hOldItem);
 	LabelInfo *linfoOld = m_labelInfoStore.Find(nIdOld);
 
 	if (linfoNew && linfoOld)
@@ -3615,7 +3624,7 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 			int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 			{
-				*pResult = TRUE;
+				*pResult = 1;
 			}
 			else if (answer == IDYES)
 				MboxMail::m_editMails.m_bIsDirty = FALSE;
@@ -3750,10 +3759,10 @@ HTREEITEM NTreeView::SelectFolderIfAlreadyOpen(CString *path, int folderType, BO
 	HTREEITEM hFolder;
 	if (hFolder = IsFolderOpen(*path))
 	{
-		DWORD nId = m_tree.GetItemData(hFolder);
+		DWORD nId = (DWORD)m_tree.GetItemData(hFolder);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 
-		size_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
+		hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
 		FolderInfo *rfinfo = m_globalFolderInfoDB.FindRoot(&folderPath);
 		if (rfinfo == 0)
 		{
@@ -4268,7 +4277,7 @@ void NTreeView::DetermineFolderPath(HTREEITEM hItem, CString &folderPath)
 {
 #if 1
 
-	DWORD nId = m_tree.GetItemData(hItem);
+	DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 	LabelInfo *linfo = m_labelInfoStore.Find(nId);
 	if ((linfo->m_nodeType != LabelInfo::MailFolder) && (linfo->m_nodeType != LabelInfo::MailSubFolder))
 		MboxMail::assert_unexpected();
@@ -4442,7 +4451,7 @@ BOOL CRegArray::GetAt(int index, CString &str)
 
 int CRegArray::GetCount()
 {
-	return m_array.GetCount();
+	return (int)m_array.GetCount();
 }
 
 BOOL CRegArray::CreateKey(CString &section, HKEY &hKey)
@@ -4584,7 +4593,7 @@ BOOL NTreeView::RefreshFolder(HTREEITEM hItem)
 	CString path = MboxMail::GetLastPath();
 
 #if 1
-	int index = m_tree.GetItemData(hItem);
+	DWORD index = (DWORD)m_tree.GetItemData(hItem);
 	CString iteName = m_tree.GetItemText(hItem);
 	LabelInfo *linfo = m_labelInfoStore.Find(index);
 
@@ -4671,7 +4680,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes, BOOL isS
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	CString pathLast = MboxMail::GetLastPath();
 
-	int nId = m_tree.GetItemData(hItem);
+	DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 
 	LabelInfo *linfo = m_labelInfoStore.Find(nId);
 	CString path;
@@ -4702,7 +4711,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes, BOOL isS
 		pCurVal = fileSizes.PGetNextAssoc(pCurVal);
 	}
 	//
-	int nResponse = dlg.DoModal();
+	int nResponse = (int)dlg.DoModal();
 	if (nResponse == IDOK)
 	{
 		int i;
@@ -4754,9 +4763,9 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	//MboxMail::ShowHint(HintConfig::MessageRemoveFileHint, h);
 
 	static const char *cLabels = "x-gmail-labels";
-	static const int cLabelsLen = strlen(cLabels);
+	static const int cLabelsLen = istrlen(cLabels);
 	static const char *cOsobiste = "osobiste";
-	static const int cOsobisteLen = strlen(cOsobiste);
+	static const int cOsobisteLen = istrlen(cOsobiste);
 
 	CString comma = ",";
 
@@ -5036,7 +5045,7 @@ int NTreeView::DisplayGmailLabels(HTREEITEM hItem)
 	LabelInfo *linfo;
 
 	// add labels to Tree
-	DWORD nId = m_tree.GetItemData(hItem);
+	DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 
 	linfo = m_labelInfoStore.Find(nId);
 	if (linfo == 0)
@@ -5153,7 +5162,7 @@ int MySimpleDeque::Count()
 	if (m_ar == 0)
 		return 0;
 
-	cnt = m_arList.size() * LSIZE + m_arcnt;
+	cnt = (int)m_arList.size() * LSIZE + m_arcnt;
 
 	//this->Assert();
 
@@ -5182,7 +5191,7 @@ MboxMail* MySimpleDeque::Get(int position)
 	LabelArray *ar;
 	int arpos;
 
-	int arListCount = m_arList.size() *LSIZE;
+	int arListCount = (int)m_arList.size() *LSIZE;
 	int arCount = arListCount + m_arcnt;
 	if (position >= arCount)
 		return 0; // error
@@ -5288,7 +5297,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 			CString emptyPath = folderPath + ".mboxlist";
 
-			unsigned long hashsum = TreeCtrlInfoDB::GetHashsum(&emptyPath);
+			hashsum_t hashsum = TreeCtrlInfoDB::GetHashsum(&emptyPath);
 			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&emptyPath, hashsum);
 
 			HTREEITEM found_hItem = 0;
@@ -5362,7 +5371,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 			FileUtils::GetFileBaseName(fileName, label);  
 
-			unsigned long hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
+			hashsum_t hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
 			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&filePath, hashsum);
 
 			HTREEITEM found_hItem = 0;
@@ -5397,7 +5406,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				if (tinfo == 0)
 					int deb = 1;
 
-				DWORD nId = m_tree.GetItemData(found_hItem);
+				DWORD nId = (DWORD)m_tree.GetItemData(found_hItem);
 				LabelInfo *linfo = m_labelInfoStore.Find(nId);
 
 				if (linfo->m_listFilePath.Compare(filePath) == 0) // should be true
@@ -5586,7 +5595,7 @@ int NTreeView::LoadLabels()
 	while (hChild)
 	{
 		name = m_tree.GetItemText(hChild);
-		nId = m_tree.GetItemData(hChild);
+		nId = (DWORD)m_tree.GetItemData(hChild);
 
 		LoadLabels(hChild);
 		hChild = m_tree.GetNextSiblingItem(hChild);
@@ -5616,7 +5625,7 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 	}
 
 	name = m_tree.GetItemText(hItem);
-	nId = m_tree.GetItemData(hItem);
+	nId = (DWORD)m_tree.GetItemData(hItem);
 
 	linfo = m_labelInfoStore.Find(nId);
 	if (linfo == 0)
@@ -5645,7 +5654,7 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 	while (hChild)
 	{
 		name = m_tree.GetItemText(hChild);
-		nId = m_tree.GetItemData(hChild);
+		nId = (DWORD)m_tree.GetItemData(hChild);
 
 		linfo = m_labelInfoStore.Find(nId);
 		if (linfo == 0)
@@ -5752,14 +5761,14 @@ HTREEITEM NTreeView::HasMailFile(CString &mailFilePath)
 	while (hChild)
 	{
 		name = m_tree.GetItemText(hChild);
-		nId = m_tree.GetItemData(hChild);
+		nId = (DWORD)m_tree.GetItemData(hChild);
 
 		linfo = m_labelInfoStore.Find(nId);
 		HTREEITEM hChild2 = m_tree.GetChildItem(hChild);
 		while (hChild2)
 		{
 			name2 = m_tree.GetItemText(hChild2);
-			nId2 = m_tree.GetItemData(hChild2);
+			nId2 = (DWORD)m_tree.GetItemData(hChild2);
 
 			linfo2 = m_labelInfoStore.Find(nId2);
 			if (linfo2 == 0) {
@@ -5793,7 +5802,7 @@ void NTreeView::MoveLabelItem(CString &mailFilePath, CString &label)
 		return;
 
 	CString name = m_tree.GetItemText(hitemToBeMoved);
-	DWORD nId = m_tree.GetItemData(hitemToBeMoved);
+	DWORD nId = (DWORD)m_tree.GetItemData(hitemToBeMoved);
 
 	HTREEITEM parent = m_tree.GetParentItem(hitemToBeMoved);
 	m_tree.DeleteItem(hitemToBeMoved);
@@ -5816,7 +5825,7 @@ void NTreeView::MoveLabelItem(HTREEITEM hRoot, CString &mailFilePath, CString &l
 		return;
 
 	CString name = m_tree.GetItemText(hitemToBeMoved);
-	DWORD nId = m_tree.GetItemData(hitemToBeMoved);
+	DWORD nId = (DWORD)m_tree.GetItemData(hitemToBeMoved);
 
 	HTREEITEM parent = m_tree.GetParentItem(hitemToBeMoved);
 	m_tree.DeleteItem(hitemToBeMoved);
@@ -5873,14 +5882,14 @@ void NTreeView::OnGmaillabelsCreate()
 	while (hChild)
 	{
 		name = m_tree.GetItemText(hChild);
-		nId = m_tree.GetItemData(hChild);
+		nId = (DWORD)m_tree.GetItemData(hChild);
 
 		linfo = m_labelInfoStore.Find(nId);
 		HTREEITEM hChild2 = m_tree.GetChildItem(hChild);
 		while (hChild2)
 		{
 			name2 = m_tree.GetItemText(hChild2);
-			nId2 = m_tree.GetItemData(hChild2);
+			nId2 = (DWORD)m_tree.GetItemData(hChild2);
 
 			linfo2 = m_labelInfoStore.Find(nId2);
 			if (linfo2 == 0) {
@@ -5989,7 +5998,7 @@ int NTreeView::DeleteLabelsForSingleMailFile(HTREEITEM hItem)
 	CString targetPrintSubFolder;
 
 	CString name = m_tree.GetItemText(hItem);
-	int nId = m_tree.GetItemData(hItem);
+	int nId = (DWORD)m_tree.GetItemData(hItem);
 
 	LabelInfo *linfo = m_labelInfoStore.Find(nId);
 
@@ -6107,7 +6116,7 @@ void NTreeView::OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult)
 	HTREEITEM hItem = pGetInfoTip->hItem;
 	if (hItem)
 	{
-		DWORD_PTR nId = m_tree.GetItemData(hItem);
+		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 		if (linfo && ((linfo->m_nodeType == LabelInfo::MailFolder) || (linfo->m_nodeType == LabelInfo::MailSubFolder)))
 		{
@@ -6429,7 +6438,7 @@ BOOL NTreeView::CanFolderBeOpen(CString &path)
 	if (IsFolderARootFolder(path))
 		return FALSE;
 
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 	FolderInfo* finfo = m_globalFolderInfoDB.Find(&path, hashsum);
 	if (finfo == 0)
 	{
@@ -6454,7 +6463,7 @@ BOOL NTreeView::CanFolderBeOpen(CString &path)
 
 BOOL NTreeView::CanRootFolderBeOpen(CString &path)
 {
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 	FolderInfo* finfo = m_globalFolderInfoDB.Find(&path, hashsum);
 	if (finfo == 0)
 	{
@@ -6825,7 +6834,7 @@ BOOL NTreeView::ValidateFolderTreeNode(MBoxFolderNode *node, GlobalFolderInfoDB 
 	FileUtils::CPathStripPath(folderPath, folderName);
 	folderPath.Append("\\");
 
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
 	FolderInfo* finfo = globalFolderInfoDB.Find(&folderPath, hashsum);
 
 	if (finfo && globalFolderInfoDB.m_deleteConflictingFolders)
@@ -6921,7 +6930,7 @@ void NTreeView::PrintTreeCtrl(HTREEITEM hItem, BOOL recursive, int depth)
 	if (hItem != 0)
 	{
 		itemName = m_tree.GetItemText(hItem);
-		nId = m_tree.GetItemData(hItem);
+		nId = (DWORD)m_tree.GetItemData(hItem);
 		TRACE("%s%s  %d\n", depthStr, itemName, nId);
 	}
 
@@ -6965,7 +6974,7 @@ BOOL NTreeView::AssertTreeCtrl_Internal(HTREEITEM hItem)
 	if (hItem != 0)
 	{
 		itemName = m_tree.GetItemText(hItem);
-		nId = m_tree.GetItemData(hItem);
+		nId = (DWORD)m_tree.GetItemData(hItem);
 		//TRACE("%s  %d\n", itemName, nId);
 
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
@@ -6977,7 +6986,7 @@ BOOL NTreeView::AssertTreeCtrl_Internal(HTREEITEM hItem)
 			folderPath.Append("\\");
 
 			TRACE("AssertTreeCtrl: FolderPath=%s\n", folderPath);
-			size_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
+			hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&folderPath);
 			FolderInfo *finfo = m_globalFolderInfoDB.Find(&folderPath);
 			if (finfo == 0)
 			{
@@ -7190,7 +7199,7 @@ BOOL NTreeView::DeleteOldDataFolder_Internal(CString &currentRootDataFolderPath,
 
 	if (hItem != 0)
 	{
-		nId = m_tree.GetItemData(hItem);
+		nId = (DWORD)m_tree.GetItemData(hItem);
 		LabelInfo *linfo = m_labelInfoStore.Find(nId);
 
 		if ((linfo->m_nodeType == LabelInfo::MailFolder) || (linfo->m_nodeType == LabelInfo::MailSubFolder))
@@ -7310,7 +7319,7 @@ void NTreeView::DoOpenFolder(CString& folderPath, BOOL selectFolder, BOOL uncond
 	BOOL retval = CanFolderBeOpen(path);
 	if (retval)
 	{
-		size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+		hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 		FolderInfo *rfinfo = m_globalFolderInfoDB.FindRoot(&path);
 		if (rfinfo == 0)
 		{
@@ -7339,14 +7348,14 @@ void NTreeView::DoOpenFolder(CString& folderPath, BOOL selectFolder, BOOL uncond
 			int index = m_folderArray.Find(path);
 			FolderInfo* finfo = m_globalFolderInfoDB.FindRoot(&path);
 
-			size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+			hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 			if (finfo)
 				FolderInfo* fi = m_globalFolderInfoDB.Remove(&path, hashsum);
 		}
 	}
 	else
 	{
-		size_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
+		hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&path);
 		FolderInfo* finfo = m_globalFolderInfoDB.Find(&path, hashsum);
 		CString existingFolderPath;
 		CString existingRootFolderPath;
@@ -7623,8 +7632,13 @@ restart:
 	return -1;
 }
 
-void NTreeView::SimplyTest()
+void NTreeView::TreeCtrlTest()
 {
+	HTREEITEM hParent;
+	HTREEITEM hItem;
+	HTREEITEM child;
+	HTREEITEM hRoot;
+
 	CString itemName;
 	DWORD nId = 0;
 
@@ -7632,7 +7646,7 @@ void NTreeView::SimplyTest()
 	// It looks TVI_ROOT is never returned from any call, just NULL.
 	// Not exactly sure why TVI_ROOT is needed as input paramter, NULL seems to work also.
 	// TODO: Find cases to invalidae above assupmtions.
-	HTREEITEM hItem = m_tree.GetRootItem();
+	hItem = m_tree.GetRootItem();
 
 	if (hItem == TVI_ROOT)
 		int deb = 1;
@@ -7640,20 +7654,33 @@ void NTreeView::SimplyTest()
 	if (hItem == NULL)
 		int deb = 1;
 
-	HTREEITEM child = m_tree.GetChildItem(hItem);
+	child = m_tree.GetChildItem(hItem);
+	child = m_tree.GetChildItem(TVI_ROOT);
 
 	CString name = "First";
 
-	HTREEITEM hParent = TVI_ROOT;
-	//hParent = 0;
-	//hItem = m_tree.InsertItem(name, hParent);
-	hItem = InsertTreeItem(name, hParent);
+	// TVI_ROOT can be used in:
+	// GetNextItem(TVI_ROOT, TVGN_CARET);
+	// HTREEITEM InsertItem(LPCTSTR lpszItem, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
+	// SortChildren(TVI_ROOT);
+	// DeleteItem(TVI_ROOT)
+	// GetChildItem(TVI_ROOT);
+
+
+	hParent = TVI_ROOT;
+
+	hItem = m_tree.GetNextItem(TVI_ROOT, TVGN_CHILD);
+	//hItem = InsertTreeItem(name, TVI_ROOT);
+	hItem = InsertTreeItem(name, 0);  // either 0 or TVI_ROOT work fine
+	hItem = m_tree.GetNextItem(TVI_ROOT, TVGN_CHILD);
+	hItem = m_tree.GetChildItem(TVI_ROOT);
+	hItem = m_tree.GetRootItem();
 	if (hItem)
 	{
 		name = m_tree.GetItemText(hItem);
 		hParent = m_tree.GetParentItem(hItem);
-		HTREEITEM child = m_tree.GetChildItem(hItem);
-		HTREEITEM hRoot = m_tree.GetRootItem();
+		child = m_tree.GetChildItem(hItem);
+		hRoot = m_tree.GetRootItem();
 		int deb = 1;
 	}
 
@@ -7684,7 +7711,7 @@ void NTreeView::SimplyTest()
 	if (hItem == NULL)
 		int deb = 1;
 
-	HTREEITEM hRoot = TVI_ROOT;
+	hRoot = TVI_ROOT;
 	hRoot = 0;
 	BOOL bSort = m_tree.SortChildren(hRoot);
 
@@ -7695,29 +7722,42 @@ void NTreeView::SimplyTest()
 	CString path = "";
 	HTREEITEM hFolder = NTreeView::HasFolder(path);
 
+	// Below returns the first child of the root. Strange that I can use 0 instead of TVI_ROOT and it works
+	hItem = m_tree.GetRootItem();
+	//
+	hItem = m_tree.GetNextItem(TVI_ROOT, TVGN_CHILD);
+	hItem = m_tree.GetNextItem(0, TVGN_CHILD);
+	//
+	hItem = m_tree.GetChildItem(TVI_ROOT);
+	hItem = m_tree.GetChildItem(0);
+
+	// BOOL ret = m_tree.ItemHasChildren(TVI_ROOT);  // crash
+	// BOOL ret = m_tree.ItemHasChildren(0);  // suspect retuern value
+
+
 	child = m_tree.GetChildItem(0);
 	while (child)
 	{
 		name = m_tree.GetItemText(child);
-		TRACE("SimplyTest: name=%s\n", name);
+		TRACE("TreeCtrlTest: name=%s\n", name);
 		UINT nCode = TVGN_NEXT;
 		child = m_tree.GetNextItem(child, nCode);
 	}
 
 	BOOL recursive = TRUE;
 	int depth = 0;
-	TRACE("SimplyTest: Tree Control:\n");
+	TRACE("TreeCtrlTest: Tree Control:\n");
 	hRoot = 0;
 	PrintTreeCtrl(hRoot, recursive, depth);
 
 	m_tree.DeleteItem(hItem1);
 
-	TRACE("SimplyTest: Tree Control:\n");
+	TRACE("TreeCtrlTest: Tree Control:\n");
 	PrintTreeCtrl(hRoot, recursive, depth);
 
 	m_tree.DeleteItem(0);
 
-	TRACE("SimplyTest: Tree Control:\n");
+	TRACE("TreeCtrlTest: Tree Control:\n");
 	PrintTreeCtrl(hRoot, recursive, depth);
 
 	hItem = m_tree.GetRootItem();
@@ -7728,7 +7768,7 @@ void NTreeView::SimplyTest()
 int NTreeView::RefreshSubFolder(HTREEITEM hFolder)
 {
 	CString name = m_tree.GetItemText(hFolder);
-	DWORD nId = m_tree.GetItemData(hFolder);
+	DWORD nId = (DWORD)m_tree.GetItemData(hFolder);
 
 	LabelInfo *linfo = m_labelInfoStore.Find(nId);
 	if (linfo == 0)
@@ -7849,7 +7889,7 @@ int NTreeView::PruneFolder(HTREEITEM hItem)
 		while (hChild)
 		{
 			name = m_tree.GetItemText(hChild);
-			nId = m_tree.GetItemData(hChild);
+			nId = (DWORD)m_tree.GetItemData(hChild);
 
 			linfo = m_labelInfoStore.Find(nId);
 			if (linfo == 0)
@@ -7918,7 +7958,7 @@ int NTreeView::RemoveMboxAssociatedWorkData(HTREEITEM hFolder, CString &filePath
 int NTreeView::RemoveMboxAssociatedWorkData(HTREEITEM hItem)
 {
 	CString name = m_tree.GetItemText(hItem);
-	DWORD nId = m_tree.GetItemData(hItem);
+	DWORD nId = (DWORD)m_tree.GetItemData(hItem);
 
 	LabelInfo *linfo = m_labelInfoStore.Find(nId);
 	if (linfo == 0)
@@ -8139,7 +8179,7 @@ int MBoxFolderTree::NodeCount(MBoxFolderNode *node)
 			count += NodeCount(&(*it));
 			int deb = 1;
 		}
-		count += node->m_nodeList.size();
+		count += (int)node->m_nodeList.size();
 	}
 	return count;
 }
@@ -8392,20 +8432,20 @@ void GlobalFolderInfoDB::Print()
 #endif
 }
 
-size_t GlobalFolderInfoDB::GetHashsum(CString * key)
+hashsum_t GlobalFolderInfoDB::GetHashsum(CString * key)
 {
-	size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+	hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 	return hashsum;
 };
 
 FolderInfo* GlobalFolderInfoDB::Remove(CString * key)
 {
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
 	FolderInfo* finfo = Remove(key, hashsum);
 	return finfo;
 }
 
-FolderInfo* GlobalFolderInfoDB::Remove(CString * key, size_t hashsum)
+FolderInfo* GlobalFolderInfoDB::Remove(CString * key, hashsum_t hashsum)
 {
 	FolderInfo *finfo = m_allFoldersTable->remove(key, hashsum);
 	FolderInfo* rfinfo = GlobalFolderInfoDB::FindRoot(key);
@@ -8425,9 +8465,9 @@ FolderInfo* GlobalFolderInfoDB::Find(CString * key)
 	return finfo;
 }
 
-FolderInfo* GlobalFolderInfoDB::Find(CString * key, size_t hashsum)
+FolderInfo* GlobalFolderInfoDB::Find(CString * key, hashsum_t hashsum)
 {
-	//size_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
+	//hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
 	FolderInfo *finfo = m_allFoldersTable->find(key, hashsum);
 	return finfo;
 }
@@ -8441,7 +8481,7 @@ void GlobalFolderInfoDB::Add(CString * key, FolderInfo *info)
 }
 
 
-void GlobalFolderInfoDB::Add(size_t hashsum, FolderInfo *info)
+void GlobalFolderInfoDB::Add(hashsum_t hashsum, FolderInfo *info)
 {
 	if (m_rootInfo == 0) 
 		MboxMail::assert_unexpected();
@@ -8584,20 +8624,20 @@ void TreeCtrlInfoDB::Print()
 #endif
 }
 
-size_t TreeCtrlInfoDB::GetHashsum(CString * key)
+hashsum_t TreeCtrlInfoDB::GetHashsum(CString * key)
 {
-	size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+	hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 	return hashsum;
 };
 
 TreeCtrlInfo* TreeCtrlInfoDB::Remove(CString * key)
 {
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(key);
 	TreeCtrlInfo* finfo = Remove(key, hashsum);
 	return finfo;
 }
 
-TreeCtrlInfo* TreeCtrlInfoDB::Remove(CString * key, size_t hashsum)
+TreeCtrlInfo* TreeCtrlInfoDB::Remove(CString * key, hashsum_t hashsum)
 {
 
 	TreeCtrlInfo* finfo = m_treeCtrlTable->remove(key);
@@ -8611,7 +8651,7 @@ TreeCtrlInfo* TreeCtrlInfoDB::Find(CString * key)
 	return finfo;
 }
 
-TreeCtrlInfo* TreeCtrlInfoDB::Find(CString * key, size_t hashsum)
+TreeCtrlInfo* TreeCtrlInfoDB::Find(CString * key, hashsum_t hashsum)
 {
 	TreeCtrlInfo *finfo = m_treeCtrlTable->find(key, hashsum);
 	return finfo;
@@ -8623,7 +8663,7 @@ void TreeCtrlInfoDB::Add(CString * key, TreeCtrlInfo *info)
 }
 
 
-void TreeCtrlInfoDB::Add(size_t hashsum, TreeCtrlInfo *info)
+void TreeCtrlInfoDB::Add(hashsum_t hashsum, TreeCtrlInfo *info)
 {
 	m_treeCtrlTable->insert(hashsum, info);
 }
@@ -9380,7 +9420,7 @@ int NTreeView::MergeRootSubFolder(CString &relativeFolderPath, CString &path, BO
 int NTreeView::MergeMails(CString &label)
 {
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	MboxMail *m;
 
@@ -9439,17 +9479,17 @@ int NTreeView::MergeMails(CString &label)
 			m_rootMboxCfile.Write(ch_end_line, ch_end_line_len);
 			m_rootMboxCfile.Write(label, label.GetLength());
 
-			m_rootMboxCfile.Write(p_beg, e - p_beg);
+			m_rootMboxCfile.Write(p_beg, UIntPtr2UInt(e - p_beg));
 		}
 		else
 		{
 			p_newline = MimeParser::EatNewLine(p, e);
-			len = p_newline - p_beg;
+			len = IntPtr2Int(p_newline - p_beg);
 
 			m_rootMboxCfile.Write(p_beg, len);
 			m_rootMboxCfile.Write(label, label.GetLength());
 
-			m_rootMboxCfile.Write(p_newline, e - p_newline);
+			m_rootMboxCfile.Write(p_newline, UIntPtr2UInt(e - p_newline));
 		}
 		//m_rootMboxCfile.Write("\r\n", 2);  // this should be fine too
 		m_rootMboxCfile.Write(ch_end_line, ch_end_line_len);
@@ -9462,11 +9502,11 @@ int NTreeView::MergeMails(CString &label)
 int NTreeView::MergeMailsRemoveDuplicates()   // remove duplicate mails by  merging labels
 {
 	static const char *cLabels = "x-gmail-labels";
-	static const int cLabelsLen = strlen(cLabels);
+	static const int cLabelsLen = istrlen(cLabels);
 
 
 	static const char *cFromMailBegin = "From ";
-	static const int cFromMailBeginLen = strlen(cFromMailBegin);
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 	MboxMail *m;
 	MboxMail *mc;
@@ -9611,10 +9651,10 @@ int NTreeView::MergeMailsRemoveDuplicates()   // remove duplicate mails by  merg
 				foundLabels = TRUE;
 				p_newline = MimeParser::GetMultiLine(p, e, line);
 
-				len = p_newline - p_beg;
+				len = IntPtr2Int(p_newline - p_beg);
 				m_rootMboxCfile.Write(p_beg, len);
 				m_rootMboxCfile.Write((char*)(LPCSTR)extraLabel, extraLabel.GetLength());
-				m_rootMboxCfile.Write(p_newline, e - p_newline);
+				m_rootMboxCfile.Write(p_newline, UIntPtr2UInt(e - p_newline));
 				break;
 			}
 			else

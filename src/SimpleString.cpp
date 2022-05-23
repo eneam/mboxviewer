@@ -64,7 +64,7 @@ int SimpleString::Find(int offset, char const c)
 {
 	const char *p = ::strchr((const char*)(m_data + offset), c);
 	if (p)
-		return(p - m_data);
+		return(IntPtr2Int(p - m_data));
 	else
 		return -1;
 }
@@ -89,7 +89,7 @@ int SimpleString::Resize(int size)
 	return m_capacity;
 }
 
-void SimpleString::append_internal(void const* Src, size_t  Size) {
+void SimpleString::append_internal(void const* Src, int  Size) {
 	int spaceNeeded = m_count + Size;
 	if (spaceNeeded > m_capacity)
 		Resize(spaceNeeded);

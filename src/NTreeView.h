@@ -194,9 +194,9 @@ public:
 
 struct GmailLabelHelper 
 {
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -217,9 +217,9 @@ struct GmailLabelHelper
 
 struct GmailMappedLabelHelper
 {
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -300,9 +300,9 @@ public:
 
 struct LabelInfoHelper
 {
-	size_t operator()(const int *key) const
+	hashsum_t operator()(const int *key) const
 	{
-		size_t hashsum = *key;
+		hashsum_t hashsum = *key;
 		return hashsum;
 	}
 	bool operator()(int *key1, LabelInfo *key2) const
@@ -369,9 +369,9 @@ public:
 
 struct FolderInfoHelper
 {
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -400,19 +400,19 @@ public:
 
 	void Print();
 	FolderInfo* Find(CString * key);
-	FolderInfo* Find(CString * key, size_t hashsum);
+	FolderInfo* Find(CString * key, hashsum_t hashsum);
 	void Add(CString * key, FolderInfo *info); 
-	void Add(size_t hashsum, FolderInfo *info);
+	void Add(hashsum_t hashsum, FolderInfo *info);
 	FolderInfo* Remove(CString * key);
-	FolderInfo* Remove(CString * key, size_t hashsum);
-	//void Add(FolderInfo *info, unsigned long hashsum);
+	FolderInfo* Remove(CString * key, hashsum_t hashsum);
+	//void Add(FolderInfo *info, hashsum_t hashsum);
 
 	FolderInfo* FindRoot(CString * key);
 	void AddRoot(CString * key, FolderInfo *info);
 
 	void RemoveRootFolder(CString &folderPath);
 
-	static size_t GetHashsum(CString * key);
+	static hashsum_t GetHashsum(CString * key);
 
 	void Clear();
 	void DeleteAll();  // delete content and allocated hash table
@@ -462,9 +462,9 @@ public:
 
 struct TreeCtrlInfoHelper
 {
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -493,14 +493,14 @@ public:
 
 	void Print();
 	TreeCtrlInfo* Find(CString * key);
-	TreeCtrlInfo* Find(CString * key, size_t hashsum);
+	TreeCtrlInfo* Find(CString * key, hashsum_t hashsum);
 	void Add(CString * key, TreeCtrlInfo *info);
-	void Add(size_t hashsum, TreeCtrlInfo *info);
+	void Add(hashsum_t hashsum, TreeCtrlInfo *info);
 	TreeCtrlInfo* Remove(CString * key);
-	TreeCtrlInfo* Remove(CString * key, size_t hashsum);
+	TreeCtrlInfo* Remove(CString * key, hashsum_t hashsum);
 
 
-	static size_t GetHashsum(CString * key);
+	static hashsum_t GetHashsum(CString * key);
 
 	void Clear();
 	void DeleteAll();  // delete content and allocated hash table
@@ -753,7 +753,7 @@ public:
 
 	HTREEITEM SelectFolderItem(CString &mboxFilePath);
 
-	void SimplyTest();
+	void TreeCtrlTest();
 
 	// Generated message map functions
 protected:

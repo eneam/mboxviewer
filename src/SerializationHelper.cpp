@@ -282,7 +282,7 @@ BOOL SerializerHelper::writeN(void *v, int sz)
 
 BOOL SerializerHelper::writeString(LPCSTR val)
 {
-	int l = strlen(val);
+	int l = istrlen(val);
 	if (!writeInt(l))
 	{
 		this->close();

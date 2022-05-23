@@ -53,7 +53,7 @@ class SimpleString;
 class StackWalker;
 class MyStackWalker;
 
-void ShellExecuteError2Text(UINT errorCode, CString &errorText);
+void ShellExecuteError2Text(UINT_PTR errorCode, CString &errorText);
 void ShowMemStatus();
 
 class Tracer
@@ -103,6 +103,8 @@ public:
 	void SetCountKeepData(INT_PTR nNewSize, INT_PTR nGrowBy = 1024);
 	void CopyKeepData(const MyMailArray& src);
 	INT_PTR MaxSize();
+	int GetCount() { return (int)CArray<MboxMail*, MboxMail*>::GetCount(); }
+	int GetSize() { return (int)CArray<MboxMail*, MboxMail*>::GetSize(); }
 };
 
 typedef MyMailArray MailArray;
@@ -290,9 +292,9 @@ public:
 
 struct SubjectThreadHelper
 {
-	size_t operator()(const CString *key) const
+	hashsum_t operator()(const CString *key) const
 	{
-		size_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -394,7 +396,7 @@ public:
 	BOOL GetBody(SimpleString *str, int maxLength = -1);
 	int DumpMailBox(MboxMail *mailBox, int which);
 	int SingleMailSizeof();
-	static int AllMailsSizeof(int count);
+	static size_t AllMailsSizeof(int count);
 
 	static ThreadIdTableType *m_pThreadIdTable;
 	static MessageIdTableType *m_pMessageIdTable;
@@ -421,7 +423,7 @@ public:
 	static UINT createMboxMailTable(UINT count);
 	static void clearMboxMailTable();
 	static MboxMailMapCollionList* MboxMail::getCollisionList(MboxMail *key);
-	static MboxMailMapCollionList* MboxMail::getCollisionList(unsigned long hashsum);
+	static MboxMailMapCollionList* MboxMail::getCollisionList(hashsum_t hashsum);
 	static bool equal(MboxMail *elem1, MboxMail *elem2);
 	//
 	static int m_nextGroupId;

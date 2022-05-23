@@ -293,7 +293,7 @@ BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosit
 		tmp.Format(_T("Exception: Code %8.8x Description: "), seNumb);
 		fp.Write(tmp, tmp.GetLength());
 
-		fp.Write(seText, strlen(seText));
+		fp.Write(seText, uistrlen(seText));
 
 		tmp.Format(_T("\nMail Position: %d\n"), mailPosition);
 		fp.Write(tmp, tmp.GetLength());

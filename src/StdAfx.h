@@ -90,6 +90,12 @@
 
 #include "resource.h"
 
+
+inline int IntPtr2Int(INT_PTR i) { return ((int)(i)); }
+inline int UIntPtr2UInt(UINT_PTR i) { return ((UINT)(i)); }
+inline int istrlen(char const* _Str) { return ((int)strlen(_Str)); }
+inline int uistrlen(char const* _Str) { return ((UINT)strlen(_Str)); }
+
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 

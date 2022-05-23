@@ -161,10 +161,10 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CString *file
 
 int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename)
 {
-	if ((UINT)result <= MaxShellExecuteErrorCode) 
+	if ((UINT_PTR)result <= MaxShellExecuteErrorCode) 
 	{
 		CString errText;
-		ShellExecuteError2Text((UINT)result, errText);
+		ShellExecuteError2Text((UINT_PTR)result, errText);
 		CStringW errorTextW;
 		DWORD error;
 		TextUtilsEx::Ansi2Wide(errText, errorTextW, error);
@@ -188,8 +188,8 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 
 int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, CString &errorText)
 {
-	if ((UINT)result <= MaxShellExecuteErrorCode) {
-		ShellExecuteError2Text((UINT)result, errorText);
+	if ((UINT_PTR)result <= MaxShellExecuteErrorCode) {
+		ShellExecuteError2Text((UINT_PTR)result, errorText);
 		return -1;
 	}
 	return 1;
@@ -1814,7 +1814,7 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
-	CWnd *p = m_wndDlgBar.GetDlgItem(pNMCD->dwItemSpec);
+	CWnd *p = m_wndDlgBar.GetDlgItem((int)pNMCD->dwItemSpec);
 	if (p) {
 		CButton *button = (CButton*)p;
 		int nFlags = button->GetCheck();
@@ -3098,7 +3098,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CString mboxFileName;
 	FileUtils::GetFolderPathAndFileName(mergedMboxFilePath, mboxFolderPath, mboxFileName);
 	//mboxFolderPath.TrimRight("\\");
-	size_t hashsum = GlobalFolderInfoDB::GetHashsum(&mboxFolderPath);
+	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&mboxFolderPath);
 	FolderInfo* finfo = pTreeView->m_globalFolderInfoDB.Find(&mboxFolderPath, hashsum);
 
 	if (finfoBeg == 0)
@@ -3180,7 +3180,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		}
 
 		static const char *cFromMailBegin = "From ";
-		static const int cFromMailBeginLen = strlen(cFromMailBegin);
+		static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 
 		char *p = inBuffer;
 		char *e = p + readBytes;
@@ -3216,7 +3216,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 			fpMergeTo.Write(ch_end_line, ch_end_line_len);
 		}
 		inBuffer = p;
-		readBytes = e - p;
+		readBytes = IntPtr2Int(e - p);
 
 		if (readBytes > 0)
 		{
@@ -4298,7 +4298,7 @@ void CMainFrame::OnFordevelopersMemory()
 	// TODO: Add your command handler code here
 
 	int mailCount = MboxMail::s_mails_ref.GetCount();
-	int allMailsSize = MboxMail::AllMailsSizeof(mailCount);
+	size_t allMailsSize = MboxMail::AllMailsSizeof(mailCount);
 	CString txt;
 	txt.Format("Allocated Memory: %d\n", allMailsSize);
 

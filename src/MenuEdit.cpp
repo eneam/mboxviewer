@@ -91,9 +91,9 @@ BOOL CMenuEdit::OnCommand(WPARAM wParam, LPARAM lParam)
     case WM_COPY:
     case WM_CLEAR:
     case WM_PASTE:
-        return SendMessage(LOWORD(wParam));
+        return (BOOL)SendMessage(LOWORD(wParam));
     case ME_SELECTALL:
-        return SendMessage (EM_SETSEL, 0, -1);
+        return (BOOL)SendMessage (EM_SETSEL, 0, -1);
     default:
         return CEdit::OnCommand(wParam, lParam);
     }
