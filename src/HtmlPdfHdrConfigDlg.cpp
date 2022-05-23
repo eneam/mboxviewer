@@ -176,7 +176,7 @@ HdrFldConfig::HdrFldConfig() :
 {
 	m_bHdrFldCustomNameFont = 0;
 	m_bHdrFontDflt = 0;
-	m_nHdrFontSize = 16;
+	m_nHdrFontSize = 20;
 	m_bHdrBoldFldName = FALSE;
 }
 

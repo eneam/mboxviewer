@@ -5210,24 +5210,26 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		// General body setup, is this needed ??
 		// if (!singleMail)  // do it for single and multiple mails
-		bodyWidth = "width:98%;";
+		bodyWidth = "width:99%;";
 		if (1)
 		{
 			CString fontColor = "black";  // TODO: probably no harm done setting to black always
+			CString bdyBackgroundColor;
 			if (bodyBackgroundColor.IsEmpty())
 			{
-				bodyBackgroundColor = "background-color:#FFFFFF;color:black;";
+				bdyBackgroundColor = "background-color:#FFFFFF;color:black;";
 			}
 			else // if (!bodyBackgroundColor.IsEmpty())
 			{
-				bdy.Append(bodyBackgroundColor);
-				bdy.Append(";color:");
-				bdy.Append(fontColor);
-				bdy.Append(";");
+				bdyBackgroundColor.Append("background-color:");
+				bdyBackgroundColor.Append(bodyBackgroundColor);
+				bdyBackgroundColor.Append(";color:");
+				bdyBackgroundColor.Append(fontColor);
+				bdyBackgroundColor.Append(";");
 			}
 
 			bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;"
-				+ bodyWidth + margin + bodyBackgroundColor
+				+ bodyWidth + margin + bdyBackgroundColor
 				+ "\"><br>\r\n";
 
 			fp.Write(bdy, bdy.GetLength());
@@ -5334,7 +5336,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
 
-		CString bodyWidth = "width:98%;";
+		CString bodyWidth = "width:99%;";
 		CString bodyBackgroundColor = "background-color:#FFFFFF;";
 		//bdy = "\r\n<div style=\'width:auto;position:initial;float:left;color:black;background-color:#FFFFFF;" + margin + "text-align:left\'>\r\n";
 		bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;color:black;"

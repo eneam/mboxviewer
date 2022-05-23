@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.29
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Ported to 64 bit platform and released 64 bit executable to support more than 2 million emails.;
+ - Fixed background color in HTML and PDF broken in previous v1.0.3.28.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.28
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
