@@ -1121,6 +1121,11 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(step));
 							}
 
+							if ((s_mails.GetCount() % 100000) == 1024)
+							{
+								int deb = 1;
+							}
+
 							if (pCUPDUPData && pCUPDUPData->ShouldTerminate())
 								break;
 						}
@@ -1417,6 +1422,9 @@ bool cmpMbox(MboxMail* a, MboxMail *b) {
 void MboxMail::Parse(LPCSTR path)
 {
 	Destroy();
+
+	s_mails.SetSize(100000, 100000);
+	s_mails.SetCountKeepData(0);
 
 	// Delete all files in print and image cache directories
 	CString cpath = path;
