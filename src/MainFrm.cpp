@@ -3564,6 +3564,120 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	return 1;
 }
 
+int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText)
+{
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	// TODO: Duplicate check, done already in _Thread function calls 
+
+	HINSTANCE result = S_OK;
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_NO_CONSOLE;
+	//ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = cmd;
+	ShExecInfo.lpParameters = args;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.hInstApp = result;
+	BOOL retval = ShellExecuteEx(&ShExecInfo);
+	if (retval == FALSE)
+	{
+		DWORD err = GetLastError();
+		int ret = CMainFrame::CheckShellExecuteResult(ShExecInfo.hInstApp, errorText);
+		return -1;
+	}
+
+	int step = 10;
+	int stepCnt = 0;
+	int nSeconds = 0;
+	CString secondsBar;
+
+	DWORD msec = 100;
+	BOOL signaled = FALSE;
+	BOOL failed = FALSE;
+	for (;;)
+	{
+		msec = 100;
+		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
+		switch (ret)
+		{
+		case WAIT_ABANDONED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_OBJECT_0: {
+#if 0
+			DWORD exitCode;
+			BOOL ret = GetExitCodeProcess(ShExecInfo.hProcess, &exitCode);
+			if ((ret == TRUE) && (exitCode == STILL_ACTIVE))
+				;
+			else
+			{
+				signaled = TRUE;
+					break;
+			}
+#else
+			signaled = TRUE;
+			break;
+#endif
+		}
+		case WAIT_FAILED: {
+			failed = TRUE;
+			break;
+		}
+		case WAIT_TIMEOUT: {
+			if (MboxMail::pCUPDUPData)
+			{
+
+				if (MboxMail::pCUPDUPData->ShouldTerminate())
+				{
+					if (ShExecInfo.hProcess)
+					{
+						TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+						CloseHandle(ShExecInfo.hProcess);
+					}
+					return 2;
+				}
+				if (progressBar)
+				{
+					if (stepCnt % 10 == 0)
+					{
+						nSeconds++;
+						if (progressText.IsEmpty())
+							MboxMail::pCUPDUPData->SetProgress(step);
+						else {
+							secondsBar.Format(_T("%s  %d seconds"), progressText, nSeconds);
+							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
+						}
+						step += 10;
+						if (step > 100)
+							step = 10;
+					}
+					stepCnt++;
+				}
+			}
+			break;
+		}
+		default: {
+			failed = TRUE;
+			break;
+		}
+		}
+		if (signaled || failed)
+		{
+			// ???
+			break;
+		}
+	}
+	if (ShExecInfo.hProcess)
+		CloseHandle(ShExecInfo.hProcess);
+
+	return 1;
+}
+
 void CSVFILE_CONFIG::SetDflts()
 {
 	// This duplicate alsoe set in ExportToCSVDlg

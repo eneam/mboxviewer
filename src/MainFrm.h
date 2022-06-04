@@ -240,6 +240,8 @@ public:
 	static int ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText);
 	int VerifyPathToHTML2PDFExecutable(CString &errorText);
 
+	static int ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText);
+
 	void PrintMailArchiveToHTML();
 	void PrintMailArchiveToTEXT();
 	void PrintMailArchiveToPDF();

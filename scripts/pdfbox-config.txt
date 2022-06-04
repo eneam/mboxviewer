@@ -1,0 +1,53 @@
+#
+# https://cyntech.wordpress.com/2009/01/09/how-to-use-commons-logging/
+
+# PDFBox logger configuration
+
+# commons-logging.properties
+
+#The commons logging log levels correspond to the java.util.logging.Level levels like this:
+
+#fatal = Level.SEVERE
+#error = Level.SEVERE
+#warn = Level.WARNING
+#info = Level.INFO
+#debug = Level.FINE
+#trace = Level.FINEST
+
+# So, if you want to set your class to log all debugs, you use LEVEL.FINE.  
+# These are also in order of priority, so, like in our example, 
+# if you set your class logger to FINE, then trace log messages will not be recorded.
+
+# jdk handlers
+# disable all logging
+#handlers=
+# enable file logging
+handlers=java.util.logging.FileHandler
+# enable file and console logging
+#handlers=java.util.logging.FileHandler, java.util.logging.ConsoleHandler
+
+# default log level
+.level=INFO
+
+# Specific logger level
+#PDFMergerUtility.level=SEVERE
+
+# FileHandler level can be set to override the global level:
+java.util.logging.FileHandler.level=SEVERE
+java.util.logging.FileHandler.append=true
+# ConsoleHandler level can be set to override the global level:
+java.util.logging.ConsoleHandler.level=INFO
+
+# log file name for the File Handler
+#java.util.logging.FileHandler.pattern=javalog%u.log
+java.util.logging.FileHandler.pattern=pdfbox.log
+
+# Specify the style of output (simple or xml)
+java.util.logging.FileHandler.formatter=java.util.logging.SimpleFormatter
+
+# Optional - Limit the size of the file (in bytes)
+#java.util.logging.FileHandler.limit=50000
+
+# Optional - The number of files to cycle through, by
+# appending an integer to the base file name:
+java.util.logging.FileHandler.count=1

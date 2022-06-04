@@ -754,6 +754,20 @@ void* __cdecl malloc(size_t size)
 
 #include "afxsock.h"
 
+BOOL CmboxviewApp::GetProcessPath(CString &procressPath)
+{
+	procressPath.Empty();
+	char *pValue;
+	errno_t  er = _get_pgmptr(&pValue);
+	if ((er == 0) && pValue)
+	{
+		procressPath.Append(pValue);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
 BOOL CmboxviewApp::InitInstance()
 {
 	// Check if MBox Viewer can write to registry
@@ -856,14 +870,10 @@ BOOL CmboxviewApp::InitInstance()
 	}
 #endif
 
-	char *pValue;
-	errno_t  er = _get_pgmptr(&pValue);
 	CString procFullPath;
-	if ((er == 0) && pValue)
-		procFullPath.Append(pValue);
+	GetProcessPath(procFullPath);
 
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), procFullPath);
-
 
 	AfxEnableControlContainer();
 

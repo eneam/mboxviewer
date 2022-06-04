@@ -212,7 +212,8 @@ bool ALongRightProcessProcPrintMailGroupToSeparatePDF(const CUPDUPDATA* pCUPDUPD
 
 	if (args->selectedMailIndexList)
 	{
-		args->ret = args->lview->PrintMailSelectedToSeparatePDF_WorkerThread(args->selectedMailIndexList, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText);
+		args->ret = args->lview->PrintMailSelectedToSeparatePDF_WorkerThread(args->selectedMailIndexList, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText, 
+			args->mergePDFs, args->mergedPDFPath);
 	}
 	else
 	{
@@ -1142,7 +1143,7 @@ void NListView::PrintToPDFMultipleSelect(int fontSize)
 		{
 			CString targetPrintSubFolderName = "PDF_GROUP";
 			CString targetPrintFolderPath;
-			int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath);
+			int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath, FALSE);
 		}
 		else
 		{
@@ -1212,7 +1213,10 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_PDF_DIRECT_FONT_24_Id = 33;
 	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_FONT_24_Id, _T("Set Font Size to 24px"));
 
-	const UINT S_PDF_DIRECT_HELP_Id = 34;
+	const UINT S_PDF_DIRECT_MERGE_Id = 34;
+	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_MERGE_Id, _T("Merge"));
+
+	const UINT S_PDF_DIRECT_HELP_Id = 35;
 	MyAppendMenu(&printPDFGroupToSubMenu, S_PDF_DIRECT_HELP_Id, _T("Help"));
 
 	const UINT S_CSV_GROUP_Id = 29;
@@ -1332,6 +1336,13 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		PrintToPDFMultipleSelect(24);
 	}
 	break;
+	case S_PDF_DIRECT_MERGE_Id:
+	{
+		CString targetPrintSubFolderName = "PDF_GROUP";
+		CString targetPrintFolderPath;
+		int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath, TRUE);
+	}
+	break;
 	case S_PDF_DIRECT_HELP_Id:
 	{
 		//CString helpFileName = "PrintMultipleMailsToSinglePDF.htm";
@@ -1350,7 +1361,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 			{
 				CString targetPrintSubFolderName = "PDF_GROUP";
 				CString targetPrintFolderPath;
-				int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath);
+				int ret = PrintMailSelectedToSeparatePDF_Thread(targetPrintSubFolderName, targetPrintFolderPath, FALSE);
 			}
 			else 
 			{
@@ -7796,7 +7807,8 @@ int NListView::PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, C
 	args.lastMail = lastMail;
 	args.selectedMailIndexList = 0;
 	args.nItem = -1;
-	args.separatePDFs = TRUE;
+	args.separatePDFs = FALSE;
+	args.mergedPDFPath.Empty();
 
 	/*OUT*/
 	args.exitted = FALSE;
@@ -8125,7 +8137,7 @@ int NListView::PrintMailRangeToSinglePDF_WorkerThread(int firstMail, int lastMai
 	return  1;
 }
 
-int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath)
+int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs)
 {
 	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS args;
 
@@ -8174,6 +8186,8 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	args.selectedMailIndexList = selectedMailsIndexList;
 	args.nItem = -1;
 	args.separatePDFs = TRUE;
+	args.mergePDFs = mergePDFs;
+	args.mergedPDFPath.Empty();
 
 	/*OUT*/
 	args.exitted = FALSE;
@@ -8217,20 +8231,53 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	{
 		if (args.errorText.IsEmpty())
 		{
-
-			CString txt = "Created separate PDF files in \n\n" + printCachePath + " \n\ndirectory.";
-			OpenContainingFolderDlg dlg(txt, TRUE);
-			INT_PTR nResponse = dlg.DoModal();
-			if (nResponse == IDOK)
+			if (mergePDFs == FALSE)
 			{
-				HWND h = GetSafeHwnd();
-				HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
-				int deb = 1;
+				CString txt = "Created separate PDF files in \n\n" + printCachePath + " \n\ndirectory.";
+				OpenContainingFolderDlg dlg(txt, TRUE);
+				INT_PTR nResponse = dlg.DoModal();
+				if (nResponse == IDOK)
+				{
+					HWND h = GetSafeHwnd();
+					HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+					CMainFrame::CheckShellExecuteResult(result, h);
+					int deb = 1;
+				}
+				else if (nResponse == IDCANCEL)
+				{
+					int deb = 1;
+				}
 			}
-			else if (nResponse == IDCANCEL)
+			else
 			{
-				int deb = 1;
+				
+				CString pdfFileName = args.mergedPDFPath;
+
+				CString txt = "Created PDF file \n\n" + pdfFileName;
+				OpenContainingFolderDlg dlg(txt, FALSE);
+				INT_PTR nResponse = dlg.DoModal();
+				////////////
+				if (nResponse == IDOK)
+				{
+					if (FileUtils::BrowseToFile(pdfFileName) == FALSE) {
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), printCachePath, NULL, NULL, SW_SHOWNORMAL);
+						CMainFrame::CheckShellExecuteResult(result, h);
+					}
+					int deb = 1;
+				}
+				else if (nResponse == IDYES)
+				{
+					HWND h = GetSafeHwnd();
+					HINSTANCE result = ShellExecute(h, _T("open"), pdfFileName, NULL, NULL, SW_SHOWNORMAL);
+					CMainFrame::CheckShellExecuteResult(result, h, &pdfFileName);
+					int deb = 1;
+				}
+				else if (nResponse == IDCANCEL)
+				{
+					int deb = 1;
+				}
+
 			}
 		}
 		else
@@ -8401,13 +8448,83 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 	return 1;
 }
 
-int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText)
+int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText,
+	BOOL mergePDFs, CString &mergedFileName)
 {
 	BOOL progressBar = TRUE;
 
 	int retdel = NListView::DeleteAllHtmAndPDFFiles(targetPrintFolderPath);
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	BOOL mergeFiles = TRUE;
+	CFile fp;
+	CString pdfboxJarFileName;
+	CString mergeCmdFilePath;
+
+	if (mergePDFs)
+	{
+		CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+		CString processFolderPath;
+		FileUtils::CPathGetPath(processExePath, processFolderPath);
+
+		// build a string with wildcards
+		CString strWildcard(processFolderPath);
+		strWildcard += _T("\\pdfbox-app-*.jar");
+
+		CString appNamePrefix = "pdfbox-app-";
+
+		CString fPath;
+		CString fName;
+
+		CFileFind finder;
+		BOOL bWorking = finder.FindFile(strWildcard);
+		while (bWorking)
+		{
+			bWorking = finder.FindNextFile();
+			if (finder.IsDots())
+				continue;
+
+			CString fPath = finder.GetFilePath();
+			CString fName = finder.GetFileName();
+			CString pref = fName.Left(appNamePrefix.GetAllocLength());
+			if (pref.CompareNoCase(appNamePrefix) == 0)
+			{
+				char v = fName.GetAt(appNamePrefix.GetAllocLength());
+				if ((v =='4') || (v == '3'))
+				{
+					pdfboxJarFileName = fName;
+					break;
+				}
+			}
+		}
+
+		if (pdfboxJarFileName.IsEmpty())
+		{
+			errorText.Format(_T("Did not find  \"pdfbox-app-3.*.jar\" file in \"%s\" directory."), processFolderPath);
+			errorText.Append("\n\nPlease review the help information by selecting \"Print to->PDF->Help\" option.");
+
+			TRACE(_T("%s\n"), errorText);
+
+			return -1;
+		}
+
+		CFileException ExError;
+		mergeCmdFilePath = targetPrintFolderPath + "\\MergePDFs.cmd";
+		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			errorText = _T("Merge PDF files failed. Could not create \"") + mergeCmdFilePath;
+			errorText += _T("\" file.\n");
+			errorText += exErrorStr;
+
+			TRACE(_T("%s\n"), errorText);
+			return -1;
+		}
+		fp.Close();
+	}
 
 	if (selectedMailIndexList->GetCount() <= 0)
 		return 1;
@@ -8459,7 +8576,244 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 	newstep = 100;
 	fileNum.Format(_T("Printing mails to PDF files ... %d of %d"), nFileNum, cnt);
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
+
+	if (mergePDFs)
+	{
+		// Create file with all mail names and merge
+		int textType = 1;
+		int maxCmdLineLength = 8191 - 256;
+		//maxCmdLineLength = 512;
+
+		CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+		CString processFolderPath;
+		FileUtils::CPathGetPath(processExePath, processFolderPath);
+
+		CString pdfboxtoolVMArgs;
+		pdfboxtoolVMArgs.Append(" -Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.Jdk14Logger");
+		CString configFilePath = processFolderPath + "\\scripts\\pdfbox-config.txt";
+		pdfboxtoolVMArgs.Append(" -Djava.util.logging.config.file=");
+		pdfboxtoolVMArgs.Append(configFilePath);
+
+		CString pdftoolCmd = "java" + pdfboxtoolVMArgs + " -jar " +  processFolderPath + "\\" + pdfboxJarFileName + " merge";
+
+		CString mergePDFsLogFilePath = targetPrintFolderPath + "\\MergePDFs.log";
+		CString pdfboxLogFilePath = targetPrintFolderPath + "\\pdfbox.log";
+
+		FileUtils::DeleteFile(mergePDFsLogFilePath);
+		FileUtils::DeleteFile(pdfboxLogFilePath);
+
+		CString filePath;
+		CString fileName;
+		CString fPath;
+		CString textFile;
+		bool fileExists = false;
+		CString newSuffix = ".pdf";
+		CStringArray in_array;
+
+		int indx = 0;
+		for (int j = 0; j < cnt; j++)
+		{
+			i = (*selectedMailIndexList)[j];
+
+			fileExists = false;
+			int ret = 1;
+
+			ret = MboxMail::MakeFileNameFromMailHeader(i, textType, textFile, targetPrintSubFolderName, fileExists, errorText);
+			if (fileExists)
+				int deb = 1;
+
+			fPath = textFile;
+			FileUtils::UpdateFileExtension(fPath, newSuffix);
+			FileUtils::GetFolderPathAndFileName(fPath, filePath, fileName);
+
+			in_array.Add(fileName);
+		}
+
+		CString mergedFilePrefix = "m";
+		CStringArray out_array;
+		// convert to while ()
+		errorText.Empty();
+		int j;
+		for (j = 0; j < 100; j++)
+		{
+			int ret = NListView::MergePDfFileList(fp, in_array, out_array, mergedFilePrefix, targetPrintFolderPath, pdftoolCmd, errorText);
+			if (ret >= 0)
+			{
+				errorText.Empty();
+				if (out_array.GetCount() > 1)
+				{
+					mergedFilePrefix.Append("m");
+					in_array.Copy(out_array);
+					out_array.SetSize(0);
+				}
+				else
+					break;
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		FolderContext *fc = &MboxMail::s_folderContext;
+
+		CString mailArchiveFileName = MboxMail::s_path;
+
+
+		if (mailArchiveFileName.IsEmpty())
+		{
+			mergedFileName = "MergedMails.pdf";
+		}
+		else
+		{
+			CString driveName;
+			CString directory;
+			CString fileNameBase;
+			CString fileNameExtention;
+			FileUtils::SplitFilePath(mailArchiveFileName, driveName, directory, fileNameBase, fileNameExtention);
+
+			mergedFileName = fileNameBase + ".pdf";
+		}
+
+		CString mergedFilePath = targetPrintFolderPath + "\\" + mergedFileName;
+		mergedFileName = mergedFilePath;
+
+		CString oldFilePath = targetPrintFolderPath + "\\" + out_array.GetAt(0);
+
+		DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+		BOOL retMove = MoveFileEx(oldFilePath, mergedFilePath, nFlags);
+		if (retMove == FALSE)
+		{
+			CString errText = FileUtils::GetLastErrorAsString();
+			TRACE("PrintMailSelectedToSeparatePDF_WorkerThread: MoveFileEx failed \"%s\"\n", errorText);
+
+			CString txt = _T("Failed to move \"") + oldFilePath;
+			txt += _T("\" file.\n\n");
+			txt.Append(errorText);
+
+			TRACE(_T("%s\n"), txt);
+
+			mergedFileName = oldFilePath;
+
+			return 1;
+		}
+	}
 	int deb = 1;
+	return 1;
+}
+
+int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray &out_array, CString &mergedFilePrefix, CString &targetPrintFolderPath, CString &pdftoolCmd, CString &errortext)
+{
+	CString mergeScript;
+	CString errorText;
+
+	int textType = 1;
+	int maxCmdLineLength = 8191 - 300;
+	//maxCmdLineLength = 512;
+
+
+	CFileException ExError;
+	CString mergeCmdFilePath = targetPrintFolderPath + "\\MergePDFs.cmd";
+	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		errorText = _T("Could not create \"") + mergeCmdFilePath;
+		errorText += _T("\" file.\n");
+		errorText += exErrorStr;
+
+		TRACE(_T("%s\n"), errorText);
+		return -1;
+	}
+
+	mergeScript = "@echo off\n\ncd ";
+	mergeScript.Append(targetPrintFolderPath);
+	mergeScript.Append("\n\n");
+
+	mergeScript.Append(pdftoolCmd);
+
+	CString mergedFileName;
+	CString mergedFile;
+	CString fileName;
+
+	BOOL progressBar = TRUE;
+	CString progressText = "Merging PDFs";
+	CString args;
+
+	int cnt = 0;
+	int mergedFileCnt = 0;
+	int i;
+	for (i = 0; i < in_array.GetCount(); i++)
+	{
+		if (mergeScript.GetLength() > maxCmdLineLength)
+		{
+			mergedFileName.Format("%s-%d.pdf", mergedFilePrefix, cnt++);
+
+			mergedFile.Format(" -o %s >> MergePDFs.log 2>&1\n\n", mergedFileName);
+			mergeScript.Append(mergedFile);
+
+			fp.Write(mergeScript, mergeScript.GetLength());
+
+			CString mergeCmdFilePath = fp.GetFilePath();
+
+			fp.Close();
+
+			out_array.Add(mergedFileName);
+
+			progressText.Format("Merging %d PDFs", mergedFileCnt);
+
+			int retexec = CMainFrame::ExecCommand_WorkerThread(mergeCmdFilePath, args, errorText, progressBar, progressText);
+
+			CFileException ExError;
+			if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+			{
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+				errorText = _T("Could not create \"") + mergeCmdFilePath;
+				errorText += _T("\" file.\n");
+				errorText += exErrorStr;
+
+				TRACE(_T("%s\n"), errorText);
+				return -1;
+			}
+
+			mergeScript.Empty();
+
+			mergeScript = "@echo off\n\ncd ";
+			mergeScript.Append(targetPrintFolderPath);
+			mergeScript.Append("\n\n");
+
+			mergeScript.Append(pdftoolCmd);
+			mergedFileCnt = 0;
+		}
+
+		fileName = in_array.GetAt(i);
+		mergeScript.Append(" -i \"");
+		mergeScript.Append(fileName);
+		mergeScript.Append("\"");
+
+		mergedFileCnt++;
+	}
+
+	if (mergedFileCnt)
+	{
+		mergedFileName.Format("%s-%d.pdf", mergedFilePrefix, cnt++);
+
+		mergedFile.Format(" -o %s >> MergePDFs.log 2>&1\n\n", mergedFileName);
+		mergeScript.Append(mergedFile);
+
+		fp.Write(mergeScript, mergeScript.GetLength());
+
+		CString mergeCmdFilePath = fp.GetFilePath();
+
+		fp.Close();
+
+		out_array.Add(mergedFileName);
+
+		progressText.Format("Merging %d PDFs", mergedFileCnt);
+
+		int retexec = CMainFrame::ExecCommand_WorkerThread(mergeCmdFilePath, args, errorText, progressBar, progressText);
+	}
 	return 1;
 }
 

@@ -407,12 +407,15 @@ public:
 	int PrintMailRangeToSinglePDF_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	// Selected to Separate PDF
-	int PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
-	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	int PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs);
+	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText, 
+		BOOL mergeFiles, CString &mergedFileName);
 	//
 	// Selected to Single PDF
 	int PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	//
+	int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray &out_array, CString &filePrefix, CString &targetPrintFolderPath, CString &pdftoolCmd, CString &errorText);
 	//
 	//////////////////////////////////////////////////////
 	////////////  PDF  END
@@ -583,6 +586,8 @@ struct FIND_ARGS
 struct PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS
 {
 	BOOL separatePDFs;
+	BOOL mergePDFs;
+	CString mergedPDFPath;
 	CString errorText;
 	CString targetPrintFolderPath;
 	CString targetPrintSubFolderName;

@@ -1,17 +1,37 @@
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=US-ASCII"></head><body><br><br><font size="+2"><b>Print Multiple Mails into Single PDF<br><br</font>
 <p style='font-size:18px;font-weight: normal;'>
-MBox Viewer's solution to Print multiple mails to single PDF is non-standard and can affect font sizes in all mails. MBox Viewer concatenates content of all mails and headers in HTML format and ask Edge or Chrome Web Browser to convert HTML document into PDF.
+MBox Viewer's default solution to Print multiple mails to single PDF is non-standard and can affect font sizes in all mails. MBox Viewer concatenates content of all mails and headers in HTML format and ask Edge or Chrome Web Browser to convert HTML document into PDF.
 <br><br>
 Some of mails may have complex style definitions and "pollute" environment of other mails. Frequently, font sizes become smaller and may need to be zoomed in by the PDF viewer. There is no similar solution for zooming when printing generated PDF documents to paper.
-<br><br>
-<span><b>The following approach is suggested when printing multiple mails into a single PDF.</b></span>
-<br><br>
-1. Print mails using default mode. Right-click on selected mails and select "Print Selected Mails to --> PDF --> Default". Evaluate generated PDF document and if not acceptable, follow step 2.
-<br><br>
-2. Set font size to 16px, 20px or 24px for printing. Right-click on selected mails and select "Print Selected Mails to --> PDF --> 16px". This will force font size of every text to be set to 16px. This may not work well for mails  with tables. Font size for text in tables is typically set to smaller to fit into table cells.
-<br><br>
-Note that you can configure MBox Viewer to print page break after each mail or after each conversation thread of mails. Select "File-->Print Config-->PDF document options->Page Break After Each Mail/Page Break After Each Conversation Thread".
-<br><br><br>
-If none of the above print solutions works for you, you need to print each mail to a separate PDF file and use a professional tool such as PDF-XChange Editor or a free tool such as PDFBox to merge generated PDF files into a single PDF file. Reliability of these tools was not evaluated. PDFBox usage is described in the User Guide. To generate mails to separate PDF files, select "File-->Print Config-->Print selected mails to separate files-->PDF".
 </p>
+<p><b>The following approach is suggested when printing multiple mails into a single PDF</b></p>
+<div style='font-size:18px;font-weight: normal;'>
+<p><b>1.</b>
+<span style="font-style:italic;"> Print mails using default mode.</span> Right-click on selected mails and select "Print Selected Mails to --> PDF --> Default". Evaluate generated PDF document and if not acceptable, follow step 2.
+</p>
+<p><b>2.</b>
+<span style="font-style:italic;"> Print mails using Merge mode.</span> Right-click on selected mails and select "Print Selected Mails to --> PDF --> Merge" option. This will print all selected mails into separate PDF files first and then merge them into a single target PDF file. Conversion of mails into PDF format by Edge or Chrome Browsers is typically high quality and the merging process typically preserves original quality. Each mail starts at the beginning of a page in the merged PDF. This may be considered less than optimal for small mails. In order to run Merge mode, user must install free java PDFBox command line tool and Java VM. Java VM is typically installed on Windows but PDFBox application must be downloaded from the following link.
+</p>
+
+<p><a href="https://pdfbox.apache.org/download.html">PDFBox</a></p>
+<p>Please download the latest pdfbox-app-3.*.jar file and install in <b>the same directory as mboxview.exe.</b></p>
+
+<p>Also, check whether java.exe is installed on your system as follow</p>
+<p>Start Command Prompt and type <b>where java</b>. If java.exe is not listed, you need to install java for Windows. You may also have to update PATH system environmental variable and restart Explorer and MBox Viewer.</p>
+<p>Evaluate generated PDF document and if not acceptable, follow step 3.</p>
+
+<p><b>3.</b><span style="font-style:italic;"> Set font size to 16px, 20px or 24px for printing.</span> Right-click on selected mails and select "Print Selected Mails to --> PDF --> 16px". This will force font size of every text to be set to 16px. This may not work well for mails  with tables. Font size for text in tables is typically set to smaller to fit into table cells.
+</p>
+<p>Note that in the approach 1 and 3 you can configure MBox Viewer to print page break after each mail or after each conversation thread of mails. Select "File-->Print Config-->PDF document options->Page Break After Each Mail/Page Break After Each Conversation Thread".
+</p>
+<p>If none of the above print solutions works for you, you need to print each mail to a separate PDF file and use a professional tool such as PDF-XChange Editor to merge generated PDF files into a single PDF file. Reliability of any of the professional tools was not evaluated. To generate mails to separate PDF files, select "File-->Print Config-->Print selected mails to separate files-->PDF".
+</p>
+<p><b>Performance</b></p>
+<p>Maximum number of mails that can be merged by 1,2 or 3 options depends on the complexity and size of mails to be merged.</p>
+<p>Merging may take minutes when merging relatively small plain text mails or it may take hours when merging large number of business mails with hyperlinks, graphics, tables, etc.</p>
+<p>For example, running option 2, it took 3 hours to print 3926 mails, mix of simple and business, into separate PDFs and another 40 minutes to merge them by PDFBox. Task Manager was showing that PDFBox process memory utilization was close to 8gigabytes.</p>
+<p>Option 1 never finished with the same set of mails. I cancelled the test when it didn't finish within 5 hours.</p>
+
+<br><br>
+</div>
 </body></html>

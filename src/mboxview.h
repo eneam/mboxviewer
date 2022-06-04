@@ -82,6 +82,8 @@ public:
 	static DWORD m_versionLS;
 	static CString m_savedVer;
 
+	static BOOL GetProcessPath(CString &procresspath);
+
 public:
 	//{{AFX_MSG(CmboxviewApp)
 	afx_msg void OnAppAbout();

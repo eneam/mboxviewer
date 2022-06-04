@@ -701,9 +701,9 @@ void FileUtils::UpdateFileExtension(CString &fileName, CString &newExtension)
 
 	fileName.Empty();
 	fileName.Append(driveName);
-	fileName.Append("\\");
+	//fileName.Append("\\");
 	fileName.Append(directory);
-	fileName.Append("\\");
+	//fileName.Append("\\");
 	fileName.Append(fileNameBase);
 	fileName.Append(newExtension);
 
