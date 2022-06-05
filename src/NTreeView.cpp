@@ -1477,6 +1477,99 @@ ArchiveFileInfoMap *NTreeView::SetupFileSizeMap(CString &path)
 	}
 }
 
+BOOL NTreeView::ValidateMboxFileName(CStringA & dirA)
+{
+	CStringW dir = dirA;
+
+	WIN32_FIND_DATAW FileData;
+	HANDLE hSearch;
+	CStringW fileW;
+	CStringW fileW2;
+	CStringA fileA;
+	BOOL	bFinished = FALSE;
+
+	// Start searching for all files in the current directory.
+	CStringW searchPath = dir + CStringW(L"\\*.*");
+	hSearch = FindFirstFileW(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE)
+	{
+		TRACE(_T("ValidateMboxFileName: No files found.\n"));
+		return FALSE;
+	}
+	while (!bFinished)
+	{
+		if (!(wcscmp(&FileData.cFileName[0], L".") == 0 || wcscmp(&FileData.cFileName[0], L"..") == 0))
+		{
+			fileW.Empty();
+			fileW.Append(&FileData.cFileName[0]);
+
+			DWORD error;
+			//BOOL retW2A = TextUtilsEx::Wide2Ansi(fileW, fileA, error);
+			UINT outCodePage = 20127;
+			CString fileAA;
+			BOOL retW2CP = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)fileW, fileW.GetLength(), outCodePage, &fileA, error);
+
+			TRACE(L"mbox fileW=%s\n", fileW);
+			TRACE("mbox fileA=%s\n", fileA);
+
+			CString fileAPath = dirA + "\\" + fileA;
+
+			if (FileUtils::PathFileExist(fileAPath))
+			{
+				if (!FindNextFileW(hSearch, &FileData))
+					bFinished = TRUE;
+				continue;
+			}
+
+			BOOL retA2W = TextUtilsEx::Ansi2Wide(fileA, fileW2, error);
+
+			if (fileW.Compare(fileW2) != 0)
+			{
+				CStringW txt = L"File Name \n\n\"" + fileW;
+				txt += L"\"\n\nContains  characters that are not supported by the current MBox Viewer\n\n";
+				txt += L"File will be ignored or MBox Viewer can rename the file to \n\n\"";
+				txt += fileW2 + "\"\n\n";
+				txt += L"Or, You can rename the file manually or moved to different folder before the next restart of MBox Viewer\n\n";
+				txt += L"Note that MBox Viewer is always in dscovery mode upon startup and this message will be shown until issue is resolved\n\n";
+				txt += L"Select YES if you wish MBox Viewer to rename the file\n\n";
+				int answer = ::MessageBoxW(0, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+				if (answer == IDYES)
+				{
+					CStringW validFileW;
+					BOOL bReplaceWhiteWithUnderscore = FALSE;
+					FileUtils::MakeValidFileNameW(fileW2, validFileW, bReplaceWhiteWithUnderscore);
+
+					CStringW oldFile = dir + L"\\" + fileW;
+					CStringW newFile = dir + L"\\" + validFileW;
+
+					DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+
+					BOOL retMove = MoveFileExW(oldFile, newFile, nFlags);
+					if (retMove == FALSE)
+					{
+						CStringW errorTextW = FileUtils::GetLastErrorAsStringW();
+						TRACE("ValidateMboxFileName: MoveFileExW failed \"%s\"\n", errorTextW);
+
+						CStringW txt = L"Failed to move file \"" + fileW;
+						txt += L"\" file.\n\n";
+						txt.Append(errorTextW);
+
+						HWND h = NULL; // we don't have any window yet
+						int answer = MessageBoxW(0, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						return -1;
+					}
+				}
+
+				int deb = 1;
+			}
+		}
+		if (!FindNextFileW(hSearch, &FileData))
+			bFinished = TRUE;
+	}
+	FindClose(hSearch);
+
+	return TRUE;
+}
 
 // Iterate all files in the path folder, validate and insert into Mail Tree
 // unless unconditionalFolderInsert==FALSE and folder empty
@@ -1592,6 +1685,10 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 
 	HTREEITEM hRoot = 0;
 
+
+	// not 100%
+	//BOOL retVal = NTreeView::ValidateMboxFileName(path);
+
 	CString fw = path + "\\*.*";
 	WIN32_FIND_DATA	wf;
 	BOOL found;
@@ -1616,7 +1713,21 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 
 				_int64 fSize = 0;
 				ArchiveFileInfo info;
-				_int64 realFSize = FileUtils::FileSize(mboxFilePath);
+				CString errText;
+				_int64 realFSize = FileUtils::FileSize(mboxFilePath, &errText);
+				if (!errText.IsEmpty())
+				{
+					CString txt = errText;
+					txt.Append("\n\"");
+					txt.Append(mboxFilePath);
+					//txt.Append("\n\nFile will be ignored");
+					txt.Append("\"\n\nThe original file name contains unicode characters that are not supported by the current MBox Viewer.");
+					txt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
+					txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+
+					int answer = MessageBox(txt, "Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+				}
+
 				found = fileSizes.Lookup(fn, info);
 				if (found)
 				{

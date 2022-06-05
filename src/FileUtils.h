@@ -83,7 +83,7 @@ public:
 	static void GetFileName(CString &fileNamePath, CString &fileName);
 	static void GetFileExtension(CString &fileName, CString &fileNameExtention);
 	static void UpdateFileExtension(CString &fileName, CString &newExtension);
-	static _int64 FileSize(LPCSTR fileName);
+	static _int64 FileSize(LPCSTR fileName, CString *errorText = 0);
 	static _int64 FolderSize(LPCSTR folderPath);
 	static int GetFolderFileCount(CString &folderPath, BOOL recursive = FALSE);
 	//

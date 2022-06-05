@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.30
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - To address occasional too small font size, added option to print multiple mails to single PDF file by merging respective PDF files.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.29
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

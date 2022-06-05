@@ -601,6 +601,7 @@ public:
 	void ClearGlobalFileSizeMap();
 	BOOL RemoveFileSizeMap(CString path);
 	ArchiveFileInfoMap *SetupFileSizeMap(CString &path);
+	BOOL ValidateMboxFileName(CStringA & dirA);
 	HTREEITEM LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap &fileSizes, BOOL unconditionalFolderInsert);
 	int OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes, BOOL isSubFolder = FALSE);
 	void RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes);

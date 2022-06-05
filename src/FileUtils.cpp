@@ -709,23 +709,33 @@ void FileUtils::UpdateFileExtension(CString &fileName, CString &newExtension)
 
 }
 
-_int64 FileUtils::FileSize(LPCSTR fileName)
+_int64 FileUtils::FileSize(LPCSTR fileName, CString *errorText)
 {
 	LARGE_INTEGER li = { 0 };
 	HANDLE hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
-		TRACE(_T("(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n"), err, fileName);
+		TRACE(_T("(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n"), err, fileName, errText);
+		if (errorText)
+			errorText->Append(errText);
 		return li.QuadPart;
 	}
-	else {
+	else
+	{
 		BOOL retval = GetFileSizeEx(hFile, &li);
 		CloseHandle(hFile);
-		if (retval != TRUE) {
+		if (retval != TRUE)
+		{
+			CString errText = FileUtils::GetLastErrorAsString();
 			DWORD err = GetLastError();
-			TRACE(_T("(GetFileSizeEx)Failed with error=%ld file=%s\n"), err, fileName);
+			TRACE(_T("(GetFileSizeEx)Failed with error=%ld file=%s\n%s\n"), err, fileName,errText);
+			if (errorText)
+				errorText->Append(errText);
 		}
-		else {
+		else
+		{
 			long long fsize = li.QuadPart;
 			return li.QuadPart;
 		}

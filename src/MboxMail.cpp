@@ -2321,6 +2321,20 @@ List - Subscribe : < http ://www.host.com/list.cgi?cmd=sub&lst=list>,
 
 */
 
+int CheckIf8Bit( const char * data, int datalen)
+{
+	unsigned char *p = (unsigned char*)data;
+	unsigned char c;
+	int i;
+	for (i = 0; i < datalen; i++)
+	{
+		c = *p++;;
+		if (c > 0x7f)
+			return 1;
+	}
+	return 0;
+}
+
 char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 {
 	int bodyCnt = 0;
@@ -2351,6 +2365,59 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 	m->m_messageId = mBody->m_MessageId;
 	m->m_replyId = mBody->m_InReplyId;
 	m->m_threadId = mBody->m_ThreadId;
+
+#if 0
+	// Expensive Best effort guess. Fix lack of charset for mail header fields
+	// Just Check first if Content-Transfer-Encoding: 8bit to optimize/reduce cpu ?
+	if (!mBody->m_Charset.IsEmpty())
+	{
+		if (m->m_from_charset.IsEmpty())
+		{
+			if (CheckIf8Bit((LPCSTR)m->m_from, m->m_from.GetLength()))
+			{
+				m->m_from_charset = mBody->m_Charset;
+				m->m_from_charsetId = TextUtilsEx::Str2PageCode(m->m_from_charset);
+				int deb = 1;
+			}
+		}
+		if (m->m_to_charset.IsEmpty())
+		{
+			if (CheckIf8Bit((LPCSTR)m->m_to, m->m_to.GetLength()))
+			{
+				m->m_to_charset = mBody->m_Charset;
+				m->m_to_charsetId = TextUtilsEx::Str2PageCode(m->m_to_charset);
+				int deb = 1;
+			}
+		}
+		if (m->m_subj_charset.IsEmpty())
+		{
+			if (CheckIf8Bit((LPCSTR)m->m_subj, m->m_subj.GetLength()))
+			{
+				m->m_subj_charset = mBody->m_Charset;
+				m->m_subj_charsetId = TextUtilsEx::Str2PageCode(m->m_subj_charset);
+				int deb = 1;
+			}
+		}
+		if (m->m_cc_charset.IsEmpty())
+		{
+			if (CheckIf8Bit((LPCSTR)m->m_cc, m->m_cc.GetLength()))
+			{
+				m->m_cc_charset = mBody->m_Charset;
+				m->m_cc_charsetId = TextUtilsEx::Str2PageCode(m->m_cc_charset);
+				int deb = 1;
+			}
+		}
+		if (m->m_bcc_charset.IsEmpty())
+		{
+			if (CheckIf8Bit((LPCSTR)m->m_bcc, m->m_bcc.GetLength()))
+			{
+				m->m_bcc_charset = mBody->m_Charset;
+				m->m_bcc_charsetId = TextUtilsEx::Str2PageCode(m->m_bcc_charset);
+				int deb = 1;
+			}
+		}
+	}
+#endif
 
 	// Iterate all the descendant body parts
 	MailBody::MailBodyList bodies;
