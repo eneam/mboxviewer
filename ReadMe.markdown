@@ -46,6 +46,14 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+
+v 1.0.3.31
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Script to merge PDF files doesn't work when MBox Viewer executable and configured data folder reside on different drives.;
+ - Page Break stopped working.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.30
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

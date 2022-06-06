@@ -8726,7 +8726,7 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 		return -1;
 	}
 
-	mergeScript = "@echo off\n\ncd ";
+	mergeScript = "@echo off\n\ncd /d ";
 	mergeScript.Append(targetPrintFolderPath);
 	mergeScript.Append("\n\n");
 
@@ -8779,7 +8779,7 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 
 			mergeScript.Empty();
 
-			mergeScript = "@echo off\n\ncd ";
+			mergeScript = "@echo off\n\ncd /d ";
 			mergeScript.Append(targetPrintFolderPath);
 			mergeScript.Append("\n\n");
 

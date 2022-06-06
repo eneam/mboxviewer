@@ -5032,9 +5032,6 @@ BOOL MboxMail::PageBreakNeeded(int mailPosition, int nextMailPosition, bool sing
 	if (pListView == 0)
 		return FALSE;
 
-	if ((abs(MboxMail::b_mails_which_sorted) != 99) && ((abs(MboxMail::b_mails_which_sorted) != 5) && (pListView->m_subjectSortType != 1)))
-		return FALSE;
-
 	if (pFrame->m_NamePatternParams.m_bPrintToSeparatePDFFiles == TRUE)
 		return FALSE;
 	else
@@ -5050,24 +5047,28 @@ BOOL MboxMail::PageBreakNeeded(int mailPosition, int nextMailPosition, bool sing
 	if (nextMailPosition >= s_mails.GetCount())
 		return FALSE;
 
-	BOOL addPageBreak = FALSE;
-	if (nextMailPosition < s_mails.GetCount())
-	{
-		MboxMail *m = s_mails[mailPosition];
-		MboxMail *m_next = s_mails[nextMailPosition];
 
-		if (abs(MboxMail::b_mails_which_sorted) == 99)
+	BOOL addPageBreak = FALSE;
+	if ((abs(MboxMail::b_mails_which_sorted) == 99) || ((abs(MboxMail::b_mails_which_sorted) == 4) && (pListView->m_subjectSortType == 1)))
+	{
+		if (nextMailPosition < s_mails.GetCount())
 		{
-			if (m_next->m_groupId != m->m_groupId)
+			MboxMail *m = s_mails[mailPosition];
+			MboxMail *m_next = s_mails[nextMailPosition];
+
+			if (abs(MboxMail::b_mails_which_sorted) == 99)
 			{
-				addPageBreak = TRUE;
+				if (m_next->m_groupId != m->m_groupId)
+				{
+					addPageBreak = TRUE;
+				}
 			}
-		}
-		else if (abs(MboxMail::b_mails_which_sorted) == 4)
-		{
-			if (m_next->m_mail_index != m->m_mail_index)
+			else if (abs(MboxMail::b_mails_which_sorted) == 4)
 			{
-				addPageBreak = TRUE;
+				if (m_next->m_mail_index != m->m_mail_index)
+				{
+					addPageBreak = TRUE;
+				}
 			}
 		}
 	}
