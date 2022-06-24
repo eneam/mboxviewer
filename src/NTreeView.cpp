@@ -53,7 +53,7 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
 
-// TODO: Must find time, some code is messy and  needs cleanup !!!
+int NTreeView::m_filesToValidateAsMboxType = 0;
 
 NTreeView::NTreeView():
 	m_gFileSizes(113)
@@ -83,6 +83,8 @@ NTreeView::NTreeView():
 
 	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_frameCx);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_frameCy);
+
+	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("filesToValidateAsMboxType"));
 }
 
 NTreeView::~NTreeView()
@@ -299,6 +301,31 @@ void NTreeView::PostNcDestroy()
 
 #define BUFF_PREVIEW_SIZE	6144
 
+BOOL NTreeView::ImboxviewFileFilter(CString & fName)
+{
+	if (m_filesToValidateAsMboxType == 1)
+		return TRUE;
+
+	CString fileNameExtension;
+	FileUtils::GetFileExtension(fName, fileNameExtension);
+
+	if (fileNameExtension.IsEmpty())
+		return TRUE;
+
+	if (fileNameExtension.CompareNoCase(".mbox") &&
+		fileNameExtension.CompareNoCase(".eml") &&
+		fileNameExtension.CompareNoCase(".mboxo") &&
+		fileNameExtension.CompareNoCase(".mboxrd") &&
+		fileNameExtension.CompareNoCase(".mboxcl") &&
+		fileNameExtension.CompareNoCase(".mboxcl2")
+		)
+	{
+		return FALSE;
+	}
+	else
+		return TRUE;
+}
+
 // This function checks whether file archive is valid
 // TODO: add MessageBox to report an error
 int NTreeView::ImboxviewFile(CString & fName)
@@ -313,6 +340,9 @@ int NTreeView::ImboxviewFile(CString & fName)
 	if (fName.Compare("G:\\GMAIL\\takeout-20210713T143614Z-001.zip") == 0)
 		int deb = 1;
 #endif
+
+	if (!ImboxviewFileFilter(fName))
+		return 0;
 
 	LPCSTR fileName = fName;
 
@@ -1711,6 +1741,9 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 						continue;
 				}
 
+				if (!ImboxviewFileFilter(fn))
+					continue;
+
 				_int64 fSize = 0;
 				ArchiveFileInfo info;
 				CString errText;
@@ -1720,10 +1753,22 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 					CString txt = errText;
 					txt.Append("\n\"");
 					txt.Append(mboxFilePath);
-					//txt.Append("\n\nFile will be ignored");
-					txt.Append("\"\n\nThe original file name contains unicode characters that are not supported by the current MBox Viewer.");
-					txt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
-					txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+					if (mboxFilePath.GetLength() > _MAX_PATH)
+					{
+						CString l;
+						l.Format("%d", mboxFilePath.GetLength());
+						txt.Append("\"\n\nThe file path length (");
+						txt.Append(l);
+						txt.Append(") is greater than maximum length (260) allowed by Windows API.");
+						txt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
+						txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+					}
+					else
+					{
+						txt.Append("\"\n\nThe original file name may contain unicode characters that are not supported by the current MBox Viewer.");
+						txt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
+						txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+					}
 
 					int answer = MessageBox(txt, "Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 				}
@@ -7917,6 +7962,9 @@ int NTreeView::RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder)
 			{
 				CString fn = wf.cFileName;
 				CString mboxFilePath = folderPath + "\\" + fn;
+
+				if (!ImboxviewFileFilter(fn))
+					continue;
 
 				_int64 realFSize = FileUtils::FileSize(mboxFilePath);
 

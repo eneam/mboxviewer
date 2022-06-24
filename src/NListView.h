@@ -495,8 +495,8 @@ public:
 	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
-	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
-	
+	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	static int ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 
 	static int FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tagDataLen);
 	static int FindBodyBackgroundColor(char *inData, int indDataLen, char *&attribTag, int &attribTagLen, CString &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib);

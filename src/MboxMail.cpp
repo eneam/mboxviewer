@@ -2366,10 +2366,10 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 	m->m_replyId = mBody->m_InReplyId;
 	m->m_threadId = mBody->m_ThreadId;
 
-#if 0
+#if 1
 	// Expensive Best effort guess. Fix lack of charset for mail header fields
 	// Just Check first if Content-Transfer-Encoding: 8bit to optimize/reduce cpu ?
-	if (!mBody->m_Charset.IsEmpty())
+	if ((mBody->m_ContentType.IsEmpty() == FALSE) && mBody->m_IsTextPlain && !mBody->m_Charset.IsEmpty())
 	{
 		if (m->m_from_charset.IsEmpty())
 		{
@@ -5186,8 +5186,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	CString bdyy;
 	bdyy.Append("\r\n\r\n<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
 	bdyy.Append("<article style=\"float:left;position:left;width:100%;background-color:#FFFFFF;margin: 0mm 0mm 0mm 0mm;\">");
-	bdyy.Append("<style>@page {size: auto; margin: 12mm 4mm 12mm 12mm;}; * {font-size:100% !important;};</style>");
-	
+	bdyy.Append("<style>@page {size: auto; margin: 12mm 4mm 12mm 6mm;}; * {font-size:100% !important;};</style>");
 
 	if (fontSizePDF == 0)
 	{
@@ -5222,9 +5221,23 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		SimpleString *workbuf = MboxMail::m_workbuf;
 		workbuf->ClearAndResize(outbuflarge->Count() * 2);
 		bool useMailPosition = true;
-		NListView::UpdateInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
-		outbuflarge->Copy(*workbuf);
+		int retUpdateImg = NListView::UpdateInlineSrcImgPath(outbuflarge->Data(), outbuflarge->Count(), workbuf, 0, mailPosition, useMailPosition);
 
+		if (outbuflarge->Count() == workbuf->Count())
+			int deb = 1;
+
+		if (workbuf->Count() > 0)
+			outbuflarge->Copy(*workbuf);
+		else
+			int deb = 1;
+
+		workbuf->ClearAndResize(outbuflarge->Count() * 2);
+		int retPrep = NListView::ReplacePreTagWitPTag((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf, TRUE);
+
+		if (workbuf->Count())
+			outbuflarge->Copy(*workbuf);
+		else
+			int deb = 1;
 
 		// Remove color and width from body tag, add later
 		CString bodyBackgroundColor;
@@ -5304,7 +5317,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				bdyBackgroundColor.Append(";");
 			}
 
-			bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;"
+			bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;overflow-wrap:break-word !important;"
 				+ bodyWidth + margin + bdyBackgroundColor
 				+ "\"><br>\r\n";
 
@@ -5415,7 +5428,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CString bodyWidth = "width:99%;";
 		CString bodyBackgroundColor = "background-color:#FFFFFF;";
 		//bdy = "\r\n<div style=\'width:auto;position:initial;float:left;color:black;background-color:#FFFFFF;" + margin + "text-align:left\'>\r\n";
-		bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;color:black;"
+		bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;color:black;overflow-wrap:break-word !important;"
 			+ bodyWidth + margin + bodyBackgroundColor
 			+ "\">\r\n";
 		fp.Write(bdy, bdy.GetLength());
@@ -5548,7 +5561,7 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameF
 		int nameFontSize = hdrFieldConfig.m_nHdrFontSize;
 		int textFontSize = hdrFieldConfig.m_nHdrFontSize;
 
-		fldTextFontStyle.Format("color:black;font-size:%dpx;line-height:%d%%;", textFontSize, lineHeight);
+		fldTextFontStyle.Format("overflow-wrap:break-word;color:black;font-size:%dpx;line-height:%d%%;", textFontSize, lineHeight);
 
 		if (hdrFieldConfig.m_bHdrBoldFldName)
 		{
@@ -5601,7 +5614,7 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameF
 		fldNameFontStyle.Format("color:black;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
 			nameFontStyle, nameFontWeight, nameFontSize, lineHeight, nameFont, nameFontFamily);
 
-		fldTextFontStyle.Format("color:black;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
+		fldTextFontStyle.Format("overflow-wrap:break-word;color:black;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
 			textFontStyle, textFontWeight, textFontSize, lineHeight, textFont, textFontFamily);
 	}
 	return 1;

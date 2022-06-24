@@ -8455,10 +8455,15 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 
 	int retdel = NListView::DeleteAllHtmAndPDFFiles(targetPrintFolderPath);
 
+	if (selectedMailIndexList->GetCount() <= 0)
+		return 1;
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	BOOL mergeFiles = TRUE;
 	CFile fp;
+	CFile fpm;
+	CFile fptxt;
 	CString pdfboxJarFileName;
 	CString mergeCmdFilePath;
 
@@ -8524,10 +8529,20 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			return -1;
 		}
 		fp.Close();
-	}
 
-	if (selectedMailIndexList->GetCount() <= 0)
-		return 1;
+		mergeCmdFilePath = targetPrintFolderPath + "\\MergeAllPDFs.cmd";
+		if (!fpm.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			errorText = _T("Merge PDF files failed. Could not create \"") + mergeCmdFilePath;
+			errorText += _T("\" file.\n");
+			errorText += exErrorStr;
+
+			TRACE(_T("%s\n"), errorText);
+			return -1;
+		}
+	}
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
@@ -8581,8 +8596,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 	{
 		// Create file with all mail names and merge
 		int textType = 1;
-		int maxCmdLineLength = 8191 - 256;
-		//maxCmdLineLength = 512;
+		int maxCmdLineLength = 8191 - 700;
+		//maxCmdLineLength = 700;
 
 		CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
 
@@ -8603,6 +8618,23 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		FileUtils::DeleteFile(mergePDFsLogFilePath);
 		FileUtils::DeleteFile(pdfboxLogFilePath);
 
+		CString selectedMailsList = targetPrintFolderPath + "\\SelectedMailsList.txt";
+		BOOL selectedMailsListFileOpen = FALSE;
+		CFileException ExError;
+		if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			errorText = _T("Merge PDF files failed. Could not create \"") + mergeCmdFilePath;
+			errorText += _T("\" file.\n");
+			errorText += exErrorStr;
+
+			TRACE(_T("%s\n"), errorText);
+			//return -1;
+		}
+		else
+			selectedMailsListFileOpen = TRUE;
+
 		CString filePath;
 		CString fileName;
 		CString fPath;
@@ -8611,6 +8643,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		CString newSuffix = ".pdf";
 		CStringArray in_array;
 
+		CString line;
 		int indx = 0;
 		for (int j = 0; j < cnt; j++)
 		{
@@ -8628,7 +8661,15 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			FileUtils::GetFolderPathAndFileName(fPath, filePath, fileName);
 
 			in_array.Add(fileName);
+			line.Format("%s\n", fileName);
+			fptxt.Write(line, line.GetLength());
 		}
+
+		if (selectedMailsListFileOpen)
+			fptxt.Close();
+
+		CString echoCmd = "@echo on\n\n";
+		fpm.Write(echoCmd, echoCmd.GetLength());
 
 		CString mergedFilePrefix = "m";
 		CStringArray out_array;
@@ -8637,7 +8678,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		int j;
 		for (j = 0; j < 100; j++)
 		{
-			int ret = NListView::MergePDfFileList(fp, in_array, out_array, mergedFilePrefix, targetPrintFolderPath, pdftoolCmd, errorText);
+			int ret = NListView::MergePDfFileList(fpm, in_array, out_array, mergedFilePrefix, targetPrintFolderPath, pdftoolCmd, errorText);
 			if (ret >= 0)
 			{
 				errorText.Empty();
@@ -8652,13 +8693,14 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			}
 			else
 			{
+				fpm.Close();
 				return -1;
 			}
 		}
+
 		FolderContext *fc = &MboxMail::s_folderContext;
 
 		CString mailArchiveFileName = MboxMail::s_path;
-
 
 		if (mailArchiveFileName.IsEmpty())
 		{
@@ -8674,6 +8716,12 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 
 			mergedFileName = fileNameBase + ".pdf";
 		}
+
+		CString mergeScript;
+		mergeScript.Format("\n\n@echo on\n\ndel /f /q \"%s\"\n\nren \"%s\" \"%s\"\n\npause\n\n", mergedFileName, out_array.GetAt(0), mergedFileName);
+		fpm.Write(mergeScript, mergeScript.GetLength());
+
+		fpm.Close();
 
 		CString mergedFilePath = targetPrintFolderPath + "\\" + mergedFileName;
 		mergedFileName = mergedFilePath;
@@ -8702,16 +8750,17 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 	return 1;
 }
 
-int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray &out_array, CString &mergedFilePrefix, CString &targetPrintFolderPath, CString &pdftoolCmd, CString &errortext)
+int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray &out_array, CString &mergedFilePrefix, CString &targetPrintFolderPath, CString &pdftoolCmd, CString &errortext)
 {
 	CString mergeScript;
+	CString echoCmd = "@echo off\n\n";
 	CString errorText;
 
 	int textType = 1;
-	int maxCmdLineLength = 8191 - 300;
-	//maxCmdLineLength = 512;
+	int maxCmdLineLength = 8191 - 700;
+	//maxCmdLineLength = 700;
 
-
+	CFile fp;
 	CFileException ExError;
 	CString mergeCmdFilePath = targetPrintFolderPath + "\\MergePDFs.cmd";
 	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
@@ -8726,7 +8775,7 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 		return -1;
 	}
 
-	mergeScript = "@echo off\n\ncd /d ";
+	mergeScript = "cd /d ";
 	mergeScript.Append(targetPrintFolderPath);
 	mergeScript.Append("\n\n");
 
@@ -8752,7 +8801,9 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 			mergedFile.Format(" -o %s >> MergePDFs.log 2>&1\n\n", mergedFileName);
 			mergeScript.Append(mergedFile);
 
+			fp.Write(echoCmd, echoCmd.GetLength());
 			fp.Write(mergeScript, mergeScript.GetLength());
+			fpm.Write(mergeScript, mergeScript.GetLength());
 
 			CString mergeCmdFilePath = fp.GetFilePath();
 
@@ -8779,7 +8830,7 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 
 			mergeScript.Empty();
 
-			mergeScript = "@echo off\n\ncd /d ";
+			mergeScript = "cd /d ";
 			mergeScript.Append(targetPrintFolderPath);
 			mergeScript.Append("\n\n");
 
@@ -8802,7 +8853,9 @@ int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray 
 		mergedFile.Format(" -o %s >> MergePDFs.log 2>&1\n\n", mergedFileName);
 		mergeScript.Append(mergedFile);
 
+		fp.Write(echoCmd, echoCmd.GetLength());
 		fp.Write(mergeScript, mergeScript.GetLength());
+		fpm.Write(mergeScript, mergeScript.GetLength());
 
 		CString mergeCmdFilePath = fp.GetFilePath();
 
@@ -11086,7 +11139,12 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	if (runInvestigation)
 	{
 		if (!foundImage)
-			return 1;
+			return -1;
+	}
+
+	if (!foundImage)
+	{
+		return -1;
 	}
 
 
@@ -11134,15 +11192,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 		//errorText = txt;
 
-		fpm.Close();
 		return -1;
-	}
-
-	if (!foundImage)
-	{
-		outbuf->Append(inData, indDataLen);
-		fpm.Close();
-		return 1;
 	}
 
 	char *pos = input;
@@ -11150,7 +11200,8 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	{
 		pos = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, img_pattern, img_patternLen);
 		if (pos == 0) {
-			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
+			if (outbuf->Count() > 0)
+				outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
 		pos += img_patternLen;
@@ -11496,7 +11547,6 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 	}
 
 	fpm.Close();
-
 
 	return 1;
 }
@@ -15472,6 +15522,69 @@ BOOL NListView::loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CStri
 	}
 	GdiplusShutdown(m_gdiplusToken);
 	return FALSE;
+}
+
+int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *preTag = "<pre";
+	static int preTagLen = istrlen(preTag);
+
+	static char *preEndTag = "</pre";
+	static int preEndTagLen = istrlen(preEndTag);
+
+	static char *pTag = "<p";
+	static int pTagLen = istrlen(pTag);
+
+	static char *pEndTag = "</p";
+	static int pEndTagLen = istrlen(pEndTag);
+
+	outbuf->ClearAndResize(indDataLen + 128);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+	char *e_data = e;
+
+	char *pPreTag = 0;
+	char *pPreEndTag = 0;
+
+	p_mark = p;
+
+	while (p < e)  // always true
+	{
+
+		pPreTag = 0;
+		pPreEndTag = 0;
+
+		count = IntPtr2Int(e - p);
+		p = TextUtilsEx::findNoCaseP(p, count, "<", 1);
+		if (p == 0)
+			break;
+
+		if (TextUtilsEx::strncmpUpper2Lower(p, e, preTag, preTagLen) == 0)
+		{
+			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
+			outbuf->Append(pTag, pTagLen);
+
+			p += preTagLen;
+			p_mark = p;
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, preEndTag, preEndTagLen) == 0)
+		{
+			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
+			outbuf->Append(pEndTag, pEndTagLen);
+
+			p += preEndTagLen;
+			p_mark = p;
+		}
+		else
+			p++;
+	}
+	if (outbuf->Count())
+		outbuf->Append(p_mark, IntPtr2Int(e_data - p_mark));
+
+	return 1;
 }
 
 

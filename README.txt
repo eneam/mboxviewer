@@ -2,6 +2,13 @@
 Changes
 ---
 
+v 1.0.3.32
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;
+ - Enhanced to wrap very long words (such as hyperlinks) causing small(er) fonts in PDF.;
+ - Addedd option to consider all files as potential mbox files or subset of files with extensions .mbox*.eml or no-extension (Thunderbird files) only.
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.31
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancment requests;

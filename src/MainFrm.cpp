@@ -613,10 +613,13 @@ void CMainFrame::OnFileOptions()
 	d.m_bEnhancedSelectFolderDlg = m_bEnhancedSelectFolderDlg;
 	if (d.DoModal() == IDOK) 
 	{
-		m_bEnhancedSelectFolderDlg = d.m_bEnhancedSelectFolderDlg;
-
 		NListView *pListView = GetListView();
 		NMsgView *pMsgView = GetMsgView();
+		NTreeView *pTreeView = GetTreeView();
+
+		pTreeView->m_filesToValidateAsMboxType = d.m_filesToValidateAsMboxType;
+
+		m_bEnhancedSelectFolderDlg = d.m_bEnhancedSelectFolderDlg;
 
 		if (pListView->m_subjectSortType != d.m_bSubjectSortType) {
 			pListView->m_subjectSortType = d.m_bSubjectSortType;

@@ -333,6 +333,9 @@
 #define IDC_ASSIGN_LABEL_PER_FOLDER     1280
 #define IDC_LABEL_PER_FOLDER            1280
 #define IDC_LABEL_NONE                  1281
+#define IDC_VALIDATE_MBOX_FILES         1282
+#define IDC_RADIO4                      1283
+#define IDC_VALIDATE_ALL                1283
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -402,7 +405,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        234
 #define _APS_NEXT_COMMAND_VALUE         32914
-#define _APS_NEXT_CONTROL_VALUE         1282
+#define _APS_NEXT_CONTROL_VALUE         1284
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

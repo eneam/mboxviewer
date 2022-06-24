@@ -63,7 +63,10 @@ public:
 	int m_bTimeType;
 	int m_bEnhancedSelectFolderDlg;
 	int m_bSubjectSortType;
+	int m_filesToValidateAsMboxType;
+	//
 	afx_msg void OnBnClickedRadio2();
+	afx_msg void OnBnClickedPictureViewer();
 };
 
 #endif // _OPTIONS_DLG_

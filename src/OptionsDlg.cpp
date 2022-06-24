@@ -49,6 +49,7 @@ COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
 	, m_format(0), m_barDelay(0)
 	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
 	, m_bImageViewer(1), m_bTimeType(0), m_bEnhancedSelectFolderDlg(0), m_bSubjectSortType(0)
+	, m_filesToValidateAsMboxType(0)
 {
 	//m_from_charsetId = GetACP();
 	//m_to_charsetId = GetACP();
@@ -73,12 +74,14 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_ENHANCED_SELECT_FOLDER, m_bEnhancedSelectFolderDlg);
 	DDX_Radio(pDX, IDC_TIME_LOCAL, m_bTimeType);
 	DDX_Radio(pDX, IDC_SUBJECT_SORT_TYPE, m_bSubjectSortType);
+	DDX_Radio(pDX, IDC_VALIDATE_MBOX_FILES, m_filesToValidateAsMboxType);
 }
 
 
 BEGIN_MESSAGE_MAP(COptionsDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &COptionsDlg::OnBnClickedOk)
-	ON_BN_CLICKED(IDC_RADIO2, &COptionsDlg::OnBnClickedRadio2)
+	//ON_BN_CLICKED(IDC_RADIO2, &COptionsDlg::OnBnClickedRadio2)
+	//ON_BN_CLICKED(IDC_PICTURE_VIEWER, &COptionsDlg::OnBnClickedPictureViewer)
 END_MESSAGE_MAP()
 
 
@@ -87,7 +90,8 @@ END_MESSAGE_MAP()
 
 void COptionsDlg::OnBnClickedOk()
 {
-	if (UpdateData(TRUE)) {
+	if (UpdateData(TRUE))
+	{
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("format"), m_format);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), m_barDelay);
 		if (m_exportEML == 1)
@@ -103,6 +107,7 @@ void COptionsDlg::OnBnClickedOk()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), m_bTimeType);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"), m_bEnhancedSelectFolderDlg);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjectSortType"), m_bSubjectSortType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("filesToValidateAsMboxType"), m_filesToValidateAsMboxType);
 
 		CDialog::OnOK();
 	}
@@ -139,6 +144,7 @@ BOOL COptionsDlg::OnInitDialog()
 	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"));
 	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"));
 	m_bSubjectSortType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjectSortType"));
+	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("filesToValidateAsMboxType"));
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -149,4 +155,12 @@ BOOL COptionsDlg::OnInitDialog()
 void COptionsDlg::OnBnClickedRadio2()
 {
 	// TODO: Add your control notification handler code here
+	int deb = 1;
+}
+
+
+void COptionsDlg::OnBnClickedPictureViewer()
+{
+	// TODO: Add your control notification handler code here
+	int deb = 1;
 }

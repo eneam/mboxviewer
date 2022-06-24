@@ -581,6 +581,8 @@ public:
 	CString m_rootMboxFilePath;
 	CFile m_rootMboxCfile;
 
+	static int m_filesToValidateAsMboxType;
+
 // Attributes
 public:
 
@@ -685,6 +687,8 @@ public:
 
 	static void FindAllDirs(LPCTSTR pstr);
 
+
+	static BOOL ImboxviewFileFilter(CString & fName);
 	static int ImboxviewFile(CString & fName);
 	static int IsValidMailFile(char *data, int datalen);
 
