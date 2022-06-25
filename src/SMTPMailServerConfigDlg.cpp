@@ -254,7 +254,7 @@ void MailDB::LoadData()
 	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
 
 	CString ActiveMailService;
-	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "AvtiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 	if (ret == FALSE)  // assume this is first time
 	{
 		Write2Registry();
@@ -282,7 +282,7 @@ void MailDB::Write2Registry()
 	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
 
 	CString ActiveMailService = "Gmail";
-	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "AvtiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 
 	GmailSMTPConfig.Write2Registry();;
 	YahooSMTPConfig.Write2Registry();
@@ -295,7 +295,7 @@ void MailDB::ReadFromRegistry()
 	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
 
 	ActiveMailService = "Gmail";
-	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "AvtiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 	if (ActiveMailService.CompareNoCase("Gmail") == 0)
 		ActiveMailServiceType = 0; // gmail
 	else if (ActiveMailService.CompareNoCase("Yahoo") == 0)
@@ -351,7 +351,7 @@ void MailDB::SaveChangesToActiveService(int encryptionType)
 	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
 
 	ActiveMailService = SMTPConfig.MailServiceName;
-	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "AvtiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 }
 
 void MailDB::SwitchToNewService(UINT nID)
