@@ -1,8 +1,6 @@
 1. Remove duplicate code
-2. Remove death code
+2. Remove dead code
 3. Drop use of Registry for configuration
 4. Port to UNICODE to address existing limitations
 5. Explore use of WebView2 or Chrome instead of old Internet Explorer/CWebBrowser
 6. And many more
-
-
