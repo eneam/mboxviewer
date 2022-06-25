@@ -15549,40 +15549,87 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	char *pPreTag = 0;
 	char *pPreEndTag = 0;
 
+	char c;
+	char c_next;
+
 	p_mark = p;
 
 	while (p < e)  // always true
 	{
-
 		pPreTag = 0;
 		pPreEndTag = 0;
 
-		count = IntPtr2Int(e - p);
-		p = TextUtilsEx::findNoCaseP(p, count, "<", 1);
-		if (p == 0)
+		pPreTag = TextUtilsEx::findNoCaseP(p, count, preTag, preTagLen);
+		if (pPreTag == 0)
+		{
 			break;
-
-		if (TextUtilsEx::strncmpUpper2Lower(p, e, preTag, preTagLen) == 0)
-		{
-			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
-			outbuf->Append(pTag, pTagLen);
-
-			p += preTagLen;
-			p_mark = p;
 		}
-		else if (TextUtilsEx::strncmpUpper2Lower(p, e, preEndTag, preEndTagLen) == 0)
-		{
-			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
-			outbuf->Append(pEndTag, pEndTagLen);
 
-			p += preEndTagLen;
-			p_mark = p;
+		outbuf->Append(p, IntPtr2Int(pPreTag - p));
+		outbuf->Append(pTag, pTagLen);
+
+		p += (pPreTag - p) + preTagLen;
+		p_mark = p;
+
+		while (p < e)
+		{
+			count = IntPtr2Int(e - p);
+			p = TextUtilsEx::findNoCaseP(p, count, "<", 1);
+			if (p == 0)
+			{
+				outbuf->Clear();
+				return 0;
+			}
+
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, preEndTag, preEndTagLen) != 0)
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p, e, preTag, preTagLen) != 0)
+				{
+					// ignore nested pre tag
+					p++;
+					continue;
+				}
+				else
+				{
+					// ignore nested pre tag
+					outbuf->Clear();
+					return 0;
+				}
+			}
+			else
+				break;
 		}
-		else
-			p++;
+
+		pPreEndTag = p;
+
+		p = p_mark;
+		while (p < pPreEndTag)
+		{
+			c = *p;
+			if ((c == '\r') || (c == '\n'))
+			{
+				outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
+				outbuf->Append("<br>", 4);
+				p_mark = p++;
+				c_next = *p;
+				if (c == '\r')
+				{
+					if (c_next == '\n')
+						p++;
+				}
+			}
+			else
+				p++;
+		}
+		outbuf->Append(pEndTag, pEndTagLen);
+		p += preEndTagLen;
+		p_mark = p;
 	}
 	if (outbuf->Count())
-		outbuf->Append(p_mark, IntPtr2Int(e_data - p_mark));
+	{
+		int cnt = IntPtr2Int(e - p_mark);
+		outbuf->Append(p_mark, cnt);
+	}
 
 	return 1;
 }

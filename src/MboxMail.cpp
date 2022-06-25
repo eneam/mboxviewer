@@ -5247,6 +5247,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			BOOL removeBackgroundColor = TRUE;
 			BOOL removeWidth = TRUE;
 
+
+			// workbuf is set inside RemoveBodyBackgroundColorAndWidth
 			int retval = NListView::RemoveBodyBackgroundColorAndWidth((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf,
 				bodyBackgroundColor, bodyWidth, removeBackgroundColor, removeWidth);
 
@@ -5491,7 +5493,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 	if (addPageBreak)
 	{
-		bdy = "\r\n<div style=\"page-break-before:always\"></div>";
+		bdy = "\r\n<div style=\"page-break-before:always\"></div>\r\n";
 		fp.Write(bdy, bdy.GetLength());
 	}
 	else
