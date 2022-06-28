@@ -5239,6 +5239,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		else
 			int deb = 1;
 
+		workbuf->ClearAndResize(outbuflarge->Count() * 2);
+		int retWidth = NListView::AddMaxWidthToHref((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf, TRUE);
+
+		if (workbuf->Count())
+			outbuflarge->Copy(*workbuf);
+		else
+			int deb = 1;
+
+
 		// Remove color and width from body tag, add later
 		CString bodyBackgroundColor;
 		CString bodyWidth;
@@ -5246,7 +5255,6 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			BOOL removeBackgroundColor = TRUE;
 			BOOL removeWidth = TRUE;
-
 
 			// workbuf is set inside RemoveBodyBackgroundColorAndWidth
 			int retval = NListView::RemoveBodyBackgroundColorAndWidth((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf,

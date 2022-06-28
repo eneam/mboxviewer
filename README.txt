@@ -5,7 +5,7 @@ Changes
 v 1.0.3.32
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
- - Enhanced to wrap very long words (such as hyperlinks) causing small(er) fonts in PDF.;
+ - Enhanced to wrap very long words (such as hyperlinks) and <pre>..long text ..</pre> text blocks with long lines causing small(er) fonts in PDF.;
  - Added option to consider all files as potential mbox files or subset of files with extensions .mbox*.eml or no-extension (Thunderbird files) only.;
  - Updated User Manual to describe new and updated features.;
 

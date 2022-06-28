@@ -11144,7 +11144,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 
 	if (!foundImage)
 	{
-		return -1;
+		;// return -1;
 	}
 
 
@@ -11206,14 +11206,21 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 		}
 		pos += img_patternLen;
 
+
 		if ((*pos == ' ') || (*pos == '\n') || (*pos == '\r'))
+		{
+			outbuf->Append(fromBegin, IntPtr2Int(pos - fromBegin));
+			outbuf->Append(" style=\"max-width:100%;\" ");
+			fromBegin = pos;
 			pos += 1;
+		}
 		else
 			continue;
 
 		// find end of <img src ...>
 		srcImgEnd = TextUtilsEx::strnstrUpper2Lower(pos, inputEnd, ">", 1);
 		if (srcImgEnd == 0) { // TODO: corrupted file ?
+
 			outbuf->Append(fromBegin, IntPtr2Int(inputEnd - fromBegin));
 			break;
 		}
@@ -11423,6 +11430,7 @@ int NListView::UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString
 			outbuf->Append("\"file:\\\\\\");
 			outbuf->Append(imgFile, imgFile.GetLength());
 			outbuf->Append('\"');
+			//outbuf->Append(" style=\"max-width:100%;\" ");
 
 			fromBegin = cidEnd;
 			if (*cidEnd == '\"')
@@ -15524,6 +15532,8 @@ BOOL NListView::loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CStri
 	return FALSE;
 }
 
+// Expensive:  Find and Convert <pre ... >  ... CRLF ... CRLF .. </pre>  to <p ... > ... <br>CRLF ... <br>CRLF ... </p>
+// to force wrap of long text lines 
 int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
 {
 	static char *preTag = "<pre";
@@ -15538,7 +15548,7 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	static char *pEndTag = "</p";
 	static int pEndTagLen = istrlen(pEndTag);
 
-	outbuf->ClearAndResize(indDataLen + 128);
+	//outbuf->ClearAndResize(indDataLen + 128);
 
 	char *p_mark;
 	char *p = inData;
@@ -15566,7 +15576,7 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 		}
 
 		outbuf->Append(p, IntPtr2Int(pPreTag - p));
-		outbuf->Append(pTag, pTagLen);
+		outbuf->Append(pTag, pTagLen); // append <p
 
 		p += (pPreTag - p) + preTagLen;
 		p_mark = p;
@@ -15585,13 +15595,13 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 			{
 				if (TextUtilsEx::strncmpUpper2Lower(p, e, preTag, preTagLen) != 0)
 				{
-					// ignore nested pre tag
+					// ignore and continue
 					p++;
 					continue;
 				}
 				else
 				{
-					// ignore nested pre tag
+					//  nested pre tag, give up
 					outbuf->Clear();
 					return 0;
 				}
@@ -15621,7 +15631,7 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 			else
 				p++;
 		}
-		outbuf->Append(pEndTag, pEndTagLen);
+		outbuf->Append(pEndTag, pEndTagLen);  // append </p
 		p += preEndTagLen;
 		p_mark = p;
 	}
@@ -15634,6 +15644,52 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	return 1;
 }
 
+int NListView::AddMaxWidthToHref(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *hrefAttr = "href=";
+	static int hrefAttrLen = istrlen(hrefAttr);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+	char *e_data = e;
+
+	char c;
+	int cnt1;
+	int cnt2;
+
+	p_mark = p;
+	while (p < e)  // always true
+	{
+		count = IntPtr2Int(e - p);
+		p = TextUtilsEx::findNoCaseP(p, count, hrefAttr, hrefAttrLen);
+		if (p == 0)
+		{
+			break;
+		}
+		c = *(p-1);
+		if ((c != ' ') && (c != '\r') && (c != '\n'))
+		{
+			p++;
+			continue;
+		}
+		
+		cnt1 = IntPtr2Int(p - p_mark);
+		outbuf->Append(p_mark, cnt1);
+		outbuf->Append(" style=\"max-width:100%;\" ");
+
+		p_mark = p;
+		p++;
+	}
+	if (outbuf->Count())
+	{
+		cnt2 = IntPtr2Int(e - p_mark);
+		outbuf->Append(p_mark, cnt2);
+	}
+
+	return 1;
+}
 
 int NListView::SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
 {
