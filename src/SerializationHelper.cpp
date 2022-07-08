@@ -36,7 +36,8 @@ void SerializerHelper::close()
 	if (m_hFile != INVALID_HANDLE_VALUE)
 	{
 		DWORD nwritten = 0;
-		WriteFile(m_hFile, m_buff, m_buff_offset, &nwritten, NULL);
+		if (m_writing)
+			WriteFile(m_hFile, m_buff, m_buff_offset, &nwritten, NULL);
 		CloseHandle(m_hFile);
 		m_hFile = INVALID_HANDLE_VALUE;
 	}
@@ -99,6 +100,8 @@ BOOL SerializerHelper::open(BOOL bWrite, int buffSize)
 			return FALSE;
 		}
 
+		m_fileSize = FileUtils::FileSize(m_path);
+
 		m_hFile = CreateFile(m_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		if (m_hFile == INVALID_HANDLE_VALUE)
 		{
@@ -114,6 +117,7 @@ BOOL SerializerHelper::open(BOOL bWrite, int buffSize)
 			close();
 			return FALSE;
 		}
+
 		m_buffCnt = nread;
 		return TRUE;
 	}
@@ -160,6 +164,11 @@ BOOL SerializerHelper::SetReadPointer(__int64 fileReadPosition)
 		return FALSE;
 	}
 
+	if ((fileReadPosition > m_fileSize) || (fileReadPosition < 0))
+	{
+		return FALSE;
+	}
+
 	LARGE_INTEGER filePointer;
 	filePointer.QuadPart = fileReadPosition;
 	LARGE_INTEGER lNewFilePointer;
@@ -172,6 +181,7 @@ BOOL SerializerHelper::SetReadPointer(__int64 fileReadPosition)
 		return FALSE;
 	}
 
+	// don't touch m_buff and m_buffSize 
 	m_buff_offset = 0;
 	m_buffCnt = 0;
 	m_file_read_offset = lNewFilePointer.QuadPart;
@@ -181,6 +191,17 @@ BOOL SerializerHelper::SetReadPointer(__int64 fileReadPosition)
 BOOL SerializerHelper::readN(void *v, int sz)
 {
 	if (m_buff == 0)
+	{
+		this->close();
+		return FALSE;
+	}
+
+	if ((m_file_read_offset + sz) == m_fileSize)
+	{
+		int deb = 1;
+	}
+
+	if ((m_fileSize - m_file_read_offset) < sz)
 	{
 		this->close();
 		return FALSE;
@@ -300,6 +321,15 @@ BOOL SerializerHelper::readString(CString &val)
 		this->close();
 		return FALSE;
 	}
+	if (l < 0)
+		return FALSE;
+
+	if ((m_fileSize - m_file_read_offset) < l)
+	{
+		this->close();
+		return FALSE;
+	}
+
 	LPSTR buf = val.GetBufferSetLength(l);
 	DWORD nRead = 0;
 	BOOL ret = readN(buf, l);

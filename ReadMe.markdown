@@ -47,6 +47,12 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.33
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Enhanced the index file reader to check file integrity to avoid MBox Viewer crash.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.32
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

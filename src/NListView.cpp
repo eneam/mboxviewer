@@ -2788,12 +2788,15 @@ BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText)
 
 int NListView::LoadMails(LPCSTR cache, MailArray *mails)
 {
+	//_int64 fileSize = FileUtils::FileSize(MboxMail::s_path);
+
 	SerializerHelper sz(cache);
 	//if (!sz.open(FALSE, 64))
 	if (!sz.open(FALSE))
 	{
 		return -1;
 	}
+
 	int version;
 	_int64 fSize;
 	int ni = 0;
@@ -2835,8 +2838,12 @@ int NListView::LoadMails(LPCSTR cache, MailArray *mails)
 	}
 
 	_int64 lastoff = 0;
+	int i = 0;
 	if (sz.readInt(&ni)) 
 	{
+		if (ni < 0)
+			return -1;
+
 		if (mails == 0)
 		{
 			MboxMail::s_mails.SetSize(ni);
@@ -2848,7 +2855,7 @@ int NListView::LoadMails(LPCSTR cache, MailArray *mails)
 			mails->SetSizeKeepData(0);
 		}
 
-		for (int i = 0; i < ni; i++)
+		for (i = 0; i < ni; i++)
 		{
 			MboxMail *m = new MboxMail();
 			if (!sz.readInt64(&m->m_startOff))
@@ -2956,10 +2963,22 @@ int NListView::LoadMails(LPCSTR cache, MailArray *mails)
 #endif
 		}
 	}
+	else
+		return -1;
 	TRACE("lastoff=%lld\n", lastoff);
 	sz.close();
 	if (mails == 0)
 		MboxMail::s_fSize = MboxMail::s_oSize = fSize;
+
+	if (i < ni)
+	{
+		if (mails == 0)
+			MboxMail::Destroy(&MboxMail::s_mails);
+		else
+			MboxMail::Destroy(mails);
+
+		return -1;
+	}
 
 	return ni;
 }
@@ -3271,7 +3290,13 @@ void NListView::FillCtrl()
 		MboxMail::SetMboxFilePath(m_path);
 		// it populates s_mails from mail index/mboxview file
 		ni = LoadMails(cache);
-		if( ni < 0 ) {
+		if( ni < 0 )
+		{
+			CString txt = _T("Index file\n\n\"") + cache;
+			txt += "\n\nappears to be corrupted. The index file will be recreated.";
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
 			ni = 0;
 			FileUtils::DeleteFile(cache);
 		} else
@@ -3509,7 +3534,13 @@ int NListView::MailFileFillCtrl(CString &errorText)
 		MboxMail::SetMboxFilePath(m_path);
 		// it populates s_mails from mail index/mboxview file
 		ni = LoadMails(cache);
-		if (ni < 0) {
+		if (ni < 0)
+		{
+			CString txt = _T("Index file\n\n\"") + cache;
+			txt += "\n\nappears to be corrupted. The index file will be recreated.";
+			HWND h = GetSafeHwnd();
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+
 			ni = 0;
 			FileUtils::DeleteFile(cache);
 		}

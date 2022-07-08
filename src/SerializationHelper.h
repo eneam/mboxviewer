@@ -38,6 +38,7 @@ private:
 	BOOL m_writing;
 	CString m_path;
 	HANDLE m_hFile;
+	__int64 m_fileSize;
 	__int64  m_file_read_offset;  //  read offset into file
 	int m_buff_offset;  // offset into m_buff
 	char *m_buff;
@@ -45,8 +46,11 @@ private:
 	int m_buffCnt;	// bytes in m_buff
 
 public:
-	SerializerHelper(LPCSTR fn) {
+	SerializerHelper(LPCSTR fn)
+	{
+		m_writing = FALSE;
 		m_path = fn;
+		m_fileSize = 0;
 		m_file_read_offset = 0;
 		m_buff_offset = 0;
 		m_buffCnt = 0;
