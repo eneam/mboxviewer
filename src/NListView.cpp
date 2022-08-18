@@ -703,12 +703,25 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		menu.AppendMenu(MF_SEPARATOR);
 	}
 
+	if ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))
+	{
+		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)printGroupToSubMenu.GetSafeHmenu(), _T("Print Subject Thread Mails To"));
+		menu.AppendMenu(MF_SEPARATOR);
+	}
+
 	const UINT S_HTML_OPEN_Id = 10;
 	MyAppendMenu(&menu, S_HTML_OPEN_Id, _T("Open in Browser"));
 
 	const UINT S_HTML_OPEN_RELATED_Id = 11;
 	if (abs(MboxMail::b_mails_which_sorted) == 99)
+	{
 		MyAppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Conversation Thread Mails in Browser"));
+	}
+
+	if ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))
+	{
+		MyAppendMenu(&menu, S_HTML_OPEN_RELATED_Id, _T("Open Subject Thread Mails in Browser"));
+	}
 
 	const UINT S_HTML_OPEN_RELATED_FILES_Id = 12;
 	MyAppendMenu(&menu, S_HTML_OPEN_RELATED_FILES_Id, _T("Open Related Files Location"));
@@ -742,7 +755,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_ARCHIVE_LOCATION_Id = 20;
 	if (pFrame && (MboxMail::IsFindMailsSelected() || MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		MyAppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save as Mbox Mail Archive file"));
+		MyAppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save All as Mbox Mail Archive file"));
 		MyAppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mbox Mail Archive Location"));
 	}
 
@@ -751,7 +764,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_LIST_LOCATION_Id = 23;
 	if (pFrame && (MboxMail::IsUserMailsSelected())) {
 		menu.AppendMenu(MF_SEPARATOR);
-		MyAppendMenu(&menu, S_SAVE_AS_LIST_Id, _T("Save as Mail List file"));
+		MyAppendMenu(&menu, S_SAVE_AS_LIST_Id, _T("Save All as Mail List file"));
 		MyAppendMenu(&menu, S_RELOAD_LIST_Id, _T("Reload from Mail List file"));
 		MyAppendMenu(&menu, M_LIST_LOCATION_Id, _T("Open Mail List Location"));
 	}
@@ -959,7 +972,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
-	case S_HTML_OPEN_Id: {
+	case S_HTML_OPEN_Id:
+	{
 		CString fileName;
 		if (pFrame) {
 			BOOL forceOpen = TRUE;
@@ -967,9 +981,10 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	break;
-	case S_HTML_OPEN_RELATED_Id: {
-			BOOL forceOpen = TRUE;
-			PrintMailGroupToText(multipleSelectedMails, iItem, 1, forceOpen);
+	case S_HTML_OPEN_RELATED_Id:
+	{
+		BOOL forceOpen = TRUE;
+		PrintMailGroupToText(multipleSelectedMails, iItem, 1, forceOpen);
 	}
 	break;
 
@@ -4104,6 +4119,38 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		// Wrap as HTML to display text with different charsets correctly
 		ext = "htm";
 
+
+		SimpleString *result = 0;
+		BOOL retResult = FALSE;
+		UINT strCodePage = TextUtilsEx::Str2PageCode((char*)(LPCSTR)bdycharset);
+		if ((strCodePage == 50220)
+			|| (strCodePage == 50221)
+			|| (strCodePage == 50222)
+			|| (strCodePage == 50225)
+			|| (strCodePage == 50227)
+			)
+		{
+
+			SimpleString *str = MboxMail::m_tmpbuf;
+			str->ClearAndResize(4*bdy.GetLength() + 1000);
+
+			str->Append((char*)(LPCSTR)bdy, bdy.GetLength());
+
+			SimpleString *wBuff = MboxMail::m_workbuf;
+			wBuff->ClearAndResize(4*bdy.GetLength() + 1000);
+
+			result = MboxMail::m_largebuf;
+			result->ClearAndResize(4*bdy.GetLength() + 1000);
+			
+			retResult = TextUtilsEx::Str2UTF8(str, strCodePage, result, wBuff);
+			if (retResult == FALSE)
+				result = 0;
+			else
+				bdycharset = "UTF-8";
+		}
+
+		//bdycharset = "UTF-8";
+
 		SimpleString *outbuf = MboxMail::m_outbuf;
 		outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
@@ -4119,10 +4166,18 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		}
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
+
 		char *inData = (char*)(LPCSTR)bdy;
 		int inDataLen = bdy.GetLength();
 		SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+		if (result != 0)
+		{
+			inData = (char*)result->Data();
+			inDataLen = result->Count();
+		}
+
 		TextUtilsEx::EncodeAsHtml(inData, inDataLen, tmpbuf);
+
 		inData = tmpbuf->Data();
 		inDataLen = tmpbuf->Count();
 
@@ -6120,14 +6175,17 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 
 	if (multipleSelectedMails == FALSE)
 	{
-		//if ((abs(MboxMail::b_mails_which_sorted) != 99) && ((abs(MboxMail::b_mails_which_sorted) != 5) && (m_subjectSortType != 1)))  // Next release
-		if (abs(MboxMail::b_mails_which_sorted) != 99)
+		if (!((abs(MboxMail::b_mails_which_sorted) == 99) || ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))))
 		{
+			//if (abs(MboxMail::b_mails_which_sorted) != 99)
+			{
 
-			CString txt = _T("Please sort all mails by conversation first.\n");
-			txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
-			HWND h = GetSafeHwnd(); // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				CString txt = _T("Please sort all mails by conversation threads or subject threads first.\n");
+				//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+				HWND h = GetSafeHwnd(); // we don't have any window yet
+				int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				//return;
+			}
 			return;
 		}
 
@@ -9827,12 +9885,16 @@ int NListView::PrintMailSelectedToSingleHTML_WorkerThread(MailIndexList *selecte
 
 int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 {
-	if (abs(MboxMail::b_mails_which_sorted) != 99) {
-
-		CString txt = _T("Please sort all mails by conversation first.\n");
-		txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
-		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	if (!((abs(MboxMail::b_mails_which_sorted) == 99) || ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))))
+	{
+		//if (abs(MboxMail::b_mails_which_sorted) != 99)
+		{
+			CString txt = _T("Please sort all mails by conversation threads or subject threads first.\n");
+			//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+			HWND h = GetSafeHwnd(); // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			//return -1;
+		}
 		return -1;
 	}
 
@@ -15599,6 +15661,7 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	{
 		pPreTag = 0;
 		pPreEndTag = 0;
+		count = IntPtr2Int(e - p);
 
 		pPreTag = TextUtilsEx::findNoCaseP(p, count, preTag, preTagLen);
 		if (pPreTag == 0)
@@ -15644,8 +15707,10 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 		pPreEndTag = p;
 
 		p = p_mark;
+		BOOL foundCRNL = FALSE;
 		while (p < pPreEndTag)
 		{
+			foundCRNL = FALSE;
 			c = *p;
 			if ((c == '\r') || (c == '\n'))
 			{
@@ -15658,9 +15723,14 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 					if (c_next == '\n')
 						p++;
 				}
+				foundCRNL = TRUE;
 			}
 			else
 				p++;
+		}
+		if (foundCRNL == FALSE)
+		{
+			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
 		}
 		outbuf->Append(pEndTag, pEndTagLen);  // append </p
 		p += preEndTagLen;
@@ -15669,6 +15739,50 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	if (outbuf->Count())
 	{
 		int cnt = IntPtr2Int(e - p_mark);
+		outbuf->Append(p_mark, cnt);
+	}
+
+	return 1;
+}
+
+int NListView::MakeSpacesAsNBSP(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *minMultiSpaces = "  ";
+	static int minMultiSpacesLen = istrlen(minMultiSpaces);
+
+	static char *nbsp2 = "&nbsp;&nbsp;";
+	static int nbsp2Len = istrlen(nbsp2);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+	char *e_data = e;
+
+	char *pMSpace = 0;
+
+	p_mark = p;
+
+	while (p < e)  // always true
+	{
+		count = IntPtr2Int(e - p);
+
+		pMSpace = TextUtilsEx::findNoCaseP(p, count, minMultiSpaces, minMultiSpacesLen);
+		if (pMSpace == 0)
+		{
+			break;
+		}
+
+		outbuf->Append(p, IntPtr2Int(pMSpace - p));
+		outbuf->Append(nbsp2, nbsp2Len);
+
+		p += (pMSpace - p) + minMultiSpacesLen;
+		p_mark = p;
+	}
+
+	int cnt = IntPtr2Int(e - p_mark);
+	if (cnt)
+	{
 		outbuf->Append(p_mark, cnt);
 	}
 
@@ -15709,6 +15823,106 @@ int NListView::AddMaxWidthToHref(char *inData, int indDataLen, SimpleString *out
 		cnt1 = IntPtr2Int(p - p_mark);
 		outbuf->Append(p_mark, cnt1);
 		outbuf->Append(" style=\"max-width:100%;\" ");
+
+		p_mark = p;
+		p++;
+	}
+	if (outbuf->Count())
+	{
+		cnt2 = IntPtr2Int(e - p_mark);
+		outbuf->Append(p_mark, cnt2);
+	}
+
+	return 1;
+}
+
+int NListView::AddMaxWidthToBlockquote(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *blockquoteAttr = "<blockquote";
+	static int blockquoteAttrLen = istrlen(blockquoteAttr);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+	char *e_data = e;
+
+	//char c;
+	int cnt1;
+	int cnt2;
+
+	p_mark = p;
+	while (p < e)  // always true
+	{
+		count = IntPtr2Int(e - p);
+		p = TextUtilsEx::findNoCaseP(p, count, blockquoteAttr, blockquoteAttrLen);
+		if (p == 0)
+		{
+			break;
+		}
+#if 0
+		c = *(p-1);
+		if ((c != ' ') && (c != '\r') && (c != '\n'))
+		{
+			p++;
+			continue;
+		}
+#endif
+		p += blockquoteAttrLen;
+
+		cnt1 = IntPtr2Int(p - p_mark);
+		outbuf->Append(p_mark, cnt1);
+		outbuf->Append(" style=\"max-width:100%; overflow-wrap:break-word !important;width:99%;\" ");
+
+		p_mark = p;
+		p++;
+	}
+	if (outbuf->Count())
+	{
+		cnt2 = IntPtr2Int(e - p_mark);
+		outbuf->Append(p_mark, cnt2);
+	}
+
+	return 1;
+}
+
+int NListView::AddMaxWidthToDIV(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags)
+{
+	static char *divAttr = "<div";
+	static int divAttrLen = istrlen(divAttr);
+
+	char *p_mark;
+	char *p = inData;
+	int count = indDataLen;
+	char *e = p + indDataLen;
+	char *e_data = e;
+
+	//char c;
+	int cnt1;
+	int cnt2;
+
+	p_mark = p;
+	while (p < e)  // always true
+	{
+		count = IntPtr2Int(e - p);
+		p = TextUtilsEx::findNoCaseP(p, count, divAttr, divAttrLen);
+		if (p == 0)
+		{
+			break;
+		}
+#if 0
+		c = *(p-1);
+		if ((c != ' ') && (c != '\r') && (c != '\n'))
+		{
+			p++;
+			continue;
+		}
+#endif
+		p += divAttrLen;
+
+		cnt1 = IntPtr2Int(p - p_mark);
+		outbuf->Append(p_mark, cnt1);
+		outbuf->Append(" style=\"max-width:80%;\" ");
 
 		p_mark = p;
 		p++;
@@ -17009,12 +17223,17 @@ int NListView::ForwardMailRange(int iSelectedItem)
 	CString targetPrintSubFolderName;
 	CString targetPrintFolderPath;
 
-	if (abs(MboxMail::b_mails_which_sorted) != 99) {
+	if (!((abs(MboxMail::b_mails_which_sorted) == 99) || ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))))
+	{
+		//if (abs(MboxMail::b_mails_which_sorted) != 99)
+		{
 
-		CString txt = _T("Please sort all mails by conversation first.\n");
-		txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
-		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			CString txt = _T("Please sort all mails by conversation threads or subject threads first.\n");
+			//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+			HWND h = GetSafeHwnd(); // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			//return -1;
+		}
 		return -1;
 	}
 

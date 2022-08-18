@@ -563,6 +563,7 @@ public:
 	static void assignColor2ConvesationGroups();
 	static void assignColor2ConvesationGroups(MailArray *mails);
 	static void Destroy(MailArray *marray = 0);
+	static void DestroyMboxMail(MboxMail *m);
 	static bool preprocessConversationsByThreadId();
 	static bool HasGMThreadId();
 	static bool preprocessConversations();

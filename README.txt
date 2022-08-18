@@ -6,6 +6,10 @@ v 1.0.3.33
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
  - Enhanced the index file reader to check file integrity to avoid MBox Viewer crash.;
+ - Fixed memory leak when merging root folder and sub-folders.;
+ - Fixed support for iso-2022-* character sets such as iso-2022-jp.;
+ - Added support for printing all mails in subject thread.;
+ - Reversed some of changes made in v1.0.3.32 to avoid line truncation when printing. It was causing rare print mail issues.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.32

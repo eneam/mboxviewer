@@ -369,6 +369,8 @@ public:
 	int VerifyMailsOnUserSelectsMailListMarkCounts();
 	//
 	void PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
+	//void PrintMailSubjectThreadToText(BOOL multipleSelectedMails, int iItem, int textType, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
+	
 	int PrintMailRangeToSingleCSV_Thread(int iItem);
 	// Debug Helpers
 	int ScanAllMailsInMbox();
@@ -498,7 +500,10 @@ public:
 	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int AddMaxWidthToHref(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
-
+	static int AddMaxWidthToBlockquote(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	static int AddMaxWidthToDIV(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	static int MakeSpacesAsNBSP(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	
 	static int FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tagDataLen);
 	static int FindBodyBackgroundColor(char *inData, int indDataLen, char *&attribTag, int &attribTagLen, CString &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib);
 	static int FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int tagLen, /*out*/ char *&attribTag, int &attribTagLen, CString &attribVal, HtmlAttribInfo &bodyAttrib);
