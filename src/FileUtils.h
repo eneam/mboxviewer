@@ -78,7 +78,7 @@ public:
 	static void GetFolderPath(CString &fileNamePath, CString &folderPath);
 	static void GetFolderPathAndFileNameW(CStringW &fileNamePath, CStringW &folderPath, CStringW &fileName);
 	static void GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName);
-	static void GetFileBaseNameAndExtension(CString &fileName, CString &fileNameExtention, CString &fileBaseName);
+	static void GetFileBaseNameAndExtension(CString &fileName, CString &fileBaseName, CString &fileNameExtention);
 	static void GetFileBaseName(CString &fileName, CString &fileBaseName);
 	static void GetFileName(CString &fileNamePath, CString &fileName);
 	static void GetFileExtension(CString &fileName, CString &fileNameExtention);

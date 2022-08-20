@@ -649,6 +649,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\DevelopmentCreateArchive.cpp" />
     <ClCompile Include="src\ExceptionUtil.cpp" />
     <ClCompile Include="src\ExportToCSVDlg.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -952,6 +953,7 @@
     <ClInclude Include="src\CustomNameTemplDlg.h" />
     <ClInclude Include="src\DataFolderConfigDlg.h" />
     <ClInclude Include="src\DateParser.h" />
+    <ClInclude Include="src\DevelopmentCreateArchive.h" />
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExceptionUtil.h" />
     <ClInclude Include="src\ExportToCSVDlg.h" />

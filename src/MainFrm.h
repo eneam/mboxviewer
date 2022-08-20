@@ -410,6 +410,7 @@ public:
 	afx_msg void OnFileDatafolderconfig();
 	afx_msg void OnFileMergerootfoldersub();
 	afx_msg void OnFileSelectasrootfolder();
+	afx_msg void OnDevelopmentoptionsDumprawdata();
 };
 
 /////////////////////////////////////////////////////////////////////////////

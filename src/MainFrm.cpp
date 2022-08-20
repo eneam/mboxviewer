@@ -47,6 +47,7 @@
 #include "SMTPMailServerConfigDlg.h"
 #include "DataFolderConfigDlg.h"
 #include "MergeRootFolderAndSubfolders.h"
+#include "DevelopmentCreateArchive.h"  // this is dialog
 
 #include "NTreeView.h"
 
@@ -271,6 +272,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_DATAFOLDERCONFIG, &CMainFrame::OnFileDatafolderconfig)
 	ON_COMMAND(ID_FILE_MERGEROOTFOLDERSUB, &CMainFrame::OnFileMergerootfoldersub)
 	ON_COMMAND(ID_FILE_SELECTASROOTFOLDER, &CMainFrame::OnFileSelectasrootfolder)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DUMPRAWDATA, &CMainFrame::OnDevelopmentoptionsDumprawdata)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5272,4 +5274,162 @@ void CMainFrame::OnFileSelectasrootfolder()
 		}
 	}
 #endif
+}
+
+
+void CMainFrame::OnDevelopmentoptionsDumprawdata()
+{
+	// TODO: Add your command handler code here
+#define RWBUFLEN 10240
+
+	NListView * pListView = GetListView();
+	NMsgView * pMsgView = GetMsgView();
+
+	if (pListView == 0)
+	{
+		return;
+	}
+
+	CString lastMailFilePath;
+	int lastMailIndex = -1;
+	int lastWhichSort = 1;
+	int selMailIndex = -1;
+
+	lastMailFilePath = pListView->m_path;
+	selMailIndex = pListView->m_lastSel;
+
+	int maxIndex = MboxMail::s_mails.GetCount() - 1;
+	if ((selMailIndex < 0) || (selMailIndex > maxIndex))
+	{
+		CString txt = "Please select mail archive and one of mails.";
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+
+	lastMailIndex = MboxMail::s_mails[selMailIndex]->m_index;
+
+	int maxRefIndex = MboxMail::s_mails_ref.GetCount() - 1;
+	if ((lastMailIndex < 0) || (lastMailIndex > maxRefIndex))
+	{
+		CString txt = "Internal Error. Please re-select mail archive and one of mails.";
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
+	}
+
+	MboxMail *m = MboxMail::s_mails_ref[lastMailIndex];
+
+	DevelopmentCreateArchive dlg;
+	dlg.m_sourceArchiveFile = lastMailFilePath;
+	dlg.m_selectedMailSubject = m->m_subj;
+
+	INT_PTR ret = dlg.DoModal();
+	if (ret != IDOK)
+	{
+		return;
+	}
+
+	CString mboxFilePath = dlg.m_sourceArchiveFolder + dlg.m_createdArchiveName;
+
+	FileUtils::DeleteFile(mboxFilePath);
+	CString dataPath = MboxMail::GetLastDataPath();
+	CString indexFilePath = dataPath + "\\" + dlg.m_createdArchiveName + ".mboxview";
+	FileUtils::DeleteFile(indexFilePath);
+
+	int firstIndex = lastMailIndex;
+	if (dlg.m_leadingMailCount < 0)
+		firstIndex = 0;
+	else
+	{
+		firstIndex = lastMailIndex - dlg.m_leadingMailCount;
+		if (firstIndex < 0)
+			firstIndex = 0;
+	}
+
+	int lastIndex = lastMailIndex;
+	if (dlg.m_trailingMailCount < 0)
+		lastIndex = maxRefIndex;
+	else
+	{
+		lastIndex = lastMailIndex + dlg.m_trailingMailCount;
+		if (lastIndex > maxRefIndex)
+			lastIndex = maxRefIndex;
+	}
+
+	MboxMail *mFirst = MboxMail::s_mails_ref[firstIndex];
+	MboxMail *mLast = MboxMail::s_mails_ref[lastIndex];
+
+	_int64 firstStartOff = mFirst->m_startOff;
+	_int64 lastStartOff = mLast->m_startOff;
+
+	_int64 lastEndOff = mLast->m_startOff + mLast->m_length;
+
+	CFile fpr;
+	CString &fname = MboxMail::s_path;
+	CFileException rExError;
+	if (!fpr.Open(lastMailFilePath, CFile::modeRead | CFile::shareDenyWrite, &rExError))
+	{
+		// TODO: critical failure
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(rExError);
+
+		CString txt = _T("Could not open \"") + lastMailFilePath;
+		txt += _T("\" mbox mail archive file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		return;
+	}
+
+	CFile fpw;
+	CFileException wExError;
+	if (!fpw.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &wExError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(wExError);
+
+		CString txt = _T("Could not create \"") + mboxFilePath;
+		txt += _T("\" mail archive file.\n");
+		txt += exErrorStr;
+
+		//TRACE(_T("%s\n"), txt);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		fpr.Close();
+		return;
+	}
+
+	_int64 totalLength = lastEndOff - firstStartOff;
+
+	char buff[RWBUFLEN];
+	_int64 bytesLeft = totalLength;
+
+	UINT bytes2Read;
+	UINT bytes2Write;
+	fpr.Seek(firstStartOff, SEEK_SET);
+	while (bytesLeft > 0)
+	{
+		if (bytesLeft > RWBUFLEN)
+			bytes2Read = RWBUFLEN;
+		else
+			bytes2Read = (UINT)bytesLeft;
+
+		bytes2Write = fpr.Read(buff, bytes2Read);
+		if (bytes2Write != bytes2Read)
+			int deb = 1;
+
+		// TODO:  Write() can create exception !!!!! 
+		fpw.Write(buff, bytes2Write);
+		fpw.Flush();
+
+		bytesLeft -= bytes2Write;
+	}
+
+	fpr.Close();
+	fpw.Close();
+	int deb = 1;
 }

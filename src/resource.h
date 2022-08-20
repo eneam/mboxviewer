@@ -51,6 +51,7 @@
 #define IDD_FORWARD_EMAIL               228
 #define IDD_DATA_FOLDER_DLG             230
 #define IDD_MERGE_FOLDER_AND_SUBFOLDERS 232
+#define IDD_DEV_CREATE_ARCHIVE          234
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -191,6 +192,7 @@
 #define IDC_CHROME_EXE_PATH             1116
 #define IDC_USER_ACCOUNT                1116
 #define IDC_EDIT_FORWARD_BCC            1116
+#define IDC_MAIL_LEADING_CNT            1116
 #define IDC_MATCH_WORD3                 1117
 #define IDC_EDIT_SUBJECT_WHOLE          1117
 #define IDC_REGULAR_EXPR3               1118
@@ -199,12 +201,14 @@
 #define IDC_HTML2PDF_SCRIPT_PATH        1119
 #define IDC_USER_PASSWORD               1119
 #define IDC_EDIT_FORWARD_TEXT           1119
+#define IDC_MAIL_TRAILING_CNT           1119
 #define IDC_MATCH_WORD4                 1120
 #define IDC_EDIT_MESSAGE_WHOLE          1120
 #define IDC_REGULAR_EXPR4               1121
 #define IDC_EDIT5                       1122
 #define IDC_EDIT_ATTACHMENT             1122
 #define IDC_EDIT_FORWARD_SERVICE        1122
+#define IDC_CREATED_ARCHIVE             1122
 #define IDC_MATCH_WORD5                 1123
 #define IDC_EDIT_ATTACHMENT_WHOLE       1123
 #define IDC_REGULAR_EXPR5               1124
@@ -336,6 +340,8 @@
 #define IDC_VALIDATE_MBOX_FILES         1282
 #define IDC_RADIO4                      1283
 #define IDC_VALIDATE_ALL                1283
+#define IDC_SOURCE_ARCHIVE              1284
+#define IDC_SELECTED_SUBJECT            1285
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -395,6 +401,7 @@
 #define ID_SELECTASROOTFOLDER_FOLDERTREEVIEW 32911
 #define ID_FILE_MERGEROOTFOLDERSUB      32912
 #define ID_FILE_SELECTASROOTFOLDER      32913
+#define ID_DEVELOPMENTOPTIONS_DUMPRAWDATA 32914
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -403,9 +410,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        234
-#define _APS_NEXT_COMMAND_VALUE         32914
-#define _APS_NEXT_CONTROL_VALUE         1284
+#define _APS_NEXT_RESOURCE_VALUE        236
+#define _APS_NEXT_COMMAND_VALUE         32915
+#define _APS_NEXT_CONTROL_VALUE         1286
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
