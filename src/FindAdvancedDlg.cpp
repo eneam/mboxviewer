@@ -226,7 +226,7 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 			}
 			else
 			{
-				m_params.m_htmlText = 1;
+				m_params.m_plainText = 1;
 				((CButton*)p)->SetCheck(m_params.m_plainText);
 				p->EnableWindow(FALSE);
 
@@ -417,7 +417,7 @@ void CFindAdvancedParams::SetDflts()
 	m_filterNumb = 0;
 	m_bSingleTo = 0;
 	m_plainText = 1;
-	m_htmlText = 0;
+	m_htmlText = 1;
 
 	m_bFindAllMailsThatDontMatch = FALSE;
 }

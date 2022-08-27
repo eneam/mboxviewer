@@ -2108,6 +2108,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	CString oldItemName;
 	CString newItemName;
 
+	__int64 res = *pResult;
+	*pResult = 0;
+
 	NMTREEVIEW *pNm = (LPNMTREEVIEW)pNMHDR;
 
 	HTREEITEM hNewItem = pNm->itemNew.hItem;
@@ -2991,7 +2994,7 @@ void NTreeView::SaveData(HTREEITEM hItem)
 
 		TRACE(_T("%s\n"), txt);
 	}
-#if _DEBUG
+#ifdef _DEBUG
 	// Test
 	TRACE("SaveData: Hash Table fileSizes Count=%d\n", fileSizes->GetCount());
 	ArchiveFileInfo info;
@@ -4487,7 +4490,7 @@ CRegArray::~CRegArray()
 
 void CRegArray::Dump()
 {
-#if _DEBUG
+#ifdef _DEBUG
 	CString key;
 
 	TRACE("FOLDER LIST:\n");
@@ -8273,7 +8276,7 @@ void MBoxFolderTree::PrintNode(CFile *fp, MBoxFolderNode *node)
 
 void MBoxFolderTree::Print(CString &filePath)
 {
-#if _DEBUG
+#ifdef _DEBUG
 	CFile fp;
 	CString path = filePath;
 	path.TrimRight("\\");

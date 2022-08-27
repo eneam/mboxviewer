@@ -231,7 +231,7 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 
 		url = "about:<html><head><style>body{background-color: #";
 		url.Append(colorStr);
-		url.Append(";}</style></head><body></body><br>");
+		url.Append(";}</style></head><body></body></html><br>");
 	}
 
 	if ((strURL.CompareNoCase(url) != 0) 

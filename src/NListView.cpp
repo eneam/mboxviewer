@@ -4875,9 +4875,9 @@ void NListView::ClearDescView()
 		CString colorStr;
 		int retC2A = NListView::Color2Str(color, colorStr);
 
-		url = "about:<html><head><style>\r\nbody {background-color: #";
+		url = "about:<html><head><style>body{background-color: #";
 		url.Append(colorStr);
-		url.Append(";}\r\n</style></head><body></body><br>");
+		url.Append(";}</style></head><body></body></html><br>");
 	}
 
 	pMsgView->m_browser.Navigate(url, NULL);
@@ -18147,7 +18147,7 @@ int NListView::VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePa
 
 	if (m_developmentMode)
 	{
-#if _DEBUG
+#ifdef _DEBUG
 		processDir = "G:\\MailKit\\ForwardEmlFile\\bin\\Debug\\netcoreapp3.1";
 		processDir = "G:\\Documents\\GIT1.0.3.21 - Copy\\mboxviewer\\ForwardEmlFile\\bin\\Debug\\netcoreapp3.1";
 #else

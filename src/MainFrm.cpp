@@ -4203,7 +4203,7 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 
 				url = "about:<html><head><style>body{background-color: #";
 				url.Append(colorStr);
-				url.Append(";}</style></head><body></body><br>");
+				url.Append(";}</style></head><body></body></html><br>");
 			}
 
 			pMsgView->m_browser.Navigate(url, NULL);
