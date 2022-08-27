@@ -53,6 +53,9 @@ struct CFindAdvancedParams
 	BOOL	m_bSetAllWholeWords;
 	BOOL	m_bSetAllCaseSensitive;
 
+	int m_plainText;
+	int m_htmlText;
+
 	COleDateTime m_startDate;
 	COleDateTime m_endDate;
 	BOOL m_filterDates;

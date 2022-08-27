@@ -136,10 +136,26 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 	char c;
 
 	p_beg = p;
+	out->Append("<p>");
 	while (p < e)
 	{
 		c = *p;
-		// TODO: implement as table and evalute performance
+#if 1
+		if (c == ' ')
+		{
+			if (*(p+1) == ' ')
+			{
+				len = IntPtr2Int(p - p_beg);
+				if (len > 0) out->Append(p_beg, len);
+				out->Append("&nbsp;");
+				p++;
+				p_beg = p;
+			}
+			else
+				p++;
+		}
+		else
+#endif
 		if ((c == '>') || (c == '<') || (c == '\"') || (c == '&') || (c == '\''))
 		{
 			len = IntPtr2Int(p - p_beg);
@@ -192,6 +208,108 @@ void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 	{
 		out->Append(p_beg, len);
 	}
+	out->Append("</p>");
+}
+
+void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *out)
+{
+	static char *prefixTable[] = { "http:", "https:", "ftp:", "mailto:", "file:", };
+	static int prefixLengthTable[] = { istrlen("http:"), istrlen("https:"), istrlen("ftp:"), istrlen("mailto:"), istrlen("file:") };
+
+	// Assume out is done by caller
+	out->ClearAndResize(inLength * 3);
+	register char *p = (char*)in;
+	register char *e = p + inLength;
+	char *p_beg;
+	int len;
+	char c;
+
+	int prefixCnt = sizeof(prefixTable)/sizeof(char*);
+
+	char *p_save = p;
+	p_beg = p;  // points to beginning of text to copy
+	char *prefixBeg;
+	out->Append("<pre>");
+	while (p < e)
+	{
+		c = *p;
+		p_save = p;
+		if (c == ':')
+		{
+			int i = 0;
+			char *pEnd = p+1;
+			for (i; i < prefixCnt; i++)
+			{
+				char *cPrefix = prefixTable[i];
+				int cPrefixLen = prefixLengthTable[i];
+
+				prefixBeg = p - (cPrefixLen -1);
+				if (prefixBeg < in)
+					continue;
+
+				int retlen = TextUtilsEx::strncmpUpper2Lower(prefixBeg, pEnd, cPrefix, cPrefixLen);
+				if (retlen == 0)
+				{
+					len = IntPtr2Int(prefixBeg - p_beg);
+					out->Append(p_beg, len);
+					out->Append("<a href=\"");
+
+					p_beg = prefixBeg;
+					// find end of link
+					c = 0;
+					while (p < e)
+					{
+						c = *p;
+						if ((c == ' ') || (c == '\t') || (c == '\r') || (c == '\n') )
+							break;
+						else
+							p++;
+					}
+					if (c)
+					{
+						c = *(p-1);
+						if ((c == '>') || (c == ')') || (c == '.') || (c == ',') || (c == ']') || (c == '}'))  // inexpensive but not most reliable solution
+							p--;
+					}
+					len = IntPtr2Int(p - p_beg);
+					out->Append(p_beg, len);
+					out->Append("\">");
+					out->Append(p_beg, len);
+					out->Append("</a>");
+					p_beg = p;
+					break;
+				}
+			}
+			if (p == p_save)
+			{
+				p++;
+			}
+			continue;
+		}
+		if ((c == '>') || (c == '<') || (c == '\"') || (c == '&') || (c == '\''))
+		{
+			len = IntPtr2Int(p - p_beg);
+			if (len > 0) out->Append(p_beg, len);
+			switch (c) {
+			case '&':  out->Append("&amp;"); break;
+			case '\"': out->Append("&quot;"); break;
+			case '\'': out->Append("&apos;"); break;
+			case '<':  out->Append("&lt;"); break;
+			case '>':  out->Append("&gt;"); break;
+			default:   break; // we should never be here
+			}
+			p++;
+			p_beg = p;
+		}
+		else
+			p++;
+	}
+	len = IntPtr2Int(p - p_beg);
+	if (len > 0)
+	{
+		out->Append(p_beg, len);
+	}
+	out->Append("</pre>");
 }
 
 BOOL TextUtilsEx::Wide2Ansi(CStringW &strW, CString &strA, DWORD &error)
@@ -555,6 +673,8 @@ CP2NM cp2name[] = {
 	{ 437 , "IBM437" , "OEM United States" },
 	{ 500 , "IBM500" , "IBM EBCDIC (International)" },
 	{ 708 , "ASMO-708" , "Arabic (ASMO 708)" },
+	//{ 709 , "" , "Arabic (ASMO-449+, BCON V4)" },  // no name assigned in Microsoft table
+	//{ 710 , "" , "Arabic - Transparent Arabic" },  // no name assigned in Microsoft table
 	{ 720 , "DOS-720" , "Arabic (DOS)" },
 	{ 737 , "ibm737" , "Greek (DOS)" },
 	{ 775 , "ibm775" , "Baltic (DOS)" },
@@ -655,6 +775,7 @@ CP2NM cp2name[] = {
 	{ 20936 , "x-cp20936" , "Chinese Simplified (GB2312-80)" },
 	{ 20949 , "x-cp20949" , "Korean Wansung" },
 	{ 21025 , "cp1025" , "IBM EBCDIC (Cyrillic Serbian-Bulgarian)" },
+	//{ 21027 , "" , "(deprecated)" },  // no name assigned in Microsoft table
 	{ 21866 , "koi8-u" , "Cyrillic (KOI8-U)" },
 	{ 28591 , "iso-8859-1" , "Western European (ISO)" },
 	{ 28592 , "iso-8859-2" , "Central European (ISO)" },
@@ -674,9 +795,19 @@ CP2NM cp2name[] = {
 	{ 50222 , "iso-2022-jp" , "Japanese (JIS-Allow 1 byte Kana - SO/SI)" },
 	{ 50225 , "iso-2022-kr" , "Korean (ISO)" },
 	{ 50227 , "x-cp50227" , "Chinese Simplified (ISO-2022)" },
+	//{ 50229 , "" , "ISO 2022 Traditional Chinese" },  // per Microsoft table
+	{ 50229 , "iso-2022-cn" , "ISO 2022 Traditional Chinese" },  // Z.M my guess
+	//{ 50930 , "" , "EBCDIC Japanese (Katakana) Extended" },  // no name assigned in Microsoft table
+	//{ 50931 , "" , "EBCDIC US-Canada and Japanese" },  // no name assigned in Microsoft table
+	//{ 50933 , "" , "EBCDIC Korean Extended and Korean" },  // no name assigned in Microsoft table
+	//{ 50935 , "" , "EBCDIC Simplified Chinese Extended and Simplified Chinese" },  // no name assigned in Microsoft table
+	//{ 50936 , "" , "EBCDIC Simplified Chinese" },  // no name assigned in Microsoft table
+	//{ 50937 , "" , "EBCDIC US-Canada and Traditional Chinese" },  // no name assigned in Microsoft table
+	//{ 50939 , "" , "EBCDIC Japanese (Latin) Extended and Japanese" },  // no name assigned in Microsoft table
 	{ 51932 , "euc-jp" , "Japanese (EUC)" },
 	{ 51936 , "EUC-CN" , "Chinese Simplified (EUC)" },
 	{ 51949 , "euc-kr" , "Korean (EUC)" },
+	//{ 51950 , "" , "EUC Traditional Chinese" },  // no name assigned in Microsoft table
 	{ 52936 , "hz-gb-2312" , "Chinese Simplified (HZ)" },
 	{ 54936 , "GB18030" , "Chinese Simplified (GB18030)" },
 	{ 57002 , "x-iscii-de" , "ISCII Devanagari" },

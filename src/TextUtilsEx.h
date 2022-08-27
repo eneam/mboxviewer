@@ -72,6 +72,7 @@ public:
 	//
 	static void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out);
 	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
+	static void EncodeAsHtmlText(const char *in, int inLength, SimpleString *out);
 	static void delete_charset2Id();
 	static UINT charset2Id(const char *char_set);
 	static void delete_id2charset();

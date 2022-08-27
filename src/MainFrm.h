@@ -411,6 +411,7 @@ public:
 	afx_msg void OnFileMergerootfoldersub();
 	afx_msg void OnFileSelectasrootfolder();
 	afx_msg void OnDevelopmentoptionsDumprawdata();
+	afx_msg void OnDevelopmentoptionsDevelo();
 };
 
 /////////////////////////////////////////////////////////////////////////////

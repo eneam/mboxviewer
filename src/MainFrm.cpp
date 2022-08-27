@@ -273,6 +273,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_MERGEROOTFOLDERSUB, &CMainFrame::OnFileMergerootfoldersub)
 	ON_COMMAND(ID_FILE_SELECTASROOTFOLDER, &CMainFrame::OnFileSelectasrootfolder)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DUMPRAWDATA, &CMainFrame::OnDevelopmentoptionsDumprawdata)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DEVELO, &CMainFrame::OnDevelopmentoptionsDevelo)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5432,4 +5433,18 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	fpr.Close();
 	fpw.Close();
 	int deb = 1;
+}
+
+
+void CMainFrame::OnDevelopmentoptionsDevelo()
+{
+	// TODO: Add your command handler code here
+
+	MboxMail::developerMode = !MboxMail::developerMode;
+
+	CMenu *menu = this->GetMenu();
+	if (MboxMail::developerMode)
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_CHECKED);
+	else
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_UNCHECKED);
 }

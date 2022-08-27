@@ -2,6 +2,15 @@
 Changes
 ---
 
+v 1.0.3.34
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Recreated hyperlinks in plain text mails.;
+ - Prevented merging multiple blanks into single blank in plain text mails.;
+ - Added menu options while in "User Selected Mails" to make GUI more user friendly.;
+ - Added additional code to prevent line truncation and/or small font when printing to PDF.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.33
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

@@ -57,6 +57,8 @@ int MboxMail::runningWorkerThreadType = 0;
 BOOL MboxMail::m_seExceptionMsgBox = TRUE;
 BOOL MboxMail::m_cppExceptionMsgBox = FALSE;
 
+BOOL MboxMail::developerMode = FALSE;
+
 HintConfig MboxMail::m_HintConfig;
 
 MailBodyPool *MailBody::m_mpool = new MailBodyPool;
@@ -4723,11 +4725,8 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 			BOOL ret2 = TextUtilsEx::WStr2CodePage((wchar_t*)(LPCWSTR)validNameW, validNameW.GetLength(), outCodePage, &validNameUTF8, error);
 
 			// Create hyperlink
-
 			if (attachmentCnt)
 				outbuf->Append(" , ");
-			else
-				outbuf->Append(" ");
 
 			CStringW filePathW = printCachePathW + L"\\" + validNameW;
 
@@ -5122,7 +5121,7 @@ int MboxMail::printDummyMailToHtmlFile(/*out*/CFile &fp)
 
 int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in - mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL addPageBreak)
 {
-	CString scale = "100%;";
+	CString scale = "98%;";
 	char *token = 0;
 	int tokenlen = 0;
 
@@ -5191,31 +5190,35 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		htmlHdrFldNameStyle.Format("<style>\r\n.hdrfldname{%s}\r\n.hdrfldtext{%s}\r\n</style>", fldNameFontStyle, fldTextFontStyle);
 	}
 
+	CString preStyle = "pre { overflow-x:auto;  white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
+
 	CString bdyy;
 	bdyy.Append("\r\n\r\n<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
 	bdyy.Append("<article style=\"width:");
 	bdyy.Append("100%;");
 	bdyy.Append("float:left; position:left;background-color:#FFFFFF; margin: 0mm 0mm 0mm 0mm; \">");
-	bdyy.Append("<style>@page {size: auto; margin: 12mm 4mm 12mm 6mm;}; * {font-size:100% !important;};</style>");
+	bdyy.Append("<style>\r\n");
+	bdyy.Append(preStyle);
+	bdyy.Append("\r\n@page {size: auto; margin: 12mm 4mm 12mm 6mm; }");
 
 	if (fontSizePDF == 0)
 	{
 		; // bdyy.Append("</style>");
 	}
-
 	else if (singleMail == false)
 	{
 		if (fontSizePDF == 16)
-			bdyy.Append("<style> * {font-size:16px !important;}</style>");
+			bdyy.Append("\r\n* {font-size:16px !important;}");
 		else if (fontSizePDF == 20)
-			bdyy.Append("<style> * {font-size:20px !important;}</style>");
+			bdyy.Append("\r\n* {font-size:20px !important;}");
 		else if (fontSizePDF == 24)
-			bdyy.Append("<style> * {font-size:24px !important;}</style>");
-
+			bdyy.Append("\r\n* {font-size:24px !important;}");
 	}
 
+	bdyy.Append("\r\n</style>");
 
 	CString margin = "margin:0mm 8mm 0mm 12mm;";
+	margin = "margin:0mm 0mm 0mm 0mm;";
 	margin = "margin-left:5px;";
 
 	fp.Write(bdyy, bdyy.GetLength());
@@ -5242,16 +5245,22 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			int deb = 1;
 
 #if 0
-		// Doesn't quite work in all cases, needs more work. Can't replace spaces everywhere, maybe just between <pre> and </pre> wil work. 
-		// Need time to prototype releible solution. Aug 17,2022
+#if 0
+		// consider adding global style  <style> https://www.w3docs.com/snippets/css/how-to-wrap-text-in-a-pre-tag-with-css.html
+		pre{
+			white-space: pre-wrap;       /* Since CSS 2.1 */
+			white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+			white-space: -pre-wrap;      /* Opera 4-6 */
+			white-space: -o-pre-wrap;    /* Opera 7 */
+			word-wrap: break-word;       /* Internet Explorer 5.5+ */
+		}
+#endif
 		workbuf->ClearAndResize(outbuflarge->Count() * 2);
 		int retPrep = NListView::ReplacePreTagWitPTag((char*)outbuflarge->Data(), outbuflarge->Count(), workbuf, TRUE);
 
 		if (workbuf->Count())
 		{
-			outbuflarge->ClearAndResize(workbuf->Count() * 3);
-			int retPrep = NListView::MakeSpacesAsNBSP((char*)workbuf->Data(), workbuf->Count(), outbuflarge, TRUE);
-			//outbuflarge->Copy(*workbuf);
+			outbuflarge->Copy(*workbuf);
 		}
 		else
 			int deb = 1;
@@ -5386,7 +5395,11 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			}
 		}
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\"></head>";
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">";
+		bdy.Append("<style>\r\n");
+		bdy.Append(preStyle);
+		bdy.Append("\r\n</style>");
+		bdy.Append("</head>");
 		if (extraHtmlHdr == false)
 			bdy.Append("</html>\r\n");
 		else
@@ -5485,7 +5498,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			+ "\">\r\n";
 		fp.Write(bdy, bdy.GetLength());
 
-		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body bgColor=#ffffff><br>\r\n";
+		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">";
+		bdy.Append("<style>\r\n");
+		bdy.Append(preStyle);
+		bdy.Append("\r\n</style></head><body bgColor=#ffffff><br>\r\n");
 		fp.Write(bdy, bdy.GetLength());
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
@@ -5500,7 +5516,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				char *inData = inbuf->Data();
 				int inDataLen = inbuf->Count();
 				workbuf->ClearAndResize(3 * inDataLen);
-				TextUtilsEx::EncodeAsHtml(inData, inDataLen, workbuf);
+				TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, workbuf);
 
 				fp.Write(workbuf->Data(), workbuf->Count());
 			}
@@ -5509,7 +5525,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				char *inData = outbuflarge->Data();
 				int inDataLen = outbuflarge->Count();
 				workbuf->ClearAndResize(3 * inDataLen);
-				TextUtilsEx::EncodeAsHtml(inData, inDataLen, workbuf);
+				TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, workbuf);
 
 				fp.Write(workbuf->Data(), workbuf->Count());
 			}
@@ -5519,7 +5535,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			char *inData = outbuflarge->Data();
 			int inDataLen = outbuflarge->Count();
 			workbuf->ClearAndResize(3 * inDataLen);
-			TextUtilsEx::EncodeAsHtml(inData, inDataLen, workbuf);
+			TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, workbuf);
 
 			fp.Write(workbuf->Data(), workbuf->Count());
 		}

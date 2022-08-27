@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "FindAdvancedDlg.h"
 #include "FindFilterRuleDlg.h"
+#include "MboxMail.h"   // looking for MboxMail::developerMode
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -123,6 +124,9 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SINGLE_TO, m_params.m_bSingleTo);
 	//DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
 
+	DDX_Check(pDX, IDC_PLAIN_TEXT, m_params.m_plainText);
+	DDX_Check(pDX, IDC_HTML_TEXT, m_params.m_htmlText);
+
 	DDX_Check(pDX, IDC_CHECK_NEGATE_FIND_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 
 	DDX_Check(pDX, IDC_FILTERDATES, m_params.m_filterDates);
@@ -154,6 +158,14 @@ END_MESSAGE_MAP()
 void CFindAdvancedDlg::OnOK()
 {
 	UpdateData();
+
+	if ((m_params.m_plainText == 0) && (m_params.m_htmlText == 0))
+	{
+		CString txt;
+		txt.Format(_T("No text type plain and/or html are checked!"));
+		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		return;
+	}
 
 	m_params.m_endDate.SetDate(m_params.m_endDate.GetYear(), m_params.m_endDate.GetMonth(), m_params.m_endDate.GetDay());
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
@@ -202,6 +214,39 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 		{
 			((CButton*)p)->SetCheck(1);
 			p->EnableWindow(FALSE);
+		}
+
+		p = GetDlgItem(IDC_PLAIN_TEXT);
+		if (p)
+		{
+			if (MboxMail::developerMode)
+			{
+				((CButton*)p)->SetCheck(m_params.m_plainText);
+				p->EnableWindow(TRUE);
+			}
+			else
+			{
+				m_params.m_htmlText = 1;
+				((CButton*)p)->SetCheck(m_params.m_plainText);
+				p->EnableWindow(FALSE);
+
+			}
+		}
+
+		p = GetDlgItem(IDC_HTML_TEXT);
+		if (p)
+		{
+			if (MboxMail::developerMode)
+			{
+				((CButton*)p)->SetCheck(m_params.m_htmlText);
+				p->EnableWindow(TRUE);
+			}
+			else
+			{
+				m_params.m_htmlText = 0;
+				((CButton*)p)->SetCheck(m_params.m_htmlText);
+				p->EnableWindow(FALSE);
+			}
 		}
 
 		SetRuleInfoText();
@@ -371,6 +416,8 @@ void CFindAdvancedParams::SetDflts()
 	m_bFindAll = TRUE;
 	m_filterNumb = 0;
 	m_bSingleTo = 0;
+	m_plainText = 1;
+	m_htmlText = 0;
 
 	m_bFindAllMailsThatDontMatch = FALSE;
 }
@@ -397,6 +444,9 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_bFindAll = src.m_bFindAll;
 	m_filterNumb = src.m_filterNumb;
 	m_bSingleTo = src.m_bSingleTo;
+
+	m_plainText = src.m_plainText;
+	m_htmlText = src.m_htmlText;
 
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 };

@@ -344,6 +344,8 @@ public:
 	static int runningWorkerThreadType;
 	//
 
+	static BOOL developerMode; 
+
 	dlink_node<MboxMail> m_hashMapLink;
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
 

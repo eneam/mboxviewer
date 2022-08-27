@@ -305,6 +305,7 @@
 #define IDC_EDIT_DFLT_FOLDER            1243
 #define IDC_CHECK4                      1244
 #define IDC_HEADER_AND_FOOTER           1244
+#define IDC_PLAIN_TEXT                  1244
 #define IDC_GMAIL                       1245
 #define IDC_YAHOO                       1246
 #define IDC_OUTLOOK                     1247
@@ -342,6 +343,8 @@
 #define IDC_VALIDATE_ALL                1283
 #define IDC_SOURCE_ARCHIVE              1284
 #define IDC_SELECTED_SUBJECT            1285
+#define IDC_HTML_TEXT                   1286
+#define IDC_TEXT_TYPE                   1287
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -402,6 +405,7 @@
 #define ID_FILE_MERGEROOTFOLDERSUB      32912
 #define ID_FILE_SELECTASROOTFOLDER      32913
 #define ID_DEVELOPMENTOPTIONS_DUMPRAWDATA 32914
+#define ID_DEVELOPMENTOPTIONS_DEVELO    32915
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -411,8 +415,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        236
-#define _APS_NEXT_COMMAND_VALUE         32915
-#define _APS_NEXT_CONTROL_VALUE         1286
+#define _APS_NEXT_COMMAND_VALUE         32916
+#define _APS_NEXT_CONTROL_VALUE         1288
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

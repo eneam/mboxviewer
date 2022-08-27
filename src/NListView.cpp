@@ -1262,12 +1262,45 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT S_FORWARD_SELECTED_MAILS_Id = 23;
 	MyAppendMenu(&menu, S_FORWARD_SELECTED_MAILS_Id, _T("Forward Selected Mails"));
-	
 
 	// Used above for printing to PDF and CSV
 	//const UINT S_PDF_DIRECT_Id = 28;
 	//const UINT S_CSV_GROUP_Id = 29;
+	// 30-35 used see above
 
+	/////////////
+	const UINT S_REMOVE_ALL_Id = 40;
+	const UINT S_SAVE_AS_ARCHIVE_Id = 41;
+	const UINT M_ARCHIVE_LOCATION_Id = 42;
+
+	if (pFrame && (MboxMail::IsFindMailsSelected() || (MboxMail::IsUserMailsSelected() && pFrame->IsUserMailsListEnabled())))
+	{
+		MyAppendMenu(&menu, S_REMOVE_ALL_Id, _T("Remove All Mails"));
+
+		menu.AppendMenu(MF_SEPARATOR);
+		MyAppendMenu(&menu, S_SAVE_AS_ARCHIVE_Id, _T("Save All as Mbox Mail Archive file"));
+		MyAppendMenu(&menu, M_ARCHIVE_LOCATION_Id, _T("Open Mbox Mail Archive Location"));
+	}
+
+	const UINT S_SAVE_AS_LIST_Id = 43;
+	const UINT S_RELOAD_LIST_Id = 44;
+	const UINT M_LIST_LOCATION_Id = 45;
+	if (pFrame && (MboxMail::IsUserMailsSelected() && pFrame->IsUserMailsListEnabled()))
+	{
+		menu.AppendMenu(MF_SEPARATOR);
+		MyAppendMenu(&menu, S_SAVE_AS_LIST_Id, _T("Save All as Mail List file"));
+		MyAppendMenu(&menu, S_RELOAD_LIST_Id, _T("Reload from Mail List file"));
+		MyAppendMenu(&menu, M_LIST_LOCATION_Id, _T("Open Mail List Location"));
+	}
+
+	const UINT S_RESTORE_LIST_Id = 46;
+	if (pFrame && MboxMail::IsAllMailsSelected() && pFrame->IsUserMailsListEnabled() && (MboxMail::s_mails_edit.GetCount() == 0))
+	{
+		//menu.AppendMenu(MF_SEPARATOR);
+		MyAppendMenu(&menu, S_RESTORE_LIST_Id, _T("Restore User Selected Mails from saved Mail List file"));
+	}
+	//////////////
+	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	UINT nFlags = TPM_RETURNCMD;
@@ -1428,6 +1461,52 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		//MboxMail::ShowHint(HintConfig::ForwardMailHint, GetSafeHwnd());
 		ForwardSelectedMails(iItem);
 		int deb = 1;
+	}
+	break;
+	////// 
+	case S_REMOVE_ALL_Id:
+	{
+		CString txt = _T("Do you want to remove all mails?");
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES) {
+			RemoveAllMails();
+		}
+		VerifyMailsOnUserSelectsMailListMarkCounts();
+	}
+	break;
+	case S_SAVE_AS_ARCHIVE_Id: {
+		//SaveAsMboxAndAsMboxlistFile();
+		SaveAsMboxArchiveFile_v2();
+	}
+	break;
+	case S_SAVE_AS_LIST_Id: {
+		SaveAsMboxListFile_v2();
+	}
+	break;
+#if 0
+	case S_ADVANCED_FIND_Id: {
+		RunFindAdvancedOnSelectedMail(iItem);
+		MboxMail::ShowHint(HintConfig::AdvancedFindDialogHint, GetSafeHwnd());
+	}
+	break;
+#endif
+	case S_RELOAD_LIST_Id: {
+		ReloadMboxListFile_v2();
+		RefreshMailsOnUserSelectsMailListMark();
+	}
+	break;
+	case S_RESTORE_LIST_Id: {
+		ReloadMboxListFile_v2();
+		RefreshMailsOnUserSelectsMailListMark();
+	}
+	break;
+	case M_ARCHIVE_LOCATION_Id: {
+		OpenArchiveFileLocation();
+	}
+	break;
+	case M_LIST_LOCATION_Id: {
+		OpenMailListFileLocation();
 	}
 	break;
 
@@ -4119,6 +4198,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		// Wrap as HTML to display text with different charsets correctly
 		ext = "htm";
 
+		CString preStyle = "pre { overflow-x:auto;  white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
 
 		SimpleString *result = 0;
 		BOOL retResult = FALSE;
@@ -4128,6 +4208,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			|| (strCodePage == 50222)
 			|| (strCodePage == 50225)
 			|| (strCodePage == 50227)
+			|| (strCodePage == 50229)
 			)
 		{
 
@@ -4154,18 +4235,22 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		SimpleString *outbuf = MboxMail::m_outbuf;
 		outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
-		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">";
+		hdr.Append("<style>\r\n");
+		hdr.Append(preStyle);
+
 		DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
 		if (m_bApplyColorStyle && (color != COLOR_WHITE))
 		{
 			CString colorStr;
 			int retC2S = Color2Str(color, colorStr);
-			hdr = "<html><head><style>body{background-color: #";
+			hdr.Append("\r\nbody {background-color: #");
 			hdr.Append(colorStr);
-			hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>");
+			hdr.Append(";}");
 		}
-		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+		hdr.Append("\r\n</style></head><body><br>\r\n");
 
+		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
 		char *inData = (char*)(LPCSTR)bdy;
 		int inDataLen = bdy.GetLength();
@@ -4176,7 +4261,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			inDataLen = result->Count();
 		}
 
-		TextUtilsEx::EncodeAsHtml(inData, inDataLen, tmpbuf);
+		TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, tmpbuf);
 
 		inData = tmpbuf->Data();
 		inDataLen = tmpbuf->Count();
@@ -4237,7 +4322,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			SimpleString *outbuf = MboxMail::m_outbuf;
 			outbuf->ClearAndResize(bodyLength + 1024);
 
-			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+			CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n";
 			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
 			if (m_bApplyColorStyle && (color != COLOR_WHITE))
 			{
@@ -4245,8 +4330,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				int retC2S = Color2Str(color, colorStr);
 				hdr = "<html><head><style>body{background-color: #";
 				hdr.Append(colorStr);
-				       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>");
-				//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>";
+				hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n");
 			}
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
@@ -4290,7 +4374,11 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				int deb = 1;
 			}
 #endif
+			// TOD: Avoid suspect code duplication
+			// Code differs if charsetMissing == 1depending on hasInlineAttachments
+			// Redo as if (charsetMissing) {} else {}; if (hasInlineAttachments) {}
 
+#if 0
 			if ((charsetMissing) || (hasInlineAttachments))
 			{
 				SimpleString *outbuf = MboxMail::m_outbuf;
@@ -4306,7 +4394,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 						int retC2S = Color2Str(color, colorStr);
 						hdr = "<html><head><style>body{background-color: #";
 						hdr.Append(colorStr);
-						       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+						hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
 						//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
 					}
 
@@ -4322,7 +4410,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 						int retC2S = Color2Str(color, colorStr);
 						CString hdr = "<html><head><style>body{background-color: ";
 						hdr.Append(colorStr);
-						       hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
+						hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>");
 						//CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>";
 						outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 					}
@@ -4374,6 +4462,62 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				int deb = 1;
 			}
 			int deb = 1;
+#else
+			// 08/25/2022
+
+			SimpleString *outbuf = MboxMail::m_outbuf;
+			outbuf->ClearAndResize(bodyLength + 1000);
+
+			if (charsetMissing)
+			{
+				// Old approach would create extra html block depending on m_bApplyColorStyle and hasInlineAttachments in an inconsistent way.
+				// Don't think any harm done if we always create extra block
+				// Unfortunately don't have respective test eml files to prove
+
+				CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n";
+				DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+				if (m_bApplyColorStyle && (color != COLOR_WHITE))
+				{
+					CString colorStr;
+					int retC2S = Color2Str(color, colorStr);
+					hdr = "<html><head><style>body{background-color: #";
+					hdr.Append(colorStr);
+					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
+				}
+
+				outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+				int deb = 1;
+			}
+			else
+			{
+				DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+				if (m_bApplyColorStyle && (color != COLOR_WHITE))
+				{
+					CString colorStr;
+					int retC2S = Color2Str(color, colorStr);
+					CString hdr = "<html><head><style>body{background-color: ";
+					hdr.Append(colorStr);
+					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
+					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+				}
+			}
+
+			char *inData = (char*)pBdy;
+			int inDataLen = bodyLength;
+
+			if (hasInlineAttachments)
+			{
+				int mailPosition = 0; // not used anyway here
+				bool useMailPosition = false;
+				UpdateInlineSrcImgPath_SelectedItem(inData, inDataLen, outbuf, mailPosition, useMailPosition, cidArray);
+			}
+			else
+				outbuf->Append(inData, inDataLen);
+
+			data = outbuf->Data();
+			datalen = outbuf->Count();
+			int deb = 1;
+#endif
 		}
 		MboxMail::rel_tmpbuf();
 	}
@@ -4731,9 +4875,9 @@ void NListView::ClearDescView()
 		CString colorStr;
 		int retC2A = NListView::Color2Str(color, colorStr);
 
-		url = "about:<html><head><style>body{background-color: #";
+		url = "about:<html><head><style>\r\nbody {background-color: #";
 		url.Append(colorStr);
-		url.Append(";}</style></head><body></body><br>");
+		url.Append(";}\r\n</style></head><body></body><br>");
 	}
 
 	pMsgView->m_browser.Navigate(url, NULL);
@@ -6053,7 +6197,6 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 
 	MailBodyContent *body;
 	BOOL textPlainFound = FALSE;
-	BOOL searchHTML = FALSE;
 	BOOL isAttachment = FALSE;
 	int i;
 	for (i = 0; i < 2; i++) // search plain text blocks first or html text blocks if no text blocks
@@ -6072,19 +6215,29 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 			else if (bContent == FALSE)
 				continue;
 
-			if (searchHTML == FALSE)
+			if (i == 0) // first iteration
 			{
 				if (body->m_contentType.CompareNoCase("text/plain") != 0)
 					continue;
 				else
 					textPlainFound = TRUE;
+
+				if (params.m_plainText == 0)
+					continue;
 			}
 			else
 			{
+				// ASSERT(i==1)  // send iteration
 				if (body->m_contentType.CompareNoCase("text/html") != 0)
 					continue;
-				else
+				else if (params.m_htmlText
+					|| (textPlainFound == FALSE))  // searched plain text but not found, search html regardless of params.m_htmlText
+				{
+					// search html text
 					int deb = 1;
+				}
+				else
+					continue;
 			}
 
 			int bodyLength = body->m_contentLength;
@@ -6161,8 +6314,6 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 
 			}
 		}
-		if (textPlainFound == FALSE)
-			searchHTML = TRUE;
 	}
 	return FALSE;
 }
@@ -15641,6 +15792,9 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 	static char *pEndTag = "</p";
 	static int pEndTagLen = istrlen(pEndTag);
 
+	static char *nbsp1 = "&nbsp;";
+	static int nbsp1Len = istrlen(nbsp1);
+
 	//outbuf->ClearAndResize(indDataLen + 128);
 
 	char *p_mark;
@@ -15687,6 +15841,8 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 
 			if (TextUtilsEx::strncmpUpper2Lower(p, e, preEndTag, preEndTagLen) != 0)
 			{
+				//  <p.. doesn't match </pre
+				// check if <p.. matches </pre
 				if (TextUtilsEx::strncmpUpper2Lower(p, e, preTag, preTagLen) != 0)
 				{
 					// ignore and continue
@@ -15701,37 +15857,55 @@ int NListView::ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *
 				}
 			}
 			else
-				break;
+				break;  // found ending </pre, i.e p_mark points to <pre and p points to </pre
 		}
 
-		pPreEndTag = p;
+		pPreEndTag = p;  // found ending </pre, i.e p_mark points to <pre and p points to </pre i.e pPreEndTag
 
 		p = p_mark;
-		BOOL foundCRNL = FALSE;
 		while (p < pPreEndTag)
 		{
-			foundCRNL = FALSE;
 			c = *p;
-			if ((c == '\r') || (c == '\n'))
+			if (c == ' ')
+			{
+				c_next = *(p+1);
+				if (c_next == ' ')
+				{
+					outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
+					outbuf->Append(nbsp1, nbsp1Len);
+					p++;
+					while (p < pPreEndTag)
+					{
+						outbuf->Append(nbsp1, nbsp1Len);
+						p++;
+						c_next = *p;
+						if (c_next != ' ')
+							break;
+					}
+					p_mark = p;
+				}
+				else
+					p++;
+			}
+			else if ((c == '\r') || (c == '\n'))
 			{
 				outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
 				outbuf->Append("<br>", 4);
-				p_mark = p++;
+				p++;
 				c_next = *p;
 				if (c == '\r')
 				{
 					if (c_next == '\n')
+					{
 						p++;
+					}
 				}
-				foundCRNL = TRUE;
+				p_mark = p;
 			}
 			else
 				p++;
 		}
-		if (foundCRNL == FALSE)
-		{
-			outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
-		}
+		outbuf->Append(p_mark, IntPtr2Int(p - p_mark));
 		outbuf->Append(pEndTag, pEndTagLen);  // append </p
 		p += preEndTagLen;
 		p_mark = p;
