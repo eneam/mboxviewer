@@ -129,6 +129,9 @@ public:
 	int FindMailHeader(char *data, int datalen);
 	static char *EatFldLine(char *p, char *e);
 
+	int ShowMailTextBlock(int iItem, int textType);
+	int ShowMailHtmlBlockAsText(int iItem);
+
 	int m_frameCx_TreeNotInHide;
 	int m_frameCy_TreeNotInHide;
 	int m_frameCx_TreeInHide;

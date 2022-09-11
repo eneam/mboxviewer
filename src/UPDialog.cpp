@@ -57,7 +57,7 @@ static const unsigned char dlg_145[] =
 #define CUPDIALOG_TEXTBOX_ID		(1026)		//Static Control Id
 #define CUPDIALOG_PROGRESSBAR_ID	(1018)		//ProgressBar Control Id
 #define CUPDIALOG_CANCELBUTTON_ID	(IDCANCEL)	//Cancel Button Control Id
-#define CUPDIALOG_TERMINATE_DELAY	(500)		//Amount of time to wait after signaling the termination, in MilliSeconds.
+#define CUPDIALOG_TERMINATE_DELAY	(5000)		//Amount of time to wait after signaling the termination, in MilliSeconds.
 
 CUPDialog::CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCTSTR lpszDlgTitle/*=_T("Please Wait..")*/,bool bAllowCancel/*=true*/)
 {

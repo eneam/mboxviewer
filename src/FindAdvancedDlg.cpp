@@ -126,6 +126,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 
 	DDX_Check(pDX, IDC_PLAIN_TEXT, m_params.m_plainText);
 	DDX_Check(pDX, IDC_HTML_TEXT, m_params.m_htmlText);
+	DDX_Check(pDX, IDC_HTML_TEXT_IF, m_params.m_htmlTextOnlyIfNoPlainText);
 
 	DDX_Check(pDX, IDC_CHECK_NEGATE_FIND_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 
@@ -150,6 +151,9 @@ BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker2)
 	ON_BN_CLICKED(IDC_BUTTON1, &CFindAdvancedDlg::OnBnClickedButtonSelectFilterRule)
 	ON_BN_CLICKED(IDC_CHECK_NEGATE_FIND_CRITERIA, &CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria)
+	ON_BN_CLICKED(IDC_BUTTON_HELP, &CFindAdvancedDlg::OnBnClickedButtonHelp)
+	ON_BN_CLICKED(IDC_HTML_TEXT, &CFindAdvancedDlg::OnBnClickedHtmlText)
+	ON_BN_CLICKED(IDC_HTML_IF, &CFindAdvancedDlg::OnBnClickedHtmlIf)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -159,7 +163,7 @@ void CFindAdvancedDlg::OnOK()
 {
 	UpdateData();
 
-	if ((m_params.m_plainText == 0) && (m_params.m_htmlText == 0))
+	if ((m_params.m_plainText == 0) && (m_params.m_htmlText == 0) && (m_params.m_htmlTextOnlyIfNoPlainText == 0))
 	{
 		CString txt;
 		txt.Format(_T("No text type plain and/or html are checked!"));
@@ -245,6 +249,22 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 			{
 				m_params.m_htmlText = 0;
 				((CButton*)p)->SetCheck(m_params.m_htmlText);
+				p->EnableWindow(FALSE);
+			}
+		}
+
+		p = GetDlgItem(IDC_HTML_TEXT_IF);
+		if (p)
+		{
+			if (MboxMail::developerMode)
+			{
+				((CButton*)p)->SetCheck(m_params.m_htmlTextOnlyIfNoPlainText);
+				p->EnableWindow(TRUE);
+			}
+			else
+			{
+				m_params.m_htmlText = 1;
+				((CButton*)p)->SetCheck(m_params.m_htmlTextOnlyIfNoPlainText);
 				p->EnableWindow(FALSE);
 			}
 		}
@@ -417,7 +437,8 @@ void CFindAdvancedParams::SetDflts()
 	m_filterNumb = 0;
 	m_bSingleTo = 0;
 	m_plainText = 1;
-	m_htmlText = 1;
+	m_htmlText = 0;
+	m_htmlTextOnlyIfNoPlainText = 1;
 
 	m_bFindAllMailsThatDontMatch = FALSE;
 }
@@ -447,6 +468,7 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 
 	m_plainText = src.m_plainText;
 	m_htmlText = src.m_htmlText;
+	m_htmlTextOnlyIfNoPlainText = src.m_htmlTextOnlyIfNoPlainText;
 
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 };
@@ -634,4 +656,30 @@ HBRUSH CFindAdvancedDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 	}
 	else
 		return hbr;
+}
+
+
+void CFindAdvancedDlg::OnBnClickedButtonHelp()
+{
+	// TODO: Add your control notification handler code here
+
+	CString helpFileName = "SearchHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
+
+	int deb = 1;
+}
+
+
+void CFindAdvancedDlg::OnBnClickedHtmlText()
+{
+	// TODO: Add your control notification handler code here
+	int deb = 1;
+}
+
+
+void CFindAdvancedDlg::OnBnClickedHtmlIf()
+{
+	// TODO: Add your control notification handler code here
+	int deb = 1;
 }

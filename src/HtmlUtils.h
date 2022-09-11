@@ -54,4 +54,7 @@ public:
 	static void FindStringInIHTMLDocument(CBrowser &browser, CString searchID, CString &searchText, BOOL matchWord, BOOL matchCase, CString &m_matchStyle);
 	static void ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &searchID);
 	static void CommonMimeType2DocumentTypes(CString &contentType, CString &documentExtension);
+	static int FindHtmlTag(char *inData, int indDataLen, char *tag, int tagLen, char *&tagBeg, int &tagDataLen);
+	static void ExtractTextFromHTML_BestEffort(SimpleString *inbuf, SimpleString *outbuf, UINT inCodePage, UINT outCodePage);
+	static int ReplaceAllHtmlTags(char *inData, int datalen, SimpleString *outbuf);
 };

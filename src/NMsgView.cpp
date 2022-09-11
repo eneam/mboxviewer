@@ -977,6 +977,9 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	const char *CustomColor = _T("Custom Color Style");
 	const char *ShowMailHdr = _T("View Raw Message Header");
 	const char *HdrPaneLayout = _T("Header Pane Layout");
+	const char *ShowMailHtml = _T("View Message Html Block");
+	const char *ShowMailHtmlAsText = _T("View Message Html Block as Text");
+	const char *ShowMailText = _T("View Message Plain Text Block");
 
 	NListView *pListView = 0;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1000,7 +1003,17 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	MyAppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, pListView->m_bApplyColorStyle);
 
 	const UINT M_SHOW_MAIL_HEADER_Id = 3;
-	MyAppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen > 0);
+	MyAppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen == 100);
+
+	const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
+	const UINT M_SHOW_MAIL_TEXT_Id = 5;
+	const UINT M_SHOW_MAIL_HTML_Id = 6;
+	if (MboxMail::developerMode)
+	{
+		MyAppendMenu(&menu, M_SHOW_MAIL_HTML_AS_TEXT_Id, ShowMailHtmlAsText, m_hdrWindowLen == 400);
+		MyAppendMenu(&menu, M_SHOW_MAIL_TEXT_Id, ShowMailText, m_hdrWindowLen == 200);
+		MyAppendMenu(&menu, M_SHOW_MAIL_HTML_Id, ShowMailHtml, m_hdrWindowLen == 300);
+	}
 
 #if 0
 	// Added global option under View
@@ -1050,7 +1063,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	else if ((command == M_SHOW_MAIL_HEADER_Id))
 	{
 		int iItem = pListView->m_lastSel;
-		if (m_hdrWindowLen)
+		if (m_hdrWindowLen == 100)
 		{
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
@@ -1062,6 +1075,54 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		}
 		int deb = 1;
 	}
+	else if ((command == M_SHOW_MAIL_HTML_AS_TEXT_Id))
+	{
+		int iItem = pListView->m_lastSel;
+		if (m_hdrWindowLen == 400)
+		{
+			this->HideMailHeader(iItem);
+			pListView->Invalidate();
+			pListView->SelectItem(iItem, TRUE);
+		}
+		else
+		{
+			this->ShowMailHtmlBlockAsText(iItem);
+		}
+		int deb = 1;
+	}
+	else if ((command == M_SHOW_MAIL_TEXT_Id))
+	{
+		int iItem = pListView->m_lastSel;
+		if (m_hdrWindowLen == 200)
+		{
+			this->HideMailHeader(iItem);
+			pListView->Invalidate();
+			pListView->SelectItem(iItem, TRUE);
+		}
+		else
+		{
+			int textType = 0;
+			this->ShowMailTextBlock(iItem, textType);
+		}
+		int deb = 1;
+	}
+	else if ((command == M_SHOW_MAIL_HTML_Id))
+	{
+		int iItem = pListView->m_lastSel;
+		if (m_hdrWindowLen == 300)
+		{
+			this->HideMailHeader(iItem);
+			pListView->Invalidate();
+			pListView->SelectItem(iItem, TRUE);
+		}
+		else
+		{
+			int textType = 1;
+			this->ShowMailTextBlock(iItem, textType);
+		}
+		int deb = 1;
+	}
+
 #if 0
 	// Added global option under View
 	else if ((command == S_DEFAULT_LAYOUT_Id))
@@ -1467,4 +1528,195 @@ int NMsgView::PreTranslateMessage(MSG* pMsg)
 		}
 	}
 	return CWnd::PreTranslateMessage(pMsg);
+}
+
+int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
+{
+	DWORD tc_start = GetTickCount();
+
+	BOOL ret = TRUE;
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+	}
+
+
+	CFile fp;
+	CFileException ExError;
+	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
+		ret = FALSE;
+
+		return 0;
+	}
+
+	m_hdrDataTmp.Clear();
+	UINT pageCode = 0;
+	int textType = 1;
+	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType);  // returns pageCode
+	if (textlen != m_hdrDataTmp.Count())
+		int deb = 1;
+
+	UINT outPageCode = pageCode;
+
+	if (m_hdrDataTmp.Count() > 0)
+	{
+		char *p = m_hdrDataTmp.Data();
+		// CFile Read removes CR and therfore we need to add CR, great  !!
+		char *ms = strchr(p, '\n');
+		if (ms)
+		{
+			BOOL bAddCR = FALSE;
+			if (*(ms - 1) != '\r')
+				bAddCR = TRUE;
+			int pos = IntPtr2Int(ms - p + 1);
+			if (bAddCR)
+			{
+				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
+				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
+				HtmlUtils::ExtractTextFromHTML_BestEffort(tmpbuf, &m_hdrData, pageCode, outPageCode);
+				MboxMail::rel_tmpbuf();
+			}
+			else
+			{
+				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
+				HtmlUtils::ExtractTextFromHTML_BestEffort(&m_hdrDataTmp, &m_hdrData, pageCode, outPageCode);
+			}
+		}
+	}
+	else
+		m_hdrData.SetCount(0);
+
+	fp.Close();
+
+	DWORD tc_end = GetTickCount();
+	DWORD delta = tc_end - tc_start;
+	TRACE("ShowMailHtmlBlockAsText:ExtractTextFromHTML_BestEffort extracted text in %ld milliseconds.\n", delta);
+
+	m_hdrWindowLen = 400;
+
+	m_hdr.ShowWindow(SW_SHOW);
+	m_hdr.ShowWindow(SW_RESTORE);
+
+	Invalidate();
+	UpdateLayout();
+
+	return 1;
+}
+
+int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
+{
+	BOOL ret = TRUE;
+	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
+		return -1;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+	if (m == 0)
+	{
+		// TODO: Assert ??
+		return 1;
+	}
+
+	NListView *pListView = 0;
+	NMsgView *pMsgView = 0;
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+	}
+
+
+	CFile fp;
+	CFileException ExError;
+	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+		CString txt = _T("Could not open \"") + MboxMail::s_path;
+		txt += _T("\" mail file.\n");
+		txt += exErrorStr;
+
+		TRACE(_T("%s\n"), txt);
+		//errorText = txt;
+
+		ret = FALSE;
+		return 0;
+	}
+
+	m_hdrDataTmp.Clear();
+	UINT pageCode = 0;
+	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType);  // returns pageCode
+	if (textlen != m_hdrDataTmp.Count())
+		int deb = 1;
+
+	if (m_hdrDataTmp.Count() > 0)
+	{
+		char *p = m_hdrDataTmp.Data();
+		// CFile Read removes CR and therfore we need to add CR, great  !!
+		char *ms = strchr(p, '\n');
+		if (ms)
+		{
+			BOOL bAddCR = FALSE;
+			if (*(ms - 1) != '\r')
+				bAddCR = TRUE;
+			int pos = IntPtr2Int(ms - p + 1);
+			if (bAddCR)
+			{
+				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
+				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
+				m_hdrData.Append(tmpbuf->Data(), tmpbuf->Count());
+				MboxMail::rel_tmpbuf();
+			}
+			else
+			{
+				m_hdrData.Clear();
+				m_hdrData.Append("\r\n");
+				m_hdrData.Append(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
+			}
+		}
+	}
+	else
+		m_hdrData.SetCount(0);
+
+	fp.Close();
+
+	if (textType == 0)
+		m_hdrWindowLen = 200;
+	else
+		m_hdrWindowLen = 300;
+
+	m_hdr.ShowWindow(SW_SHOW);
+	m_hdr.ShowWindow(SW_RESTORE);
+
+	Invalidate();
+	UpdateLayout();
+
+	return 1;
 }

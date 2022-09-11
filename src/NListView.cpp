@@ -3260,7 +3260,10 @@ int NListView::FillCtrl_ParseMbox(CString &mboxPath)
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			//ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{
@@ -3423,7 +3426,10 @@ void NListView::FillCtrl()
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			//ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{
@@ -3486,7 +3492,10 @@ void NListView::FillCtrl()
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			//ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{
@@ -5070,7 +5079,10 @@ void NListView::OnEditFind()
 				{  // IDOK==1, IDCANCEL==2
 					// We should be here when user selects Cancel button
 					//ASSERT(cancelledbyUser == TRUE);
-					int loopCnt = 20;
+
+					DWORD terminationDelay = Dlg.GetTerminationDelay();
+					int loopCnt = (terminationDelay+100)/25;
+
 					DWORD tc_start = GetTickCount();
 					while ((loopCnt-- > 0) && (args.exitted == FALSE))
 					{
@@ -5080,8 +5092,14 @@ void NListView::OnEditFind()
 					DWORD delta = tc_end - tc_start;
 					TRACE("(OnEditFind)Waited %ld milliseconds for thread to exist.\n", delta);
 				}
+
+				if (args.exitted == FALSE)
+					MboxMail::s_mails_find.SetCountKeepData(0);
+
 				w = args.retpos;
 				MboxMail::pCUPDUPData = NULL;
+
+
 			}
 			if (m_bFindAll) 
 			{
@@ -5397,7 +5415,10 @@ int NListView::DoFastFind(int which, BOOL mainThreadContext, int maxSearchDurati
 	{
 		m_findAllCount = 0;
 		if (findAll)
+		{
 			MboxMail::s_mails_find.SetSizeKeepData(MboxMail::s_mails.GetCount());
+			// MboxMail::s_mails_find.SetCountKeepData(0);  // must use  s_mails_find.Add() otherwise exception
+		}
 		for (int i = which; i < sz; i++)
 		{
 			MboxMail *m = MboxMail::s_mails[i];
@@ -5668,7 +5689,10 @@ void NListView::OnEditFindAgain()
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			//ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{
@@ -5678,6 +5702,8 @@ void NListView::OnEditFindAgain()
 			DWORD delta = tc_end - tc_start;
 			TRACE("(OnEditFindAgain)Waited %ld milliseconds for thread to exist.\n", delta);
 		}
+		//if (args.exitted == FALSE) w = -1;
+
 		w = args.retpos;
 		MboxMail::pCUPDUPData = NULL;
 	}
@@ -6206,8 +6232,10 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 			body = m->m_ContentDetailsArray[j];
 
 			isAttachment = FALSE;
-			if (!body->m_attachmentName.IsEmpty()) {
-				if (bAttachment == FALSE)
+
+			if (!body->m_attachmentName.IsEmpty())
+			{
+				if ((bAttachment == FALSE) || (i == 1))
 					continue;
 				else
 					isAttachment = TRUE;
@@ -6218,25 +6246,21 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 			if (i == 0) // first iteration
 			{
 				if (body->m_contentType.CompareNoCase("text/plain") != 0)
-					continue;
-				else
-					textPlainFound = TRUE;
-
-				if (params.m_plainText == 0)
-					continue;
-			}
-			else
-			{
-				// ASSERT(i==1)  // send iteration
-				if (body->m_contentType.CompareNoCase("text/html") != 0)
-					continue;
-				else if (params.m_htmlText
-					|| (textPlainFound == FALSE))  // searched plain text but not found, search html regardless of params.m_htmlText
 				{
-					// search html text
-					int deb = 1;
+					continue;
 				}
-				else
+				else if (!isAttachment)
+				{
+					textPlainFound = TRUE;
+					if (params.m_plainText == 0)
+						continue;
+				}
+				else //  isAttachment == TRUE
+					int deb = 1;
+			}
+			else // (i == 1)
+			{
+				if (body->m_contentType.CompareNoCase("text/html") != 0)
 					continue;
 			}
 
@@ -6297,6 +6321,35 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 				if (isAttachment)
 					fldIndx = 6;
 
+				if (i == 1)
+				{
+					DWORD tc_start = GetTickCount();
+
+					//const SimpleStringWrapper  inbuf(pData, datalen);
+					SimpleStringWrapper  inbuf(pData, datalen);
+
+					UINT pageCode = CP_UTF8;
+					if (body->m_pageCode)
+						pageCode = body->m_pageCode;
+					UINT outPageCode = pageCode;
+
+
+					SimpleString *retbuf = MboxMail::m_workbuf;
+					retbuf->ClearAndResize(2*inbuf.Count());
+					
+					//HtmlUtils::GetTextFromIHTMLDocument(&inbuf, retbuf, pageCode, outPageCode);
+					HtmlUtils::ExtractTextFromHTML_BestEffort(&inbuf, retbuf, pageCode, outPageCode);
+
+
+					pData = retbuf->Data();
+					datalen = retbuf->Count();
+
+					DWORD tc_end = GetTickCount();
+					DWORD delta = tc_end - tc_start;
+					//TRACE("AdvancedFindInMailContent:GetTextFromIHTMLDocument extracted text in %ld milliseconds.\n", delta);
+					//TRACE("AdvancedFindInMailContent:ExtractTextFromHTML_BestEffort extracted text in %ld milliseconds.\n", delta);
+				}
+
 				if (params.m_bEditChecked[fldIndx])
 				{
 					if (params.m_bWholeWord[fldIndx]) {
@@ -6314,6 +6367,23 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 
 			}
 		}
+		// no match yet
+		// i == 1
+
+		if (params.m_htmlText == 1)
+		{
+			continue;
+		}
+		else if (params.m_htmlTextOnlyIfNoPlainText == 1)
+		{
+			if (textPlainFound == TRUE)
+				break;
+			else
+				int deb = 1;
+		}
+		else
+			break;
+
 	}
 	return FALSE;
 }
@@ -6870,6 +6940,14 @@ void NListView::SwitchToMailList(int nID, BOOL force)
 {
 	// TODO: there is more optimization/simplication/cleanup when force is set to TRUE
 	// force is set to TRUE when running FIND option while FIND list is active
+	//
+	// IDC_ARCHIVE_LIST                1056
+	// IDC_FIND_LIST                   1057
+	// IDC_EDIT_LIST                   1152
+	// IDC_LABEL_LIST                  1197
+	// IDC_FOLDER_LIST                 1191
+
+
 	int nWhichMailList = MboxMail::nWhichMailList;
 	if ((nWhichMailList == nID) && (force == FALSE))
 		return;
@@ -7348,7 +7426,10 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 				{  // IDOK==1, IDCANCEL==2
 					// We should be here when user selects Cancel button
 					//ASSERT(cancelledbyUser == TRUE);
-					int loopCnt = 20;
+
+					DWORD terminationDelay = Dlg.GetTerminationDelay();
+					int loopCnt = (terminationDelay+100)/25;
+
 					DWORD tc_start = GetTickCount();
 					while ((loopCnt-- > 0) && (args.exitted == FALSE))
 					{
@@ -7358,6 +7439,9 @@ void NListView::EditFindAdvanced(CString *from, CString *to, CString *subject)
 					DWORD delta = tc_end - tc_start;
 					TRACE("(EditFindAdvanced)Waited %ld milliseconds for thread to exist.\n", delta);
 				}
+				if (args.exitted == FALSE)
+					MboxMail::s_mails_find.SetCountKeepData(0);
+
 				w = args.retpos;
 				MboxMail::pCUPDUPData = NULL;
 			}
@@ -8072,7 +8156,10 @@ int NListView::PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, C
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -8197,7 +8284,10 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -8450,7 +8540,10 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -8613,7 +8706,10 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolder
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -9434,7 +9530,10 @@ int NListView::PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, 
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -9539,7 +9638,10 @@ int NListView::PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CS
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -9755,7 +9857,10 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFol
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -9865,7 +9970,10 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolde
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -13272,7 +13380,10 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -13501,7 +13612,10 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -13775,7 +13889,10 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -13994,7 +14111,10 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -17642,7 +17762,10 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 	{  // IDOK==1, IDCANCEL==2
 		// We should be here when user selects Cancel button
 		//ASSERT(cancelledbyUser == TRUE);
-		int loopCnt = 20;
+
+		DWORD terminationDelay = Dlg.GetTerminationDelay();
+		int loopCnt = (terminationDelay+100)/25;
+
 		DWORD tc_start = GetTickCount();
 		while ((loopCnt-- > 0) && (args.exitted == FALSE))
 		{
@@ -18485,6 +18608,208 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	m_list.SetRedraw(TRUE);
 
 	return ret;
+}
+
+#if 0
+// Get Text from Html and create file to be able later to compare with text plain block
+int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *selectedMailIndexList)
+{
+	CString colLabels;
+	CString separator;
+
+	CFile fp;
+	CString textFile;
+	CString errorText;
+	bool fileExists = false;
+	int ret = 1;
+
+
+	ret = MakeFileNameFromMailArchiveName(textType, textFile, targetPrintSubFolder, fileExists, errorText);
+
+
+	if (ret < 0) {
+		HWND h = NULL;
+		int answer = ::MessageBox(h, errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+
+	textFileName = textFile;
+	int textFileLength = textFile.GetLength();
+	int maxPath = _MAX_PATH;
+
+	{
+		CFileException ExError;
+		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+
+			CString txt = _T("Could not create \"") + textFile;
+			txt += _T("\" file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+
+			CFileStatus rStatus;
+			BOOL ret = fp.GetStatus(rStatus);
+
+			//errorText = txt;
+
+			HWND h = NULL; // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+
+		CFile fpm;
+		CFileException ExError2;
+		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
+
+			CString txt = _T("Could not open \"") + MboxMail::s_path;
+			txt += _T("\" mail file.\n");
+			txt += exErrorStr;
+
+			//TRACE(_T("%s\n"), txt);
+			//errorText = txt;
+
+			HWND h = NULL; // we don't have any window yet
+			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			fp.Close();
+			return -1;
+		}
+
+		if (textType == 0) {
+			if (textConfig.m_nCodePageId == CP_UTF8) {
+				const char *BOM_UTF8 = "\xEF\xBB\xBF";
+				fp.Write(BOM_UTF8, 3);
+			}
+		}
+
+		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+		BOOL printAttachments = TRUE;
+		if (pFrame)
+		{
+			printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS-1);
+		}
+
+		AttachmentMgr attachmentDB;
+
+		{
+			int i;
+			firstMail = (*selectedMailIndexList)[0];
+			int cnt = (int)selectedMailIndexList->GetCount();
+
+			BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+			for (int j = 0; j < cnt; j++)
+			{
+				i = (*selectedMailIndexList)[j];
+
+					printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+		}
+
+		fp.Close();
+		fpm.Close();
+	}
+}
+#endif
+
+// Get Text from Html and create file to be able later to compare with text plain block
+// Not finished and not used yet
+int NListView::ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm)
+{
+	UINT pageCode;
+
+	MboxMail *m = MboxMail::s_mails[mailPosition];
+
+	SimpleString *outbuf = MboxMail::m_outbuf;
+	SimpleString *inbuf = MboxMail::m_inbuf;
+	SimpleString *workbuf = MboxMail::m_workbuf;
+
+	inbuf->ClearAndResize(10000);
+	workbuf->ClearAndResize(10000);
+	outbuf->ClearAndResize(10000);
+
+	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	//
+	int textType = 0; // Text
+	pageCode = 0;
+	int textlen = MboxMail::GetMailBody_mboxview(fpm, mailPosition, outbuf, pageCode, textType);  // returns pageCode
+	if (textlen != outbuf->Count())
+		int deb = 1;
+
+	if (outbuf->Count())
+	{
+		fp.Write(outbuf->Data(), outbuf->Count());
+	}
+#if 0
+	else
+	{
+		outbuf->Clear();
+		pageCode = 0;
+		int textType = 1; // HTML
+
+		int textlen = GetMailBody_mboxview(fpm, mailPosition, outbuf, pageCode, textType);  // returns pageCode
+		if (textlen != outbuf->Count())
+			int deb = 1;
+
+		if (outbuf->Count())
+		{
+			MboxMail::m_Html2TextCount++;
+
+			CString bdycharset;
+			std::string charSet;
+			if (pageCode > 0)
+			{
+				BOOL ret = TextUtilsEx::id2charset(pageCode, charSet);
+#if 0
+				// TODO: charset in the mail Content-Type an in mail body differs; current approach seems to work 
+				UINT pageCodeFromBody = getCodePageFromHtmlBody(outbuf, charSet);
+				if ((pageCodeFromBody) && (pageCodeFromBody != pageCode))
+					int deb = 1;
+#endif
+			}
+			else
+			{
+				pageCode = getCodePageFromHtmlBody(outbuf, charSet);
+
+				if (pageCode == 0) {
+					pageCode = CP_UTF8;
+					BOOL ret = TextUtilsEx::id2charset(pageCode, charSet);
+				}
+			}
+
+			bdycharset.Append(charSet.c_str());
+
+			inbuf->Clear();
+
+			CString bdy;
+			bool extraHtmlHdr = false;
+			if (outbuf->FindNoCase(0, "<body", 5) < 0) // didn't find if true
+			{
+				extraHtmlHdr = true;
+				bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body>";
+				inbuf->Append(bdy, bdy.GetLength());
+			}
+
+			inbuf->Append(*outbuf);
+			if (extraHtmlHdr)
+				inbuf->Append("</body></html>\r\n");
+
+			outbuf->Clear();
+
+			UINT outPageCode = CP_UTF8;
+			// Below Relies on IHTMLDocument2
+			HtmlUtils::GetTextFromIHTMLDocument(inbuf, outbuf, pageCode, outPageCode);
+			fp.Write(outbuf->Data(), outbuf->Count());
+		}
+	}
+#endif
+
+	outbuf->Clear();
+	outbuf->Append("\r\n");
+	fp.Write(outbuf->Data(), outbuf->Count());
+
+	return 1;
 }
 
 

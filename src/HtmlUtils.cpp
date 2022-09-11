@@ -635,6 +635,15 @@ void HtmlUtils::PrintIHTMLDocument(IHTMLDocument2 *lpDocument, SimpleString *wor
 	{
 		return;
 	}
+#if 0
+	IHTMLElement *lpBodyElm = 0;
+	hr = lpHtmlDocument->get_body(&lpBodyElm);
+	//HTML_ASSERT(SUCCEEDED(hr) && lpBodyElm);
+	if (!lpBodyElm) {
+		lpHtmlDocument->Release();
+		return;
+	}
+#endif
 
 	CComBSTR bstrTEXT;
 	lpElm->get_innerText(&bstrTEXT);
@@ -1068,6 +1077,167 @@ void HtmlUtils::CommonMimeType2DocumentTypes(CString &contentType, CString &docu
 	{
 		documentExtension.Append(".eml");
 	}
+}
+
+// Best Effort only. Text is not formatted properly but that is fine for searching text
+// TODO: explore DOM and innerText. Already tried IHTMLDocument2 and it was very slow. Need to investigate more
+void HtmlUtils::ExtractTextFromHTML_BestEffort(SimpleString *inbuf, SimpleString *outbuf, UINT inCodePage, UINT outCodePage)
+{
+	static char* bodyTag = "body";
+	static int bodyTagLen = istrlen(bodyTag);
+
+	static char* styleTag = "<style";
+	static int styleTagLen = istrlen(styleTag);
+
+	char *tagBeg;
+	int tagLenRet;
+	int dataLen = 0;
+	int datalen = 0;
+
+	int ret = HtmlUtils::FindHtmlTag(inbuf->Data(), inbuf->Count(), bodyTag, bodyTagLen, tagBeg, tagLenRet);
+	if (ret)
+	{
+		char *inData = tagBeg + tagLenRet;
+		datalen = inbuf->Count() - IntPtr2Int(tagBeg + tagLenRet - inbuf->Data());
+		ASSERT(datalen >= 0);
+
+		if (*inData == '<')
+		{
+			char *e = inData+datalen;
+			char *mark = inData;
+			// There could be multiple <style> tags within body. We wil handle just one for now.
+			// Other <style. tags wil polute text unfortunately
+			if (TextUtilsEx::strncmpUpper2Lower(inData, e, styleTag, styleTagLen) == 0)
+			{
+				inData += styleTagLen;
+				datalen -= styleTagLen;
+				while (inData < e)
+				{
+					if (*inData == '<')
+						break;
+					else
+					{
+						inData++;
+						datalen--;
+					}
+				}
+				if (inData >= e)
+					return;
+
+				dataLen = inbuf->Count() - IntPtr2Int(inData - inbuf->Data());
+				ASSERT(datalen >= 0);
+				ASSERT(dataLen == datalen);
+
+				int deb = 1;
+			}
+		}
+
+		// Replace al tags with the single blank
+		int ret = HtmlUtils::ReplaceAllHtmlTags(inData, datalen, outbuf);
+
+		int deb = 1;
+	}
+	else
+	{
+		char *inData = inbuf->Data();
+		int  datalen = inbuf->Count();
+
+		int ret = HtmlUtils::ReplaceAllHtmlTags(inData, datalen, outbuf);
+
+		int deb = 1;
+	}
+}
+
+int HtmlUtils::FindHtmlTag(char *inData, int indDataLen, char *tag, int tagLen, char *&tagBeg, int &tagLenRet)
+{
+	tagBeg = 0;
+	tagLenRet = 0;
+
+	char *p = inData;
+	char *e = p + indDataLen;
+
+	while (p < e)
+	{
+		while (p < e)
+		{
+			if (*p == '<')
+				break;
+			else
+				p++;
+		}
+		if (p >= e)
+			return 0;
+
+		tagBeg = p++;
+
+		if (tag)
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p, e, tag, tagLen) != 0)
+			{
+				continue;
+			}
+		}
+
+		p += tagLen;
+
+		while (p < e)
+		{ 
+			if (*p == '>')
+				break;
+			else if (*p == '<')
+				break;
+			else
+				p++;
+		}
+		if (p >= e)
+			return 0;
+
+		if (*p == '>')
+		{
+			tagLenRet = IntPtr2Int(p + 1 -tagBeg);
+			ASSERT(tagLenRet >= 0);
+			break;
+		}
+	}
+	return tagLenRet;
+}
+
+int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *outbuf)
+{
+	char *tagBeg = 0;
+	int tagLenRet = 0;
+
+	char *p = inData;
+	char *e = p + inDataLen;
+
+	int datalen = inDataLen;
+	int len;
+	int ret;
+
+	while (p < e)
+	{
+		ret = HtmlUtils::FindHtmlTag(p, datalen, 0, 0, tagBeg, tagLenRet);
+		if (ret == 0)
+			break;
+
+		len = IntPtr2Int(tagBeg - p);
+		ASSERT(len >= 0);
+		outbuf->Append(p, len);
+		outbuf->Append(' ');
+
+		p = tagBeg + tagLenRet;
+		datalen -= len + tagLenRet;
+		ASSERT(datalen == (e - p));
+		int deb = 1;
+	}
+	if (outbuf->Count())
+	{
+		len = IntPtr2Int(e - p);
+		ASSERT(len >= 0);
+		outbuf->Append(p, len);
+	}
+
+	return 1;
 }
 
 #if 0

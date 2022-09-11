@@ -152,6 +152,11 @@ public:
 		m_dwTerminateDelay = dwMilliSeconds;
 	}
 
+	inline DWORD GetTerminationDelay()
+	{
+		return m_dwTerminateDelay;
+	}
+
 	virtual ~CUPDialog();
 
 	// DoModal invokes the Modal Dialog. 

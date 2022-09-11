@@ -345,6 +345,8 @@
 #define IDC_SELECTED_SUBJECT            1285
 #define IDC_HTML_TEXT                   1286
 #define IDC_TEXT_TYPE                   1287
+#define IDC_HTML_IF                     1288
+#define IDC_HTML_TEXT_IF                1288
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -416,7 +418,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        236
 #define _APS_NEXT_COMMAND_VALUE         32916
-#define _APS_NEXT_CONTROL_VALUE         1288
+#define _APS_NEXT_CONTROL_VALUE         1289
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

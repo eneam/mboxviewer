@@ -142,3 +142,18 @@ public:
 	}
 };
 
+
+// Read only wrapper around char* data and int count
+class SimpleStringWrapper : public SimpleString
+{
+public:
+	SimpleStringWrapper(char *data, int count)
+	{
+		m_data = data;
+		m_count = count;
+	}
+	~SimpleStringWrapper() { m_data = 0;};
+	//char *Data() { return m_data; }
+	//int Count() { return m_count; }
+};
+

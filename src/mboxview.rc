@@ -406,9 +406,11 @@ BEGIN
     LTEXT           "",IDC_RULE_TEXT,14,233,366,8
     CONTROL         "Match TO field only if single recipient on the list",IDC_SINGLE_TO,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,150,192,167,10
-    CONTROL         "plain",IDC_PLAIN_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,139,254,31,10
-    CONTROL         "html",IDC_HTML_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,178,254,29,10
-    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,20,254,111,8
+    CONTROL         "plain",IDC_PLAIN_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,254,31,10
+    CONTROL         "html",IDC_HTML_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,254,29,10
+    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8
+    CONTROL         "html if no plain text",IDC_HTML_TEXT_IF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,254,77,10
+    PUSHBUTTON      "Help",IDC_BUTTON_HELP,299,251,50,14
 END
 
 IDD_FIND_IN_MAIL DIALOGEX 0, 0, 309, 45

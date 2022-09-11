@@ -385,6 +385,8 @@ public:
 
 	void PostMsgCmdParamAttachmentHint();
 	//
+	int ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm);
+	//
 	
 	static int ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDirectory, CString &emlFile, CString &errorText);
 	static int PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile);

@@ -3974,7 +3974,10 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{
@@ -6195,7 +6198,10 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			ASSERT(cancelledbyUser == TRUE);
-			int loopCnt = 20;
+
+			DWORD terminationDelay = Dlg.GetTerminationDelay();
+			int loopCnt = (terminationDelay+100)/25;
+
 			DWORD tc_start = GetTickCount();
 			while ((loopCnt-- > 0) && (args.exitted == FALSE))
 			{

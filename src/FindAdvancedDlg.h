@@ -55,6 +55,7 @@ struct CFindAdvancedParams
 
 	int m_plainText;
 	int m_htmlText;
+	int m_htmlTextOnlyIfNoPlainText;
 
 	COleDateTime m_startDate;
 	COleDateTime m_endDate;
@@ -118,6 +119,9 @@ public:
 	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonSelectFilterRule();
 	afx_msg void OnBnClickedCheckNegateFindCriteria();
+	afx_msg void OnBnClickedButtonHelp();
+	afx_msg void OnBnClickedHtmlText();
+	afx_msg void OnBnClickedHtmlIf();
 };
 
 //{{AFX_INSERT_LOCATION}}
