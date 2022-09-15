@@ -4074,6 +4074,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 								// For now use instead as below
 								//SimpleStringWrapper str((char*)(LPCSTR)bdy, bdy.GetLength());
 								SimpleString &str = *MboxMail::m_largelocal3;
+								str.Clear();
 								str.Append((char*)(LPCSTR)bdy, bdy.GetLength());
 
 								SimpleString *wBuff = MboxMail::m_largelocal1;
@@ -4100,6 +4101,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 								// For now use instead as below
 								//SimpleStringWrapper str(contentData, contentDataLength);
 								SimpleString &str = *MboxMail::m_largelocal3;
+								str.Clear();
 								str.Append(contentData, contentDataLength);
 
 								SimpleString *wBuff = MboxMail::m_largelocal1;
@@ -6547,8 +6549,12 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 				{
 					DWORD tc_start = GetTickCount();
 
-					//const SimpleStringWrapper  inbuf(pData, datalen);
-					SimpleStringWrapper  inbuf(pData, datalen);
+					// TODO: investigate memory leak reported by VS when using SimpleStringWrapper
+					// For now use instead as below
+					// SimpleStringWrapper  inbuf(pData, datalen);
+					SimpleString &inbuf = *MboxMail::m_largelocal1;
+					inbuf.Clear();
+					inbuf.Append(pData, datalen);
 
 					UINT pageCode = CP_UTF8;
 					if (body->m_pageCode)
