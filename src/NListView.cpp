@@ -4168,8 +4168,11 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					int deb = 1;
 
 				ext = curExt;
-				if (!charset.IsEmpty())
-					bdycharset = charset;
+				if (bdycharset.CollateNoCase("utf-8") != 0)  // this just hack for now
+				{
+					if (!charset.IsEmpty())
+						bdycharset = charset;
+				}
 
 				pMsgView->m_strBody = contentType;
 			}
