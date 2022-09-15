@@ -69,13 +69,20 @@ MboxMailTableType *MboxMail::m_pMboxMailTable = 0;
 MboxMail::MboxMailMapType *MboxMail::m_pMboxMailMap = 0;
 int MboxMail::m_nextGroupId = 0;
 
-SimpleString* MboxMail::m_outbuf = new SimpleString(10000);
-SimpleString* MboxMail::m_inbuf = new SimpleString(10000);
-SimpleString* MboxMail::m_outdata = new SimpleString(10000);
-SimpleString* MboxMail::m_indata = new SimpleString(10000);
-SimpleString* MboxMail::m_workbuf = new SimpleString(10000);
-SimpleString* MboxMail::m_tmpbuf = new SimpleString(10000);
-SimpleString* MboxMail::m_largebuf = new SimpleString(10000);
+SimpleString* MboxMail::m_outbuf = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_inbuf = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_outdata = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_indata = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_workbuf = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_tmpbuf = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_largebuf = new SimpleString(1*1024*1024);
+//
+SimpleString* MboxMail::m_largelocal1 = new SimpleString(10*1024*1024);
+SimpleString* MboxMail::m_largelocal2 = new SimpleString(10*1024*1024);
+SimpleString* MboxMail::m_largelocal3 = new SimpleString(10*1024*1024);
+SimpleString* MboxMail::m_smalllocal1 = new SimpleString(1*1024*1024);
+SimpleString* MboxMail::m_smalllocal2 = new SimpleString(1*1024*1024);
+
 
 BOOL MboxMail::m_outbufBusy = FALSE;
 BOOL MboxMail::m_inbufBusy = FALSE;
@@ -6747,12 +6754,27 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 	outbuf->ClearAndResize(10000);
 	inbuf->ClearAndResize(10000);
 
+	SimpleString* tmpbuf = MboxMail::m_largelocal3;
+	tmpbuf->Clear();
+
 	MailBodyContent *body;
 	pageCode = 0;
+	UINT bdyPageCode = 0;
 	bool pageCodeConflict = false;
+
+	BOOL reencodeCurrent = FALSE;
+	BOOL reencodeNew = FALSE;
+	BOOL setAsUTF8 = FALSE;
+	UINT CP_US_ASCII = 20127;
 
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
+		reencodeCurrent = FALSE;
+		reencodeNew = FALSE;
+		setAsUTF8 = FALSE;
+
+		tmpbuf->Clear();
+
 		body = m->m_ContentDetailsArray[j];
 
 		if ((!body->m_attachmentName.IsEmpty()) || 
@@ -6760,29 +6782,61 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 		{
 				continue;
 		}
-		if (textType == 0) {
+		if (textType == 0)
+		{
 			if (body->m_contentType.CompareNoCase("text/plain") != 0)
 			{
 				continue;
 			}
 		} 
-		else if (textType == 1) {
+		else if (textType == 1)
+		{
 			if (body->m_contentType.CompareNoCase("text/html") != 0)
 			{
 				continue;
 			}
 		}
 
-		bodyCnt++;
-		if (pageCodeConflict == false) {
-			if (pageCode == 0)
-				pageCode = body->m_pageCode;
-			else if (pageCode != body->m_pageCode)
-				pageCodeConflict = true;
+		if (bodyCnt == 0)
+		{
+			bdyPageCode = body->m_pageCode;
+			pageCode = body->m_pageCode;
+		}
+		else
+		{
+			pageCode = body->m_pageCode;
+
+			if (bdyPageCode != pageCode)
+			{
+				if (((bdyPageCode == CP_UTF8) || (bdyPageCode == CP_US_ASCII))  && ((pageCode == CP_UTF8) || (pageCode == CP_US_ASCII)))
+				{
+					ASSERT((bdyPageCode == CP_UTF8) || (pageCode == CP_UTF8));
+					setAsUTF8 = TRUE;
+				}
+				else if ((bdyPageCode == CP_UTF8) || (bdyPageCode == CP_US_ASCII))
+				{
+					reencodeNew = TRUE;
+				}
+				else if ((pageCode == CP_UTF8) || (pageCode == CP_US_ASCII))
+				{
+					reencodeCurrent = TRUE;
+				}
+				else
+				{
+					reencodeCurrent = TRUE;
+					reencodeNew = TRUE;
+				}
+			}
+		}
+		if (textType == 1)
+		{
+			reencodeCurrent = FALSE;
+			reencodeNew = FALSE;
 		}
 
 		int bodyLength = body->m_contentLength;
-		if ((body->m_contentOffset + body->m_contentLength) > m->m_length) {
+		if ((body->m_contentOffset + body->m_contentLength) > m->m_length)
+		{
 			// something is not consistent
 			bodyLength = m->m_length - body->m_contentOffset;
 			if (bodyLength < 0)
@@ -6804,39 +6858,138 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 		{
 			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
 			int dlength = d64.GetOutputLength();
-			int needLength = dlength + outbuf->Count();
-			outbuf->Resize(needLength);
+			//
+			if (!reencodeCurrent && !reencodeNew)
+			{
+				int needLength = dlength + outbuf->Count();
+				outbuf->Resize(needLength);
+				char *outptr = outbuf->Data(outbuf->Count());
 
-			char *outptr = outbuf->Data(outbuf->Count());
-			int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
-			if (retlen > 0)
-				outbuf->SetCount(outbuf->Count() + retlen);
+				int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
+				if (retlen > 0)
+					outbuf->SetCount(outbuf->Count() + retlen);
+			}
+			else
+			{
+				int needLength = dlength;
+				tmpbuf->Resize(needLength);
+
+				int retlen = d64.GetOutput((unsigned char*)tmpbuf->Data(), dlength);
+				if (retlen > 0)
+				{
+					tmpbuf->SetCount(retlen);
+				}
+			}
 		}
 		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
 		{
 			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
 			int dlength = dGP.GetOutputLength();
-			int needLength = dlength + outbuf->Count();
-			outbuf->Resize(needLength);
+			//
+			if (!reencodeCurrent && !reencodeNew)
+			{
+				int needLength = dlength + outbuf->Count();
+				outbuf->Resize(needLength);
+				char *outptr = outbuf->Data(outbuf->Count());
 
-			char *outptr = outbuf->Data(outbuf->Count());
-			int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
-			if (retlen > 0)
-				outbuf->SetCount(outbuf->Count() + retlen);
+				int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
+				if (retlen > 0)
+				{
+					outbuf->SetCount(outbuf->Count() + retlen);
+				}
+			}
+			else
+			{
+				int needLength = dlength;
+				tmpbuf->Resize(needLength);
+
+				int retlen = dGP.GetOutput((unsigned char*)tmpbuf->Data(), dlength);
+				if (retlen > 0)
+				{
+					tmpbuf->SetCount(retlen);
+				}
+			}
 		}
 		else
 		{
 			// in case we have multiple bodies of the same type ?? not sure it is valid case/concern
 			// asking for trouble ??
-			outbuf->Append(bodyBegin, bodyLength);
+			if (!reencodeCurrent && !reencodeNew)
+			{
+				outbuf->Append(bodyBegin, bodyLength);
+			}
+			else
+			{
+				tmpbuf->Append(bodyBegin, bodyLength);
+			}
 		}
+
+		if (reencodeCurrent || reencodeNew)
+		{
+			SimpleString *result;
+			if (reencodeCurrent)
+			{
+				SimpleString *wBuff = MboxMail::m_largelocal1;
+				wBuff->ClearAndResize(4*outbuf->Count());
+
+				result = MboxMail::m_largelocal2;
+				result->ClearAndResize(4*outbuf->Count());
+
+				BOOL retResult = TextUtilsEx::Str2UTF8(outbuf, bdyPageCode, result, wBuff);
+				if (retResult == TRUE)
+				{
+					outbuf->Clear();
+					outbuf->Append(result->Data(), result->Count());
+					pageCode = CP_UTF8;
+				}
+				else
+					; // don't touch outbuf
+			}
+			if (reencodeNew)
+			{
+				SimpleString *wBuff = MboxMail::m_largelocal1;
+				wBuff->ClearAndResize(4*tmpbuf->Count());
+
+				result = MboxMail::m_largelocal2;
+				result->ClearAndResize(4*tmpbuf->Count());
+
+				// TODO: make wBuff local to Str2UTF8
+				BOOL retResult = TextUtilsEx::Str2UTF8(tmpbuf, pageCode, result, wBuff);
+				if (retResult == TRUE)
+				{
+					outbuf->Append(result->Data(), result->Count());
+					pageCode = CP_UTF8;
+				}
+				else
+				{
+					outbuf->Append(tmpbuf->Data(), tmpbuf->Count());
+				}
+			}
+			//charset = "utf-8";
+		}
+		else
+		{
+			; // all done
+		}
+
+		if (setAsUTF8)
+		{
+			pageCode = CP_UTF8;
+			bdyPageCode = CP_UTF8;
+		}
+		else if ((bdyPageCode == CP_UTF8) || (pageCode == CP_UTF8))
+		{
+			pageCode = CP_UTF8;
+			bdyPageCode = CP_UTF8;
+			if (bodyCnt > 0)
+				int deb = 1;
+		}
+	
+		bodyCnt++;
 
 		if (bodyCnt > 1)
 			int deb = 1;
 	}
-
-	if (pageCodeConflict)
-		pageCode = 0;
 
 	return outbuf->Count();
 }
@@ -7692,6 +7845,17 @@ void MboxMail::ReleaseResources(BOOL updateRegistry)
 	MboxMail::m_indata = 0;
 	delete MboxMail::m_outdata;
 	MboxMail::m_outdata = 0;
+	delete MboxMail::m_largelocal1;
+	MboxMail::m_largelocal1 = 0;
+	delete MboxMail::m_largelocal2;
+	MboxMail::m_largelocal2 = 0;
+	delete MboxMail::m_largelocal3;
+	MboxMail::m_largelocal3 = 0;
+	delete MboxMail::m_smalllocal1;
+	MboxMail::m_smalllocal1 = 0;
+	delete MboxMail::m_smalllocal2;
+	MboxMail::m_smalllocal2 = 0;
+	//
 	delete MailBody::m_mpool;
 	MailBody::m_mpool = 0;
 	delete m_pMessageIdTable;
@@ -7841,7 +8005,7 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 			if (TextUtilsEx::findNoCase(outbuf->Data(), outbuf->Count(), "<body", 5) >= 0)
 				hasBody = TRUE;
 
-			if (TextUtilsEx::findNoCase(outbuf->Data(), outbuf->Count(), "charset=", 5) >= 0)
+			if (TextUtilsEx::findNoCase(outbuf->Data(), outbuf->Count(), "charset=", 8) >= 0)
 				hasCharset = TRUE;
 		}
 

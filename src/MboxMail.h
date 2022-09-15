@@ -437,6 +437,14 @@ public:
 	static SimpleString *m_workbuf;
 	static SimpleString *m_tmpbuf;
 	static SimpleString *m_largebuf;
+	// define buffer for local use only within single function
+	// TODO: find time and fix this mess
+	static SimpleString *m_largelocal1;
+	static SimpleString *m_largelocal2;
+	static SimpleString *m_largelocal3;
+	static SimpleString *m_smalllocal1;
+	static SimpleString *m_smalllocal2;
+
 	// added below later; must implement large buffer manager ? just created mess to resolve later
 	static BOOL m_outbufBusy;
 	static BOOL m_inbufBusy;

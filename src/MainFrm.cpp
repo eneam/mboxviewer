@@ -5447,4 +5447,24 @@ void CMainFrame::OnDevelopmentoptionsDevelo()
 		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_CHECKED);
 	else
 		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_UNCHECKED);
+
+	CString bufferSizes;
+	bufferSizes .Format("Static Buffer Sizes:\n"
+		"\tm_outbuf=%d\n\tm_inbuf=%d\n\tm_outdata=%d\n\tm_indata=%d\n\tm_workbuf=%d\n\tm_tmpbuf=%d\n"
+		"\tm_largebuf=%d\n\tm_largelocal1=%d\n\tm_largelocal2=%d\n\tm_largelocal3=%d\n\tm_smalllocal1=%d\n\tm_smalllocal2=%d\n\n",
+		MboxMail::m_outbuf->Capacity(),
+		MboxMail::m_inbuf->Capacity(),
+		MboxMail::m_outdata->Capacity(),
+		MboxMail::m_indata->Capacity(),
+		MboxMail::m_workbuf->Capacity(),
+		MboxMail::m_tmpbuf->Capacity(),
+		MboxMail::m_largebuf->Capacity(),
+		MboxMail::m_largelocal1->Capacity(),
+		MboxMail::m_largelocal2->Capacity(),
+		MboxMail::m_largelocal3->Capacity(),
+		MboxMail::m_smalllocal1->Capacity(),
+		MboxMail::m_smalllocal2->Capacity()
+		);
+	TRACE("%s", bufferSizes);
+
 }

@@ -3886,8 +3886,11 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					curExt = "txt";
 				}
 
-				int pc = CString(fval).Find("charset=");
-				if (pc != -1) {
+				//int pc = CString(fval).Find("charset=");
+				int fvalLen = istrlen(fval);
+				int pc = TextUtilsEx::findNoCase(fval, fvalLen, "charset=", 8);
+				if (pc != -1)
+				{
 					int charsetLength = CString(fval + pc + 8).FindOneOf(";\n\r");
 					if (charsetLength < 0)
 						charsetLength = istrlen(fval + pc + 8);
@@ -3987,12 +3990,69 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			{
 				if (!alreadyFoundHTML)
 				{
+					BOOL reencodeCurrent = FALSE;
+					BOOL reencodeNew = FALSE;
+					BOOL setAsUTF8 = FALSE;
+
 					if (alreadyFoundPlain == false)
 					{
 						bdy.Empty();
 						IsBodyEmpty = TRUE;
 						partsCnt = 0;
 						bdycharset.Empty();
+					}
+					else
+					{
+						// Handle multiple text/plain blocks. Reencode if necessary
+						// TODO: Simplify and always reencode ??
+
+						if (!bdycharset.IsEmpty())
+						{
+							if (!charset.IsEmpty())
+							{
+								UINT cp_bdycharset = TextUtilsEx::Str2PageCode((char*)(LPCSTR)bdycharset);
+								UINT cp_charset = TextUtilsEx::Str2PageCode((char*)(LPCSTR)charset);
+
+								if (bdycharset.CompareNoCase(charset) != 0)
+								{
+									BOOL bdycharset_IsUtf8 = (bdycharset.CollateNoCase("utf-8") == 0);
+									BOOL bdycharset_IsUsAscii = (bdycharset.CollateNoCase("us-ascii") == 0);
+									BOOL charset_IsUtf8 = (charset.CollateNoCase("utf-8") == 0);
+									BOOL charset_IsUsAscii = (charset.CollateNoCase("us-ascii") == 0);
+
+									if ((bdycharset_IsUtf8 || bdycharset_IsUsAscii) && (charset_IsUtf8 || charset_IsUsAscii))
+									{
+										setAsUTF8 = TRUE;
+									}
+									else if (bdycharset_IsUtf8 || bdycharset_IsUsAscii)
+									{
+										reencodeNew = TRUE;
+									}
+									else if (charset_IsUtf8 || charset_IsUsAscii)
+									{
+										reencodeCurrent = TRUE;
+									}
+									else
+									{
+										reencodeCurrent = TRUE;
+										reencodeNew = TRUE;
+									}
+								}
+							}
+#if 0
+							if (charset.CompareNoCase("utf-8") == 0)
+								; 	//bdycharset will be set to utf-8
+							else
+								charset.Empty();  // keep bdycharset
+#endif
+						}
+					}
+
+					if (0)  // Justa test
+					{
+						reencodeCurrent = FALSE;
+						reencodeNew = FALSE;
+						setAsUTF8 = TRUE;
 					}
 
 					alreadyFoundPlain = true;
@@ -4004,7 +4064,72 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 						bdy.ReleaseBuffer();
 					}
 					else
-						bdy.Append(contentData, contentDataLength);
+					{
+						if (reencodeCurrent || reencodeNew)
+						{
+							SimpleString *result;
+							if (reencodeCurrent)
+							{
+								// TODO: investigate memory leak when using SimpleStringWrapper
+								// For now use instead as below
+								//SimpleStringWrapper str((char*)(LPCSTR)bdy, bdy.GetLength());
+								SimpleString &str = *MboxMail::m_largelocal3;
+								str.Append((char*)(LPCSTR)bdy, bdy.GetLength());
+
+								SimpleString *wBuff = MboxMail::m_largelocal1;
+								wBuff->ClearAndResize(4*str.Count());
+
+								result = MboxMail::m_largelocal2;
+								result->ClearAndResize(4*str.Count());
+
+								UINT strCodePage = TextUtilsEx::Str2PageCode((char*)(LPCSTR)bdycharset);
+
+								BOOL retResult = TextUtilsEx::Str2UTF8(&str, strCodePage, result, wBuff);
+								if (retResult == TRUE)
+								{
+									bdy.Empty();
+									bdy.Append(result->Data(), result->Count());
+									charset = "utf-8";
+								}
+								else
+									; // don't tocy bdy
+							}
+							if (reencodeNew)
+							{
+								// TODO: investigate memory leak when using SimpleStringWrapper
+								// For now use instead as below
+								//SimpleStringWrapper str(contentData, contentDataLength);
+								SimpleString &str = *MboxMail::m_largelocal3;
+								str.Append(contentData, contentDataLength);
+
+								SimpleString *wBuff = MboxMail::m_largelocal1;
+								wBuff->ClearAndResize(4*str.Count());
+
+								result = MboxMail::m_largelocal2;
+								result->ClearAndResize(4*str.Count());
+
+								UINT strCodePage = TextUtilsEx::Str2PageCode((char*)(LPCSTR)charset);
+
+								BOOL retResult = TextUtilsEx::Str2UTF8(&str, strCodePage, result, wBuff);
+								if (retResult == TRUE)
+								{
+									bdy.Append(result->Data(), result->Count());
+									charset = "utf-8";
+								}
+								else
+								{
+									bdy.Append(contentData, contentDataLength);
+								}
+							}
+							//charset = "utf-8";
+						}
+						else
+						{
+							bdy.Append(contentData, contentDataLength);
+						}
+						if (setAsUTF8)
+							charset = "utf-8";
+					}
 
 					partsCnt++;
 					if (partsCnt > 1)
@@ -4019,7 +4144,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			}
 			else
 			{
-				if (alreadyFoundHTML == FALSE) {
+				if (alreadyFoundHTML == FALSE)
+				{
 					bdy.Empty();
 					IsBodyEmpty = TRUE;
 					partsCnt = 0;
@@ -4370,7 +4496,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			// TODO: need to optimize use of buffers
 			BOOL charsetMissing = FALSE;
 
-			if (TextUtilsEx::findNoCase(pBdy, bodyLength, "charset=", 5) < 0)
+			if (TextUtilsEx::findNoCase(pBdy, bodyLength, "charset=", 8) < 0)
 				charsetMissing = TRUE;
 
 			// For now always append missing charset
@@ -4507,6 +4633,11 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					CString hdr = "<html><head><style>body{background-color: ";
 					hdr.Append(colorStr);
 					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
+					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+				}
+				else
+				{
+					CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n";
 					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 				}
 			}
@@ -6222,6 +6353,94 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 		return FALSE;
 
 	MailBodyContent *body;
+
+	if (MboxMail::developerMode)
+	{
+		if (params.m_bEditChecked[5])  // message
+		{
+			BOOL plainTextOnly = FALSE;
+			BOOL htmlTextOnly = FALSE;
+			BOOL bothTextOnly = FALSE;
+			int textBlockCnt = 1;
+
+			if (m_stringWithCase[5].Compare("1") == 0)
+				plainTextOnly = TRUE;
+			else if (m_stringWithCase[5].Compare("1.2") == 0)
+			{
+				plainTextOnly = TRUE;
+				textBlockCnt = 2;
+			}
+			else if (m_stringWithCase[5].Compare("2") == 0)
+				htmlTextOnly = TRUE;
+			else if (m_stringWithCase[5].Compare("2.2") == 0)
+			{
+				htmlTextOnly = TRUE;
+				textBlockCnt = 2;
+			}
+			else if (m_stringWithCase[5].Compare("3") == 0)
+				bothTextOnly = TRUE;
+
+			if (plainTextOnly || htmlTextOnly || bothTextOnly)
+			{
+				int attachmentCnt = 0;
+				int plainTextCnt = 0;
+				int htmlTextCnt = 0;
+				for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+				{
+					body = m->m_ContentDetailsArray[j];
+
+					if (!body->m_attachmentName.IsEmpty())
+					{
+						attachmentCnt++;
+					}
+					else if (body->m_contentType.CompareNoCase("text/html") == 0)
+					{
+						htmlTextCnt++;
+					}
+					else if (body->m_contentType.CompareNoCase("text/plain") == 0)
+					{
+						plainTextCnt++;
+					}
+				}
+
+				if (bothTextOnly)
+				{
+					if (plainTextCnt && htmlTextCnt)
+						return TRUE;
+				}
+				else if (plainTextOnly)
+				{
+					if (textBlockCnt == 1)
+					{
+						if ((plainTextCnt == textBlockCnt) && (htmlTextCnt == 0))
+							return TRUE;
+					}
+					else
+					{
+						if ((plainTextCnt >= textBlockCnt) && (htmlTextCnt == 0))
+							return TRUE;
+					}
+				}
+				else if (htmlTextOnly)
+				{
+					if (textBlockCnt == 1)
+					{
+						if ((htmlTextCnt == textBlockCnt) && (plainTextCnt == 0))
+							return TRUE;
+					}
+					else
+					{
+						if ((htmlTextCnt >= textBlockCnt) && (plainTextCnt == 0))
+							return TRUE;
+					}
+				}
+
+				return FALSE;
+			}
+		}
+	}
+
+
 	BOOL textPlainFound = FALSE;
 	BOOL isAttachment = FALSE;
 	int i;
