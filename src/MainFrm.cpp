@@ -1422,7 +1422,9 @@ int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderNa
 	htmFileName.Append(textFileName);
 
 	CString progressText;
-	ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText);
+	TRACE("Printing %s to PDF\n", htmFileName);
+	int timeout = 300; // seconds
+	ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText, timeout);
 	return ret;
 }
 
@@ -3394,7 +3396,7 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 	return 1;
 }
 
-int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText)
+int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3502,6 +3504,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	DWORD msec = 100;
 	BOOL signaled = FALSE;
 	BOOL failed = FALSE;
+	int returnCode = 1;
 	for (;;)
 	{
 		msec = 100;
@@ -3509,6 +3512,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		switch (ret)
 		{
 		case WAIT_ABANDONED: {
+			errorText = "Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_ABANDONED";
 			failed = TRUE;
 			break;
 		}
@@ -3517,6 +3521,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 			break;
 		}
 		case WAIT_FAILED: {
+			errorText = "Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_FAILED";
 			failed = TRUE;
 			break;
 		}
@@ -3531,7 +3536,8 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 						TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
 						CloseHandle(ShExecInfo.hProcess);
 					}
-					return 2;
+					returnCode = 2;
+					return returnCode;
 				}
 				if (progressBar)
 				{
@@ -3549,28 +3555,61 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 							step = 10;
 					}
 					stepCnt++;
+					if ((timeout >= 0) && (nSeconds > timeout))
+					{
+						errorText.Format("Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+						failed = TRUE;
+						if (ShExecInfo.hProcess)
+						{
+							TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+							CloseHandle(ShExecInfo.hProcess);
+						}
+						return -1;
+					}
+				}
+				else
+				{
+					if (stepCnt % 10 == 0)
+					{
+						nSeconds++;
+						if ((timeout >= 0) && (nSeconds > timeout))
+						{
+							errorText.Format("Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+							failed = TRUE;
+							if (ShExecInfo.hProcess)
+							{
+								TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
+								CloseHandle(ShExecInfo.hProcess);
+							}
+							return -1;
+						}
+					}
+					stepCnt++;
 				}
 			}
 			break;
 		}
 		default: {
+			errorText.Format("Conversion of HTML to PDF failed. WaitForSingleObject returns unknown code=%s", ret);
 			failed = TRUE;
 			break;
 		}
 		}
 		if (signaled || failed)
 		{
-			// ???
+			// ??
+			if (failed)
+				returnCode = -1;
 			break;
 		}
 	}
 	if (ShExecInfo.hProcess)
 		CloseHandle(ShExecInfo.hProcess);
 
-	return 1;
+	return returnCode;
 }
 
-int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText)
+int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 

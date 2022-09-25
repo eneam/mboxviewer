@@ -237,10 +237,10 @@ public:
 	int PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString &errorText);
 	int PrintSingleMailtoHTML(int iItem, CString &targetPrintSubFolderName, CString &errorText);
 	//
-	static int ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText);
+	static int ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
 	int VerifyPathToHTML2PDFExecutable(CString &errorText);
 
-	static int ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText);
+	static int ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
 
 	void PrintMailArchiveToHTML();
 	void PrintMailArchiveToTEXT();

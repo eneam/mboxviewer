@@ -4338,7 +4338,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		// Wrap as HTML to display text with different charsets correctly
 		ext = "htm";
 
-		CString preStyle = "pre { overflow-x:auto;  white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
+		//CString preStyle = "pre { overflow-x:auto;  white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
+		CString preStyle = "pre { overflow-x:break-word; white-space:pre; white-space:hp-pre-wrap; white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
 
 		SimpleString *result = 0;
 		BOOL retResult = FALSE;
@@ -4370,13 +4371,17 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				bdycharset = "UTF-8";
 		}
 
-		//bdycharset = "UTF-8";
+		if (bdycharset.IsEmpty())
+			bdycharset = "UTF-8";
 
 		SimpleString *outbuf = MboxMail::m_outbuf;
 		outbuf->ClearAndResize(bdy.GetLength() + 1000);
 
 		CString hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">";
 		hdr.Append("<style>\r\n");
+		hdr.Append("@media print {\r\n");
+		hdr.Append(preStyle);
+		hdr.Append("\r\n}\r\n");
 		hdr.Append(preStyle);
 
 		DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
@@ -8690,7 +8695,15 @@ int NListView::PrintMailRangeToSinglePDF_WorkerThread(int firstMail, int lastMai
 	if (progressBar && MboxMail::pCUPDUPData)
 		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
 
-	ret = CMainFrame::ExecCommand_WorkerThread(htmFileName, errorText, TRUE, progressText);
+
+	int timeout = -1;
+	if (firstMail == lastMail)
+	{
+		; // timeout = 300;
+		timeout = -1;  // let user cancel print if takes too long
+	}
+
+	ret = CMainFrame::ExecCommand_WorkerThread(htmFileName, errorText, TRUE, progressText, timeout);
 
 	return  1;
 }
@@ -8811,7 +8824,21 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 			}
 			else
 			{
-				
+				CString mergeErrorFilepath = printCachePath +"\\MergePDFsError.log";
+				_int64 mergeErrorFileSize = FileUtils::FileSize(mergeErrorFilepath);
+
+				HWND h = GetSafeHwnd();
+				if (mergeErrorFileSize > 0)
+				{
+					CString text = "Merge File was created.\n"
+						"However, one or more emails didn't finish printing to PDF in 5 minutes and were not merged\n"
+						"Select OK to open the file with the list of failed mails\n";
+					int answer = ::MessageBox(h, text, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+
+					HINSTANCE result = ShellExecute(h, _T("open"), mergeErrorFilepath, NULL, NULL, SW_SHOWNORMAL);
+					CMainFrame::CheckShellExecuteResult(result, h, &mergeErrorFilepath);
+				}
+
 				CString pdfFileName = args.mergedPDFPath;
 
 				CString txt = "Created PDF file \n\n" + pdfFileName;
@@ -8838,13 +8865,13 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 				{
 					int deb = 1;
 				}
-
 			}
 		}
 		else
 		{
 			MboxMail::assert_unexpected();
-			HWND h = NULL;
+			HWND h = GetSafeHwnd();
+
 			int answer = ::MessageBox(h, args.errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
@@ -8853,7 +8880,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFold
 	{
 		if (!args.errorText.IsEmpty())
 		{
-			HWND h = NULL;
+			HWND h = GetSafeHwnd();
 			int answer = ::MessageBox(h, args.errorText, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
@@ -9017,7 +9044,15 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 {
 	BOOL progressBar = TRUE;
 
+	// TODO: Just delete folder instead ?
 	int retdel = NListView::DeleteAllHtmAndPDFFiles(targetPrintFolderPath);
+	CString fpath = targetPrintFolderPath + "\\MergePDFsError.log";
+	BOOL r = FileUtils::DeleteFile(fpath);
+	fpath = targetPrintFolderPath + "\\MergePDFs.log";
+	r = FileUtils::DeleteFile(fpath);
+	fpath = targetPrintFolderPath + "\\SelectedMailsList.txt";
+	r = FileUtils::DeleteFile(fpath);
+	// Delete cmd files ?
 
 	if (selectedMailIndexList->GetCount() <= 0)
 		return 1;
@@ -9079,6 +9114,22 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			return -1;
 		}
 
+		CFile fpMergeError;
+		CFileException ExMergeError;
+		CString mergeErrorFilePath = targetPrintFolderPath + "\\MergePDFsError.log";
+		if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExMergeError))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
+
+			errorText = _T("Could not create \"") + mergeErrorFilePath;
+			errorText += _T("\" file.\n");
+			errorText += exErrorStr;
+
+			TRACE(_T("%s\n"), errorText);
+			return -1;
+		}
+		fpMergeError.Close();  // Write Append in 
+
 		CFileException ExError;
 		mergeCmdFilePath = targetPrintFolderPath + "\\MergePDFs.cmd";
 		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
@@ -9137,7 +9188,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (progressBar && MboxMail::pCUPDUPData)
 		{
 			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
-				break;
+				fpm.Close();
+				return -1;
 			}
 
 			newstep = ((double)(j - 0 + 1)) / step;
@@ -9194,7 +9246,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			errorText += exErrorStr;
 
 			TRACE(_T("%s\n"), errorText);
-			//return -1;
+			fpm.Close();
+			return -1;
 		}
 		else
 			selectedMailsListFileOpen = TRUE;
@@ -9281,6 +9334,12 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			mergedFileName = fileNameBase + ".pdf";
 		}
 
+		if (out_array.GetCount() == 0)
+		{
+			fpm.Close();
+			return -1;
+		}
+
 		CString mergeScript;
 		mergeScript.Format("\n\n@echo on\n\ndel /f /q \"%s\"\n\nren \"%s\" \"%s\"\n\npause\n\n", mergedFileName, out_array.GetAt(0), mergedFileName);
 		fpm.Write(mergeScript, mergeScript.GetLength());
@@ -9324,6 +9383,23 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	int maxCmdLineLength = 8191 - 700;
 	//maxCmdLineLength = 700;
 
+	CFile fpMergeError;
+	CFileException ExMergeError;
+	CString mergeErrorFilePath = targetPrintFolderPath + "\\MergePDFsError.log";
+	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate | CFile::shareDenyNone, &ExMergeError))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
+
+		errorText = _T("Could not create \"") + mergeErrorFilePath;
+		errorText += _T("\" file.\n");
+		errorText += exErrorStr;
+
+		TRACE(_T("%s\n"), errorText);
+		return -1;
+	}
+
+	fpMergeError.SeekToEnd(); // Append Mode
+
 	CFile fp;
 	CFileException ExError;
 	CString mergeCmdFilePath = targetPrintFolderPath + "\\MergePDFs.cmd";
@@ -9336,6 +9412,9 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		errorText += exErrorStr;
 
 		TRACE(_T("%s\n"), errorText);
+
+		fpMergeError.Close();
+
 		return -1;
 	}
 
@@ -9348,6 +9427,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	CString mergedFileName;
 	CString mergedFile;
 	CString fileName;
+	CString filePath;
 
 	BOOL progressBar = TRUE;
 	CString progressText = "Merging PDFs";
@@ -9389,6 +9469,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 				errorText += exErrorStr;
 
 				TRACE(_T("%s\n"), errorText);
+
+				fpMergeError.Close();
 				return -1;
 			}
 
@@ -9403,11 +9485,22 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		}
 
 		fileName = in_array.GetAt(i);
-		mergeScript.Append(" -i \"");
-		mergeScript.Append(fileName);
-		mergeScript.Append("\"");
+		filePath = targetPrintFolderPath + "\\" + fileName;
+		// Make sure Browser was able to create the file, oterwise merge will fail !!!!
+		if (FileUtils::PathFileExist(filePath))
+		{
+			mergeScript.Append(" -i \"");
+			mergeScript.Append(fileName);
+			mergeScript.Append("\"");
 
-		mergedFileCnt++;
+			mergedFileCnt++;
+		}
+		else
+		{
+			CString line;
+			line.Format("File \"%s\" not found and it will not be merged\n", fileName);
+			fpMergeError.Write(line, line.GetLength());
+		}
 	}
 
 	if (mergedFileCnt)
@@ -9431,6 +9524,12 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 
 		int retexec = CMainFrame::ExecCommand_WorkerThread(mergeCmdFilePath, args, errorText, progressBar, progressText);
 	}
+	else
+	{
+		fp.Close();
+	}
+
+	fpMergeError.Close();
 	return 1;
 }
 
@@ -18184,7 +18283,7 @@ CString NListView::FixCommandLineArgument(int in)
 	return out;
 }
 
-INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText)
+INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 

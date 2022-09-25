@@ -356,7 +356,7 @@ public:
 	int ForwardMails_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	int ForwardSelectedMails_Thread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName);
 	int ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexList *selectedMailIndexList, CString &errorText);
-	INT64  ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText);
+	INT64  ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
 	CString FixCommandLineArgument(CString &in);
 	CString FixCommandLineArgument(int in);
 	INT64 ExecCommand_KillProcess(CString processName, CString &errorText, BOOL progressBar, CString &progressText);
