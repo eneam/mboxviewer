@@ -5,9 +5,9 @@ Changes
 v 1.0.3.35
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
- - Enhanced mail date/time discovery to better support newsfeeds. More enhancements are needed to support newsfeeds.;
- - Fixed support for subject threads Print To.;
- - Added print mail timeout for Print to PDF Merge option.
+ - Enhanced mail date/time discovery to better support newsfeeds. More enhancements are needed to better support newsfeeds.;
+ - Fixed Print To for subject threads.;
+ - Implemented print mail timeout for Print to PDF Merge option.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.34
