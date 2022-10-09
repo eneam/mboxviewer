@@ -92,6 +92,38 @@ public:
 	//
 	static int DecodeURL(char *URL, int urlLen);
 
+	static void CopyLine(char *p, char *e, CString &line)
+	{
+		char c;
+		while (p < e)
+		{
+			c = *p;
+			if ((c != '\r') && (c != '\n'))
+			{
+				line.AppendChar(c);
+			}
+			p++;
+		}
+		if (line.GetLength())
+			line.Append("\r\n");
+		return;
+	}
+
+	inline static char *SkipNumeric(char *p) {
+		while (_istdigit(*p)) p++;  // TODO: may trigger exception if p become invalid; unlikely -:)
+		return p;
+	}
+
+	inline static char *SkipNumericReverse(char *p) {
+		while (_istdigit(*p)) p--;  // TODO: may trigger exception if p become invalid; unlikely -:)
+		return p;
+	}
+
+	inline static char *SkipWhiteReverse(char *p) {
+		while ((*p == ' ') || (*p == '\t')) p--;  // TODO: may trigger exception if p become invalid; unlikely -:)
+		return p;
+	}
+
 	inline static char *SkipWhite(char *p) {
 		while ((*p == ' ') || (*p == '\t')) p++;
 		return p;

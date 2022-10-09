@@ -578,7 +578,9 @@ int NTreeView::IsValidMailFile(char *data, int datalen)
 	{
 		if ((bMimeVersion && (bMboxFrom || bMessageID)) ||
 			(bMboxFrom && bMessageID) ||
-			((bTo && bSubject) && (bMimeVersion || bMessageID)))
+			((bFrom && bSubject) && (bMimeVersion || bMessageID)) ||
+			((bTo && bSubject) && (bMimeVersion || bMessageID))
+			)
 			if (bMboxFrom)
 				return 1;
 			else
@@ -1823,7 +1825,7 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap
 				}
 				else
 				{
-					; // ignore non mbox files
+					int deb = 1; // ignore non mbox files
 				}
 
 				if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
@@ -2171,10 +2173,29 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 	linfoNew = m_labelInfoStore.Find(nIdNew);
 
 	// This is called when tree is closed
+
+	HTREEITEM hOldItemRoot = DetermineRootItem(hOldItem);
+	CString oldItemRootName;
+	if (hOldItemRoot)
+		oldItemRootName = m_tree.GetItemText(hOldItemRoot);
+
 	HTREEITEM hRoot = DetermineRootItem(hNewItem);
-	CString rootName = m_tree.GetItemText(hRoot);
+	CString rootName;
+	if (hRoot)
+		rootName = m_tree.GetItemText(hRoot);
 
 	HTREEITEM hParent = m_tree.GetParentItem(hNewItem);
+	CString parentName;
+	if (hParent)
+		parentName = m_tree.GetItemText(hParent);
+
+	HTREEITEM hOldItemParent = 0;
+	if (hOldItem)
+		hOldItemParent = m_tree.GetParentItem(hOldItem);
+	CString oldItemParentName;
+	if (hOldItemParent)
+		oldItemParentName = m_tree.GetItemText(hOldItemParent);
+
 	//######################################################################################################
 	//     Process Folder or SubFolder 
 	//######################################################################################################
@@ -2227,7 +2248,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	}
 
-	CString parentName = m_tree.GetItemText(hParent);
+	//CString parentName = m_tree.GetItemText(hParent);
 	NamePatternParams *pNamePP = &pFrame->m_NamePatternParams;
 
 	//######################################################################################################
@@ -2284,7 +2305,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		CString mboxFileName = mboxFileNameBase + mboxFileNameExtention;
 
-		if ((hOldItem != hParent) || mboxFileNamePath.Compare(linfoNew->m_filePath))
+		//if ((hOldItem != hParent) || mboxFileNamePath.Compare(linfoNew->m_filePath))
+		if ((hOldItemParent != hParent) || mboxFileNamePath.Compare(linfoNew->m_filePath))
 		{
 			// or set here. Likely it doesn't matter
 			// pListView->m_which = hRoot;

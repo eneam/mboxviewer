@@ -768,6 +768,14 @@ void CMainFrame::OnFileOpen()
 		}
 	}
 
+	if (!FileUtils::PathDirExists(path))
+	{
+		CString txt;
+		txt.Format(_T("Trying to open folder \"%s\" that doesn't exist.\n\nPossible problem: Ansi folder names are supported only.\n"),path);
+		HWND h = NULL; // we don't have any window yet
+		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+
 	DoOpen(path);
 }
 

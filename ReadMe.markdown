@@ -47,6 +47,14 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 Changes
 ---
 
+v 1.0.3.35
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Enhanced mail date/time discovery to better support newsfeeds. More enhancements are needed to support newsfeeds.;
+ - Fixed support for subject threads Print To.;
+ - Added print mail timeout for print to PDF Merge option.
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.34
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

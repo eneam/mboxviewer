@@ -884,6 +884,260 @@ bool IsFromValidDelimiter(char *p, char *e)
 		return false;
 }
 
+BOOL FoundMonth()
+{
+	return TRUE;
+}
+
+void MboxMail::MonthToString(int monthInt, CString &monthStr)
+{
+	static char *months[] = { "jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec" };
+	if ((monthInt >= 1) && (monthInt <= 12))
+	{
+		monthStr = months[monthInt-1];
+	}
+	return;
+}
+
+void MboxMail::FindDateInHeader(char *data, int datalen, CString &dateStr)
+{
+	static char *days[] = { "sun","mon","tue","wed","thu","fri","sat" };
+	static char *months[] = { "jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec" };
+
+	int headerlen = NMsgView::FindMailHeader(data, datalen);
+
+
+	char *p = data;
+	char *e = data + headerlen;
+
+	// probbaly should parse and create dictionary of words
+	char c;
+	BOOL found = FALSE;
+	while (p < e)
+	{
+		found = FALSE;
+		c = *p;
+		c = tolower(c);
+		switch (c)
+		{
+		case 'a':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " apr ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " aug ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'd':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " dec ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'f':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " feb ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'j':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jan ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jun ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jul ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'm':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " mar ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " may ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'n':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " nov ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 'o':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " oct ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		case 's':
+		{
+			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " sep ", 5) == 0)
+			{
+				FoundMonth();
+				found = TRUE;
+			}
+			int deb = 1; break;
+		}
+		default:
+		{
+			int deb = 1; break;
+		}
+		}
+		if (found == TRUE)
+		{
+			char *d = TextUtilsEx::SkipWhiteReverse(p-1);
+			char *day = TextUtilsEx::SkipNumericReverse(d);
+			day++;
+			if (_istdigit(*d))
+			{
+				TextUtilsEx::CopyLine(day, e, dateStr);
+				int deb = 1;
+			}
+		}
+		p++;
+	}
+	int deb = 1;
+}
+
+time_t MboxMail::parseRFC822Date(CString &date, CString &format)
+{
+	time_t tdate = -1;
+	SYSTEMTIME tm;
+	if (DateParser::parseRFC822Date(date, &tm))
+	{
+		MyCTime::fixSystemtime(&tm);
+		if (DateParser::validateSystemtime(&tm))
+		{
+			MyCTime tt(tm);
+			date = tt.FormatGmtTm(format);
+			if (date.IsEmpty())
+				date = tt.FormatLocalTm(format);
+			if (date.IsEmpty())
+				int deb = 1;
+			tdate = tt.GetTime();
+		}
+	}
+	return tdate;
+}
+
+BOOL MboxMail::CreateRFC822Date(CString &date, CString &rfcDate)
+{
+	rfcDate.Empty();
+
+#if 0
+	// Test
+	//date = "2000/09/02";
+	//date = "2000/13/02";
+	date = "09/02/2000";
+	date = "09/13/2000";
+	date = "02/09/2000";
+#endif
+
+	CString delim = "/:- ";
+	CStringArray va;
+	TextUtilsEx::SplitString(date, delim, va);
+
+	int val1_Int;
+	int val2_Int;
+	int val3_Int;
+
+	if (va.GetCount() >= 3)
+	{
+		int fcnt1 = _stscanf((LPCSTR)va[0], "%d", &val1_Int);
+		int fcnt2 = _stscanf((LPCSTR)va[1], "%d", &val2_Int);
+		int fcnt3 = _stscanf((LPCSTR)va[2], "%d", &val3_Int);
+
+		if ((fcnt1 == 1) && (fcnt2 == 1) && (fcnt3 == 1))
+		{
+			if (val1_Int > 1000)
+			{
+				CString monthStr;
+				if (val2_Int < 13)
+				{
+					if (val3_Int < 32)
+					{
+						MonthToString(val2_Int, monthStr);
+						if (!monthStr.IsEmpty())
+							rfcDate = va[2] + " " + monthStr + " " + va[0] + " 00:00:00 +0000 (UTC)";
+					}
+				}
+				else // (val2_Int >= 13)
+				{
+					// very unlikely case
+					if (val3_Int < 13)
+					{
+						MonthToString(val3_Int, monthStr);
+						if (!monthStr.IsEmpty())
+							rfcDate = va[1] + " " + monthStr + " " + va[0] + " 00:00:00 +0000 (UTC)";
+					}
+				}
+			}
+			else if (val3_Int > 1000)
+			{
+				CString monthStr;
+				if (val2_Int < 13)
+				{
+					if (val1_Int < 32)
+					{
+						MonthToString(val2_Int, monthStr);
+						if (!monthStr.IsEmpty())
+							rfcDate = va[0] + " " + monthStr + " " + va[2] + " 00:00:00 +0000 (UTC)";
+					}
+				}
+				else // (val2_Int >= 13)
+				{
+					// very unlikely case
+					if (val1_Int < 13)
+					{
+						MonthToString(val1_Int, monthStr);
+						if (!monthStr.IsEmpty())
+							rfcDate = va[1] + " " + monthStr + " " + va[2] + " 00:00:00 +0000 (UTC)";
+					}
+				}
+			}
+		}
+	}
+
+	if (!rfcDate.IsEmpty())
+		return TRUE;
+	else
+		return FALSE;
+}
+
 char szFrom5[] = "From ";
 char szFrom6[] = "\nFrom ";
 char	*g_szFrom;
@@ -922,7 +1176,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	CString contentDisposition = "Content-Disposition: attachment";
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "format");
 	CString format = MboxMail::GetDateFormat(iFormat);
-	CString to, from, subject, date;
+	CString to, from, subject, date, date_orig;
 	CString date_fromField;
 	CString cc, bcc;
 	CString msgId, thrdId;
@@ -936,6 +1190,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	int curstep = (int)(startOffset / (s_step?s_step:1));
 	CString line;
 	CString rcved;
+	CString dateStr;
 
 	int mailCnt = s_mails.GetCount();
 	char *badPtr = 0;
@@ -1205,50 +1460,143 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 						date = rcved.Mid(pos + 1);
 					else
 						date = rcved;
-					SYSTEMTIME tm;
-					if (DateParser::parseRFC822Date(date, &tm)) 
+
+					if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
 					{
-						MyCTime::fixSystemtime(&tm);
-						if (DateParser::validateSystemtime(&tm)) 
-						{
-							MyCTime tt(tm);
-							date = tt.FormatGmtTm(format);
-							if (date.IsEmpty())
-								date = tt.FormatLocalTm(format);
-							if (date.IsEmpty())
-								int deb = 1;
-							tdate = tt.GetTime();
-							bRcvDate = false;
-							recv = TRUE;
-						}
+						bRcvDate = false;
+						recv = TRUE;
 					}
 					else
-						int deb = 1;
+					{
+						date_orig = date;
+
+						date.Empty();
+
+						_int64 lsize = bufSize - (_int64)(msgStart - orig);
+						int datalen;
+						if (lsize > 0x1fffffff)
+							datalen = 0x1fffffff;
+						else
+							datalen = (int)lsize;
+
+						dateStr.Empty();
+						FindDateInHeader(msgStart, datalen, dateStr);
+
+						if (dateStr.IsEmpty())
+						{
+							CString rfcDateStr;
+							if (CreateRFC822Date(date_orig, rfcDateStr))
+							{
+								date = rfcDateStr;
+								if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+								{
+									bDate = false;
+									recv = FALSE;
+								}
+								else
+									date.Empty();
+							}
+						}
+						else   //  (!dateStr.IsEmpty())
+						{
+							date = dateStr;
+							if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+							{
+								bDate = false;
+								recv = FALSE;
+							}
+							else // if (dateStr.IsEmpty())
+							{
+								date.Empty();
+
+								CString rfcDateStr;
+								if (CreateRFC822Date(date_orig, rfcDateStr))
+								{
+									date = rfcDateStr;
+									if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+									{
+										bDate = false;
+										recv = FALSE;
+									}
+									else
+										date.Empty();
+								}
+								int deb = 1;
+							}
+						}
+					}
 				}
 				else if (bDate && TextUtilsEx::strncmpUpper2Lower(p, e, cDate, cDateLen) == 0)
 				{
 					p = MimeParser::GetMultiLine(p, e, line);
 					date = line.Mid(cDateLen);
 					date.Trim();
-					SYSTEMTIME tm;
-					if (DateParser::parseRFC822Date(date, &tm)) 
+
+					if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
 					{
-						MyCTime::fixSystemtime(&tm);
-						if (DateParser::validateSystemtime(&tm)) 
-						{
-							MyCTime tt(tm);
-							date = tt.FormatGmtTm(format);
-							if (date.IsEmpty())
-								date = tt.FormatLocalTm(format);
-							if (date.IsEmpty())
-								int deb = 1;
-							tdate = tt.GetTime();
-							bDate = false;
-							recv = FALSE;
-						}
+						bDate = false;
+						recv = FALSE;
 					}
 					else
+					{
+						date_orig = date;
+
+						date.Empty();
+
+						_int64 lsize = bufSize - (_int64)(msgStart - orig);
+						int datalen;
+						if (lsize > 0x1fffffff)
+							datalen = 0x1fffffff;
+						else
+							datalen = (int)lsize;
+
+						dateStr.Empty();
+						FindDateInHeader(msgStart, datalen, dateStr);
+
+						if (dateStr.IsEmpty())
+						{
+							CString rfcDateStr;
+							if (CreateRFC822Date(date_orig, rfcDateStr))
+							{
+								date = rfcDateStr;
+								if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+								{
+									bDate = false;
+									recv = FALSE;
+								}
+								else
+									date.Empty();
+							}
+						}
+						else   //  (!dateStr.IsEmpty())
+						{
+							date = dateStr;
+							if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+							{
+								bDate = false;
+								recv = FALSE;
+							}
+							else // if (dateStr.IsEmpty())
+							{
+								date.Empty();
+
+								CString rfcDateStr;
+								if (CreateRFC822Date(date_orig, rfcDateStr))
+								{
+									date = rfcDateStr;
+									if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+									{
+										bDate = false;
+										recv = FALSE;
+									}
+									else
+										date.Empty();
+								}
+								int deb = 1;
+							}
+						}
 						int deb = 1;
+					}
 				}
 				else if (bMsgId && TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0)
 				{

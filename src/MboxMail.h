@@ -492,6 +492,10 @@ public:
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCSTR path);
 	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
+	static void MboxMail::FindDateInHeader(char *data, int datelen,  CString &dateStr);
+	static void MboxMail::MonthToString(int month, CString &monthStr);
+	static time_t MboxMail::parseRFC822Date(CString &date, CString &format);
+	static BOOL MboxMail::CreateRFC822Date(CString &date, CString &rfcDateString);
 	//
 	static void Parse_LabelView(LPCSTR path);
 

@@ -126,7 +126,7 @@ public:
 	void DisableMailHeader();
 	int HideMailHeader(int iItem);
 	int ShowMailHeader(int iItem);
-	int FindMailHeader(char *data, int datalen);
+	static int FindMailHeader(char *data, int datalen);
 	static char *EatFldLine(char *p, char *e);
 
 	int ShowMailTextBlock(int iItem, int textType);

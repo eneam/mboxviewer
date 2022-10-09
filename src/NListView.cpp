@@ -6642,7 +6642,6 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 			}
 			return;
 		}
-
 		FindFirstAndLastMailOfConversation(iItem, firstMail, lastMail);
 	}
 	else //  (multipleSelectedMails == TRUE)
@@ -9571,12 +9570,17 @@ int NListView::PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selected
 	return 1;
 }
 
-void NListView::FindFirstAndLastMailOfMailThreadConversation(int iItem, int &firstMail, int &lastMail)
+void NListView::FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail)
+//void NListView::FindFirstAndLastMailOfMailThreadConversation(int iItem, int &firstMail, int &lastMail)
 {
-	_ASSERT(1); // TODO: 
+	if (abs(MboxMail::b_mails_which_sorted) == 99)
+		FindFirstAndLastMailOfMailThreadConversation(iItem, firstMail, lastMail);
+	else if ((abs(MboxMail::b_mails_which_sorted) == 4) && (m_subjectSortType == 1))
+		FindFirstAndLastMailOfSubjectConversation(iItem, firstMail, lastMail);
 }
 
-void NListView::FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail)
+void NListView::FindFirstAndLastMailOfMailThreadConversation(int iItem, int &firstMail, int &lastMail)
+//void NListView::FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail)
 {
 	firstMail = 0;
 	lastMail = 0;

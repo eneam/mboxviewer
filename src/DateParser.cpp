@@ -35,6 +35,7 @@
 #include "stdafx.h"
  
 #include "DateParser.h"
+#include "TextUtilsEx.h"
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
@@ -227,7 +228,11 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		}
 
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
-			return false;
+		{
+			seconds = 0;
+			if (sscanf(s, "%d:%d", &hour, &minute) != 2)
+				return false;
+		}
 
 		// skip hour & minute & seconds
 		SKIP_NON_WHITESPACE();
@@ -260,12 +265,15 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		month = j;
 
 		if (sscanf(s, "%d:%d:%d", &hour, &minute, &seconds) != 3)
-			return false;
+		{
+			seconds = 0;
+			if (sscanf(s, "%d:%d", &hour, &minute) != 2)
+				return false;
+		}
 
 		// skip hour & minute & seconds
 		SKIP_NON_WHITESPACE();
 		SKIP_WHITESPACE();
-
 
 		char *s_save = 0;
 		// TODO: fixme
@@ -297,12 +305,12 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		s = s_save;
 	}
 
-	CHECK_PREMATURE_END();
+	//CHECK_PREMATURE_END();
  
 	if (*s == '+') 
 		s++;
 
-	CHECK_PREMATURE_END();
+	//CHECK_PREMATURE_END();
 
 	char zoneStr[300];
 	if (sscanf(s,"%s",zoneStr) != 1)
@@ -313,71 +321,87 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 	if (zoneStr[0] == '-' ||
 		(zoneStr[0] >= '0' && zoneStr[0] <= '9'))
 	{
+		char *z = zoneStr;
+		if (*z == '-')
+			z++;
+		char *zend = TextUtilsEx::SkipNumeric(z);
+		if (*zend)
+		{
+			if (!_istdigit(*zend))
+				*zend = NULL;
+		}
 		; // Do nothing.
-	}
-	else if (strcmp(zoneStr,"ut") == 0)
-	{
-		strcpy(zoneStr,"0000");
-	}
-	else if (strcmp(zoneStr,"gmt") == 0)
-	{
-		strcpy(zoneStr,"0000");
-	}
-	else if (strcmp(zoneStr,"est") == 0)
-	{
-		strcpy(zoneStr,"-0500");
-	}
-	else if (strcmp(zoneStr,"edt") == 0)
-	{
-		strcpy(zoneStr,"-0400");
-	}
-	else if (strcmp(zoneStr,"cst") == 0)
-	{
-		strcpy(zoneStr,"-0600");
-	}
-	else if (strcmp(zoneStr,"cdt") == 0)
-	{
-		strcpy(zoneStr,"-0500");
-	}
-	else if (strcmp(zoneStr,"mst") == 0)
-	{
-		strcpy(zoneStr,"-0700");
-	}
-	else if (strcmp(zoneStr,"mdt") == 0)
-	{
-		strcpy(zoneStr,"-0600");
-	}
-	else if (strcmp(zoneStr,"pst") == 0)
-	{
-		strcpy(zoneStr,"-0800");
-	}
-	else if (strcmp(zoneStr,"pdt") == 0)
-	{
-		strcpy(zoneStr,"-0700");
-	}
-	else if (strcmp(zoneStr,"a") == 0)
-	{
-		strcpy(zoneStr,"-0100");
-	}
-	else if (strcmp(zoneStr,"z") == 0)
-	{
-		strcpy(zoneStr,"0000");
-	}
-	else if (strcmp(zoneStr,"m") == 0)
-	{
-		strcpy(zoneStr,"-1200");
-	}
-	else if (strcmp(zoneStr,"n") == 0)
-	{
-		strcpy(zoneStr,"0100");
-	}
-	else if (strcmp(zoneStr,"y") == 0)
-	{
-		strcpy(zoneStr,"1200");
 	}
 	else
 	{
-		strcpy(zoneStr,"0000");
+		char *zend = TextUtilsEx::findOneOf(zoneStr, &zoneStr[strlen(zoneStr)], " ,)}]>");
+		if (zend)
+			*zend = NULL;
+
+		if (strcmp(zoneStr, "ut") == 0)
+		{
+			strcpy(zoneStr, "0000");
+		}
+		else if (strcmp(zoneStr, "gmt") == 0)
+		{
+			strcpy(zoneStr, "0000");
+		}
+		else if (strcmp(zoneStr, "est") == 0)
+		{
+			strcpy(zoneStr, "-0500");
+		}
+		else if (strcmp(zoneStr, "edt") == 0)
+		{
+			strcpy(zoneStr, "-0400");
+		}
+		else if (strcmp(zoneStr, "cst") == 0)
+		{
+			strcpy(zoneStr, "-0600");
+		}
+		else if (strcmp(zoneStr, "cdt") == 0)
+		{
+			strcpy(zoneStr, "-0500");
+		}
+		else if (strcmp(zoneStr, "mst") == 0)
+		{
+			strcpy(zoneStr, "-0700");
+		}
+		else if (strcmp(zoneStr, "mdt") == 0)
+		{
+			strcpy(zoneStr, "-0600");
+		}
+		else if (strcmp(zoneStr, "pst") == 0)
+		{
+			strcpy(zoneStr, "-0800");
+		}
+		else if (strcmp(zoneStr, "pdt") == 0)
+		{
+			strcpy(zoneStr, "-0700");
+		}
+		else if (strcmp(zoneStr, "a") == 0)
+		{
+			strcpy(zoneStr, "-0100");
+		}
+		else if (strcmp(zoneStr, "z") == 0)
+		{
+			strcpy(zoneStr, "0000");
+		}
+		else if (strcmp(zoneStr, "m") == 0)
+		{
+			strcpy(zoneStr, "-1200");
+		}
+		else if (strcmp(zoneStr, "n") == 0)
+		{
+			strcpy(zoneStr, "0100");
+		}
+		else if (strcmp(zoneStr, "y") == 0)
+		{
+			strcpy(zoneStr, "1200");
+		}
+		else
+		{
+			strcpy(zoneStr, "0000");
+		}
 	}
  
 	// Convert zoneStr from (-)hhmm to minutes.
