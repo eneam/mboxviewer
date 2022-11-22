@@ -4015,10 +4015,10 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 
 								if (bdycharset.CompareNoCase(charset) != 0)
 								{
-									BOOL bdycharset_IsUtf8 = (bdycharset.CollateNoCase("utf-8") == 0);
-									BOOL bdycharset_IsUsAscii = (bdycharset.CollateNoCase("us-ascii") == 0);
-									BOOL charset_IsUtf8 = (charset.CollateNoCase("utf-8") == 0);
-									BOOL charset_IsUsAscii = (charset.CollateNoCase("us-ascii") == 0);
+									BOOL bdycharset_IsUtf8 = (bdycharset.CompareNoCase("utf-8") == 0);
+									BOOL bdycharset_IsUsAscii = (bdycharset.CompareNoCase("us-ascii") == 0);
+									BOOL charset_IsUtf8 = (charset.CompareNoCase("utf-8") == 0);
+									BOOL charset_IsUsAscii = (charset.CompareNoCase("us-ascii") == 0);
 
 									if ((bdycharset_IsUtf8 || bdycharset_IsUsAscii) && (charset_IsUtf8 || charset_IsUsAscii))
 									{
@@ -4170,7 +4170,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					int deb = 1;
 
 				ext = curExt;
-				if (bdycharset.CollateNoCase("utf-8") != 0)  // this just hack for now
+				if (bdycharset.CompareNoCase("utf-8") != 0)  // this just hack for now
 				{
 					if (!charset.IsEmpty())
 						bdycharset = charset;
@@ -17814,8 +17814,19 @@ int NListView::ForwardMailDialog(int iItem)
 		return -1;
 	}
 
-	m_ForwardMailData.m_From = pFrame->m_mailDB.SMTPConfig.UserAccount;
 	m_ForwardMailData.m_MailService = pFrame->m_mailDB.SMTPConfig.MailServiceName;
+	if (pFrame && (m_ForwardMailData.m_MailService.CompareNoCase("Custom") == 0))
+	{
+		if (m_ForwardMailData.m_From.IsEmpty())
+		{
+			if (!pFrame->m_mailDB.SMTPConfig.UserMailAddress.IsEmpty())
+				m_ForwardMailData.m_From = pFrame->m_mailDB.SMTPConfig.UserMailAddress;
+			else
+				m_ForwardMailData.m_From = pFrame->m_mailDB.SMTPConfig.UserAccount;
+		}
+	}
+	else
+		m_ForwardMailData.m_From = pFrame->m_mailDB.SMTPConfig.UserAccount;
 
 	ForwardMailDlg dlg;
 
@@ -17833,6 +17844,14 @@ int NListView::ForwardMailDialog(int iItem)
 	if (dlg.DoModal() == IDOK)
 	{
 		m_ForwardMailData.Copy(dlg.m_Data);
+		if (pFrame && (m_ForwardMailData.m_MailService.CompareNoCase("Custom") == 0))
+		{
+			if (pFrame->m_mailDB.SMTPConfig.UserMailAddress.Compare(m_ForwardMailData.m_From) != 0)
+			{
+				pFrame->m_mailDB.SMTPConfig.UserMailAddress = m_ForwardMailData.m_From;
+				pFrame->m_mailDB.CustomSMTPConfig.Copy(pFrame->m_mailDB.SMTPConfig);
+			}
+		}
 		return 1;
 	}
 	else
@@ -18323,6 +18342,12 @@ INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CStri
 
 	CString args;
 	args = args + " --smtp-cnf " + FixCommandLineArgument(smtpConfigFilePath);
+
+	if (mailData.m_MailService.CompareNoCase("Custom") == 0)
+	{
+		args = args + " --from " + FixCommandLineArgument(mailData.m_From);
+	}
+
 	args = args + " --to " + FixCommandLineArgument(mailData.m_To);
 	if (!mailData.m_CC.IsEmpty())
 		args = args + " --cc " + FixCommandLineArgument(mailData.m_CC);

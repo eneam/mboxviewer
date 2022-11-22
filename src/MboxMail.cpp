@@ -166,7 +166,7 @@ bool MailBodyContent::IsAttachment()
 	if (!m_attachmentName.IsEmpty() ||
 		!m_contentId.IsEmpty() ||
 		!m_contentLocation.IsEmpty() ||
-		(m_contentDisposition.CollateNoCase("attachment") == 0)
+		(m_contentDisposition.CompareNoCase("attachment") == 0)
 		)
 		return true;
 	else

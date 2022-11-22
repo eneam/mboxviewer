@@ -376,7 +376,7 @@ bool MailHeader::IsAttachment()
 		!m_AttachmentName.IsEmpty() ||
 		!m_ContentId.IsEmpty() ||
 		!m_ContentLocation.IsEmpty() ||
-		(m_Disposition.CollateNoCase("attachment") == 0)
+		(m_Disposition.CompareNoCase("attachment") == 0)
 		)
 		return true;
 	else

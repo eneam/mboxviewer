@@ -4044,6 +4044,9 @@ void CMainFrame::OnClose()
 			DeleteAllPlacementKeys();
 	}
 
+	CString ActiveMailService = m_mailDB.SMTPConfig.MailServiceName;;
+	m_mailDB.Write2Registry(ActiveMailService);
+
 	MboxMail::ReleaseResources();
 
 	CFrameWnd::OnClose();

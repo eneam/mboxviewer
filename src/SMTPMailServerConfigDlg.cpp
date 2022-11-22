@@ -36,6 +36,11 @@
 #include "afxdialogex.h"
 
 
+#define GMAIL_MAX_MAIL_SIZE 25590
+#define YAHOO_MAX_MAIL_SIZE 40720
+#define OUTLOOK_MAX_MAIL_SIZE 35830
+
+
 // SMTPMailServerConfigDlg dialog
 
 IMPLEMENT_DYNAMIC(SMTPMailServerConfigDlg, CDialogEx)
@@ -70,6 +75,7 @@ BEGIN_MESSAGE_MAP(SMTPMailServerConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BBUTTON_SAVE, &SMTPMailServerConfigDlg::OnBnClickedBbuttonSave)
 	ON_BN_CLICKED(IDC_SMTP_SERVER_HELP, &SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp)
 	ON_BN_CLICKED(IDCANCEL, &SMTPMailServerConfigDlg::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_RESET_MAX_MAIL_SIZE, &SMTPMailServerConfigDlg::OnBnClickedResetMaxMailSize)
 END_MESSAGE_MAP()
 
 
@@ -166,6 +172,7 @@ void MailConfig::Copy(MailConfig &config)
 	UserPassword = config.UserPassword;
 	EncryptionType = config.EncryptionType;
 	MaxMailSize = config.MaxMailSize;
+	UserMailAddress = config.UserMailAddress;
 }
 
 void MailConfig::Write2Registry()
@@ -179,6 +186,7 @@ void MailConfig::Write2Registry()
 	//ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "UserPassword", UserPassword);
 	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "EncryptionType", EncryptionType);
 	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MaxMailSize", MaxMailSize);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "UserMailAddress", UserMailAddress);
 }
 
 void MailConfig::ReadFromRegistry(CString &serviceName)
@@ -192,6 +200,7 @@ void MailConfig::ReadFromRegistry(CString &serviceName)
 	//UserPassword = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "UserPassword");
 	EncryptionType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "EncryptionType");
 	MaxMailSize = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MaxMailSize");
+	UserMailAddress = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "UserMailAddress");
 }
 
 MailDB::MailDB()
@@ -221,7 +230,8 @@ void MailDB::InitConfigsToDflts()
 	GmailSMTPConfig.UserAccount = "";
 	GmailSMTPConfig.UserPassword = "";
 	GmailSMTPConfig.EncryptionType = StartTls;
-	GmailSMTPConfig.MaxMailSize = 25590;
+	GmailSMTPConfig.MaxMailSize = GMAIL_MAX_MAIL_SIZE;
+	GmailSMTPConfig.UserMailAddress = "";
 
 	YahooSMTPConfig.MailServiceName = "Yahoo";
 	YahooSMTPConfig.SmtpServerAddress = "smtp.mail.yahoo.com";
@@ -229,7 +239,9 @@ void MailDB::InitConfigsToDflts()
 	YahooSMTPConfig.UserAccount = "";
 	YahooSMTPConfig.UserPassword = "";
 	YahooSMTPConfig.EncryptionType = StartTls;
-	YahooSMTPConfig.MaxMailSize = 25590;
+	//YahooSMTPConfig.MaxMailSize = 25590;
+	YahooSMTPConfig.MaxMailSize = YAHOO_MAX_MAIL_SIZE; // ~39MB reported by Yahoo SMPT Server Nov/20/2022 and it seems to work
+	YahooSMTPConfig.UserMailAddress = "";
 
 	OutlookSMTPConfig.MailServiceName = "Outlook";
 	OutlookSMTPConfig.SmtpServerAddress = "smtp-mail.outlook.com";
@@ -237,7 +249,8 @@ void MailDB::InitConfigsToDflts()
 	OutlookSMTPConfig.UserAccount = "";
 	OutlookSMTPConfig.UserPassword = "";
 	OutlookSMTPConfig.EncryptionType = StartTls;
-	OutlookSMTPConfig.MaxMailSize = 35830;
+	OutlookSMTPConfig.MaxMailSize = OUTLOOK_MAX_MAIL_SIZE;
+	OutlookSMTPConfig.UserMailAddress = "";
 
 	CustomSMTPConfig.MailServiceName = "Custom";
 	CustomSMTPConfig.SmtpServerAddress = "";
@@ -246,6 +259,7 @@ void MailDB::InitConfigsToDflts()
 	CustomSMTPConfig.UserPassword = "";
 	CustomSMTPConfig.EncryptionType = None;
 	CustomSMTPConfig.MaxMailSize = 0;
+	CustomSMTPConfig.UserMailAddress = "";
 
 }
 
@@ -257,7 +271,8 @@ void MailDB::LoadData()
 	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 	if (ret == FALSE)  // assume this is first time
 	{
-		Write2Registry();
+		CString ActiveMailService = "Gmail";
+		Write2Registry(ActiveMailService);
 	}
 	ReadFromRegistry();
 }
@@ -277,11 +292,11 @@ void MailDB::Copy(MailDB &db)
 }
 
 // Only called once to populate registry
-void MailDB::Write2Registry()
+void MailDB::Write2Registry(CString &ActiveMailService)
 {
 	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
 
-	CString ActiveMailService = "Gmail";
+	//CString ActiveMailService = "Gmail";
 	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
 
 	GmailSMTPConfig.Write2Registry();;
@@ -371,3 +386,42 @@ void MailDB::SwitchToNewService(UINT nID)
 	ActiveMailService = SMTPConfig.MailServiceName;
 };
 
+
+
+void SMTPMailServerConfigDlg::OnBnClickedResetMaxMailSize()
+{
+	// TODO: Add your control notification handler code here
+	int maxMailSize = 0;
+	int ActiveMailServiceType = 0;
+
+	if (m_mailDB.ActiveMailService.CompareNoCase("Gmail") == 0)
+	{
+		maxMailSize = GMAIL_MAX_MAIL_SIZE;
+		m_mailDB.GmailSMTPConfig.MaxMailSize = maxMailSize;
+		ActiveMailServiceType = 0; // gmail
+	}
+	else if (m_mailDB.ActiveMailService.CompareNoCase("Yahoo") == 0)
+	{
+		maxMailSize = YAHOO_MAX_MAIL_SIZE;
+		m_mailDB.YahooSMTPConfig.MaxMailSize = maxMailSize;
+		ActiveMailServiceType = 1; // yahoo
+	}
+	else if (m_mailDB.ActiveMailService.CompareNoCase("Outlook") == 0)
+	{
+		maxMailSize = OUTLOOK_MAX_MAIL_SIZE;
+		m_mailDB.OutlookSMTPConfig.MaxMailSize = maxMailSize;
+		ActiveMailServiceType = 2; // outlook
+	}
+	else if (m_mailDB.ActiveMailService.CompareNoCase("Custom") == 0)
+	{
+		ActiveMailServiceType = 3; // custom
+	}
+	else
+		; // ???
+
+	if (maxMailSize > 0)
+	{
+		m_mailDB.SMTPConfig.MaxMailSize = maxMailSize;
+		UpdateData(FALSE);
+	}
+}

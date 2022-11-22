@@ -510,7 +510,7 @@ void HtmlUtils::RemoveStyleTagFromIHTMLDocument(IHTMLElement *lpElm)
 				//ppvElement->get_innerText(&bstrTEXT);
 
 				CString tag(bstrTag);
-				if (tag.CollateNoCase("style") == 0) {
+				if (tag.CompareNoCase("style") == 0) {
 					ppvElement->put_innerText(emptyText);
 					int deb = 1;
 				}
@@ -739,19 +739,19 @@ void HtmlUtils::PrintIHTMLElement(IHTMLElement *lpElm, CStringW &text)
 				CString tag(bstrTag);
 				TRACE("TAG=%s\n", (LPCSTR)tag);
 
-				if (tag.CollateNoCase("style") == 0)
+				if (tag.CompareNoCase("style") == 0)
 					int deb = 1;
 
-				if (tag.CollateNoCase("tbody") == 0)
+				if (tag.CompareNoCase("tbody") == 0)
 					int deb = 1;
 
-				if (tag.CollateNoCase("td") == 0)
+				if (tag.CompareNoCase("td") == 0)
 					int deb = 1;
 
-				if (tag.CollateNoCase("body") == 0)
+				if (tag.CompareNoCase("body") == 0)
 					int deb = 1;
 
-				if (tag.CollateNoCase("style") == 0) {
+				if (tag.CompareNoCase("style") == 0) {
 					CComBSTR emptyText("");
 					ppvElement->put_innerText(emptyText);
 					int deb = 1;

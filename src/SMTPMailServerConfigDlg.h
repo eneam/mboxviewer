@@ -51,6 +51,7 @@ public:
 	UINT EncryptionType;
 	INT MaxMailSize;
 	//CComboBox TLSOptions;
+	CString UserMailAddress;
 
 	void Copy(MailConfig &config);
 	void Write2Registry();
@@ -75,7 +76,7 @@ public:
 	void Initialize();
 	void Copy(MailDB &db);
 	void LoadData();
-	void Write2Registry();
+	void Write2Registry(CString &ActiveMailService);
 	void ReadFromRegistry();
 	void SaveChangesToActiveService(int encryptionType);
 	void SwitchToNewService(UINT nID);
@@ -109,4 +110,5 @@ public:
 	afx_msg void OnBnClickedBbuttonSave();
 	afx_msg void OnBnClickedSmtpServerHelp();
 	afx_msg void OnBnClickedCancel();
+	afx_msg void OnBnClickedResetMaxMailSize();
 };

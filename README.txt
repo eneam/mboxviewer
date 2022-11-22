@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.36
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Enhanced Custom Mail Forward option to allow user to specify FROM address.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.35
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

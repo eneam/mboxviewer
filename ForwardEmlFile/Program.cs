@@ -333,6 +333,16 @@ namespace ForwardEmlFile
             logger.Open(loggerFilePath);
             logger.Log("Logger Open");
 
+#if DEBUG
+            //System.Threading.Thread.Sleep(15000);
+            //for (int i = 0; i < 10; i++)  Console.Beep();
+
+            System.Diagnostics.Debugger.Launch();
+            System.Diagnostics.Debugger.Break();
+
+            logger.Log("Debugger.Launch()");
+#endif
+
             try
             {
                 // File.Delete doesn't seem to generate exceptions if file doesn't exist
@@ -516,7 +526,7 @@ namespace ForwardEmlFile
                     bool rval = FileUtils.CreateWriteCloseFile(errorFilePathOldInstance, "Received invalid id:password. Exitting\n");
                     System.Environment.Exit(ExitCodes.ExitCmdArguments);
                 }
-                string id = smtpConfig.UserPassword.Substring(0, found );
+                string id = smtpConfig.UserPassword.Substring(0, found);
                 string passwd = smtpConfig.UserPassword.Substring(found + 1);
                 smtpConfig.UserPassword = passwd;
 
@@ -535,7 +545,12 @@ namespace ForwardEmlFile
 
             MimeKit.ParserOptions opt = new MimeKit.ParserOptions();
 
-            var From = new MailboxAddress("", smtpConfig.UserAccount);
+
+            string FromString = mailInfo.From;
+            if (mailInfo.From.Length == 0)
+                FromString = smtpConfig.UserAccount;
+
+            var From = new MailboxAddress("", FromString);
             //
             InternetAddressList CCList = new InternetAddressList();
             InternetAddressList BCCList = new InternetAddressList();
@@ -589,6 +604,7 @@ namespace ForwardEmlFile
             {
                 bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Building Mime Mesage Failed\n", ex.Message);
                 logger.Log("Exception in Building Mime Message: ", ex.ToString());
+
                 System.Environment.Exit(ExitCodes.ExitMimeMessage);
             }
 
@@ -637,12 +653,72 @@ namespace ForwardEmlFile
                 catch (Exception ex)
                 {
                     bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Connect to SMTP Server Failed\n", ex.Message);
-                    logger.Log("Exception in Connect: ", ex.ToString());
+                    logger.Log("Exception in Connect to SMPT Server: ", ex.ToString());
                     System.Environment.Exit(ExitCodes.ExitConnect);
                 }
 
                 logger.Log(String.Format("Connected to {0} mail service", smtpConfig.MailServiceName));
 
+#if DEBUG
+                try
+                {
+                    PrintCapabilities(client, logger);
+                }
+                catch (Exception)
+                {
+                    ; //ignore exception
+                }
+#endif
+
+                if (client.Capabilities.HasFlag(SmtpCapabilities.Authentication))
+                {
+                    try
+                    {
+                        client.Authenticate(smtpConfig.UserAccount, smtpConfig.UserPassword);
+                    }
+                    catch (AuthenticationException ex)
+                    {
+                        bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. SMTP Authentication Failed.\n", ex.Message);
+                        logger.Log("Send Failed. SMTP Authentication Failed: ", ex.ToString());
+
+                        System.Environment.Exit(ExitCodes.ExitAuthenticate); ;
+                    }
+                    catch (SmtpCommandException ex)
+                    {
+                        string statusCodeStr = ex.StatusCode.ToString();
+                        string errorCodeString = ex.ErrorCode.ToString();
+                        string exPlus = ex.Message + " StatusCode: " + statusCodeStr + " ErrorCode:  " + errorCodeString;
+
+                        bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. Error trying to authenticate.\n", exPlus);
+
+                        string exPlusPlus = exPlus + "\n" + ex.ToString();
+                        logger.Log("SendFailed. Error trying to authenticate: ", exPlusPlus); ;
+
+                        System.Environment.Exit(ExitCodes.ExitAuthenticate); ;
+                    }
+                    catch (SmtpProtocolException ex)
+                    {
+                        bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. Protocol error while trying to authenticate.\n", ex.Message);
+                        logger.Log("SendFailed. Protocol error while trying to authenticate: ", ex.ToString());
+
+                        System.Environment.Exit(ExitCodes.ExitAuthenticate); ;
+                    }
+                    catch (Exception ex)
+                    {
+                        bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. SMTP Authentication Failed\n", ex.Message);
+                        logger.Log("Send Failed. Exception in SMTP Authentication: ", ex.ToString());
+
+                        System.Environment.Exit(ExitCodes.ExitAuthenticate);
+                    }
+
+                    logger.Log("SMTP Authentication Succeeded");
+                }
+                else
+                {
+                    logger.Log("SMTP Authentication not supported by SMTP Server");
+                }
+
+#if OLD
                 try
                 {
                     if (useOAUTH2)
@@ -653,10 +729,24 @@ namespace ForwardEmlFile
                 catch (Exception ex)
                 {
                     bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "SMTP Authentication Failed\n", ex.Message);
-                    logger.Log("Exception in Authenticate: ", ex.ToString());
+                    logger.Log("Exception in SMTP Authentication: ", ex.ToString());
                     System.Environment.Exit(ExitCodes.ExitAuthenticate);
                 }
+
                 logger.Log("SMTP Authentication Succeeded");
+#endif
+
+
+#if DEBUG
+                try
+                {
+                    PrintCapabilities(client, logger);
+                }
+                catch (Exception)
+                {
+                    ; //ignore exception
+                }
+#endif
 
                 // Clear smtpConfig.UserPassword in case it cores
                 smtpConfig.UserPassword = "";
@@ -665,10 +755,60 @@ namespace ForwardEmlFile
                 {
                     client.Send(msg);
                 }
+                catch (SmtpCommandException ex)
+                {
+                    string statusCodeStr = ex.StatusCode.ToString();
+                    string errorCodeString = ex.ErrorCode.ToString();
+                    string exPlus = ex.Message + " StatusCode: " + statusCodeStr + " ErrorCode:  " + errorCodeString;
+
+                    switch (ex.ErrorCode)
+                    {
+                        case SmtpErrorCode.RecipientNotAccepted:
+                            exPlus += "\nRecipient not accepted:  " + ex.Mailbox.Address;
+                            break;
+                        case SmtpErrorCode.SenderNotAccepted:
+                            exPlus += "\nSender not accepted:  " + ex.Mailbox.Address;
+                            break;
+                        case SmtpErrorCode.MessageNotAccepted:
+                            exPlus += "\nMessage not accepted";
+                            break;
+                    }
+
+                    bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed\n", exPlus);
+
+                    string exPlusPlus = exPlus + "\n" + ex.ToString();
+                    logger.Log("Send Failed. Exception in Send to SMTP Server: ", exPlusPlus);
+
+                    System.Environment.Exit(ExitCodes.ExitSend);
+                }
+                catch (SmtpProtocolException ex)
+                {
+                    string exPlus = ex.Message;
+
+                    bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. Protocol error while sending message:\n", exPlus);
+
+                    logger.Log("Send Failed. Protocol error while sending message: ", ex.ToString());
+
+                    System.Environment.Exit(ExitCodes.ExitSend);
+                }
                 catch (Exception ex)
                 {
-                    bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed\n", ex.Message);
-                    logger.Log("Exception in Send to SMTP Server: ", ex.ToString());
+                    string exPlus = ex.Message;
+
+                    bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed. Error while sending message:\n", exPlus);
+
+                    logger.Log("Send Failed. Error while sending message: ", ex.ToString());
+
+                    System.Environment.Exit(ExitCodes.ExitSend);
+                }
+#if OLD
+                //
+                catch (Exception ex)
+                {
+                    string exPlus = ex.Message;
+                    bool rval = FileUtils.CreateWriteCloseFile(errorFilePath, "Send Failed\n", exPlus);
+                    logger.Log("Send Failed. Exception in Send to SMTP Server: ", ex.ToString());
+                    //logger.Log("Maximum message length reported by SMTP Server: ", client.MaxSize.ToString());
 
                     //string msgString = MailkitConvert.ToString(msg);
                     //string msgAsString = msg.ToString();
@@ -679,7 +819,7 @@ namespace ForwardEmlFile
 
                     System.Environment.Exit(ExitCodes.ExitSend);
                 }
-
+#endif
                 string txt = "Mail Sending Succeeded";
                 logger.Log(txt);
                 bool retval = FileUtils.CreateWriteCloseFile(okFilePath, txt);
@@ -799,7 +939,7 @@ namespace ForwardEmlFile
                 logger.Log("TcpListener created");
 
                 // Start listening for client requests.
-                logger.Log("Waiting too start TcpListener ... ");
+                logger.Log("Waiting to start TcpListener ... ");
                 server.Start();
                 logger.Log("TcpListener started");
             }
@@ -921,6 +1061,30 @@ namespace ForwardEmlFile
                 }
             }
             return "";
+        }
+
+        public static void PrintCapabilities(SmtpClient client, FileLogger logger)
+        {
+            if (client.Capabilities.HasFlag(SmtpCapabilities.Authentication))
+            {
+                var mechanisms = string.Join(", ", client.AuthenticationMechanisms);
+                logger.Log("The SMTP server supports the following SASL mechanisms: ", mechanisms);
+            }
+
+            if (client.Capabilities.HasFlag(SmtpCapabilities.Size))
+                logger.Log("The SMTP server has a size restriction on messages: .", client.MaxSize.ToString());
+
+            if (client.Capabilities.HasFlag(SmtpCapabilities.Dsn))
+                logger.Log("The SMTP server supports delivery-status notifications.");
+
+            if (client.Capabilities.HasFlag(SmtpCapabilities.EightBitMime))
+                logger.Log("The SMTP server supports Content-Transfer-Encoding: 8bit");
+
+            if (client.Capabilities.HasFlag(SmtpCapabilities.BinaryMime))
+                logger.Log("The SMTP server supports Content-Transfer-Encoding: binary");
+
+            if (client.Capabilities.HasFlag(SmtpCapabilities.UTF8))
+                logger.Log("The SMTP server supports UTF-8 in message headers.");
         }
     }
 }

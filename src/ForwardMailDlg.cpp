@@ -89,7 +89,18 @@ BOOL ForwardMailDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	m_EditText.SetWindowText(m_Data.m_Text);
+	if (GetSafeHwnd())
+	{
+		CWnd* p = GetDlgItem(IDC_EDIT_FORWARD_FROM);
+		if (p)
+		{
+			if (m_Data.m_MailService.CompareNoCase("Custom") == 0)
+				p->EnableWindow(TRUE);
+			else
+				p->EnableWindow(FALSE);
 
+		}
+	}
 	return TRUE;
 }
 
