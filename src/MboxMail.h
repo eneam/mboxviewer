@@ -366,6 +366,8 @@ public:
 	CString m_messageId;
 	CString m_replyId;
 	CString m_threadId;
+	// Commented out m_referenceId for now
+	//CString m_referenceId;
 	//unsigned _int64 m_threadId; // conversation thread id
 	int m_groupId;       // can't be reused
 	int m_groupColor;    // TODO: can't be reused practicaly

@@ -79,6 +79,7 @@ BEGIN
         MENUITEM "Restore Hint Messages",       ID_FILE_RESTOREHINTMESSAGES
         POPUP "Development Options"
         BEGIN
+            MENUITEM "About System",                ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM
             MENUITEM "Sort By Id",                  ID_FORDEVELOPERS_SORTBYID
             MENUITEM "Allocated Memory",            ID_FORDEVELOPERS_MEMORY
             MENUITEM "Create Mail Archive File",    ID_DEVELOPMENTOPTIONS_DUMPRAWDATA
@@ -184,7 +185,7 @@ CAPTION "Dialog"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         "Tree1",IDC_TREE,"SysTreeView32",WS_BORDER | WS_HSCROLL | WS_TABSTOP,71,68,60,50
-    CONTROL         "List1",IDC_LIST,"SysListView32",WS_BORDER | WS_TABSTOP,138,69,60,50
+    CONTROL         "List1",IDC_LIST,"SysListView32",WS_BORDER | WS_TABSTOP,137,69,60,50
     CONTROL         "Custom1",IDC_BROWSER,"",WS_TABSTOP,14,129,50,14
     CONTROL         "Custom1",IDC_EXPLORER,"",WS_TABSTOP,82,131,50,14
     CONTROL         "List1",IDC_ATTACHMENTS,"SysListView32",WS_BORDER | WS_TABSTOP,7,67,60,50
@@ -778,6 +779,16 @@ BEGIN
     EDITTEXT        IDC_CREATED_ARCHIVE,91,115,205,14,ES_AUTOHSCROLL
 END
 
+IDD_PAGE_CODE_LIST_DLG DIALOGEX 0, 0, 311, 181
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Page Code List"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,199,160,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,254,160,50,14
+    CONTROL         "",IDC_CODE_PAGE_ENUMERATION,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,285,141
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -785,7 +796,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,36
+ FILEVERSION 1,0,3,37
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -802,7 +813,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.36"
+            VALUE "FileVersion", "1.0.3.37"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -1021,6 +1032,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 169
     END
+
+    IDD_PAGE_CODE_LIST_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 304
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 174
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1211,6 +1230,14 @@ END
 IDD_DEV_CREATE_ARCHIVE AFX_DIALOG_LAYOUT
 BEGIN
     0
+END
+
+IDD_PAGE_CODE_LIST_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    100, 100, 0, 0,
+    100, 100, 0, 0,
+    0, 0, 100, 100
 END
 
 

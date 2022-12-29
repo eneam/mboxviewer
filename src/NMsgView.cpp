@@ -403,7 +403,7 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 			if (nEstimatedAttachSize < m_nAttachSize)
 				m_nAttachSize = nEstimatedAttachSize;
 		}
-}
+	}
 	else
 		m_nAttachSize = 0;
 

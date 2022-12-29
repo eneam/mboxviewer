@@ -321,7 +321,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentId, cContentIdLen) == 0) {
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
-			MimeParser::GetMessageId(line, cMsgIdLen, m_ContentId);
+			MimeParser::GetMessageId(line, cContentIdLen, m_ContentId);
 			m_ContentId.Trim();
 			m_ContentId.Trim("<>");
 
@@ -343,7 +343,9 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cThreadId, cThreadIdLen) == 0) {
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
-			MimeParser::GetThreadId(line, cThreadIdLen, m_ThreadId);
+			//imeParser::GetThreadId(line, cThreadIdLen, m_ThreadId);
+			m_ThreadId = line.Mid(cThreadIdLen);
+			m_ThreadId.Trim();
 		}
 #if 0
 		// Below doesn't always help, commented out for now
@@ -518,7 +520,6 @@ MailBody* MailBody::CreatePart()
 	return mbody;
 }
 
-
 void MailBody::ErasePart(MailBody* mbody)
 {
 	mbody->DeleteAll();
@@ -667,18 +668,57 @@ int MimeParser::GetFieldValue(CString &fieldLine, int startPos, CString &value)
 	value.Trim();
 	return 1;
 }
-
-int MimeParser::GetMessageId(CString &fieldLine, int startPos, CString &value)
+int MimeParser::GetMessageId(CString& fieldLine, int startPos, CString& value)
 {
-	int posEnd = fieldLine.FindOneOf(">;\n\r");
-	if (posEnd < 0)  // indicates problem, '>' expected
-		value = fieldLine.Mid(startPos);
-	else if (fieldLine.GetAt(posEnd) == '>')
-		value = fieldLine.Mid(startPos, posEnd - startPos + 1);
-	else
-		value = fieldLine.Mid(startPos, posEnd - startPos);
-	value.Trim();
-	return 1;
+	int next_startPos = MimeParser::GetMessageId((char*)((LPCSTR)fieldLine), startPos, value);
+	return next_startPos;
+}
+
+int MimeParser::GetMessageId(char* fldLine, int startPos, CString &value)
+{
+	char* str = fldLine;
+	str += startPos;
+	char ch = *str;
+	const char* first = 0;
+	const char* last = 0;
+	value.Empty();
+	while ((*str != 0) && (*str != '<') && (*str != '\n') && (*str != '\r'))
+	{
+		str++;
+	}
+	if (*str != '<')
+	{
+		return -1;
+	}
+	first = str;
+	while ((*str != 0) && (*str != '>') && (*str != '\n') && (*str != '\r'))
+	{
+		str++;
+	}
+	if (*str != '>')
+	{
+		return -1;
+	}
+	last = str;
+	int len = (int)(last - first + 1);
+	value.Append(first, len);
+
+	int pos = (int)(last - fldLine + 1);
+	return pos;
+}
+
+int MimeParser::GetMessageIdList(CString& fieldLine, int startPos, MessageIdList &msgIdList)
+{
+	CString value;
+	char* buffer = (char*)((LPCSTR)fieldLine);
+	while (startPos >= 0)
+	{
+		startPos = MimeParser::GetMessageId(buffer, startPos, value);
+		if (startPos > 0)
+			msgIdList.push_back(value);
+	}
+
+	return (int)msgIdList.size();
 }
 
 int MimeParser::GetThreadId(CString &fieldLine, int startPos, CString &value)

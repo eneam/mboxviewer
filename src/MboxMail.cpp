@@ -1167,6 +1167,8 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	static const int cThreadIdLen = istrlen(cThreadId);
 	static const char *cMsgId = "message-id:";
 	static const int cMsgIdLen = istrlen(cMsgId);
+	static const char *cReferenceId = "references:";
+	static const int cReferenceIdLen = istrlen(cReferenceId);
 
 	char *orig = p;
 	register char *e = p + bufSize - 1;
@@ -1179,11 +1181,11 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 	CString to, from, subject, date, date_orig;
 	CString date_fromField;
 	CString cc, bcc;
-	CString msgId, thrdId;
+	CString msgId, thrdId, referenceIds;
 	time_t tdate = -1;
 	time_t tdate_fromField = 1;
 	bool	bTo = true, bFrom = true, bSubject = true, bDate = true, bRcvDate = true; // indicates not found, false means found
-	bool bMsgId = true, bThrdId = true;
+	bool bMsgId = true, bThrdId = true, bReferenceIds = true;
 	bool bCC = true, bBCC = true;
 	char *msgStart = NULL;
 	int recv = TRUE;
@@ -1405,7 +1407,7 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					msgId.Empty();
 					thrdId.Empty();
 					tdate = -1;
-					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = bMsgId  = bThrdId  = true;
+					bTo = bFrom = bSubject = bDate = bRcvDate = bCC = bBCC = bMsgId = bThrdId = bReferenceIds = true;
 					//Sleep(10);
 				}
 				p += 5;
@@ -1602,8 +1604,21 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 				{
 					bMsgId = false;
 					p = MimeParser::GetMultiLine(p, e, line);
-					msgId = line.Mid(cMsgIdLen);
-					msgId.Trim();
+					MimeParser::GetMessageId(line, cMsgIdLen, msgId);
+#if 0
+					// Support code for testing
+					int startPos = cMsgIdLen;
+					MessageIdList msgIdList;
+					int msgIdCnt = MimeParser::GetMessageIdList(line, startPos, msgIdList);
+					if (msgIdList.size())
+					{
+						CString& messageId = msgIdList.front();
+						if (msgId.Compare(messageId) != 0)
+						{
+							int deb = 1;
+						}
+					}
+#endif
 				}
 				else if (bThrdId && TextUtilsEx::strncmpUpper2Lower(p, e, cThreadId, cThreadIdLen) == 0)
 				{
@@ -1612,6 +1627,31 @@ bool MboxMail::Process(register char *p, DWORD bufSize, _int64 startOffset,  boo
 					thrdId = line.Mid(cThreadIdLen);
 					thrdId.Trim();
 				}
+#if 0
+				// TODO: For future support of Refernces header field
+				else if (bReferenceIds && TextUtilsEx::strncmpUpper2Lower(p, e, cReferenceId, cReferenceIdLen) == 0)
+				{
+					bReferenceIds = false;
+					p = MimeParser::GetMultiLine(p, e, line);
+					referenceIds = line.Mid(cReferenceIdLen);
+					referenceIds.Trim();
+					//
+					int startPos = cReferenceIdLen;
+					MessageIdList msgIdList;
+					int msgIdCnt = MimeParser::GetMessageIdList(line, startPos, msgIdList);
+					if (msgIdList.size())
+					{
+						CString & messageId = msgIdList.front();
+						CString message_Id;
+						MimeParser::GetMessageId(line, cReferenceIdLen, message_Id);
+						if (message_Id.Compare(messageId) != 0)
+						{
+							int deb = 1;
+						}
+					}
+					int deb = 1;
+				}
+#endif
 #if 0
 				// doesn't quite work; looking for empty lines seem to work best
 				else if (TextUtilsEx::strncmpUpper2Lower(p, e, cContentType, cContentTypeLen) == 0)
@@ -2173,20 +2213,51 @@ bool sortByToDesc(MboxMail *cr1, MboxMail *cr2) {
 		return (cmp > 0);
 }
 
+char* ExtractSubjectEx(char *subj, int subjlen)
+{
+	// Find Re and/or Fwd and return pointer to subj left
+	return 0;
+}
+
 int ExtractSubject(CString &subject, char *&subjectText) 
 {
+	// TODO: Enhance to handle more cases: Re[2] Re: [hello] Re: etc
 	char *subj = (char *)(LPCSTR)subject;
 	int subjlen = subject.GetLength();
 
 	//TODO: should I skip white spaces 
 	// should compare
-
 	while (subjlen >= 4)
 	{
 		if (subj[0] == 'R')
 		{
-			if ((strncmp((char*)subj, "Re: ", 4) == 0) || (strncmp((char*)subj, "RE: ", 4) == 0)) {
+			if ((strncmp((char*)subj, "Re: ", 4) == 0) || (strncmp((char*)subj, "RE: ", 4) == 0))
+			{
 				subj += 4; subjlen -= 4;
+				if (subj[0] == '[')
+				{
+					char* pch;
+					if (pch = strchr(subj, ']'))
+					{
+						int r1 = strncmp((char*)pch, "] Re: ", 6);
+						int r2 = strncmp((char*)pch, "] RE: ", 6);
+						if ((r1 == 0) || (r2 == 0))
+						{
+							subjlen -= (int)((pch - subj) + 6);
+							subj = pch + 6;
+						}
+						else
+						{
+							int r1 = strncmp((char*)pch, "] Fwd: ", 7);
+							int r2 = strncmp((char*)pch, "] FWD: ", 7);
+							if ((r1 == 0) || (r2 == 0))
+							{
+								subjlen -= (int)((pch - subj) + 7);
+								subj = pch + 7;
+							}
+						}
+					}
+				}
 			}
 			else
 				break;
@@ -2197,6 +2268,31 @@ int ExtractSubject(CString &subject, char *&subjectText)
 			{
 				if ((strncmp((char*)subj, "Fwd: ", 5) == 0) || (strncmp((char*)subj, "FWD: ", 5) == 0)) {
 					subj += 5; subjlen -= 5;
+					if (subj[0] == '[')
+					{
+						char* pch;
+						if (pch = strchr(subj, ']'))
+						{
+							int r1 = strncmp((char*)pch, "] Fwd: ", 7);
+							int r2 = strncmp((char*)pch, "] FWD: ", 7);
+							if ((r1 == 0) || (r2 == 0))
+							{
+								subjlen -= (int)((pch - subj) + 7);
+								subj = pch + 7;
+							}
+							else
+							{
+								int r1 = strncmp((char*)pch, "] Re: ", 6);
+								int r2 = strncmp((char*)pch, "] RE: ", 6);
+								if ((r1 == 0) || (r2 == 0))
+								{
+									subjlen -= (int)((pch - subj) + 6);
+									subj = pch + 6;
+								}
+							}
+						}
+					}
+
 				}
 				else
 					break;
@@ -2834,7 +2930,8 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 // Or enhance delete MboxMail
 void MboxMail::DestroyMboxMail(MboxMail *m)
 {
-	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++) {
+	int j;
+	for (j = 0; j < m->m_ContentDetailsArray.size(); j++) {
 		delete m->m_ContentDetailsArray[j];
 		m->m_ContentDetailsArray[j] = 0;
 	}
@@ -2858,7 +2955,8 @@ void MboxMail::Destroy(MailArray *array)
 		if (e[cnt])
 			int deb = 1;
 	}
-	for (int i = 0; i < cnt; i++)
+	int i;
+	for (i = 0; i < cnt; i++)
 	{
 		DestroyMboxMail(mails[i]);
 		mails[i] = 0;
@@ -3125,7 +3223,7 @@ bool MboxMail::preprocessConversations()
 		int id = i;
 		if (m->m_messageId.GetLength())
 		{
-			int mId = getMessageId(&m->m_messageId);
+			int mId = MboxMail::getMessageId(&m->m_messageId);
 			if (mId < 0) 
 				insertMessageId(&m->m_messageId, id);
 			else 
@@ -3143,7 +3241,7 @@ bool MboxMail::preprocessConversations()
 
 		if (m->m_replyId.GetLength())
 		{
-			int mId = getMessageId(&m->m_replyId);
+			int mId = MboxMail::getMessageId(&m->m_replyId);
 			if ((mId < 0) && (m->m_duplicateId == false))
 			{
 				insertMessageId(&m->m_replyId, id);
@@ -3167,7 +3265,7 @@ bool MboxMail::preprocessConversations()
 
 		if (m->m_replyId.GetLength())
 		{
-			int rId = getMessageId(&m->m_replyId);
+			int rId = MboxMail::getMessageId(&m->m_replyId);
 			if (rId < 0) 
 			{
 				orphanCount++;
@@ -7220,6 +7318,125 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 				int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
 				if (retlen > 0)
 					outbuf->SetCount(outbuf->Count() + retlen);
+
+				// All below blocks are commented out.
+				// they were used to; test enhanced support for Gmal Labels
+#if 0
+				const unsigned char* pos = d64.GetInputDataPos();
+				unsigned char ch = *pos;
+
+				while ((ch == '=') || (ch == '\r') || (ch == '\n'))
+				{
+					pos++;
+					ch = *pos;
+				}
+				{
+					char* bodyEnd = bodyBegin + bodyLength;
+					_int64 left = bodyEnd - (char*)pos;
+
+					MboxCMimeCodeBase64 d64((char*)pos, (int)left);
+					int dlength = d64.GetOutputLength();
+
+					int needLength = dlength + outbuf->Count();
+					outbuf->Resize(needLength);
+					char* outptr = outbuf->Data(outbuf->Count());
+
+					int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
+					if (retlen > 0)
+						outbuf->SetCount(outbuf->Count() + retlen);
+#endif
+
+					// 
+#if 0
+					UINT strCodePage = 65001;
+					UINT toPageCode = 932;
+
+					//BOOL TextUtilsEx::Str2CodePage(SimpleString* str, UINT inCodePage, UINT outCodePage, SimpleString* result, SimpleString* workBuff);
+
+					CString src(outbuf->Data(), outbuf->Count());
+
+					DWORD retcode = TextUtilsEx::Str2PageCode(src, strCodePage, toPageCode);
+					int cnt = src.GetLength();
+					//outbuf->Clear();
+					//outbuf->Append((char*)(LPCSTR)src, src.GetLength());
+					int deb3 = 1;
+
+#endif
+
+#if 0
+					//MboxCMimeCodeBase64 e64((char*)outbuf->Data(), (int)outbuf->Count(), true);
+					MboxCMimeCodeBase64 e64((char*)(LPCSTR)src, (int)src.GetLength(), true);
+					int elength = e64.GetOutputLength();
+
+					SimpleString ebuf;
+					SimpleString* enbuf = &ebuf;
+
+					int needEncodeLength = elength + enbuf->Count();
+					enbuf->Resize(needEncodeLength);
+					char* eoutptr = enbuf->Data(enbuf->Count());
+
+					int eretlen = e64.GetOutput((unsigned char*)eoutptr, elength);
+
+					int deb = 1;
+#endif
+
+#if 0
+					UINT strCodePage = 65001;
+					UINT toPageCode = 932;
+
+					//BOOL TextUtilsEx::Str2CodePage(SimpleString* str, UINT inCodePage, UINT outCodePage, SimpleString* result, SimpleString* workBuff);
+
+					CString src(outbuf->Data(), outbuf->Count());
+
+					DWORD retcode = TextUtilsEx::Str2PageCode(src, strCodePage, toPageCode);
+
+					//MboxCMimeCodeBase64 e64((char*)outbuf->Data(), (int)outbuf->Count(), true);
+					MboxCMimeCodeBase64 e64((char*)(LPCSTR)src, (int)src.GetLength(), true);
+
+					int elength = e64.GetOutputLength();
+
+					SimpleString ebuf;
+					SimpleString* enbuf = &ebuf;
+
+					int needEncodeLength = elength + enbuf->Count();
+					enbuf->Resize(needEncodeLength);
+					char* eoutptr = enbuf->Data(enbuf->Count());
+
+					int eretlen = e64.GetOutput((unsigned char*)eoutptr, elength);
+
+				}
+#endif
+
+#if 0
+				UINT strCodePage = 65001;
+				UINT toPageCode = 932;
+
+				//BOOL TextUtilsEx::Str2CodePage(SimpleString* str, UINT inCodePage, UINT outCodePage, SimpleString* result, SimpleString* workBuff);
+
+				CString src(outbuf->Data(), outbuf->Count());
+
+				DWORD retcode = TextUtilsEx::Str2PageCode(src, strCodePage, toPageCode);
+				outbuf->Clear();
+				outbuf->Append((char*)(LPCSTR)src, src.GetLength());
+
+#endif
+				
+#if 0
+				//MboxCMimeCodeQP e64((char*)outbuf->Data(), (int)outbuf->Count(), true);
+				MboxCMimeCodeBase64 e64((char*)outbuf->Data(), (int)outbuf->Count(), true);
+				int elength = e64.GetOutputLength();
+
+				SimpleString ebuf;
+				SimpleString* enbuf = &ebuf;
+
+				int needEncodeLength = elength + enbuf->Count();
+				enbuf->Resize(needEncodeLength);
+				char* eoutptr = enbuf->Data(enbuf->Count());
+
+				int eretlen = e64.GetOutput((unsigned char*)eoutptr, elength);
+#endif
+
+				int deb2 = 1;
 			}
 			else
 			{

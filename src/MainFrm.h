@@ -412,6 +412,7 @@ public:
 	afx_msg void OnFileSelectasrootfolder();
 	afx_msg void OnDevelopmentoptionsDumprawdata();
 	afx_msg void OnDevelopmentoptionsDevelo();
+	afx_msg void OnDeveloperOptionsAboutSystem();
 };
 
 /////////////////////////////////////////////////////////////////////////////

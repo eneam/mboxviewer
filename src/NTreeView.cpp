@@ -4938,6 +4938,8 @@ BOOL NTreeView::RecreateGmailLabels(HTREEITEM hItem)
 }
 
 // Parse mbox file and create label files and Windows folders
+// TODO: Current solutiuon is quite complex
+// May need to recreate label tree first and resolve valid file name issue next
 int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 {
 	HWND h = GetSafeHwnd();
@@ -4945,6 +4947,8 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 
 	static const char *cLabels = "x-gmail-labels";
 	static const int cLabelsLen = istrlen(cLabels);
+	static const char* cCategory = "category ";
+	static const int cCategoryLength = istrlen(cCategory);
 	static const char *cOsobiste = "osobiste";
 	static const int cOsobisteLen = istrlen(cOsobiste);
 
@@ -4966,9 +4970,10 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	CString mailFile = m_tree.GetItemText(hItem);
 	int mailCnt = MboxMail::s_mails.GetCount();
 
-	const int buffSmallSize = 1024;  // TODO: make small and enlarge and rety is needed
+	const int buffSmallSize = 1024;  // TODO: make small and enlarge and retry if needed
 	SimpleString buff(buffSmallSize + 1);
 	CString validFileName;
+	CString rawLabel;
 	//MboxMail *m_s;
 	MboxMail *m;
 	CString labels;
@@ -4976,7 +4981,15 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	CString v;
 	CString el;
 	CString line;
-	int i;
+	int ii; // reusable for not nested loops
+	int k; // for mail loop
+	int j; // for label loop
+	int i; // for sublabel loop
+	CString delim = "/";
+	CString mappedEl;  // valid as part of file name
+	CString mappedV;  // kind of path of mappedEl
+	CString mappedLabel;  // mapped label path
+	CString rawLabelFolder;
 
 	int maxNoLabelCnt = 100;
 	BOOL foundLabels = FALSE;
@@ -4995,21 +5008,26 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 	if (MboxMail::s_mails.GetCount() != MboxMail::s_mails_ref.GetCount())
 		int deb = 1;
 
+	CString labelsCachePath;
+	CString rootPrintSubFolder = "LabelCache";
+	CString errorText;
+	CString targetPrintSubFolder;
+	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText);
+	if (retval == FALSE) {
+		MboxMail::assert_unexpected();
+		TRACE("CreateGmailLabelFiles: CreateCachePath LabelCache failed\n");
+		return -1;
+	}
+
 	int noLabelCnt = 0;
 	m_labelSeqNumb = 0;
 	BOOL TraceLabels = FALSE;
 	//CString searchText = "We don't normally send surveys";
 	//searchText = "Re: [chromium-dev] Mac builds";
-	for (i = 0; i < mailCnt; i++)
+	for (k = 0; k < mailCnt; k++)
 	{
-		//m_s = MboxMail::s_mails[i];
-		m = MboxMail::s_mails_ref[i];
-#if 0
-		if (strncmp(m->m_subj, searchText, searchText.GetLength()) == 0)
-			TraceLabels = TRUE;
-		else
-			TraceLabels = FALSE;
-#endif
+		//m_s = MboxMail::s_mails[k];
+		m = MboxMail::s_mails_ref[k];
 
 		m->GetBody(fp, &buff, buffSmallSize);
 
@@ -5028,14 +5046,23 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 				val = line.Mid(cLabelsLen);
 				val.TrimLeft(": ");
 				val.TrimRight(" ");
+
 				//TRACE("Labels=%s\n", val);
 				CString charset;
 				UINT charsetId;
-				UINT toCharacterId = 20127;  // us-ascii
+				UINT toCharacterId = 20127;  // us-ascii  toCharacterId is ignored currently
 				CString decodedVal = TextUtilsEx::DecodeString(val, charset, charsetId, toCharacterId);
 
 				if (charsetId > 0)
-					DWORD error = TextUtilsEx::Str2Ansi(decodedVal, charsetId);  // 0 == no error
+				{
+					UINT toCharacterId = CP_ACP;
+					//UINT toCharacterId = GetACP();
+					//UINT toCharacterId = 932;  // shift_jis
+
+					//DWORD error = TextUtilsEx::Str2Ansi(decodedVal, charsetId);  // 0 == no error
+					DWORD error = TextUtilsEx::Str2PageCode(decodedVal, charsetId, toCharacterId);  // 0 == no error
+					int deb = 1;
+				}
 				val = decodedVal;
 				break;
 			}
@@ -5048,7 +5075,7 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 			int deb = 1;
 		}
 
-		if ((foundLabels == FALSE) && val.IsEmpty() && (i > maxNoLabelCnt))  // it looks like it is not gmail  file
+		if ((foundLabels == FALSE) && val.IsEmpty() && (k > maxNoLabelCnt))  // it looks like it is not gmail  file
 		{
 			fp.Close();
 			TRACE("CreateGmailLabelFiles:: Didn't find labels\n");
@@ -5057,6 +5084,7 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 
 		CStringArray a;
 		TextUtilsEx::Tokenize(val, a);
+
 		if (TraceLabels) {
 			TRACE("\n\nCreateGmailLabelFiles: =========> Before Remove Duplicate Labels \"%s\"\n", val);
 			TextUtilsEx::TraceStringArray(a);
@@ -5067,12 +5095,12 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 		while (first < a.GetSize())
 		{
 			el = a.ElementAt(first);
-			for (int i = first + 1; i < a.GetSize(); i++)
+			for (ii = first + 1; ii < a.GetSize(); ii++)
 			{
-				v = a.ElementAt(i);
+				v = a.ElementAt(ii);
 				if (el.Compare(v) == 0)
 				{
-					a.RemoveAt(i);
+					a.RemoveAt(ii);
 					break;
 				}
 			}
@@ -5085,38 +5113,24 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 		}
 
 		// iterate all labels and add mail ptr to respectfull list/array
-		for (int i = 0; i < a.GetSize(); i++)
+		for (j = 0; j < a.GetSize(); j++)
 		{
-			v = a.ElementAt(i);
+			v = a.ElementAt(j);
 			v.Trim();
 			//TRACE("|%s|\n", v);
 
-#if 0
-			char *pp = (char*)(LPCSTR)v;
-			char *ee = pp + v.GetLength();
-			if (TextUtilsEx::strncmpUpper2Lower(pp, ee, cOsobiste, cOsobisteLen) == 0)
-				int deb = 1;
-#endif
-
-			validFileName = v;
-
-			//FileUtils::MakeValidFilePath(v, FALSE);
-			FileUtils::MakeValidLabelFilePath(v, FALSE);
-
-			GmailLabel *gMappedLabel = m_mappedToLabelHT->find(&v);
-
-			if (gMappedLabel && gMappedLabel->m_label.Compare(validFileName))
+			if (v.GetLength() >= cCategoryLength)
 			{
-				CString seqNumb;
-				seqNumb.Format(" %d", m_labelSeqNumb++);
-				v += seqNumb;
-
-				GmailLabel *mappedLabel = m_mappedToLabelHT->find(&v);
-				if (mappedLabel)
-					MboxMail::assert_unexpected();
+				char* p = (char*)(LPCSTR)v;
+				char* e = p + v.GetLength();
+				if (TextUtilsEx::strncmpUpper2Lower(p, e, cCategory, cCategoryLength) == 0)
+				{
+					// TODO: enhnace to remove all spaces
+					// Below assumes single space only
+					v.SetAt(cCategoryLength - 1, '/');
+				}
 			}
 
-			CString delim = "/";
 			CStringArray va;
 			TextUtilsEx::SplitString(v, delim, va);
 
@@ -5125,54 +5139,120 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 				TextUtilsEx::TraceStringArray(va);
 			}
 
-			// TODO: is this just for testing ?
+			// Multiple sequential slash chracters will be replaced with just one
+			CString validLabel = v;
 			v.Empty();
-			for (int i = 0; i < va.GetSize(); i++)
+			int valen = (int)va.GetSize();
+			for (ii = 0; ii < valen; ii++)
 			{
-				el = va.ElementAt(i);
+				el = va.ElementAt(ii);
 				el.Trim();
-				if (i == 0)
+				if (ii == 0)
 					v += el;
 				else
 					v += "/" + el;
 			}
 
-			if (TraceLabels) {
-				TRACE("CreateGmailLabelFiles: After Split Label v=\"%s\"\n", v);
-				TextUtilsEx::TraceStringArray(va);
-			}
+			validFileName = v;
+			rawLabel = v;
 
-			GmailLabel *gLabel = m_labelHT->find(&validFileName);
-
-			//TRACE("%u\n", glabel);
-			if (gLabel == 0)
-			{
-				gLabel = new GmailLabel(validFileName, v);
-				gLabel->m_ptrList->Add(m);
-				m_labelHT->insert(&gLabel->m_label, gLabel);
-				m_mappedToLabelHT->insert(&gLabel->m_mappedToLabel, gLabel);
-			}
-			else
+			GmailLabel* gLabel = m_labelHT->find(&rawLabel);
+			if (gLabel)
 			{
 				gLabel->m_ptrList->Add(m);
+				continue;
 			}
 
+			v.Empty();
+			//CString mappedEl;  // valid as part of file name
+			//CString mappedV;  // kind of path of mappedEl
+			//CString mappedLabel;  // mapped label path
+
+			int sublabelCnt = (int)va.GetSize();
+			for (i = 0; i < sublabelCnt; i++)
+			{
+				el = va.ElementAt(i);
+				el.Trim();
+				mappedEl = el;
+				FileUtils::MakeValidLabelFilePath(mappedEl, FALSE);
+				if (i == 0)
+				{
+					v = el;
+					mappedV = mappedEl;
+					mappedLabel = mappedEl;
+					gLabel = m_labelHT->find(&v);
+					if (gLabel)
+					{
+						mappedV = gLabel->m_mappedToLabel;
+						mappedLabel = gLabel->m_mappedLabelPath;
+						continue;
+					}
+				}
+				else
+				{
+					mappedV = v + "/" + mappedEl;
+					mappedLabel += "/" + mappedEl;
+					v += "/" + el;
+					gLabel = m_labelHT->find(&v);
+					if (gLabel)
+					{
+						mappedV = gLabel->m_mappedToLabel;
+						mappedLabel = gLabel->m_mappedLabelPath;
+						continue;
+					}					
+				}
+
+				rawLabel = v;
+
+				GmailLabel* gMappedLabel = m_mappedToLabelHT->find(&mappedV);
+				if (gMappedLabel)
+					int deb = 1;
+
+				GmailLabel* gLabel = m_labelHT->find(&v);
+				if (gLabel)
+				{
+					//ASSERT(gMappedLabel);
+					if (i == (sublabelCnt - 1))
+					{
+						gLabel->m_ptrList->Add(m);
+						//continue;
+					}
+					int deb = 1;
+				}
+				else
+				{
+					if (gMappedLabel)
+					{
+						//TRACE("%u\n", glabel);
+						if (gLabel == 0)
+						{
+							CString seqNumb;
+							seqNumb.Format(" %d", m_labelSeqNumb++);
+							mappedLabel += seqNumb;
+
+							GmailLabel* mLabel = m_mappedToLabelHT->find(&v);
+							if (mLabel)
+								MboxMail::assert_unexpected();
+						}
+						else
+							int deb = 1;
+					}
+
+					gLabel = new GmailLabel(rawLabel, mappedV, mappedLabel);
+					m_labelHT->insert(&rawLabel, gLabel);
+					m_mappedToLabelHT->insert(&mappedV, gLabel);
+
+					if (i == (sublabelCnt - 1))
+					{
+						gLabel->m_ptrList->Add(m);
+					}
+				}
+			}
 			// va array no longer needed
 			int deb = 1;
 		}
 	}
 	fp.Close();
-
-	CString labelsCachePath;
-	CString rootPrintSubFolder = "LabelCache";
-	CString errorText;
-	CString targetPrintSubFolder;
-	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText);
-	if (retval == FALSE) {
-		MboxMail::assert_unexpected();
-		TRACE("CreateGmailLabelFiles: CreateCachePath LabelCache failed\n");
-		return -1;
-	}
 
 	GmailLableMapType::IHashMapIter iter = m_labelHT->first();
 
@@ -5200,14 +5280,14 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 		totalCnt += cnt;
 
 		MboxMail::s_mails_label.SetSizeKeepData(cnt);
-		for (i = 0; i < cnt; i++)
+		for (ii = 0; ii < cnt; ii++)
 		{
-			MboxMail::s_mails_label[i] = iter.element->m_ptrList->Get(i);
+			MboxMail::s_mails_label[ii] = iter.element->m_ptrList->Get(ii);
 		}
 
 		ASSERT(MboxMail::s_mails_label.GetCount() <= mailCnt);
 
-		int r = pListView->SaveAsLabelFile(&MboxMail::s_mails_label, labelsCachePath, iter.element->m_mappedToLabel, errorText);
+		int r = pListView->SaveAsLabelFile(&MboxMail::s_mails_label, labelsCachePath, iter.element->m_label, iter.element->m_mappedLabelPath, errorText);
 		if (r < 0) {
 			MboxMail::assert_unexpected();
 			TRACE("CreateGmailLabelFiles: SaveAsLabelFile failed\n");
@@ -5275,9 +5355,10 @@ int NTreeView::DisplayGmailLabels(HTREEITEM hItem)
 	return 1;
 }
 
-GmailLabel::GmailLabel(CString &label, CString &mappedToLabel)
+GmailLabel::GmailLabel(CString &label, CString& mappedToLabel, CString &mappedLabelPath)
 {
 	m_label = label;
+	m_mappedLabelPath = mappedLabelPath;
 	m_mappedToLabel = mappedToLabel;
 	m_ptrList = new MySimpleDeque;
 }
@@ -5491,10 +5572,25 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				if (tinfo)
 					int deb = 1;
 
-				HTREEITEM newItem = InsertTreeItem(folderName, 6, 7, hItem);
+				CString folderNm = folderName;
+				if (FileUtils::PathFileExist(emptyPath))
+				{
+					CString gLabel;
+					int retv = pListView->GetLabelFromLabelListFile_v2(emptyPath, gLabel);
+					if (retv < 0)
+					{
+						MboxMail::assert_unexpected();
+						finder.Close();
+						return -1;
+					}
+					folderNm = gLabel;
+				}
+
+				HTREEITEM newItem = InsertTreeItem(folderNm, 6, 7, hItem);
 				if (newItem == 0)
 				{
 					MboxMail::assert_unexpected();
+					finder.Close();
 					return -1;
 				}
 
@@ -5508,14 +5604,9 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 				if (!FileUtils::PathFileExist(emptyPath))
 				{
-					// Create empty xxx.mboxlist file
-					MboxMail::s_mails_label.SetCountKeepData(0);
-					_int64 mailFileSize = FileUtils::FileSize(dataFilePath);
-					int r = pListView->WriteMboxListFile_v2(&MboxMail::s_mails_label, emptyPath, mailFileSize, errorText);
-					if (r < 0) {
-						MboxMail::assert_unexpected();
-						return -1;
-					}
+					// Should never be true
+					// All files are created in CreateGmailLabelFiles() now 12/26/2022
+					MboxMail::assert_unexpected();
 				}
 
 				LabelInfo *linfo = new LabelInfo(nId, dataFilePath, label, emptyPath); // MailLabel
@@ -5524,6 +5615,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				int r = NTreeView::ShowGmailLabels_internal(newItem, folderPath, dataFilePath);
 				if (r < 0) {
 					MboxMail::assert_unexpected();
+					finder.Close();
 					return -1;
 				}
 			}
@@ -5538,6 +5630,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				int r = NTreeView::ShowGmailLabels_internal(found_hItem, folderPath, dataFilePath);
 				if (r < 0) {
 					MboxMail::assert_unexpected();
+					finder.Close();
 					return -1;
 				}
 			}
@@ -5552,6 +5645,15 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 
 			FileUtils::GetFileBaseName(fileName, label);  
 
+			CString gLabel;
+			int retv = pListView->GetLabelFromLabelListFile_v2(filePath, gLabel);
+			if (retv < 0)
+			{
+				MboxMail::assert_unexpected();
+				finder.Close();
+				return -1;
+			}
+
 			hashsum_t hashsum = TreeCtrlInfoDB::GetHashsum(&filePath);
 			TreeCtrlInfo *tinfo = m_treeCtrlInfoDB.Find(&filePath, hashsum);
 
@@ -5565,10 +5667,11 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				if (tinfo)
 					int deb = 1;
 
-				HTREEITEM newItem = InsertTreeItem(label, 6, 7, hItem);
+				HTREEITEM newItem = InsertTreeItem(gLabel, 6, 7, hItem);
 				if (newItem == 0)
 				{
 					MboxMail::assert_unexpected();
+					finder.Close();
 					return -1;
 				}
 

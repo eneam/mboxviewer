@@ -2216,18 +2216,18 @@ void NListView::ResetSize()
 	m_list.Invalidate();
 }
 
-void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult) 
+void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LV_DISPINFO* pDispInfo = (LV_DISPINFO*)pNMHDR;
-	static const char * ast = "*";
-	static const char * nul = "";
+	static const char* ast = "*";
+	static const char* nul = "";
 	char datebuff[32];
 	char sizebuff[32];
 	if (pDispInfo->item.mask & LVIF_TEXT)
 	{
-		MboxMail *m = MboxMail::s_mails[pDispInfo->item.iItem];
-//		MboxMail *m = (MboxMail*)pDispInfo->item.lParam;
-		const char *t;
+		MboxMail* m = MboxMail::s_mails[pDispInfo->item.iItem];
+		//		MboxMail *m = (MboxMail*)pDispInfo->item.lParam;
+		const char* t;
 		switch (pDispInfo->item.iSubItem) {
 		case 0: // date
 			/*
@@ -2242,10 +2242,10 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 			break;
 		case 1: // date
 			datebuff[0] = 0;
-			if (m->m_timeDate >= 0) 
+			if (m->m_timeDate >= 0)
 			{
 				MyCTime tt(m->m_timeDate);
-				if (!m_gmtTime) 
+				if (!m_gmtTime)
 				{
 					CString lDateTime = tt.FormatLocalTm(m_format);
 					strcpy(datebuff, (LPCSTR)lDateTime);
@@ -2267,25 +2267,25 @@ void NListView::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 			t = m->m_subj.GetBufferSetLength(m->m_subj.GetLength());
 			break;
 		case 5: // size
-			{
-				int length = m->m_length;
-				int kb = length / 1000;
-				if (length % 1000)
-					kb++;
-				sizebuff[0] = 0;
-				_itoa(kb, sizebuff, 10);
-				t = sizebuff;
-			}
-			break;
+		{
+			int length = m->m_length;
+			int kb = length / 1000;
+			if (length % 1000)
+				kb++;
+			sizebuff[0] = 0;
+			_itoa(kb, sizebuff, 10);
+			t = sizebuff;
+		}
+		break;
 		default:
 			t = nul;
 			break;
 		}
 		pDispInfo->item.pszText = (char*)t;
 	}
-/*	if( pDispInfo->item.mask & LVIF_PARAM ) {
-		pDispInfo->item.lParam = (LPARAM)m;
-	}*/
+	/*	if( pDispInfo->item.mask & LVIF_PARAM ) {
+			pDispInfo->item.lParam = (LPARAM)m;
+		}*/
 	*pResult = 0;
 }
 
@@ -7088,17 +7088,34 @@ void NListView::OnODCacheHintListCtrl(NMHDR* pNMHDR, LRESULT* pResult)
 
 void NListView::ItemState2Str(UINT uState, CString &strState)
 {
-	strState.Empty();
-	switch (uState)
-	{
-	case LVIS_ACTIVATING: strState.Append("LVIS_ACTIVATING"); break;
-	case LVIS_CUT: strState.Append("LVIS_CUT"); break;
-	case LVIS_DROPHILITED: strState.Append("LVIS_DROPHILITED"); break;
-	case LVIS_FOCUSED: strState.Append("LVIS_FOCUSED"); break;
-	case LVIS_OVERLAYMASK: strState.Append("LVIS_OVERLAYMASK"); break;
-	case LVIS_SELECTED: strState.Append("LVIS_SELECTED"); break;
-	case LVIS_STATEIMAGEMASK: strState.Append("LVIS_STATEIMAGEMASK"); break;
-	default: strState.Append("LVIS_UNKNOWN"); break;
+
+
+	if (uState & LVIS_ACTIVATING) {
+		strState.Append("LVIS_ACTIVATING");
+	}
+	if (uState & LVIS_CUT) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_CUT");
+	}
+	if (uState & LVIS_DROPHILITED) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_DROPHILITED");
+	}
+	if (uState & LVIS_FOCUSED) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_FOCUSED");
+	}
+	if (uState & LVIS_OVERLAYMASK) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_OVERLAYMASK");
+	}
+	if (uState & LVIS_SELECTED) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_SELECTED");
+	}
+	if (uState & LVIS_STATEIMAGEMASK) {
+		if (!strState.IsEmpty()) { strState.Append(" | "); }
+		strState.Append("LVIS_STATEIMAGEMASK");
 	}
 }
 
@@ -10520,6 +10537,7 @@ void NListView::OnTimer(UINT_PTR nIDEvent)
 }
 
 #define MAIL_LIST_VERSION2  (MAIL_LIST_VERSION_BASE+2)
+#define MAIL_LABEL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+100)
 
 // TODO: Please define the naming standard to end this name nightmare  !!!!!!
 int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
@@ -18690,14 +18708,55 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 	return 1;
 }
 
-int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString &errorText)
+int NListView::WriteMboxLabelListFile(MailArray* mailsArray, CString &gLabel, CString& filePath, _int64 mboxFileSize, CString& errorText)
+{
+	SerializerHelper sz(filePath);
+	if (!sz.open(TRUE))
+	{
+		CString lastError = FileUtils::GetLastErrorAsString();
+		CString txt = _T("Could not create \"") + filePath + _T("\"\n");
+		txt += _T("Error: ") + lastError + "\n";
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	// Create mboxlist file to allow reload of archive file list
+
+	sz.writeInt(MAIL_LABEL_LIST_VERSION);			// version
+	//sz.writeString(mboxFile);  // TODO: ??
+	// main mbox mail file size other mbox files are derived/contain subset
+	sz.writeInt64(mboxFileSize);
+	// we don't always create new mail archive corresponding to mboxListFile/mail list
+	// mailFileSize is mboxMailFileSize corresponding to mboxListFile
+	_int64 mailFileSize = -1;  //  FileSize(mboxFilePath);  
+	sz.writeInt64(mailFileSize);	// file size
+	sz.writeInt(mailsArray->GetSize());
+	sz.writeString((LPCSTR)gLabel);
+
+	MboxMail* m;
+	for (int i = 0; i < mailsArray->GetSize(); i++)
+	{
+		m = (*mailsArray)[i];
+		sz.writeInt64(m->m_startOff);
+		sz.writeInt(m->m_length);
+		sz.writeInt(m->m_index);
+		sz.writeInt((int)m->m_ContentDetailsArray.size());
+	}
+	sz.close();
+
+	return 1;
+}
+
+int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString& mappedLabelName, CString &errorText)
 {
 	static const char* cCategory = "category ";
 	static const int cCategoryLength = istrlen(cCategory);
 
 	MailArray *mailsArray = marray;
 
-	TRACE("SaveAsLabelFile: ArrayCnt=%d targetDir=%s labelName=%s\n", mailsArray->GetCount(), targetDir, labelName);
+	TRACE("SaveAsLabelFile: ArrayCnt=%d targetDir=%s labelName=%s mappedLabelName=%s\n", 
+		mailsArray->GetCount(), targetDir, labelName, mappedLabelName);
 
 #if 1
 	CString mailFile = MboxMail::s_path;
@@ -18730,21 +18789,28 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &l
 		return -1;
 	}
 
-	if (labelName.GetLength() >= cCategoryLength)
-	{
-		char *p = (char*)(LPCSTR)labelName;
-		char *e = p + labelName.GetLength();
-		if (TextUtilsEx::strncmpUpper2Lower(p, e, cCategory, cCategoryLength) == 0)
-			labelName.SetAt(cCategoryLength-1, '/');
-	}
+	CString rootLabelsCachePath = labelsCachePath;
 
 	CString delim = "/";
+
+	CStringArray gLabelArray;
+	TextUtilsEx::SplitString(labelName, delim, gLabelArray);
+	int glarCnt = (int)gLabelArray.GetSize();
+	CString gLabel;
+	if (glarCnt > 0)
+		gLabel = gLabelArray.ElementAt(glarCnt-1);
+
 	CStringArray l;
-	TextUtilsEx::SplitString(labelName, delim, l);
+	TextUtilsEx::SplitString(mappedLabelName, delim, l);
 
 	int lcnt = (int)l.GetSize();
-	CString label = l.GetAt(lcnt-1);
-	if (l.GetSize() > 1)
+	if (glarCnt != lcnt)
+		int deb = 1;
+
+	CString label;
+	if (lcnt > 0)
+		label = l.GetAt(lcnt - 1);
+	if (lcnt > 1)
 	{
 		for (int i = 0; i < lcnt-1; i++)
 		{
@@ -18760,10 +18826,10 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &l
 	CString labelListFilePath = labelsCachePath + "\\" + label + ".mboxlist";
 
 	_int64 mailFileSize = MboxMail::s_fSize;
-	int wret = NListView::WriteMboxListFile_v2(marray, labelListFilePath, mailFileSize, errorText);
+	int wret = NListView::WriteMboxLabelListFile(marray, gLabel, labelListFilePath, mailFileSize, errorText);
 	if (wret < 0)
 	{
-		TRACE("SaveAsLabelFile: WriteMboxListFile_v2  failed\n");
+		TRACE("SaveAsLabelFile: WriteMboxLabelListFile  failed\n");
 		return -1;
 	}
 
@@ -18837,7 +18903,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	int mailListCnt;
 
 	CString txt = _T("Mail list file\n\"") + listFilePath;
-	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease remove the file.");
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease refresh Gmail Labels.");
 
 	if (!sz.readInt(&version)) {
 		sz.close();
@@ -18845,7 +18911,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 		return -1;
 	}
 
-	if (version != MAIL_LIST_VERSION2)
+	if (version != MAIL_LABEL_LIST_VERSION)
 	{
 		sz.close();
 
@@ -18854,7 +18920,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
 		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
 		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
-		text += strVersion + "\".\nCan't reload.\nPlease remove the file.";
+		text += strVersion + "\".\nCan't reload.\nPlease refresh Gmail Labels.";
 
 		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -18894,6 +18960,14 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 		return -1;
 	}
 
+	CString gLabel;
+	if (!sz.readString(gLabel)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
 	BOOL errorDoNothing = FALSE;
 	BOOL verifyOnly = TRUE;
 	__int64 pos = 0;
@@ -18917,7 +18991,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	{
 		sz.close();
 		CString txt = _T("Mail list file\n\"") + listFilePath;
-		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.");
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1; // do nothing
@@ -18930,7 +19004,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 		MboxMail::s_mails_folder.SetSizeKeepData(0);
 
 		CString txt = _T("Mail list file\n\"") + listFilePath;
-		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.");
+		txt += _T("\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.");
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 	}
@@ -18964,6 +19038,150 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	m_list.SetRedraw(TRUE);
 
 	return ret;
+}
+
+int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLabel)
+{
+	int ret = 1;  //OK
+
+	MailArray* mailsArray = &MboxMail::s_mails;
+
+#if 0
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		// should never be here
+		return -1;
+	}
+#endif
+
+#if 0
+	if (MboxMail::IsFolderMailsSelected())
+	{
+		CString txt = _T("Folder Selected Mails List not empty. Overwrite?");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+			return -1;
+	}
+#endif
+
+	CString mboxFileNamePath = MboxMail::s_path;
+
+	if (mboxFileNamePath.IsEmpty())
+	{
+		CString txt = _T("Please open mail file first.");
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	CString path = MboxMail::GetLastPath();
+	if (path.IsEmpty())
+	{
+		MboxMail::assert_unexpected();
+		return -1;  // Hopefully s_path will fail first
+	}
+
+
+	if (!FileUtils::PathFileExist(listFilePath))
+	{
+		CString txt = _T("Mail List File \"") + listFilePath;
+		txt += _T("\" doesn't exist.\nCan't reload.");
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	SerializerHelper sz(listFilePath);
+	if (!sz.open(FALSE))
+	{
+		CString lastError = FileUtils::GetLastErrorAsString();
+		CString txt = _T("Could not create \"") + listFilePath + _T("\"\n");
+		txt += _T("Error: ") + lastError + "\n";
+		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	int version;
+	_int64 mailFileSize;
+	_int64 mboxFileSize;
+	int mailListCnt;
+
+	CString txt = _T("Mail list file\n\"") + listFilePath;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease refresh Gmail Labels.");
+
+	if (!sz.readInt(&version))
+	{
+		sz.close();
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (version != MAIL_LABEL_LIST_VERSION)
+	{
+		sz.close();
+
+		CString text = _T("Mail list file\n\"") + listFilePath;
+		CString strVersion;
+		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
+		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
+		text += strVersion + "\".\nCan't reload.\nPlease refresh Gmail Labels.";
+
+		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt64(&mailFileSize))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt64(&mboxFileSize))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	if (!sz.readInt(&mailListCnt))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	_int64 nMailFileSize = FileUtils::FileSize(mboxFileNamePath);
+
+#if 0
+	if ((mailListCnt < 0) || (mailListCnt > MboxMail::s_mails_ref.GetCount()) ||
+		(mailFileSize != nMailFileSize))
+	{
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+#endif
+
+	//CString gLabel;
+	if (!sz.readString(gLabel)) {
+		sz.close();
+		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		MboxMail::assert_unexpected();
+		return -1;
+	}
+
+	sz.close();
+
+	return 1;
 }
 
 #if 0

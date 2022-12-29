@@ -57,16 +57,16 @@ protected:
 class MboxCMimeCodeBase64 : public CMimeCodeBase64
 {
 public:
-	MboxCMimeCodeBase64(const char* pbInput, int nInputSize) {
-		SetInput(pbInput, nInputSize, false);
+	MboxCMimeCodeBase64(const char* pbInput, int nInputSize, bool bEncoding = false) {
+		SetInput(pbInput, nInputSize, bEncoding);
 	}
 };
 
 class MboxCMimeCodeQP : public CMimeCodeQP
 {
 public:
-	MboxCMimeCodeQP(const char* pbInput, int nInputSize) {
-		SetInput(pbInput, nInputSize, false);
+	MboxCMimeCodeQP(const char* pbInput, int nInputSize, bool bEncoding = false) {
+		SetInput(pbInput, nInputSize, bEncoding);
 	}
 };
 

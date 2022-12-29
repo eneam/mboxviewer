@@ -837,6 +837,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\PageCodeListDlg.cpp" />
     <ClCompile Include="src\PictureCtrl.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug-StackTrace|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -990,6 +991,7 @@
     <ClInclude Include="src\OpenArchiveFileDlg.h" />
     <ClInclude Include="src\OpenContainingFolderDlg.h" />
     <ClInclude Include="src\OptionsDlg.h" />
+    <ClInclude Include="src\PageCodeListDlg.h" />
     <ClInclude Include="src\PictureCtrl.h" />
     <ClInclude Include="src\PrintConfigDlg.h" />
     <ClInclude Include="src\Profile.h" />

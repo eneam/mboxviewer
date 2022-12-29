@@ -338,9 +338,11 @@ public:
 	int LoadFolderListFile_v2(CString &folderPath, CString &folderName);
 	int CopyMailsToFolders();
 	//
-	int SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString &errorText);
+	int SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString& mappedLabelName, CString &errorText);
 	int LoadLabelListFile_v2(CString &folderPath, CString &folderName);
 	int WriteMboxListFile_v2(MailArray *mailsArray, CString &listFilePath, _int64 mboxFileSize, CString &errorText);
+	int WriteMboxLabelListFile(MailArray* mailsArray, CString &gLabel, CString& listFilePath, _int64 mboxFileSize, CString& errorText);
+	int GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLabel);
 
 	int VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePath, CString &errorText);
 

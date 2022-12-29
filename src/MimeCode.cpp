@@ -515,12 +515,16 @@ int CMimeCodeBase64::Decode(unsigned char* pbOutput, int nMaxSize)
 	int nFrom = 0;
 	unsigned char chHighBits = 0;
 
-	while (pbData < pbEnd)
+	unsigned char prev_ch = 0;
+	int pos = 0;
+	while (m_pbData < pbEnd)
 	{
 		if (pbOutput >= pbOutEnd)
 			break;
 
 		unsigned char ch = *pbData++;
+		prev_ch = ch;
+
 		if (ch == '\r' || ch == '\n')
 			continue;
 		ch = (unsigned char) DecodeBase64Char(ch);
@@ -546,8 +550,9 @@ int CMimeCodeBase64::Decode(unsigned char* pbOutput, int nMaxSize)
 		default:
 			*pbOutput++ = chHighBits | ch;
 		}
+		pos++;
 	}
-
+	m_pbData = pbData;
 	return (int)(pbOutput - pbOutStart);
 }
 

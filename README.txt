@@ -2,6 +2,12 @@
 Changes
 ---
 
+v 1.0.3.37
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Enhanced Gmail Labels to address garbled text for ANSI encoded labels.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.36
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

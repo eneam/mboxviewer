@@ -274,6 +274,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_SELECTASROOTFOLDER, &CMainFrame::OnFileSelectasrootfolder)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DUMPRAWDATA, &CMainFrame::OnDevelopmentoptionsDumprawdata)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DEVELO, &CMainFrame::OnDevelopmentoptionsDevelo)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM, &CMainFrame::OnDeveloperOptionsAboutSystem)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5517,4 +5518,36 @@ void CMainFrame::OnDevelopmentoptionsDevelo()
 		);
 	TRACE("%s", bufferSizes);
 
+}
+
+#include "PageCodeListDlg.h"
+
+void CMainFrame::OnDeveloperOptionsAboutSystem()
+{
+#if 0
+	PageCodeListDlg dlg;
+	INT_PTR retcode = dlg.DoModal();
+#endif
+
+	// TODO: Add your command handler code here
+	CString aboutSystem;
+	CString info;
+
+	UINT codePage = GetACP();
+	CString codePageInfo;
+
+	DWORD dwFlags = 0;
+	CPINFOEXA CPInfoEx;
+
+	BOOL retval = GetCPInfoExA(codePage, dwFlags, &CPInfoEx);
+
+	BOOL ret = TextUtilsEx::Id2LongInfo(codePage, codePageInfo);
+
+	info.Format("Code Page: %d \"%s\"\n", codePage, codePageInfo);
+	aboutSystem.Append(info);
+	
+	HWND h = GetSafeHwnd();
+	int answer = MessageBox(aboutSystem, _T("Info"), MB_APPLMODAL | MB_OK);
+
+	int deb = 1;
 }

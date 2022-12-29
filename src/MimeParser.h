@@ -42,14 +42,23 @@
 #include "Mime.h"
 #include "MimeCode.h"
 
+#ifndef _VECTOR_
+#include <vector>
+#endif
+
+
 class MboxMail;
+
+typedef std::vector <CString> MessageIdList;
 
 class MimeParser
 {
 public:
 	static char *GetMultiLine(char *p, char *e, CString &line);
 	static int GetFieldValue(CString &fieldLine, int startPos, CString &value);
+	static int GetMessageIdList(CString& fieldLine, int startPos, MessageIdList &msgIdList);
 	static int GetMessageId(CString &fieldLine, int startPos, CString &value);
+	static int GetMessageId(char* fieldLine, int startPos, CString& value);
 	static int GetThreadId(CString &fieldLine, int startPos, CString &value);
 	static int GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value);
 	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);

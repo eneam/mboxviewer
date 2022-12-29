@@ -52,6 +52,7 @@
 #define IDD_DATA_FOLDER_DLG             230
 #define IDD_MERGE_FOLDER_AND_SUBFOLDERS 232
 #define IDD_DEV_CREATE_ARCHIVE          234
+#define IDD_PAGE_CODE_LIST_DLG          236
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -260,6 +261,7 @@
 #define IDC_TEMPL_TO_USERNAME           1185
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
+#define IDC_CODE_PAGE_ENUMERATION       1187
 #define IDC_CHECK_ATTACHMENT_NAME       1188
 #define IDC_CHECK_NEGATE_SEARCH_CRITERIA 1189
 #define IDC_LICENSE                     1190
@@ -409,6 +411,7 @@
 #define ID_FILE_SELECTASROOTFOLDER      32913
 #define ID_DEVELOPMENTOPTIONS_DUMPRAWDATA 32914
 #define ID_DEVELOPMENTOPTIONS_DEVELO    32915
+#define ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM 32916
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -417,8 +420,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        236
-#define _APS_NEXT_COMMAND_VALUE         32916
+#define _APS_NEXT_RESOURCE_VALUE        238
+#define _APS_NEXT_COMMAND_VALUE         32917
 #define _APS_NEXT_CONTROL_VALUE         1290
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

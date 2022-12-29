@@ -125,13 +125,14 @@ class CMimeCodeBase
 public:
 	CMimeCodeBase() :
 		m_pbInput(NULL),
-		m_nInputSize(0),
+		m_nInputSize(0), m_pbData(0),
 		m_bIsEncoding(false) {}
 
 public:
 	void SetInput(const char* pbInput, int nInputSize, bool bEncoding)
 	{
 		m_pbInput = (const unsigned char*) pbInput;
+		m_pbData = (unsigned char*)m_pbInput;
 		m_nInputSize = nInputSize;
 		m_bIsEncoding = bEncoding;
 	}
@@ -143,6 +144,12 @@ public:
 	{
 		return m_bIsEncoding ? Encode(pbOutput, nMaxSize) : Decode(pbOutput, nMaxSize);
 	}
+
+	const unsigned char* GetInputDataPos()
+	{ 
+		return m_pbData;
+	}
+
 
 protected:
 	// overrides
@@ -161,6 +168,7 @@ protected:
 
 protected:
 	const unsigned char* m_pbInput;
+	const unsigned char* m_pbData;
 	int m_nInputSize;
 	bool m_bIsEncoding;
 };

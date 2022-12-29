@@ -32,6 +32,12 @@
 
 class SimpleString;
 
+typedef struct {
+	UINT m_charsetId;
+	char* m_charset;
+	char* m_info;
+} CP2NM;
+
 class TextUtilsEx
 {
 public:
@@ -45,6 +51,7 @@ public:
 	static UINT Str2PageCode(const  char* PageCodeStr);
 	// Str2Ansi converts str encoded with strCodePage -> CP_ACP i.e. to system default Windows ANSI code page, can be different on different computers.
 	static DWORD Str2Ansi(CString &str, UINT strCodePage);  
+	static DWORD Str2PageCode(CString& str, UINT strCodePage, UINT toPageCode);
 	//
 	static BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff);
 	// Str2CodePage converts str encoded using strCodePage -> outCodePage or to CP_UTF8 if outCodePage == 0
@@ -73,11 +80,15 @@ public:
 	static void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out);
 	static void EncodeAsHtml(const char *in, int inLength, SimpleString *out);
 	static void EncodeAsHtmlText(const char *in, int inLength, SimpleString *out);
+	//
 	static void delete_charset2Id();
 	static UINT charset2Id(const char *char_set);
 	static void delete_id2charset();
 	static BOOL id2charset(UINT id, std::string &charset);
+	static BOOL Id2LongInfo(UINT id, CString& codePageInfo);
+	static BOOL GetCodePageInfo(UINT codePage, CP2NM &cpInfo);
 	static int showCodePageTable(CString &path);
+	//
 	static BOOL isNumeric(CString &str);
 	static char *strchar(char *beg, char *end, char c);
 	static char *findOneOf(char *beg, char *end, char *charList);
@@ -137,8 +148,4 @@ public:
 	static void TraceStringArray(CStringArray &a);
 };
 
-typedef struct {
-	UINT m_charsetId;
-	char *m_charset;
-	char *m_info;
-} CP2NM;
+

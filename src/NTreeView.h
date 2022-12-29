@@ -182,13 +182,14 @@ class MySimpleDeque;
 class GmailLabel
 {
 public:
-	GmailLabel(CString &label, CString &mappedToLabel);
+	GmailLabel(CString &label, CString &mappedToLabel, CString &mappedLabelPath);
 	~GmailLabel();
 
 	dlink_node<GmailLabel> m_hashMapLink;
 	dlink_node<GmailLabel> m_hashMapLinkToMappedLabel;
-	CString m_label;
-	CString m_mappedToLabel;
+	CString m_mappedLabelPath;  // mapped all sublabels
+	CString m_label;  // raw label
+	CString m_mappedToLabel;   // mapped label
 	MySimpleDeque *m_ptrList;
 };
 

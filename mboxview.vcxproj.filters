@@ -190,6 +190,9 @@
     <ClCompile Include="src\DevelopmentCreateArchive.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\PageCodeListDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -391,6 +394,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\DevelopmentCreateArchive.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PageCodeListDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -31,6 +31,7 @@
 #include "TextUtilsEx.h"
 #include "SimpleString.h"
 #include <algorithm>
+#include "FileUtils.h"
 
 #if 1
 void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
@@ -337,7 +338,14 @@ UINT TextUtilsEx::Str2PageCode(const  char* PageCodeStr)
 
 // TODO: Find time to reduce number of conversion functions, duplicates
 
-DWORD TextUtilsEx::Str2Ansi(CString &str, UINT strCodePage)
+DWORD TextUtilsEx::Str2Ansi(CString& str, UINT strCodePage)
+{
+	UINT toPageCode = CP_ACP;
+	DWORD retCode = TextUtilsEx::Str2PageCode(str, strCodePage, toPageCode);
+	return retCode;
+}
+
+DWORD TextUtilsEx::Str2PageCode(CString &str, UINT strCodePage, UINT toPageCode)
 {
 	int len = str.GetLength() * 4 + 2;
 	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
@@ -348,13 +356,15 @@ DWORD TextUtilsEx::Str2Ansi(CString &str, UINT strCodePage)
 		const DWORD error = ::GetLastError();
 		return error;
 	}
-	char * buff1 = (char *)malloc(len1 + 2); // or could  call WideCharToMultiByte first to get the required length
-	int len2 = WideCharToMultiByte(CP_ACP, 0, buff, len1, buff1, len1 + 1, NULL, NULL);
+	int outlen = 4 * len1 + 2;
+	char * buff1 = (char *)malloc(outlen); // or could  call WideCharToMultiByte first to get the required length
+	int len2 = WideCharToMultiByte(toPageCode, 0, buff, len1, buff1, outlen, NULL, NULL);
 	if (len2 == 0) {
 		free(buff);
 		free(buff1);
 		// error - implement error log file
 		const DWORD error = ::GetLastError();
+		CString errText = FileUtils::GetLastErrorAsString();
 		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
 		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
 		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
@@ -714,7 +724,7 @@ CP2NM cp2name[] = {
 	{ 1201 , "unicodeFFFE" , "Unicode (Big-Endian)" },
 	{ 1250 , "windows-1250" , "Central European (Windows)" },
 	{ 1251 , "windows-1251" , "Cyrillic (Windows)" },
-	{ 1252 , "Windows-1252" , "Western European (Windows)" },
+	{ 1252 , "Windows-1252" , "ANSI Latin1; Western European (Windows)" },
 	{ 1253 , "windows-1253" , "Greek (Windows)" },
 	{ 1254 , "windows-1254" , "Turkish (Windows)" },
 	{ 1255 , "windows-1255" , "Hebrew (Windows)" },
@@ -1001,6 +1011,42 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	return 1;
 }
 
+BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString &codePageInfo)
+{
+	CP2NM* item;
+	//CString codePageInfo;
+	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+	for (int i = 0; i < cp2name_size; i++)
+	{
+		item = &cp2name[i];
+		if (codePage == item->m_charsetId)
+		{
+			codePageInfo.Empty();
+			codePageInfo.Format("%s %s", item->m_charset, item->m_info);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL TextUtilsEx::GetCodePageInfo(UINT codePage, CP2NM& cpInfo)
+{
+	CP2NM* item;
+	//CString codePageInfo;
+	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+	for (int i = 0; i < cp2name_size; i++)
+	{
+		item = &cp2name[i];
+		if (codePage == item->m_charsetId)
+		{
+			cpInfo = *item;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
 BOOL TextUtilsEx::isNumeric(CString &str) {
 	int i = 0;
 	if (str[i] == '-')
@@ -1219,7 +1265,9 @@ void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStrin
 	a.RemoveAll();
 	strToken = strIn.Tokenize(delim, position);
 	while (!strToken.IsEmpty()) {
-		a.Add(strToken);
+		strToken.Trim(" \t");
+		if (!strToken.IsEmpty())
+			a.Add(strToken);
 		strToken = strIn.Tokenize(delim, position);
 	}
 }
@@ -1246,7 +1294,10 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 			else if (c == del)  // separator
 				; // state = notInsideDoubleQuotes;  // stay inHunt
 			else if (c == '"')
+			{
 				state = insideDoubleQuotes;
+				//token.AppendChar(c);  // doesn't work, best is to ignore
+			}
 			else if ((c != del) && (c != '"'))  // No need to check just Append
 			{
 				state = notInsideDoubleQuotes;
@@ -1273,7 +1324,8 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 			else
 			{
 				token.Trim(" \t");
-				a.Add(token);
+				if (!token.IsEmpty())
+					a.Add(token);
 				token.Empty();
 				state = inHunt;
 			}
@@ -1295,7 +1347,8 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 				else
 				{
 					token.Trim(" \t");
-					a.Add(token);
+					if (!token.IsEmpty())
+						a.Add(token);
 					token.Empty();
 					state = inHunt;
 				}
