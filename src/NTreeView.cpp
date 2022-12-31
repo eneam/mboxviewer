@@ -2287,6 +2287,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			return;
 		}
 
+		pListView->m_path = linfoNew->m_filePath;
 		pListView->m_path_label = linfoNew->m_listFilePath;
 		MboxMail::s_path_label = linfoNew->m_listFilePath;
 
@@ -2327,7 +2328,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		lastDataPath = MboxMail::GetLastDataPath();
 
 		//MboxMail::nWhichMailList = IDC_FOLDER_LIST;
-		int retval = pListView->LoadLabelListFile_v2(linfoNew->m_listFilePath, linfoNew->m_label);
+		int retval = pListView->LoadLabelListFile_v2(linfoNew->m_listFilePath, linfoNew->m_label, linfoNew->m_filePath);
 		if (retval < 0)
 		{
 #if 1
@@ -3391,10 +3392,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	BOOL isLabel = FALSE;
+	LabelInfo* linfo = 0;
+	DWORD nId = 0;
 	if (hItem)
 	{
-		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
-		LabelInfo *linfo = m_labelInfoStore.Find(nId);
+		nId = (DWORD)m_tree.GetItemData(hItem);
+		linfo = m_labelInfoStore.Find(nId);
 		if (linfo && !linfo->m_listFilePath.IsEmpty())
 			isLabel = TRUE;
 	}
@@ -3536,12 +3539,40 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString Label;
 		int retLabel = menu.GetMenuString(M_DatabaseLocation_Id, Label, nFlags);
 
-		CString path = MboxMail::GetLastDataPath();
-		//if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+		if (linfo)
 		{
-			HWND h = GetSafeHwnd();
-			HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-			CMainFrame::CheckShellExecuteResult(result, h);
+			if (linfo->m_nodeType == LabelInfo::MailLabel)
+			{
+				CString path = linfo->m_listFilePath;
+				if (FileUtils::fileExists(path))
+				{
+					if (FileUtils::BrowseToFile(path) == FALSE) {  // TODO: s_path error checking ??
+						HWND h = GetSafeHwnd();
+						HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+						CMainFrame::CheckShellExecuteResult(result, h);
+					}
+				}
+			}
+			else
+			{
+				CString path = MboxMail::GetLastDataPath();
+				//if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+				{
+					HWND h = GetSafeHwnd();
+					HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+					CMainFrame::CheckShellExecuteResult(result, h);
+				}
+			}
+		}
+		else
+		{
+			CString path = MboxMail::GetLastDataPath();
+			//if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+			{
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+				CMainFrame::CheckShellExecuteResult(result, h);
+			}
 		}
 	}
 	break;
@@ -5576,7 +5607,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 				if (FileUtils::PathFileExist(emptyPath))
 				{
 					CString gLabel;
-					int retv = pListView->GetLabelFromLabelListFile_v2(emptyPath, gLabel);
+					int retv = pListView->GetLabelFromLabelListFile_v2(emptyPath, gLabel, dataFilePath);
 					if (retv < 0)
 					{
 						MboxMail::assert_unexpected();
@@ -5646,7 +5677,7 @@ int NTreeView::ShowGmailLabels_internal(HTREEITEM hItem, CString &listFilePath, 
 			FileUtils::GetFileBaseName(fileName, label);  
 
 			CString gLabel;
-			int retv = pListView->GetLabelFromLabelListFile_v2(filePath, gLabel);
+			int retv = pListView->GetLabelFromLabelListFile_v2(filePath, gLabel, dataFilePath);
 			if (retv < 0)
 			{
 				MboxMail::assert_unexpected();

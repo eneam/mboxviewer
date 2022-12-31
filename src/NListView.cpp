@@ -8036,7 +8036,8 @@ void NListView::RunFindAdvancedOnSelectedMail(int iItem)
 }
 
 #define MAIL_LIST_VERSION_BASE  0x73215500
-#define MAIL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+1)
+#define MAIL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+2)
+#define MAIL_LABEL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+3)
 
 int NListView::PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly)
 {
@@ -10536,9 +10537,6 @@ void NListView::OnTimer(UINT_PTR nIDEvent)
 	//CWnd::OnTimer(nIDEvent);
 }
 
-#define MAIL_LIST_VERSION2  (MAIL_LIST_VERSION_BASE+2)
-#define MAIL_LABEL_LIST_VERSION  (MAIL_LIST_VERSION_BASE+100)
-
 // TODO: Please define the naming standard to end this name nightmare  !!!!!!
 int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 {
@@ -10655,7 +10653,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	pos = 0;
 	retval = sz.GetReadPointer(pos);
 
-	if (version != MAIL_LIST_VERSION2)
+	if (version != MAIL_LIST_VERSION)
 	{
 		sz.close();
 
@@ -10863,7 +10861,7 @@ int NListView::SaveAsMboxListFile_v2()
 
 	// Create mboxlist file to allow reload of archive file list
 
-	sz.writeInt(MAIL_LIST_VERSION2);			// version
+	sz.writeInt(MAIL_LIST_VERSION);			// version
 	//sz.writeString(mboxFile);  // TODO: ??
 	// main mbox mail file size other mbox files are derived/contain subset
 	sz.writeInt64(MboxMail::s_fSize);	
@@ -15483,7 +15481,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 
 	// Create mboxlist file to allow reload of archive file list
 
-	sz.writeInt(MAIL_LIST_VERSION2);			// version
+	sz.writeInt(MAIL_LIST_VERSION);			// version
 	//sz.writeString(mboxFile);  // TODO: ??
 	sz.writeInt64(MboxMail::s_fSize);	// root mail file size
 	_int64 mailFileSize = 0; //  -1;  //  FileSize(mboxFilePath);  // we don't always create new mail archive and mail list
@@ -15923,7 +15921,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		return -1;
 	}
 
-	if (version != MAIL_LIST_VERSION2)
+	if (version != MAIL_LIST_VERSION)
 	{
 		sz.close();
 
@@ -18684,7 +18682,7 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 
 	// Create mboxlist file to allow reload of archive file list
 
-	sz.writeInt(MAIL_LIST_VERSION2);			// version
+	sz.writeInt(MAIL_LIST_VERSION);			// version
 	//sz.writeString(mboxFile);  // TODO: ??
 	// main mbox mail file size other mbox files are derived/contain subset
 	sz.writeInt64(mboxFileSize);
@@ -18836,7 +18834,7 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &l
 	return 1;
 }
 
-int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
+int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, CString &mboxFilePath)
 {
 	int ret = 1;  //OK
 
@@ -18880,7 +18878,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 
 	if (!FileUtils::PathFileExist(listFilePath))
 	{
-		CString txt = _T("Mail List File \"") + listFilePath;
+		CString txt = _T("Mail Label List File \"") + listFilePath;
 		txt += _T("\" doesn't exist.\nCan't reload.");
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -18890,7 +18888,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	SerializerHelper sz(listFilePath);
 	if (!sz.open(FALSE)) {
 		CString lastError = FileUtils::GetLastErrorAsString();
-		CString txt = _T("Could not create \"") + listFilePath + _T("\"\n");
+		CString txt = _T("Could not open \"") + listFilePath + _T("\"\n");
 		txt += _T("Error: ") + lastError + "\n";
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
@@ -18902,8 +18900,8 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	_int64 mboxFileSize;
 	int mailListCnt;
 
-	CString txt = _T("Mail list file\n\"") + listFilePath;
-	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease refresh Gmail Labels.");
+	CString txt = _T("Mail label list file\n\"") + listFilePath;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.");
 
 	if (!sz.readInt(&version)) {
 		sz.close();
@@ -18911,16 +18909,22 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 		return -1;
 	}
 
-	if (version != MAIL_LABEL_LIST_VERSION)
+	int mailLabelListVersion = MAIL_LABEL_LIST_VERSION;
+	int versionBase = MAIL_LIST_VERSION_BASE;
+	int expectedVersion = mailLabelListVersion - versionBase;
+	int listFileVersion = version - versionBase;
+	if (version != mailLabelListVersion)
 	{
 		sz.close();
 
-		CString text = _T("Mail list file\n\"") + listFilePath;
+		CString text = _T("Mail label list file\n\n\"") + listFilePath;
 		CString strVersion;
-		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
-		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
-		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
-		text += strVersion + "\".\nCan't reload.\nPlease refresh Gmail Labels.";
+
+		strVersion.Format(_T("%d"), listFileVersion);
+		text += _T("\".\n\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), expectedVersion);
+		text += strVersion + "\".\nCan't reload.\nPlease select Refresh Gmail Labels";
+		text += _T(" for mbox mail file\n\n") + mboxFilePath;
 
 		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -19040,7 +19044,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName)
 	return ret;
 }
 
-int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLabel)
+int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLabel, CString& mboxFilePath)
 {
 	int ret = 1;  //OK
 
@@ -19085,7 +19089,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLab
 
 	if (!FileUtils::PathFileExist(listFilePath))
 	{
-		CString txt = _T("Mail List File \"") + listFilePath;
+		CString txt = _T("Mail Label List File \"") + listFilePath;
 		txt += _T("\" doesn't exist.\nCan't reload.");
 		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -19096,7 +19100,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLab
 	if (!sz.open(FALSE))
 	{
 		CString lastError = FileUtils::GetLastErrorAsString();
-		CString txt = _T("Could not create \"") + listFilePath + _T("\"\n");
+		CString txt = _T("Could not open \"") + listFilePath + _T("\"\n");
 		txt += _T("Error: ") + lastError + "\n";
 		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
@@ -19108,8 +19112,9 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLab
 	_int64 mboxFileSize;
 	int mailListCnt;
 
-	CString txt = _T("Mail list file\n\"") + listFilePath;
-	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease refresh Gmail Labels.");
+	CString txt = _T("Mail label list file\n\"") + listFilePath;
+	txt += _T("\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.");
+	txt += _T("\nfor mbox mail file\n\n") + mboxFilePath;
 
 	if (!sz.readInt(&version))
 	{
@@ -19118,16 +19123,22 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLab
 		return -1;
 	}
 
-	if (version != MAIL_LABEL_LIST_VERSION)
+	int mailLabelListVersion = MAIL_LABEL_LIST_VERSION;
+	int versionBase = MAIL_LIST_VERSION_BASE;
+	int expectedVersion = mailLabelListVersion - versionBase;
+	int listFileVersion = version - versionBase;
+	if (version != mailLabelListVersion)
 	{
 		sz.close();
 
-		CString text = _T("Mail list file\n\"") + listFilePath;
+		CString text = _T("Mail label list file\n\n\"") + listFilePath;
 		CString strVersion;
-		strVersion.Format(_T("%d"), (version - MAIL_LIST_VERSION_BASE));
-		text += _T("\".\nhas incompatible version\"") + strVersion + "\". Expected version \"";
-		strVersion.Format(_T("%d"), (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
-		text += strVersion + "\".\nCan't reload.\nPlease refresh Gmail Labels.";
+
+		strVersion.Format(_T("%d"), listFileVersion);
+		text += _T("\".\n\nhas incompatible version\"") + strVersion + "\". Expected version \"";
+		strVersion.Format(_T("%d"), expectedVersion);
+		text += strVersion + "\".\nCan't reload.\nPlease select Refresh Gmail Labels";
+		text += _T(" for mbox mail file\n\n") + mboxFilePath;
 
 		int answer = MessageBox(text, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
