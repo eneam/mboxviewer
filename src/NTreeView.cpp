@@ -462,6 +462,7 @@ int NTreeView::IsValidMailFile(char *data, int datalen)
 	BOOL bSubject = FALSE;
 	BOOL bMimeVersion = FALSE;
 	BOOL bMessageID = FALSE;
+	BOOL bDate = FALSE;
 
 	char *p = data;
 	char *e = data + datalen;
@@ -561,6 +562,10 @@ int NTreeView::IsValidMailFile(char *data, int datalen)
 			{
 				bSubject = TRUE;
 			}
+			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cDate, cDateLen) == 0)
+			{
+				bDate = TRUE;
+			}
 
 			maxLineLen = maxLineLenght;
 			p = MimeParser::EatNewLine(p, e, maxLineLen);
@@ -574,17 +579,25 @@ int NTreeView::IsValidMailFile(char *data, int datalen)
 	if (!bMessageID)
 		int deb = 1;
 
-	if (bFrom)
+	if (CMainFrame::m_relaxedMboxFileValidation == FALSE)
 	{
-		if ((bMimeVersion && (bMboxFrom || bMessageID)) ||
-			(bMboxFrom && bMessageID) ||
-			((bFrom && bSubject) && (bMimeVersion || bMessageID)) ||
-			((bTo && bSubject) && (bMimeVersion || bMessageID))
-			)
-			if (bMboxFrom)
-				return 1;
-			else
-				return 2;
+		if (bFrom)
+		{
+			if ((bMimeVersion && (bMboxFrom || bMessageID)) ||
+				(bMboxFrom && bMessageID) ||
+				((bFrom && bSubject) && (bMimeVersion || bMessageID)) ||
+				((bTo && bSubject) && (bMimeVersion || bMessageID))
+				)
+				if (bMboxFrom)
+					return 1;
+				else
+					return 2;
+		}
+	}
+	else
+	{
+		if (bFrom || bTo || bSubject || bDate)
+			return 1;
 	}
 	if (endOfHeaderFound == FALSE)
 		return -1;

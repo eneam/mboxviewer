@@ -69,6 +69,8 @@ CommandLineParms CMainFrame::m_commandLineParms;
 
 ColorStylesDB CMainFrame::m_ColorStylesDB;
 
+BOOL CMainFrame::m_relaxedMboxFileValidation =  FALSE;
+
 #define MaxShellExecuteErrorCode 32
 
 MBoxViewerDB::MBoxViewerDB()
@@ -275,6 +277,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DUMPRAWDATA, &CMainFrame::OnDevelopmentoptionsDumprawdata)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DEVELO, &CMainFrame::OnDevelopmentoptionsDevelo)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM, &CMainFrame::OnDeveloperOptionsAboutSystem)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, &CMainFrame::OnDevelopmentoptionsRelaxmailfilevalidation)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -497,6 +500,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		; // SetFocus();
 		//OnSetFocus(0);
 	}
+
+	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("relaxedMboxFileValidation"));
+	CMenu* menu = this->GetMenu();
+	if (CMainFrame::m_relaxedMboxFileValidation)
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
+	else
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+
 
 	CToolTipCtrl* toolTpis = m_pTreeView->m_tree.GetToolTips();
 	if (toolTpis)
@@ -5550,4 +5561,19 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	int answer = MessageBox(aboutSystem, _T("Info"), MB_APPLMODAL | MB_OK);
 
 	int deb = 1;
+}
+
+
+void CMainFrame::OnDevelopmentoptionsRelaxmailfilevalidation()
+{
+	// TODO: Add your command handler code here
+	m_relaxedMboxFileValidation = !m_relaxedMboxFileValidation;
+
+	CMenu* menu = this->GetMenu();
+	if (CMainFrame::m_relaxedMboxFileValidation)
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
+	else
+		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("relaxedMboxFileValidation"), (WORD)m_relaxedMboxFileValidation);
 }

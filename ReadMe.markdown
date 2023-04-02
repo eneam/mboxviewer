@@ -36,7 +36,9 @@ Features
 
 License
 -----
-Mbox viewer is a free software. Most of it is licensed under AGPLv3. Small parts are licenced under CPOL 1.02.
+Mbox viewer is a free software. Most of it is licensed under AGPLv3.
+Small parts are licenced under CPOL 1.02.
+MailKit open source library linked to connect to SMTP servers is licensed under MIT.
 See the LICENCE.txt file included in the distribution for further details.
 
 NOTE: The source code and executable were released under GPLv2 on Sourceforge since the project inception as shown on the Summary page.
@@ -46,6 +48,12 @@ The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to
 
 Changes
 ---
+
+v 1.0.3.38
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;
+ - Added an option to enable relaxed mail file validation;
+ - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.37
 

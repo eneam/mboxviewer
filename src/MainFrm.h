@@ -271,6 +271,8 @@ public:
 
 	static void OpenHelpFile(CString &filePath, HWND h = NULL);
 
+	static BOOL m_relaxedMboxFileValidation;
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -413,6 +415,7 @@ public:
 	afx_msg void OnDevelopmentoptionsDumprawdata();
 	afx_msg void OnDevelopmentoptionsDevelo();
 	afx_msg void OnDeveloperOptionsAboutSystem();
+	afx_msg void OnDevelopmentoptionsRelaxmailfilevalidation();
 };
 
 /////////////////////////////////////////////////////////////////////////////
