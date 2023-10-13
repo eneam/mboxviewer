@@ -3703,6 +3703,49 @@ MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	return strcmp(strItem1, strItem2);
 }
 
+int NListView::AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyCnt, CString &bdy, int textType)
+{
+	if (bodyCnt <= 0)
+		return 1;
+
+	bool isInlineAttachment = MboxCMimeHelper::IsInlineAttachment(pBP);
+
+	if (isInlineAttachment)
+	{
+		CString name;
+		CString fileName;
+		CString disposition;
+
+		MboxCMimeHelper::Name(pBP, name);
+		MboxCMimeHelper::Filename(pBP, fileName);
+		CString attachmentName = name;
+		if (fileName)
+			attachmentName = fileName;
+
+		if (!attachmentName.IsEmpty())
+		{
+			if (textType == 0)
+			{
+				bdy.Append("\n\n\n----- ");
+				bdy.Append(attachmentName);
+				bdy.Append(" ---------------------\n\n");
+			}
+			else
+			{
+				CString bdycharset = "UTF-8"; // FIXMEFIXME
+				//bdy.Append(    "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">");
+				bdy.Append("\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
+				bdy.Append(bdycharset);
+				bdy.Append("\"><body><span><br><br><br>----- ");
+				bdy.Append(attachmentName);
+				bdy.Append(" ---------------------<br><br>");
+				bdy.Append("</span></body></html>\r\n");
+			}
+		}
+	}
+	return 1;
+}
+
 void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 {
 	CMainFrame *pFrame = 0;
@@ -3946,6 +3989,7 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 		if (contentTypeExtension.CompareNoCase("octet-stream") == 0)
 			isOctetStream = TRUE;
 
+		// What is this? Strange calculations. Lukily it is not used, just information.
 		CString contentIdExtension;;
 		CString contentIdMain = contentType.Left(pos);
 		pos = contentType.ReverseFind('/');
@@ -3957,7 +4001,12 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 
 		bool isText = pBP->IsText();
 		bool isMessage = pBP->IsMessage();
+		bool isAttachmentDisposition = MboxCMimeHelper::IsAttachment(pBP);
+		bool isInlineDisposition = MboxCMimeHelper::IsInlineAttachment(pBP);
 		bool isAttachment = MboxCMimeHelper::IsAttachment(pBP);
+		// Temp fix for v1.0.3.39. Make better fix in v1.0.3.40 UNICODE version
+		if (isText && isAttachment && isInlineDisposition)
+			isAttachment = false;
 		bool isInlineAttachment = MboxCMimeHelper::IsInlineAttachment(pBP);
 		if (isInlineAttachment)
 			int deb = 1;
@@ -4065,14 +4114,19 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					}
 					else
 					{
+						int bodyCnt = partsCnt;
+						int textType = 0;
+						AppendInlineAttachmentNameSeparatorLine(pBP, bodyCnt, bdy, textType);
+
 						if (reencodeCurrent || reencodeNew)
 						{
 							SimpleString *result;
 							if (reencodeCurrent)
 							{
-								// TODO: investigate memory leak when using SimpleStringWrapper
-								// For now use instead as below
-								//SimpleStringWrapper str((char*)(LPCSTR)bdy, bdy.GetLength());
+								//SimpleString* inbufPtr;
+								//SimpleStringWrapper  inbuf(pData, datalen);
+								//inbufPtr = inbuf.getBasePtr();
+
 								SimpleString &str = *MboxMail::m_largelocal3;
 								str.Clear();
 								str.Append((char*)(LPCSTR)bdy, bdy.GetLength());
@@ -4093,13 +4147,14 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 									charset = "utf-8";
 								}
 								else
-									; // don't tocy bdy
+									; // don't touch bdy
 							}
 							if (reencodeNew)
 							{
-								// TODO: investigate memory leak when using SimpleStringWrapper
-								// For now use instead as below
-								//SimpleStringWrapper str(contentData, contentDataLength);
+								//SimpleString* inbufPtr;
+								//SimpleStringWrapper  inbuf(pData, datalen);
+								//inbufPtr = inbuf.getBasePtr();
+
 								SimpleString &str = *MboxMail::m_largelocal3;
 								str.Clear();
 								str.Append(contentData, contentDataLength);
@@ -4163,7 +4218,12 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 					bdy.ReleaseBuffer();
 				}
 				else
+				{
+					int bodyCnt = partsCnt;
+					int textType = 1;
+					AppendInlineAttachmentNameSeparatorLine(pBP, bodyCnt, bdy, textType);
 					bdy.Append(contentData, contentDataLength);
+				}
 
 				partsCnt++;
 				if (partsCnt > 1)
@@ -4180,7 +4240,8 @@ void NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 			}
 			TRACE("ext=%s charset=%s\n", (LPCSTR)ext, (LPCSTR)charset);
 		}
-		else
+		// else // Commented to handle inline text as text and attachment
+		if (MboxCMimeHelper::IsAttachment(pBP))
 		{
 			// Attachment file names mess
 			// https://blog.nodemailer.com/2017/01/27/the-mess-that-is-attachment-filenames/
@@ -6554,9 +6615,10 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 				{
 					DWORD tc_start = GetTickCount();
 
-					// TODO: investigate memory leak reported by VS when using SimpleStringWrapper
-					// For now use instead as below
-					// SimpleStringWrapper  inbuf(pData, datalen);
+					//SimpleString* inbufPtr;
+					//SimpleStringWrapper  inbuf(pData, datalen);
+					//inbufPtr = inbuf.getBasePtr();
+
 					SimpleString &inbuf = *MboxMail::m_largelocal1;
 					inbuf.Clear();
 					inbuf.Append(pData, datalen);
@@ -14819,7 +14881,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 		body = m->m_ContentDetailsArray[j];
 
 		BOOL showAttachment = FALSE;
-		if (body->IsAttachment())
+		if (body->IsAttachment() || body->IsInlineAttachment())
 		{
 			if (showAllAttachments || !body->m_isEmbeddedImage)
 				showAttachment = TRUE;
@@ -15154,7 +15216,7 @@ int NListView::PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *ou
 		body = m->m_ContentDetailsArray[j];
 
 		BOOL showAttachment = FALSE;
-		if (body->IsAttachment())
+		if (body->IsAttachment() || body->IsInlineAttachment())
 		{
 			if (showAllAttachments || !body->m_isEmbeddedImage)
 				showAttachment = TRUE;

@@ -234,6 +234,7 @@ public:
 	BOOL m_bInFind;
 	HTREEITEM m_which;
 	void SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);
+	int AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyCnt, CString& bdy, int textType);
 	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	CString m_searchString;
 	int m_lastFindPos;

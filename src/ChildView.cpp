@@ -166,6 +166,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 
 	BOOL bEmlPrewviewMode = CMainFrame::m_commandLineParms.m_bEmlPreviewMode;
+	BOOL bDirectFileOpenMode = CMainFrame::m_commandLineParms.m_bDirectFileOpenMode;
 
 	if (bEmlPrewviewMode)
 		treeSize.cx = 0;
@@ -197,7 +198,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else if (m_msgViewPosition == 3)   // windows on left
 	{
 		msgSize.cx = msg_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode)
+		if (bEmlPrewviewMode && !bDirectFileOpenMode)
 			msgSize.cx = frameSize.cx*2;
 		msgSize.cy = 200;
 	}
@@ -220,20 +221,23 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	{
 		listSize.cx = frameSize.cx - treeSize.cx;
 		listSize.cy = list_frameCy_TreeNotInHide;
-		if (bEmlPrewviewMode)
+		if (bEmlPrewviewMode && !bDirectFileOpenMode)
 			listSize.cy = 0;
+		else if (bDirectFileOpenMode)
+			listSize.cy = 90;
+
 	}
 	else if (m_msgViewPosition == 2)   // windows on right
 	{
 		listSize.cx = list_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode)
+		if (bEmlPrewviewMode && !bDirectFileOpenMode)
 			listSize.cx = 0;
 		listSize.cy = 200;
 	}
 	else if (m_msgViewPosition == 3)   // windows on left
 	{
 		listSize.cx = list_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode)
+		if (bEmlPrewviewMode && !bDirectFileOpenMode)
 			listSize.cx = 0;
 		listSize.cy = 200;
 	}

@@ -83,6 +83,7 @@ struct CommandLineParms
 	{
 		m_bEmlPreviewMode = FALSE;  m_progressBarDelay = -1; 
 		m_exportEml = FALSE; m_traceCase = 0; m_bEmlPreviewFolderExisted = FALSE;
+		m_hasOptions = FALSE; m_bDirectFileOpenMode = FALSE;
 	}
 	void Clear()
 	{
@@ -94,6 +95,7 @@ struct CommandLineParms
 	}
 	int VerifyParameters();
 	//
+	BOOL m_hasOptions;
 	CString m_allCommanLineOptions;
 	//
 	CString m_mboxListFilePath;
@@ -103,6 +105,8 @@ struct CommandLineParms
 	CString m_mboxFolderPath;
 	CString m_mboxFileNameOrPath;
 	BOOL m_bEmlPreviewFolderExisted;
+	// only file name as cpmmand line param
+	BOOL m_bDirectFileOpenMode;
 	//
 	int m_progressBarDelay;
 	BOOL m_exportEml;

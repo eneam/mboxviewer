@@ -124,3 +124,35 @@ bool MboxCMimeHelper::IsInlineAttachment(CMimeBody* pBP)
 	else
 		return false;
 }
+
+bool MboxCMimeHelper::IsAttachmentDisposition(CMimeBody* pBP)
+{
+	CString name;
+	CString fileName;
+	CString disposition;
+
+	Name(pBP, name);
+	Filename(pBP, fileName);
+	GetContentDisposition(pBP, disposition);
+	int dispositionMatchRet = disposition.CompareNoCase("attachment");
+	if (dispositionMatchRet == 0)
+		return true;
+	else
+		return false;
+}
+
+bool MboxCMimeHelper::IsInlineDisposition(CMimeBody* pBP)
+{
+	CString name;
+	CString fileName;
+	CString disposition;
+
+	Name(pBP, name);
+	Filename(pBP, fileName);
+	GetContentDisposition(pBP, disposition);
+	int dispositionMatchRet = disposition.CompareNoCase("inline");
+	if (dispositionMatchRet == 0)
+		return true;
+	else
+		return false;
+}

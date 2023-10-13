@@ -220,6 +220,7 @@ public:
 	bool m_isEmbeddedImage;
 
 	bool IsAttachment();
+	bool IsInlineAttachment();
 };
 
 unsigned long StrHash(const char* buf, const UINT length);
@@ -619,6 +620,7 @@ public:
 	//
 	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
 	static int GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);
+	static int AppendInlineAttachmentNameSeparatorLine(MailBodyContent* body, int bodyCnt, SimpleString* outbuf, int textType);
 	//
 	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
 	static int GetMailBody_CMimeMessage(CMimeMessage &mail, int mailPosition, SimpleString *outbuf, UINT &pageCode);

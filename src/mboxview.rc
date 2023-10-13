@@ -797,7 +797,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,38
+ FILEVERSION 1,0,3,39
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -814,7 +814,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.38"
+            VALUE "FileVersion", "1.0.3.39"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"

@@ -163,15 +163,42 @@ UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
 bool MailBodyContent::IsAttachment()
 {
-	if (!m_attachmentName.IsEmpty() ||
+	// Temp fix in 1.0.3.39 for incorrect determination of attachment type. Review in v1.0.3.40 UNICODE
+	if (((m_contentType.CompareNoCase("text/html") == 0) || (m_contentType.CompareNoCase("text/plain") == 0)) &&
+		(m_contentDisposition.CompareNoCase("attachment") != 0))
+	{
+		return false;
+	}
+	// end fix
+	else if (!m_attachmentName.IsEmpty() ||
 		!m_contentId.IsEmpty() ||
 		!m_contentLocation.IsEmpty() ||
 		(m_contentDisposition.CompareNoCase("attachment") == 0)
 		)
+	{
 		return true;
+	}
 	else
 		return false;
 }
+
+bool MailBodyContent::IsInlineAttachment()
+{
+	// Temp fix in 1.0.3.39 for incorrect determination of attachment type. Review in v1.0.3.40 UNICODE
+	if (((m_contentType.CompareNoCase("text/html") == 0) || (m_contentType.CompareNoCase("text/plain") == 0))  &&
+		(m_contentDisposition.CompareNoCase("inline") == 0))
+	{
+		if (!m_attachmentName.IsEmpty() ||
+				!m_contentId.IsEmpty() ||
+				!m_contentLocation.IsEmpty())
+			return true;
+		else
+			return false;
+	}
+	else
+		return false;
+}
+
 
 struct MsgIdHash {
 public:
@@ -5161,7 +5188,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 		body = m->m_ContentDetailsArray[j];
 
 		BOOL showAttachment = FALSE;
-		if (body->IsAttachment())
+		if (body->IsAttachment() || body->IsInlineAttachment())
 		{
 			if (showAllAttachments || !body->m_isEmbeddedImage)
 				showAttachment = TRUE;
@@ -5429,7 +5456,7 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 		body = m->m_ContentDetailsArray[j];
 
 		BOOL showAttachment = FALSE;
-		if (body->IsAttachment())
+		if (body->IsAttachment() || body->IsInlineAttachment())
 		{
 			if (showAllAttachments || !body->m_isEmbeddedImage)
 				showAttachment = TRUE;
@@ -7192,6 +7219,38 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *o
 	return ret;
 }
 
+
+int MboxMail::AppendInlineAttachmentNameSeparatorLine(MailBodyContent* body, int bodyCnt, SimpleString* outbuf, int textType)
+{
+	if (bodyCnt > 0)
+	{
+		if (body->m_contentDisposition.CompareNoCase("inline") == 0)
+		{
+			if (!body->m_attachmentName.IsEmpty())
+			{
+				if (textType == 0)
+				{
+					outbuf->Append("\n\n\n----- ");
+					outbuf->Append((LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength());
+					outbuf->Append(" ---------------------\n\n");
+				}
+				else
+				{
+					CString bdycharset = "UTF-8"; // FIXMEFIXME
+					//outbuf->Append("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">");
+					outbuf->Append("\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
+					outbuf->Append((LPCSTR)bdycharset, bdycharset.GetLength());
+					outbuf->Append("\"><body><span><br><br><br>----- ");
+					outbuf->Append((LPCSTR)body->m_attachmentName, body->m_attachmentName.GetLength());
+					outbuf->Append(" ---------------------<br><br>");
+					outbuf->Append("</span></body></html>\r\n");
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textType)
 {
 	_int64 fileOffset;
@@ -7227,11 +7286,14 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 
 		body = m->m_ContentDetailsArray[j];
 
+#if 0
+		// Not correct if Content-Disposition is "inline"
 		if ((!body->m_attachmentName.IsEmpty()) || 
 			(body->m_contentDisposition.CompareNoCase("attachment") == 0)) 
 		{
 				continue;
 		}
+#endif
 		if (textType == 0)
 		{
 			if (body->m_contentType.CompareNoCase("text/plain") != 0)
@@ -7246,6 +7308,13 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 				continue;
 			}
 		}
+#if 1
+		//  Fix for content-type of type text 
+		if (body->m_contentDisposition.CompareNoCase("attachment") == 0)
+		{
+			continue;
+		}
+#endif
 
 		if (bodyCnt == 0)
 		{
@@ -7313,11 +7382,14 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 			{
 				int needLength = dlength + outbuf->Count();
 				outbuf->Resize(needLength);
+				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
 				char *outptr = outbuf->Data(outbuf->Count());
 
 				int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
 				if (retlen > 0)
+				{
 					outbuf->SetCount(outbuf->Count() + retlen);
+				}
 
 				// All below blocks are commented out.
 				// they were used to; test enhanced support for Gmal Labels
@@ -7459,6 +7531,7 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 			{
 				int needLength = dlength + outbuf->Count();
 				outbuf->Resize(needLength);
+				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
 				char *outptr = outbuf->Data(outbuf->Count());
 
 				int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
@@ -7483,8 +7556,11 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 		{
 			// in case we have multiple bodies of the same type ?? not sure it is valid case/concern
 			// asking for trouble ??
+			_ASSERTE((body->m_contentTransferEncoding.CompareNoCase("base64") != 0) &&
+				(body->m_contentTransferEncoding.CompareNoCase("quoted-printable") != 0));
 			if (!reencodeCurrent && !reencodeNew)
 			{
+				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
 				outbuf->Append(bodyBegin, bodyLength);
 			}
 			else
@@ -7492,6 +7568,10 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 				tmpbuf->Append(bodyBegin, bodyLength);
 			}
 		}
+
+		// reencodeCurrent and reencodeNew are always set to FALSE for HTML text block
+		if ((reencodeCurrent || reencodeNew) && (textType == 1))
+			_ASSERTE(FALSE);
 
 		if (reencodeCurrent || reencodeNew)
 		{
@@ -7514,6 +7594,7 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 				else
 					; // don't touch outbuf
 			}
+
 			if (reencodeNew)
 			{
 				SimpleString *wBuff = MboxMail::m_largelocal1;

@@ -32,6 +32,11 @@
 // Investigate and use standard CString instead  ?
 class SimpleString
 {
+protected:
+	SimpleString(int capacity, int grow_size, int count) {
+		m_data = 0;  m_count = 0;  m_grow_size = 0;
+		m_capacity = 0;
+	}
 public:
 #define DFLT_GROW_SIZE 16
 	SimpleString() { Initialize(0, DFLT_GROW_SIZE); }
@@ -62,7 +67,7 @@ public:
 	int Capacity() { return m_capacity; }
 	int Count() { return m_count; }
 	void SetCount(int count) {
-		ASSERT(count <= m_capacity); ASSERT(m_data);
+		ASSERT(count <= m_capacity); _ASSERTE(m_data);
 		m_count = count; m_data[count] = 0;
 	}
 	void Clear() {
@@ -144,16 +149,17 @@ public:
 
 
 // Read only wrapper around char* data and int count
-class SimpleStringWrapper : public SimpleString
+class SimpleStringWrapper : protected SimpleString
 {
 public:
-	SimpleStringWrapper(char *data, int count)
+	SimpleStringWrapper(char* data, int count) : SimpleString(0, 0, 0)
 	{
 		m_data = data;
 		m_count = count;
 	}
-	~SimpleStringWrapper() { m_data = 0;};
-	//char *Data() { return m_data; }
-	//int Count() { return m_count; }
+	~SimpleStringWrapper() { m_data = 0; };
+	char* Data() { return m_data; }
+	int Count() { return m_count; }
+	SimpleString* getBasePtr() { return this; }
 };
 

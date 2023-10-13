@@ -644,6 +644,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		return;
 	if (bFlag) 
 	{
+		CMainFrame::m_commandLineParms.m_hasOptions = TRUE;
 		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) 
 		{
 			CString openFolder = lpszParam + 7;
@@ -722,6 +723,7 @@ void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		else 
 		{
 			// Unknown argument
+			CMainFrame::m_commandLineParms.m_hasOptions = FALSE;
 			CString txt = _T("Invalid Command Line Option \"");
 			CString opt = lpszParam;
 			txt += opt 
@@ -841,6 +843,14 @@ BOOL CmboxviewApp::InitInstance()
 	{
 		MboxMail::ReleaseResources();
 		return FALSE;
+	}
+	else if (!CMainFrame::m_commandLineParms.m_hasOptions && !CMainFrame::m_commandLineParms.m_allCommanLineOptions.IsEmpty())
+	{
+		CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
+		CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim("\"");
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight("\\");
 	}
 	else
 	{

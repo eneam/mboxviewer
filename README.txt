@@ -1,6 +1,14 @@
 
 Changes
 ---
+
+v 1.0.3.39
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Enhanced handling of text/html and text/plain inline blocks as both the attachments and message text when required.;
+ - Enhanced MBox Viewer to open mail archive file directly by double-left-clicking on the file.; 
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.38
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests;

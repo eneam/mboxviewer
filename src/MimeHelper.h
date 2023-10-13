@@ -50,6 +50,8 @@ public:
 	//
 	static bool IsAttachment(CMimeBody* pBP);
 	static bool IsInlineAttachment(CMimeBody* pBP);
+	static bool IsAttachmentDisposition(CMimeBody* pBP);
+	static bool IsInlineDisposition(CMimeBody* pBP);
 protected:
 	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
 };
