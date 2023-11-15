@@ -36,6 +36,7 @@
 //
 
 #include <vector>
+#include <map>
 #include "Mime.h"
 #include "MimeCode.h"
 #include "FileUtils.h"
@@ -56,7 +57,7 @@ class SerializerHelper;
 class SimpleString;
 class NMsgView;
 
-BOOL SaveMails(LPCSTR cache, BOOL mainThread, CString &errorText);
+// BOOL SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText);  // FIXMEFIXME
 
 typedef CArray<int, int> MailIndexList;
 class MailBodyContent;
@@ -68,7 +69,7 @@ typedef MyMailArray MailArray;
 class HtmlAttribInfo
 {
 public:
-	HtmlAttribInfo(CString &name)
+	HtmlAttribInfo(CStringA &name)
 	{
 		m_name = name; m_quoted = FALSE; m_separator = 0; m_terminator = ' ';
 	}
@@ -83,12 +84,12 @@ public:
 		m_name.Empty(); m_value.Empty(); m_quoted = FALSE;  m_separator = 0; m_terminator = ' '; m_attribString.Empty();
 	}
 
-	CString m_name;
-	CString m_value;
+	CStringA m_name;
+	CStringA m_value;
 	BOOL m_quoted;
 	char m_separator;
 	char m_terminator;
-	CString m_attribString;
+	CStringA m_attribString;
 };
 
 class MailBodyInfo
@@ -96,8 +97,8 @@ class MailBodyInfo
 public:
 	MailBodyInfo() { m_index = 0; };
 	~MailBodyInfo() {};
-	CString m_CID;
-	CString m_imgFileName;
+	CStringA m_CID;
+	CStringA m_imgFileName;
 	int m_index;
 };
 
@@ -106,13 +107,27 @@ typedef MyCArray<MailBodyInfo*> MailBodyInfoArray;
 class AttachmentData
 {
 public:
-	AttachmentData() { m_nextId = 0;}
+	AttachmentData() {
+		m_nextId = 0; m_isEmbedded = FALSE; m_width = 0; m_height = 0; 
+		m_length = 0; m_crc = 0;
+	}
 	~AttachmentData() {}
 
 	CStringW m_nameW;
+	BOOL m_isEmbedded;
+	int m_width;
+	int m_height;
 	int m_nextId;
+	_int64 m_length;
+	_int64 m_crc;
 };
 
+typedef CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> AttachmentDB;
+typedef CArray<AttachmentData> AttachmentArray;
+
+
+// Allows to detect duplicate names. When duplication is detected, unique ID is returned to the caller
+// to enable caller to decide to create unique name or not
 class AttachmentMgr
 {
 public:
@@ -121,13 +136,68 @@ public:
 
 	void Clear();
 
-	CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> m_attachmentMap;
-	// Insert into DB if not present; append unique Id if name present
-	int GetValidName(CStringW &inName);
+	// Use std::map to reduce overhead // FIXME
+	// std::map<CStringW, AttachmentData> m_attachmentMap;
+
+	AttachmentDB m_attachmentMap;
+	AttachmentArray m_attachmentArray;
+
+	// Insert into DB if not present and return -1
+	// otherwise retrun >= 0
+
+	AttachmentData* GetAttachmentData(const CStringW& inName);
+	BOOL HasName(CStringW &inName);
+	void AddName(CStringW& inName, BOOL isEmbedded);
+	int InsertName(CStringW& inName, BOOL isEmbedded);
+	void Sort();
+	void PrintMap(CString& title);
+	void PrintArray(CString& title);
 };
 
-typedef CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> AttachmentDB;
+class EmbededImagesStats
+{
+public:
+	EmbededImagesStats() { Clear(); }
 
+	void Clear();
+
+	int m_EmbededImagesNoMatch;
+
+	int m_FoundMHtml;
+	int m_FoundMHtmlHtml;
+	int m_FoundUnexpectedMHtml = 0;
+
+	int m_Found = 0;
+	int m_FoundCid = 0;
+	int m_FoundHttp = 0;
+	int m_FoundHttps = 0;
+	int m_FoundMHtmlHttp = 0;
+	int m_FoundMHtmlHttps = 0;
+	int m_FoundData = 0;
+	int m_FoundLocalFile = 0;
+	//
+	int m_NotFound = 0;
+	int m_NotFoundCid = 0;
+	int m_NotFoundHttp = 0;
+	int m_NotFoundHttps = 0;
+	int m_NotFoundMHtmlHttp = 0;
+	int m_NotFoundMHtmlHttps = 0;
+	int m_NotFoundData = 0;
+	int m_NotFoundLocalFile = 0;
+};
+
+struct MailArchiveFileInfo
+{
+	int m_version;
+	_int64 m_fileSize;
+	_int64 m_oldestMailTime;
+	_int64 m_latestMailTime;
+	CStringA m_reservedString1;
+	CStringA m_reservedString2;
+	_int64 m_reservedInt1;
+	_int64 m_reservedInt2;
+	int m_mailCount;
+};
 
 class NListView : public CWnd
 {
@@ -157,6 +227,18 @@ public:
 
 // Implementation
 public:
+
+	// Global Vars -- FIXME
+	// avoid changes to multiple interfaces -- find better solution
+	// set/reset  in NListView::OnRClickSingleSelect: case S_PRINTER_Id and  case S_PRINTER_GROUP_Id:
+	// and in NListView::OnRClickMultipleSelect: case S_PRINTER_GROUP_Id: 
+	static BOOL m_fullImgFilePath;   // examined in NListView::UpdateInlineSrcImgPathEx
+	static BOOL m_fullImgFilePath_Config;
+	static BOOL m_appendAttachmentPictures;;
+	//
+	// Global Vars  -- FIXME
+
+	EmbededImagesStats m_EmbededImagesStats;
 
 	int m_frameCx_TreeNotInHide;
 	int m_frameCy_TreeNotInHide;
@@ -207,13 +289,13 @@ public:
 	// TESTING
 	BOOL MatchIfFieldFolded(int mailPosition, char *fld);
 	// 
-	int CheckMatch(int which, CString &searchString);
+	int CheckMatch(int which, CStringA &searchString);
 	
-	int MatchHeaderFldSingleAddress(int fldIndx, CString &fld, CFindAdvancedParams &params, int pos = 1);
-	int MatchHeaderFld(int fldIndx, CString &fld, CFindAdvancedParams &params, int pos = 1);
+	int MatchHeaderFldSingleAddress(int fldIndx, CStringA &fld, UINT hdrFldCodePage, CFindAdvancedParams &params, int pos = 1);
+	int MatchHeaderFld(int fldIndx, CStringA &fld, UINT hdrFldCodePage, CFindAdvancedParams &params, int pos = 1);
 	int CheckMatchAdvanced(int i, CFindAdvancedParams &params);
-	void DetermineKeywordsForProgresBar(CString *stringWithCase, CString &keyword1, CString &keyword2);  // for Advanced Find
-	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment);
+	void DetermineKeywordsForProgresBar(CString *m_string, CString &keyword1, CString &keyword2);  // for Advanced Find
+	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CStringA &searchString);
 	BOOL AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams &params);
 	void CloseMailFile();
 	void ResetFileMapView();
@@ -223,51 +305,52 @@ public:
 	BOOL HasAnyAttachment(MboxMail *m);
 	// end of vars
 
-	// For single Mail. TODO: Should consider to define structure to avoid confusing var names
+	BOOL m_bExportEml;
+	int m_subjectSortType;
+
+	//#####################################
+	// *** Search related vars block
+	
+	int m_SearchType;  // 0 = none, 1=basic, 2=advanced
+
+	// For single Mail.
 	CString m_searchStringInMail;
+	CStringA m_searchStringInMailA;
 	BOOL m_bCaseSensInMail;
 	BOOL m_bWholeWordInMail;
 
-	int m_subjectSortType;
-	BOOL m_bExportEml;
-	BOOL m_bFindNext;
+	// BOOL m_bFindNext;  // FIXMEFIXME
 	BOOL m_bInFind;
 	HTREEITEM m_which;
-	void SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);
-	int AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyCnt, CString& bdy, int textType);
+
+	int SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);
+	int AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyCnt, CStringA& bdy, int textType);
 	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
+	int DoFastFindLegacy(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
+	int DoFastFindAdvanced(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
+	static BOOL MyCTimeToOleTime(MyCTime& ctimeDateTime, COleDateTime& coleDateTime);
+	static BOOL OleTime2MyCTime(COleDateTime& coleDateTime, MyCTime& ctimeDateTime, BOOL roundUP);
+
 	CString m_searchString;
 	int m_lastFindPos;
 	int m_maxSearchDuration;
 	BOOL m_bEditFindFirst;
+	int m_findAllCount;
 
-	BOOL m_bNeedToFindMailMinMaxTime;
-	MyCTime m_mboxMailStartDate;
-	MyCTime m_mboxMailEndDate;
-	BOOL m_needToRestoreArchiveListDateTime;
-
-	BOOL	m_filterDates;
+	// m_bHighlightAllSet is set when Highlight option is selected in Find to highlight all search string occurences 
+	// when page is loaded , see CBrowser::OnDocumentCompleteExplorer
+	BOOL m_bHighlightAllSet;    
+	// Used by Search Text option
 	BOOL	m_bCaseSens;
 	BOOL	m_bWholeWord;
-	MyCTime m_lastStartDate;
-	MyCTime m_lastEndDate;
-	BOOL m_bFrom;
-	BOOL m_bTo;
-	BOOL m_bSubject;
-	BOOL m_bContent;
-	BOOL m_bCC;
-	BOOL m_bBCC;
-	BOOL m_bAttachments;
-	BOOL m_bAttachmentName;
-	BOOL m_bHighlightAll;
-	BOOL m_bFindAll;
-	BOOL m_bFindAllMailsThatDontMatch;
-	BOOL m_bHighlightAllSet;
 
-	//struct CFindDlgParams m_findParams;  // TODO: review later, requires too many chnages for now
+	struct CFindDlgParams m_findParams;
 	struct CFindAdvancedParams m_advancedParams;
-	CString m_stringWithCase[FILTER_FIELDS_NUMB];
+	CStringA m_stringWithCase[FILTER_FIELDS_NUMB];
 	BOOL m_advancedFind;
+
+	// *** End of Search related vars block
+	//#####################################
 
 	void ClearDescView();
 	CString m_curFile;
@@ -276,7 +359,7 @@ public:
 	int m_gmtTime;
 	CString m_path;
 	CString m_path_label;
-	int m_findAllCount;
+
 	// Used in Custom Draw
 	SimpleString *m_name;
 	SimpleString *m_addr;
@@ -287,31 +370,29 @@ public:
 	//
 	std::vector <MailBodyInfo*> m_BodyInfoArray;
 	//
-	int SaveAsEmlFile(CString &bdy);
+	int SaveAsEmlFile(CStringA &bdy);
 	int SaveAsEmlFile(char *bdy, int bdylen);
 	void FindImageFileName(CString &cid);
 	//
-	int LoadMails(LPCSTR cache, MailArray *mails = 0);
+	int LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, MailArray *mails, CString& errorText);
+	int LoadMailsInfo(SerializerHelper& sz, MailArchiveFileInfo& maileFileInfo, CString &errorText);
+
+	int LoadSingleMail(MboxMail* m, SerializerHelper &sz);
+	int Cache2Text(LPCWSTR cache, CString format);
 	void FillCtrl();
 	int FillCtrl_ParseMbox(CString &mboxPath);
 	int  MailFileFillCtrl(CString &errorText);
 	virtual ~NListView();
 	void SelectItemFound(int iItem);
-	int DumpSelectedItem(int which);
-	static int DumpItemDetails(int which);
-	static int DumpItemDetails(MboxMail *m);
-	static int DumpItemDetails(int which, MboxMail *m, CMimeMessage &mail);
-	static int DumpCMimeMessage(CMimeMessage &mail, HANDLE hFile);
 	void ResetFont();
 	void RedrawMails();
 	void ResizeColumns();
 	time_t OleToTime_t(COleDateTime *ot);
-	void MarkColumns();
 	int MailsWhichColumnSorted() const;
 	void SetLabelOwnership();
 	void ItemState2Str(UINT uState, CString &strState);
 	void ItemChange2Str(UINT uChange, CString &strState);
-	void PrintSelected();
+	void PrintSelected();  // debug support
 	void OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult);
 	void OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult);
 	void PrintToPDFMultipleSelect(int fontSize);
@@ -321,7 +402,8 @@ public:
 	int CopyAllMails();
 	int FindInHTML(int iItem);
 	void SwitchToMailList(int nID, BOOL force = FALSE);
-	void EditFindAdvanced(CString *from = 0, CString *to = 0, CString *subject = 0);
+	//void EditFindAdvanced(CStringA *from = 0, CStringA *to = 0, CStringA *subject = 0);
+	void EditFindAdvanced(MboxMail *m = 0);
 	void RunFindAdvancedOnSelectedMail(int iItem);
 	int PopulateUserMailArray(SerializerHelper &sz, int mailListCnt, BOOL verifyOnly);
 	int PopulateMailArray(SerializerHelper &sz, MailArray &mArray, int mailListCnt, BOOL verifyOnly);
@@ -339,18 +421,20 @@ public:
 	int LoadFolderListFile_v2(CString &folderPath, CString &folderName);
 	int CopyMailsToFolders();
 	//
-	int SaveAsLabelFile(MailArray *marray, CString &targetDir, CString &labelName, CString& mappedLabelName, CString &errorText);
+	int SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &labelName, DWORD labelCodePage, CStringA& mappedLabelName, CString &errorText);
 	int LoadLabelListFile_v2(CString &folderPath, CString &folderName, CString &mboxFilePath);
 	int WriteMboxListFile_v2(MailArray *mailsArray, CString &listFilePath, _int64 mboxFileSize, CString &errorText);
-	int WriteMboxLabelListFile(MailArray* mailsArray, CString &gLabel, CString& listFilePath, _int64 mboxFileSize, CString& errorText);
-	int GetLabelFromLabelListFile_v2(CString& listFilePath, CString& gLabel, CString &mboxFilePath);
+	int WriteMboxLabelListFile(MailArray* mailsArray, CStringA &gLabel, DWORD gLabelCodePage, CString& listFilePath, _int64 mboxFileSize, CString& errorText);
+	int GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLabel, DWORD& gLabelCodePage, CString &mboxFilePath);
 
-	int VerifyPathToForwardEmlFileExecutable(CString &ForwardEmlFileExePath, CString &errorText);
+	// #########################################
+	// Forward emails vars block
 
-	BOOL m_developmentMode;
 	int m_tcpPort;
-	BOOL m_enbaleForwardMailsLog;
-	BOOL m_enbaleSMTPProtocolLog;
+	BOOL m_enableForwardMailsLog;
+	BOOL m_enableSMTPProtocolLog;
+
+	int VerifyPathToForwardEmlFileExecutable(CString& ForwardEmlFileExePath, CString& errorText);
 	int DeleteForwardEmlFiles(CString &folderPath);
 	int ForwardSingleMail(int iItem, BOOL progressBar, CString &progressText, CString &errorText);
 	int ForwardMailDialog(int iItem);
@@ -359,12 +443,18 @@ public:
 	int ForwardMails_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	int ForwardSelectedMails_Thread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName);
 	int ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexList *selectedMailIndexList, CString &errorText);
-	INT64  ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
+	INT64  ExecCommand_WorkerThread(int tcpPort, CString instanceId, CString &password, ForwardMailData &mailData, 
+		CString &emlFile, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
+
+	// End of Forward emails vars block
+	// #########################################
+
 	CString FixCommandLineArgument(CString &in);
 	CString FixCommandLineArgument(int in);
 	INT64 ExecCommand_KillProcess(CString processName, CString &errorText, BOOL progressBar, CString &progressText);
 
-	MailIndexList * PopulateSelectedMailsList();
+	MailIndexList *PopulateSelectedMailsListFromRange(int firstIndex, int lstIndex);
+	MailIndexList *PopulateSelectedMailsList();
 	void FindFirstAndLastMailOfConversation(int iItem, int &firstMail, int &lastMail);
 	void FindFirstAndLastMailOfMailThreadConversation(int iItem, int &firstMail, int &lastMail);
 	void FindFirstAndLastMailOfSubjectConversation(int iItem, int &firstMail, int &lastMail);
@@ -379,10 +469,9 @@ public:
 	int ScanAllMailsInMbox();
 	int ScanAllMailsInMbox_NewParser();
 	//
-	static BOOL MyCTimeToOleTime(MyCTime &ctimeDateTime, COleDateTime &coleDateTime);
-	static BOOL OleTime2MyCTime(COleDateTime &coleDateTime, MyCTime &ctimeDateTime, BOOL roundUP);
 
-	BOOL PrepopulateAdvancedSearchParams(CString *from, CString *to, CString *subject);
+	//BOOL PrepopulateAdvancedSearchParams(CStringA *from, CStringA *to, CStringA *subject);
+	BOOL PrepopulateAdvancedSearchParams(MboxMail *m);
 	void FindMinMaxTime(MyCTime &minTime, MyCTime &maxTime);
 	void ResetFilterDates();
 
@@ -390,39 +479,51 @@ public:
 	//
 	int ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm);
 	//
-	
 	static int ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDirectory, CString &emlFile, CString &errorText);
 	static int PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile);
-	static int PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB);
-	static int DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyContent *body, SimpleString *bodyData, CStringW &nameW, AttachmentMgr &attachmentDB);
-	static int PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *outbuf, CString &characterLimit, CString &attachmentSeparator);
-	// Called in CheckMatchAdvanced and CheckMatch
-	static int FindAttachmentName(MboxMail *m, CString &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
 	//
+	//  Attachment related functions
+	// FIXME Both PrintMailAttachments & CreateMailAttachments create attachments; compare and consolidate if possible
+	static int PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr &attachmentDB);
+	static int CreateMailAttachments(CFile* fpm, int mailPosition, CString* attachmentFolderPath, BOOL prependMailId, AttachmentMgr& attachmentDB, 
+		BOOL extraFileNameValidation = TRUE);
+	//
+	// PrintAttachmentNamesAsText2CSV & MboxMail::printAttachmentNamesAsHtml & printAttachmentNamesAsText print names but don't create files
+	static int PrintAttachmentNamesAsText2CSV(int mailPosition, SimpleString *outbuf, CString &characterLimit, CStringA &attachmentSeparator);
+	// int MboxMail::printAttachmentNamesAsHtml(CFile* fpm, int mailPosition, SimpleString* outbuf, CString& attachmentFileNamePrefix, CStringA& attachmentFilesFolderPath);
+	// int MboxMail::printAttachmentNamesAsText(CFile* fpm, int mailPosition, SimpleString* outbuf, CString& attachmentFileNamePrefix);
+	//
+	static int DetermineAttachmentName(CFile* fpm, int mailPosition, MailBodyContent* body, SimpleString* bodyData,
+		CStringW& nameW, AttachmentMgr& attachmentDB, BOOL remapDuplicateNames, BOOL extraValidation = TRUE);
+	// Called in CheckMatchAdvanced and CheckMatch
+	static int FindAttachmentName(MboxMail *m, CStringA &searchString, BOOL bWholeWord, BOOL bCaseSensitive);
+	//
+	
+	static void GetExtendedMailId(MboxMail* m, CString& extendedId);
+	// //
 	//////////////////////////////////////////////////////
 	////////////  PDF
 	//////////////////////////////////////////////////////
-	int PrintMailConversationToSeparatePDF_Thread(int mailIndex, CString &errorText);
+	int PrintMailConversationToSeparatePDF_Thread(int mailIndex, BOOL mergePDFs, CString &errorText);
 	int PrintMailConversationToSinglePDF_Thread(int mailIndex, CString &errorText);
 	//
 	// Range to Separate PDF
-	int PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	int PrintMailRangeToSeparatePDF_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	int PrintMailRangeToSeparatePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString& targetPrintFolderPath, BOOL mergePDFs);
 	//
 	// Range to Single PDF
 	int PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	int PrintMailRangeToSinglePDF_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	// Selected to Separate PDF
-	int PrintMailSelectedToSeparatePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs);
+	int PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs);
 	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText, 
 		BOOL mergeFiles, CString &mergedFileName);
 	//
 	// Selected to Single PDF
-	int PrintMailSelectedToSinglePDF_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
-	int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray &out_array, CString &filePrefix, CString &targetPrintFolderPath, CString &pdftoolCmd, CString &errorText);
+	int NListView::MergePDfFileList(CFile &fp, CStringArray &in_array, CStringArray &out_array, CString &filePrefix, CString &targetPrintFolderPath, 
+		CString &pdfboxJarFileName, CString &errorText);
 	//
 	//////////////////////////////////////////////////////
 	////////////  PDF  END
@@ -439,25 +540,22 @@ public:
 	//
 	// Range to Separate HTML
 	int PrintMailRangeToSeparateHTML_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	int PrintMailRangeToSeparateHTML_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	// Range to Single HTML
 	int PrintMailRangeToSingleHTML_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	int PrintMailRangeToSingleHTML_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	// Selected to Separate HTML
-	int PrintMailSelectedToSeparateHTML_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	// Selected to Single HTML
-	int PrintMailSelectedToSingleHTML_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
+	int PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSingleHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	//////////////////////////////////////////////////////
 	////////////  HTML  END
 	//////////////////////////////////////////////////////
 	//
-		//
 	//////////////////////////////////////////////////////
 	////////////  TEXT
 	//////////////////////////////////////////////////////
@@ -466,7 +564,7 @@ public:
 	//int PrintMailSelectedToSeparateTEXT_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	//int PrintMailSelectedToSeparateTEXT_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 
-	// Selected to Single HTML
+	// Selected to Single TEXT
 	int PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	///
@@ -475,53 +573,62 @@ public:
 	//int CreateInlineImageCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	int CreateAttachmentCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	//int CreateAttachmentCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	int CreateAttachmentCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	int CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	//int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 
-	static BOOL IsSingleAddress(CString *to);
-	static void TrimToAddr(CString *to, CString &toAddr, int maxNumbOfAddr);
-	static void TrimToName(CString *to, CString &toName, int maxNumbOfAddr);
+	static BOOL IsSingleAddress(CStringA *to);
+	static void TrimToAddr(CStringA *to, CStringA &toAddr, int maxNumbOfAddr);
+	static void TrimToName(CStringA *to, CStringA &toName, int maxNumbOfAddr);
 	static int DeleteAllHtmAndPDFFiles(CString &targetFolder);
 	//static int DeleteAllHtmFiles(CString &targetFolder);
 	//
-	static int CreateInlineImageFiles(CFile &fpm, int mailPosition, CString &imageCachePath, bool runInvestigation = false);
-	static int UpdateInlineSrcImgPath(char *inData, int indDataLen, SimpleString *outbuf, CListCtrl *attachments, int mailPosition, bool useMailPosition, bool runInvestigation = false);
-	static int DetermineImageFileName(MboxMail *m, CString &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition);
+	static int CreateEmbeddedImageFilesEx(CFile& fpm, int mailPosition, CString& imageCachePath, BOOL createEmbeddedImageFiles);
+	static int DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsImageType, MboxMail *m, CStringA &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition);
 	//
-	static int DetermineEmbeddedImages(char *inData, int indDataLen, int mailPosition);
-	static int DetermineEmbeddedImages(char *inData, int indDataLen, MboxMail *m);
+	static int UpdateInlineSrcImgPathEx(CFile* fpm, char* inData, int indDataLen, SimpleString* outbuf,
+		BOOL makeFileNameUnique,  // add unique prefix to image file name
+		BOOL makeAbsoluteImageFilePath,  
+		CString& relativeSrcImgFilePath, CString& absoluteSrcImgFilePath, AttachmentMgr& attachmentDB,
+		EmbededImagesStats& embededImgStats, int mailPosition, BOOL createEmbeddedImageFiles ,
+		BOOL verifyAttachmentDataAsImageType, BOOL insertMaxWidthForImgTag,
+		CStringA& maxWidth, CStringA& maxHeight);
+
+	static void AppendPictureAttachments(MboxMail *m, AttachmentMgr &attachmentDB, CString *absoluteFolderPath, CString *relativeFolderPath,  CFile* fpm);
 	//
-	static int FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CString &fileName);
+	static int FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsArray, CStringA &fileName);
 	//
-	static int CreateInlineImageFiles_SelectedItem(CMimeBody::CBodyList &bodies, NMsgView *pMsgView, int mailPosition, MailBodyInfoArray &cidArray, MyCArray<bool> &fileImgAlreadyCreatedArray, bool runInvestigation = false);
-	static int UpdateInlineSrcImgPath_SelectedItem(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition, bool useMailPosition, MailBodyInfoArray &cidArray);
-	static int DetermineImageFileName_SelectedItem(CMimeBody::CBodyList &bodies, MboxMail *m, CString &cidName, CString &imageFilePath, CMimeBody **foundBody, MyCArray<bool> &fileImgAlreadyCreatedArray, int mailPosition);
-	static int GetMailBody_SelectedItem(CMimeBody::CBodyList &bodies, CMimeBody** pBP);  // return body text type or 0-plain, 1-html, -1-not found
-	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CString &fileName);
+	static int FindFilenameCount(CMimeBody::CBodyList &bodies, CStringA &fileName);
 
 	static int RemoveBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, int mailPosition);
 	static int SetBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int ReplacePreTagWitPTag(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	static int ReplaceBlockqouteTagWithDivTag(char* inData, int indDataLen, SimpleString* outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int AddMaxWidthToHref(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int AddMaxWidthToBlockquote(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int AddMaxWidthToDIV(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
 	static int MakeSpacesAsNBSP(char *inData, int indDataLen, SimpleString *outbuf, BOOL ReplaceAllWhiteBackgrounTags);
+	static int RemoveMicrosoftSection1Class(SimpleString* inbuf, int offset);
 	
 	static int FindBodyTag(char *inData, int indDataLen, char *&tagBeg, int &tagDataLen);
-	static int FindBodyBackgroundColor(char *inData, int indDataLen, char *&attribTag, int &attribTagLen, CString &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib);
-	static int FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int tagLen, /*out*/ char *&attribTag, int &attribTagLen, CString &attribVal, HtmlAttribInfo &bodyAttrib);
-	static int RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor);
-	static int RemoveBodyBackgroundColorAndWidth(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor, 
-		CString &bodyWidth, BOOL removeBgColor, BOOL removeWidth);
+	static int FindBodyBackgroundColor(char *inData, int indDataLen, char *&attribTag, int &attribTagLen, CStringA &bodyBackgroundColor, HtmlAttribInfo &bodyBackgroundColorAttrib);
+	static int FindBodyTagAttrib(char *inData, int indDataLen, char *tag, int tagLen, /*out*/ char *&attribTag, int &attribTagLen, CStringA &attribVal, HtmlAttribInfo &bodyAttrib);
+	static int RemoveBodyBackgroundColor(char *inData, int indDataLen, SimpleString *outbuf, CStringA &bodyBackgroundColor);
+	static int RemoveBodyBackgroundColorAndWidth(char *inData, int indDataLen, SimpleString *outbuf, CStringA &bodyBackgroundColor, 
+		CStringA &bodyWidth, BOOL removeBgColor, BOOL removeWidth);
 	static int SetBodyWidth(char *inData, int indDataLen, SimpleString *outbuf, CString &bodyBackgroundColor);
 
-	static int Color2Str(DWORD color, CString &colorStr);
+	static int Color2Str(DWORD color, CStringA &colorStr);
+	static int Color2Str(DWORD color, CString& colorStr);
 
-	static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CString &extension);
+	//static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CStringA &extension);
 	static int DetermineListFileName(CString &fileName, CString &listFileName);
 	void SetListFocus();
+
+	static BOOL SaveMails(LPCWSTR cache, BOOL mainThread, CString& errorText);
+
+	BOOL m_developmentMode;
 
 	// Generated message map functions
 protected:
@@ -540,7 +647,6 @@ protected:
 	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDividerdblclick(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnItemchangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnODStateChangedListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
@@ -555,11 +661,20 @@ public:
 	afx_msg void OnUpdateEditFindadvanced(CCmdUI *pCmdUI);
 	//virtual BOOL PreTranslateMessage(MSG* pMsg);
 	//afx_msg void OnSetFocus(CWnd* pOldWnd);
-	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
+	afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg LRESULT OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnClose();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnTvnGetInfoTip(NMHDR* pNMHDR, LRESULT* pResult);
+
+	afx_msg BOOL OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+
+	virtual void PreSubclassWindow();
+
+	void CellHitTest(const CPoint& pt, int& nRow, int& nCol) const;
+	bool ShowToolTip(const CPoint& pt) const;
+	CString GetToolTipText(int nRow, int nCol);
 };
 
 struct FORWARD_MAILS_ARGS
@@ -619,6 +734,7 @@ struct WRITE_INDEX_FILE_ARGS
 	CString errorText;
 	BOOL exitted;
 	int ret;
+	NListView* lview;
 };
 
 struct WRITE_IMAGE_FILE_ARGS

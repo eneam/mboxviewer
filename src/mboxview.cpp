@@ -46,6 +46,15 @@
 
 #include "ExceptionUtil.h"
 
+#include "winnls.h"
+#include "SimpleTree.h"
+
+#include "MimeHelper.h"
+#include "SimpleString.h"
+
+#include "Shobjidl.h"
+#include "shobjidl_core.h"
+
 int JsonTest();
 
 //#include "afxglobals.h"
@@ -66,7 +75,10 @@ static int unhandledExceptionsCnt = 0;
 
 DWORD CmboxviewApp::m_versionMS = 0;
 DWORD CmboxviewApp::m_versionLS = 0;
-CString CmboxviewApp::m_savedVer = "";
+CString CmboxviewApp::m_savedVer = L"";
+CString CmboxviewApp::m_processPath = L"";
+CString CmboxviewApp::m_startupPath = L"";
+CString CmboxviewApp::m_currentPath = L"";
 
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
@@ -109,42 +121,43 @@ LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 	if (unhandledExceptionsCnt == 0)
 	{
 
-	char const*  szCause = seDescription(seNumb);
+		char const* szCause = seDescription(seNumb);
 
-	char *stackDumpFileName = "UnhandledException_StackDump.txt";
-	int mailPosition = MboxMail::s_mails.GetCount();
-	MyStackWalker *sw  = nullptr;
-	if (MboxMail::glStackWalker)
-	{
-		sw = MboxMail::glStackWalker;
-	}
-	BOOL ret = DumpStack(sw, stackDumpFileName, (TCHAR*)szCause, seNumb, pExceptionPtrs->ContextRecord, mailPosition);
+		wchar_t* stackDumpFileName = L"UnhandledException_StackDump.txt";
+		int mailPosition = MboxMail::s_mails.GetCount();
+		MyStackWalker* sw = nullptr;
+		if (MboxMail::glStackWalker)
+		{
+			sw = MboxMail::glStackWalker;
+		}
+		BOOL ret = DumpStack(sw, stackDumpFileName, (CHAR*)szCause, seNumb, pExceptionPtrs->ContextRecord, mailPosition);
 
-	CString progDir;
-	BOOL retDir = GetProgramDir(progDir);
+		CString progDir;
+		BOOL retDir = GetProgramDir(progDir);
 
-	char *exceptionName = "UnhandledException";
-	CString errorTxt;
+		wchar_t* exceptionName = L"UnhandledException";
+		CString errorTxt;
+		CString szCauseW(szCause);
 #ifdef USE_STACK_WALKER
-	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"
-		"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
-		"Please provide the files to the development team.\n\n"),
-		exceptionName, seNumb, szCause, stackDumpFileName, progDir);
+		errorTxt.Format(L"%s: Code=%8.8x Description=%s\n\n"
+			"To help to diagnose the problem, created file\n\n%s\n\nin\n\n%s directory.\n\n"
+			"Please provide the files to the development team.\n\n",
+			exceptionName, seNumb, szCauseW, stackDumpFileName, progDir);
 #else
-	errorTxt.Format(_T("%s: Code=%8.8x Description=%s\n\n"), exceptionName, seNumb, szCause);
+		errorTxt.Format(L"%s: Code=%8.8x Description=%s\n\n", exceptionName, seNumb, szCauseW);
 #endif
-	AfxMessageBox((LPCTSTR)errorTxt, MB_OK | MB_ICONHAND);
+		AfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
 
-	MboxMail::ignoreException = TRUE;
+		MboxMail::ignoreException = TRUE;
 
-	if (!MboxMail::runningWorkerThreadType)
-	{
-		//MessageBeep(MB_OK);
-		//MessageBeep(MB_OK);
-		//MessageBeep(MB_OK);
-		//AfxAbort();
-		exit(0);
-	}
+		if (!MboxMail::runningWorkerThreadType)
+		{
+			//MessageBeep(MB_OK);
+			//MessageBeep(MB_OK);
+			//MessageBeep(MB_OK);
+			//AfxAbort();
+			exit(0);
+		}
 	}
 
 	unhandledExceptionsCnt++;
@@ -174,11 +187,11 @@ void __cdecl InvalidParameterHandler(
 	lineW.Format(L"%d", line);
 	CStringW txt = L"expression=" + CStringW(expression) + L"function=" + CStringW(function) + L"file=" + CStringW(file) + L"line=" + lineW;
 
-	CString txtA;
+	CStringA txtA;
 	DWORD error;
-	BOOL retW2A = TextUtilsEx::Wide2Ansi(txt, txtA, error);
+	BOOL retW2A = TextUtilsEx::WStr2Ansi(txt, txtA, error);
 
-	AfxMessageBox(txtA, MB_OK | MB_ICONHAND);
+	AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 
 	// GetExceptionPointers(0, &pExceptionPtrs);
 
@@ -215,7 +228,7 @@ void UnSetMyExceptionHandler()
 	//_set_invalid_parameter_handler(InvalidParameterHandler);
 }
 
-const char *sz_Software_mboxview = "SOFTWARE\\mboxview";
+const wchar_t* sz_Software_mboxview = L"SOFTWARE\\UMBoxViewer";
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp
@@ -224,10 +237,10 @@ BEGIN_MESSAGE_MAP(CmboxviewApp, CWinApp)
 	//{{AFX_MSG_MAP(CmboxviewApp)
 	ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
 	ON_COMMAND(ID_HELP_DONATE, OnHelpDonate)
-		// NOTE - the ClassWizard will add and remove mapping macros here.
-		//    DO NOT EDIT what you see in these blocks of generated code!
-	//}}AFX_MSG_MAP
-	ON_COMMAND_RANGE(ID_FILE_MRU_FIRST, ID_FILE_MRU_LAST, MyMRUFileHandler) 
+	// NOTE - the ClassWizard will add and remove mapping macros here.
+	//    DO NOT EDIT what you see in these blocks of generated code!
+//}}AFX_MSG_MAP
+ON_COMMAND_RANGE(ID_FILE_MRU_FIRST, ID_FILE_MRU_LAST, MyMRUFileHandler)
 //	ON_UPDATE_COMMAND_UI(ID_FILE_MRU_FILE1, OnUpdateRecentFileMenu)
 END_MESSAGE_MAP()
 
@@ -243,13 +256,13 @@ void Com_Initialize()
 	int deb = 1;
 }
 
-void CmboxviewApp::AddToRecentFileList(LPCTSTR lpszPathName)
+void CmboxviewApp::AddToRecentFileList(LPCWSTR lpszPathName)
 {
 	ASSERT_VALID(this);
-	ASSERT(m_pRecentFileList != NULL);
+	_ASSERTE(m_pRecentFileList != NULL);
 
 	CString pathName = lpszPathName;
-	pathName.TrimRight("\\");
+	pathName.TrimRight(L"\\");
 	CString filePathName;
 	int count;
 	int i;
@@ -258,7 +271,7 @@ void CmboxviewApp::AddToRecentFileList(LPCTSTR lpszPathName)
 	for (i = 0; i < count; i++)
 	{
 		filePathName = m_pRecentFileList->m_arrNames[i];
-		filePathName.TrimRight("\\");
+		filePathName.TrimRight(L"\\");
 		if (filePathName.Compare(pathName) == 0)
 		{
 			m_pRecentFileList->Remove(i);
@@ -274,22 +287,25 @@ void CmboxviewApp::AddToRecentFileList(LPCTSTR lpszPathName)
 void CmboxviewApp::MyMRUFileHandler(UINT i)
 {
 	ASSERT_VALID(this);
-	ASSERT(m_pRecentFileList != NULL);
+	_ASSERTE(m_pRecentFileList != NULL);
 
-	ASSERT(i >= ID_FILE_MRU_FILE1);
-	ASSERT(i < ID_FILE_MRU_FILE1 + (UINT)m_pRecentFileList->GetSize());
+	_ASSERTE(i >= ID_FILE_MRU_FILE1);
+	_ASSERTE(i < ID_FILE_MRU_FILE1 + (UINT)m_pRecentFileList->GetSize());
 
 	CString strName, strCurDir, strMessage;
 	int nIndex = i - ID_FILE_MRU_FILE1;
-	ASSERT((*m_pRecentFileList)[nIndex].GetLength() != 0);
 
-	strName.Format("MRU: open file (%d) '%s'.\n", (nIndex) + 1,(LPCTSTR)(*m_pRecentFileList)[nIndex]);
+	CString folderPath = (*m_pRecentFileList)[nIndex];
+	_ASSERTE(folderPath.GetLength() != 0);
 
-	if( ! FileUtils::PathDirExists((*m_pRecentFileList)[nIndex]) ) {
+	strName.Format(L"MRU: open file (%d) '%s'.\n", (nIndex)+1, (LPCWSTR)folderPath);
+
+	if (!FileUtils::PathDirExists(folderPath)) {
 		m_pRecentFileList->Remove(nIndex);
 		return;
 	}
-	((CMainFrame*)AfxGetMainWnd())->DoOpen((*m_pRecentFileList)[nIndex]);
+
+	((CMainFrame*)AfxGetMainWnd())->DoOpen(folderPath);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -302,9 +318,9 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 
 #include "winerror.h"
 
-BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
+BOOL GetErrorMessage(DWORD dwErrorCode, CString& errorMessage)
 {
-	TCHAR Buffer[1024];
+	wchar_t Buffer[1024];
 	DWORD cchBufferLength = 1022;
 
 	Buffer[0] = 0;
@@ -316,8 +332,8 @@ BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
 		cchBufferLength,
 		NULL);
 	CString errMessage = CString(Buffer);
-	errMessage.TrimRight(" \t\r\n");
-	errorMessage.Format("Error Code %u \"%s\"\n", dwErrorCode, errMessage);
+	errMessage.TrimRight(L" \t\r\n");
+	errorMessage.Format(L"Error Code %u \"%s\"\n", dwErrorCode, errMessage);
 
 	return (cchMsg > 0);
 }
@@ -325,10 +341,422 @@ BOOL GetErrorMessage(DWORD dwErrorCode, CString &errorMessage)
 #include <iostream>
 #include <commctrl.h>
 
+void CreateAnsiToUTF8TableStr(CString& tbl, int firstPos, int lastPos)
+{
+	DWORD error;
+	CString cStr;
+	CString cStr2;
+	CString cStr3;
+	CString cStr4;
+	CStringA strA;
+	CStringA inStr;
+	int i;
+	UINT inCodePage = GetACP();
+	for (i = firstPos; i <= lastPos; i++)
+	{
+		cStr.Empty();
+		inStr.Format("%c", i);
+		//if ((i == 129) || (i == 134)) inStr = " ";
+		cStr4 = inStr;
+		int len4 = cStr4.GetLength();
+		if (cStr4.IsEmpty())
+			cStr4 = " ";
+		cStr3.Format(L"%s", CString(inStr));
+		int len3 = cStr3.GetLength();
+		if (cStr3.IsEmpty())
+			cStr3 = " ";
+
+		strA.Empty();
+		TextUtilsEx::Str2UTF8((LPCSTR)inStr, inStr.GetLength(), inCodePage, strA, error);
+		cStr.Format(L"%03d 0x%02x 0x%04x %s %s -- ", i, i, cStr4.GetAt(0), cStr4, cStr3);
+		cStr.Append(L"0x");
+		int j = 0;
+		cStr2.Empty();
+		for (j = 0; j < strA.GetLength(); j++)
+		{
+			unsigned char uic = strA.GetAt(j);
+			cStr2.Format(L"%02x", uic);
+			cStr.Append(cStr2);
+		}
+		tbl.Append(cStr);
+		tbl.Append(L"\n");
+	}
+}
+
+class ReqFromToInfo
+{
+public:
+	UINT m_type;
+	CString m_from;
+	CStringW m_to;
+};
+
+
+HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* fDefault)
+{
+	IApplicationAssociationRegistration* pAAR;
+
+	HRESULT hr = CoCreateInstance(CLSID_ApplicationAssociationRegistration,
+		NULL, CLSCTX_INPROC,
+		__uuidof(IApplicationAssociationRegistration),
+		(void**)&pAAR);
+
+	if (SUCCEEDED(hr))
+	{
+		hr = pAAR->QueryAppIsDefault(extension,
+			AT_FILEEXTENSION, AL_EFFECTIVE,
+			prog,
+			fDefault);
+
+		pAAR->Release();
+	}
+
+	return hr;
+}
+
+
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+#if _DEBUG
+
+#if 0
+	// Doesn't work for my case
+	CString szProg = L"mboxview";
+	CString szQuery = L".eml";
+	szQuery = L".txt";
+
+	//ASSOCIATIONTYPE  atQueryType = 0;
+	//ASSOCIATIONLEVEL alQueryLevel = 0;
+	//CString pszAppRegistryName = L"";
+	BOOL fDefault = FALSE;
+
+	DWORD dwCoInit = COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE;
+	CoInitializeEx(NULL, dwCoInit);
+	HRESULT ret = CheckIsDefaultApp((LPCWSTR)szProg, (LPCWSTR)szQuery, &fDefault);
+	CoUninitialize();
+	int deb5 = 1;
+
+
+#if 0
+	{
+		IApplicationAssociationRegistration reg =
+			(IApplicationAssociationRegistration) new ApplicationAssociationRegistration();
+
+		string progID;
+
+		reg.QueryCurrentDefault(".txt",
+			ASSOCIATIONTYPE.AT_FILEEXTENSION,
+			ASSOCIATIONLEVEL.AL_EFFECTIVE,
+			out progID);
+		Console.WriteLine(progID);
+
+		reg.QueryCurrentDefault("http",
+			ASSOCIATIONTYPE.AT_URLPROTOCOL,
+			ASSOCIATIONLEVEL.AL_EFFECTIVE,
+			out progID);
+		Console.WriteLine(progID);
+	}
+
+	HRESULT ret = IApplicationAssociationRegistration::QueryAppIsDefault(
+		szQuery,
+		atQueryType,
+		alQueryLevel,
+		szAppRegistryName,
+		&fDefault);
+#endif
+
+#endif
+
+
+#if 0
+	CString cstr;
+	INT64 numb;
+	numb = 9;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 98;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 9987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 98987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 9987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 98987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = 987987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = -987987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+	numb = +987987987;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+
+	wchar_t* wstr = L"++987987987";
+	TextUtilsEx::WStr2WstrWithCommas(wstr, wcslen(wstr), cstr);
+
+	const int deb = 1;
+#endif
+
+#if 0
+	CArray<ReqFromToInfo> regFromToTable;
+
+	HKEY hKey = HKEY_CURRENT_USER;
+	CString section = CString(sz_Software_mboxview) + L"\\General";
+
+	section = CString(sz_Software_mboxview);
+
+	const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
+
+	CString fromSection = CString(sz_Software_mboxview_Legacy) + L"\\folders";
+	CString toSection = CString(sz_Software_mboxview) + L"\\MailFolders";
+
+	TRACE(L"_CopyLegacyFolders\n");
+	LSTATUS retCode0 = CProfile::CopyKey(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	fromSection = CString(sz_Software_mboxview_Legacy) + L"\\MailService";
+	toSection = CString(sz_Software_mboxview) + L"\\MailService";
+
+	TRACE(L"_CopyLegacyFolders: MailService\n");
+	LSTATUS retCode3 = CProfile::CopyKey(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	TRACE(L"_CopyLegacyFolders: MailService SubKeys\n");
+	LSTATUS retCode4 = CProfile::CopySubKeys(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	fromSection = CString(sz_Software_mboxview_Legacy) + L"\\Window Placement";
+	toSection = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+
+	TRACE(L"_CopyLegacyFolders: Window Placement\n");
+	LSTATUS retCode5 = CProfile::CopyKey(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	fromSection = CString(sz_Software_mboxview_Legacy) + L"\\mboxview\\MRUs";
+	toSection = CString(sz_Software_mboxview) + L"\\mboxview\\MRUs";
+
+	TRACE(L"_CopyLegacyFolders: MRUs\n");
+	LSTATUS retCode6 = CProfile::CopyKey(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+
+	fromSection = CString(sz_Software_mboxview_Legacy);
+	toSection = CString(sz_Software_mboxview) + L"\\General";
+
+	KeyFromToTable arr;
+	arr.SetSize(1);
+	arr.RemoveAll();
+
+	arr.SetSize(10);
+	arr[0] = { REG_DWORD, L"messageWindowPosition", L"" };
+	arr.SetSize(1);
+
+	LSTATUS retCode10 = CProfile::CopyKeyValueList(hKey, fromSection, toSection, arr);
+
+	toSection = CString(sz_Software_mboxview) + L"\\LastSelection";
+
+	arr.RemoveAll();
+	arr.SetSize(5);
+	arr[0] = { REG_SZ, L"lastLabelFilePath", L"" };
+	arr[1] = { REG_SZ, L"lastMailFilePath", L"" };
+	arr[2] = { REG_DWORD, L"lastMailIndex", L"" };
+	arr[3] = { REG_SZ, L"lastPath", L"" };
+	arr[4] = { REG_DWORD, L"lastWhichSort", L"" };
+
+
+	LSTATUS retCode8 = CProfile::CopyKeyValueList(hKey, fromSection, toSection, arr);
+
+#endif
+
+#if 0
+	HKEY hKey = HKEY_CURRENT_USER;
+	CString section = CString(sz_Software_mboxview);
+
+	TRACE(L"EnumerateAllSubKeys\n");
+	LSTATUS retCode1 = CProfile::EnumerateAllSubKeys(hKey, (LPCWSTR)section);
+
+	section = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	TRACE(L"EnumerateAllSubKeyValues\n");
+	LSTATUS retCode2 = CProfile::EnumerateAllSubKeyValues(hKey, (LPCWSTR)section);
+
+	int deb = 1;
+#endif
+
+#if 0
+	// TEST if file name can be longet than 260 characters
+
+	CFile testFile;
+	CString fileName = "\\\\?";
+
+	fileName.AppendChar('\\');
+
+	fileName.Empty();
+	fileName.Append("C:\\");
+	for (int i = 0; i < 512; i++)
+		fileName.Append("x");
+
+	fileName.Append("Y.txt");
+
+	UINT nFlags = CFile::modeWrite | CFile::modeCreate;
+	BOOL ret = testFile.Open(fileName, nFlags);
+	if (ret)
+		testFile.Close();
+
+	DWORD dwAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+
+	CStringW fileNameW;
+	DWORD error;
+
+	BOOL r = TextUtilsEx::Ansi2WStr(fileName, fileNameW, error);
+
+	HANDLE hFile = CreateFileW(fileNameW, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		BOOL retClose = CloseHandle(hFile);
+	}
+#endif
+
+
+#if 0
+	int i;
+	for (i = 0; i < 255; i++)
+	{
+		int c = i;
+		if (iscntrl(c))
+		{
+			TRACE(L"ANSI c=%d %x is Control charcater !!!\n", c, c);
+		}
+	}
+	for (i = 0; i < 255; i++)
+	{
+		wint_t c = i;
+		if (iswcntrl(c))
+		{
+			TRACE(L"Wide ANSI c=%d %x is Control charcater !!!\n", c, c);
+		}
+	}
+	int deb33 = 1;
+
+#endif
+
+#if 0
+	struct NodeData {
+		int m_pos;
+	};
+
+	using STNode = SimpleTreeNodeEx<NodeData>;
+
+	CString treeName = L"just a test";
+	SimpleTreeEx<NodeData> st(treeName);
+
+	STNode* parentNode = 0;
+	STNode* node1 = st.InsertNode(parentNode, CString(L"node #1"));
+	STNode* node2 = st.InsertNode(parentNode, CString(L"node #2"));
+
+	STNode* node1_1 = st.InsertNode(node1, CString(L"node #1.1"));
+	STNode* node2_1 = st.InsertNode(node1, CString(L"node #2.1"));
+
+	int cnt = st.NodeCount(parentNode);
+
+
+	int deb33 = 1;
+#endif
+
+#if 0
+	typedef enum _NORM_FORM {
+		NormalizationOther = 0,
+		NormalizationC = 0x1,
+		NormalizationD = 0x2,
+		NormalizationKC = 0x5,
+		NormalizationKD = 0x6
+	} NORM_FORM;
+#endif
+
+#if 0
+#if (NTDDI_VERSION >= NTDDI_VISTA)
+	NORM_FORM form = NormalizationC;
+	CString origStr = CString(L"T\u00e8st string \uFF54\uFF4F n\u00f8rm\u00e4lize");
+	LPCWSTR   lpSrcString = origStr;
+	int       cwSrcLength = origStr.GetLength() + 1;
+	wchar_t ooutStr[1024];
+	LPWSTR    lpDstString = &ooutStr[0];
+	int       cwDstLength = 1024;
+
+	if (IsNormalizedString(form, lpSrcString, cwSrcLength))
+	{
+		TRACE(L"Already normalized in this form\n");
+		int deb = 1;
+	}
+	else
+	{
+		TRACE(L"String not normalized in this form\n");
+		int deb = 1;
+	}
+
+
+	int retLength = NormalizeString(form, lpSrcString, cwSrcLength, lpDstString, cwDstLength);
+	if (retLength <= 0 && GetLastError() != ERROR_SUCCESS)
+	{
+		if (GetLastError() == ERROR_NO_UNICODE_TRANSLATION)
+		{
+			TRACE(L"Invalid Unicode found at input character index %d\n", -retLength);
+		}
+		int deb = 1;
+	}
+	else
+	{
+		;// keep the original string. Better than noting ??
+	}
+#endif
+
+	int deb = 1;
+#endif
+
+#if 0
+	// TEST CStrinA to CStrinW , TRACE
+	CStringA strA = "mama tata";
+	CStringW strW = strA;
+	const wchar_t* d = (LPCWSTR)strW;  // works
+
+	TRACE("Ani %s\n", strA);
+	TRACE("Wide %s\n", strW);   // doesn't work
+	TRACE(L"Ani-L %s\n", strA);  // doesn't work and risky looking for two nulls ?
+	TRACE(L"Wide-L %s\n", strW);  // works
+
+	strW = "tata mama";
+	TRACE(L"Wide-L %s\n", strW); // works
+
+	strA = strW;
+	TRACE("Ani %s\n", strA);   // works
+
+	CStringW str2W("siostra");
+	TRACE(L"Wide-L %s\n", strW);  // works
+
+	CStringA str2A(L"siostra");
+	TRACE("Ansi-L %s\n", str2A);   // works
+
+	UINT myCodePage = GetACP();
+	CString tbl;
+	tbl.Format(L"ANSI-To-UTF8 TABLE for local Code Page %d\n", myCodePage);
+	CreateAnsiToUTF8TableStr(tbl, 32, 127);
+	TRACE(L"%s\n", tbl);
+
+	tbl.Empty();
+	tbl.Append(L"\n");
+	CreateAnsiToUTF8TableStr(tbl, 128, 159);
+	TRACE(L"%s\n", tbl);
+
+	tbl.Empty();
+	tbl.Append(L"\n");
+	CreateAnsiToUTF8TableStr(tbl, 160, 255);
+	tbl.Append(L"\n");
+	TRACE(L"%s\n", tbl);
+	int deb = 1;
+#endif
+
+
 
 #if 0
 	// TaskDialog or MFC wrapper CTaskDialog are supported on Vista and higher. 
@@ -354,10 +782,10 @@ CmboxviewApp::CmboxviewApp()
 #endif
 #if 0
 	int _snwprintf_s(
-		wchar_t *buffer,
+		wchar_t* buffer,
 		size_t sizeOfBuffer,
 		size_t count,
-		const wchar_t *format[,
+		const wchar_t* format[,
 		argument] ...
 	);
 #endif
@@ -372,27 +800,27 @@ CmboxviewApp::CmboxviewApp()
 	TRACE(L"%s\n", wstr);
 
 	//print the size of wide character
-	TRACE("Wide character size is %d\n", sizeof(c));
-	TRACE("Wide character size is %d\n", wstr.GetLength());
+	TRACE(L"Wide character size is %d\n", sizeof(c));
+	TRACE(L"Wide character size is %d\n", wstr.GetLength());
 
 	int deb1 = 1;
 #endif
 
 #if 0
-	CString rootFolder = "G:\\MboxViewer";
-	CList<CString, CString &> folderList;
+	CString rootFolder = "G:\\UMBoxViewer";
+	CList<CString, CString&> folderList;
 	CString errorText;
 	int maxDepth = 10;
 
 	BOOL bRetVal = FileUtils::GetFolderList(rootFolder, folderList, errorText, maxDepth);
 
-		// Print all folders, i.e. not empty folder path
+	// Print all folders, i.e. not empty folder path
 	CString folderPath;
-	TRACE(_T("List of non empty folders:\n"));
+	TRACE(L"List of non empty folders:\n");
 	while (folderList.GetCount() > 0)
 	{
 		folderPath = folderList.RemoveHead();
-		TRACE(_T("Folder Path: \"%s\"\n"), folderPath);
+		TRACE(L"Folder Path: \"%s\"\n", folderPath);
 	}
 #endif
 
@@ -406,9 +834,9 @@ CmboxviewApp::CmboxviewApp()
 		CString errTextA = FileUtils::GetLastErrorAsString();
 		CString errTextB = FileUtils::GetLastErrorAsStringW();
 
-		TRACE("%s", errTextA);
-		TRACE("%s", errTextB);
-		TRACE("%s", errorMessage);
+		TRACE(L"%s", errTextA);
+		TRACE(L"%s", errTextB);
+		TRACE(L"%s", errorMessage);
 	}
 #endif
 
@@ -425,8 +853,79 @@ CmboxviewApp::CmboxviewApp()
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
 	//SetNoOaCache();
 
-	//int test_enc();
-	//test_enc();
+#if 0
+
+	CStringA wordEncoded = "=?UTF-8?Q?St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
+
+	CStringA inStrUTF8 = "St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";  // UTF-8 encoded string
+
+
+	wordEncoded = "=?UTF-8?B?5rWL6K+V5Lit5paH5paH5Lu2LnR4dA==?=";
+	CStringA inStrUTF8_base64 = "5rWL6K+V5Lit5paH5paH5Lu2LnR4dA";
+
+
+	CStringA inStrUTF8_2;
+	const char* bodyBegin = (LPCSTR)inStrUTF8_base64;
+	int bodyLength = inStrUTF8_base64.GetAllocLength();
+
+	MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+	int dlength = d64.GetOutputLength();
+	int needLength = dlength;
+
+	SimpleString outbuf;
+	outbuf.Resize(needLength);
+
+	char* outptr = outbuf.Data();
+	int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
+	if (retlen > 0)
+		outbuf.SetCount(retlen);
+
+	inStrUTF8_2.Append(outbuf.Data(), outbuf.Count());
+
+	CStringA outStr;
+	UINT charsetId = CP_UTF8;
+	DWORD error = 0;
+	int encodeCnt = TextUtilsEx::EncodeString(inStrUTF8, outStr, charsetId, error);
+
+
+	CStringA outStr2;
+	int encodeCnt2 = TextUtilsEx::EncodeString(inStrUTF8_2, outStr2, charsetId, error);
+
+
+	CStringA encodedTxt_B;
+	int encodeType_B = 'B';
+	int eCnt_B = TextUtilsEx::WordEncode(inStrUTF8, encodedTxt_B, encodeType_B);
+
+	CStringA encodedTxt_Q;
+	int encodeType_Q = 'Q';
+	int eCnt_Q = TextUtilsEx::WordEncode(inStrUTF8, encodedTxt_Q, encodeType_Q);
+
+
+	CStringA decodedTxt;
+	CStringA charset;
+	UINT dCharsetId = 0;
+	int dCnt = TextUtilsEx::DecodeString(wordEncoded, decodedTxt, charset, dCharsetId, error);
+
+
+	CStringW wstr;
+	BOOL retU2W = TextUtilsEx::UTF82WStr(&decodedTxt, &wstr, error);
+
+
+	CString fileBaseName;
+	CString fileNameExtention;
+	//FileUtils::GetFileBaseNameAndExtension(decodedTxt, fileBaseName, fileNameExtention);
+
+	decodedTxt.Append(":?>");
+
+
+	CStringA encodedTxt;
+	int encodeType = 'B';
+	int eCnt = TextUtilsEx::WordEncode(decodedTxt, encodedTxt, encodeType);
+
+
+
+	int debW = 1;
+#endif
 
 #ifdef  IHASH_MAP_TEST
 	bool IHashMapTest();
@@ -443,8 +942,10 @@ CmboxviewApp::CmboxviewApp()
 	int deb = 1;
 #endif
 
+#endif  // end of if _DEBUG
 
 	//FileUtils FU;  FU.UnitTest();
+	int deb_exit = 1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -454,40 +955,58 @@ CmboxviewApp theApp;
 
 void SetBrowserEmulation()
 {
-	CString ieVer = CProfile::_GetProfileString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Internet Explorer", "Version");
-	int p = ieVer.Find('.');
-	int maj = atoi(ieVer);
-	int min = atoi(ieVer.Mid(p + 1));
-	DWORD dwEmulation = CProfile::_GetProfileInt(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe");
+	CString processPath;
+	CmboxviewApp::GetProcessPath(processPath);
+
+	CString procName;
+	FileUtils::GetFileName(processPath, procName);
+
+	if (procName.IsEmpty())
+	{
+		procName = L"mboxview.exe";
+	}
+
+	CString ieSvcVer = CProfile::_GetProfileString(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", L"svcVersion");
+	CString ieVer = CProfile::_GetProfileString(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", L"Version");
+	int p = ieVer.Find(L'.');
+	int maj = _tstoi(ieVer);
+	int min = _tstoi(ieVer.Mid(p + 1));
+	DWORD dwEmulation = CProfile::_GetProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName);
 	if (maj == 9 && min >= 10) {
 		DWORD dwem = min * 1000 + 1;
-		if (dwEmulation != dwem) {
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", dwem);
-			CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", dwem);
+		//if (dwEmulation != dwem)
+		{
+			BOOL ret1 = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", L"mboxview.exe", dwem);
+			BOOL ret2 = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", L"mboxview64.exe", dwem);
+			BOOL ret3 = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, dwem);
+			BOOL ret4 = CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, dwem);
+			const int deb = 1;
 		}
 	}
 	else
+	{
 		if (maj == 9) {
 			if (dwEmulation != 9999) {
-				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", 9999);
-				CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", 9999);
+				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, 9999);
+				CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, 9999);
 			}
 		}
 		else
 			if (maj == 8) {
 				if (dwEmulation != 8888) {
-					CProfile::_WriteProfileInt(HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", 8888);
-					CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", "mboxview.exe", 8888);
+					CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, 8888);
+					CProfile::_WriteProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName, 8888);
 				}
 			}
+	}
 }
 
 #pragma comment(linker, "/defaultlib:version.lib")
 
-BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls)
+BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD& ms, DWORD& ls)
 {
 	// get module handle
-	TCHAR filename[_MAX_PATH];
+	wchar_t filename[_MAX_PATH];
 
 	// get module file name
 	DWORD len = GetModuleFileName(hModule, filename,
@@ -511,7 +1030,7 @@ BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls)
 
 	LPVOID lpvi;
 	UINT iLen;
-	if (!VerQueryValue(pVersionInfo, _T("\\"), &lpvi, &iLen)) {
+	if (!VerQueryValue(pVersionInfo, L"\\", &lpvi, &iLen)) {
 		delete[] pVersionInfo;
 		return FALSE;
 	}
@@ -528,7 +1047,7 @@ BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls)
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp message handlers
 
-int CmboxviewApp::ExitInstance() 
+int CmboxviewApp::ExitInstance()
 {
 	return CWinApp::ExitInstance();
 }
@@ -541,14 +1060,14 @@ class CAboutDlg : public CDialog
 public:
 	CAboutDlg();
 	CFont m_linkFont;
-// Dialog Data
-	//{{AFX_DATA(CAboutDlg)
+	// Dialog Data
+		//{{AFX_DATA(CAboutDlg)
 	enum { IDD = IDD_ABOUTBOX };
 	//}}AFX_DATA
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CAboutDlg)
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
@@ -596,35 +1115,36 @@ void CmboxviewApp::OnAppAbout()
 
 void CmboxviewApp::OnHelpDonate()
 {
-	HINSTANCE result = ShellExecute(NULL, _T("open"), "https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
+	HINSTANCE result = ShellExecute(NULL, L"open", L"https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp message handlers
 
-BOOL CAboutDlg::OnInitDialog() 
+BOOL CAboutDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	DWORD ms, ls;
-    if (CmboxviewApp::GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
+	if (CmboxviewApp::GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
 	{
 		CmboxviewApp::m_versionMS = ms;
 		CmboxviewApp::m_versionLS = ls;
 
 		CString txt;
-        // display file version from VS_FIXEDFILEINFO struct
-        txt.Format("Version %d.%d.%d.%d", 
-                 HIWORD(ms), LOWORD(ms),
-                 HIWORD(ls), LOWORD(ls));
+		// display file version from VS_FIXEDFILEINFO struct
+		txt.Format(L"Version %d.%d.%d.%d",
+			HIWORD(ms), LOWORD(ms),
+			HIWORD(ls), LOWORD(ls));
 
 		if (sizeof(INT_PTR) == 4)
-			txt.Append(" 32bit");
+			txt.Append(L" 32bit");
 		else if (sizeof(INT_PTR) == 8)
-			txt.Append(" 64bit");
+			txt.Append(L" 64bit");
+		txt.Append(L" Unicode");
 		GetDlgItem(IDC_STATIC1)->SetWindowText(txt);
 	}
 	return TRUE;  // return TRUE unless you set the focus to a control
-	              // EXCEPTION: OCX Property Pages should return FALSE
+	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 class CCmdLine : public CCommandLineInfo
@@ -635,113 +1155,121 @@ public:
 	CCmdLine::CCmdLine() {
 		m_bError = FALSE; m_bLastPathSet = FALSE;
 	}
-	void ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL bLast);
+	void ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast);
 };
 
-void CCmdLine::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL) // bLast )
+void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 {
+	HWND h = NULL; // we don't have any window yet  
+	//CString ptxt = CString(L"ParseParam() must delete this line:  ") + lpszParam;
+	//int answer = ::MessageBox(h, ptxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
+
 	if (m_bError)
 		return;
-	if (bFlag) 
+	if (bFlag)
 	{
 		CMainFrame::m_commandLineParms.m_hasOptions = TRUE;
-		if (strncmp(lpszParam, _T("FOLDER="), 7) == 0) 
+		if (_tcsncmp(lpszParam, L"FOLDER=", 7) == 0)
 		{
 			CString openFolder = lpszParam + 7;
 			CMainFrame::m_commandLineParms.m_mboxFolderPath = openFolder;
 		}
-		else if (strncmp(lpszParam, _T("MAIL_FILE="), 10) == 0) 
+		else if (_tcsncmp(lpszParam, L"MAIL_FILE=", 10) == 0)
 		{
 			CString mailFile = lpszParam + 10;
 
 			CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = mailFile;
 		}
-		else if (strncmp(lpszParam, _T("EXPORT_EML="), 11) == 0) 
+		else if (_tcsncmp(lpszParam, L"EXPORT_EML=", 11) == 0)
 		{
 			CString exportEML = lpszParam + 11;
 			exportEML.MakeLower();
-			if (!((exportEML.Compare("y") == 0) || (exportEML.Compare("n") == 0))) 
+			if (!((exportEML.Compare(L"y") == 0) || (exportEML.Compare(L"n") == 0)))
 			{
-				CString txt = _T("Invalid Command Line Option Value \"");
+				CString txt = L"Invalid Command Line Option Value \"";
 				CString opt = lpszParam;
-				txt += opt + _T("\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?");
+				txt += opt + L"\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?";
 				HWND h = NULL; // we don't have any window yet  
-				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
 			else {
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML);
+				CString section_options = CString(sz_Software_mboxview) + L"\\Options";
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"exportEML", exportEML);
 
 				CMainFrame::m_commandLineParms.m_exportEml = FALSE;
-				if (exportEML.Compare("y") == 0)
+				if (exportEML.Compare(L"y") == 0)
 					CMainFrame::m_commandLineParms.m_exportEml = TRUE;
 			}
 		}
-		else if (strncmp(lpszParam, _T("PROGRESS_BAR_DELAY="), 19) == 0) 
+		else if (_tcsncmp(lpszParam, L"PROGRESS_BAR_DELAY=", 19) == 0)
 		{
 			CString barDelay = lpszParam + 19;
 			// Validate
 			if (!TextUtilsEx::isNumeric(barDelay))
 			{
-				CString txt = _T("Invalid Command Line Option Value \"");
+				CString txt = L"Invalid Command Line Option Value \"";
 				CString opt = lpszParam;
-				txt += opt + _T("\".\nDo you want to continue?");
+				txt += opt + L"\".\nDo you want to continue?";
 				HWND h = NULL; // we don't have any window yet  
-				int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
-			else 
+			else
 			{
 				DWORD progressBarDelay = _tstoi(barDelay);
-				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), progressBarDelay);
+				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"progressBarDelay", progressBarDelay);
 				CMainFrame::m_commandLineParms.m_progressBarDelay = progressBarDelay;
 			}
 		}
-		else if (strncmp(lpszParam, _T("EML_PREVIEW_MODE"), 19) == 0)
+		else if (_tcsncmp(lpszParam, L"EML_PREVIEW_MODE", 19) == 0)
 		{
 			CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
 		}
-		else if (strncmp(lpszParam, _T("MBOX_MERGE_LIST_FILE"), 20) == 0)
+		else if (_tcsncmp(lpszParam, L"MBOX_MERGE_LIST_FILE", 20) == 0)
 		{
 			CString emlListFile = lpszParam + 21;
 			CMainFrame::m_commandLineParms.m_mboxListFilePath = emlListFile;
 		}
-		else if (strncmp(lpszParam, _T("MBOX_MERGE_TO_FILE"), 18) == 0)
+		else if (_tcsncmp(lpszParam, L"MBOX_MERGE_TO_FILE", 18) == 0)
 		{
 			CString mergeToFilePath = lpszParam + 19;
 			FileUtils::NormalizeFilePath(mergeToFilePath);
 			CMainFrame::m_commandLineParms.m_mergeToFilePath = mergeToFilePath;
 		}
-		else if (strncmp(lpszParam, _T("TRACE_CASE"), 10) == 0)
+		else if (_tcsncmp(lpszParam, L"TRACE_CASE", 10) == 0)
 		{
 			CString traceCase = lpszParam + 11;
 			DWORD nTraceCase = _tstoi(traceCase);
 			CMainFrame::m_commandLineParms.m_traceCase = nTraceCase;
 		}
-		else 
+		else
 		{
 			// Unknown argument
 			CMainFrame::m_commandLineParms.m_hasOptions = FALSE;
-			CString txt = _T("Invalid Command Line Option \"");
+			CString txt = L"Invalid Command Line Option \"";
 			CString opt = lpszParam;
-			txt += opt 
-				+ _T("\"")
-				+ _T("\n\nValid options:\n")
-				+ _T("  -FOLDER=Folder Path\n")
-				+ _T("  -MAIL_FILE=Mbox File Path or Name to open\n")
-				+ _T("  -EXPORT_EML=y or n\n")
-				+ _T("  -PROGRESS_BAR_DELAY=Seconds\n")
-				+ _T("  -EML_PREVIEW_MODE\n")
-				+ _T("  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n")
-				+ _T("  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n")
-				+ _T("\nDo you want to continue?")
+			txt += opt
+				+ L"\""
+				+ L"\n\nValid options:\n"
+				+ L"  -FOLDER=Folder Path\n"
+				+ L"  -MAIL_FILE=Mbox File Path or Name to open\n"
+				+ L"  -EXPORT_EML=y or n\n"
+				+ L"  -PROGRESS_BAR_DELAY=Seconds\n"
+				+ L"  -EML_PREVIEW_MODE\n"
+				+ L"  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n"
+				+ L"  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n"
+				+ L"\nDo you want to continue?"
 				;
 
 			CMainFrame::m_commandLineParms.Clear();
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_YESNO);
+			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_YESNO);
 			if (answer == IDNO)
 				m_bError = TRUE;
 		}
@@ -756,7 +1284,7 @@ void* __cdecl malloc(size_t size)
 {
 	int deb = 1;
 	char mem[1];
-	void *p = new char[size];
+	void* p = new char[size];
 	tot += size;
 	return p;
 }
@@ -765,14 +1293,40 @@ void* __cdecl malloc(size_t size)
 
 #include "afxsock.h"
 
-BOOL CmboxviewApp::GetProcessPath(CString &procressPath)
+BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 {
+	HMODULE hModule = 0;
+	wchar_t procFileName[512];
+	procFileName[0] = L'\0';
+	DWORD   nSize = 511;
+	DWORD retval = GetModuleFileName(hModule, procFileName, nSize);
+	if (retval == 0)
+	{
+		DWORD error = GetLastError();
+		CString errorText = FileUtils::GetLastErrorAsString();
+		TRACE(L"GetProcessPath: error=%d errorText=%s\n", error, errorText);
+		int deb = 1;
+	}
+	CString processFilePath = procFileName;
+
 	procressPath.Empty();
-	char *pValue;
-	errno_t  er = _get_pgmptr(&pValue);
+	wchar_t* pValue;
+	errno_t  er = _get_wpgmptr(&pValue);
 	if ((er == 0) && pValue)
 	{
 		procressPath.Append(pValue);
+
+		CString txt;
+		txt.Format(L"GetModuleFileName=\n%s\n\n_get_wpgmptr     =\n%s\n", processFilePath, procressPath);
+		TRACE(L"%s", txt);
+
+#if _DEBUG
+#if 0
+		HWND h = 0;
+		int answer = MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_OK);
+#endif
+#endif
+
 		return TRUE;
 	}
 	else
@@ -781,18 +1335,36 @@ BOOL CmboxviewApp::GetProcessPath(CString &procressPath)
 
 BOOL CmboxviewApp::InitInstance()
 {
-	// Check if MBox Viewer can write to registry
-	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);
-	if (ret == FALSE)
-	{
-		HWND h = NULL; // we don't have any window yet 
-		CString txt = "Could not write to Windows registry likely  due to lack of permission. "
-			"Please resolve the issue and run the MBox Viewer again\n";
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	BOOL retExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview));
 
-		// To stop memory leaks reports by debugger
-		MboxMail::ReleaseResources(FALSE);
-		return FALSE;
+	if (retExists == FALSE)
+	{
+		// Check if MBox Viewer can write to registry
+		BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);  // FIXMEFIXME
+		if (ret == FALSE)
+		{
+			HWND h = NULL; // we don't have any window yet 
+			CString txt = L"Could not write to Windows registry likely  due to lack of permission. "
+				"Please resolve the issue and run the MBox Viewer again\n";
+			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+			// To stop memory leaks reports by debugger
+			MboxMail::ReleaseResources(FALSE);
+			return FALSE;
+		}
+	}
+
+	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");  // FIXME Redundant check ??
+	if ((retExists == FALSE) || dataFolder.IsEmpty())
+	{
+		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
+		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+		if (retLegacyExists == TRUE)
+		{
+			NTreeView::ImportLegacyRegistryData();
+			int deb = 1;
+		}
 	}
 
 	HANDLE procHandle = GetCurrentProcess();
@@ -810,7 +1382,7 @@ BOOL CmboxviewApp::InitInstance()
 		;
 
 	MboxMail::glStackWalker = new MyStackWalker(options);
-	MyStackWalker *sw = MboxMail::glStackWalker;
+	MyStackWalker* sw = MboxMail::glStackWalker;
 	if (sw)
 	{
 		// preload modules, etc to minimize work in MyUnhandledExceptionFilter();
@@ -819,11 +1391,11 @@ BOOL CmboxviewApp::InitInstance()
 	}
 
 #if 0
-	char *stackDumpFileName = "UnhandledException_StackDump.txt";
+	char* stackDumpFileName = "UnhandledException_StackDump.txt";
 	UINT seNumb = 0;
-	CONTEXT *ContextRecord = nullptr;
+	CONTEXT* ContextRecord = nullptr;
 	int mailPosition = -1;
-	BOOL ret = DumpStack(sw, stackDumpFileName, (TCHAR*)"Preload", seNumb, ContextRecord, mailPosition);
+	BOOL ret = DumpStack(sw, stackDumpFileName, (CHAR*)"Preload", seNumb, ContextRecord, mailPosition);
 #endif
 
 	/// Disable "Whole program Optimization" to get accurate Stack Trace  !!!!
@@ -833,9 +1405,11 @@ BOOL CmboxviewApp::InitInstance()
 	//AfxEnableMemoryTracking(TRUE);
 	//afxMemDF = allocMemDF | delayFreeMemDF | checkAlwaysMemDF;
 
+
+
 	CCmdLine cmdInfo;
 	CString mailFile;
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "mailFile", mailFile);
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"mailFile", mailFile);
 
 	CMainFrame::m_commandLineParms.m_allCommanLineOptions = CWinApp::m_lpCmdLine;
 	ParseCommandLine(cmdInfo);
@@ -846,11 +1420,11 @@ BOOL CmboxviewApp::InitInstance()
 	}
 	else if (!CMainFrame::m_commandLineParms.m_hasOptions && !CMainFrame::m_commandLineParms.m_allCommanLineOptions.IsEmpty())
 	{
-		CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
+		//CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
 		CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
-		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim("\"");
-		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight("\\");
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L"\"");
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight(L"\\");
 	}
 	else
 	{
@@ -867,20 +1441,20 @@ BOOL CmboxviewApp::InitInstance()
 		}
 	}
 
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "processPath");
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 #if 0
 	// Commented out for now since it seem to confuse users. Need to find better solution.
 	if (!processPath.IsEmpty())
 	{
-		CString txt = _T("Mbox viewer instance might be running already:\n\n") + processPath;
-		txt += _T("\n\n");
-		txt += _T("Only single instance should be running to avoid potential\n");
-		txt += _T("issues since all instances will share the same data in the registry.\n\n");
-		txt += _T("In most cases this warning can be ignored.\n"
-			"It will be generated if program crashes or it is killed from Task Manager.\n\n");
-		txt += _T("Do you want to continue?");
+		CString txt = L"Mbox viewer instance might be running already:\n\n" + processPath;
+		txt += L"\n\n";
+		txt += L"Only single instance should be running to avoid potential\n";
+		txt += L"issues since all instances will share the same data in the registry.\n\n";
+		txt += L"In most cases this warning can be ignored.\n"
+			"It will be generated if program crashes or it is killed from Task Manager.\n\n";
+		txt += L"Do you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 		{
 			MboxMail::ReleaseResources();
@@ -889,10 +1463,9 @@ BOOL CmboxviewApp::InitInstance()
 	}
 #endif
 
-	CString procFullPath;
-	GetProcessPath(procFullPath);
+	GetProcessPath(m_processPath);
 
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"), procFullPath);
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"processPath", m_processPath);
 
 	AfxEnableControlContainer();
 
@@ -911,11 +1484,11 @@ BOOL CmboxviewApp::InitInstance()
 	// Change the registry key under which our settings are stored.
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization.
-	SetRegistryKey(_T("mboxview"));
+	SetRegistryKey(L"UMBoxViewer");  // FIXMEFIXME
 
 	m_pRecentFileList = new
-		CRecentFileList(0, "MRUs",
-		"Path %d", 16);
+		CRecentFileList(0, L"MRUs",
+			L"Path %d", 16);
 	m_pRecentFileList->ReadList();
 	// Initialize all Managers for usage. They are automatically constructed
 	// if not yet present
@@ -926,13 +1499,60 @@ BOOL CmboxviewApp::InitInstance()
 
 	DWORD msgViewPosition = 1;
 	BOOL retval;
-	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), msgViewPosition);
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", msgViewPosition);
+	if (retval == TRUE) {
+		if ((msgViewPosition < 1) && (msgViewPosition > 3))
+			msgViewPosition = 1;  // bottom=1
+	}
+
+	//CMainFrame* pFrame = new CMainFrame(msgViewPosition);
+
+	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+
+	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", msgViewPosition);
 	if (retval == TRUE) {
 		if ((msgViewPosition < 1) && (msgViewPosition > 3))
 			msgViewPosition = 1;  // bottom=1
 	}
 
 	CMainFrame* pFrame = new CMainFrame(msgViewPosition);
+
+	if (pFrame == 0)
+	{
+		int deb = 1;
+	}
+
+	DWORD BUFSIZE = 1024;
+	wchar_t Buffer[1024];
+
+	DWORD dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
+	if (dwRet > 0)
+	{
+		m_startupPath = CString(Buffer);
+	}
+
+	CString folderPath;
+	FileUtils::GetFolderPath(m_processPath, folderPath);
+
+	if (!::SetCurrentDirectory((LPCWSTR)folderPath))
+	{
+		int deb = 1;
+	}
+
+	dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
+	if (dwRet > 0)
+	{
+		m_currentPath = CString(Buffer);
+	}
+
+	pFrame->m_processPath = m_processPath;
+	pFrame->m_startupPath = m_startupPath;
+	pFrame->m_currentPath = m_currentPath;
+
 	if (pFrame->GetSafeHwnd() == 0)
 		int deb = 1;
 	m_pMainWnd = pFrame;
@@ -946,7 +1566,7 @@ BOOL CmboxviewApp::InitInstance()
 	// The one and only window has been initialized, so show and update it.
 	pFrame->ShowWindow(SW_SHOW);
 	pFrame->UpdateWindow();
-	
+
 	DWORD ms, ls;
 	if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
 	{
@@ -957,28 +1577,28 @@ BOOL CmboxviewApp::InitInstance()
 		CString newPlatform;
 		CString newVer;
 		// display file version from VS_FIXEDFILEINFO struct
-		newVer.Format("%d.%d.%d.%d",
+		newVer.Format(L"%d.%d.%d.%d",
 			HIWORD(ms), LOWORD(ms),
 			HIWORD(ls), LOWORD(ls));
-		m_savedVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version");
+
+		if (sizeof(INT_PTR) == 4)
+			newPlatform.Append(L"32bit");
+		else if (sizeof(INT_PTR) == 8)
+			newPlatform.Append(L"64bit");
+
+		savedPlatform = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"platform");
+		m_savedVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"version");
+
 		if (m_savedVer.Compare(newVer) != 0)
 		{
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "version", newVer);
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"version", newVer);
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"platform", newPlatform);
 			pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
 		}
-		else
+		else if (savedPlatform.Compare(newPlatform) != 0)
 		{
-			if (sizeof(INT_PTR) == 4)
-				newPlatform.Append("32bit");
-			else if (sizeof(INT_PTR) == 8)
-				newPlatform.Append("64bit");
-
-			savedPlatform = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "platform");
-			if (savedPlatform.Compare(newPlatform) != 0)
-			{
-				CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "platform", newPlatform);
-				pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
-			}
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"platform", newPlatform);
+			pFrame->PostMessage(WM_COMMAND, ID_APP_ABOUT, 0);
 		}
 	}
 
@@ -986,52 +1606,16 @@ BOOL CmboxviewApp::InitInstance()
 
 	if (AfxSocketInit() == FALSE)
 	{
-		AfxMessageBox("Sockets Could Not Be Initialized");
+		AfxMessageBox(L"Sockets Could Not Be Initialized");
 		return FALSE;
 	}
-
-#if 0
-	// TEST if file name can be longet than 260 characters
-
-	CFile testFile;
-	CString fileName = "\\\\?";
-
-	fileName.AppendChar('\\');
-
-	fileName.Empty();
-	fileName.Append("C:\\");
-	for (int i = 0; i < 512; i++)
-		fileName.Append("x");
-
-	fileName.Append("Y.txt");
-
-	UINT nFlags = CFile::modeWrite | CFile::modeCreate;
-	BOOL ret = testFile.Open(fileName, nFlags);
-	if (ret)
-		testFile.Close();
-
-	DWORD dwAccess = GENERIC_WRITE;
-	DWORD dwCreationDisposition = CREATE_ALWAYS;
-
-	CStringW fileNameW;
-	DWORD error;
-
-	BOOL r = TextUtilsEx::Ansi2Wide(fileName, fileNameW, error);
-
-	HANDLE hFile = CreateFileW(fileNameW, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		BOOL retClose = CloseHandle(hFile);
-	}
-#endif
-
 	return TRUE;
 }
 
 
 void CAboutDlg::OnStnClickedDonation()
 {
-	HINSTANCE result = ShellExecute(NULL, _T("open"), "https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
+	HINSTANCE result = ShellExecute(NULL, L"open", L"https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
 }
 
 
@@ -1072,7 +1656,7 @@ bool IHashMapTest()
 	class Item
 	{
 	public:
-		Item(std::string &nm) { name = nm; }
+		Item(std::string& nm) { name = nm; }
 		//
 		dlink_node<Item> hashNode;
 		dlink_node<Item> hashNode2;
@@ -1080,12 +1664,12 @@ bool IHashMapTest()
 	};
 
 	struct ItemHash {
-		unsigned long operator()(const Item *key) const
+		unsigned long operator()(const Item* key) const
 		{
 			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
 		};
-		unsigned long operator()(Item *key) const
+		unsigned long operator()(Item* key) const
 		{
 			hashsum_t  hashsum = std::hash<std::string>{}(key->name);
 			return hashsum;
@@ -1093,11 +1677,11 @@ bool IHashMapTest()
 	};
 
 	struct ItemEqual {
-		bool operator()(const Item *key, const Item *item) const
+		bool operator()(const Item* key, const Item* item) const
 		{
 			return (key->name == item->name);
 		};
-		bool operator()(Item *key, const Item *item) const
+		bool operator()(Item* key, const Item* item) const
 		{
 			return (key->name == item->name);
 		};
@@ -1108,10 +1692,10 @@ bool IHashMapTest()
 
 	unsigned long sz = 10;
 
-	Item *it = new Item(std::string("John"));
-	Item *it2 = new Item(std::string("Irena"));
-	Item *it3 = new Item(std::string("Lucyna"));
-	Item *it4 = new Item(std::string("Jan"));
+	Item* it = new Item(std::string("John"));
+	Item* it2 = new Item(std::string("Irena"));
+	Item* it3 = new Item(std::string("Lucyna"));
+	Item* it4 = new Item(std::string("Jan"));
 
 	MyHashMap hashMap(sz);
 	MyHashMap hashMap2(sz);
@@ -1171,7 +1755,7 @@ bool IHashMapTest()
 	assert(hashMap.count() == 3);
 
 	// Remove by key and hashsum
-	Item *item;
+	Item* item;
 	if ((item = hashMap.find(it2)) != nullptr)
 	{
 		hashsum_t hashsum = ItemHash{}(it2);
@@ -1214,7 +1798,7 @@ bool IHashMapTest()
 	int L = 1;
 	int R = 10;
 	int p = next_fake_prime(L);
-	TRACE("%d,%d=%d\n", L,R,p);
+	TRACE("%d,%d=%d\n", L, R, p);
 	//
 	L = 1000; R = 10;
 	p = next_fake_prime(L);
@@ -1237,10 +1821,10 @@ int next_fake_prime(int L)
 		modNumbs = L;
 	if (L < 10000)
 		R = 10;
-	else 
+	else
 		R = 100;
 
-	for (i = L; i <= L+R; i++)
+	for (i = L; i <= L + R; i++)
 	{
 		for (j = 2; j <= modNumbs; ++j)
 		{
@@ -1250,7 +1834,7 @@ int next_fake_prime(int L)
 		if (j == modNumbs)
 			break;
 	}
-	if (i < (L+R))
+	if (i < (L + R))
 		return i;
 	else
 		return L;
@@ -1366,11 +1950,11 @@ BOOL CharEncodingTest()
 	input.Append("Hello Everybody");
 
 
-	SimpleString *str = &input;
+	SimpleString* str = &input;
 	UINT inCodePage = CP_ISO_8859_1;
 	UINT outCodePage = CP_UTF8;
-	SimpleString *result = &local1;
-	SimpleString *workBuff = &local2;
+	SimpleString* result = &local1;
+	SimpleString* workBuff = &local2;
 
 	int buffLen = str->Count() * 4 + 2;
 	workBuff->ClearAndResize(buffLen);

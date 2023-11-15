@@ -76,20 +76,20 @@ public:
 	//CRichEditCtrl m_hdr;
 	CFont m_font;
 	CString m_strTitleSubject, m_strTitleFrom, m_strTitleDate, m_strTitleTo, m_strTitleCC, m_strTitleBCC, m_strTitleBody;  // Labels
-	CString m_strSubject, m_strFrom, m_strDate, m_strTo, m_strCC, m_strBCC, m_strBody;
+	CStringA m_strSubject, m_strFrom, m_strDate, m_strTo, m_strCC, m_strBCC, m_strBody;
 	UINT m_subj_charsetId, m_from_charsetId, m_date_charsetId, m_to_charsetId, m_cc_charsetId, m_bcc_charsetId, m_body_charsetId;
 	UINT m_cnf_subj_charsetId, m_cnf_from_charsetId, m_cnf_date_charsetId, m_cnf_to_charsetId, m_cnf_cc_charsetId, m_cnf_bcc_charsetId;
-	CString m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_cc_charset, m_bcc_charset, m_body_charset;
+	CStringA m_subj_charset, m_from_charset, m_date_charset, m_to_charset, m_cc_charset, m_bcc_charset, m_body_charset;
 	//
 	CString m_strMailHeader;
 	//
-	CString m_mail_header_charset;
+	CStringA m_mail_header_charset;
 	UINT m_mail_header_charsetId;
 	//
-	CString m_body_text_charset;
+	CStringA m_body_text_charset;
 	UINT m_body_text_charsetId;
 	//
-	CString m_body_html_charset;
+	CStringA m_body_html_charset;
 	UINT m_body_html_charsetId;
 
 	int m_show_charsets;
@@ -102,7 +102,7 @@ public:
 // Operations
 public:
 protected:
-	int PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle, CString &FieldText, CString &Charset, UINT CharsetId, UINT CnfCharsetId);
+	int PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle, CStringA &FieldText, CStringA &Charset, UINT CharsetId, UINT CnfCharsetId);
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -113,10 +113,9 @@ protected:
 
 // Implementation
 public:
-	void ClearSearchResultsInIHTMLDocument(CString &searchID);
-	void FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase);
+	void ClearSearchResultsInIHTMLDocument(CString& searchID);
+	void FindStringInIHTMLDocument(CString& searchText, BOOL matchWord, BOOL matchCase);
 	static void PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage);
-
 
 	void OnMessageheaderpanelayoutDefault();
 	void OnMessageheaderpanelayoutExpanded();
@@ -144,7 +143,10 @@ public:
 	BOOL m_bAttach;
 	CString m_searchID;
 	CString m_matchStyle;
+
 	virtual ~NMsgView();
+
+	void CalculateViewRec(CRect& rc, int cx, int cy);
 
 	// Generated message map functions
 protected:
@@ -156,6 +158,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	afx_msg LRESULT OnCmdParam_OnSizeMsgView(WPARAM wParam, LPARAM lParam);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

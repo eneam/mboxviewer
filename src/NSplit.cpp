@@ -118,7 +118,7 @@ void CNSplit::OnDrawSplitter(CDC* pDC, ESplitType nType,
 		break;
 
 	default:
-		ASSERT(FALSE);  // unknown splitter type
+		_ASSERTE(FALSE);  // unknown splitter type
 	}
 	// fill the middle
 	pDC->FillSolidRect(rect, m_clrBtnFace);

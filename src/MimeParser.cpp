@@ -138,7 +138,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 	int contentIndex = 0;
 	int contentLength = 0;
 
-	CString line;
+	CStringA line;
 	char *p = (char*)pszData;
 	char *e = (char*)pszData + nDataSize;
 
@@ -185,18 +185,22 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 					m_IsTextPlain = false;
 				}
 				int ret = MimeParser::GetParamValue(line, cTypeLen, cCharset, cCharsetLen, m_Charset);
-				if (!m_Charset.IsEmpty()) {
-					m_PageCode = TextUtilsEx::Str2PageCode(m_Charset);
+				if (!m_Charset.IsEmpty())
+				{
+					m_PageCode = TextUtilsEx::StrPageCodeName2PageCode(m_Charset);
 					if (m_PageCode > CP_UTF8)
 						int deb = 1;
 					if ((m_PageCode == 0) && m_IsTextHtml)
 						int deb = 1;
 				}
 				ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
-				if (!m_Name.IsEmpty()) {
-					CString charset;
+				if (!m_Name.IsEmpty())
+				{
+					UINT toCharsetId = 0; // not used anyway
+					CStringA charset;
 					UINT charsetId = 0;
-					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId);
+					DWORD error;
+					CStringA Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId, toCharsetId, error);
 					// TODO: what about charset and charsetId :)
 					m_Name = Name;
 					m_NamePageCode = charsetId;
@@ -210,9 +214,11 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 				int ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
 				if (!m_Name.IsEmpty()) 
 				{
-					CString charset;
+					UINT toCharsetId = 0; // not used anyway
+					CStringA charset;
 					UINT charsetId = 0;
-					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId);
+					DWORD error;
+					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId, toCharsetId, error);
 					// TODO: what about charset and charsetId :)
 					m_Name = Name;
 					m_NamePageCode = charsetId;
@@ -226,7 +232,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			p = MimeParser::GetMultiLine(p, e, line);
 			MimeParser::GetFieldValue(line, cTransferEncodingLen, m_TransferEncoding);
 		}
-		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cDisposition, cDispositionLen) == 0)  // Begin Disposition
 		{
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
@@ -237,7 +243,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			int posret = line.Find(cFileNameStar);
 			if (posret > 0)
 			{
-				CString fileName;
+				CStringA fileName;
 				BOOL hasCharset;
 				// TODO: Verify ; Concatenate multiple filename*0 , filename*1 segments if present; make sure it is safe before you anable 
 				int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cFileNameStar, cFileNameStarLen, fileName, hasCharset);
@@ -245,24 +251,62 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 				TRACE("FILENAME  = %s\n", line);
 				TRACE("FILENAME* = %s\n", fileName);
 
-				CString charset;
+				CStringA charset;
 				UINT charsetId = 0;
 
-				CString outString;
+				CStringA outString;
 				if (hasCharset)
 				{
+					// example string UTF-8''Copy%20of%20JOHN%20KOWALSKI%20SECOND%20PRIORITIES%20Rev%201%20with%20effort%20cost.xlsx
+					// value looks like URL, may contatin %20 for example
+					// can value look like URL but without charset ?? try to verify
 					int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, outString);
-					fileName.Empty();
-					fileName.Append(outString);
+					if (retdecode)
+					{
+						if (charsetId == CP_UTF8)
+						{
+							fileName.Empty();
+							fileName.Append(outString);
+						}
+						else
+						{
+							// Convert to UTF-8 or don't touch ??
+							CStringA tostr;
+							DWORD error;
+							BOOL retS2U = TextUtilsEx::Str2UTF8((LPCSTR)outString, outString.GetLength(), charsetId, tostr, error);
+							if (retS2U)
+							{
+								fileName = tostr;
+								charsetId = CP_UTF8;
+							}
+
+						}
+					}
+				}
+				else
+				{
+					int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, outString);
+					if (retdecode && fileName.CompareNoCase(outString))
+					{
+						_ASSERTE(FALSE);
+
+						fileName.Empty();
+						fileName.Append(outString);
+					}
 				}
 
 				// We prefer filename but in this case we may prefer Name if not empty
+				// fileName is local here and not used later yet ??
+				// Investigate more Concatenate multiple filename*0, etc
 				if (!m_Name.IsEmpty())
 				{
 					if (m_Name.CompareNoCase(fileName) == 0)
 						TRACE("Name and Filename match\n");
 					else
+					{
+						_ASSERTE(FALSE);
 						TRACE("Name and Filename don't match !!!!!!\n");
+					}
 				}
 				int deb = 1;
 			}
@@ -276,10 +320,13 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			}
 			// attachment type or not, get the filename/attachment name 
 			int ret = MimeParser::GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
-			if (!m_AttachmentName.IsEmpty()) {
-				CString charset;
+			if (!m_AttachmentName.IsEmpty())
+			{
+				UINT toCharsetId = 0; // not used anyway
+				CStringA charset;
 				UINT charsetId = 0;
-				CString attachmentName = TextUtilsEx::DecodeString(m_AttachmentName, charset, charsetId);
+				DWORD error;
+				CStringA attachmentName = TextUtilsEx::DecodeString(m_AttachmentName, charset, charsetId, toCharsetId, error);
 				// TODO: what about charset and charsetId :)
 
 				m_AttachmentNamePageCode = charsetId;
@@ -291,17 +338,20 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 				int posret = line.Find(cFileNameStar);
 				if (posret > 0)
 				{
-					CString fileName;
+					CStringA fileName;
 					BOOL hasCharset;
 					// TODO: Concatenate multiple filename*0 , filename*1 segments if present;
 					int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cFileNameStar, cFileNameStarLen, fileName, hasCharset);
 
-					CString charset;
+					CStringA charset;
 					UINT charsetId = 0;
 
-					CString attachmentName;
+					CStringA attachmentName;
 					if (hasCharset)
 					{
+						// example string UTF-8''Copy%20of%20JOHN%20KOWALSKI%20SECOND%20PRIORITIES%20Rev%201%20with%20effort%20cost.xlsx
+						// value looks like URL, may contatin %20 for example
+						// can value look like URL but without charset ?? try to verify
 						int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, attachmentName);
 						fileName.Empty();
 						fileName.Append(attachmentName);
@@ -309,10 +359,14 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 						m_AttachmentNamePageCode2 = charsetId;
 						m_AttachmentName2 = attachmentName;
 					}
+					else
+					{
+						;// ???
+					}
 					int deb = 1;
 				}
 			}
-		}
+		}  // end of Disposition
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
 			BreakParser();
 			p = MimeParser::GetMultiLine(p, e, line);
@@ -443,7 +497,7 @@ int MailBody::Load(char *& pszDataBase, const char* pszData, int nDataSize)
 		return (int)(pszData - pszDataBegin);
 
 	// load child body parts
-	ASSERT(m_Boundary.GetLength() > 0);
+	_ASSERTE(m_Boundary.GetLength() > 0);
 
 	pszEnd = pszData + nDataSize;
 	const char* pszBound1 = FindBoundary(pszData, pszEnd, m_Boundary, m_Boundary.GetLength());
@@ -621,7 +675,7 @@ Note:  While the standard  permits  folding  wherever  linear -
 	between addresses, after the separating comma.
 #endif
 
-char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
+char *MimeParser::GetMultiLine(char *p, char *e, CStringA &line, BOOL raw)
 {
 	// TODO: not the most efficient implementation
 	char *p_beg = p;
@@ -631,7 +685,8 @@ char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
 	::memcpy(ss, p_beg, p - p_beg);
 
 	line.TrimLeft();
-	line.TrimRight("\r\n");
+	if (!raw)
+		line.TrimRight("\r\n");
 
 	if (line.IsEmpty())
 		return p;
@@ -645,20 +700,27 @@ char *MimeParser::GetMultiLine(char *p, char *e, CString &line)
 		char *p_next_beg = p;
 		p = EatNewLine(p, e);
 
-		CString nextLine;
+		CStringA nextLine;
 		char *ss = nextLine.GetBufferSetLength(IntPtr2Int(p - p_next_beg));
 		::memcpy(ss, p_next_beg, p - p_next_beg);
-		nextLine.TrimLeft();
-		nextLine.TrimRight("\r\n");
+		if (!raw)
+		{
+			nextLine.TrimLeft();
+			nextLine.TrimRight("\r\n");
 
-		line += " " + nextLine;  // this is according to spec but it doesn't work in many cases
-		//line += nextLine;
+			line += " " + nextLine;  // this is according to spec but it doesn't work in many cases  FIXME
+			//line += nextLine;
+		}
+		else
+		{
+			line += nextLine;
+		}
 	}
 	line.Trim();
 	return p;
 };
 
-int MimeParser::GetFieldValue(CString &fieldLine, int startPos, CString &value)
+int MimeParser::GetFieldValue(CStringA &fieldLine, int startPos, CStringA &value)
 {
 	int posEnd = fieldLine.FindOneOf(";\n\r");
 	if (posEnd < 0)
@@ -668,13 +730,13 @@ int MimeParser::GetFieldValue(CString &fieldLine, int startPos, CString &value)
 	value.Trim();
 	return 1;
 }
-int MimeParser::GetMessageId(CString& fieldLine, int startPos, CString& value)
+int MimeParser::GetMessageId(CStringA& fieldLine, int startPos, CStringA& value)
 {
 	int next_startPos = MimeParser::GetMessageId((char*)((LPCSTR)fieldLine), startPos, value);
 	return next_startPos;
 }
 
-int MimeParser::GetMessageId(char* fldLine, int startPos, CString &value)
+int MimeParser::GetMessageId(char* fldLine, int startPos, CStringA &value)
 {
 	char* str = fldLine;
 	str += startPos;
@@ -707,9 +769,9 @@ int MimeParser::GetMessageId(char* fldLine, int startPos, CString &value)
 	return pos;
 }
 
-int MimeParser::GetMessageIdList(CString& fieldLine, int startPos, MessageIdList &msgIdList)
+int MimeParser::GetMessageIdList(CStringA& fieldLine, int startPos, MessageIdList &msgIdList)
 {
-	CString value;
+	CStringA value;
 	char* buffer = (char*)((LPCSTR)fieldLine);
 	while (startPos >= 0)
 	{
@@ -721,7 +783,7 @@ int MimeParser::GetMessageIdList(CString& fieldLine, int startPos, MessageIdList
 	return (int)msgIdList.size();
 }
 
-int MimeParser::GetThreadId(CString &fieldLine, int startPos, CString &value)
+int MimeParser::GetThreadId(CStringA &fieldLine, int startPos, CStringA &value)
 {
 	int posEnd = fieldLine.FindOneOf(";\n\r");
 	if (posEnd < 0)  // indicates problem, '>' expected
@@ -732,14 +794,14 @@ int MimeParser::GetThreadId(CString &fieldLine, int startPos, CString &value)
 	return 1;
 }
 
-int MimeParser::GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value)
+int MimeParser::GetThreadId(CStringA &fieldLine, int startPos, unsigned __int64 &value)
 {
 	const char *pos = (LPCSTR)fieldLine + startPos;
 	value = _atoi64(pos);
 	return 1;
 }
 
-int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value)
+int MimeParser::GetParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value)
 {
 	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
 	value.Empty();
@@ -796,12 +858,12 @@ int MimeParser::GetParamValue(CString &fieldLine, int startPos, const char *para
 	return 1;
 }
 
-int MimeParser::GetFilenameParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset)
+int MimeParser::GetFilenameParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset)
 {
 	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
 	value.Empty();
 
-	CString part;
+	CStringA part;
 	hasCharset = FALSE;
 	int hasCharsetDone = FALSE;
 	int lastPos = fieldLine.GetLength();
@@ -829,7 +891,7 @@ int MimeParser::GetFilenameParamValue(CString &fieldLine, int startPos, const ch
 		return 1;
 }
 
-int MimeParser::GetFilenameParamPartValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset)
+int MimeParser::GetFilenameParamPartValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset)
 {
 	// TODO: it will break if ';' is part of the value. Need to handle quoted values containing ';' ?
 	value.Empty();
@@ -937,7 +999,7 @@ int MimeParser::GetFilenameParamPartValue(CString &fieldLine, int startPos, cons
 	char *posBegin = p;
 	char *posEnd = pend;
 
-	CString part = fieldLine.Mid(IntPtr2Int(posBegin - pbegin_sv), IntPtr2Int(posEnd - posBegin));
+	CStringA part = fieldLine.Mid(IntPtr2Int(posBegin - pbegin_sv), IntPtr2Int(posEnd - posBegin));
 	value.Append(part);
 
 	value.Trim("\"");
@@ -975,27 +1037,10 @@ char* MimeParser::SkipEmptyLines(const char* p, const char* e)
 	return (char*)p;
 }
 
-#if 0
 char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 {
-	isEmpty = true;
-	while ((p < e) && (*p++ != '\n'))
-	{
-		if (isEmpty)
-		{
-			if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
-				;
-			else
-				isEmpty = false;
-		}
-	}
-	return p;
-}
-
-#else
-
-char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
-{
+	// mail text is not always formatted well
+	// below will handle multiple CRs in a row and CR but no NL that follows to support mails not well formatted
 	isEmpty = true;
 	while (p < e)
 	{
@@ -1024,6 +1069,8 @@ char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 		if (*p == '\n')  // CR NL
 			return ++p;
 
+		// handle case abcCRxyz; return pointer to xyz
+		// Should caller fix this and always pass abcCRNLxyz FIXME
 		if (*p != '\r')  // CR no NL
 			return p;
 
@@ -1033,10 +1080,17 @@ char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 	return p;
 }
 
-#endif
-
 char *MimeParser::EatNewLine(char* p, char*e)
 {
+#if 0
+	while ((p < e) && (*p != '\n')) { p++; }
+	if (p < e)
+		return ++p;
+	else
+		return p;
+#else
+	// mail text is not always formatted well
+	// below will handle multiple CRs in a row and CR but no NL that follows to support mails not well formatted
 	while (p < e)
 	{
 		while ((p < e) && (*p != '\n') && (*p != '\r')) { p++; }
@@ -1054,6 +1108,8 @@ char *MimeParser::EatNewLine(char* p, char*e)
 		if (*p == '\n')  // CR NL
 			return ++p;
 
+		// handle case abcCRxyz; return pointer to xyz
+		// Should caller fix this and always pass abcCRNLxyz FIXME
 		if (*p != '\r')  // CR no NL
 			return p;
 
@@ -1061,10 +1117,25 @@ char *MimeParser::EatNewLine(char* p, char*e)
 	}
 
 	return p;
+#endif
 }
 
 char *MimeParser::EatNewLine(char* p, char*e, int &maxLineLength)
 {
+#if 0
+	while ((p < e) && (*p != '\n') && (maxLineLength > 0))
+	{
+		p++;
+		maxLineLength--;
+	}
+	if (p < e)
+		return ++p;
+	else
+		return p;
+
+#else
+	// mail text is not always formatted well
+	// below will handle multiple CRs in a row and CR but no NL that follows to support mails not well formatted
 	while (p < e)
 	{
 		while ((p < e) && (*p != '\n') && (*p != '\r') && (maxLineLength > 0))
@@ -1088,6 +1159,8 @@ char *MimeParser::EatNewLine(char* p, char*e, int &maxLineLength)
 		if (*p == '\n')  // CR NL
 			return ++p;
 
+		// handle case abcCRxyz; return pointer to xyz
+		// Should caller fix this and always pass abcCRNLxyz FIXME
 		if (*p != '\r')  // CR no NL
 			return p;
 
@@ -1096,4 +1169,5 @@ char *MimeParser::EatNewLine(char* p, char*e, int &maxLineLength)
 	if (maxLineLength <= 0)
 		int deb = 1;
 	return p;
+#endif
 }

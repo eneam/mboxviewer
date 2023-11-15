@@ -31,34 +31,82 @@
 
 #pragma once
 
+#define MAX_KEY_NAME_LENGTH 255
+#define MAX_KEY_VALUE_LENGTH 16383
+
+class RegKeyFromToInfo
+{
+public:
+	UINT m_type;
+	CString m_from;
+	CStringW m_to;
+};
+
+typedef CArray<RegKeyFromToInfo> KeyFromToTable;
+
+struct RegQueryInfoKeyParams
+{
+	RegQueryInfoKeyParams() { SetDflts(); }
+	TCHAR    achKey[MAX_KEY_NAME_LENGTH +1];   // buffer for subkey name
+	DWORD    cbName;                   // size of name string 
+	TCHAR    achClass[MAX_PATH+1];   // buffer for class name 
+	DWORD    cchClassName;         // size of class string 
+	DWORD    cSubKeys;             // number of subkeys 
+	DWORD    cbMaxSubKey;          // longest subkey size 
+	DWORD    cchMaxClass;          // longest class string 
+	DWORD    cValues;              // number of values for key 
+	DWORD    cchMaxValue;          // longest value name 
+	DWORD    cbMaxValueData;       // longest value data 
+	DWORD    cbSecurityDescriptor; // size of security descriptor 
+	FILETIME ftLastWriteTime;      // last write time
+	void SetDflts()
+	{
+		cbName = MAX_KEY_NAME_LENGTH;
+		achClass[0] = 0;
+		cchClassName = MAX_PATH;
+		cSubKeys = 0;
+	}
+};
+
 class CProfile {
 public:
 /*	CProfile();
 	CProfile(CString path);
-	BOOL _WriteProfileInt( LPCTSTR section, LPCTSTR key, DWORD value );
-	BOOL _WriteProfileString( LPCTSTR section, LPCTSTR key, CString &value );
-	int _GetProfileInt( LPCTSTR section, LPCTSTR key );
-	CString _GetProfileString( LPCTSTR section, LPCTSTR key );
+	BOOL _WriteProfileInt( LPCWSTR section, LPCWSTR key, DWORD value );
+	BOOL _WriteProfileString( LPCWSTR section, LPCWSTR key, CString &value );
+	int _GetProfileInt( LPCWSTR section, LPCWSTR key );
+	CString _GetProfileString( LPCWSTR section, LPCWSTR key );
 	void _SetProfileAppKey(CString str) { m_regAppKey = str; };
 */	
-	static BOOL _DeleteProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key);
-	static BOOL _WriteProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD value );
-	static BOOL _WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, CString &value );
-	static BOOL _WriteProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, const BYTE *lpData, DWORD cbData);
+	static BOOL _DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static BOOL _WriteProfileInt( HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value );
+	static BOOL _WriteProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key, CString &value );
+	static BOOL _WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE *lpData, DWORD cbData);
 
-/*	static BOOL _WriteProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key, int value ) {
+/*	static BOOL _WriteProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key, int value ) {
 		CString w;
 		w.Format("%d", value);
 		return _WriteProfileString( hKey, section, key, w );
 	}*/
-	static int _GetProfileInt( HKEY hKey, LPCTSTR section, LPCTSTR key );
-	static CString _GetProfileString( HKEY hKey, LPCTSTR section, LPCTSTR key );
-	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, DWORD &intval);
-	static BOOL _GetProfileInt(HKEY hKey, LPCTSTR section, LPCTSTR key, int &intval);
-	static BOOL _GetProfileString(HKEY hKey, LPCTSTR section, LPCTSTR key, CString &str);
-	static BOOL _GetProfileBinary(HKEY hKey, LPCTSTR section, LPCTSTR key, BYTE *lpData, DWORD &cbData);
+	static int _GetProfileInt( HKEY hKey, LPCWSTR section, LPCWSTR key );
+	static CString _GetProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key );
+	static BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD &intval);
+	static BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int &intval);
+	static BOOL _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString &str);
+	static BOOL _GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE *lpData, DWORD &cbData);
 	//
-	static BOOL _DeleteKey(HKEY hKey, LPCTSTR section, LPCTSTR key);
+	static BOOL _DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static BOOL _DeleteKey(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive);
+	//
+	static LSTATUS CopyKey(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
+	static LSTATUS CopySubKeys(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
+	static LSTATUS CopyKeyValueList(HKEY hKey, LPCWSTR section, LPCWSTR toSection, KeyFromToTable& arr);
+	static BOOL CheckIfKeyExists(HKEY hKey, LPCWSTR section);
+	//
+	static LSTATUS InitRegQueryInfoKeyParams(HKEY hKey, RegQueryInfoKeyParams& params);
+	static LSTATUS EnumerateAllSubKeys(HKEY hKey, LPCWSTR section);
+	static LSTATUS EnumerateAllSubKeyValues(HKEY hKey, LPCWSTR section);
+
 private:
 //	CString	m_regAppKey;
 };

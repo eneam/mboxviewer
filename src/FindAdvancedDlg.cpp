@@ -31,6 +31,7 @@
 
 #include "stdafx.h"
 #include "mboxview.h"
+#include "TextUtilsEx.h"
 #include "FindAdvancedDlg.h"
 #include "FindFilterRuleDlg.h"
 #include "MboxMail.h"   // looking for MboxMail::developerMode
@@ -44,15 +45,15 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
-const char *FindFields[] = { "From", "To", "Subject", "CC", "BCC", "Message", "Attachments", "Attachment Name" };
+const wchar_t* FindFields[] = { L"From", L"To", L"Subject", L"CC", L"BCC", L"Message", L"Attachments", L"Attachment Name" };
 
-const TCHAR  *ruleText[] = {
-	_T("((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
-	_T("(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
-	_T("((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name"),
-	_T("((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
-	_T("(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"),
-	_T("(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name")
+const wchar_t  *ruleText[] = {
+	L"((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	L"(From->To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	L"((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",
+	L"((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	L"(From->To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
+	L"(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
 };
 
 
@@ -61,8 +62,6 @@ CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 
 {
 	//{{AFX_DATA_INIT(CFindAdvancedDlg)
-
-	m_params.SetDflts();
 
 	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
 	m_checkedColor = RGB(255, 255, 0);
@@ -166,7 +165,7 @@ void CFindAdvancedDlg::OnOK()
 	if ((m_params.m_plainText == 0) && (m_params.m_htmlText == 0) && (m_params.m_htmlTextOnlyIfNoPlainText == 0))
 	{
 		CString txt;
-		txt.Format(_T("No text type plain and/or html are checked!"));
+		txt.Format(L"No text type plain and/or html are checked!");
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -174,16 +173,29 @@ void CFindAdvancedDlg::OnOK()
 	m_params.m_endDate.SetDate(m_params.m_endDate.GetYear(), m_params.m_endDate.GetMonth(), m_params.m_endDate.GetDay());
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
 
+
+	BOOL filterDatesSet = FALSE;
+	CWnd *p = GetDlgItem(IDC_FILTERDATES);
+	CButton* b = (CButton*)p;
+	if (b)
+	{
+		int state = b->GetCheck();
+		if (state == BST_CHECKED)
+		{
+			filterDatesSet = TRUE;
+		}
+	}
+
 	int i;
 	for (i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		if (m_params.m_bEditChecked[i] == TRUE)
 			break;
 	}
-	if (i == FILTER_FIELDS_NUMB)
+	if ((i == FILTER_FIELDS_NUMB) && (filterDatesSet == FALSE))
 	{
 		CString txt;
-		txt.Format(_T("No filter fields are checked!"));
+		txt.Format(L"Date filter is not set and no filter fields are checked!");
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -192,17 +204,16 @@ void CFindAdvancedDlg::OnOK()
 	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		m_params.m_string[i].TrimRight();
-		g_tu.MakeLower(m_params.m_string[i]);
 
 		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty()) {
 			CString txt;
-			txt.Format(_T("%s field is checked but search string is empty!"), FindFields[i]);
+			txt.Format(L"%s field is checked but search string is empty!", FindFields[i]);
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 			return;
 		}
 	}
 
-	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));	
+	//TRACE(L"Extended: %u %u\n", m_string.GetAt(0), m_string.GetAt(1));	
 	CDialog::OnOK();
 }
 
@@ -420,10 +431,12 @@ void CFindAdvancedParams::SetDflts()
 {
 	for (int i = 0; i < FILTER_FIELDS_NUMB; i++) 
 	{
-		m_string[i] = _T("");
+		m_string[i] = L"";
 		m_bWholeWord[i] = FALSE;
 		m_bCaseSensitive[i] = FALSE;
 		m_bEditChecked[i] = FALSE;
+
+		m_stringA[i] = "";
 	}
 
 	m_bSetAllWholeWords = FALSE;
@@ -451,9 +464,17 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
 	{
 		m_string[i] = src.m_string[i];
+		m_stringA[i] = src.m_stringA[i];
+		m_charsetId[i] = src.m_charsetId[i];
 		m_bWholeWord[i] = src.m_bWholeWord[i];
 		m_bCaseSensitive[i] = src.m_bCaseSensitive[i];
 		m_bEditChecked[i] = src.m_bEditChecked[i];
+	}
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
+	{
+		DWORD error;
+		//TextUtilsEx::WStr2Ansi(m_string[i], m_stringA[i], error);
+		TextUtilsEx::WStr2UTF8(&m_string[i], &m_stringA[i], error);
 	}
 	m_bSetAllWholeWords = src.m_bSetAllWholeWords;
 	m_bSetAllCaseSensitive = src.m_bSetAllCaseSensitive;
@@ -471,6 +492,13 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_htmlTextOnlyIfNoPlainText = src.m_htmlTextOnlyIfNoPlainText;
 
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
+
+	m_lastStartDate = src.m_lastStartDate;
+	m_lastEndDate = src.m_lastEndDate;
+	m_mboxMailStartDate = src.m_mboxMailStartDate;
+	m_mboxMailEndDate = src.m_mboxMailEndDate;
+	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
+	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
 };
 
 
@@ -485,9 +513,10 @@ void CFindAdvancedDlg::OnBnClickedEditReset()
 	COleDateTime endDate = m_params.m_endDate;
 
 	m_params.SetDflts();
+	// m_params.ResetFilterDates(); do we want this reset ??    // FIXMEFIXME
 
 	m_params.m_filterNumb = m_filterNumb;
-	//m_params.m_bSingleTo = m_bSingleTo;
+	//m_params.m_bSingleTo = m_bSingleTo;  // FIXMEFIXME why not ??
 	m_params.m_startDate = startDate;
 	m_params.m_endDate = endDate;
 
@@ -570,7 +599,7 @@ void CFindAdvancedDlg::SetRuleInfoText()
 		{
 			CString RuleNumberText;
 
-			RuleNumberText.Format(_T("Rule %d is selected !!!"), m_params.m_filterNumb + 1);
+			RuleNumberText.Format(L"Rule %d is selected !!!", m_params.m_filterNumb + 1);
 
 			p->SetWindowText(RuleNumberText);
 			p->EnableWindow(TRUE);
@@ -682,4 +711,26 @@ void CFindAdvancedDlg::OnBnClickedHtmlIf()
 {
 	// TODO: Add your control notification handler code here
 	int deb = 1;
+}
+
+CFindAdvancedParams::CFindAdvancedParams()
+{
+	SetDflts();
+	ResetFilterDates();
+	int deb = 1;
+}
+
+CFindAdvancedParams::~CFindAdvancedParams()
+{
+	int deb = 1;
+}
+
+void CFindAdvancedParams::ResetFilterDates()
+{
+	m_lastStartDate = (time_t)-1;
+	m_lastEndDate = (time_t)-1;
+	m_mboxMailStartDate = (time_t)-1;
+	m_mboxMailEndDate = (time_t)-1;
+	m_needToRestoreArchiveListDateTime = FALSE;
+	m_bNeedToFindMailMinMaxTime = TRUE;
 }

@@ -32,55 +32,55 @@
 #include "Mime.h"
 
 
-void MboxCMimeHelper::GetContentType(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentType(CMimeBody* pBP, CStringA &value)
 {
 	const char *fieldName = CMimeConst::ContentType();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
 
-void MboxCMimeHelper::GetContentLocation(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentLocation(CMimeBody* pBP, CStringA &value)
 {
 	//const char *fieldName = CMimeConst::ContentLocation();
 	const char *fieldName = "Content-Location";
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
 
-void MboxCMimeHelper::GetTransferEncoding(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetTransferEncoding(CMimeBody* pBP, CStringA &value)
 {
 	const char *fieldName = CMimeConst::TransferEncoding();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
-void MboxCMimeHelper::GetContentID(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentID(CMimeBody* pBP, CStringA &value)
 {
 	const char *fieldName = CMimeConst::ContentID();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
-void MboxCMimeHelper::GetContentDescription(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentDescription(CMimeBody* pBP, CStringA &value)
 {
 	const char *fieldName = CMimeConst::ContentDescription();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
-void MboxCMimeHelper::GetContentDisposition(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetContentDisposition(CMimeBody* pBP, CStringA &value)
 {
 	const char *fieldName = CMimeConst::ContentDisposition();
 	MboxCMimeHelper::GetValue(pBP, fieldName, value);
 }
-void MboxCMimeHelper::GetCharset(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::GetCharset(CMimeBody* pBP, CStringA &value)
 {
 	string str = pBP->GetCharset();
 	value = str.c_str();
 }
-void MboxCMimeHelper::Name(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::Name(CMimeBody* pBP, CStringA &value)
 {
 	string str = pBP->GetName();
 	value = str.c_str();
 }
-void MboxCMimeHelper::Filename(CMimeBody* pBP, CString &value)
+void MboxCMimeHelper::Filename(CMimeBody* pBP, CStringA &value)
 {
 	string str = pBP->GetFilename();
 	value = str.c_str();
 }
-void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &value)
+void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CStringA &value)
 {
 	const CMimeField *pFld = pBP->CMimeHeader::GetField(fieldName);
 	if (pFld)
@@ -95,9 +95,9 @@ void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CString &v
 
 bool MboxCMimeHelper::IsAttachment(CMimeBody* pBP)
 {
-	CString name;
-	CString fileName;
-	CString disposition;
+	CStringA name;
+	CStringA fileName;
+	CStringA disposition;
 
 	Name(pBP, name);
 	Filename(pBP, fileName);
@@ -111,9 +111,9 @@ bool MboxCMimeHelper::IsAttachment(CMimeBody* pBP)
 
 bool MboxCMimeHelper::IsInlineAttachment(CMimeBody* pBP)
 {
-	CString name;
-	CString fileName;
-	CString disposition;
+	CStringA name;
+	CStringA fileName;
+	CStringA disposition;
 
 	Name(pBP, name);
 	Filename(pBP, fileName);
@@ -125,11 +125,12 @@ bool MboxCMimeHelper::IsInlineAttachment(CMimeBody* pBP)
 		return false;
 }
 
+
 bool MboxCMimeHelper::IsAttachmentDisposition(CMimeBody* pBP)
 {
-	CString name;
-	CString fileName;
-	CString disposition;
+	CStringA name;
+	CStringA fileName;
+	CStringA disposition;
 
 	Name(pBP, name);
 	Filename(pBP, fileName);
@@ -143,9 +144,9 @@ bool MboxCMimeHelper::IsAttachmentDisposition(CMimeBody* pBP)
 
 bool MboxCMimeHelper::IsInlineDisposition(CMimeBody* pBP)
 {
-	CString name;
-	CString fileName;
-	CString disposition;
+	CStringA name;
+	CStringA fileName;
+	CStringA disposition;
 
 	Name(pBP, name);
 	Filename(pBP, fileName);

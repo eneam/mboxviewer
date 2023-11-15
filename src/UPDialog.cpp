@@ -59,7 +59,7 @@ static const unsigned char dlg_145[] =
 #define CUPDIALOG_CANCELBUTTON_ID	(IDCANCEL)	//Cancel Button Control Id
 #define CUPDIALOG_TERMINATE_DELAY	(5000)		//Amount of time to wait after signaling the termination, in MilliSeconds.
 
-CUPDialog::CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCTSTR lpszDlgTitle/*=_T("Please Wait..")*/,bool bAllowCancel/*=true*/)
+CUPDialog::CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCWSTR lpszDlgTitle/*=L"Please Wait.."*/,bool bAllowCancel/*=true*/)
 {
 	m_hThread = NULL;							//No Thread Yet !!
 
@@ -100,7 +100,7 @@ void CUPDialog::Cleanup()
 	if(m_ThreadData.bAlive)		//If associated Thread is still alive Terminate It
 	{
 		if (WaitForSingleObject(m_hThread, m_dwTerminateDelay) != WAIT_OBJECT_0) {
-			TRACE(_T("(Cleanup)Terminating Thread\n"));
+			TRACE(L"(Cleanup)Terminating Thread\n");
 			TerminateThread(m_hThread, IDCANCEL);
 		}
 	}
@@ -168,7 +168,7 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 			if(pProgressDialog->m_bAllowCancel == false)
 				SendMessage(hDlg,PROGRESSTHREADDATA::WM_DISABLECONTROLS,wParam,lParam);
 
-			SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)_T(""));
+			SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)L"");
 
 			SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nProgressBarControlId),PBM_SETPOS,0,0);
 
@@ -273,12 +273,12 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 			{
 				LPPROGRESSTHREADDATA pThreadData = (LPPROGRESSTHREADDATA)(LPVOID)(&pProgressDialog->m_ThreadData);
 				pThreadData->bTerminate = true;
-				SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(_T("Termination Initiated..")));
+				SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Initiated.."));
 				SendMessage(hDlg,PROGRESSTHREADDATA::WM_DISABLECONTROLS,wParam,lParam);
 				if(pThreadData->bAlive)
 					Sleep(pProgressDialog->m_dwTerminateDelay);
 				if(pThreadData->bAlive)
-					SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(_T("Termination Complete ..Shutting Down !!")));
+					SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Complete ..Shutting Down !!"));
 				if(pThreadData->bAlive)
 					Sleep(pProgressDialog->m_dwTerminateDelay);
 				EndDialog(hDlg, MAKEWPARAM(IDCANCEL,1));

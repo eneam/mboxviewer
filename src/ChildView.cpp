@@ -99,7 +99,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	BOOL ret;
 
 	if (!m_verSplitter.CreateStatic(this, 1, 2, WS_CHILD | WS_VISIBLE, AFX_IDW_PANE_FIRST)) {
-		TRACE("Failed to create first splitter\n");
+		TRACE(L"Failed to create first splitter\n");
 		return -1;
 	}
 
@@ -109,7 +109,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		ret = m_horSplitter.CreateStatic(&m_verSplitter, 1, 2, WS_CHILD | WS_VISIBLE, m_verSplitter.IdFromRowCol(0, 1));
 
 	if (ret == FALSE) {
-		TRACE("Failed to create second splitter\n");
+		TRACE(L"Failed to create second splitter\n");
 		return -1;
 	}
 
@@ -125,14 +125,15 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Need to find better solution to windows placement
 	CSize frameSize = frameRect.Size();
 
-	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
 #if 1
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
-	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, _T("MainFrame_EmlPreviewMode"), (LPBYTE)&wpr, cb);
-	else
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, _T("MainFrame"), (LPBYTE)&wpr, cb);
+	ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, section_wnd, L"MainFrame", (LPBYTE)&wpr, cb);
 	int cx = -1;
 	int cy = -1;
 	if (ret && (cb == sizeof(wpr)))
@@ -153,55 +154,48 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	treeSize.cx = 177;
 	treeSize.cy = 200;
 
-	int tree_frameCx = 177;
-	int tree_frameCy = 200;
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("TreeFrameWidth"), tree_frameCx);
+	int tree_frameCx = treeSize.cx;
+	int tree_frameCy = treeSize.cy;
+
+	BOOL retCx = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameWidth", tree_frameCx);
 	
-	if (ret)
+	if (retCx)
 		treeSize.cx = tree_frameCx;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("TreeFrameHeight"), tree_frameCy);
-	if (ret)
+	BOOL retCy = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameHeight", tree_frameCy);
+	if (retCy)
 		treeSize.cy = tree_frameCy;
 
 
 	BOOL bEmlPrewviewMode = CMainFrame::m_commandLineParms.m_bEmlPreviewMode;
 	BOOL bDirectFileOpenMode = CMainFrame::m_commandLineParms.m_bDirectFileOpenMode;
 
+#if 0
 	if (bEmlPrewviewMode)
 		treeSize.cx = 0;
+#endif
 
 	if (!m_verSplitter.CreateView(0, 0, RUNTIME_CLASS(NTreeView), treeSize, NULL)) {
-		TRACE("Failed to create Tree left view\n");
+		TRACE(L"Failed to create Tree left view\n");
 		return -1;
 	}
 
 	//
 	CSize msgSize;
 
-	int msg_frameCx_TreeNotInHide = 700;
-	int msg_frameCy_TreeNotInHide = 200;
+	msgSize.cx = 700;
+	msgSize.cy = 200;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("MsgFrameTreeNotHiddenWidth"), msg_frameCx_TreeNotInHide);
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("MsgFrameTreeNotHiddenHeight"), msg_frameCy_TreeNotInHide);
+	int msg_frameCx = msgSize.cx;
+	int msg_frameCy = msgSize.cy;
 
-	if (m_msgViewPosition == 1)   // windows on top
-	{
-		msgSize.cx = frameSize.cx - treeSize.cx;
-		msgSize.cy = msg_frameCy_TreeNotInHide;
-	}
-	else if (m_msgViewPosition == 2)   // windows on right
-	{
-		msgSize.cx = msg_frameCx_TreeNotInHide;
-		msgSize.cy = 200;
-	}
-	else if (m_msgViewPosition == 3)   // windows on left
-	{
-		msgSize.cx = msg_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode && !bDirectFileOpenMode)
-			msgSize.cx = frameSize.cx*2;
-		msgSize.cy = 200;
-	}
+	retCx = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth", msg_frameCx);
+	retCy = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight", msg_frameCy);
+
+	if (retCx)
+		msgSize.cx = msg_frameCx;
+	if (retCy)
+		msgSize.cy = treeSize.cy;
 
 	if (msgSize.cx < 0)
 		int deb = 1;
@@ -211,36 +205,19 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CSize listSize;
 
-	int list_frameCx_TreeNotInHide = 700;
-	int list_frameCy_TreeNotInHide = 200;
+	listSize.cx = 700;
+	listSize.cy = 200;
 
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("ListFrameTreeNotHiddenWidth"), list_frameCx_TreeNotInHide);;
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, _T("ListFrameTreeNotHiddenHeight"), list_frameCy_TreeNotInHide);;
+	int list_frameCx = listSize.cx;
+	int list_frameCy = listSize.cy;
 
-	if (m_msgViewPosition == 1)   // windows on top
-	{
-		listSize.cx = frameSize.cx - treeSize.cx;
-		listSize.cy = list_frameCy_TreeNotInHide;
-		if (bEmlPrewviewMode && !bDirectFileOpenMode)
-			listSize.cy = 0;
-		else if (bDirectFileOpenMode)
-			listSize.cy = 90;
+	retCx = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenWidth", list_frameCx);
+	retCy = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenHeight", list_frameCy);
 
-	}
-	else if (m_msgViewPosition == 2)   // windows on right
-	{
-		listSize.cx = list_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode && !bDirectFileOpenMode)
-			listSize.cx = 0;
-		listSize.cy = 200;
-	}
-	else if (m_msgViewPosition == 3)   // windows on left
-	{
-		listSize.cx = list_frameCx_TreeNotInHide;
-		if (bEmlPrewviewMode && !bDirectFileOpenMode)
-			listSize.cx = 0;
-		listSize.cy = 200;
-	}
+	if (retCx)
+		listSize.cx = list_frameCx;
+	if (retCy)
+		listSize.cy = list_frameCy;
 
 	if (listSize.cx < 0)
 		int deb = 1;
@@ -291,7 +268,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else
 		;
 	if (ret == FALSE) {
-		TRACE("Failed to create top view\n");
+		TRACE(L"Failed to create top view\n");
 		return -1;
 	}
 
@@ -305,7 +282,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	else
 		;
 	if (ret == FALSE) {
-		TRACE("Failed to create bottom view\n");
+		TRACE(L"Failed to create bottom view\n");
 		return -1;
 	}
 
@@ -364,7 +341,8 @@ void CChildView::OnSize(UINT nType, int cx, int cy)
 BOOL CChildView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo) 
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	if( pFrame ) {
+	if( pFrame )
+	{
 		CWnd *pTreeView = pFrame->GetTreeView();
 		if( pTreeView && pTreeView->OnCmdMsg(nID, nCode, pExtra, pHandlerInfo) )
 			return TRUE;

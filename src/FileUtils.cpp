@@ -32,82 +32,57 @@
 #include "TextUtilsEx.h"
 #include "SimpleString.h"
 
-bool FileUtils::PathDirExistsW(CString &dir)
+bool FileUtils::PathDirExists(CString &dir)
 {
-	CStringW dirW;
-	DWORD error;
-	BOOL retA2W = TextUtilsEx::Ansi2Wide(dir, dirW, error);
-
-	bool ret = FileUtils::PathDirExistsW(dirW);
+	bool ret = FileUtils::PathDirExists((LPCWSTR)dir);
 	return ret;
+
 }
 
-bool FileUtils::PathDirExists(LPCSTR path)
-{
-	DWORD dwFileAttributes = GetFileAttributes(path);
-	if (dwFileAttributes != (DWORD)0xFFFFFFFF)
-	{
-		bool bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
-		return bRes;
-	}
-	else
-		return false;
-}
-
-bool FileUtils::PathDirExistsW(LPCWSTR path)
+bool FileUtils::PathDirExists(LPCWSTR path)
 {
 	DWORD dwFileAttributes = GetFileAttributesW(path);
 	if (dwFileAttributes == INVALID_FILE_ATTRIBUTES)
 	{
-		CStringW retW = GetLastErrorAsStringW();
-		TRACE(L"%s", retW);
+		// may return invalid path or invalid file - not sure why
+		CStringW retW = GetLastErrorAsString();  
+		TRACE(L"%s : \"%s\"\n", retW, path);
+		int deb = 1;
 	}
 
-	if (dwFileAttributes != (DWORD)0xFFFFFFFF)
+	if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
 	{
 		bool bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
 		return bRes;
 	}
 	else
+	{
 		return false;
+	}
 }
 
-BOOL FileUtils::PathFileExist(LPCSTR path)
+BOOL FileUtils::PathFileExist(CString &path)
+{
+	BOOL ret = PathFileExist((LPCWSTR)path);
+	return ret;
+}
+
+BOOL FileUtils::PathFileExist(LPCWSTR path)
 {
 	DWORD dwFileAttributes = GetFileAttributes(path);
-	if (dwFileAttributes != (DWORD)0xFFFFFFFF)
+	if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
 	{
 		BOOL bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY);
 		return bRes;
 	}
 	else
-		return FALSE;
-}
-
-BOOL FileUtils::PathFileExistW(LPCWSTR path)
-{
-	DWORD dwFileAttributes = GetFileAttributesW(path);
-	if (dwFileAttributes != (DWORD)0xFFFFFFFF)
 	{
-		BOOL bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY);
-		return bRes;
+		CString errText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+		TRACE(L"(FileSize)error=%ld file=%s\n%s\n", err, path, errText);
+		return FALSE;
 	}
-	else
-		return FALSE;
 }
-
-int FileUtils::fileExists(LPCSTR file)
-{
-	DWORD dwFileAttributes = GetFileAttributes(file);
-	if (dwFileAttributes != (DWORD)0xFFFFFFFF)
-	{
-		BOOL bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY);
-		return bRes;
-}
-	else
-		return FALSE;
-}
-
 
 __int64 FileUtils::FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
 {
@@ -129,55 +104,37 @@ __int64 FileUtils::FileSeek(HANDLE hf, __int64 distance, DWORD MoveMethod)
 	return li.QuadPart;
 }
 
-CString FileUtils::GetMboxviewTempPath(const char *name)
-{
-	char	buf[_MAX_PATH + 1];
-	buf[0] = 0;
-	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
-
-	CString localTempPath = CString(buf);
-	localTempPath.TrimRight("\\");
-	localTempPath.Append("\\mboxview\\");
-	if (name) 
-	{
-		localTempPath.Append(name);
-		localTempPath.Append("\\");
-	}
-	BOOL ret = TRUE;
-	if (!FileUtils::PathDirExists(localTempPath))
-		ret = FileUtils::CreateDirectory(localTempPath);
-	return localTempPath;
-}
-
-CStringW FileUtils::GetMboxviewTempPathW(const wchar_t *name)
+CString FileUtils::GetMboxviewTempPath(const wchar_t *folderName, const wchar_t *subfolderName)
 {
 	wchar_t	buf[_MAX_PATH + 1];
 	buf[0] = 0;
-	DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
+	const DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
 	//
-	CStringW localTempPath = CStringW(buf);
+	CStringW localTempPath = CStringW(&buf[0]);
 	localTempPath.TrimRight(L"\\");
-	localTempPath.Append(L"\\mboxview\\");
-	if (name)
+	localTempPath.Append(L"\\");
+	localTempPath.Append(folderName);
+	localTempPath.Append(L"\\");
+	if (subfolderName)
 	{
-		localTempPath.Append(name);
+		localTempPath.Append(subfolderName);
 		localTempPath.Append(L"\\");
 	}
 	BOOL ret = TRUE;
-	if (!FileUtils::PathDirExistsW(localTempPath))
-		ret = FileUtils::CreateDirectoryW(localTempPath);
+	if (!FileUtils::PathDirExists(localTempPath))
+		ret = FileUtils::CreateDir(localTempPath);
 	return localTempPath;
 }
 
 CString FileUtils::GetMboxviewLocalAppPath()
 {
-	char	buf[_MAX_PATH + 1];
+	wchar_t	buf[_MAX_PATH + 1];
 	buf[0] = 0;
 	buf[_MAX_PATH] = 0;
-	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
+	const DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
 
-	CString locaAppTempFolderPath = CString(buf);
-	locaAppTempFolderPath.TrimRight("\\");
+	CString locaAppTempFolderPath = CString(&buf[0]);
+	locaAppTempFolderPath.TrimRight(L"\\");
 
 	CString folderPath;
 	FileUtils::GetFolderPath(locaAppTempFolderPath, folderPath);
@@ -192,7 +149,7 @@ CString FileUtils::CreateMboxviewLocalAppPath()
 	// It should be created by the OS already. Eliminate below?
 	if (!FileUtils::PathDirExists(folderPath)) 
 	{
-		ret = FileUtils::CreateDirectory(folderPath);
+		ret = FileUtils::CreateDir(folderPath);
 		if (ret == FALSE)
 		{
 			folderPath.Empty();
@@ -201,208 +158,50 @@ CString FileUtils::CreateMboxviewLocalAppPath()
 	return folderPath;
 }
 
-CString FileUtils::GetMboxviewLocalAppDataPath(const char *name)
-{
-#if 1
-	CString folderPath = GetMboxviewLocalAppPath();
-#else
-	char	buf[_MAX_PATH + 1];
-	buf[0] = 0;
-	buf[_MAX_PATH] = 0;
-
-	DWORD gtp = ::GetTempPath(_MAX_PATH, buf);
-
-	CString folderPath;
-	CString fileName;
-
-	CString localTempPath = CString(buf);
-	localTempPath.TrimRight("\\");
-	FileUtils::GetFolderPathAndFileName(localTempPath, folderPath, fileName);
-#endif
-
-	folderPath.Append("MBoxViewer\\");
-	if (name) {
-		folderPath.Append(name);
-		folderPath.Append("\\");
-	}
-	BOOL ret = TRUE;
-	if (!FileUtils::PathDirExists(folderPath))
-	{
-		ret = FileUtils::CreateDirectory(folderPath);
-		if (ret == FALSE)
-			folderPath.Empty();
-	}
-	return folderPath;
-}
-
-CStringW FileUtils::GetMboxviewLocalAppDataPathW(const wchar_t *name)
+CString FileUtils::GetMboxviewLocalAppDataPath(const wchar_t* folderName, const wchar_t* subfolderName)
 {
 	wchar_t	buf[_MAX_PATH + 1];
 	buf[0] = 0;
-	DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
+	const DWORD gtp = ::GetTempPathW(_MAX_PATH, buf);
 
 	CStringW folderPath;
 	CStringW fileName;
 
-	CStringW localTempPath = CStringW(buf);
+	CStringW localTempPath = CStringW(&buf[0]);
 	localTempPath.TrimRight(L"\\");
-	FileUtils::GetFolderPathAndFileNameW(localTempPath, folderPath, fileName);
-	folderPath.Append(L"MBoxViewer\\");
-	if (name) {
-		folderPath.Append(name);
+	FileUtils::GetFolderPathAndFileName(localTempPath, folderPath, fileName);
+	folderPath.Append(folderName);
+	folderPath.Append(L"\\");
+	if (subfolderName) {
+		folderPath.Append(subfolderName);
 		folderPath.Append(L"\\");
 	}
 	BOOL ret = TRUE;
-	if (!FileUtils::PathDirExistsW(folderPath))
-		ret = FileUtils::CreateDirectoryW(folderPath);
+	if (!FileUtils::PathDirExists(folderPath))
+		ret = FileUtils::CreateDir(folderPath);
 
 	return folderPath;
 }
 
-CString FileUtils::CreateMboxviewLocalAppDataPath(const char *name)
+CString FileUtils::CreateMboxviewLocalAppDataPath(const wchar_t *name)
 {
-	CString folderPath = FileUtils::GetMboxviewLocalAppDataPath(name);
+	CStringW folderPath = FileUtils::GetMboxviewLocalAppDataPath(name);
 	BOOL ret = TRUE;
 	if (!FileUtils::PathDirExists(folderPath))
-	{
-		ret = FileUtils::CreateDirectory(folderPath);
-		if (ret == FALSE)
-			folderPath.Empty();
-	}
-	return folderPath;
-}
-
-CStringW FileUtils::CreateMboxviewLocalAppDataPathW(const wchar_t *name)
-{
-	CStringW folderPath = FileUtils::GetMboxviewLocalAppDataPathW(name);
-	BOOL ret = TRUE;
-	if (!FileUtils::PathDirExistsW(folderPath))
-		ret = FileUtils::CreateDirectoryW(folderPath);
+		ret = FileUtils::CreateDir(folderPath);
 
 	return folderPath;
 }
 
 BOOL FileUtils::OSRemoveDirectory(CString &dir, CString &errorText)
 {
-	BOOL ret = ::RemoveDirectory(dir);
+	const BOOL ret = ::RemoveDirectoryW(dir);
 	if (!ret)
 	{
 		errorText = FileUtils::GetLastErrorAsString();
-		TRACE("OSRemoveDirectory: \"%s\" %s", dir, errorText);
-	}
-	return ret;
-}
-
-BOOL FileUtils::OSRemoveDirectoryW(CStringW &dir, CStringW &errorText)
-{
-	BOOL ret = ::RemoveDirectoryW(dir);
-	if (!ret)
-	{
-		errorText = FileUtils::GetLastErrorAsStringW();
 		TRACE(L"OSRemoveDirectory: \"%s\" %s", dir, errorText);
 	}
 	return ret;
-}
-
-// Remove directory and all sub-directories
-// TODO: No longer used, RemoveDir is used
-BOOL FileUtils::RemoveDirectory(CString &dir, DWORD &error)
-{
-	error = 0;
-
-	WIN32_FIND_DATA FileData;
-	HANDLE hSearch;
-	BOOL	bFinished = FALSE;
-	// Start searching for all files in the current directory.
-	CString searchPath = dir + "\\*.*";
-	hSearch = FindFirstFile(searchPath, &FileData);
-	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE("RemoveDirectory: No files found.\n");
-		return FALSE;
-	}
-	while (!bFinished)
-	{
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
-		{
-			CString fileFound = dir + "\\" + CString(FileData.cFileName);
-			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
-			{
-				BOOL retR = FileUtils::RemoveDirectory(fileFound, error);
-				if (retR == FALSE) {
-					bFinished = TRUE;
-					break;
-				}
-			}
-			else
-			{
-				BOOL retF = FileUtils::DeleteFile(fileFound);
-			}
-		}
-		if (!FindNextFile(hSearch, &FileData)) {
-			bFinished = TRUE;
-			break;
-		}
-	}
-	FindClose(hSearch);
-	// dir must be empty
-	CString errorText;
-	BOOL retRD = FileUtils::OSRemoveDirectory(dir, errorText);
-	if (!retRD)
-		return FALSE;
-	else
-		return TRUE;
-}
-
-
-// Remove directory and all sub-directories
-// TODO: No longer used, RemoveDirW is used
-BOOL FileUtils::RemoveDirectoryW(CStringW &dir, DWORD &error)
-{
-	error = 0;
-
-	if (dir.Find(L"Cache") < 0)
-	{
-		ASSERT(0);
-		return FALSE;
-	}
-
-	WIN32_FIND_DATAW FileData;
-	HANDLE hSearch;
-	BOOL bFinished = FALSE;
-	// Start searching for all files in the current directory.
-	CStringW searchPath = dir + L"\\*.*";
-	hSearch = FindFirstFileW(searchPath, &FileData);
-	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE(L"RemoveDirectoryW: No files found.\n");
-		return FALSE;
-	}
-	while (!bFinished)
-	{
-		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
-		{
-			CStringW	fileFound = dir + L"\\" + CStringW(FileData.cFileName);
-			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
-			{
-				BOOL retR = FileUtils::RemoveDirectoryW(fileFound, error);
-				if (retR == FALSE)
-					bFinished = TRUE;
-			}
-			else
-			{
-				BOOL retF = FileUtils::DeleteFileW(fileFound);
-			}
-		}
-		if (!FindNextFileW(hSearch, &FileData))
-			bFinished = TRUE;
-	}
-	FindClose(hSearch);
-	// dir must be empty, no files
-	CStringW errorText;
-	BOOL retRD = FileUtils::OSRemoveDirectoryW( dir , errorText); 
-	if (!retRD)
-		return FALSE;
-	else
-		return TRUE;
 }
 
 // Removes files and optionally folders
@@ -410,73 +209,8 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 {
 	if (!FileUtils::VerifyName(directory))
 	{
-		TRACE("RemoveDir: Failed to delete, VerifyName \"%s\"\n", directory);
-		ASSERT(0);
-		return FALSE;
-	}
-
-	WIN32_FIND_DATA FileData;
-	HANDLE hSearch;
-	BOOL	bFinished = FALSE;
-
-	// Start searching for all files in the current directory.
-	CString dir = directory;
-	dir.TrimRight("\\");
-	dir.Append("\\");
-
-	CString searchPath = dir + "*.*";
-	hSearch = FindFirstFile(searchPath, &FileData);
-	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE("RemoveDir: No files found in \"%s\".\n", dir);
-		return FALSE;
-	}
-	while (!bFinished) 
-	{
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0)) 
-		{
-			CString	fileFound = dir + FileData.cFileName;
-			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-			{
-				BOOL retF = FileUtils::DeleteFile(fileFound, TRUE);
-				// handle error
-			}
-			else if (recursive)
-			{
-				BOOL retB = FileUtils::RemoveDir(fileFound, recursive, removeFolders);
-			}
-		}
-		if (!FindNextFile(hSearch, &FileData))
-		{
-			bFinished = TRUE;
-		}
-	}
-	BOOL retFC = FindClose(hSearch);
-	if (removeFolders)
-	{
-		// Will fail if recursive=false and sub-directories exist
-		CString errorText;
-		BOOL retRD = FileUtils::OSRemoveDirectory(dir, errorText);
-		int deb = 1;
-	}
-	return TRUE;
-}
-
-BOOL FileUtils::RemoveDirW(CString & dir, bool recursive, bool removeFolders)
-{
-	CStringW dirW;
-	DWORD error;
-	BOOL retA2W = TextUtilsEx::Ansi2Wide(dir, dirW, error);
-	BOOL ret = FileUtils::RemoveDirW(dirW, recursive, removeFolders);
-	return ret;
-}
-
-// Removes files and optionally folders
-BOOL FileUtils::RemoveDirW(CStringW & directory, bool recursive, bool removeFolders)
-{
-	if (!FileUtils::VerifyNameW(directory))
-	{
-		TRACE(L"RemoveDirW: Failed to delete, VerifyNameW failed \"%s\"\n", directory);
-		ASSERT(0);
+		TRACE(L"RemoveDir: Failed to delete, VerifyName failed \"%s\"\n", directory);
+		_ASSERTE(FALSE);
 		return FALSE;
 	}
 
@@ -492,7 +226,7 @@ BOOL FileUtils::RemoveDirW(CStringW & directory, bool recursive, bool removeFold
 	CStringW searchPath = dir + L"*.*";
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE(L"RemoveDirW: No files found in \"%s\".\n", dir);
+		TRACE(L"RemoveDir: No files found in \"%s\".\n", dir);
 		return FALSE;
 	}
 	while (!bFinished) 
@@ -501,9 +235,9 @@ BOOL FileUtils::RemoveDirW(CStringW & directory, bool recursive, bool removeFold
 		{
 			CStringW	fileFound = dir + CStringW(FileData.cFileName);
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-				FileUtils::DeleteFileW(fileFound, TRUE);
+				FileUtils::DelFile(fileFound, TRUE);
 			else if (recursive)
-				FileUtils::RemoveDirW(fileFound, recursive, removeFolders);
+				FileUtils::RemoveDir(fileFound, recursive, removeFolders);
 		}
 		if (!FindNextFileW(hSearch, &FileData))
 			bFinished = TRUE;
@@ -513,35 +247,24 @@ BOOL FileUtils::RemoveDirW(CStringW & directory, bool recursive, bool removeFold
 	{
 		// Will fail if recursive=false and sub-directories exist
 		CStringW errorText;
-		BOOL retRD = FileUtils::OSRemoveDirectoryW(dir, errorText);
+		BOOL retRD = FileUtils::OSRemoveDirectory(dir, errorText);
 	}
 	return TRUE;
 }
 
-CString FileUtils::CreateTempFileName(CString ext)
+CString FileUtils::CreateTempFileName(const wchar_t *folderName, CString ext)
 {
-	CString fmt = GetMboxviewTempPath() + "PTT%05d." + ext;
+	CString fmt = GetMboxviewTempPath(folderName) + "PTT%05d." + ext;
 	CString fileName;
 ripeti:
 	fileName.Format(fmt, abs((int)(1 + (int)(100000.0*rand() / (RAND_MAX + 1.0)))));
 	if (FileUtils::PathFileExist(fileName))
 		goto ripeti;
 
-	return fileName; //+_T(".HTM");
+	return fileName; //+L".HTM";
 }
 
-void FileUtils::CPathStripPath(const char *path, CString &fileName)
-{
-	int pathlen = istrlen(path);
-	char *pathbuff = new char[pathlen + 1];
-	strcpy(pathbuff, path);
-	PathStripPath(pathbuff);
-	fileName.Empty();
-	fileName.Append(pathbuff);
-	delete[] pathbuff;
-}
-
-void FileUtils::CPathStripPathW(const wchar_t *path, CStringW &fileName)
+void FileUtils::CPathStripPath(const wchar_t *path, CStringW &fileName)
 {
 	int pathlen = (int)wcslen(path);
 	wchar_t *pathbuff = new wchar_t[pathlen + 1];
@@ -552,11 +275,11 @@ void FileUtils::CPathStripPathW(const wchar_t *path, CStringW &fileName)
 	delete[] pathbuff;
 }
 
-BOOL FileUtils::CPathGetPath(const char *path, CString &filePath)
+BOOL FileUtils::CPathGetPath(const wchar_t *path, CString &filePath)
 {
-	int pathlen = istrlen(path);
-	char *pathbuff = new char[2 * pathlen + 1];  // to avoid overrun ?? see microsoft docs
-	strcpy(pathbuff, path);
+	int pathlen = iwstrlen(path);
+	wchar_t *pathbuff = new wchar_t[2 * pathlen + 1];  // to avoid overrun ?? see microsoft docs
+	_tcscpy(pathbuff, path);
 	BOOL ret = PathRemoveFileSpec(pathbuff);
 	//HRESULT  ret = PathCchRemoveFileSpec(pathbuff, pathlen);  //   pathbuff must be of PWSTR type
 
@@ -567,30 +290,6 @@ BOOL FileUtils::CPathGetPath(const char *path, CString &filePath)
 }
 
 void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention)
-{
-	TCHAR ext[_MAX_EXT + 1]; ext[0] = 0;
-	TCHAR drive[_MAX_DRIVE + 1]; drive[0] = 0;
-	TCHAR dir[_MAX_DIR + 1]; dir[0] = 0;
-	TCHAR fname[_MAX_FNAME + 1]; fname[0] = 0;
-
-	driveName.Empty();
-	directory.Empty();
-	fileNameBase.Empty();
-	fileNameExtention.Empty();
-
-	_tsplitpath_s(fileName,
-		drive, _MAX_DRIVE + 1,
-		dir, _MAX_DIR + 1,
-		fname, _MAX_FNAME + 1,
-		ext, _MAX_EXT + 1);
-
-	driveName.Append(drive);
-	directory.Append(dir);
-	fileNameBase.Append(fname);
-	fileNameExtention.Append(ext);
-}
-
-void FileUtils::SplitFilePathW(CStringW &fileName, CStringW &driveName, CStringW &directory, CStringW &fileNameBase, CStringW &fileNameExtention)
 {
 	wchar_t ext[_MAX_EXT + 1]; ext[0] = 0;
 	wchar_t drive[_MAX_DRIVE + 1]; drive[0] = 0;
@@ -626,32 +325,11 @@ void FileUtils::GetFolderPath(CString &fileNamePath, CString &folderPath)
 
 void FileUtils::GetFolderPathAndFileName(CString &fileNamePath, CString &folderPath, CString &fileName)
 {
-	CString driveName;
-	CString directory;
-	CString fileNameBase;
-	CString fileNameExtention;
+	CStringW driveName;
+	CStringW directory;
+	CStringW fileNameBase;
+	CStringW fileNameExtention;
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
-	folderPath = driveName + directory;
-	fileName = fileNameBase + fileNameExtention;
-}
-
-void FileUtils::GetFolderPathW(CStringW &fileNamePath, CStringW &folderPath)
-{
-	CStringW driveName;
-	CStringW directory;
-	CStringW fileNameBase;
-	CStringW fileNameExtention;
-	SplitFilePathW(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
-	folderPath = driveName + directory;
-}
-
-void FileUtils::GetFolderPathAndFileNameW(CStringW &fileNamePath, CStringW &folderPath, CStringW &fileName)
-{
-	CStringW driveName;
-	CStringW directory;
-	CStringW fileNameBase;
-	CStringW fileNameExtention;
-	SplitFilePathW(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 	fileName = fileNameBase + fileNameExtention;
 }
@@ -690,7 +368,6 @@ void FileUtils::GetFileExtension(CString &fileName, CString &fileNameExtention)
 	SplitFilePath(fileName, driveName, directory, fileNameBase, fileNameExtention);
 }
 
-
 void FileUtils::UpdateFileExtension(CString &fileName, CString &newExtension)
 {
 	CString driveName;
@@ -709,7 +386,7 @@ void FileUtils::UpdateFileExtension(CString &fileName, CString &newExtension)
 
 }
 
-_int64 FileUtils::FileSize(LPCSTR fileName, CString *errorText)
+_int64 FileUtils::FileSize(LPCWSTR fileName, CString *errorText)
 {
 	LARGE_INTEGER li = { 0 };
 	HANDLE hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -717,7 +394,7 @@ _int64 FileUtils::FileSize(LPCSTR fileName, CString *errorText)
 	{
 		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
-		TRACE(_T("(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n"), err, fileName, errText);
+		TRACE(L"(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, fileName, errText);
 		if (errorText)
 			errorText->Append(errText);
 		return li.QuadPart;
@@ -730,7 +407,7 @@ _int64 FileUtils::FileSize(LPCSTR fileName, CString *errorText)
 		{
 			CString errText = FileUtils::GetLastErrorAsString();
 			DWORD err = GetLastError();
-			TRACE(_T("(GetFileSizeEx)Failed with error=%ld file=%s\n%s\n"), err, fileName,errText);
+			TRACE(L"(GetFileSizeEx)Failed with error=%ld file=%s\n%s\n", err, fileName,errText);
 			if (errorText)
 				errorText->Append(errText);
 		}
@@ -743,26 +420,7 @@ _int64 FileUtils::FileSize(LPCSTR fileName, CString *errorText)
 	return li.QuadPart;
 }
 
-BOOL FileUtils::BrowseToFile(LPCTSTR filename)
-{
-	BOOL retval = TRUE;
-
-	// It appears m_ie.Create  in CBrowser::OnCreate calls CoInitilize
-	//Com_Initialize();
-
-	__unaligned  ITEMIDLIST *pidl = ILCreateFromPath(filename);
-	if (pidl) {
-		HRESULT  ret = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
-		if (ret != S_OK)
-			retval = FALSE;
-		ILFree(pidl);
-	}
-	else
-		retval = FALSE;
-	return retval;
-}
-
-BOOL FileUtils::BrowseToFileW(LPCWSTR filename)
+BOOL FileUtils::BrowseToFile(LPCWSTR filename)
 {
 	BOOL retval = TRUE;
 
@@ -781,179 +439,64 @@ BOOL FileUtils::BrowseToFileW(LPCWSTR filename)
 	return retval;
 }
 
-void  FileUtils::MakeValidFilePath(CString &name, BOOL bReplaceWhiteWithUnderscore)
+void  FileUtils::MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
 {
-	SimpleString validName(name.GetLength());
-	validName.Append((LPCSTR)name, name.GetLength());
-	FileUtils::MakeValidFilePath(validName, bReplaceWhiteWithUnderscore);
+	CString result;
+	FileUtils::MakeValidFileName(name, result, bReplaceWhiteWithUnderscore, extraValidation);
+
 	name.Empty();
-	name.Append(validName.Data(), validName.Count());
+	name.Append(result);
 }
 
-void  FileUtils::MakeValidFilePath(SimpleString &name, BOOL bReplaceWhiteWithUnderscore)
+void  FileUtils::MakeValidFileNameA(CStringA& name, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
+{
+	CStringA result;
+	FileUtils::MakeValidFileNameA(name, result, bReplaceWhiteWithUnderscore, extraValidation);
+
+	name.Empty();
+	name.Append(result);
+}
+
+void  FileUtils::MakeValidFileNameA(CStringA& name, CStringA& result, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
+{
+	FileUtils::MakeValidFileNameA((LPCSTR)name, name.GetLength(), result, bReplaceWhiteWithUnderscore, extraValidation);
+}
+
+// name can be UTF8 or ansi or ascii. Replace invalid file name charcater with underscore or space
+void  FileUtils::MakeValidFileNameA(const char* name, int namelen, CStringA& result, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
 {
 	// Always merge consecutive underscore characters
-	int csLen = name.Count();
-	char* str = name.Data();
+	result.Preallocate(namelen + 2);
+
+	int csLen = namelen;
 	int i;
-	int j = 0;
-	char c;
+
+	int c;
 	BOOL allowUnderscore = TRUE;
 	for (i = 0; i < csLen; i++)
 	{
-		c = str[i];
+		c = name[i] & 0xFF;
 		if (
-			(c == '?') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters
-			(c == '*') || (c == '|') || (c == '"')    // not valid file name characters
-			// I seem to remember that browser would not open a file with name with these chars, 
-			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
-			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
-			|| (c == '%')
-			)
-		{
-			if (allowUnderscore)
-			{
-				allowUnderscore = FALSE;
-				str[j++] = '_';
-			}
-		}
-		else if (c == '\\') // reserved file name characters
-		{
-			if (allowUnderscore)
-			{
-				allowUnderscore = FALSE;
-				str[j++] = '_';
-			}
-		}
-		else if (bReplaceWhiteWithUnderscore && ((c == ' ') || (c == '\t')))
-		{
-			if (allowUnderscore)
-			{
-				str[j++] = '_';
-				allowUnderscore = FALSE;
-			}
-		}
-		else if ((c < 32) || (c > 126))
-		{
-			if (allowUnderscore)
-			{
-				str[j++] = '_';
-				allowUnderscore = FALSE;
-			}
-		}
-		else
-		{
-			str[j++] = c;
-			allowUnderscore = TRUE;
-		}
-	}
-	name.SetCount(j);
-}
-
-
-void  FileUtils::MakeValidLabelFilePath(CString &name, BOOL bReplaceWhiteWithUnderscore)
-{
-	SimpleString validName(name.GetLength());
-	validName.Append((LPCSTR)name, name.GetLength());
-	FileUtils::MakeValidLabelFilePath(validName, bReplaceWhiteWithUnderscore);
-	name.Empty();
-	name.Append(validName.Data(), validName.Count());
-}
-
-void  FileUtils::MakeValidLabelFilePath(SimpleString &name, BOOL bReplaceWhiteWithUnderscore)
-{
-	// Always merge consecutive underscore characters
-	int csLen = name.Count();
-	char* str = name.Data();
-	int i;
-	int j = 0;
-	unsigned char c;
-	BOOL allowUnderscore = TRUE;
-	for (i = 0; i < csLen; i++)
-	{
-		c = str[i];
-		if (
-			(c == '?') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters
-			(c == '*') || (c == '|') || (c == '"')    // not valid file name characters
-			// I seem to remember that browser would not open a file with name with these chars, 
-			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
-			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
-			|| (c == '%')
-			)
-		{
-			if (allowUnderscore)
-			{
-				allowUnderscore = FALSE;
-				str[j++] = '_';
-			}
-		}
-		else if (c == '\\') // reserved file name characters
-		{
-			if (allowUnderscore)
-			{
-				allowUnderscore = FALSE;
-				str[j++] = '_';
-			}
-		}
-		else if (bReplaceWhiteWithUnderscore && ((c == ' ') || (c == '\t')))
-		{
-			if (allowUnderscore)
-			{
-				str[j++] = '_';
-				allowUnderscore = FALSE;
-			}
-		}
-		else if (c < 32)
-		{
-			if (allowUnderscore)
-			{
-				str[j++] = '_';
-				allowUnderscore = FALSE;
-			}
-		}
-		else
-		{
-			str[j++] = c;
-			allowUnderscore = TRUE;
-		}
-	}
-	name.SetCount(j);
-}
-
-void  FileUtils::MakeValidFileName(CString &name, BOOL bReplaceWhiteWithUnderscore)
-{
-	SimpleString validName(name.GetLength());
-	validName.Append((LPCSTR)name, name.GetLength());
-	FileUtils::MakeValidFileName(validName, bReplaceWhiteWithUnderscore);
-	name.Empty();
-	name.Append(validName.Data(), validName.Count());
-}
-
-void  FileUtils::MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnderscore)
-{
-	// Always merge consecutive underscore characters
-	int csLen = name.Count();
-	char* str = name.Data();
-	int i;
-	int j = 0;
-	char c;
-	BOOL allowUnderscore = TRUE;
-	for (i = 0; i < csLen; i++)
-	{
-		c = str[i];
-		if (
-			(c == '?') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters
+			(c == '?') || (c == '<') || (c == '>') || (c == ':') ||  // not valid file name characters on Windows
 			(c == '*') || (c == '|') || (c == '"')                 // not valid file name characters
-			// I seem to remember that browser would not open a file with name with these chars, 
-			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
-			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
-			|| (c == '%')
+			|| (c == '%')     // sometimes pdfbox, Edge and Chrome have problems
 			)
 		{
 			if (allowUnderscore)
 			{
 				allowUnderscore = FALSE;
-				str[j++] = '_';
+				result.AppendChar('_');
+			}
+		}
+		else if (extraValidation &&
+			( (c == '#') || (c == '\'')   // sometimes pdfbox, Edge and Chrome have problems
+			  || (c == '!') )             // breaks cmd batch files, breaks Print Merge option
+			)             
+		{
+			if (allowUnderscore)
+			{
+				allowUnderscore = FALSE;
+					result.AppendChar('_');
 			}
 		}
 		else if ((c == '/') || (c == '\\')) // reserved file name characters
@@ -961,52 +504,66 @@ void  FileUtils::MakeValidFileName(SimpleString &name, BOOL bReplaceWhiteWithUnd
 			if (allowUnderscore)
 			{
 				allowUnderscore = FALSE;
-				str[j++] = '_';
+				result.AppendChar('_');
 			}
 		}
 		else if (bReplaceWhiteWithUnderscore && ((c == ' ') || (c == '\t')))
 		{
 			if (allowUnderscore)
 			{
-				str[j++] = '_';
+				result.AppendChar('_');
 				allowUnderscore = FALSE;
 			}
 		}
-		else if ((c < 32) || (c > 126))
+		else if (iscntrl(c) || (c == 0x7f))
 		{
 			if (allowUnderscore)
 			{
-				str[j++] = '_';
+				result.AppendChar('_');
 				allowUnderscore = FALSE;
 			}
 		}
 		else
 		{
-			str[j++] = c;
+			result.AppendChar(c);
 			allowUnderscore = TRUE;
 		}
 	}
-	name.SetCount(j);
 }
 
-void  FileUtils::MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bReplaceWhiteWithUnderscore)
+void  FileUtils::MakeValidFileName(CString& name, CString& result, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
+{
+	FileUtils::MakeValidFileName((LPCWSTR)name, name.GetLength(), result, bReplaceWhiteWithUnderscore, extraValidation);
+}
+
+void  FileUtils::MakeValidFileName(const wchar_t *name, int namelen, CString &result, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
 {
 	// Always merge consecutive underscore characters
-	int csLen = name.GetLength();
+	result.Preallocate(namelen + 2);
+
+	int csLen = namelen;
 	int i;
 
-	wchar_t c;
+	wint_t c;
 	BOOL allowUnderscore = TRUE;
 	for (i = 0; i < csLen; i++)
 	{
-		c = name[i];
+		c = name[i] & 0xFFFF;
 		if (
-			(c == L'?') || (c == L'<') || (c == L'>') || (c == L':') ||  // not valid file name characters
+			(c == L'?') || (c == L'<') || (c == L'>') || (c == L':') ||  // not valid file name characters on Windows
 			(c == L'*') || (c == L'|') || (c == L'"')                 // not valid file name characters
-			// I seem to remember that browser would not open a file with name with these chars, 
-			// but now I can't recreate the case. One more reminder I need to keep track of all test cases
-			// 1.0.3.7 || (c == ',') || (c == ';') || (c == '%')
-			|| (c == L'%')
+			|| (c == L'%')  // sometimes pdfbox, Edge and Chrome have problems
+			)
+		{
+			if (allowUnderscore)
+			{
+				allowUnderscore = FALSE;
+				result.AppendChar(L'_');
+			}
+		}
+		else if (extraValidation &&
+			((c == L'#') || (c == L'\'')   // sometimes pdfbox, Edge and Chrome have problems
+				|| (c == L'!'))             // breaks cmd batch files, breaks Print Merge option
 			)
 		{
 			if (allowUnderscore)
@@ -1031,7 +588,7 @@ void  FileUtils::MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bRepl
 				allowUnderscore = FALSE;
 			}
 		}
-		else if (iswcntrl(c))
+		else if (iswcntrl(c) || (c == 0x007f))
 		{
 			if (allowUnderscore)
 			{
@@ -1048,46 +605,6 @@ void  FileUtils::MakeValidFileNameW(CStringW &name, CStringW &result, BOOL bRepl
 }
 
 BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int dataLength)
-{
-	DWORD dwAccess = GENERIC_WRITE;
-	DWORD dwCreationDisposition = CREATE_ALWAYS;
-
-	HANDLE hFile = CreateFile(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		int deb = 1;
-		return FALSE;
-	}
-	else
-	{
-		const unsigned char* pszData = data;
-		int nLeft = dataLength;
-
-		for (;;)
-		{
-			DWORD nWritten = 0;
-
-			BOOL retWrite = WriteFile(hFile, pszData, nLeft, &nWritten, 0);
-			if (nWritten != nLeft)
-				int deb = 1;
-
-			if (nWritten < 0)
-				break;
-
-			pszData += nWritten;
-			nLeft -= nWritten;
-			if (nLeft <= 0)
-				break;
-		}
-
-		BOOL retClose = CloseHandle(hFile);
-		if (retClose == FALSE)
-			int deb = 1;
-	}
-	return TRUE;
-}
-
-BOOL FileUtils::Write2File(CStringW &cStrNamePath, const unsigned char *data, int dataLength)
 {
 	DWORD dwAccess = GENERIC_WRITE;
 	DWORD dwCreationDisposition = CREATE_ALWAYS;
@@ -1135,7 +652,7 @@ int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesTo
 	while (bytesToWrite > 0)
 	{
 		nwritten = 0;
-		if (!WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL)) {
+		if (!::WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL)) {
 			DWORD retval = GetLastError();
 			break;
 		}
@@ -1178,7 +695,7 @@ BOOL FileUtils::ReadEntireFile(CString &cStrNamePath, SimpleString &txt)
 			else
 				nNumberOfBytesToRead = (DWORD)bytesLeft;
 
-			BOOL retval = ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
+			BOOL retval = ::ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
 			if (retval == FALSE)
 				break;
 
@@ -1196,10 +713,10 @@ BOOL FileUtils::ReadEntireFile(CString &cStrNamePath, SimpleString &txt)
 BOOL FileUtils::NormalizeFilePath(CString &filePath)
 {
 	CString outFilePath;
-	filePath.Replace("/", "\\");
-	filePath.TrimRight("\\");
+	filePath.Replace(L"/", L"\\");
+	filePath.TrimRight(L"\\");
 	int i, k;
-	char c;
+	wchar_t c;
 	k = 0;
 	for (i = 0; i < filePath.GetLength(); )
 	{
@@ -1217,8 +734,8 @@ BOOL FileUtils::NormalizeFilePath(CString &filePath)
 		}
 	}
 
-	char buffer[MAX_PATH + 1];
-	BOOL ret = PathCanonicalizeA(buffer, (LPCSTR)outFilePath);
+	wchar_t buffer[MAX_PATH + 1];
+	BOOL ret = PathCanonicalize(buffer, (LPCWSTR)outFilePath);
 	if (ret)
 	{
 		filePath.Empty();
@@ -1231,7 +748,8 @@ BOOL FileUtils::NormalizeFilePath(CString &filePath)
 
 
 // create all subfolders if they don't exist
-BOOL FileUtils::CreateDirectory(const char *path)
+
+BOOL FileUtils::CreateDir(const wchar_t *path)
 {
 	CList<CString, CString &> folderList;
 
@@ -1241,7 +759,7 @@ BOOL FileUtils::CreateDirectory(const char *path)
 
 	int i;
 	BOOL foundValidSubFolder = FALSE;
-	int maxSubfolderDepth = 1000;
+	int maxSubfolderDepth = 128;
 	for (i = 0; i < maxSubfolderDepth; i++)
 	{
 		if (FileUtils::PathDirExists(subFolderPath))
@@ -1251,62 +769,8 @@ BOOL FileUtils::CreateDirectory(const char *path)
 		}
 
 		folderPath = subFolderPath;
-		folderPath.TrimRight("\\");
-		FileUtils::GetFolderPathAndFileName(folderPath, subFolderPath, folderName);
-		if (subFolderPath.IsEmpty())
-			break;
-		folderList.AddHead(folderName);
-	}
-	if (!foundValidSubFolder)
-	{
-		return FALSE;
-	}
-	if (folderList.IsEmpty())
-		return TRUE;
-
-	folderPath = subFolderPath;
-	folderPath.TrimRight("\\");
-	folderPath.Append("\\");
-	while (folderList.GetCount() > 0)
-	{
-		folderName = folderList.RemoveHead();
-		folderPath.Append(folderName);
-		folderPath.Append("\\");
-		if (!::CreateDirectory(folderPath, NULL)) // must be global function
-		{
-			return FALSE;
-		}
-		if (!FileUtils::PathDirExists(folderPath))
-		{
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
-BOOL FileUtils::CreateDirectoryW(const wchar_t *path)
-{
-	CList<CStringW, CStringW &> folderList;
-
-	CStringW folderPath(path);
-	CStringW subFolderPath(path);
-	CStringW folderName;
-
-	int i;
-	BOOL foundValidSubFolder = FALSE;
-	int maxSubfolderDepth = 1000;
-	for (i = 0; i < maxSubfolderDepth; i++)
-	{
-		if (FileUtils::PathDirExistsW(subFolderPath))
-		{
-			foundValidSubFolder = TRUE;
-			break;
-		}
-
-		folderPath = subFolderPath;
 		folderPath.TrimRight(L"\\");
-		FileUtils::GetFolderPathAndFileNameW(folderPath, subFolderPath, folderName);
+		FileUtils::GetFolderPathAndFileName(folderPath, subFolderPath, folderName);
 		if (subFolderPath.IsEmpty())
 			break;
 		folderList.AddHead(folderName);
@@ -1326,68 +790,59 @@ BOOL FileUtils::CreateDirectoryW(const wchar_t *path)
 		folderName = folderList.RemoveHead();
 		folderPath.Append(folderName);
 		folderPath.Append(L"\\");
-		if (!::CreateDirectoryW(folderPath, NULL))  // must be global function
+		if (!::CreateDirectory(folderPath, NULL))  // must be global function
 		{
 			return FALSE;
 		}
-		if (!FileUtils::PathDirExistsW(folderPath))
+		if (!FileUtils::PathDirExists(folderPath))
 		{
 			return FALSE;
 		}
 	}
-
 	return TRUE;
 }
 
 BOOL FileUtils::VerifyName(CString &name)
 {
-	if ((name.Find("Cache") < 0) && // expand "Cache" check PrintCache etc
-		(name.Find("MBoxViewer") < 0) &&
-		(name.Find(".WriteSupported") < 0) &&  // should not be needed; MBoxViewer should fail first
-		(name.Find(".rootfolder") < 0) && // should not be needed; MBoxViewer should fail first
-		(name.Find("AppData\\Local\\Temp\\mboxview") < 0)
-		)
-	{
-		TRACE("VerifyName: Failed \"%s\"\n", name);
-		ASSERT(0);
-		return FALSE;
-	}
-	return TRUE;
-}
-
-BOOL FileUtils::VerifyNameW(CStringW &name)
-{
+#if 0
 	if ((name.Find(L"Cache") < 0) && // expand "Cache" check PrintCache etc
-		(name.Find(L"MBoxViewer") < 0) &&
+		(name.Find(L"UMBoxViewer") < 0) &&
 		(name.Find(L".WriteSupported") < 0) &&  // should not be needed; MBoxViewer should fail first
 		(name.Find(L".rootfolder") < 0) && // should not be needed; MBoxViewer should fail first
-		(name.Find(L"AppData\\Local\\Temp\\mboxview") < 0)
+		(name.Find(L"AppData\\Local\\Temp\\UMBoxViewer") < 0)
 		)
+#else
+	if (
+		(name.Find(L"UMBoxViewer") < 0) &&
+		(name.Find(L".WriteSupported") < 0)
+		)
+#endif
 	{
 		TRACE(L"VerifyName: Failed \"%s\"\n", name);
-		ASSERT(0);
+		_ASSERTE(FALSE);
 		return FALSE;
 	}
 	return TRUE;
 }
 
-BOOL FileUtils::DeleteFile(CString &path, BOOL verify)
+BOOL FileUtils::DelFile(CString &path, BOOL verify)
 {
-	BOOL ret = FileUtils::DeleteFile(path.operator LPCSTR(), verify);
+	BOOL ret = FileUtils::DelFile(path.operator LPCWSTR(), verify);
 	return ret;
 }
 
-BOOL FileUtils::DeleteFile(const char *path, BOOL verify)
+BOOL FileUtils::DelFile(const wchar_t *path, BOOL verify)
 {
-	TRACE("DeleteFile: \"%s\"\n", path);
 
-	CString filePath = path;
+	TRACE(L"DelFile: \"%s\"\n", path);
+
+	CStringW filePath = path;
 	if (verify)
 	{
 		if (!VerifyName(filePath))
 		{
-			TRACE("DeleteFile: VerifyName failed. Failed to delete \"%s\"\n", path);
-			ASSERT(path);
+			TRACE(L"DelFile: VerifyName failed. Failed to delete \"%s\"\n", path);
+			_ASSERTE(path);
 			return FALSE;
 		}
 	}
@@ -1395,38 +850,8 @@ BOOL FileUtils::DeleteFile(const char *path, BOOL verify)
 	BOOL ret = ::DeleteFile(path);
 	if (!ret)
 	{
-		CString errorText = FileUtils::GetLastErrorAsString();
-		TRACE("DeleteFile: \"%s\" %s", path, errorText);
-	}
-	return ret;
-}
-
-BOOL FileUtils::DeleteFileW(CStringW &path, BOOL verify)
-{
-	BOOL ret = FileUtils::DeleteFileW(path.operator LPCWSTR(), verify);
-	return ret;
-}
-
-BOOL FileUtils::DeleteFileW(const wchar_t *path, BOOL verify)
-{
-	TRACE(L"DeleteFileW: \"%s\"\n", path);
-
-	CStringW filePath = path;
-	if (verify)
-	{
-		if (!VerifyNameW(filePath))
-		{
-			TRACE(L"DeleteFile: VerifyName failed. Failed to delete \"%s\"\n", path);
-			ASSERT(path);
-			return FALSE;
-		}
-	}
-
-	BOOL ret = ::DeleteFileW(path);
-	if (!ret)
-	{
-		CStringW errorText = FileUtils::GetLastErrorAsStringW();
-		TRACE(L"DeleteFileW: \"%s\" %s", path, errorText);
+		CStringW errorText = FileUtils::GetLastErrorAsString();
+		TRACE(L"DelFile: \"%s\" %s", path, errorText);
 	}
 	return ret;
 }
@@ -1434,151 +859,66 @@ BOOL FileUtils::DeleteFileW(const wchar_t *path, BOOL verify)
 // Optimistic Copy, ignores many errors
 // TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
 // Try to copy first and remove from directory only if no errors ??
-CString FileUtils::CopyDirectory(const char *cFromPath, const char* cToPath, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
+
+CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPath, CStringArray * excludeFilter, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
 {
-	WIN32_FIND_DATA FileData;
+	WIN32_FIND_DATAW FileData;
 	HANDLE hSearch;
 	BOOL	bFinished = FALSE;
 	CString errorText;
 
 	CString fromPath = cFromPath;
-	fromPath.TrimRight("\\");
-	fromPath.Append("\\");
-
 	if (!FileUtils::PathDirExists(cFromPath))
 	{
-		CString errorText;
-		errorText.Format("CopyDirectory: Invalid from directory path %s", fromPath);
-		//errorText = FileUtils::GetLastErrorAsString();
-		TRACE("%s", errorText);
+		errorText.Format(L"CopyDirectory: Invalid from directory path \"%s\"", fromPath);
+		//errorText = FileUtils::GetLastErrorAsStringW();
+		TRACE(L"%s", errorText);
 		return errorText;
+	}
+
+	if (excludeFilter)
+	{
+		int count = (int)excludeFilter->GetCount();
+		int i;
+		for (i = 0; i < excludeFilter->GetCount(); i++)
+		{
+			if (fromPath.Find(excludeFilter->GetAt(i)) >= 0)
+				break;
+		}
+		if (i == count)
+			return errorText;
+	}
+
+	if (!FileUtils::VerifyName(fromPath))
+	{
+		TRACE(L"CopyDirectory: VerifyName failed. Invalid From Directory Name  \"%s\"\n", fromPath);
+		_ASSERTE(FALSE);
+		//return TRUE; // FIXME
 	}
 
 	CString toPath = cToPath;
-	toPath.TrimRight("\\");
-	toPath.Append("\\");
-	if (!FileUtils::CreateDirectory(cToPath))
+	if (!FileUtils::CreateDir(cToPath))
 	{
-		errorText.Format("CopyDirectory: Create To directory %s failed.", toPath);
-		//errorText = FileUtils::GetLastErrorAsString();
-		TRACE("%s", errorText);
-		return errorText;
-	}
-
-	// Start searching for all files in the From directory.
-	CString searchPath = fromPath + "*.*";
-	hSearch = FindFirstFile(searchPath, &FileData);
-	if (hSearch == INVALID_HANDLE_VALUE) 
-	{
-		CString errText;
-		errText.Format("CopyDirectory: Didn't find files in %s", fromPath);
-		//CString errText = FileUtils::GetLastErrorAsString();
-		TRACE("%s", errText);
-		return errorText;  // Success, return empty error string
-	}
-
-	while (!bFinished)
-	{
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
-		{
-			CString	fileFound = fromPath + FileData.cFileName;
-			CString toFilePath = toPath  + FileData.cFileName;
-			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-			{
-				if (!::CopyFile(fileFound, toFilePath, bFailIfExists))
-				{
-					CString errText = FileUtils::GetLastErrorAsString();
-					TRACE("CopyDirectory: %s", errText);
-				}
-				else if (removeFolderAfterCopy)
-				{
-					if (!FileUtils::DeleteFile(fileFound))
-					{
-						CString errText = FileUtils::GetLastErrorAsString();
-						TRACE("CopyDirectory: %s", errText);
-					}
-				}
-			}
-			else // recursive
-			{
-				CString fromPath = fileFound + "\\";
-				CString toPath = toFilePath + "\\";
-				errorText = FileUtils::CopyDirectory(fromPath, toPath, bFailIfExists, removeFolderAfterCopy);
-				if (!errorText.IsEmpty())
-				{
-					TRACE("CopyDirectory: %s", errorText);
-				}
-			}
-		}
-		if (!FindNextFile(hSearch, &FileData))
-		{
-			bFinished = TRUE;
-		}
-	}
-
-	FindClose(hSearch);
-	if (removeFolderAfterCopy)
-	{
-		errorText.Empty();
-		BOOL retRD = FileUtils::OSRemoveDirectory(fromPath, errorText);
-		if (!retRD)
-		{
-			TRACE("CopyDirectory: %s", errorText);
-		}
-	}
-	return errorText;
-}
-
-// Optimistic Copy, ignores many errors
-// TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
-// Try to copy first and remove from directory only if no errors ??
-
-CStringW FileUtils::CopyDirectoryW(const char *cFromPath, const char *cToPath, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
-{
-	CString fromDir = cFromPath;
-	CStringW fromDirW;
-	CString toDir = cToPath;
-	CStringW toDirW;
-
-	DWORD error;
-	BOOL retA2W = TextUtilsEx::Ansi2Wide(fromDir, fromDirW, error);
-	retA2W = TextUtilsEx::Ansi2Wide(toDir, toDirW, error);
-	CStringW errorText = FileUtils::CopyDirectoryW(fromDirW, toDirW, bFailIfExists, removeFolderAfterCopy);
-	return errorText;
-
-}
-CStringW FileUtils::CopyDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
-{
-	WIN32_FIND_DATAW FileData;
-	HANDLE hSearch;
-	BOOL	bFinished = FALSE;
-	CStringW errorText;
-
-	CStringW fromPath = cFromPath;
-	if (!FileUtils::PathDirExistsW(cFromPath))
-	{
-		errorText.Format(L"CopyDirectoryW: Invalid from directory path %s", fromPath);
+		errorText.Format(L"CopyDirectory: Create To directory \"%s\" failed.", toPath);
 		//errorText = FileUtils::GetLastErrorAsStringW();
 		TRACE(L"%s", errorText);
 		return errorText;
 	}
 
-	CStringW toPath = cToPath;
-	if (!FileUtils::CreateDirectoryW(cToPath))
+	if (!FileUtils::VerifyName(toPath))
 	{
-		errorText.Format(L"CopyDirectoryW: Create To directory %s failed.", toPath);
-		//errorText = FileUtils::GetLastErrorAsStringW();
-		TRACE(L"%s", errorText);
-		return errorText;
+		TRACE(L"CopyDirectory: VerifyName failed. Invalid To Directory Name \"%s\"\n", toPath);
+		_ASSERTE(FALSE);
+		//return TRUE; // FIXME
 	}
 
 	// Start searching for all files in the from directory.
-	CStringW searchPath = fromPath + "*.*";
+	CString searchPath = fromPath + L"*.*";
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE)
 	{
-		CStringW errText;
-		errText.Format(L"CopyDirectoryW: Didn't find files in %s", fromPath);
+		CString errText;
+		errText.Format(L"CopyDirectory: Didn't find files in \"%s\"", fromPath);
 		//CStringW errText = FileUtils::GetLastErrorAsStringW();
 		TRACE(L"%s", errText);
 		return errorText;   // Success, return empty error string
@@ -1588,32 +928,32 @@ CStringW FileUtils::CopyDirectoryW(const wchar_t *cFromPath, const wchar_t *cToP
 	{
 		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
 		{
-			CStringW	fileFound = fromPath + FileData.cFileName;
-			CStringW toFilePath = toPath + FileData.cFileName;
+			CString fileFound = fromPath + FileData.cFileName;
+			CString toFilePath = toPath + FileData.cFileName;
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 			{
 				if (!::CopyFileW(fileFound, toFilePath, bFailIfExists))
 				{
-					CStringW errText = FileUtils::GetLastErrorAsStringW();
-					TRACE(L"CopyDirectoryW: %s", errText);
+					CString errText = FileUtils::GetLastErrorAsString();
+					TRACE(L"CopyDirectory: \"%s\"\n%s", fileFound, errText);
 				}
 				else if (removeFolderAfterCopy)
 				{
-					if (!FileUtils::DeleteFileW(fileFound))
+					if (!FileUtils::DelFile(fileFound))
 					{
-						CStringW errText = FileUtils::GetLastErrorAsStringW();
-						TRACE(L"CopyDirectoryW: %s", errText);
+						CString errText = FileUtils::GetLastErrorAsString();
+						TRACE(L"CopyDirectory: \"%s\"\n%s", fileFound, errText);
 					}
 				}
 			}
 			else // recursive
 			{
-				CStringW fromPath = fileFound + "\\";
-				CStringW toPath = toFilePath + "\\";
-				errorText = FileUtils::CopyDirectoryW(fromPath, toPath, bFailIfExists, removeFolderAfterCopy);
+				CString fromPath = fileFound + L"\\";
+				CString toPath = toFilePath + L"\\";
+				errorText = FileUtils::CopyDirectory(fromPath, toPath, excludeFilter, bFailIfExists, removeFolderAfterCopy);
 				if (!errorText.IsEmpty())
 				{
-					TRACE(L"CopyDirectoryW: %s", errorText);
+					TRACE(L"CopyDirectory: \"%s\"\n%s", fromPath, errorText);
 				}
 			}
 		}
@@ -1627,74 +967,31 @@ CStringW FileUtils::CopyDirectoryW(const wchar_t *cFromPath, const wchar_t *cToP
 	if (removeFolderAfterCopy)
 	{
 		errorText.Empty();
-		BOOL retRD = FileUtils::OSRemoveDirectoryW(fromPath, errorText);
+		BOOL retRD = FileUtils::OSRemoveDirectory(fromPath, errorText);
 		if (!retRD)
 		{
-			TRACE(L"CopyDirectoryW: %s", errorText);
+			TRACE(L"CopyDirectory: \"%s\"\n%s", fromPath, errorText);
 		}
 	}
 	return errorText;
 }
 
-CString FileUtils::MoveDirectory(const char *cFromPath, const char *cToPath)
-{
-#if 1
-	BOOL removeFolderAfterCopy = TRUE;
-	BOOL bFailIfExists = FALSE;
-	CString errorText = FileUtils::CopyDirectory(cFromPath, cToPath, bFailIfExists, removeFolderAfterCopy);
-	return errorText;
-#else
-	//  MoveFileEx seem to fail if one of the files or subfolders can't be moved
-	// Is this preferble in our case ??
-	CString errorText;
-	CString fromPath = cFromPath;
-	CString toPath = cToPath;
-	DWORD  dwFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH;
-	BOOL ret = MoveFileEx(fromPath, toPath, dwFlags);
-	if (!ret)
-		errorText = GetLastErrorAsString();
-	return errorText;
-#endif
-}
-
-CStringW FileUtils::MoveDirectoryW(const wchar_t *cFromPath, const wchar_t *cToPath)
+CString FileUtils::MoveDirectory(const wchar_t *cFromPath, const wchar_t *cToPath)
 {
 	BOOL removeFolderAfterCopy = TRUE;
 	BOOL bFailIfExists = FALSE;
-	CStringW errorText = FileUtils::CopyDirectoryW(cFromPath, cToPath, bFailIfExists, removeFolderAfterCopy);
+	CString errorText = FileUtils::CopyDirectory(cFromPath, cToPath, 0, bFailIfExists, removeFolderAfterCopy);
 	return errorText;
 }
 
-CString FileUtils::GetLastErrorAsString()
-{
-	//Get the error message, if any.
-	CString emptyMsg;
-	DWORD errorMessageID = ::GetLastError();
-	//DWORD errorMessageID = ERROR_REQ_NOT_ACCEP;
-	if (errorMessageID == 0)
-		return emptyMsg; //No error message has been recorded
-
-	LPSTR messageBuffer = nullptr;
-	DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
-
-	CString message(messageBuffer, size);
-
-	CString errorMessage;
-	message.TrimRight(" \t\r\n");
-	errorMessage.Format("Error Code %u \"%s\"\n", errorMessageID, message);
-
-	//Free the buffer.
-	LocalFree(messageBuffer);
-
-	return errorMessage;
-}
-
-CStringW FileUtils::GetLastErrorAsStringW()
+CString FileUtils::GetLastErrorAsString(DWORD errorCode)
 {
 	//Get the error message, if any.
 	CStringW emptyMsg;
-	DWORD errorMessageID = ::GetLastError();
+	DWORD errorMessageID = errorCode;
+	if (errorCode == 0xFFFF)
+		errorMessageID = ::GetLastError();
+
 	//DWORD errorMessageID = ERROR_REQ_NOT_ACCEP;
 	if (errorMessageID == 0)
 		return emptyMsg; //No error message has been recorded
@@ -1718,20 +1015,19 @@ CStringW FileUtils::GetLastErrorAsStringW()
 CString FileUtils::GetFileExceptionErrorAsString(CFileException &exError)
 {
 	CString exErrorStr;
-	TCHAR szCause[2048];
+	wchar_t szCause[2048];
 	exError.GetErrorMessage(szCause, 2048);
 
 	exErrorStr.Append(szCause);
 	return exErrorStr;
 }
 
-
 CString FileUtils::GetOpenForReadFileExceptionErrorAsString(CString &fileName, CFileException &exError)
 {
 	CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exError);
 
-	CString txt = _T("Could not open \"") + fileName;
-	txt += _T("\" file.\n");
+	CString txt = L"Could not open \"" + fileName;
+	txt += L"\" file.\n";
 	txt += exErrorStr;
 	return txt;
 }
@@ -1746,9 +1042,11 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 	cacheFolderList.Add("EmlCache");
 	cacheFolderList.Add("LabelCache");
 	cacheFolderList.Add("ArchiveCache");
+	cacheFolderList.Add("ListCache");
 	cacheFolderList.Add("MergeCache");
+	//NTreeView::SetupCacheFolderList(cacheFolderList);  // should use this but it would need to include NTreeView.h
 
-	rootFolder.TrimRight("\\");
+	rootFolder.TrimRight(L"\\");
 	//rootFolder.Append("\\");
 
 	CString folderName;
@@ -1772,7 +1070,7 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 	CString searchPath = folderPath + "\\*.*";
 	hSearch = FindFirstFile(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE("GetFolderList: No files found.\n");
+		TRACE(L"GetFolderList: No files found.\n");
 		return FALSE;
 	}
 
@@ -1781,15 +1079,15 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 	CString fileName;
 	while (!bFinished)
 	{
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
+		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
 		{
 			fileName = CString(FileData.cFileName);
 			CString fileFound = folderPath + "\\" + fileName;
 
 			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
 			{
-				fileFound.TrimRight("\\");
-				fileFound.Append("\\");
+				fileFound.TrimRight(L"\\");
+				fileFound.Append(L"\\");
 #if 0
 				FileUtils::CPathStripPath(folderPath, folderName);
 				ignoreFolder = FALSE;
@@ -1821,13 +1119,12 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 
 	if (fileCnt)
 	{
-		rootFolder.TrimRight("\\");
-		rootFolder.Append("\\");
+		rootFolder.TrimRight(L"\\");
+		rootFolder.Append(L"\\");
 		folderList.AddTail(rootFolder);
 	}
 
 	return TRUE;
-
 }
 
 int FileUtils::GetFolderFileCount(CString &rootFolderPath, BOOL recursive)
@@ -1835,14 +1132,14 @@ int FileUtils::GetFolderFileCount(CString &rootFolderPath, BOOL recursive)
 	int fileCnt = 0;
 
 	CString folderPath = rootFolderPath;
-	folderPath.TrimRight("\\");
+	folderPath.TrimRight(L"\\");
 
 	WIN32_FIND_DATA FileData;
 	HANDLE hSearch;
 	BOOL	bFinished = FALSE;
 
 	// Start searching for all folders in the current directory.
-	CString searchPath = folderPath + "\\*.*";
+	CString searchPath = folderPath + L"\\*.*";
 	hSearch = FindFirstFile(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
 		return 0;
@@ -1851,10 +1148,10 @@ int FileUtils::GetFolderFileCount(CString &rootFolderPath, BOOL recursive)
 	CString fileName;
 	while (!bFinished)
 	{
-		if (!(strcmp(FileData.cFileName, ".") == 0 || strcmp(FileData.cFileName, "..") == 0))
+		if (!(_tcscmp(FileData.cFileName, L".") == 0 || _tcscmp(FileData.cFileName, L"..") == 0))
 		{
 			fileName = CString(FileData.cFileName);
-			CString fileFound = folderPath + "\\" + fileName;
+			CString fileFound = folderPath + L"\\" + fileName;
 
 			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
 			{
@@ -1880,14 +1177,14 @@ int FileUtils::GetFolderFileCount(CString &rootFolderPath, BOOL recursive)
 	return fileCnt;
 }
 
-_int64 FileUtils::FolderSize(LPCSTR fPath)
+_int64 FileUtils::FolderSize(LPCWSTR fPath)
 {
 	WIN32_FIND_DATA data;
 	__int64 size = 0;
 	CString folderPath = fPath;
-	folderPath.TrimRight("\\");
-	folderPath.Append("\\)");
-	CString filePath = folderPath + "*.*";
+	folderPath.TrimRight(L"\\");
+	folderPath.Append(L"\\)");
+	CString filePath = folderPath + L"*.*";
 	HANDLE h = FindFirstFile(filePath, &data);
 	if (h != INVALID_HANDLE_VALUE)
 	{
@@ -1895,7 +1192,7 @@ _int64 FileUtils::FolderSize(LPCSTR fPath)
 		{
 			if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			{
-				if (strcmp(data.cFileName, ".") != 0 && strcmp(data.cFileName, "..") != 0)
+				if (_tcscmp(data.cFileName, L".") != 0 && _tcscmp(data.cFileName, L"..") != 0)
 				{
 					folderPath = folderPath + data.cFileName;
 					size += FolderSize(filePath);
@@ -1919,9 +1216,9 @@ _int64 FileUtils::FolderSize(LPCSTR fPath)
 BOOL FileUtils::IsReadonlyFolder(CString &folderPath)
 {
 	CString path = folderPath;
-	path.TrimRight("\\");
+	path.TrimRight(L"\\");
 
-	CString tempFolderPath = path + "\\.WriteSupported";
+	CString tempFolderPath = path + L"\\.WriteSupported";
 
 	BOOL retD = FileUtils::RemoveDir(tempFolderPath, true, true);
 	if (FileUtils::PathDirExists(tempFolderPath))
@@ -1930,7 +1227,7 @@ BOOL FileUtils::IsReadonlyFolder(CString &folderPath)
 		return TRUE;
 	}
 
-	if (!FileUtils::CreateDirectory(tempFolderPath))
+	if (!FileUtils::CreateDir(tempFolderPath))
 	{
 		// Should never fails
 		// Assume readonly folder
@@ -1942,9 +1239,57 @@ BOOL FileUtils::IsReadonlyFolder(CString &folderPath)
 	return FALSE;
 }
 
-// TODO: update test to test chnages to RemoveDir, new CopyDirectory and MoveDirectory
+void FileUtils::SplitFileFolder(CString& path, CStringArray& a)
+{
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+
+	SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
+
+	int position = 0;
+	CString delim = L"\\";
+	CString strToken;
+
+	a.RemoveAll();
+	directory.TrimRight(L"\\");
+	strToken = directory.Tokenize(delim, position);
+	while (!strToken.IsEmpty())
+	{
+		a.Add(strToken);
+		strToken = directory.Tokenize(delim, position);
+	}
+}
+
+CString FileUtils::SizeToString(_int64 size)
+{
+	//wchar_t sizeStr_inKB[256];
+	wchar_t sizeStr_inBytes[256];
+	int sizeStrSize = 256;
+
+#if 0
+	_int64 size;
+	LPCWSTR fileSizeStr_inKB = StrFormatKBSize(fileSize, &sizeStr_inKB[0], sizeStrSize);
+	if (!fileSizeStr_inKB)
+		sizeStr_inKB[0] = 0;
+#endif
+
+	LPCWSTR fileSizeStr_inBytes = StrFormatByteSize64(size, &sizeStr_inBytes[0], sizeStrSize);
+	if (!fileSizeStr_inBytes)
+		sizeStr_inBytes[0] = 0;
+
+	CString txt;
+	//txt.Format(L"File size:  %s (%s)\n", sizeStr_inKB, sizeStr_inBytes);
+	txt.Format(L"File size: (%s)", sizeStr_inBytes);
+
+	return txt;
+}
+
+// TODO: update test to test chnages to RemoveDirA, new CopyDirectory and MoveDirectory
 void FileUtils::UnitTest()
 {
+#if 0
 	DWORD error;
 	bool retPathExists;
 	BOOL retRemoveDirectory;
@@ -1961,52 +1306,51 @@ void FileUtils::UnitTest()
 	/////////////////////////////////////////
 	pathW = GetMboxviewTempPathW();
 	if (pathW.Find(safeDirW) < 0)
-		ASSERT(false);
+		_ASSERTE(false);
 	retRemoveFiles = RemoveDirW(pathW, true);
 	retRemoveDirectory = RemoveDirectoryW(pathW, error);
 
 	pathW = GetMboxviewTempPathW();
 	retPathExists = PathDirExistsW(pathW);
-	ASSERT(retPathExists);
+	_ASSERTE(retPathExists);
 	retRemoveFiles = RemoveDirW(pathW, true);
 	retRemoveDirectory = RemoveDirectoryW(pathW, error);
-	ASSERT(retRemoveDirectory);
+	_ASSERTE(retRemoveDirectory);
 
 	pathW = GetMboxviewTempPathW();
 	retPathExists = PathDirExistsW(pathW);
 	subpathW = GetMboxviewTempPathW(L"Inline");
 	retPathExists = PathDirExistsW(subpathW);
-	ASSERT(retPathExists);
+	_ASSERTE(retPathExists);
 	retRemoveFiles = RemoveDirW(subpathW, true);
 	//retRemoveDirectory = RemoveDirectoryW(subpathW, error);
 	retRemoveDirectory = RemoveDirectoryW(pathW, error);
-	ASSERT(retRemoveDirectory);
+	_ASSERTE(retRemoveDirectory);
 
 	/////////////////////////////////////////
 
 	/////////////////////////////////
 	pathA = GetMboxviewTempPath();
 	if (pathA.Find(safeDir) < 0)
-		ASSERT(false);
-	retRemoveFiles = RemoveDir(pathA, true);
-	retRemoveDirectory = RemoveDirectory(pathA, error);
+		_ASSERTE(false);
+	retRemoveFiles = RemoveDirA(pathA, true);
+	retRemoveDirectory = RemoveDirectoryA(pathA, error);
 
 	pathA = GetMboxviewTempPath();
 	retPathExists = PathDirExists(pathA);
-	ASSERT(retPathExists);
-	retRemoveFiles = RemoveDir(pathA, true);
-	retRemoveDirectory = RemoveDirectory(pathA, error);
-	ASSERT(retRemoveDirectory);
+	_ASSERTE(retPathExists);
+	retRemoveFiles = RemoveDirA(pathA, true);
+	retRemoveDirectory = RemoveDirectoryA(pathA, error);
+	_ASSERTE(retRemoveDirectory);
 
 
 	pathA = GetMboxviewTempPath();
 	retPathExists = PathDirExists(pathA);
 	subpathA = GetMboxviewTempPath("Inline");
 	retPathExists = PathDirExists(subpathA);
-	ASSERT(retPathExists);
-	//retRemoveDirectory = RemoveDirectory(subpathA, error);
+	_ASSERTE(retPathExists);
+	//retRemoveDirectory = RemoveDirectoryA(subpathA, error);
 	retRemoveDirectory = RemoveDirectoryA(pathA, error);
-	ASSERT(retRemoveDirectory);
-
-
+	_ASSERTE(retRemoveDirectory);
+#endif
 }

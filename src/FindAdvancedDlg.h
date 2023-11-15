@@ -37,6 +37,8 @@
 
 #include "stdafx.h"
 #include "ATLComTime.h"
+#include "MyCTime.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
@@ -45,7 +47,12 @@
 
 struct CFindAdvancedParams
 {
+	CFindAdvancedParams::CFindAdvancedParams();
+	CFindAdvancedParams::~CFindAdvancedParams();
+
 	CString	m_string[FILTER_FIELDS_NUMB];
+	CStringA m_stringA[FILTER_FIELDS_NUMB];
+	UINT	m_charsetId[FILTER_FIELDS_NUMB];
 	BOOL	m_bWholeWord[FILTER_FIELDS_NUMB];
 	BOOL	m_bCaseSensitive[FILTER_FIELDS_NUMB];
 	BOOL	m_bEditChecked[FILTER_FIELDS_NUMB];
@@ -68,8 +75,19 @@ struct CFindAdvancedParams
 	BOOL m_bFindAll;
 	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
+	// Run time args
+	BOOL m_bNeedToFindMailMinMaxTime;
+
+	MyCTime m_mboxMailStartDate;
+	MyCTime m_mboxMailEndDate;
+	BOOL m_needToRestoreArchiveListDateTime;
+	MyCTime m_lastStartDate;
+	MyCTime m_lastEndDate;
+
 	void SetDflts();
 	void Copy(CFindAdvancedParams &src);
+
+	void ResetFilterDates();
 };
 
 class CFindAdvancedDlg : public CDialog

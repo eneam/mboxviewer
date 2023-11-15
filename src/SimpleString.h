@@ -33,7 +33,7 @@
 class SimpleString
 {
 protected:
-	SimpleString(int capacity, int grow_size, int count) {
+	SimpleString(int capacity, int grow_size, int count) { 
 		m_data = 0;  m_count = 0;  m_grow_size = 0;
 		m_capacity = 0;
 	}
@@ -67,7 +67,7 @@ public:
 	int Capacity() { return m_capacity; }
 	int Count() { return m_count; }
 	void SetCount(int count) {
-		ASSERT(count <= m_capacity); _ASSERTE(m_data);
+		_ASSERTE(count <= m_capacity); _ASSERTE(m_data);
 		m_count = count; m_data[count] = 0;
 	}
 	void Clear() {
@@ -98,15 +98,15 @@ public:
 		m_data[m_count] = 0;
 	}
 
-	void Copy(void const* Src, int  Size) {
+	void Copy(char const* Src, int  Size) {
 		if (Size > m_capacity) Resize(Size);  // Not good; you are mixing signed and unsigned
 		::memcpy(m_data, Src, Size);
 		SetCount(Size);
 	}
 
-	void append_internal(void const* Src, int  Size);
+	void append_internal(char const* Src, int  Size);
 
-	void Append(void const* Src, int  Size) {
+	void Append(char const* Src, int  Size) {
 		if (!CanAdd(Size))
 			Resize(m_count + Size);
 		append_internal(Src, Size);
@@ -130,9 +130,25 @@ public:
 		Append(str.Data(), str.Count());
 	}
 
-	int FindNoCase(int offset, void const* Src, int  Size);
-	int FindAny(int offset, void const * Src);
+	// Be aware!!!:  FindNoCase return to offset relative to the beginning of the stored string 
+	// and not the offset relative to the argument offset
+	int FindNoCase(int offset, char const* Src, int  Size);
+	int FindNoCase(int offset, char const* Src, int  Size, int ncount);
+
+	// Find first char matching any char on the list Src
+	// Be aware!!!:  FindAny returns to offset relative to the beginning of the stored string 
+	// and not the offset relative to the argument offset
+	int FindAny(int offset, char const* Src);
+
+	// Find first char matching the char c
+	// Be aware!!!:  Find returns to offset relative to the beginning of the stored string 
+	// and not the offset relative to the argument offset
+
 	int Find(int offset, char const c);
+	//
+	int ReplaceNoCase(int offset, char const* Src, int Size, char const* newSrc, int newSize, int ncount);
+
+	int Remove(int offsetBegin, int offsetEnd);
 
 	char GetAt(int pos) {
 		return m_data[pos];
@@ -152,14 +168,14 @@ public:
 class SimpleStringWrapper : protected SimpleString
 {
 public:
-	SimpleStringWrapper(char* data, int count) : SimpleString(0, 0, 0)
+	SimpleStringWrapper(char *data, int count) : SimpleString(0,0,0)
 	{
 		m_data = data;
 		m_count = count;
 	}
-	~SimpleStringWrapper() { m_data = 0; };
-	char* Data() { return m_data; }
+	~SimpleStringWrapper() { m_data = 0;};
+	char *Data() { return m_data; }
 	int Count() { return m_count; }
-	SimpleString* getBasePtr() { return this; }
+	SimpleString* getBasePtr() { return this;  }
 };
 

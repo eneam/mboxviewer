@@ -39,6 +39,19 @@ enum {
 	StartTlsWhenAvailable = 4
 };
 
+class MailConfigA
+{
+public:
+	CStringA MailServiceName;
+	CStringA SmtpServerAddress;
+	UINT SmtpServerPort;
+	CStringA UserAccount;
+	CStringA UserPassword;
+	UINT EncryptionType;
+	INT MaxMailSize;
+	//CComboBox TLSOptions;
+	CStringA UserMailAddress;
+};
 
 class MailConfig
 {
@@ -56,6 +69,7 @@ public:
 	void Copy(MailConfig &config);
 	void Write2Registry();
 	void ReadFromRegistry(CString &serviceName);
+	DWORD WStr2Ansi(MailConfigA& mailConfig);
 };
 
 

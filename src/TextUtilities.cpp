@@ -32,9 +32,12 @@
 #pragma warning (disable : 4786)
 #endif
 
-#include "TextUtilities.h"
+#include "ctype.h"
 #include <algorithm>
 #include <map>
+#include "TextUtilities.h"
+#include "TextUtilsEx.h"
+#include "HtmlUtils.h"
 
 TextUtilities	g_tu;
 
@@ -45,6 +48,10 @@ TextUtilities	g_tu;
 #define new DEBUG_NEW
 #endif
 #endif
+
+CString TextUtilities::m_strW;
+SimpleString TextUtilities::m_strA;
+SimpleString TextUtilities::m_workBuff;
 
 static UINT32 _crc32Table[256] = 
 {
@@ -105,54 +112,295 @@ UINT32 TextUtilities::CalcCRC32(const char* buf, const UINT length)
 	return crc32;
 }
 
-int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens )   /* Search Search pat[0..m-1] in text[0..n-1] */
+int TextUtilities::StrSearch(unsigned char* srcText, int n, UINT textCP, unsigned char* pat, int m, BOOL bCaseSens, unsigned char* skipTable)   /* Search Search pat[0..m-1] in text[0..n-1] */
 {
-    char d[256];
-    int i, j, k, lim;
-    int res = -1;
-    memset(d, m+1, 256);
-    for( k=0; k<m; k++ )
-        d[pat[k]] = m-k;
+	DWORD error;
+	int ret = -1;
+	unsigned char* text = srcText;
+	BOOL retCP2W = FALSE;
+
+	UINT CP_ASCII = 20127;
+	if (textCP == CP_ASCII)
+		textCP = 0;  // CodePage2WStr will fail if textCP == CP_ASCII but 8bit charcaters are in text
+
+	BOOL checkIsNormalizedString = FALSE;
+	if ((bCaseSens == FALSE) || ((bCaseSens == TRUE) && (textCP != CP_UTF8)) ||
+		(checkIsNormalizedString && ((bCaseSens == TRUE) && (textCP == CP_UTF8))))
+	{
+		int lenW = m_strW.GetAllocLength();
+		m_strW.LockBuffer();
+		m_strW.Empty();
+		//void Preallocate(int nLength);
+		lenW = m_strW.GetAllocLength();
+
+		retCP2W = TextUtilsEx::CodePage2WStr((char*)text, n, textCP, &m_strW, error);
+		if (retCP2W && checkIsNormalizedString)
+		{
+#if (NTDDI_VERSION >= NTDDI_VISTA)
+			NORM_FORM form = NormalizationC;
+			if (IsNormalizedString(form, (LPCWSTR)m_strW, m_strW.GetLength()))
+			{
+				TRACE(L"Already normalized in this form\n");
+				int deb = 1;
+			}
+			else
+				int deb = 1;
+#else
+			int deb = 1;
+#endif
+		}
+	}
+
+	// Pattern string and Text/haystack must be converted to UTF8, both lower or upper case
+	// Converting strings to lower case is the best effort because it is done as language independent
+	// Converting strings to lower case works quite well but matching may result in false negative matches in few cases
+	if (bCaseSens == FALSE)
+	{
+		if (retCP2W)
+		{
+			CString &loweStr = m_strW.MakeLower();
+			BOOL retW2A = TextUtilsEx::WStr2UTF8((LPCWSTR)m_strW, m_strW.GetLength(), &m_strA, error);
+			if (retW2A)
+			{
+				text = (unsigned char*)m_strA.Data();
+				n = m_strA.Count();
+			}
+		}
+		bCaseSens = TRUE; // FIXMEFIXME
+	}
+	else if (textCP != CP_UTF8)
+	{
+		if (retCP2W)
+		{
+			BOOL retW2A = TextUtilsEx::WStr2UTF8((LPCWSTR)m_strW, m_strW.GetLength(), &m_strA, error); 
+			if (retW2A)
+			{
+				text = (unsigned char*)m_strA.Data();
+				n = m_strA.Count();
+			}
+		}
+	}
+	else  // textCP == CP_UTF8
+	{
+		int deb = 1;
+	}
+
+	if (n < 1024)  // 256 selected without any investigation to help to select the optimal length
+	{
+		char* found = 0;
+		if (bCaseSens)
+			found = strstr((char* const)text, (char* const)pat);
+		else
+			_ASSERTE(FALSE);
+			// found = StrStrIA((char* const)text, (char* const)pat);  // doesn't work anyway
+		if (found)
+			return (int)(found - (char* const)text);
+		else
+			return -1;
+	}
+	else
+	{
+		ret = TextUtilities::BMHSearch(text, n, pat, m, bCaseSens, skipTable);
+	}
+	return ret;
+}
+
+int TextUtilities::StrSearchW(unsigned char* srcText, int n, UINT textCP, unsigned char* pat, int m, BOOL bCaseSens, unsigned char* skipTable)   /* Search Search pat[0..m-1] in text[0..n-1] */
+{
+	DWORD error;
+	int ret = -1;
+	unsigned char* text = srcText;
+	BOOL retCP2W = FALSE;
+
+	UINT CP_ASCII = 20127;
+	if (textCP == CP_ASCII)
+		textCP = 0;  // CodePage2WStr will fail if textCP == CP_ASCII but 8bit charcaters are in text
+
+	BOOL checkIsNormalizedString = TRUE;
+	if ((bCaseSens == FALSE) || ((bCaseSens == TRUE) && (textCP != CP_UTF8)) ||
+		(checkIsNormalizedString && ((bCaseSens == TRUE) && (textCP == CP_UTF8))))
+	{
+		int lenW = m_strW.GetAllocLength();
+		m_strW.LockBuffer();
+		m_strW.Empty();
+		//void Preallocate(int nLength);
+		lenW = m_strW.GetAllocLength();
+
+		retCP2W = TextUtilsEx::CodePage2WStr((char*)text, n, textCP, &m_strW, error);
+		if (retCP2W && checkIsNormalizedString)
+		{
+#if (NTDDI_VERSION >= NTDDI_VISTA)
+			NORM_FORM form = NormalizationC;
+			if (IsNormalizedString(form, (LPCWSTR)m_strW, m_strW.GetLength()))
+			{
+				TRACE(L"Already normalized in this form\n");
+				int deb = 1;
+			}
+			else
+				int deb = 1;
+#else
+			int deb = 1;
+#endif
+		}
+	}
+
+	// Pattern string and Text/haystack must be converted to UTF8, both lower or upper case
+	// Converting strings to lower case is the best effort because it is done as language independent
+	// Converting strings to lower case works quite well but matching may result in false negative matches in few cases
+	if (bCaseSens == FALSE)
+	{
+		if (retCP2W)
+		{
+			CString& loweStr = m_strW.MakeLower();
+			BOOL retW2A = TextUtilsEx::WStr2UTF8((LPCWSTR)m_strW, m_strW.GetLength(), &m_strA, error);
+			if (retW2A)
+			{
+				text = (unsigned char*)m_strA.Data();
+				n = m_strA.Count();
+			}
+		}
+		bCaseSens = TRUE; // FIXMEFIXME
+	}
+	else if (textCP != CP_UTF8)
+	{
+		if (retCP2W)
+		{
+			BOOL retW2A = TextUtilsEx::WStr2UTF8((LPCWSTR)m_strW, m_strW.GetLength(), &m_strA, error);
+			if (retW2A)
+			{
+				text = (unsigned char*)m_strA.Data();
+				n = m_strA.Count();
+			}
+		}
+	}
+	else  // textCP == CP_UTF8
+	{
+		int deb = 1;
+	}
+
+	if (n < 1024)  // 256 selected without any investigation to decide on the optimal length
+	{
+		int strl = n;
+		char* textBegin = (char*)text;
+		char* textEnd = (char*)text + strl;
+		char *wordLastPlus;
+
+		while (strl > 0)
+		{
+			char* found = strstr((char* const)text, (char* const)pat);
+			if (found == 0)
+			{
+				return -1;
+			}
+
+			if ((found != (char*)textBegin) && !IsWordSeparator(*(found - 1)))
+			{
+				strl = (int)(textEnd - found -1);
+				if (strl >= m)
+				{
+					text = (unsigned char*)++found;
+					continue;
+				}
+				else
+					return -1;
+			}
+			wordLastPlus = found + m;
+			if ((wordLastPlus != textEnd) && !IsWordSeparator(*wordLastPlus))
+			{
+				strl = (int)(textEnd - found -1);
+				if (strl >= m)
+				{
+					text = (unsigned char*)++found;
+					continue;
+				}
+				else
+					return -1;
+			}
+			else
+			{
+				int pos = (int)(found - textBegin);
+				return pos;
+			}
+		}
+	}
+	else
+	{
+		ret = TextUtilities::BMHSearchW(text, n, pat, m, bCaseSens, skipTable);
+	}
+	return ret;
+}
+
+int TextUtilities::BMHSearchW(unsigned char* text, int n, unsigned char* pat, int m, BOOL bCaseSens, unsigned char* skipTable)   /* Search Search pat[0..m-1] in text[0..n-1] */
+{
+	unsigned char dd[256];  // skip table
+	unsigned char* d = &dd[0];
+	int i, j, k, lim;
+	int res = -1;
+
+	if ((n < m) || (m <= 0))
+	{
+		_ASSERTE(FALSE);
+		return -1;
+	}
+
+	if (skipTable == 0)
+	{
+			// Populate skip table. Precompute and pass as argument . Any Locality concerns ??
+		memset(dd, m + 1, 256);  // why not memset(d, m, 256)  optymization, see comment below // FIXMEFIXME
+		for (k = 0; k < m; k++)
+			dd[pat[k]] = m - k;
+
+		d = &dd[0];
+	}
+	else
+		d = skipTable;
+
     pat[m] = 1;          /* To avoid having code     */ /* for special case n-k+1=m */ /* null terminator overwrite, restore before exit */
 	// TODO original lim = n - m + 1; // // out of range and crash under debugger when searching RAW message
 	// TODO corrected  lim = n - m; doesn't crash but matching fails in some cases, restored original lim = n-m+1; 
 	/* for special case n-k+1=m */
 	lim = n - m + 1; // // out of range and may crash under debugger
 
-	if( bCaseSens ) {
-		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
+	if ( bCaseSens )
+	{
+		for ( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{
 			i=k;
-			for( j=0; (unsigned char)(text[i]) == pat[j]; j++ ) {
+			for ( j=0; (unsigned char)(text[i]) == pat[j]; j++ ) {
 				i++; /* Could be optimal order */
 			}
-			if( j == m ) {
-				if( k != 0 ) {
-					if( IsWordBegin(text[k-1]) )
+			if ( j == m )
+			{
+				if ( k != 0 ) {
+					if (!IsWordSeparator(text[k-1]) )
 						continue;
 				}
-				if( k+m < n ) {
-					if( IsWordBegin(text[k+m]) )
+				if ( k+m < n ) {
+					if (!IsWordSeparator(text[k+m]) )
 						continue;
 				}
 				res = k;
 				break;
 			}
 		}
-	} else {
-		for( k=0; k < lim; k += d[(unsigned char)ToLower(text[k+m])] ) /* Searching */
+	}
+	else
+	{
+		_ASSERTE(FALSE);   // Delete below, no longer used // FIXME
+		for( k=0; k < lim; k += d[(unsigned char)tolower(text[k+m])] ) /* Searching */
 		{
 			i=k;
-			for( j=0; (unsigned char)ToLower(text[i]) == pat[j]; j++ ) {
+			for ( j=0; (unsigned char)tolower(text[i]) == pat[j]; j++ ) {
 				i++; /* Could be optimal order */
 			}
-			if( j == m ) {
-				if( k != 0 ) {
-					if( IsWordBegin(text[k-1]) )
+			if ( j == m )
+			{
+				if ( k != 0 ) {
+					if (!IsWordSeparator(text[k-1]) )
 						continue;
 				}
 				if( k+m < n ) {
-					if( IsWordBegin(text[k+m]) )
+					if (!IsWordSeparator(text[k+m]) )
 						continue;
 				}
 				res = k;
@@ -163,83 +411,85 @@ int TextUtilities::BMHSearchW( unsigned char *text, int n, unsigned char *pat, i
     pat[m] = 0;  // restore null terminator
     return res;
 }
-int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens )   /* Search Search pat[0..m-1] in text[0..n-1] */
+
+// There are many variations of heuristic implementation of the Boyer Moore algorithm, and simplest one is Horspool variation.
+// Like Boyer-Moore algorithm, worst-case scenario time complexity is O(m * n) while average complexity is O(n). 
+// Space usage doesn't depend on the size of the pattern, but only on the size of the alphabet which is 256 
+// since that is the maximum value of ASCII character in English alphabet
+// int BoyerMooreHorspoolSearch(char[] pattern, char[] text)
+//
+// n is text length, m is pattern length
+//
+int TextUtilities::BMHSearch( unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens, unsigned char *skipTable)   /* Search Search pat[0..m-1] in text[0..n-1] */
 {
-    unsigned char d[256];
+    unsigned char dd[256];  // skip table
+	register unsigned char* d = &dd[0];
     int i, j, k, lim;
     int res = -1;
-    memset(d, m+1, 256);
-    for( k=0; k<m; k++ )
-        d[pat[k]] = m-k;
+
+	if (n < m)
+	{
+		_ASSERTE(FALSE);
+		return -1;
+	}
+
+	if (skipTable == 0)
+	{
+
+		// Populate skip table. Precompute and pass as argument . Any Locality concern ??
+		memset(d, m + 1, 256);  // why not memset(d, m, 256);  optymization, see comment below // FIXMEFIXME  
+		for (k = 0; k < m; k++)
+			d[pat[k]] = m - k;
+	}
+	else
+		d = skipTable;
+
     pat[m] = 1;          /* To avoid having code     */  /* for special case n-k+1=m */
 	// TODO original lim = n - m + 1; // // out of range and crash under debugger when searching RAW message
 	// TODO corrected  lim = n - m; doesn't crash but matching fails in some cases, restored original lim = n-m+1; 
     /* for special case n-k+1=m */
-    lim = n-m+1; // // out of range and may crash under debugger
+    lim = n - m + 1; // // out of range and may crash under debugger
 
- 	if( bCaseSens ) {
-		for( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
+ 	if( bCaseSens )
+	{
+		for ( k=0; k < lim; k += d[(unsigned char)(text[k+m])] ) /* Searching */
 		{
 			i=k;
-			for( j=0; (unsigned char)(text[i]) == pat[j]; j++ ) {
+			for ( j=0; (unsigned char)(text[i]) == pat[j]; j++ ) {
 				i++; /* Could be optimal order */
 			}
-			if( j == m ) {
-				res = k; 
-				break;
-			}
-		}
-	} else {
-		for( k=0; k < lim; k += d[(unsigned char)ToLower(text[k+m])] ) /* Searching */
-		{
-			i=k;
-			for (j = 0; (unsigned char)ToLower(text[i]) == pat[j]; j++) {
-				i++; /* Could be optimal order */
-			}
-			if( j == m ) {
+			if ( j == m ) {
 				res = k; 
 				break;
 			}
 		}
 	}
-    pat[m] = 0; 
+	else
+	{
+		_ASSERTE(FALSE);  // Delete below, no longer used // FIXME
+		for ( k=0; k < lim; k += d[(unsigned char)tolower(text[k+m])] ) /* Searching */
+		{
+			i=k;
+			for (j = 0; (unsigned char)tolower(text[i]) == pat[j]; j++) {
+				i++; /* Could be optimal order */
+			}
+			if ( j == m ) {
+				res = k; 
+				break;
+			}
+		}
+	}
+    pat[m] = 0; // restore null terminator
     return res;
 }
-#define WordMinSize  2       //  The minimum and maximum lengths a word must be
-#define WordMaxSize  40      //  in order even to bother doing more aggressive checks
-                                    //  on to determine if it should be indexed.
 
-// I don't think there is a word in English that has more than...
-#define WordMaxConsecConsonants  4
-#define WordMaxConsecVowels      5
-#define WordMaxConsecSame        2
-#define WordMaxConsecPuncts      2
+static const char WordSeparatorChars[] = "0123456789abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static bool WordSeparatorCharsTable[256];
 
-static const char *SpaceChars = " \r\n\t";
-static bool SpaceCharsTable[256];
-static const char AlfaChars[] =      "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
-static bool AlfaCharsTable[256];
-static const char WordChars[] =      "0123456789abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
-static bool WordCharsTable[256];
-static const char WordBeginChars[] = "0123456789abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
-static bool WordBeginCharsTable[256];
-static const char WordEndChars[] =   "0123456789abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
-static bool WordEndCharsTable[256];
-static const char LowerCaseChars[] =  "abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
+static const char LowerCaseChars[] = "abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ";
 static bool LowerCaseCharsTable[256];
-static const char UpperCaseChars[] =  "ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß";
+static const char UpperCaseChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß";
 static bool UpperCaseCharsTable[256];
-static const char VowelChars[] =      "aeiouAEIOUÀÁÂÃÄÅÆÈÉÊËÌÍÎÏÒÓÔÕÖØÙÚÛÜàáâãäåæèéêëìíîïðòóôõöøùúûü";
-static bool VowelCharsTable[256];
-static const char ApoChars[] =      "'`´";
-static bool ApoCharsTable[256];
-
-static const char DigitChars[] =      "0123456789";
-static bool DigitCharsTable[256];
-static const char XDigitChars[] =      "0123456789abcdefABCDEF";
-static bool XDigitCharsTable[256];
-
-static char LowerToUpperCharsTable[256];
 static char UpperToLowerCharsTable[256];
 
 //
@@ -281,22 +531,28 @@ static char const iso8859_map[] = {
 	'ø', 'ù', 'ú', 'û', 'ü', 'ý', 'þ', 'ÿ',	// 248
 };
 
+void TextUtilities::MakeWordSeparatorLookupTable(const char* s, bool* l)
+{
+	memset(l+128, false, 128 * sizeof(*l));
+	memset(l, true, 128 * sizeof(*l));
+	for (; *s; s++)
+		l[(int)((unsigned char)*s)] = false;
+}
 
-void TextUtilities::MakeLookupTable(const char *s, bool *l)
+void TextUtilities::MakeLookupTable(const char* s, bool* l)
 {
 	memset(l, false, 256 * sizeof(*l));
 	for (; *s; s++)
-		l[(int) ((unsigned char) *s)] = true;
+		l[(int)((unsigned char)*s)] = true;
 }
 
-void TextUtilities::MakeConversionTable( const char *from, const char *to, char *dest )
+void TextUtilities::MakeConversionTable(const char* from, const char* to, char* dest)
 {
 	ASSERT(strlen(from) == strlen(to));
-	//memset(dest, 0, 256 * sizeof(*dest));
 	for (int i = 0; i < 256; i++)
 		dest[i] = i;
 	for (; *from; from++, to++)
-		dest[(int) ((unsigned char) *from)] = *to;
+		dest[(int)((unsigned char)*from)] = *to;
 }
 
 static std::vector<CString>* CreateArray(const char *arr[])
@@ -312,19 +568,10 @@ static std::vector<CString>* CreateArray(const char *arr[])
 
 bool TextUtilities::Init()
 {
-	MakeLookupTable(SpaceChars, SpaceCharsTable);
-	MakeLookupTable(AlfaChars, AlfaCharsTable);
-	MakeLookupTable(WordChars, WordCharsTable);
-	MakeLookupTable(WordBeginChars, WordBeginCharsTable);
-	MakeLookupTable(WordEndChars, WordEndCharsTable);
+	MakeWordSeparatorLookupTable(WordSeparatorChars, WordSeparatorCharsTable);
 	MakeLookupTable(LowerCaseChars, LowerCaseCharsTable);
-	MakeLookupTable(UpperCaseChars, UpperCaseCharsTable);
-	MakeLookupTable(VowelChars, VowelCharsTable);
-	MakeLookupTable(ApoChars, ApoCharsTable);
-	MakeLookupTable(DigitChars, DigitCharsTable);
-	MakeLookupTable(XDigitChars, XDigitCharsTable);
-	MakeConversionTable( LowerCaseChars, UpperCaseChars, LowerToUpperCharsTable );
-	MakeConversionTable( UpperCaseChars, LowerCaseChars, UpperToLowerCharsTable );
+	MakeConversionTable(UpperCaseChars, LowerCaseChars, UpperToLowerCharsTable);
+
 	return true;
 }
 
@@ -334,113 +581,12 @@ TextUtilities::~TextUtilities() {
 
 #define HASH_LOOKUP(c, tbl) (tbl[(int) (0x000000ff & c)])
 
-bool TextUtilities::IsSpace(const char c) {
-	return HASH_LOOKUP(c, SpaceCharsTable);
+bool TextUtilities::IsWordSeparator(const char c) {
+	return HASH_LOOKUP(c, WordSeparatorCharsTable);
 }
 
-bool TextUtilities::IsAlfa(const char c) {
-	return HASH_LOOKUP(c, AlfaCharsTable);
-}
-
-bool TextUtilities::IsWord(const char c) {
-	return HASH_LOOKUP(c, WordCharsTable);
-}
-
-bool TextUtilities::IsWordBegin(const char c) {
-	return HASH_LOOKUP(c, WordBeginCharsTable);
-}
-
-bool TextUtilities::IsWordEnd(const char c) {
-	return HASH_LOOKUP(c, WordEndCharsTable);
-}
-
-bool TextUtilities::IsLowerCase(const char c) {
-	return HASH_LOOKUP(c, LowerCaseCharsTable);
-}
-
-bool TextUtilities::IsUpperCase(const char c) {
-	return HASH_LOOKUP(c, UpperCaseCharsTable);
-}
-
-bool TextUtilities::IsVowel(const char c) {
-	return HASH_LOOKUP(c, VowelCharsTable);
-}
-
-bool TextUtilities::IsDigit( const char c ) {
-	return HASH_LOOKUP(c, DigitCharsTable);
-}
-
-bool TextUtilities::IsXDigit( const char c ) {
-	return HASH_LOOKUP(c, XDigitCharsTable);
-}
-
-bool TextUtilities::IsAlfaNum( char c ) {
-    return IsDigit( c ) || IsAlfa( c );
-}
-
-bool TextUtilities::IsApo( char c ) {
-    return HASH_LOOKUP(c, ApoCharsTable);
-}
-
-bool TextUtilities::IsPunct( const char c ) {
-	return ( ! IsAlfaNum(c) && ! IsSpace(c) );
-}
-
-char TextUtilities::ToLower( char c ) {
+char TextUtilities::ToLower(char c) {
 	return HASH_LOOKUP(c, UpperToLowerCharsTable);
-}
-
-char TextUtilities::ToUpper( char c ) {
-    return HASH_LOOKUP(c, LowerToUpperCharsTable);
-}
-
-void TextUtilities::MakeLower( register char *s ) {
-	while( *s ) {
-		*s = ToLower(*s);
-		s++;
-	}
-}
-
-void TextUtilities::MakeLower( CString &s ) {
-	MakeLower(s.GetBuffer(s.GetLength()));
-}
-
-void TextUtilities::MakeUpper( register char *s ) {
-	while( *s ) {
-		*s = ToUpper(*s);
-		s++;
-	}
-}
-
-void TextUtilities::MakeUpper( CString &s ) {
-	MakeUpper(s.GetBuffer(s.GetLength()));
-}
-
-void TextUtilities::CapitalizeWords( register char *s, int bLower )
-{
-	while( *s ) {
-		while( ! IsWordBegin(*s) )
-			s++;
-		if( *s ) {
-			*s = ToUpper(*s);
-			s++;
-		}
-		while( IsWord(*s) ) {
-			if( bLower == 1 )
-				*s = ToLower(*s);
-			s++;
-		}
-		s++;
-	}
-}
-
-bool TextUtilities::IsAllCaps( register const char *s ) {
-	while( *s ) {
-		if( IsAlfa(*s) && IsLowerCase(*s) )
-			break;
-		s++;
-	}
-	return *s == 0;
 }
 
 #define N_CHARS		16			/* number of bytes printed in one line */
@@ -524,7 +670,7 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 		if (cnt > (MAX_BUFF - (N_CHARS*20)))
 		{
 			buff[cnt] = '\0';
-			TRACE(_T("%s"), buff);
+			TRACE(L"%s", buff);
 			cnt = 0;
 			sprintf(&buff[cnt], "\n");
 			n = istrlen(&buff[cnt]);
@@ -540,11 +686,9 @@ void TextUtilities::hexdump(char *title, char *area, int length)
 	if (cnt >= 0)
 	{
 		buff[cnt] = '\0';
-		TRACE(_T("%s"), buff);
+		TRACE(L"%s", buff);
 	}
 }
-
-
 
 bool TextUtilities::TestAll()
 {
@@ -571,19 +715,21 @@ bool TextUtilities::TestAll()
 	char *pat22 = new char[pat2Len + 1];
 	strcpy(pat22, pat2);
 
-	TRACE(_T("pat1=%s pat2=%s\n"), pat11, pat22);
+	TRACE(L"pat1=%s pat2=%s\n", pat11, pat22);
 
-	int pos0 = g_tu.BMHSearch((unsigned char*)s11, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+	UINT inCodePage = CP_UTF8; // FIXMEFIXME
 
-	int pos1 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+	int pos0 = g_tu.StrSearch((unsigned char*)s11, s1Len, inCodePage, (unsigned char*)pat11, pat1Len, caseSensitive, 0);
 
-	int pos2 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat22, pat2Len, caseSensitive);
+	int pos1 = g_tu.StrSearch((unsigned char*)s1, s1Len, inCodePage, (unsigned char*)pat11, pat1Len, caseSensitive, 0);
+
+	int pos2 = g_tu.StrSearch((unsigned char*)s1, s1Len, inCodePage, (unsigned char*)pat22, pat2Len, caseSensitive, 0);
 
 	caseSensitive = FALSE;
-	int pos11 = g_tu.BMHSearch((unsigned char*)s1, s1Len, (unsigned char*)pat11, pat1Len, caseSensitive);
+	int pos11 = g_tu.StrSearch((unsigned char*)s1, s1Len, inCodePage, (unsigned char*)pat11, pat1Len, caseSensitive, 0);
 
 
-	//int BMHSearchW(unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE);
+	//int StrSearchW(unsigned char *text, int n, unsigned char *pat, int m, BOOL bCaseSens = FALSE);
 
 	delete[] pat11;
 	delete[] pat22;
@@ -609,140 +755,13 @@ template<class T> void MyCArray<T>::CopyKeepData(const MyCArray<T>& src)
 		Copy(src);
 }
 
+
+
 #if 0
-////////////////////
-extern "C"
-{
-	typedef char gchar;
-	typedef uint32_t guint32;
-
-	//GLIB_VAR const guint16 * const g_ascii_table;
-
-	//#define g_ascii_islower(c) ((g_ascii_table[(guchar) (c)] & G_ASCII_LOWER) != 0)
-
-
-
-	gchar
-		g_ascii_toupper(gchar c)
-	{
-		//return g_ascii_islower(c) ? c - 'a' + 'A' : c;
-		return  g_tu.ToUpper(c);
-	}
-
-
-	gchar
-		g_ascii_tolower(gchar c)
-	{
-		//return g_ascii_isupper(c) ? c - 'A' + 'a' : c;
-		return  g_tu.ToLower(c);
-	}
-
-
-
-	/* this decodes rfc2047's version of quoted-printable */
-	static size_t
-		quoted_decode(const unsigned char *in, size_t len, unsigned char *out, int *state, guint32 *save)
-	{
-		register const unsigned char *inptr;
-		register unsigned char *outptr;
-		const unsigned char *inend;
-		unsigned char c, c1;
-		guint32 saved;
-		int need;
-
-		if (len == 0)
-			return 0;
-
-		inend = in + len;
-		outptr = out;
-		inptr = in;
-
-		need = *state;
-		saved = *save;
-
-		if (need > 0) {
-			if (isxdigit((int)*inptr)) {
-				if (need == 1) {
-					c = g_ascii_toupper((int)(saved & 0xff));
-					c1 = g_ascii_toupper((int)*inptr++);
-					saved = 0;
-					need = 0;
-
-					goto decode;
-				}
-
-				saved = 0;
-				need = 0;
-
-				goto equals;
-			}
-
-			/* last encoded-word ended in a malformed quoted-printable sequence */
-			*outptr++ = '=';
-
-			if (need == 1)
-				*outptr++ = (char)(saved & 0xff);
-
-			saved = 0;
-			need = 0;
-		}
-
-		while (inptr < inend) {
-			c = *inptr++;
-			if (c == '=') {
-			equals:
-				if (inend - inptr >= 2) {
-					if (isxdigit((int)inptr[0]) && isxdigit((int)inptr[1])) {
-						c = g_ascii_toupper(*inptr++);
-						c1 = g_ascii_toupper(*inptr++);
-					decode:
-						*outptr++ = (((c >= 'A' ? c - 'A' + 10 : c - '0') & 0x0f) << 4)
-							| ((c1 >= 'A' ? c1 - 'A' + 10 : c1 - '0') & 0x0f);
-					}
-					else {
-						/* malformed quoted-printable sequence? */
-						*outptr++ = '=';
-					}
-				}
-				else {
-					/* truncated payload, maybe it was split across encoded-words? */
-					if (inptr < inend) {
-						if (isxdigit((int)*inptr)) {
-							saved = *inptr;
-							need = 1;
-							break;
-						}
-						else {
-							/* malformed quoted-printable sequence? */
-							*outptr++ = '=';
-						}
-					}
-					else {
-						saved = 0;
-						need = 2;
-						break;
-					}
-				}
-			}
-			else if (c == '_') {
-				/* _'s are an rfc2047 shortcut for encoding spaces */
-				*outptr++ = ' ';
-			}
-			else {
-				*outptr++ = c;
-			}
-		}
-
-		*state = need;
-		*save = saved;
-
-		return (size_t)(outptr - out);
-	}
-}
 
 int test_enc()
 {
-	//char *word = "=?UTF-8?Q?St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
+	char *wordEncoded = "=?UTF-8?Q?St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
 	char *word = "St=c3=a9phane_Scudeller?= <sscudeller@gmail.com>";
 	const unsigned char *in = (const unsigned char*)word;
 

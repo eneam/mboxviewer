@@ -42,8 +42,8 @@ IMPLEMENT_DYNAMIC(MergeRootFolderAndSubfolders, CDialogEx)
 MergeRootFolderAndSubfolders::MergeRootFolderAndSubfolders(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MERGE_FOLDER_AND_SUBFOLDERS, pParent)
 {
-	m_mergeRootFolderStyle = 1;
-	m_labelAssignmentStyle = 1;
+	m_mergeRootFolderStyle = 1;  // merge all mbox files under root folder and all subfolders
+	m_labelAssignmentStyle = 1;  // assign mbox file name as label to each mail
 
 	// Get the log font.
 	NONCLIENTMETRICS ncm;
@@ -99,12 +99,20 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 	// TODO:  Add extra initialization here
 
 	m_introText.SetFont(&m_TextFont);
-	m_introText.SetWindowText("This dialog enables users to configure root data folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
-		"When merging thousands of mail files, typically eml files, make sure to select an option to assign the same label to all files within containing folder (or assign no label)."
-		" Folder name will be assigned as the label name."
-		" By default, MBox Viewer creates a separate label per each mail file."
-		" This would create thousands of labels under the Mail Tree and make mail viewing unmanageable.\r\n"
-	);
+#if 0
+	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
+		L"When merging thousands of mail files, typically eml files, make sure to select an option to assign the same label to all files within containing folder (or assign no label)."
+		L" Folder name will be assigned as the label name."
+		L" By default, MBox Viewer creates a separate label per each mail file."
+		L" This would create thousands of labels under the Mail Tree and make mail viewing unmanageable.\r\n")
+	;
+#else
+	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
+		L"Select \"Assign no Labels\" option when merging Gmail mail files.\r\n"
+		L"Select \"Assign no Labels\" or \"Assign same label to all MBOX files per containing folder\" option when merging thousands of mail files.\r\n"
+		L"\r\n")
+		;
+#endif
 
 	// Set TABSTOPS to FALSE to stop highlighting text
 	m_introText.EnableWindow(TRUE);
@@ -163,7 +171,7 @@ void MergeRootFolderAndSubfolders::OnBnClickedConfigFolderStyle1()
 	if (p)
 	{
 		((CButton*)p)->SetCheck(0);
-		p->EnableWindow(FALSE);
+		p->EnableWindow(TRUE);
 	}
 	p = GetDlgItem(IDC_LABEL_PER_FOLDER);
 	if (p)

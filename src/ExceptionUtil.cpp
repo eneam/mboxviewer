@@ -28,7 +28,9 @@
 
 #include "stdafx.h"
 #include "eh.h"
+#include "TextUtilsEx.h"
 #include "FileUtils.h"
+#include "myCTime.h"
 #include "SimpleString.h"
 #include <dbghelp.h>
 #include "StackWalker.h"
@@ -38,7 +40,7 @@
 void __cdecl trans_func(unsigned int u, EXCEPTION_POINTERS* ep)
 {
 	char const*  szCause = seDescription(u);
-	BOOL ret = DumpStack(nullptr, "TranslationSystemE_StackTrace.txt", (TCHAR*)szCause, u, ep->ContextRecord);
+	BOOL ret = DumpStack(nullptr, L"TranslationSystemE_StackTrace.txt", (CHAR*)szCause, u, ep->ContextRecord);
 
 	throw SE_Exception(u);
 }
@@ -95,8 +97,8 @@ BOOL GetProgramDir(CString &progDir)
 {
 	progDir.Empty();
 
-	char *pProgPath = 0;
-	errno_t  er = _get_pgmptr(&pProgPath);
+	wchar_t *pProgPath = 0;
+	errno_t  er = _get_wpgmptr(&pProgPath);
 	if (pProgPath && (er == 0))
 	{
 		BOOL ret = FileUtils::CPathGetPath(pProgPath, progDir);
@@ -106,30 +108,30 @@ BOOL GetProgramDir(CString &progDir)
 		return FALSE;
 }
 
-BOOL CreateDumpFilePath(char *fileName, CString &filePath)
+BOOL CreateDumpFilePath(wchar_t *fileName, CString &filePath)
 {
 	filePath.Empty();
 
-	char *pProgPath = 0;
-	errno_t  er = _get_pgmptr(&pProgPath);
+	wchar_t *pProgPath = 0;
+	errno_t  er = _get_wpgmptr(&pProgPath);
 	if (pProgPath && (er == 0))
 	{
 		CString fileDir;
 		//BOOL ret = FileUtils::CPathGetPath(pProgPath, fileDir);
 
-		char *noExtension_ProgPath = new char[strlen(pProgPath) + 1];
-		strcpy(noExtension_ProgPath, pProgPath);
+		wchar_t *noExtension_ProgPath = new wchar_t[_tcslen(pProgPath) + 1];
+		_tcscpy(noExtension_ProgPath, pProgPath);
 		PathRemoveExtension(noExtension_ProgPath);
 		filePath.Append(noExtension_ProgPath);
 		delete noExtension_ProgPath;
 
-		filePath.Append("_");
+		filePath.Append(L"_");
 		filePath.Append(fileName);
 	}
 	if (filePath.IsEmpty())
 	{
 		// Should never be here but -:)
-		filePath.Append("C:\\");
+		filePath.Append(L"C:\\");
 		filePath.Append(fileName);
 	}
 	return TRUE;
@@ -137,7 +139,7 @@ BOOL CreateDumpFilePath(char *fileName, CString &filePath)
 
 #ifdef USE_STACK_WALKER
 
-BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
+BOOL DumpStack(MyStackWalker *sw, wchar_t *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
 {
 	BOOL ret = TRUE;
 
@@ -180,24 +182,27 @@ BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNum
 		if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 		{
 #if 0
-			CString txt = _T("Could not create Stack Dump File\"") + procFullPath;
-			txt += _T("\" file.\n");
+			CString txt = L"Could not create Stack Dump File\"" + procFullPath;
+			txt += L"\" file.\n";
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			ret = FALSE;
 		}
 		else
 		{
-			CString tmp = CTime::GetCurrentTime().Format(_T("%A, %B %d, %Y %H:%M:%S\n"));
+			MyCTime currentTime;  // set to current time as UTC
+			CStringA format = "%A, %B %d, %Y %H:%M:%S\n";
+			CStringA tmp = currentTime.FormatLocalTmA(format);
+
 			fp.Write(tmp, tmp.GetLength());
 
-			tmp.Format(_T("Exception: Code %8.8x Description: "), seNumb);
+			tmp.Format("Exception: Code %8.8x Description: ", seNumb);
 			fp.Write(tmp, tmp.GetLength());
 
-			fp.Write(seText, strlen(seText));
+			fp.Write(seText, istrlen(seText));
 
-			tmp.Format(_T("\nMail Position: %d\n"), mailPosition);
+			tmp.Format("\nMail Position: %d\n", mailPosition);
 			fp.Write(tmp, tmp.GetLength());
 
 			fp.Write("\n\n", 2);
@@ -215,23 +220,30 @@ BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNum
 }
 
 
-BOOL DumpStackEx(char *fileName, CException* e)
+BOOL DumpStackEx(wchar_t *fileName, CException* e)
 {
-	TCHAR szCause[256];
+	WCHAR szCause[256] = { 0 };
 	UINT seNumber = 0;
-	e->GetErrorMessage(szCause, 255, &seNumber);
+	BOOL ret = e->GetErrorMessage(szCause, 255, &seNumber);
 
-	BOOL ret = DumpStack(nullptr, fileName, szCause, seNumber);
+	CStringW strW;
+	strW.Append(&szCause[0]);
+	CStringA strA;
+	DWORD error = 0;
+
+	TextUtilsEx::WStr2Ansi(strW, strA, error);
+
+	BOOL retDS = DumpStack(nullptr, fileName, strA, seNumber);
 	return ret;
 }
 #else
 
-BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
+BOOL DumpStack(MyStackWalker *sw, wchar_t *fileName, const CHAR *seText, UINT seNumb, PCONTEXT ContextRecord, int mailPosition)
 {
 	return TRUE;
 }
 
-BOOL DumpStackEx(char *fileName, CException* e)
+BOOL DumpStackEx(wchar_t *fileName, CException* e)
 {
 	return TRUE;
 }
@@ -265,7 +277,7 @@ const char* seDescription(const int code)
 	}
 }
 
-BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosition, char *data, int datalen)
+BOOL DumpMailData(wchar_t *fileName, const CHAR *seText, UINT seNumb, int mailPosition, char *data, int datalen)
 {
 	BOOL ret = TRUE;
 
@@ -278,24 +290,27 @@ BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosit
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-		CString txt = _T("Could not create \"") + filePath;
-		txt += _T("\" file.\n");
+		CString txt = L"Could not create \"" + filePath;
+		txt += L"\" file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("%s\n"), txt);
+		TRACE(L"%s\n", txt);
 		ret = FALSE;
 	}
 	else
 	{
-		CString tmp = CTime::GetCurrentTime().Format(_T("%A, %B %d, %Y %H:%M:%S\n"));
+		MyCTime currentTime;  // set to current time as UTC
+		CStringA format = "%A, %B %d, %Y %H:%M:%S\n";
+		CStringA tmp = currentTime.FormatLocalTmA(format);
+
 		fp.Write(tmp, tmp.GetLength());
 
-		tmp.Format(_T("Exception: Code %8.8x Description: "), seNumb);
+		tmp.Format("Exception: Code %8.8x Description: ", seNumb);
 		fp.Write(tmp, tmp.GetLength());
 
-		fp.Write(seText, uistrlen(seText));
+		fp.Write(seText, istrlen(seText));
 
-		tmp.Format(_T("\nMail Position: %d\n"), mailPosition);
+		tmp.Format("\nMail Position: %d\n", mailPosition);
 		fp.Write(tmp, tmp.GetLength());
 
 		fp.Write("\n\n", 2);

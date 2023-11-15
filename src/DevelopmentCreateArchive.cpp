@@ -66,7 +66,7 @@ BOOL DevelopmentCreateArchive::OnInitDialog()
 	FileUtils::GetFolderPathAndFileName(m_sourceArchiveFile, m_sourceArchiveFolder, fileName);
 	FileUtils::GetFileBaseNameAndExtension(fileName, fileBaseName, fileNameExtention);
 
-	m_createdArchiveName = fileBaseName + "_subset" + fileNameExtention;
+	m_createdArchiveName = fileBaseName + L"_subset" + fileNameExtention;
 
 	UpdateData(FALSE);
 
@@ -104,12 +104,12 @@ void DevelopmentCreateArchive::OnBnClickedOk()
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
 		CString txt;
-		txt.Format("File \"%s\" already exist. Do you want to override?", mboxFilePath);
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		txt.Format(L"File \"%s\" already exist. Do you want to override?", mboxFilePath);
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 			return;
 
-		//FileUtils::DeleteFile(m_createdArchiveName);
+		//FileUtils::DelFile(m_createdArchiveName);
 	}
 
 	CDialogEx::OnOK();

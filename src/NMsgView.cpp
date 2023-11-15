@@ -76,8 +76,8 @@ NMsgView::NMsgView()
 	m_nAttachSize = 50;
 	m_bMax = TRUE;
 
-	m_searchID = "mboxview_Search";
-	m_matchStyle = "color: white; background-color: blue";
+	m_searchID = L"mboxview_Search";
+	m_matchStyle = L"color: white; background-color: blue";
 
 	// Get the log font.
 	NONCLIENTMETRICS ncm;
@@ -122,19 +122,23 @@ NMsgView::NMsgView()
 	m_from_charsetId = 0;
 	m_date_charsetId = 0;
 	m_to_charsetId = 0;
+	m_cc_charsetId = 0;
+	m_bcc_charsetId = 0;
 	m_body_charsetId = 0;
 	//
 	m_mail_header_charsetId = 0;
 	m_body_text_charsetId = 0;
 	m_body_html_charsetId = 0;
 
-	m_cnf_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "subjCharsetId");
-	m_cnf_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "fromCharsetId");
+	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
+
+	m_cnf_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"subjCharsetId");
+	m_cnf_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"fromCharsetId");
 	m_cnf_date_charsetId = 0;
-	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "toCharsetId");
-	m_cnf_cc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "ccCharsetId");
-	m_cnf_bcc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "bccCharsetId");
-	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "showCharsets");
+	m_cnf_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"toCharsetId");
+	m_cnf_cc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"ccCharsetId");
+	m_cnf_bcc_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"bccCharsetId");
+	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"showCharsets");
 
 #if 0
 	if (m_cnf_from_charsetId == 0)
@@ -148,13 +152,13 @@ NMsgView::NMsgView()
 #endif
 
 	DWORD bImageViewer;
-	BOOL retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
+	BOOL retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"imageViewer", bImageViewer);
 	if (retval == TRUE) {
 		m_bImageViewer = bImageViewer;
 	}
 	else {
 		bImageViewer = 1;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), bImageViewer);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"imageViewer", bImageViewer);
 		m_bImageViewer = bImageViewer;
 	}
 
@@ -163,14 +167,17 @@ NMsgView::NMsgView()
 	m_frameCx_TreeInHide = 700;
 	m_frameCy_TreeInHide = 200;
 
+	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
 
-	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
-
-	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", m_frameCx_TreeNotInHide);
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", m_frameCy_TreeNotInHide);
+	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth", m_frameCx_TreeNotInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight", m_frameCy_TreeNotInHide);
 	//
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", m_frameCx_TreeInHide);
-	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", m_frameCy_TreeInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenWidth", m_frameCx_TreeInHide);
+	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenHeight", m_frameCy_TreeInHide);
 }
 
 NMsgView::~NMsgView()
@@ -192,6 +199,7 @@ BEGIN_MESSAGE_MAP(NMsgView, CWnd)
 	//ON_WM_SIZING()
 	ON_WM_CLOSE()
 	ON_WM_RBUTTONDOWN()
+	ON_MESSAGE(WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE, &NMsgView::OnCmdParam_OnSizeMsgView)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -217,19 +225,23 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (!m_browser.Create(NULL, NULL, WS_CHILD | WS_VISIBLE, CRect(), this, IDC_BROWSER))
 		return -1;
 
-	if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS | LVS_AUTOARRANGE, CRect(), this, IDC_ATTACHMENTS))
+	if (!m_attachments.Create(WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_SMALLICON | LVS_SHOWSELALWAYS | LVS_AUTOARRANGE, 
+		CRect(), this, IDC_ATTACHMENTS))
 		return -1;
+
+	m_attachments.SetExtendedStyle(LVS_EX_LABELTIP | m_attachments.GetExtendedStyle());
+
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_attachments.SetTextColor(RGB(0, 0, 0));
-	if (!m_font.CreatePointFont(85, _T("Tahoma")))
-		if (!m_font.CreatePointFont(85, _T("Verdana")))
-			m_font.CreatePointFont(85, _T("Arial"));
+	if (!m_font.CreatePointFont(85, L"Tahoma"))
+		if (!m_font.CreatePointFont(85, L"Verdana"))
+			m_font.CreatePointFont(85, L"Arial");
 
 	m_attachments.SetFont(&m_font);
 	CImageList sysImgList;
 	SHFILEINFO shFinfo;
 
-	sysImgList.Attach((HIMAGELIST)SHGetFileInfo(_T("C:\\"),
+	sysImgList.Attach((HIMAGELIST)SHGetFileInfo(L"C:\\",
 		0,
 		&shFinfo,
 		sizeof(shFinfo),
@@ -274,8 +286,12 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void NMsgView::OnSize(UINT nType, int cx, int cy) 
 {
+	// Not working well. When completed, message is send to invoke NMsgView::UpdateLayout()
+	// Maybe I will fix that one day
 	int deb1, deb2, deb3, deb4;
 	CWnd::OnSize(nType, cx, cy);
+
+	TRACE(L"OnSize: c=%d cy=%d\n", cx, cy);
 
 	CRect r;
 	GetClientRect(r);
@@ -287,9 +303,11 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 		BOOL bTreeHideVal = pFrame->TreeHideValue();
 		BOOL isTreeHidden = pFrame->IsTreeHidden();
 
-		TRACE("NMsgView::OnSize() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+		TRACE(L"NMsgView::OnSize() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
 			r.Width(), r.Height(), cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
 
+#if 0
+		// No lnger needed, delete.
 		if (!pFrame->m_bIsTreeHidden)
 		{
 			m_frameCx_TreeNotInHide = cx;
@@ -300,7 +318,9 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 			m_frameCx_TreeInHide = cx;
 			m_frameCy_TreeInHide = cy;
 		}
+#endif
 	}
+
 
 	if (nType == SIZE_RESTORED)
 		int deb = 1;
@@ -334,97 +354,65 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
-	int m_attachmentWindowMaxSize = 25;
-	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
+	int m_attachmentWindowMaxSize = 25;  // in %
+	AttachmentConfigParams* attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
 	if (attachmentConfigParams)
 	{
 		m_attachmentWindowMaxSize = attachmentConfigParams->m_attachmentWindowMaxSize;
 	}
 	if (m_attachmentWindowMaxSize > 0)
 	{
+		// tried to leverage the following:
+		// m_attachments.GetViewRect(&rc);
+		// m_attachments.ApproximateViewRect();
+		// but it didn't work as expected
+		// CalculateViewRec(rc, cx, cy); is the best effort solution
 
-		// BEST effort to calculate size of attachment rectangle
-		//int scrollVwidth = GetSystemMetrics(SM_CXVSCROLL);
-		//int scrollHwidth = GetSystemMetrics(SM_CXHSCROLL);
+		CRect rcview;
+		m_attachments.GetViewRect(&rcview);
 
-		int aCnt = m_attachments.GetItemCount();
-		int hS = 0;
-		int vS = 0;
-		m_attachments.GetItemSpacing(TRUE, &hS, &vS);
+		int nAttachSize = rcview.Height();
+		if (rcview.Width() > cx)
+			nAttachSize += 18;
 
-		RECT irc;
-		int rectLen = 0;
-		for (int ii = 0; ii < aCnt; ii++)
-		{
-			m_attachments.GetItemRect(ii, &irc, LVIR_BOUNDS);
-			int w = irc.right - irc.left;
-			if (w < hS)
-				rectLen += hS;
-			else
-				rectLen += w;
-		}
+		CSize proposedViewRec(cx, 300);
+		CSize approxViewRec = m_attachments.ApproximateViewRect(proposedViewRec, m_attachments.GetItemCount());
 
-		int m_nAttachLines = 1;
-		if (cx > 19)
-			m_nAttachLines = rectLen / (cx - 19) + 1;
-		else if (cx > 0)
-			m_nAttachLines = rectLen / cx + 1;
-
-		m_nAttachSize = m_nAttachLines * 19;
-		if (m_nAttachLines > aCnt)
-			m_nAttachSize = aCnt * 19;
-
-		if ((m_nAttachSize < 44) && (aCnt > 2))
-			m_nAttachSize = 44;
-		else if (m_nAttachSize < 23)
-			m_nAttachSize = 23;
-
-		if ((cx > 0) && (rectLen > cx))
-		{
-			m_nAttachSize += 22;
-		}
+		CRect rc;
+		CalculateViewRec(rc, cx, cy);
+		m_nAttachSize = rc.bottom - rc.top;
 
 		int nMaxAttachSize = (int)((double)cy * m_attachmentWindowMaxSize / 100);
 		if (nMaxAttachSize < 23)
 			nMaxAttachSize = 23;
 
 		if (m_nAttachSize > nMaxAttachSize)
-		{
-			int lines = (nMaxAttachSize - 23) / 17;
-			if (lines < 1)
-				lines = 1;
-			int nEstimatedAttachSize = 23 + lines * 17;
-
-			if ((cx > 0) && (rectLen > cx))
-			{
-				m_nAttachSize += 22;
-			}
-
-			if (nEstimatedAttachSize < m_nAttachSize)
-				m_nAttachSize = nEstimatedAttachSize;
-		}
+			m_nAttachSize = nMaxAttachSize;
 	}
 	else
 		m_nAttachSize = 0;
 
 	int acy = m_bAttach ? m_nAttachSize : 0;
 
-	int textWndOffset = nOffset;
+	int textWndOffset = nOffset;   // int nOffset = CalculateHigthOfMsgHdrPane();
 	int hdrHight = 0;
 	int hdrWidth = 0;
 	if (m_hdrWindowLen > 0)
 	{
-		hdrHight = cy - nOffset;
+		hdrHight = cy - nOffset;  // show header, text block, etc mode
 		hdrWidth = cx + 1;
 	}
-	m_hdr.MoveWindow(BSIZE, BSIZE + textWndOffset, hdrWidth, hdrHight);
+	m_hdr.MoveWindow(BSIZE, BSIZE + textWndOffset, hdrWidth, hdrHight); // show/shrink header, text block, etc area (CMenuEdit)
 
 	int browserOffset = nOffset + hdrHight;
 
 	int browserX = BSIZE;
 	int browserY = BSIZE + browserOffset;
 	int browserWidth = cx;
+
 	int browserHight = cy - acy - browserOffset;
+	if (m_attachments.GetItemCount())  // FIXME
+		browserHight -= BSIZE;
 	if (m_hdrWindowLen > 0)
 	{
 		browserHight = 0;
@@ -433,7 +421,7 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 	m_browser.MoveWindow(browserX, browserY, browserWidth, browserHight);
 
 	int attachmentX = BSIZE;
-	int attachmentY = cy - acy + BSIZE;
+	int attachmentY = cy - acy + BSIZE;  // FIXME
 	//attachmentY = cy - acy;
 	int attachmentWidth = cx;
 	int attachmentHight = acy;
@@ -442,17 +430,89 @@ void NMsgView::OnSize(UINT nType, int cx, int cy)
 		attachmentHight = 0;
 		attachmentWidth = 0;
 	}
+
 	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
 
-	// TODO: seem to fix resizing issue; it should not be needed by iy seem to work
 	Invalidate();
 	UpdateWindow();
 }
 
+void NMsgView::CalculateViewRec(CRect& rc, int cx, int cy)
+{
+	TRACE("\n\nCalculateViewRec\n");
+
+	TRACE("cx=%d cy=%d rc.LT=%d,%d rc.RB=%d,%d rc.w=%d rc.h=%d\n",
+		cx, cy, rc.left, rc.top, rc.right, rc.bottom, rc.Width(), rc.Height());
+
+	CRect rcview;
+	m_attachments.GetViewRect(&rcview); //  doesn't seem to work well
+
+	TRACE("GetViewRect: cx=%d cy=%d rc.LT=%d,%d rc.RB=%d,%d rc.w=%d rc.h=%d\n",
+		cx, cy, rcview.left, rcview.top, rcview.right, rcview.bottom, rcview.Width(), rcview.Height());
+
+	int aCnt = m_attachments.GetItemCount();
+	int hS = 0;
+	int vS = 0;
+	m_attachments.GetItemSpacing(TRUE, &hS, &vS);
+
+	CRect irc;
+	m_attachments.GetItemRect(0, &irc, LVIR_BOUNDS);
+
+	int itemHight = irc.Height();
+
+	CPaintDC dc(this);
+	HDC hDC = dc.GetSafeHdc();
+
+	int len = 0;
+	int totalLen = 0;
+	POINT pt;
+	int longLineCnt = 0;
+	TRACE("\n\nCalculateViewRec\n");
+	for (int ii = 0; ii < aCnt; ii++)
+	{
+		m_attachments.GetItemRect(ii, &irc, LVIR_BOUNDS);
+		m_attachments.GetItemPosition(ii, &pt);
+
+		TRACE("cx=%d cy=%d irc.LT=%d,%d irc.RB=%d,%d irc.w=%d irc.h=%d\n",
+			cx, cy, irc.left, irc.top, irc.right, irc.bottom, irc.Width(), irc.Height());
+		TRACE("pt.x=%d pt.y=%d\n", pt.x, pt.y);
+
+		if ((irc.right + 4) > cx)
+			longLineCnt++;
+
+		SIZE sizeItem;
+		CString name = m_attachments.GetItemText(ii, 0);
+		BOOL retA = GetTextExtentPoint32(hDC, name, name.GetLength(), &sizeItem);
+
+		int sizeExtra = (sizeItem.cx % hS) ? hS : 0;
+		int cxItem = (sizeItem.cx / hS) * hS + sizeExtra;
+
+		int itemWidth = sizeItem.cx;
+		totalLen += itemWidth;
+	}
+
+	int extraLine = (totalLen % (cx-18)) ? 1 : 0;
+	int lcnt = totalLen / (cx-18) + extraLine;
+	if (longLineCnt)
+		lcnt++;
+
+	int height = lcnt * 18 + BSIZE;
+	if (height < 23)
+		height = 23;
+
+	rc.SetRect(0,0,cx, height);
+
+	// Doesn't work well. Calculation of height are not accurate; force retry. Will invoke  UpdateLayout !!!!
+	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE, 0, 0);
+}
+
 void NMsgView::UpdateLayout()
 {
+	// Works Ok. May need to make small improvements on size and positions of hdr, browser, attachmen panes
 	CRect r;
 	GetClientRect(r);
+
+	TRACE(L"UpdateLayout: c=%d cy=%d\n", r.Width(), r.Height());
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame)
@@ -461,28 +521,21 @@ void NMsgView::UpdateLayout()
 		BOOL bTreeHideVal = pFrame->TreeHideValue();
 		BOOL isTreeHidden = pFrame->IsTreeHidden();
 
-		int cx = 0;
-		int cy = 0;
-		TRACE("NMsgView::UpdateLayout() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
+		int cx = r.Width();
+		int cy = r.Height();
+		TRACE(L"NMsgView::UpdateLayout() WinWidth=%d WinHight=%d cx=%d cy=%d viewPos=%d IsTreeHideVal=%d IsTreeHidden=%d\n",
 			r.Width(), r.Height(), cx, cy, msgViewPosition, bTreeHideVal, isTreeHidden);
 	}
 
 	int cx = r.Width()-1;
 	int cy = r.Height()-1;
-	int nOffset = CalculateHigthOfMsgHdrPane();
+
+	int mailHdrFieldsPaneHight = CalculateHigthOfMsgHdrPane();
+
 	cx -= BSIZE*2;
 	cy -= BSIZE*2;
 
-	//int acy = m_bAttach ? m_nAttachSize : 0;
-	//m_browser.MoveWindow(BSIZE, BSIZE+nOffset, cx, cy - acy - nOffset);
-	//m_attachments.MoveWindow(BSIZE, cy-acy+BSIZE, cx, acy);
-
-	// BEST effort to calculate size of attachment rectangle
-	RECT rc;
-	m_attachments.GetViewRect(&rc);
-	m_nAttachSize = rc.bottom - rc.top;
-
-	int m_attachmentWindowMaxSize = 25;
+	int m_attachmentWindowMaxSize = 25;  // in %
 	AttachmentConfigParams *attachmentConfigParams = CMainFrame::GetAttachmentConfigParams();
 	if (attachmentConfigParams)
 	{
@@ -490,49 +543,41 @@ void NMsgView::UpdateLayout()
 	}
 	if (m_attachmentWindowMaxSize > 0)
 	{
-		if (m_nAttachSize < 23)
-			m_nAttachSize = 23;
+		CRect rcview;
+		m_attachments.GetViewRect(&rcview);  // works best when window is nor resized
 
-		if ((rc.right + 19) > r.Width())
-			m_nAttachSize += 22;
+		m_nAttachSize = rcview.Height();
+		if (rcview.Width() > cx)
+			m_nAttachSize += 18;
 
 		int nMaxAttachSize = (int)((double)cy * m_attachmentWindowMaxSize / 100);
 		if (nMaxAttachSize < 23)
 			nMaxAttachSize = 23;
 
 		if (m_nAttachSize > nMaxAttachSize)
-		{
-			int lines = (nMaxAttachSize - 23) / 17;
-			if (lines < 1)
-				lines = 1;
-			int nEstimatedAttachSize = 23 + lines * 17;
-			if ((rc.right + 19) > r.Width())
-				nEstimatedAttachSize += 22;
-
-			if (nEstimatedAttachSize < m_nAttachSize)
-				m_nAttachSize = nEstimatedAttachSize;
-		}
+			m_nAttachSize = nMaxAttachSize;
 	}
 	else
 		m_nAttachSize = 0;
 
 	int acy = m_bAttach ? (m_nAttachSize) : 0;
 
-	int textWndOffset = nOffset;
 	int hdrHight = 0;
 	int hdrWidth = 0;
-	if (m_hdrWindowLen > 0)
+	if (m_hdrWindowLen > 0)   // show header, text block, etc mode
 	{
-		hdrHight = cy - nOffset;
+		hdrHight = cy - mailHdrFieldsPaneHight;
 		hdrWidth = cx + 1;
 	}
-	m_hdr.MoveWindow(BSIZE, BSIZE + textWndOffset, hdrWidth, hdrHight);
+	m_hdr.MoveWindow(BSIZE, BSIZE + mailHdrFieldsPaneHight, hdrWidth, hdrHight);  // show/shrink header, text block, etc area (CMenuEdit)
 
-	int browserOffset = nOffset + hdrHight;
+	int browserOffset = mailHdrFieldsPaneHight + hdrHight;
 	int browserX = BSIZE;
 	int browserY = BSIZE + browserOffset;
 	int browserWidth = cx;
 	int browserHight = cy - acy - browserOffset;
+	if (m_attachments.GetItemCount())
+		browserHight -= 2*BSIZE;
 	if (m_hdrWindowLen > 0)
 	{
 		browserHight = 0;
@@ -542,16 +587,15 @@ void NMsgView::UpdateLayout()
 
 	int attachmentX = BSIZE;
 	int attachmentY = cy - acy + BSIZE;
-	//attachmentY = cy - acy;
+	attachmentY = cy - acy;
 	int attachmentWidth = cx;
-	int attachmentHight = acy;
+	int attachmentHight = acy + 2;
 	if (m_hdrWindowLen > 0)
 	{
 		attachmentHight = 0;
 		attachmentWidth = 0;
 	}
 	m_attachments.MoveWindow(attachmentX, attachmentY, attachmentWidth, attachmentHight);
-
 
 	Invalidate();
 	UpdateWindow();
@@ -632,8 +676,10 @@ void FrameGradientFill( CDC *dc, CRect rect, int size, COLORREF crstart, COLORRE
 	::FrameRect(dc->m_hDC, rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 }
 
-int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle,  CString &FieldText, CString &Charset, UINT CharsetId, UINT CnfCharsetId)
+int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL bigFont, CString &FieldTitle,  CStringA &FieldText, CStringA &Charset, UINT CharsetId, UINT CnfCharsetId)
 {
+	DWORD error;
+
 	HDC hDC = dc.GetSafeHdc();
 
 	int xpos = x_pos;
@@ -643,8 +689,9 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 		dc.SelectObject(&m_BigBoldFont);
 	else
 		dc.SelectObject(&m_BoldFont);
+
 	xpos += TEXT_BOLD_LEFT;
-	dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, FieldTitle, NULL);
+	BOOL retTextOut = dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, FieldTitle, NULL);
 	CSize szFieldTitle = dc.GetTextExtent(FieldTitle);
 
 	if (bigFont)
@@ -653,28 +700,35 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 		dc.SelectObject(&m_NormFont);
 
 	UINT charsetId = CharsetId;
-	CString StrCharset;
-	CString strCharSetId;
+	CStringA StrCharset;
+	CStringA strCharSetId;
 	if (m_show_charsets)
 	{
-		if ((CharsetId == 0) && (CnfCharsetId != 0)) {
+		if ((CharsetId == 0) && (CnfCharsetId != 0))
+		{
 			std::string str;
 			BOOL ret = TextUtilsEx::id2charset(CnfCharsetId, str);
-			CString charset = str.c_str();
+			CStringA charset = str.c_str();
 
-			strCharSetId.Format(_T("%u"), CnfCharsetId);
+			strCharSetId.Format("%u", CnfCharsetId);
 			StrCharset += " (" + charset + "/" + strCharSetId + "*)";
 
 			charsetId = CnfCharsetId;
 		}
-		else {
-			strCharSetId.Format(_T("%u"), CharsetId);
+		else
+		{
+			strCharSetId.Format("%u", CharsetId);
 			StrCharset += " (" + Charset + "/" + strCharSetId + ")";
 		}
 		xpos += szFieldTitle.cx;
-		dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, StrCharset, NULL);
 
-		CSize szStrCharset = dc.GetTextExtent(StrCharset);
+		CString StrCharsetW;
+		int pageCode = CP_ACP;
+		BOOL retS2W = TextUtilsEx::Str2WStr(StrCharset, pageCode, StrCharsetW, error);
+
+		xpos += 0;
+		BOOL retval = dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, StrCharsetW, NULL);
+		CSize szStrCharset = dc.GetTextExtent(StrCharsetW);
 		xpos += szStrCharset.cx;
 	}
 	else
@@ -691,17 +745,26 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 			charsetId = CP_UTF8;
 	}
 
-	if (charsetId) {
+	CSize szFieldText = { 0,0 };
+	if (charsetId)
+	{
 		CStringW strW;
-		if (TextUtilsEx::Str2Wide(FieldText, charsetId, strW)) {
-			BOOL retval = ::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCWSTR)strW, strW.GetLength(), NULL);
+		if (TextUtilsEx::Str2WStr(FieldText, charsetId, strW, error))
+		{
+			BOOL retval = dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, strW, NULL);
+			szFieldText = dc.GetTextExtent(strW);
 			done = TRUE;
 		}
 	}
-	if (!done) {
-		dc.ExtTextOut(xpos, ypos, ETO_CLIPPED, r, FieldText, NULL);
+	_ASSERTE(done);
+	if (!done)
+	{
+		BOOL retval = ::ExtTextOutA(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCSTR)FieldText, FieldText.GetLength(), NULL);
+		CSize szText = { 0,0 };
+		BOOL ret = GetTextExtentPoint32A(hDC, (LPCSTR)FieldText, FieldText.GetLength(), &szText);
+		if (ret)
+			szFieldText = szText;
 	}
-	CSize szFieldText = dc.GetTextExtent(FieldText);
 
 	xpos += szFieldText.cx;
 	return xpos;
@@ -710,7 +773,7 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 void NMsgView::OnPaint()
 {
 	if (m_hdrWindowLen > 0)
-		m_hdr.SetWindowText(m_hdrData.Data());
+		m_hdr.SetWindowText((LPCWSTR)m_hdrData.Data());
 
 	CPaintDC dc(this); // device context for painting
 	static bool ft = true;
@@ -863,25 +926,10 @@ BOOL NMsgView::OnEraseBkgnd(CDC* pDC)
 
 void NMsgView::OnLButtonDblClk(UINT nFlags, CPoint point) 
 {
-#if 1
 	ClearSearchResultsInIHTMLDocument(m_searchID);
-#else
-	CString path = FileUtils::GetMboxviewTempPath();
-	HINSTANCE result = ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
-	/*
-	if (m_rcCaption.PtInRect(point))
-	{
-
-		m_bMax = !m_bMax;
-		UpdateLayout();
-	}
-	CWnd::OnLButtonDblClk(nFlags, point);
-	m_browser.SetFocus();
-	*/
-#endif
 }
 
-int FindMenuItem(CMenu* Menu, LPCTSTR MenuName) 
+int FindMenuItem(CMenu* Menu, LPCWSTR MenuName) 
 {
 	int count = Menu->GetMenuItemCount();
 	for (int i = 0; i < count; i++) {
@@ -893,7 +941,7 @@ int FindMenuItem(CMenu* Menu, LPCTSTR MenuName)
 	return -1;
 }
 
-int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap)
+int AttachIcon(CMenu* Menu, LPCWSTR MenuName, int resourceId, CBitmap  &cmap)
 {
 	MENUITEMINFO minfo;
 	memset(&minfo, 0, sizeof(minfo));
@@ -910,12 +958,12 @@ int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap)
 	return pos;
 }
 
-void NMsgView::ClearSearchResultsInIHTMLDocument(CString &searchID)
+void NMsgView::ClearSearchResultsInIHTMLDocument(CString& searchID)
 {
 	HtmlUtils::ClearSearchResultsInIHTMLDocument(m_browser, searchID);
 }
 
-void NMsgView::FindStringInIHTMLDocument(CString &searchText, BOOL matchWord, BOOL matchCase)
+void NMsgView::FindStringInIHTMLDocument(CString& searchText, BOOL matchWord, BOOL matchCase)
 {
 	HtmlUtils::FindStringInIHTMLDocument(m_browser, m_searchID, searchText, matchWord, matchCase, m_matchStyle);
 }
@@ -973,13 +1021,13 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
 
-	const char *ClearFindtext = _T("Clear Find Text");
-	const char *CustomColor = _T("Custom Color Style");
-	const char *ShowMailHdr = _T("View Raw Message Header");
-	const char *HdrPaneLayout = _T("Header Pane Layout");
-	const char *ShowMailHtml = _T("View Message Html Block");
-	const char *ShowMailHtmlAsText = _T("View Message Html Block as Text");
-	const char *ShowMailText = _T("View Message Plain Text Block");
+	const wchar_t *ClearFindtext = L"Clear Find Text";
+	const wchar_t*CustomColor = L"Custom Color Style";
+	const wchar_t*ShowMailHdr = L"View Raw Message Header";
+	const wchar_t*HdrPaneLayout = L"Header Pane Layout";
+	const wchar_t*ShowMailHtml = L"View Message Html Block";
+	const wchar_t*ShowMailHtmlAsText = L"View Message Html Block as Text";
+	const wchar_t*ShowMailText = L"View Message Plain Text Block";
 
 	NListView *pListView = 0;
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1022,12 +1070,12 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	hdrLayout.AppendMenu(MF_SEPARATOR);
 
 	const UINT S_DEFAULT_LAYOUT_Id = 4;
-	MyAppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, _T("Default"), m_hdrPaneLayout == 0);
+	MyAppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, L"Default", m_hdrPaneLayout == 0);
 
 	const UINT S_EXPANDED_LAYOUT_Id = 5;
-	MyAppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, _T("Expanded"), m_hdrPaneLayout == 1);
+	MyAppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, L"Expanded", m_hdrPaneLayout == 1);
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), _T("Header Fields Layout"));
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), L"Header Fields Layout");
 	menu.AppendMenu(MF_SEPARATOR);
 #endif
 
@@ -1127,16 +1175,20 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	// Added global option under View
 	else if ((command == S_DEFAULT_LAYOUT_Id))
 	{
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 		m_hdrPaneLayout = 0;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"headerPaneLayout", m_hdrPaneLayout);
 		Invalidate();
 		UpdateLayout();
 		int deb = 1;
 	}
 	else if ((command == S_EXPANDED_LAYOUT_Id))
 	{
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 		m_hdrPaneLayout = 1;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"headerPaneLayout", m_hdrPaneLayout);
 		Invalidate();
 		UpdateLayout();
 		int deb = 1;
@@ -1304,14 +1356,18 @@ int NMsgView::ShowMailHeader(int mailPosition)
 		pListView = pFrame->GetListView();
 	}
 
+
+	BOOL ret;
 	if (pListView && pListView->m_bExportEml)
 	{
 		// Get raw mail body
-		m->GetBody(&m_hdrDataTmp, 0);
+		ret = m->GetBodySS(&m_hdrDataTmp, 0);
 		pListView->SaveAsEmlFile(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
 	}
 	else
-		m->GetBody(&m_hdrDataTmp, 128*1024);
+	{
+		ret = m->GetBodySS(&m_hdrDataTmp, 128 * 1024);
+	}
 
 	int headerlen = 0;
 	if (m->m_headLength > 0)
@@ -1325,28 +1381,46 @@ int NMsgView::ShowMailHeader(int mailPosition)
 
 		m_hdrDataTmp.SetCount(headerlen);
 		char *p = m_hdrDataTmp.Data();
-		// CFile Read removes CR and therfore we need to add CR, great  !!
+		// CFile Read removes CR and therefore we need to add CR, great  !!  // FIXMEFIXME
 		char *ms = strchr(p, '\n');
 		if (ms) 
 		{
 			BOOL bAddCR = FALSE;
 			if (*(ms - 1) != '\r')
 				bAddCR = TRUE;
+
+			//bAddCR = TRUE;
 			int pos = IntPtr2Int(ms - p + 1);
 			if (bAddCR)
 			{
 				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				tmpbuf->Clear();
 				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				m_hdrData.Append(tmpbuf->Data(), tmpbuf->Count());
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				// int codePage = CP_US_ASCII;
+				int codePage = CP_ACP;  // default to ANSI code page. or call GetACP() ?? to retrieve the current Windows ANSI code page identifier for the operating system.
+				TextUtilsEx::CodePage2WStr(tmpbuf->Data(), tmpbuf->Count(), codePage, &m_hdrData, error);
+
+				wchar_t *data = (wchar_t*)m_hdrData.Data();
+
 				MboxMail::rel_tmpbuf();
 			}
 			else
 			{
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				m_hdrData.Append(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				//int codePage = CP_US_ASCII;
+				int codePage = CP_ACP;
+				TextUtilsEx::CodePage2WStr(m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), codePage, &m_hdrData, error);
+
+				wchar_t* data = (wchar_t*)m_hdrData.Data();
 			}
 		}
 	}
@@ -1493,8 +1567,10 @@ int NMsgView::CalculateHigthOfMsgHdrPane()
 void NMsgView::OnMessageheaderpanelayoutDefault()
 {
 	// TODO: Add your command handler code here
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 	m_hdrPaneLayout = 0;
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"headerPaneLayout", m_hdrPaneLayout);
 	Invalidate();
 	UpdateLayout();
 	int deb = 1;
@@ -1504,8 +1580,11 @@ void NMsgView::OnMessageheaderpanelayoutDefault()
 void NMsgView::OnMessageheaderpanelayoutExpanded()
 {
 	// TODO: Add your command handler code here
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 	m_hdrPaneLayout = 1;
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("headerPaneLayout"), m_hdrPaneLayout);
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"headerPaneLayout", m_hdrPaneLayout);
 	Invalidate();
 	UpdateLayout();
 	int deb = 1;
@@ -1532,7 +1611,7 @@ int NMsgView::PreTranslateMessage(MSG* pMsg)
 
 int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 {
-	DWORD tc_start = GetTickCount();
+	ULONGLONG tc_start = GetTickCount64();
 
 	BOOL ret = TRUE;
 	if ((mailPosition >= MboxMail::s_mails.GetCount()) || (mailPosition < 0))
@@ -1560,11 +1639,11 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-		CString txt = _T("Could not open \"") + MboxMail::s_path;
-		txt += _T("\" mail file.\n");
+		CString txt = L"Could not open \"" + MboxMail::s_path;
+		txt += L"\" mail file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("%s\n"), txt);
+		TRACE(L"%s\n", txt);
 		//errorText = txt;
 
 		ret = FALSE;
@@ -1575,7 +1654,8 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 	m_hdrDataTmp.Clear();
 	UINT pageCode = 0;
 	int textType = 1;
-	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType);  // returns pageCode
+	int plainTextMode = 0;  // no extra img tags; html text has img tags already
+	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType, plainTextMode);  // returns pageCode
 	if (textlen != m_hdrDataTmp.Count())
 		int deb = 1;
 
@@ -1595,17 +1675,63 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 			if (bAddCR)
 			{
 				SimpleString *tmpbuf = MboxMail::get_tmpbuf();
+				tmpbuf->Clear();
+
 				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				HtmlUtils::ExtractTextFromHTML_BestEffort(tmpbuf, &m_hdrData, pageCode, outPageCode);
+
+				BOOL bestEffortTextExtract = FALSE;
+				if (bestEffortTextExtract)
+				{
+					// Relative fast but extraction needs to be improved
+					HtmlUtils::ExtractTextFromHTML_BestEffort(tmpbuf, &m_hdrDataTmp, pageCode, outPageCode);
+				}
+				else
+				{
+					// Below Relies on IHTMLDocument2 // This is could be slow if hyperlinks are present
+					// May need to remove hyperlinks first from the document ?
+					HtmlUtils::GetTextFromIHTMLDocument(tmpbuf, &m_hdrDataTmp, pageCode, outPageCode);
+				}
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				int codePage = CP_UTF8;
+				// codePage is ignored, pageCode is used instead
+				// data in m_hdrData is cleared by CodePage2WStr. Top blank line is lost. FIXME ??
+				TextUtilsEx::CodePage2WStr(m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), pageCode, &m_hdrData, error);
+
 				MboxMail::rel_tmpbuf();
 			}
 			else
 			{
+				SimpleString* tmpbuf = MboxMail::get_tmpbuf();
+				tmpbuf->Clear();
+
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				HtmlUtils::ExtractTextFromHTML_BestEffort(&m_hdrDataTmp, &m_hdrData, pageCode, outPageCode);
+
+				BOOL bestEffortTextExtract = FALSE;
+				if (bestEffortTextExtract)
+				{
+					// Relative fast but extraction needs to be improved
+					HtmlUtils::ExtractTextFromHTML_BestEffort(&m_hdrDataTmp, tmpbuf, pageCode, outPageCode);
+				}
+				else
+				{
+					// Below Relies on IHTMLDocument2 // This is very very slow if hyperlinks are present
+					// May need to remove hyperlinks first from the document ?
+					HtmlUtils::GetTextFromIHTMLDocument(&m_hdrDataTmp, tmpbuf, pageCode, outPageCode);
+				}
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				int codePage = CP_UTF8;
+				// codePage is ignored, pageCode is used instead
+				// data in m_hdrData is cleared by CodePage2WStr. Top blank line is lost. FIXME ??
+				TextUtilsEx::CodePage2WStr(tmpbuf->Data(), tmpbuf->Count(), pageCode, &m_hdrData, error);
+
+				MboxMail::rel_tmpbuf();
 			}
 		}
 	}
@@ -1614,9 +1740,9 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 
 	fp.Close();
 
-	DWORD tc_end = GetTickCount();
-	DWORD delta = tc_end - tc_start;
-	TRACE("ShowMailHtmlBlockAsText:ExtractTextFromHTML_BestEffort extracted text in %ld milliseconds.\n", delta);
+	ULONGLONG tc_end = GetTickCount64();
+	DWORD delta = (DWORD)(tc_end - tc_start);
+	TRACE(L"ShowMailHtmlBlockAsText:ExtractTextFromHTML_BestEffort extracted text in %ld milliseconds.\n", delta);
 
 	m_hdrWindowLen = 400;
 
@@ -1650,18 +1776,17 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 		pListView = pFrame->GetListView();
 	}
 
-
 	CFile fp;
 	CFileException ExError;
 	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-		CString txt = _T("Could not open \"") + MboxMail::s_path;
-		txt += _T("\" mail file.\n");
+		CString txt = L"Could not open \"" + MboxMail::s_path;
+		txt += L"\" mail file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("%s\n"), txt);
+		TRACE(L"%s\n", txt);
 		//errorText = txt;
 
 		ret = FALSE;
@@ -1670,7 +1795,8 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 
 	m_hdrDataTmp.Clear();
 	UINT pageCode = 0;
-	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType);  // returns pageCode
+	int plainTextMode = 0;  // no extra img tags;
+	int textlen = MboxMail::GetMailBody_mboxview(fp, mailPosition, &m_hdrDataTmp, pageCode, textType, plainTextMode);  // returns pageCode
 	if (textlen != m_hdrDataTmp.Count())
 		int deb = 1;
 
@@ -1691,14 +1817,26 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 				TextUtilsEx::ReplaceNL2CRNL((LPCSTR)m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), tmpbuf);
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				m_hdrData.Append(tmpbuf->Data(), tmpbuf->Count());
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				int codePage = CP_UTF8;
+				// codePage is ignored, pageCode is used instead
+				// data in m_hdrData is cleared by CodePage2WStr. Top blank line is lost. FIXME ??
+				TextUtilsEx::CodePage2WStr(m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), pageCode, &m_hdrData, error);
 				MboxMail::rel_tmpbuf();
 			}
 			else
 			{
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-				m_hdrData.Append(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
+
+				DWORD error;
+				UINT CP_US_ASCII = 20127;
+				int codePage = CP_UTF8;
+				// codePage is ignored, pageCode is used instead
+				// data in m_hdrData is cleared by CodePage2WStr. Top blank line is lost. FIXME ??
+				TextUtilsEx::CodePage2WStr(m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), pageCode, &m_hdrData, error);
 			}
 		}
 	}
@@ -1719,4 +1857,10 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 	UpdateLayout();
 
 	return 1;
+}
+
+LRESULT NMsgView::OnCmdParam_OnSizeMsgView(WPARAM wParam, LPARAM lParam)
+{
+	this->UpdateLayout();
+	return 0;
 }

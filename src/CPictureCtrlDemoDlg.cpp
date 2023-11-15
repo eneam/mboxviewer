@@ -50,6 +50,7 @@
 #include "mboxview.h"
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
+#include "GdiUtils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -64,13 +65,13 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pPare
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
-	CStringW fpath = FileUtils::GetMboxviewTempPathW();
+	CStringW fpath = CMainFrame::GetMboxviewTempPath();
 	LoadImageFileNames(fpath);
 	for (int i = 0; i < m_ImageFileNameArray.GetSize(); i++)
 	{
 		const wchar_t *fullFilePath = m_ImageFileNameArray[i]->operator LPCWSTR();
 		CStringW fileName;
-		FileUtils::CPathStripPathW(fullFilePath, fileName);
+		FileUtils::CPathStripPath(fullFilePath, fileName);
 
 		if (attachmentName->Compare(fileName) == 0) {
 			m_ImageFileNameArrayPos = i;
@@ -228,13 +229,10 @@ void CCPictureCtrlDemoDlg::LoadImageFromFile()
 
 	CStringW fileName;
 	LPCWSTR fPath = filePath->operator LPCWSTR();
-	FileUtils::CPathStripPathW((wchar_t*)fPath, fileName);
+	FileUtils::CPathStripPath((wchar_t*)fPath, fileName);
 
 	//Load an Image from File
-	CString fileNameA;
-	DWORD error;
-	BOOL retW2A = TextUtilsEx::Wide2Ansi(fileName, fileNameA, error);
-	SetWindowText(fileNameA);
+	SetWindowText(fileName);
 
 	m_picCtrl.LoadFromFile(*filePath, m_rotateType, m_Zoom);
 }
@@ -320,7 +318,7 @@ void CCPictureCtrlDemoDlg::EnableZoom(BOOL enableZoom)
 	m_Zoom = 1;
 	m_picCtrl.ResetDrag();
 	m_sliderCtrl.SetPos(m_sliderRange / 2);
-	GetDlgItem(IDC_SLIDER_POS)->SetWindowText(_T("0"));
+	GetDlgItem(IDC_SLIDER_POS)->SetWindowText(L"0");
 
 	GetDlgItem(IDC_SLIDER_ZOOM)->EnableWindow(enableZoom);
 	GetDlgItem(IDC_SLIDER_POS)->EnableWindow(enableZoom);
@@ -328,37 +326,20 @@ void CCPictureCtrlDemoDlg::EnableZoom(BOOL enableZoom)
 	m_bZoomEnabled = enableZoom;
 }
 
-BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCTSTR file)
+BOOL CCPictureCtrlDemoDlg::isSupportedPictureFile(LPCWSTR file)
 {
-	PTSTR ext = PathFindExtension(file);
+	PWSTR ext = PathFindExtension(file);
 	CString cext = ext;
-	if ((cext.CompareNoCase(_T(".png")) == 0) ||
-		(cext.CompareNoCase(_T(".jpg")) == 0) ||
-		(cext.CompareNoCase(_T(".pjpg")) == 0) ||
-		(cext.CompareNoCase(_T(".jpeg")) == 0) ||
-		(cext.CompareNoCase(_T(".pjpeg")) == 0) ||
-		(cext.CompareNoCase(_T(".jpe")) == 0) ||
-		(cext.CompareNoCase(_T(".bmp")) == 0) ||
-		(cext.CompareNoCase(_T(".tif")) == 0) ||
-		(cext.CompareNoCase(_T(".tiff")) == 0) ||
-		(cext.CompareNoCase(_T(".dib")) == 0) ||
-		(cext.CompareNoCase(_T(".jfif")) == 0) ||
-		(cext.CompareNoCase(_T(".emf")) == 0) ||
-		(cext.CompareNoCase(_T(".wmf")) == 0) ||
-		(cext.CompareNoCase(_T(".ico")) == 0) ||
-		(cext.CompareNoCase(_T(".gif")) == 0))
-	{
-		return TRUE;
-	}
-	else
-		return FALSE;
+
+	BOOL ret = GdiUtils::IsSupportedPictureFileExtension(cext);
+	return ret;
 }
 
 int __cdecl FooPred(void const * first, void const * second)
 {
 	CStringW *f = *((CStringW**)first);
 	CStringW *s = *((CStringW**)second);
-	int ret = wcscmp(f->operator LPCWSTR(), s->operator LPCWSTR());
+	int ret = _wcsicmp(f->operator LPCWSTR(), s->operator LPCWSTR());
 	return ret;
 }
 
@@ -373,16 +354,14 @@ BOOL CCPictureCtrlDemoDlg::LoadImageFileNames(CStringW & dir)
 	CStringW searchPath = dir + CStringW(L"*.*");
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
-		TRACE(_T("CCPictureCtrlDemoDlg: No files found.\n"));
+		TRACE(L"CCPictureCtrlDemoDlg: No files found.\n");
 		return FALSE;
 	}
-	while (!bFinished) {
+	while (!bFinished)
+	{
 		if (!(wcscmp(&FileData.cFileName[0], L".") == 0 || wcscmp(&FileData.cFileName[0], L"..") == 0)) {
 			CStringW ext = PathFindExtensionW(&FileData.cFileName[0]);
-			CString extA;
-			DWORD error;
-			BOOL retW2A = TextUtilsEx::Wide2Ansi(ext, extA, error);
-			if (isSupportedPictureFile(extA))
+			if (isSupportedPictureFile(ext))
 			{
 				if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) {
 					CStringW	*fileFound = new CStringW;
@@ -436,7 +415,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 			CString errorText;
 			ShellExecuteError2Text((UINT_PTR)result, errorText);
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		}
 	}
 }
@@ -512,7 +491,7 @@ void CCPictureCtrlDemoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrol
 	nPos = m_sliderCtrl.GetPos();
 	int pos = nPos;
 
-	//TRACE(_T("Slider Position: %d\n"), pos);
+	//TRACE(L"Slider Position: %d\n", pos);
 
 	if (pos <= (m_sliderRange / 2)) 
 	{
@@ -528,11 +507,11 @@ void CCPictureCtrlDemoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrol
 		m_Zoom = (float)pos / 10 + 1;
 	}
 
-	//TRACE(_T("zoom=%f\n"), m_Zoom);
+	//TRACE(L"zoom=%f\n", m_Zoom);
 
 	CString zoomLevel;
 	int level = nPos - (m_sliderRange / 2);
-	zoomLevel.Format(_T("%d"), level);
+	zoomLevel.Format(L"%d", level);
 	GetDlgItem(IDC_SLIDER_POS)->SetWindowText(zoomLevel);
 
 	Invalidate();

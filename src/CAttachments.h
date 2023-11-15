@@ -54,10 +54,9 @@ public:
 	void ReleaseResources();
 
 	BOOL FindAttachmentByNameW(CStringW &name);
-	BOOL FindAttachmentByName(CString &name);
-	BOOL AddInlineAttachment(CString &name);
+	BOOL FindAttachmentByNameA(CStringA &name);
+	//BOOL AddInlineAttachment(CString &name);
 	BOOL InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP);
-
 
 	NMsgView *m_pMsgView;
 	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;
@@ -65,9 +64,10 @@ public:
 	DECLARE_MESSAGE_MAP()
 	BOOL PreTranslateMessage(MSG* pMsg);
 
-	afx_msg void OnPaint();
+	//afx_msg void OnPaint();
 	afx_msg void OnActivating(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 

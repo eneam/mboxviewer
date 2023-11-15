@@ -313,7 +313,7 @@ BOOL SerializerHelper::writeString(LPCSTR val)
 	return writeN((void*)val, l);
 }
 
-BOOL SerializerHelper::readString(CString &val)
+BOOL SerializerHelper::readString(CStringA &val)
 {
 	int l = 0;
 	if (!readInt(&l))

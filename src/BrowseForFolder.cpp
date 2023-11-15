@@ -186,7 +186,7 @@ void CBrowseForFolder::SetSelection(const CString& strPath) const
 	if (m_hwnd == NULL)
 		return;
 
-	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, TRUE, reinterpret_cast<LPARAM>(LPCTSTR(strPath)));
+	(void)SendMessage(m_hwnd, BFFM_SETSELECTION, TRUE, reinterpret_cast<LPARAM>(LPCWSTR(strPath)));
 }
 
 void CBrowseForFolder::SetStatusText(const CString& strText) const
@@ -194,7 +194,7 @@ void CBrowseForFolder::SetStatusText(const CString& strText) const
 	if (m_hwnd == NULL)
 		return;
 
-	(void)SendMessage(m_hwnd, BFFM_SETSTATUSTEXT, NULL, reinterpret_cast<LPARAM>(LPCTSTR(strText)));
+	(void)SendMessage(m_hwnd, BFFM_SETSTATUSTEXT, NULL, reinterpret_cast<LPARAM>(LPCWSTR(strText)));
 }
 
 int __stdcall CBrowseForFolder::BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)

@@ -89,7 +89,7 @@ void InputBox::OnBnClickedOk()
 
 	m_input.TrimRight();
 	if (m_input.IsEmpty()) {
-		AfxMessageBox(_T("Folder name can't be empty!"), MB_OK | MB_ICONHAND);
+		AfxMessageBox(L"Folder name can't be empty!", MB_OK | MB_ICONHAND);
 		return;
 
 	}

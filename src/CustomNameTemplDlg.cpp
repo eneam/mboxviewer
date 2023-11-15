@@ -82,19 +82,19 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	BOOL ret = MboxMail::ParseTemplateFormat(m_nameTemplateCnf.m_TemplateFormat, labelArray);
 	if (labelArray.GetCount() == 0)
 	{
-		AfxMessageBox(_T("Template format can't be empty!"), MB_OK | MB_ICONHAND);
+		AfxMessageBox(L"Template format can't be empty!", MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bFromUsername == FALSE) && (m_nameTemplateCnf.m_bFromDomain == FALSE))
 	{
-		AfxMessageBox(_T("Either From User Account Name or From Domain must be checked!"), MB_OK | MB_ICONHAND);
+		AfxMessageBox(L"Either From User Account Name or From Domain must be checked!", MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bToUsername == FALSE) && (m_nameTemplateCnf.m_bToDomain == FALSE))
 	{
-		AfxMessageBox(_T("Either To User Account Name or To Domain must be checked!"), MB_OK | MB_ICONHAND);
+		AfxMessageBox(L"Either To User Account Name or To Domain must be checked!", MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -116,8 +116,8 @@ void NameTemplateCnf::ClearParts()
 void NameTemplateCnf::SetDflts()
 {
 
-	m_TemplateFormat = _T("%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%");
-	m_DateFormat = _T("%Y-%m-%d");
+	m_TemplateFormat = L"%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%";
+	m_DateFormat = L"%Y-%m-%d";
 
 	m_bReplaceWhiteWithUnderscore = FALSE;
 	m_bFromUsername = TRUE;
@@ -147,6 +147,7 @@ void CustomNameTemplDlg::OnBnClickedSrcftime()
 {
 	// TODO: Add your control notification handler code here
 
-	HINSTANCE result = ShellExecute(NULL, _T("open"), "https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l?view=vs-2019", NULL, NULL, SW_SHOWNORMAL);
+	HINSTANCE result = ShellExecute(NULL, L"open", 
+		L"https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l?view=vs-2019", NULL, NULL, SW_SHOWNORMAL);
 	int deb = 1;
 }

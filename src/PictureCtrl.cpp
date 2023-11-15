@@ -36,7 +36,7 @@
 //
 // Adapted for Windows MBox Viewer by the mboxview development
 // Simplified, added re-orientation, added next, previous, rotate, zoom, dragging and print capabilities
-// Significant portion of the code likely more than 80% is now custom
+// Significant portion of the code likely more than 80% is now new
 // 
 // Function: A MFC Picture Control to display
 //           an image on a Dialog, etc.
@@ -46,13 +46,14 @@
 ///////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include <GdiPlus.h>
+#include <atlimage.h>
 #include "resource.h"  
 #include "PictureCtrl.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
 #include "CPictureCtrlDemoDlg.h"
-#include <GdiPlus.h>
-#include <atlimage.h>
+#include "GdiUtils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -129,7 +130,7 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		return;
 	}
 
-	//TRACE(_T("CPictureCtrl::DrawItem\n"));
+	//TRACE(L"CPictureCtrl::DrawItem\n");
 
 	if (m_bIsPicLoaded)
 	{
@@ -159,6 +160,12 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			m_cimage = Image::FromFile(f);
 		}
 
+		Status sts = m_cimage->GetLastStatus();
+		if (sts != Gdiplus::Status::Ok)
+		{
+			return;
+		}
+
 		if (m_cimage == 0)
 			int deb = 1;
 
@@ -181,22 +188,24 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		GetPropertyDateTime(*image, pictureDateTime);
 
 		CStringW windowTextW;
-		FileUtils::CPathStripPathW(m_szFilePath, windowTextW);
-
-		CString windowText;
-		DWORD error;
-		TextUtilsEx::Wide2Ansi(windowTextW, windowText, error);
-
-		CString sep = " ";
-		CString largeSep = "   - ";
-
-		if (!(pictureDateTime.IsEmpty() && equipModel.IsEmpty() && equipMake.IsEmpty()))
-			windowText += largeSep + pictureDateTime + sep + equipModel + sep + equipMake;
-
-		m_pPictureCtrlOwner->SetWindowText(windowText);
+		FileUtils::CPathStripPath(m_szFilePath, windowTextW);
 
 #if 0
-		// Doesn't work. Looks may need to handle WM_NCPAINT. Below seem to be overwritten by WM_NCPAINT event
+		CString windowText;
+		DWORD error;
+		TextUtilsEx::WStr2Ansi(windowTextW, windowText, error);
+#endif
+
+		CString sep = L" ";
+		CString largeSep = L"   - ";
+
+		if (!(pictureDateTime.IsEmpty() && equipModel.IsEmpty() && equipMake.IsEmpty()))
+			windowTextW += largeSep + pictureDateTime + sep + equipModel + sep + equipMake;
+
+		m_pPictureCtrlOwner->SetWindowText(windowTextW);
+
+#if 0
+		// Didn't work. Looks may need to handle WM_NCPAINT. Below seem to be overwritten by WM_NCPAINT event
 		// Revisit later
 		TITLEBARINFO ti;
 		memset(&ti, 0, sizeof(ti));
@@ -212,7 +221,9 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		if (m_bFixOrientation)
 		{
-			m_rotateType = DetermineNewOrientation(*image);
+			CLSID Clsid;
+			EncoderParameters encoderParameters;
+			m_rotateType = GdiUtils::DetermineReorder(*image, Clsid, encoderParameters);
 			image->RotateFlip(m_rotateType);
 			m_rotateType = Gdiplus::RotateNoneFlipNone;
 		}
@@ -283,7 +294,7 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			if (rc.Height() && rc.Width())
 				m_rect = rc;
 
-			//TRACE(_T("m_hightZoom=%f m_widthZoom=%f\n"), m_hightZoom, m_widthZoom);
+			//TRACE(L"m_hightZoom=%f m_widthZoom=%f\n", m_hightZoom, m_widthZoom);
 
 			w = (int)(m_Zoom * w);
 			h = (int)(m_Zoom * h);
@@ -357,7 +368,8 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		// All below approches work.
 		// ExcludeClip would suggest better performance but no significant boost observed
-		// TODO: Method 1 & 2 doesn't seem to work in all cases. Sometimnes new image overlapps old/previous image 
+		// TODO: Method 1 & 2 doesn't seem to work in all cases. 
+		// Sometimnes new image overlapps old/previous image . Transparent background issue ???
 #if 0
 		// Method 1
 		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));
@@ -377,117 +389,18 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
 #endif
 
-#if 2
+#if 1
 		// Method 3 - initial implementation
 		Gdiplus::SolidBrush bb(Gdiplus::Color(0, 0, 0));   // black
-		//Gdiplus::SolidBrush bb(Gdiplus::Color(255, 255, 255));   // white
+		Gdiplus::SolidBrush wb(Gdiplus::Color(255, 255, 255));   // white
 		graph->FillRectangle(&bb, rC);
+		Gdiplus::Rect rcplus(posLeft, posTop, w, h);
+		graph->FillRectangle(&wb, rcplus);
 		graph->DrawImage(image, posLeft, posTop, w, h);
-		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());
+		graphics->DrawImage(&bmp, rc.left, rc.top, rc.Width(), rc.Height());  // FIXME
+		//graph->FillRectangle(&bb, rC);
 #endif
 	}
-}
-
-Gdiplus::RotateFlipType CPictureCtrl::DetermineNewOrientation(Gdiplus::Image &image)
-{
-	Gdiplus::RotateFlipType rotateType = Gdiplus::RotateNoneFlipNone;
-
-	Gdiplus::Status gStatus = Gdiplus::UnknownImageFormat;
-
-	GUID gFormat = Gdiplus::ImageFormatUndefined;
-	gStatus = image.GetRawFormat(&gFormat);
-	if (gStatus == Gdiplus::Status::Ok)
-	{
-		if (gFormat == Gdiplus::ImageFormatEXIF)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatTIFF)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatGIF)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatJPEG)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatMemoryBMP)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatPNG)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatBMP)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatEMF)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatWMF)
-			int deb = 1;
-		else if (gFormat == Gdiplus::ImageFormatUndefined)
-			int deb = 1;
-		else
-			int deb = 1;
-	}
-
-	long data[128];
-	Gdiplus::PropertyItem* item = (Gdiplus::PropertyItem*)&data;
-
-	PROPID propid;
-	UINT propSize;
-	Gdiplus::GpStatus stst;
-
-	propid = PropertyTagOrientation;
-	propSize = image.GetPropertyItemSize(propid);
-	stst = Gdiplus::PropertyNotFound;
-	if (gStatus == Gdiplus::Status::Ok) {
-		stst = image.GetPropertyItem(propid, propSize, item);
-	}
-
-	long orientation = 0;
-	if ((gStatus == Gdiplus::Status::Ok) && (stst == Gdiplus::Status::Ok) && (gFormat != Gdiplus::ImageFormatUndefined))
-	{
-		if (item->type == PropertyTagTypeShort)
-			orientation = static_cast<ULONG>(*((USHORT*)item->value));
-		else if (item->type == PropertyTagTypeLong)
-			orientation = static_cast<ULONG>(*((ULONG*)item->value));
-
-		int deb = 1;
-
-
-#if 0
-		1 - The 0th row is at the top of the visual image, and the 0th column is the visual left side.
-			2 - The 0th row is at the visual top of the image, and the 0th column is the visual right side.
-			3 - The 0th row is at the visual bottom of the image, and the 0th column is the visual right side.
-			4 - The 0th row is at the visual bottom of the image, and the 0th column is the visual left side.
-			5 - The 0th row is the visual left side of the image, and the 0th column is the visual top.
-			6 - The 0th row is the visual right side of the image, and the 0th column is the visual top.
-			7 - The 0th row is the visual right side of the image, and the 0th column is the visual bottom.
-			8 - The 0th row is the visual left side of the image, and the 0th column is the visual bottom.
-#endif
-
-
-		switch (orientation)
-		{
-		case 1:
-			rotateType = Gdiplus::RotateNoneFlipNone;
-			break;
-		case 2:
-			rotateType = Gdiplus::RotateNoneFlipX;
-			break;
-		case 3:
-			rotateType = Gdiplus::Rotate180FlipNone;
-			break;
-		case 4:
-			rotateType = Gdiplus::Rotate180FlipX;
-			break;
-		case 5:
-			rotateType = Gdiplus::Rotate90FlipX;
-			break;
-		case 6:
-			rotateType = Gdiplus::Rotate90FlipNone;
-			break;
-		case 7:
-			rotateType = Gdiplus::Rotate270FlipX;
-			break;
-		case 8:
-			rotateType = Gdiplus::Rotate270FlipNone;
-			break;
-		}
-	}
-	return rotateType;
 }
 
 BOOL CPictureCtrl::OnEraseBkgnd(CDC *pDC)
@@ -497,7 +410,7 @@ BOOL CPictureCtrl::OnEraseBkgnd(CDC *pDC)
 
 void CPictureCtrl::GetStringProperty(PROPID propid, Gdiplus::Image &image, CString &str)
 {
-	long data[128];
+	long data[1024];
 	Gdiplus::PropertyItem* item = (Gdiplus::PropertyItem*)&data;
 
 	UINT propSize;
@@ -509,20 +422,21 @@ void CPictureCtrl::GetStringProperty(PROPID propid, Gdiplus::Image &image, CStri
 	stst = image.GetPropertyItem(propid, propSize, item);
 	if (stst == Gdiplus::Status::Ok)
 	{
+		// item->type = ImageTypeBitmap or ImageTypeMetafile
 		int valueLength = item->length - 1;
 		if (valueLength <= 0)
 			return;
-		LPCTSTR buf = str.GetBuffer(valueLength);
 
-		memcpy((char*)buf, (LPCSTR)item->value, valueLength); // to porotect if not NULL terminated
-		str.ReleaseBuffer(valueLength);
+		CStringA val = (LPCSTR)item->value;
+		DWORD error;
+		BOOL ret = TextUtilsEx::CodePage2WStr(&val, 0, &str, error);
 		int deb = 1;
 	}
 }
 
 BOOL CPictureCtrl::GetIntProperty(PROPID propid, Gdiplus::Image &image, long &integer)
 {
-	long data[128];
+	long data[1024];
 	Gdiplus::PropertyItem* item = (Gdiplus::PropertyItem*)&data;
 
 	UINT propSize;
@@ -554,27 +468,8 @@ BOOL CPictureCtrl::GetIntProperty(PROPID propid, Gdiplus::Image &image, long &in
 
 void CPictureCtrl::GetPropertyEquipMake(Gdiplus::Image &image, CString &equipMake)
 {
-	long data[128];
-	Gdiplus::PropertyItem* item = (Gdiplus::PropertyItem*)&data;
-
-	PROPID propid;
-	UINT propSize;
-	Gdiplus::GpStatus stst;
-
-	propid = PropertyTagEquipMake; // Type 	PropertyTagTypeASCII , Count 	Length of the string including the NULL terminator
-	propSize = image.GetPropertyItemSize(propid);
-	stst = Gdiplus::PropertyNotFound;
-	stst = image.GetPropertyItem(propid, propSize, item);
-	if (stst == Gdiplus::Status::Ok)
-	{
-		int valueCount = item->length - 1;
-		if (valueCount <= 0)
-			return;
-		LPCTSTR buf = equipMake.GetBuffer(item->length-1);
-		memcpy((char*)buf, (LPCSTR)item->value, item->length - 1); // to porotect if not NULL terminated
-		equipMake.ReleaseBuffer(item->length - 1);
-		int deb = 1; 
-	}
+	PROPID propid = PropertyTagEquipMake; // Type 	PropertyTagTypeASCII , Count 	Length of the string including the NULL terminator
+	GetStringProperty(propid, image, equipMake);
 }
 
 void CPictureCtrl::GetPropertyEquipModel(Gdiplus::Image &image, CString &equipModel)

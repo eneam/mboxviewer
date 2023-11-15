@@ -40,6 +40,10 @@ public:
 
 	int m_bShowAllAttachments_Window;
 	int m_bAnyAttachment_Indicator;
+	int m_bSingleMailView;
+	int m_bMultipleMailsView;
+	int m_bSingleMailPrint;
+	int m_bMultipleMailsPrint;
 
 	void SetDflts();
 	void Copy(AttachmentConfigParams &src);

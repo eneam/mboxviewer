@@ -68,6 +68,7 @@ public:
 	CString m_rootImageSubFolder;
 	CString m_rootAttachmentSubFolder;
 	CString m_rootArchiveSubFolder;
+	CString m_rootListSubFolder;
 	CString m_rootLabelSubFolder;
 	CString m_rootEmlSubFolder;
 	CString m_rootMergedSubFolder;
@@ -105,7 +106,7 @@ struct CommandLineParms
 	CString m_mboxFolderPath;
 	CString m_mboxFileNameOrPath;
 	BOOL m_bEmlPreviewFolderExisted;
-	// only file name as cpmmand line param
+	// file name is the only command line param to open mail file directly by double left click
 	BOOL m_bDirectFileOpenMode;
 	//
 	int m_progressBarDelay;
@@ -128,13 +129,13 @@ public:
 	BOOL m_bBCC;
 	BOOL m_bContent;
 	BOOL m_bAttachmentNames;
-	CString m_AttachmentNamesSeparatorString;
+	CStringA m_AttachmentNamesSeparatorString;
 	CString m_MessageLimitString;
 	CString m_MessageLimitCharsString;
 	int m_dateFormat;
 	int m_bGMTTime;
 	int m_nCodePageId;
-	CString m_separator;
+	CStringA m_separator;
 
 	void SaveToRegistry();
 	void LoadFromRegistry();
@@ -145,10 +146,10 @@ class MySelectFolder : public CFileDialog
 public:
 	MySelectFolder(
 		BOOL bOpenFileDialog, // TRUE for FileOpen, FALSE for FileSaveAs
-		LPCTSTR lpszDefExt = NULL,
-		LPCTSTR lpszFileName = NULL,
+		LPCWSTR lpszDefExt = NULL,
+		LPCWSTR lpszFileName = NULL,
 		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		LPCTSTR lpszFilter = NULL,
+		LPCWSTR lpszFilter = NULL,
 		CWnd* pParentWnd = NULL,
 		DWORD dwSize = 0,
 		BOOL bVistaStyle = TRUE
@@ -208,6 +209,15 @@ public:
 	NListView * DetListView();
 	NTreeView * DetTreeView();
 
+	static CString m_processPath;
+	static CString m_startupPath;
+	static CString m_currentPath;
+
+	static CString GetMboxviewTempPath(const wchar_t* name = 0);
+	static CString m_mboxviewTempPath;
+	static CString GetMboxviewLocalAppDataPath(const wchar_t* name = 0);
+	static CString CreateTempFileName(const wchar_t *ext = L"htm");
+
 	void UpdateToolsBar();
 	BOOL IsTreeHidden();
 
@@ -219,9 +229,9 @@ public:
 		return m_bIsTreeHidden;
 	}
 
-	BOOL DeleteAllPlacementKeys();
+	BOOL DeleteAllPlacementKeys(CString& section_wnd);
 
-	void DoOpen(CString& path);
+	BOOL DoOpen(CString& path);
 	void SetMailList(int nID);
 	void EnableMailList(int nId, BOOL enable);
 	void EnableAllMailLists(BOOL enable);
@@ -230,7 +240,6 @@ public:
 	void ConfigMessagewindowPosition(int msgViewPosition);
 	int GetMessageWindowPosition() { return m_msgViewPosition; }
 	void CheckMessagewindowPositionMenuOption(int msgViewPosition);
-	void CreateMailListsInfoText(CFile &fp);
 	void UpdateFilePrintconfig();
 	int MergeArchiveFiles();
 	BOOL SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
@@ -238,21 +247,25 @@ public:
 	//
 	int OnPrintSingleMailtoText(int mailPosition, int textType, CString &createdTextFileName, BOOL forceOpen = FALSE, BOOL printToPrinter = FALSE, BOOL createFileOnly = FALSE);
 	void OnPrinttoTextFile(int textType);
-	int PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString &errorText);
+	int PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString& progressText, CString &errorText);
 	int PrintSingleMailtoHTML(int iItem, CString &targetPrintSubFolderName, CString &errorText);
 	//
-	static int ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
+	// Used by Print to
+	static int ExecCommand_WorkerThread(CString& htmFileName, CString& errorText, BOOL progressBar, CString& progressText, int timeout, int headlessTimout);
 	int VerifyPathToHTML2PDFExecutable(CString &errorText);
 
-	static int ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout = -1);
+
+	// Used by Merge PDFs
+	static int ExecCommand_WorkerThread(CString &directory, CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout);
 
 	void PrintMailArchiveToHTML();
 	void PrintMailArchiveToTEXT();
 	void PrintMailArchiveToPDF();
+	void OnPrinttoPdf();
 
 	void PrintMailsToCSV(int firstMail, int lastMail, BOOL selecteMails);
 
-	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CString *filePath = 0);
+	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringA *filePath = 0);
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename);
 
@@ -276,6 +289,7 @@ public:
 	static void OpenHelpFile(CString &filePath, HWND h = NULL);
 
 	static BOOL m_relaxedMboxFileValidation;
+	static BOOL m_relativeInlineImageFilePath;
 
 #ifdef _DEBUG
 	virtual void AssertValid() const;
@@ -314,7 +328,7 @@ protected:  // control bar embedded members
 public:
 	// From MergeFolderAndSubfolders
 	int m_mergeRootFolderStyle;
-	int m_labelAssignmentStyle;
+	int m_labelAssignmentStyle;  // 0 == no labels; 1 == mbox file names as labels; 2 == folder names as labels
 
 	CString m_lastPath;
 	BOOL m_bIsTreeHidden;
@@ -395,8 +409,6 @@ public:
 	afx_msg void OnFilePrintconfig();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnUpdateFilePrintconfig(CCmdUI *pCmdUI);
-	afx_msg void OnFileMergearchivefiles();
-	afx_msg void OnPrinttoPdf();
 	afx_msg void OnClose();
 	//afx_msg void OnBnClickedFolderList();
 	afx_msg void OnFileAttachmentsconfig();
@@ -419,7 +431,7 @@ public:
 	afx_msg void OnDevelopmentoptionsDumprawdata();
 	afx_msg void OnDevelopmentoptionsDevelo();
 	afx_msg void OnDeveloperOptionsAboutSystem();
-	afx_msg void OnDevelopmentoptionsRelaxmailfilevalidation();
+	afx_msg void OnFileGeneraloptions();
 };
 
 /////////////////////////////////////////////////////////////////////////////

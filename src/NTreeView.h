@@ -60,10 +60,10 @@ class MySaveFileDialog : public CFileDialog
 public:
 	MySaveFileDialog(
 		BOOL bOpenFileDialog, // TRUE for FileOpen, FALSE for FileSaveAs
-		LPCTSTR lpszDefExt = NULL,
-		LPCTSTR lpszFileName = NULL,
+		LPCWSTR lpszDefExt = NULL,
+		LPCWSTR lpszFileName = NULL,
 		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		LPCTSTR lpszFilter = NULL,
+		LPCWSTR lpszFilter = NULL,
 		CWnd* pParentWnd = NULL,
 		DWORD dwSize = 0,
 		BOOL bVistaStyle = TRUE
@@ -154,7 +154,7 @@ public:
 	BOOL bNeedsValidation;
 };
 
-typedef CMap<CString, LPCSTR, ArchiveFileInfo, ArchiveFileInfo> FileSizeMap;
+typedef CMap<CString, LPCWSTR, ArchiveFileInfo, ArchiveFileInfo> FileSizeMap;
 
 // Folder name plus table of mail archive names and sizes
 // Loaded from .mboxview plus new files discovered
@@ -170,7 +170,7 @@ public:
 
 // table of tables. Table of all folders info, i.e table of FileSizeMap info
 // Folder name is the key. The same as m_folderPath in ArchiveFileInfoMap
-typedef unordered_map<std::string, ArchiveFileInfoMap*> GlobalFileSizeMap;
+typedef unordered_map<std::wstring, ArchiveFileInfoMap*> GlobalFileSizeMap;
 
 unsigned long StrHash(const char* buf, const UINT length);
 
@@ -179,37 +179,47 @@ class MySimpleDeque;
 // Used during parsing. It represent label and the list of associated mails
 // i.e pointer to MboxMail loaded into MboxMail::s_mails array
 // Used later to create Windows folders with .mboxlist file for each label
+// Label database is file based and that creates complexity due to restriction on the files names
+// There are a number of invalid or reserved characters that can't appear in the file name
 class GmailLabel
 {
 public:
-	GmailLabel(CString &label, CString &mappedToLabel, CString &mappedLabelPath);
+	GmailLabel(CStringA &label, DWORD codepage, CStringA &mappedToLabel, CStringA &mappedLabelPath);
 	~GmailLabel();
 
 	dlink_node<GmailLabel> m_hashMapLink;
 	dlink_node<GmailLabel> m_hashMapLinkToMappedLabel;
-	CString m_mappedLabelPath;  // mapped all sublabels
-	CString m_label;  // raw label
-	CString m_mappedToLabel;   // mapped label
-	MySimpleDeque *m_ptrList;
+	//
+	CStringA m_mappedLabelPath;  // mapped all sublabels
+	CStringA m_mappedToLabel;   // mapped label
+	//
+	MySimpleDeque *m_ptrList;  // list of MboxMail* items for a given label
+	//
+	CStringA& GetLabelA();  // return { m_label; }
+	DWORD GetCodePage() { return m_codePage; }
+	CString GetLabelW();   // m_label+m_codePage encoded as wide CString
+protected:
+	CStringA m_label;  // m_label+m_codePage (same as in gmail mail file) shown in TreeCtrl
+	UINT m_codePage;
 };
 
 struct GmailLabelHelper 
 {
-	hashsum_t operator()(const CString *key) const
+	hashsum_t operator()(const CStringA *key) const
 	{
 		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
-	bool operator()(CString *key1, CString *key2) const
+	bool operator()(CStringA *key1, CStringA *key2) const
 	{
 		if (*key1 == *key2)
 			return true;
 		else
 			return false;
 	}
-	bool operator()(CString *key1, GmailLabel *key2) const
+	bool operator()(CStringA *key1, GmailLabel *key2) const
 	{
-		if (*key1 == key2->m_label)
+		if (*key1 == key2->GetLabelA())
 			return true;
 		else
 			return false;
@@ -218,19 +228,19 @@ struct GmailLabelHelper
 
 struct GmailMappedLabelHelper
 {
-	hashsum_t operator()(const CString *key) const
+	hashsum_t operator()(const CStringA *key) const
 	{
 		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
 		return hashsum;
 	}
-	bool operator()(CString *key1, CString *key2) const
+	bool operator()(CStringA *key1, CStringA *key2) const
 	{
 		if (*key1 == *key2)
 			return true;
 		else
 			return false;
 	}
-	bool operator()(CString *key1, GmailLabel *key2) const
+	bool operator()(CStringA *key1, GmailLabel *key2) const
 	{
 		if (*key1 == key2->m_mappedToLabel)
 			return true;
@@ -263,8 +273,8 @@ public:
 
 
 // Table of GmailLabels. Use key/label name to find
-using GmailLableMapType = IHashMap<CString, GmailLabel, GmailLabelHelper, GmailLabelHelper, &GmailLabel::m_hashMapLink>;
-using GmailMappedLabelMapType = IHashMap<CString, GmailLabel, GmailMappedLabelHelper, GmailMappedLabelHelper, &GmailLabel::m_hashMapLinkToMappedLabel>;
+using GmailLableMapType = IHashMap<CStringA, GmailLabel, GmailLabelHelper, GmailLabelHelper, &GmailLabel::m_hashMapLink>;
+using GmailMappedLabelMapType = IHashMap<CStringA, GmailLabel, GmailMappedLabelHelper, GmailMappedLabelHelper, &GmailLabel::m_hashMapLinkToMappedLabel>;
 
 
 // TODO:  Rename LabelInfo to TreeNodeInfo
@@ -372,7 +382,7 @@ struct FolderInfoHelper
 {
 	hashsum_t operator()(const CString *key) const
 	{
-		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -465,7 +475,7 @@ struct TreeCtrlInfoHelper
 {
 	hashsum_t operator()(const CString *key) const
 	{
-		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -542,7 +552,7 @@ public:
 	BOOL ExpandItem(HTREEITEM hItem, UINT nCode);
 
 	CWheelTreeCtrl	m_tree;
-	// TODO: Consider consolidating m_globalFolderInfoDB and m_labelInfoStore i none table
+	// TODO: Consider consolidating m_globalFolderInfoDB and m_labelInfoStore in one table
 	GlobalFolderInfoDB m_globalFolderInfoDB;
 	TreeCtrlInfoDB m_treeCtrlInfoDB;
 	//
@@ -604,13 +614,17 @@ public:
 	void ClearGlobalFileSizeMap();
 	BOOL RemoveFileSizeMap(CString path);
 	ArchiveFileInfoMap *SetupFileSizeMap(CString &path);
-	BOOL ValidateMboxFileName(CStringA & dirA);
+
+	int RemoveOrphanIndexFilesFromFolderAndFileSizeMap(CString& path, FileSizeMap& fileSizes);
+	HTREEITEM InsertAllDiscoveredMailFilesToTreeCtrl(HTREEITEM hParent, CString& path, FileSizeMap& fileSizes, BOOL unconditionalFolderInsert);
 	HTREEITEM LoadFileSizes(HTREEITEM hParent, CString &path, FileSizeMap &fileSizes, BOOL unconditionalFolderInsert);
 	int OpenHiddenFiles(HTREEITEM hItem, FileSizeMap &fileSizes, BOOL isSubFolder = FALSE);
 	void RemoveFileFromTreeView(HTREEITEM hItem, FileSizeMap &fileSizes);
 	void DetermineFolderPath(HTREEITEM hItem, CString &folderPath);
 	//
 	HTREEITEM DetermineRootItem(HTREEITEM hItem);
+	HTREEITEM DetermineRootFolder(HTREEITEM hItem);
+	HTREEITEM DetermineRootMboxFile(HTREEITEM hItem);
 	void Traverse( HTREEITEM hItem, CFile &fp, FileSizeMap &fileSizes);
 	void SaveData(HTREEITEM hItem);  // save data to per folder .mboxview file
 	void ClearData();
@@ -618,9 +632,9 @@ public:
 	HTREEITEM FillCtrl_Internal(HTREEITEM hParent, BOOL unconditionalFolderInsert = FALSE, BOOL expand = TRUE);
 	void ExpandOrCollapseTree(BOOL expand);
 	void LoadFolders();
-	BOOL CheckIfLegacyMBoxViewerCreatedFoldersAndFilesExists();
-	BOOL MoveMBoxViewerCreatedLegacyFolders();
-	BOOL MoveMBoxViewerDataFolders(CString &mboxFolderPath, CString &currentRootDataFolderPath, CString &newRootDataFolderPath);
+
+	static BOOL ImportLegacyRegistryData();
+
 	void DeleteMBoxAllWorkFolders(CString &mboxFileName);
 	HTREEITEM HasFolder(CString &path);
 	HTREEITEM IsFolderOpen(CString &path);
@@ -629,7 +643,13 @@ public:
 	//
 	HTREEITEM FindFolder(CString &path);
 	HTREEITEM FindFolder(HTREEITEM hRoot, CString &path);
-	BOOL FindFolder(HTREEITEM hRoot, CString &path, HTREEITEM &hFolder);
+	BOOL FindFolder(HTREEITEM hRoot, CString &path, HTREEITEM &hFolder, BOOL recursive);
+	BOOL FindFolder_internal(HTREEITEM hRoot, CString& path, HTREEITEM& hFolder, BOOL recursive);
+	BOOL FolderHasChilder(CString& path);
+	//
+	//
+	BOOL PrintFolderNames(HTREEITEM hRoot, BOOL recursive);
+	BOOL PrintFolderNames_internal(HTREEITEM hRoot, BOOL recursive);
 	//
 	HTREEITEM FindMailFile(CString &path);
 	//
@@ -657,7 +677,6 @@ public:
 	void StartTimer();
 	void PostMsgCmdParamFileName(CString *fileName = 0);
 	BOOL RefreshFolder(HTREEITEM hItem);
-	void PrintFolderNames();
 	void PrintTreeCtrl(HTREEITEM hItem, BOOL recursive, int depth);
 
 	int CreateLabelsForSingleMailFile(HTREEITEM hItem);
@@ -665,6 +684,7 @@ public:
 	int RefreshLabelsForSingleMailFile(HTREEITEM hItem);
 	int UpdateLabelMailListFile(HTREEITEM hItem);
 
+	int  IsGmailLabelFile(CString& mboxFile);
 	BOOL RecreateGmailLabels(HTREEITEM hItem);
 	int CreateGmailLabelFiles(HTREEITEM hItem);
 	BOOL DisplayGmailLabels(HTREEITEM hItem);
@@ -673,7 +693,6 @@ public:
 	HTREEITEM HasLabel(HTREEITEM hItem, CString &label);
 	BOOL LoadLabels();
 	BOOL LoadLabels(HTREEITEM hItem);
-	void MoveItem(HTREEITEM hitemToBeMoved, HTREEITEM hitemInsertAfter);
 	void MoveLabelItem(CString &mailFilePath, CString &label);
 	void MoveLabelItem(HTREEITEM hRoot, CString &mailFilePath, CString &label);
 	HTREEITEM HasMailFile(CString &mailFilePath);
@@ -686,7 +705,7 @@ public:
 	int CreateFlatFolderList(HTREEITEM hItem, CArray<CString> &folderList);
 	int CreateFlatFolderList(CString &mboxFileName, CArray<CString> &folderList);
 
-	static void FindAllDirs(LPCTSTR pstr);
+	static void FindAllDirs(LPCWSTR pstr);
 
 
 	static BOOL ImboxviewFileFilter(CString & fName);
@@ -712,7 +731,7 @@ public:
 	int MergeTreeFolders(MBoxFolderTree &tree, CString &errorText);
 	int MergeRootSubFolder_NoLabels(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList = FALSE, BOOL expand = TRUE);
 	int MergeRootSubFolder(CString &relativeFolderPath, CString &path, BOOL addToRecentFileList = FALSE, BOOL expand = TRUE);
-	int MergeMails(CString &labels);
+	int MergeMails(CStringA &labels);
 	int MergeMailsRemoveDuplicates();
 	int ArchiveMailsRemoveDuplicates(CFile &fp, CString &filePath);
 	BOOL SaveMergedFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
@@ -740,13 +759,9 @@ public:
 
 	//
 	BOOL DeleteOldDataFolder(CString &currentRootDataFolderPath, CString &newRootDataFolderPath, HTREEITEM hItem = 0);
-	BOOL DeleteOldDataFolder_Internal(CString &currentRootDataFolderPath, CString &newRootDataFolderPath, HTREEITEM hItem = 0);
-	void DetermineOldAndNewDataFolderPath(CString &mboxFolderPath, 
-		CString &currentRootDataFolderPath, CString &newRootDataFolderPath, 
-		CString &currentDataFolderPath, CString &newDataFolderPath);
 
-	HTREEITEM InsertTreeItem(LPCTSTR lpszItem, int nImage, int nSelectedImage, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
-	HTREEITEM InsertTreeItem(LPCTSTR lpszItem, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
+	HTREEITEM InsertTreeItem(LPCWSTR lpszItem, int nImage, int nSelectedImage, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
+	HTREEITEM InsertTreeItem(LPCWSTR lpszItem, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 
 	int MergeMailArchiveFiles(HTREEITEM hFolder);
 
@@ -760,6 +775,8 @@ public:
 	HTREEITEM SelectFolderItem(CString &mboxFilePath);
 
 	void TreeCtrlTest();
+
+	static void SetupCacheFolderList(CArray<CString>& cacheFolderList);
 
 	// Generated message map functions
 protected:
@@ -783,9 +800,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	afx_msg void OnGmaillabelsCreate();
-	afx_msg void OnGmaillabelsDelete();
-	afx_msg void OnGmaillabelsRefresh();
 };
 
 /////////////////////////////////////////////////////////////////////////////

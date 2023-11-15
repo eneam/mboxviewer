@@ -184,6 +184,20 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	int deb = 1;
 }
 
+int CWheelListCtrl::PreTranslateMessage(MSG* pMsg)
+{
+	return CWnd::PreTranslateMessage(pMsg);
+}
+
+void CWheelListCtrl::PreSubclassWindow()
+{
+	// Doesn't work. Probably since we do customdraw
+	_ASSERT(1);
+	//SetExtendedStyle(LVS_EX_INFOTIP | LVS_EX_LABELTIP | LVS_EX_DOUBLEBUFFER | GetExtendedStyle());
+	CListCtrl::PreSubclassWindow();
+	SetExtendedStyle(LVS_EX_INFOTIP | LVS_EX_LABELTIP | LVS_EX_DOUBLEBUFFER | GetExtendedStyle());
+}
+
 
 #if 0
 // Didn't work., more to investiagte
@@ -204,6 +218,10 @@ void CWheelListCtrl::OnMouseHover(UINT nFlags, CPoint point)
 
 	CListCtrl::OnMouseHover(nFlags, point);
 }
+
+#endif
+
+#if 0
 
 
 void CWheelListCtrl::OnSetFocus(CWnd* pOldWnd)

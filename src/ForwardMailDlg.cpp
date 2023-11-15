@@ -94,7 +94,7 @@ BOOL ForwardMailDlg::OnInitDialog()
 		CWnd* p = GetDlgItem(IDC_EDIT_FORWARD_FROM);
 		if (p)
 		{
-			if (m_Data.m_MailService.CompareNoCase("Custom") == 0)
+			if (m_Data.m_MailService.CompareNoCase(L"Custom") == 0)
 				p->EnableWindow(TRUE);
 			else
 				p->EnableWindow(FALSE);
@@ -115,7 +115,7 @@ void ForwardMailDlg::OnBnClickedOk()
 	if (m_Data.m_To.GetAllocLength() == 0)
 	{
 		CString txt;
-		txt.Format("Empty \"To:\" field not allowed!");
+		txt.Format(L"Empty \"To:\" field not allowed!");
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -154,7 +154,7 @@ void MyCustomEdit::OnPaint()
 	HDC hDC = dc.GetSafeHdc();
 
 	CFont newFont;
-	newFont.CreatePointFont(85, _T("Tahoma"));
+	newFont.CreatePointFont(85, L"Tahoma");
 
 	// Set new font. Should reinstall old oldFont?? doesn't seem to matter
 	CFont  *pOldFont = dc.SelectObject(&newFont);
@@ -184,7 +184,7 @@ void ForwardMailDlg::OnBnClickedForwardClear()
 	m_Data.m_To.Empty();
 	m_Data.m_CC.Empty();
 	m_Data.m_BCC.Empty();
-	m_EditText.SetWindowText("");
+	m_EditText.SetWindowText(L"");
 
 	UpdateData(FALSE);
 }

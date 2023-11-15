@@ -39,8 +39,8 @@ public:
 
 	int Connect();
 	int Close();
-	int Send(CString &msg);
-	int  ConnectSendClose(CString &msg, CString &errorText);
+	int Send(CStringA &msg);
+	int  ConnectSendClose(CStringA &msg, CString &errorText);
 
 	BOOL m_connected;
 	CSocket s;

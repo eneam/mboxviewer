@@ -48,6 +48,7 @@
 #include "DataFolderConfigDlg.h"
 #include "MergeRootFolderAndSubfolders.h"
 #include "DevelopmentCreateArchive.h"  // this is dialog
+#include "GeneralOptionsDlg.h"
 
 #include "NTreeView.h"
 
@@ -57,10 +58,11 @@
 #define new DEBUG_NEW
 #endif
 
-///////
-// Kept adding and adding Print to functions but now cleanup is needed, better reusability, possible abstractions, error handling, etc
-// Postponed to the next relase 1.0.3.3 since larger effort is needed
-///////
+CString CMainFrame::m_processPath = L"";
+CString CMainFrame::m_startupPath = L"";
+CString CMainFrame::m_currentPath = L"";
+
+CString CMainFrame::m_mboxviewTempPath = L"";
 
 
 MBoxViewerDB CMainFrame::m_ViewerGlobalDB;
@@ -69,21 +71,23 @@ CommandLineParms CMainFrame::m_commandLineParms;
 
 ColorStylesDB CMainFrame::m_ColorStylesDB;
 
-BOOL CMainFrame::m_relaxedMboxFileValidation =  FALSE;
+BOOL CMainFrame::m_relaxedMboxFileValidation = FALSE;
+BOOL CMainFrame::m_relativeInlineImageFilePath = TRUE;
 
 #define MaxShellExecuteErrorCode 32
 
 MBoxViewerDB::MBoxViewerDB()
 {
-	m_rootDBFolder = "MBOXV";
-	m_rootLocalDBFolder = "MBoxViewer";
-	m_rootPrintSubFolder = "PrintCache";
-	m_rootImageSubFolder = "ImageCache";
-	m_rootAttachmentSubFolder = "AttachmentCache";
-	m_rootArchiveSubFolder = "ArchiveCache";
-	m_rootLabelSubFolder = "LabelCache";
-	m_rootEmlSubFolder = "EmlCache";
-	m_rootMergedSubFolder = "MergeCache";
+	m_rootDBFolder = L"MBOXV";
+	m_rootLocalDBFolder = L"UMBoxViewer";
+	m_rootPrintSubFolder = L"PrintCache";
+	m_rootImageSubFolder = L"ImageCache";
+	m_rootAttachmentSubFolder = L"AttachmentCache";
+	m_rootArchiveSubFolder = L"ArchiveCache";
+	m_rootListSubFolder = L"ListCache";
+	m_rootLabelSubFolder = L"LabelCache";
+	m_rootEmlSubFolder = L"EmlCache";
+	m_rootMergedSubFolder = L"MergeCache";
 	m_isReadOnlyMboxDataMedia = 2;  // Unknown, not set
 };
 
@@ -127,7 +131,7 @@ CString MBoxViewerDB::GetMergedSubFolder() {
 BOOL MBoxViewerDB::IsReadOnlyMboxDataMedia(CString *path)
 {
 	// This is madness, so expensive
-	CString rootAppDataPath = FileUtils::GetMboxviewLocalAppDataPath();
+	CString rootAppDataPath = CMainFrame::GetMboxviewLocalAppDataPath();
 
 	CString dataPath;
 	if (path)
@@ -146,14 +150,14 @@ BOOL MBoxViewerDB::IsReadOnlyMboxDataMedia(CString *path)
 		return TRUE;
 }
 
-int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CString *filePath)
+int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringA *filePath)
 {
 	int ret = 0;
 	CStringW filePathW;
 	if (filePath)
 	{
 		DWORD error;
-		TextUtilsEx::Ansi2Wide(*filePath, filePathW, error);
+		TextUtilsEx::Ansi2WStr(*filePath, filePathW, error);
 		ret = CheckShellExecuteResult(result, h, &filePathW);
 	}
 	else
@@ -167,13 +171,12 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 	if ((UINT_PTR)result <= MaxShellExecuteErrorCode) 
 	{
 		CString errText;
-		ShellExecuteError2Text((UINT_PTR)result, errText);
 		CStringW errorTextW;
-		DWORD error;
-		TextUtilsEx::Ansi2Wide(errText, errorTextW, error);
+		ShellExecuteError2Text((UINT_PTR)result, errorTextW);
+		//CStringW errorTextW;
 		if (filename) 
 		{
-			if (FileUtils::PathFileExistW(*filename))
+			if (FileUtils::PathFileExist(*filename))
 			{
 				errorTextW += L"\n\nFile exists. Open the file location and check file properties.\n";
 				errorTextW += L"Make sure the default application is configured to open the file.\n";
@@ -253,8 +256,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_PRINTCONFIG, &CMainFrame::OnFilePrintconfig)
 	ON_WM_SIZE()
 	ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
-	//ON_COMMAND(ID_FILE_MERGEARCHIVEFILES, &CMainFrame::OnFileMergearchivefiles)
-	//ON_COMMAND(ID_PRINTTO_PDF, &CMainFrame::OnPrinttoPdf)
 	ON_WM_CLOSE()
 	//ON_BN_CLICKED(IDC_FOLDER_LIST, &CMainFrame::OnBnClickedFolderList)
 	ON_COMMAND(ID_FILE_ATTACHMENTSCONFIG, &CMainFrame::OnFileAttachmentsconfig)
@@ -277,7 +278,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DUMPRAWDATA, &CMainFrame::OnDevelopmentoptionsDumprawdata)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DEVELO, &CMainFrame::OnDevelopmentoptionsDevelo)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM, &CMainFrame::OnDeveloperOptionsAboutSystem)
-	ON_COMMAND(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, &CMainFrame::OnDevelopmentoptionsRelaxmailfilevalidation)
+	ON_COMMAND(ID_FILE_GENERALOPTIONS, &CMainFrame::OnFileGeneraloptions)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -297,6 +298,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
 
+	Com_Initialize();  // FIXME
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 	m_colorStyleDlg = 0;
 	m_NamePatternParams.SetDflts();
 	//m_csvConfig.SetDflts();
@@ -310,8 +315,15 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_MailIndex = -1;  // Not used ??
 	m_bViewMessageHeaders = FALSE;
 	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
-	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "enhancedSelectFolderDialog");
-	m_lastPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("lastPath"));
+	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"enhancedSelectFolderDialog");
+
+	DWORD fullImgFilePath_Config;
+	BOOL found = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", fullImgFilePath_Config);
+	if (found)
+		m_relativeInlineImageFilePath = fullImgFilePath_Config;
+
+	CString section_lastSelection = CString(sz_Software_mboxview) + L"\\LastSelection";
+	m_lastPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastPath");
 
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
@@ -441,15 +453,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			pListView->m_bLongMailAddress = FALSE;
 	}
 
-#if 0
-	DWORD dwFileNameFormatSizeLimit = m_NamePatternParams.m_nFileNameFormatSizeLimit;
-	BOOL retval;
-	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameSizeLimit"), dwFileNameFormatSizeLimit);
-	if (retval == TRUE) {
-		m_NamePatternParams.m_nFileNameFormatSizeLimit = dwFileNameFormatSizeLimit;
-	}
-#endif
-
 	m_NamePatternParams.LoadFromRegistry();
 	m_attachmentConfigParams.LoadFromRegistry();
 	m_HdrFldConfig.LoadFromRegistry();
@@ -469,17 +472,25 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
 
-	PostMessageA(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, 0, 0);
+	PostMessage(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, 0, 0);
 
-	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
 
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
 	BOOL  ret;
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wpr, cb);
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, section_wnd, L"MainFrame_EmlPreviewMode", (LPBYTE)&wpr, cb);
 	else
-		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wpr, cb);
+		ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, section_wnd, L"MainFrame", (LPBYTE)&wpr, cb);
+#else
+	ret = CProfile::_GetProfileBinary(HKEY_CURRENT_USER, section_wnd, L"MainFrame", (LPBYTE)&wpr, cb);
+#endif
 	if (ret && (cb == sizeof(wpr)))
 	{
 		HWND hWnd = GetSafeHwnd();
@@ -501,13 +512,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		//OnSetFocus(0);
 	}
 
-	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("relaxedMboxFileValidation"));
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation");
+
+#if 0
 	CMenu* menu = this->GetMenu();
 	if (CMainFrame::m_relaxedMboxFileValidation)
 		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
 	else
 		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+#endif
 
+	CString chromeVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, L"SOFTWARE\\Google\\Chrome\\BLBeacon", L"version");
+	CString edgeVer = CProfile::_GetProfileString(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Edge\\BLBeacon", L"version");
 
 	CToolTipCtrl* toolTpis = m_pTreeView->m_tree.GetToolTips();
 	if (toolTpis)
@@ -521,6 +538,43 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		d = toolTpis->GetDelayTime(dwDuration);
 		int deb = 1;
 	}
+
+	// Good luck with Locale functions. Big mess. Ignore for now
+	LCID myDfltLocale = GetUserDefaultLCID();
+
+	LCID   Locale = LOCALE_USER_DEFAULT;  // [in 
+	LCTYPE LCType = LOCALE_FONTSIGNATURE;  // [in
+	LOCALESIGNATURE LocSig;
+	LPWSTR lpLCData = (LPWSTR)&LocSig;              // [out, optional] 
+	int cchData = sizeof(LocSig) / sizeof(WCHAR);   // [in
+
+	int retLocale = GetLocaleInfoW(Locale, LCType, lpLCData, cchData);
+
+	int deb = 1;
+
+
+#if (NTDDI_VERSION >= NTDDI_VISTA)
+
+	// GetLocaleInfoEx requires _WIN32_WINNT_VISTA
+	// Current #define _WIN32_WINNT _WIN32_WINNT_WINXP
+	// Requried #define _WIN32_WINNT _WIN32_WINNT_VISTA
+
+	CALID calid;
+	DWORD value;
+
+	int retLocaleExId = GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
+		LOCALE_ICALENDARTYPE | LOCALE_RETURN_NUMBER,
+		(LPWSTR)&value,
+		sizeof(value) / sizeof(WCHAR));
+	calid = value;
+
+	LOCALESIGNATURE LocSigEx;
+
+	int retLocaleExStr = GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
+		LOCALE_FONTSIGNATURE,
+		(LPWSTR)&LocSigEx,
+		sizeof(LocSigEx) / sizeof(WCHAR));
+#endif
 
 	SetFocus();
 	SetActiveWindow();
@@ -573,12 +627,12 @@ void CMainFrame::OnActivateApp(BOOL bActive, DWORD dwThreadID)
 {
 	if (bActive)
 	{
-		TRACE("OnActivateApp: ACTIVE\n");
+		TRACE(L"OnActivateApp: ACTIVE\n");
 		int deb = 1;
 	}
 	else
 	{
-		TRACE("OnActivateApp: INACTIVE\n");
+		TRACE(L"OnActivateApp: INACTIVE\n");
 		// Hack to prevent selected text from being erased when switching to differnt application
 		// Doesn't work when you minimize window via minimize button
 		m_wndView.SetFocus();
@@ -624,6 +678,7 @@ void CMainFrame::OnUpdateFileOpen(CCmdUI* pCmdUI)
 void CMainFrame::OnFileOptions()
 {
 	bool needRedraw = false;
+	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
 	COptionsDlg d;
 	d.m_bEnhancedSelectFolderDlg = m_bEnhancedSelectFolderDlg;
 	if (d.DoModal() == IDOK) 
@@ -639,7 +694,7 @@ void CMainFrame::OnFileOptions()
 		if (pListView->m_subjectSortType != d.m_bSubjectSortType) {
 			pListView->m_subjectSortType = d.m_bSubjectSortType;
 			DWORD subjectSortType = d.m_bSubjectSortType;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjectSortType"), subjectSortType);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"subjectSortType", subjectSortType);
 		}
 
 
@@ -652,66 +707,66 @@ void CMainFrame::OnFileOptions()
 		if (pListView->m_maxSearchDuration != d.m_barDelay) {
 			pListView->m_maxSearchDuration = d.m_barDelay;
 			DWORD barDelay = d.m_barDelay;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"progressBarDelay", barDelay);
 		}
 
 		BOOL exportEml = (d.m_exportEML > 0) ? TRUE : FALSE;
 		if (pListView->m_bExportEml != exportEml) {
 			pListView->m_bExportEml = exportEml;
-			CString str_exportEML = _T("n");
+			CString str_exportEML = L"n";
 			if (exportEml == TRUE)
-				str_exportEML = _T("y");
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), str_exportEML);
+				str_exportEML = L"y";
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_options, L"exportEML", str_exportEML);
 		}
 
 		if (pMsgView->m_cnf_subj_charsetId != d.m_subj_charsetId) {
 			pMsgView->m_cnf_subj_charsetId = d.m_subj_charsetId;
 			DWORD charsetId = d.m_subj_charsetId;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), charsetId);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"subjCharsetId", charsetId);
 			needRedraw = true;
 		}
 		if (pMsgView->m_cnf_from_charsetId != d.m_from_charsetId) {
 			pMsgView->m_cnf_from_charsetId = d.m_from_charsetId;
 			DWORD charsetId = d.m_from_charsetId;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), charsetId);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"fromCharsetId", charsetId);
 			needRedraw = true;
 		}
 		if (pMsgView->m_cnf_to_charsetId != d.m_to_charsetId) {
 			pMsgView->m_cnf_to_charsetId = d.m_to_charsetId;
 			DWORD charsetId = d.m_to_charsetId;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), charsetId);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"toCharsetId", charsetId);
 			needRedraw = true;
 		}
 #if 0
 		if (pMsgView->m_cnf_cc_charsetId != d.m_cc_charsetId) {
 			pMsgView->m_cnf_cc_charsetId = d.m_cc_charsetId;
 			DWORD charsetId = d.m_cc_charsetId;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("ccCharsetId"), charsetId);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"ccCharsetId", charsetId);
 			needRedraw = true;
 		}
 		if (pMsgView->m_cnf_bcc_charsetId != d.m_bcc_charsetId) {
 			pMsgView->m_cnf_bcc_charsetId = d.m_bcc_charsetId;
 			DWORD charsetId = d.m_bcc_charsetId;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("bccCharsetId"), charsetId);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"bccCharsetId", charsetId);
 			needRedraw = true;
 		}
 #endif
 		if (pMsgView->m_show_charsets != d.m_show_charsets) {
 			pMsgView->m_show_charsets = d.m_show_charsets;
 			DWORD show_charsets = d.m_show_charsets;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), show_charsets);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"showCharsets", show_charsets);
 			needRedraw = true;
 		}
 		if (pMsgView->m_bImageViewer != d.m_bImageViewer) {
 			pMsgView->m_bImageViewer = d.m_bImageViewer;
 			DWORD bImageViewer = d.m_bImageViewer;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), bImageViewer);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"showCharsets", bImageViewer);
 		}
 		if (pListView->m_gmtTime != d.m_bTimeType)
 		{
 			pListView->m_gmtTime = d.m_bTimeType;
 			DWORD bTimeType = d.m_bTimeType;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), bTimeType);
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"timeType", bTimeType);
 			needRedraw = true;
 		}
 		if (needRedraw)
@@ -758,7 +813,7 @@ void CMainFrame::OnFileOpen()
 		if (bff.SelectFolder())
 		{
 			path = bff.GetSelectedFolder();
-			path.TrimRight(_T("\\"));
+			path.TrimRight(L"\\");
 		}
 		else
 		{
@@ -771,7 +826,7 @@ void CMainFrame::OnFileOpen()
 		INT_PTR ret = SelectFolder(path);
 		if (ret == IDOK)
 		{
-			path.TrimRight(_T("\\"));
+			path.TrimRight(L"\\");
 		}
 		else
 		{
@@ -783,9 +838,9 @@ void CMainFrame::OnFileOpen()
 	if (!FileUtils::PathDirExists(path))
 	{
 		CString txt;
-		txt.Format(_T("Trying to open folder \"%s\" that doesn't exist.\n\nPossible problem: Ansi folder names are supported only.\n"),path);
+		txt.Format(L"Trying to open folder \"%s\" that doesn't exist.\n\n\n",path);
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 
 	DoOpen(path);
@@ -863,10 +918,61 @@ void CMainFrame::OnTreeHide()
 	BOOL bIsTreeHidden = m_bIsTreeHidden;
 	m_bIsTreeHidden = !m_bIsTreeHidden;
 
-	TRACE("TreeState %d --> %d m_frameCy_TreeInHide=%d m_frameCx_TreeInHide=%d m_frameCy_TreeNotInHide=%d m_frameCx_TreeNotInHide=%d\n", 
+	TRACE(L"TreeState %d --> %d m_frameCy_TreeInHide=%d m_frameCx_TreeInHide=%d m_frameCy_TreeNotInHide=%d m_frameCx_TreeNotInHide=%d\n", 
 		bIsTreeHidden, m_bIsTreeHidden, 
 		pListView->m_frameCy_TreeInHide, pListView->m_frameCx_TreeInHide, 
 		pListView->m_frameCy_TreeNotInHide, pListView->m_frameCx_TreeNotInHide);
+
+	CRect rectMsgView;
+	CRect rectListView;
+	CRect rectTreeView;
+	CRect rectFrameView;
+
+
+	NMsgView* msgView = GetMsgView();
+	NListView* listView = GetListView();
+	NTreeView* treeView = GetTreeView();
+
+	msgView->GetClientRect(&rectMsgView);
+	listView->GetClientRect(&rectListView);
+	treeView->GetClientRect(&rectTreeView);
+
+	CRect rectMsgViewWindow;
+	CRect rectListViewWindow;
+	CRect rectTreeViewWindow;
+
+	msgView->GetWindowRect(rectMsgViewWindow);
+	listView->GetWindowRect(rectListViewWindow);
+	treeView->GetWindowRect(rectTreeViewWindow);
+
+	int listPlusMsg = rectListViewWindow.Width() + rectMsgViewWindow.Width();
+	int listPlusMsgPlusTree = rectListViewWindow.Width() + rectMsgViewWindow.Width() + rectTreeViewWindow.Width();;
+
+	this->GetClientRect(rectFrameView);
+
+	if (bIsTreeHidden)
+	{
+		pListView->m_frameCx_TreeInHide = rectListViewWindow.Width();
+		pListView->m_frameCy_TreeInHide = rectListViewWindow.Height();
+
+		pMsgView->m_frameCx_TreeInHide = rectMsgViewWindow.Width();
+		pMsgView->m_frameCy_TreeInHide = rectMsgViewWindow.Height();
+
+		if (rectTreeViewWindow.Width() == 0)
+			pTreeView->m_frameCx = 200;
+		//pTreeView->m_frameCy = rectTreeViewWindow.Height();
+	}
+	else
+	{
+		pListView->m_frameCx_TreeNotInHide = rectListViewWindow.Width();
+		pListView->m_frameCy_TreeNotInHide = rectListViewWindow.Height();
+
+		pMsgView->m_frameCx_TreeNotInHide = rectMsgViewWindow.Width();
+		pMsgView->m_frameCy_TreeNotInHide = rectMsgViewWindow.Height();
+
+		pTreeView->m_frameCx = rectTreeViewWindow.Width();
+		pTreeView->m_frameCy = rectTreeViewWindow.Height();
+	}
 
 	if (!bIsTreeHidden)
 	{
@@ -875,6 +981,8 @@ void CMainFrame::OnTreeHide()
 		if (m_pListView)
 		{
 			if (m_msgViewPosition == 1)
+				//m_wndView.m_horSplitter.SetRowInfo(rowList, pListView->m_frameCx_TreeInHide, 0);
+				//m_wndView.m_horSplitter.SetColumnInfo(colList, pListView->m_frameCx_TreeInHide, 0);
 				m_wndView.m_horSplitter.SetRowInfo(rowList, pListView->m_frameCy_TreeInHide, 0);
 			else if (m_msgViewPosition == 2)
 				m_wndView.m_horSplitter.SetColumnInfo(colList, pListView->m_frameCx_TreeInHide, 0);
@@ -939,17 +1047,140 @@ void CMainFrame::OnTreeHide()
 
 	m_wndView.m_verSplitter.RecalcLayout();
 
+	//m_bIsTreeHidden = !m_bIsTreeHidden;
+
 	int deb = 1;
 }
 
-void CMainFrame::DoOpen(CString& path) 
+BOOL CMainFrame::DoOpen(CString& path) 
 {
+	//if (path.Find(MboxMail::s_folderContext.m_rootDataFolderPathConfig) == 0)
+	if (path.Find(L"UMBoxViewer") >= 0)  // chnaged to look for UMBoxViewer subfolder created under root data folder
+	{
+		CString fpath = MboxMail::s_folderContext.m_rootDataFolderPathConfig + L"\\UMBoxViewer";
+		CString txt;
+		txt.Format(L"Can't open folder \n\n\"%s\"\n\nFolder must not be located under \"UMBoxViewer\" subfolder created under the configured root data folder \n\n\"%s\"\n\n"
+			L"Please manually move the respective mbox files to valid folder. ",
+				path, fpath);
+
+		int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+		return FALSE;
+	}
+
 	NTreeView *pTreeView = GetTreeView();
 	if (pTreeView)
 	{
 		BOOL expand = TRUE;
 		pTreeView->DoOpen(path, expand);
+
+		if (CMainFrame::m_relaxedMboxFileValidation == FALSE)
+		{
+			HTREEITEM hRoot = 0;
+			BOOL recursive = TRUE;
+			CString folderPath;
+
+			folderPath = path;
+			folderPath.TrimRight(L"\\");
+			HTREEITEM hItem;
+			BOOL retFind = pTreeView->FindFolder(hRoot, folderPath, hItem, recursive);
+
+			FolderInfo *finfoBeg = pTreeView->m_globalFolderInfoDB.Find(&path);
+			int mailFolderCount = 0;
+			if (hItem)
+			{
+				mailFolderCount = pTreeView->GetChildrenCount(hItem, recursive);
+				if (mailFolderCount == 0)
+				{
+					CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n";
+					txt.Append(L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n");
+					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+
+					if (answer == IDYES)
+					{
+						CMainFrame::m_relaxedMboxFileValidation = TRUE;
+						BOOL ret = pTreeView->RefreshFolder(hItem);
+
+						HTREEITEM hItem;
+						BOOL retFind = pTreeView->FindFolder(hRoot, folderPath, hItem, recursive);
+						if (hItem)
+						{
+							mailFolderCount = pTreeView->GetChildrenCount(hItem, recursive);
+							if (mailFolderCount == 0)
+							{
+								int deb1 = 0;
+							}
+						}
+					}
+					int deb = 1;
+				}
+			}
+			else
+			{
+				CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n";
+				txt.Append(L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n");
+				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+
+				if (answer == IDYES)
+				{
+					CMainFrame::m_relaxedMboxFileValidation = TRUE;
+					pTreeView->DoOpen(path, expand);
+
+					folderPath = path;
+					folderPath.TrimRight(L"\\");
+					HTREEITEM hItem;
+					BOOL retFind = pTreeView->FindFolder(hRoot, folderPath, hItem, recursive);
+					if (hItem)
+					{
+						mailFolderCount = pTreeView->GetChildrenCount(hItem, recursive);
+						if (mailFolderCount == 0)
+						{
+							int deb1 = 0;
+						}
+						int deb = 1;
+					}
+				}
+			}
+			if (CMainFrame::m_relaxedMboxFileValidation == TRUE)  //eser requested discovery using Relaxed Validation Rules
+			{
+				if (mailFolderCount == 0)
+				{
+					CString txt = L"No mail archive files were discovered using relaxed mail file validation rules\n\n";
+					txt.Append(L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n");
+					txt.Append(L"The relaxed mail file validation rules can be later enabled/disabled ");
+					txt.Append(L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n");
+					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+					if (answer == IDNO)
+					{
+						CMainFrame::m_relaxedMboxFileValidation = FALSE;
+					}
+					int deb1 = 0;
+				}
+				else
+				{
+					CString txt = L"Several mail archive files were discovered using relaxed mail file validation rules\n\n";
+					txt.Append(L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n");
+					txt.Append(L"The relaxed mail file validation rules can be later enabled/disabled ");
+					txt.Append(L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n");
+					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+					if (answer == IDNO)
+					{
+						CMainFrame::m_relaxedMboxFileValidation = FALSE;
+					}
+				}
+
+				CMenu* menu = this->GetMenu();
+				if (CMainFrame::m_relaxedMboxFileValidation)
+					menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
+				else
+					menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+
+				CString section_general = CString(sz_Software_mboxview) + L"\\General";
+				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation", (WORD)m_relaxedMboxFileValidation);
+			}
+		}
+		int deb = 1;
 	}
+	return TRUE;
 }
 
 NTreeView * CMainFrame::DetTreeView()
@@ -971,7 +1202,7 @@ NListView * CMainFrame::DetListView()
 	else if (m_msgViewPosition == 3)
 		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 1);
 	else
-		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);  // should never be here ASSERT ?
+		return (NListView *)m_wndView.m_horSplitter.GetPane(0, 0);  // should never be here _ASSERTE ?
 }
 
 NListView * CMainFrame::GetListView()
@@ -988,7 +1219,7 @@ NMsgView * CMainFrame::DetMsgView()
 	else if (m_msgViewPosition == 3)
 		return (NMsgView *)m_wndView.m_horSplitter.GetPane(0, 0);
 	else
-		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);  // should never be here ASSERT ?
+		return (NMsgView *)m_wndView.m_horSplitter.GetPane(1, 0);  // should never be here _ASSERTE ?
 }
 
 NMsgView * CMainFrame::GetMsgView()
@@ -1089,14 +1320,14 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					CString text = "Created file \n\n" + csvFileName;
+					CString text = L"Created file \n\n" + csvFileName;
 					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
 						if (FileUtils::BrowseToFile(csvFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, L"open", datapath, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
 						}
 						int deb = 1;
@@ -1104,7 +1335,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 					else if (nResponse == IDYES)
 					{
 						HWND h = GetSafeHwnd();
-						HINSTANCE result = ShellExecute(h, _T("open"), csvFileName, NULL, NULL, SW_SHOWNORMAL);
+						HINSTANCE result = ShellExecute(h, L"open", csvFileName, NULL, NULL, SW_SHOWNORMAL);
 						CheckShellExecuteResult(result, h, &csvFileName);
 						int deb = 1;
 					}
@@ -1126,11 +1357,11 @@ void CMainFrame::OnViewCodepageids()
 {
 	// TODO: Add your command handler code here
 
-	CString HelpPath = FileUtils::GetMboxviewTempPath("MboxHelp");
+	CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
 
 	BOOL createDirOk = TRUE;
 	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = FileUtils::CreateDirectory(HelpPath);
+		createDirOk = FileUtils::CreateDir(HelpPath);
 
 	int ret = TextUtilsEx::showCodePageTable(HelpPath);
 }
@@ -1141,9 +1372,9 @@ void CMainFrame::OnPrinttoCsv()
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
-		CString txt = _T("Please open mail file first.");
+		CString txt = L"Please open mail file first.";
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 	OnFileExportToCsv();
@@ -1161,9 +1392,9 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) 
 	{
-		CString txt = _T("Please open mail file first.");
+		CString txt = L"Please open mail file first.";
 		HWND h = GetSafeHwnd(); 
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -1210,14 +1441,14 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					CString txt = "Created file \n\n" + textFileName;
+					CString txt = L"Created file \n\n" + textFileName;
 					OpenContainingFolderDlg dlg(txt);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
 						if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, L"open", datapath, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h);
 						}
 						int deb = 1;
@@ -1225,7 +1456,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 					else if (nResponse == IDYES)
 					{
 						HWND h = GetSafeHwnd();
-						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						HINSTANCE result = ShellExecute(h, L"open", textFileName, NULL, NULL, SW_SHOWNORMAL);
 						CheckShellExecuteResult(result, h, &textFileName);
 						int deb = 1;
 					}
@@ -1249,9 +1480,9 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
-		CString txt = _T("Please open mail file first.");
+		CString txt = L"Please open mail file first.";
 		HWND h = GetSafeHwnd(); 
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -1298,7 +1529,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 			{
 				if (FileUtils::PathDirExists(datapath))
 				{ // likely :) 
-					CString txt = "Created file \n\n" + textFileName;
+					CString txt = L"Created file \n\n" + textFileName;
 					if (createFileOnly) {
 						int deb = 1;
 					}
@@ -1316,8 +1547,32 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 							UINT l = fp.Read(inbuf->Data(), (UINT)ll);
 							inbuf->SetCount(l);
 
+							CString folder;
+							FileUtils::CPathGetPath(textFileName, folder);
+
+
+							// FIXMEFIXME
+							DWORD BUFSIZE = 1024;
+							wchar_t Buffer[1024];
+							wchar_t Buffer2[1024];
+
+							DWORD dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
+
+							// works with or without setting directory
+							if (!::SetCurrentDirectory((LPCWSTR)folder))
+							{
+								;
+							}
+
+							dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer2);
+
 							UINT inCodePage = CP_UTF8;
 							NMsgView::PrintHTMLDocumentToPrinter(inbuf, workbuf, inCodePage);
+
+							if (!::SetCurrentDirectory(Buffer))
+							{
+								;
+							}
 
 							int deb = 1;
 						}
@@ -1325,11 +1580,11 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						{
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-							CString txt = _T("Could not open \"") + textFileName;
-							txt += _T("\" mail file.\n");
+							CString txt = L"Could not open \"" + textFileName;
+							txt += L"\" mail file.\n";
 							txt += exErrorStr;
 
-							TRACE(_T("%s\n"), txt);
+							TRACE(L"%s\n", txt);
 							// MessageBox ??
 							int deb = 1;
 						}
@@ -1342,7 +1597,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						{
 							if (FileUtils::BrowseToFile(textFileName) == FALSE) {
 								HWND h = GetSafeHwnd();
-								HINSTANCE result = ShellExecute(h, _T("open"), datapath, NULL, NULL, SW_SHOWNORMAL);
+								HINSTANCE result = ShellExecute(h, L"open", datapath, NULL, NULL, SW_SHOWNORMAL);
 								CheckShellExecuteResult(result, h);
 							}
 							int deb = 1;
@@ -1350,7 +1605,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						else if (nResponse == IDYES)
 						{
 							HWND h = GetSafeHwnd();
-							HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+							HINSTANCE result = ShellExecute(h, L"open", textFileName, NULL, NULL, SW_SHOWNORMAL);
 							CheckShellExecuteResult(result, h, &textFileName);
 							int deb = 1;
 						}
@@ -1362,7 +1617,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 					else
 					{
 						HWND h = GetSafeHwnd();
-						HINSTANCE result = ShellExecute(h, _T("open"), textFileName, NULL, NULL, SW_SHOWNORMAL);
+						HINSTANCE result = ShellExecute(h, L"open", textFileName, NULL, NULL, SW_SHOWNORMAL);
 						CheckShellExecuteResult(result, h, &textFileName);
 						int deb = 1;
 					}
@@ -1409,13 +1664,13 @@ int  CMainFrame::PrintSingleMailtoHTML(int iItem, CString &targetPrintSubFolderN
 	return 1;
 }
 
-int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderName, BOOL progressBar, CString &errorText)
+int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString& targetPrintSubFolderName, BOOL progressBar, CString& progressText, CString& errorText)
 {
 	CString textFileName;
 
 	TEXTFILE_CONFIG textConfig;
-	NListView * pListView = CMainFrame::GetListView();
-	if (pListView) 
+	NListView* pListView = CMainFrame::GetListView();
+	if (pListView)
 	{
 		textConfig.m_dateFormat = pListView->m_format;
 		textConfig.m_bGMTTime = pListView->m_gmtTime;
@@ -1430,21 +1685,40 @@ int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString &targetPrintSubFolderNa
 	int textType = 1;
 	int ret = MboxMail::PrintMailRangeToSingleTextFile(textConfig, textFileName, iItem, iItem, textType, targetPrintSubFolderName, errorText);
 
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	CString fileName;
-	
+
 	fileName.Append(textFileName);
 	CString newSuffix;
-	newSuffix.Append(".pdf");
+	newSuffix.Append(L".pdf");
 	FileUtils::UpdateFileExtension(fileName, newSuffix);
 
 	CString htmFileName;
 	htmFileName.Append(textFileName);
 
-	CString progressText;
-	TRACE("Printing %s to PDF\n", htmFileName);
-	int timeout = 300; // seconds
-	ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText, timeout);
+	// CString progressText;  // FIXME
+	TRACE(L"Printing %s to PDF\n", htmFileName);
+
+	const int timeout = 700; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
+	// I am aware of cases it takes 10 or minutes to finish 
+	// or print will never finish sometimes. Had to pick something
+	const int headlessTimout = -1;  // Don't configure --timeout >= 0 option to Edge/Chrome, doesn't work as documented
+	// reported --timeout issue to Chromium team July 5, 2023
+	// --timeout it is fixed in Canary version but it was not integrated into official release yet
+	ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText, timeout, headlessTimout);
+	if (ret == -2)
+	{
+#if 0
+		// internal hard timer fired which means print failed, retry
+		// --timeout and --virtual-time-budget options don't seem to work. Will not retry
+		// 
+		// set headlessTimeout and retry
+		errorText.Empty();
+		const int headlessTiemout = 6;
+		ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText, timeout, headlessTiemout);
+#endif
+		int deb = 1;
+	}		
 	return ret;
 }
 
@@ -1614,9 +1888,9 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 		m_bMailDownloadComplete = FALSE;
 
 	if (m_bMailDownloadComplete)
-		strPage.Format("%s", _T("Mail Retrieval Complete"));
+		strPage.Format(L"%s", L"Mail Retrieval Complete");
 	else
-		strPage.Format("%s", _T("Mail Retrieval In Progress ..."));
+		strPage.Format(L"%s", L"Mail Retrieval In Progress ...");
 #if 0
 	// Doesn't always work
 	pCmdUI->SetText(strPage);
@@ -1659,9 +1933,9 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 	pCmdUI->Enable();
 	CString strMailIndex;
 	if (listView->m_lastSel >= 0)
-		strMailIndex.Format("Mail %d of %d", listView->m_lastSel + 1, mailCnt);
+		strMailIndex.Format(L"Mail %d of %d", listView->m_lastSel + 1, mailCnt);
 	else
-		strMailIndex.Format("Mail xx of %d", mailCnt);
+		strMailIndex.Format(L"Mail xx of %d", mailCnt);
 
 	pCmdUI->SetText(strMailIndex);
 
@@ -1678,7 +1952,7 @@ void CMainFrame::SetupMailListsToInitialState()
 
 
 	if (MboxMail::b_mails_which_sorted != 1)
-		int deb = 1; // TODO: ASSERT ?
+		int deb = 1; // TODO: _ASSERTE ?
 
 
 	MboxMail::m_allMails.m_lastSel = -1;
@@ -1888,42 +2162,12 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 {
 	// TODO: Add your control notification handler code here
 
-	CString HelpPath = FileUtils::GetMboxviewTempPath("MboxHelp");
+	CString helpFileName = "MailListsInfo.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 
-	BOOL createDirOk = TRUE;
-	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = FileUtils::CreateDirectory(HelpPath);
-
-	CString codePageIdsFile = "MailListsInfo.htm";
-	CString fullPath = HelpPath + "\\" + codePageIdsFile;
-
-	CFile fp;
-	CFileException ExError;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
-	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
-		txt += exErrorStr;
-
-		//TRACE(_T("%s\n"), txt);
-
-		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
-		return;
-	}
-
-	CreateMailListsInfoText(fp);
-
-	fp.Close();
-
-	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
-
-	int deb = 1;
 	return;
 }
-
 
 void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -1962,144 +2206,6 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 	int deb = 1;
 }
 
-void CMainFrame::CreateMailListsInfoText(CFile &fp)
-{
-	CString htmlHdr;
-
-	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
-	htmlHdr += "<br><font size=\"+2\"><b>Mail List Dialog Bar</b></font><br><br>";
-
-	htmlHdr += "<u>NOTE: Please review also important help information under \"View -> Mboxview Help\" option</u></font><br><br>";
-
-	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
-
-	CString text;
-	text.Append(
-		"Mbox Viewer maintains 3 internal mail lists:<br>"
-		"<ul>"
-		"<li>All Mails list is populated from the selected archive file under Mail Tree.</li>"
-		"<li>Found Mails list is populated by the search results. User can run Find Advanced dialog or set the Find All option in the Find dialog.</li>"
-		"<li>User Selected Mails list is composed by a user from the mails in the All Mails and Found Mails lists. Mails on All Mails and Found Mails lists are marked by the red vertical bar in the first column if they are also on User Selected Mails list.</li>"
-		"</ul>"
-		"Each internal mail list has associated button in the dialog bar located next to the tool bar. When a particular mail list is selected and shown in the Mail Summary Window, associated button is highlighted.<br>"
-		"<br>"
-		"Access to the User Selected Mails list is enabled upon startup and allows users to perform simple list auditing. It can be disabled and the associated Button gray out by the user if desired by selecting View->User Selected Mail List to enable/disable.<br>"
-		"<br>"
-		"When User Selected Mails list is enabled, additional mail menu options are enabled such as Copy Selected Mails to User Selected Mails.<br>"
-		"<br>"
-		"Content of the User Selected Mails list is controlled by the user. User can merge search results with the content of the User Selected List.<br>"
-		"<br>"
-		"User can run the search multiples time and merge results multiple times with the User Selected List. Search results can be pruned before merging.<br>"
-		"<br>"
-		"In addition, user has an option to select/highlight one or more mails in the Summary Mail Window and copy to the User Selected Mails list.<br>"
-		"<br>"
-		"Merging/copying process will not create duplicate mails in the User Selected List.<br>"
-		"<br>"
-		"User can select and highlight one or more mails in the Summary Mail Window and remove from the active list. Mails can't be removed from the All Mails list.<br>"
-		"<br>"
-		"All Mails list content persists until new mail archive is selected.<br>"
-		"<br>"
-		"Found Mails list content persists until new search or when new mail archive is selected.<br>"
-		"<br>"
-		"User Selected Mails list content persists until cleared by the user or when new mail archive is selected.<br>"
-		"<br>"
-		"<u>NOTE</u> that mails in the All Mails and Found Mails list will be marked with the vertical bar in the first column to indicate that the same mail is present in the User Selected Mails list.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail List Archiving</b></font><br>"
-		"<br>"
-		"Found Mails list and User Selected Mails list content can be saved to mbox archive files and to mboxlist mail list files.<br>"
-		"<br>"
-		"Archive file will be created in the DIRECTORY\\ArchiveCache\\MailArchiveFileX directory.<br>"
-		"<br>"
-		"Archive file created from the Found Mails list will be created by appending _FIND suffix to the base name of the main archive file name.<br>"
-		"<br>"
-		"The _USER suffix will be appended when creating archive file from the User Selected Mails list.<br>"
-		"<br>"
-		"For example, if the root mbox archive file from gmail is called \"All mail Including Spam and Trash.11.09.2018.mbox\", then created archive file will be named \"All mail Including Spam and Trash.11.09.2018_USER.mbox.\"<br>"
-		"<br>"
-		"Separately, user can save mails in User Select Mails list to .mboxlist file, for example \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\".<br>"
-		"<br>"
-		"The .mboxlist files are much smaller than the mail archive files. The final .mboxlist file can be reloaded at any time and then the archive file can be created.\"<br>"
-		"<br>"
-		"WARNING: The .mboxlist file will no longer be valid if the master mail archive is changed.<br>"
-		"<br>"
-		"The mail list file allows user to reload the last archived mail list into the User Select Mails. Reload can be requested at any time including after restart of the mbox viewer.<br>"
-		"<br>"
-		"After mbox viewer is restarted or when User Selected Mails list is empty, User Selected Mails list can be restored when All Mails list is active.<br>"
-		"<br>"
-		"When User Selected Mails list is active, it can be reloaded when List is not empty.<br>"
-		"<br>"
-	);
-
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Managing Multiple Archives</b></font><br>"
-		"<br>"
-		"Mutiple archives can be created from the the same single main (or master) mail archive. However, before you create new content and new archive from Found Mails or User Selected List, the last archive with hard-coded name must be renamed first.<br>"
-		"<br>"
-		"Click on Open Mail Archive Location and rename the last hard-coded mail archive, for example:<br>"
-		"<br>"
-		"\"All mail Including Spam and Trash.11.09.2018_USER.mbox.\" --> \"All mail from Amazon.11.09.2018_USER.mbox.\"<br>"
-		"<br>"
-		"Not likely but if desired, multiple mboxlist files can be maintained by following similar steps.<br>"
-		"<br>"
-		"You must restore mboxlist file to original name if you plan to continue to update the mail list at later date. For example:<br>"
-		"<br>"
-		"\"All mail from Amazon.11.09.2018_USER.mbox.mboxlist\"  ---copy or --> \"All mail Including Spam and Trash.11.09.2018_USER.mbox.mboxlist\"<br>"
-		"<br>"
-		"Future releases may address the issue better.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Merging Multiple Mail Archives</b></font><br>"
-		"<br>"
-		"Multiple archives can be concatenated into a single archive using \"File -> Merge Archive Files\" option.<br>"
-		"<br>"
-		"This is useful if you need to analyze multiple mail views, provided as separate archive files, derived from the same archive file.<br>"
-		"<br>"
-		"After merging is completed, select \"File -> Refresh\" to discover new archive by the mbox viewer.<br>"
-		"<br>"
-		"In order to remove duplicate mails from the concatenated file:"
-		"<br>"
-		"<ol>"
-		"<li>Select the created archive.</li>"
-		"<br>"
-		"<li>Select \"View -> User Selected Mails\" to enable User Select Mails list.</li>"
-		"<br>"
-		"<li>Right click on any mail to select \"Copy All into User Selected Mails\" option to copy all mails into User Select Mails list.</li>"
-		"<br>"
-		"<li>Click on the  \"User Selected Mails\" button to select User Select Mails list.</li>"
-		"<br>"
-		"<li>Right click on any mail to select \"Remove Duplicate Mails\" option to remove duplicate  mails from User Select Mails list.</li>"
-		"<br>"
-		"<li>Mails are considered duplicate if the Data, From, To header fields and unique message ID generated by the mail provider match.</li>"
-		"<br>"
-		"<li>Select \"Save as Mbox Mail Archive file\" option to save mails in the User Selecected Mails list.</li>"
-		"<br>"
-		"<li>Select \"File -> Refresh\" to discover new no duplicate mails archive file by the mbox viewer.</li>"
-		"<br>"
-		"<li>You may want to rename the default name assigned to the archive file before the above step.</li>"
-		"</ol>"
-		"<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	CString htmlEnd = "\r\n</body></html>";
-	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
-}
-
-
 void CMainFrame::OnViewUserselectedmails()
 {
 	// TODO: Add your command handler code here
@@ -2108,7 +2214,7 @@ void CMainFrame::OnViewUserselectedmails()
 		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
 		m_bUserSelectedMailsCheckSet = FALSE;
 		EnableMailList(IDC_EDIT_LIST, FALSE);
-		//TRACE("OnViewUserselectedmails: MF_CHECKED->MF_UNCHECKED\n");
+		//TRACE(L"OnViewUserselectedmails: MF_CHECKED->MF_UNCHECKED\n");
 
 		// we disabled User Selected List, switch to archive list
 		if (MboxMail::IsUserMailsSelected()) {
@@ -2128,7 +2234,7 @@ void CMainFrame::OnViewUserselectedmails()
 		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
 		m_bUserSelectedMailsCheckSet = TRUE;
 		EnableMailList(IDC_EDIT_LIST, TRUE);
-		//TRACE("OnViewUserselectedmails: MF_UNCHECKED->MF_CHECKED\n");
+		//TRACE(L"OnViewUserselectedmails: MF_UNCHECKED->MF_CHECKED\n");
 	}
 }
 
@@ -2147,333 +2253,12 @@ void CMainFrame::OnHelpMboxviewhelp()
 {
 	// TODO: Add your command handler code here
 
-	CString HelpPath = FileUtils::GetMboxviewTempPath("MboxHelp");
+	CString helpFileName = "MboxviewerHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 
-	BOOL createDirOk = TRUE;
-	if (!FileUtils::PathDirExists(HelpPath))
-		createDirOk = FileUtils::CreateDirectory(HelpPath);
-
-	CString codePageIdsFile = "MboxviewerHelp.htm";
-	CString fullPath = HelpPath + "\\" + codePageIdsFile;
-
-	CFile fp;
-	CFileException ExError;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
-	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
-		txt += exErrorStr;
-
-		//TRACE(_T("%s\n"), txt);
-
-		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
-		return;
-	}
-
-	CString htmlHdr;
-
-	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body style=\'margin-left:0.5cm\'>";
-	htmlHdr += "<br><font size=\"+2\"><b>Mbox Viewer Help</b></font><br><br>";
-
-	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
-
-	CString text;
-
-	text.Empty();
-	text.Append(
-		"Please review the User Guide provided with the package and/or "
-		"right/left single and double click on any item within the Mbox Viewer window and try all presented options.<br>"
-		"<br>"
-		"To get started, please install the mbox mail archive in the local folder,"
-		" install and left double click on the mboxview executable and then select File->Select Folder menu option to open that folder.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+2\"><u><b>Mail Printing Overview</b></u></font><br>"
-		"<br>"
-		"Mbox Viewer supports direct printing of all, single or multiple mails to CSV, Text, HTML, PDF files and to PDF printer.<br>"
-		"<br>"
-		"Mails can also be printed to PDF from any Web Browser by opening mails printed to HTML files.<br>"
-		"<br>"
-		"By default all, single or multiple mails are printed to single CSV, Text, HTML and PDF files without any additional configuration or manual steps.<br>"
-		"<br>"
-		"However there is a limit how many mails can effectively be printed to a single file.<br>"
-		"<br>"
-		"Option is provided to print mails to separate files to support larger number of mails.<br>"
-		"<br>"
-		"The next sections below will cover these limitations and alternate solutions.<br>"
-		"<br><br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to CSV Spreasheet file</b></font><br>"
-		"<br>"
-		"Mbox Viewer supports printing of all mails or selected group of mails to single CSV file only.<br>"
-		"<br>"
-		"All mails can be printed to single CSV file but a particular Spreadsheet tool may limit the maximum supported size of the spreadsheet file.<br>"
-		"<br>"
-		"User can select and print groups of mails to separate CVS files as a work around.<br>"
-		"<br>"
-		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate CSV files<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to TEXT file</b></font><br>"
-		"<br>"
-		"Mbox Viewer supports printing of all mail, single or selected group of mails to single Text file only.<br>"
-		"<br>"
-		"All mails can be printed to single TEXT file but a particular Text viewer tool may limit the maximum supported size of the text file.<br>"
-		"<br>"
-		"User can select and print groups of mails to separate Text files as a work around.<br>"
-		"<br>"
-		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate Text files<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to HTML file</b></font><br>"
-		"<br>"
-		"Mbox Viewer supports printing of all mails, single or selected group of mails to single HTML file or to separate per mail HTML file.<br>"
-		"<br>"
-		"All archive mails can be printed to single HTML file but HTML viewer tools/Web Browsers may not be able to process large HTML files, become very slow or completely overloaded.<br>"
-		"<br>"
-		"User can select and print groups of mails to separate HTML files as a work around.<br>"
-		"<br>"
-		"There is no option to automatically split all mails into configurable number of mail groups for printing to separate HTML files<br>"
-		"<br>"
-		"There is no hard rule how many mails can be printed to a single HTML file and viewed by a Web Browser.<br>"
-		"<br>"
-		"It depends on the size and content (such as heavy graphics) of mails. It should be doable to print up to a couple of thousands small to medium size text mails to a single HTML file.<br>"
-		"<br>"
-		"Mails can be printed to a separate per mail HTML file for further processing as described in Mail Printing to PDF section.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to PDF printer</b></font><br>"
-		"<br>"
-		"Mbox Viewer supports printing of all mails, single or selected group of mails to PDF printer.<br>"
-		"<br>"
-		"Printing to PDF printer relies on Microsoft HTML Document object to print its content.<br>"
-		"<br>"
-		"First, Mbox Viewer will print mails to a single HTML file, then it will load the file into HTML Document object and request the document object to print its content.<br>"
-		"<br>"
-		"The limitations as far as the maximum number of mails that can be printed are described in the \"Printing Mails to HTML file\" section above.<br>"
-		"<br>"
-		"The \"File -> Print Config -> Page Setup\" dialog option allows users to control <u>the page title, header, footer and background color</u>.<br>"
-		"<br>"
-		"By default user is prompted to select PDF printer for printing mails.<br>"
-		"<br>"
-		"If the PDF printer is configured as the default printer, user can set \"File -> Print Config -> Do Not Prompt\" dialog option to skip the printer prompt.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to PDF files</b></font><br>"
-		"<br>"
-		"Mbox Viewer supports multiple ways to print all, single or multiple mails to PDF files.<br>"
-		"<br>"
-		"All methods convert  HTML files, created first from mails by the Mbox Viewer, to PDF format.<br>"
-		"<br>"
-		"By default all, single or selected mails are printed to a single HTML file and then converted to PDF format.<br>"
-		"<br>"
-		"The default method limits the number of mails that can be effectively printed to single HTML file as noted in previous sections.<br>"
-		"<br>"
-		"More scalable method is described in in \"Mail Printing to PDF files by Power Users\" section.<br>"
-		"<br>"
-		"Mbox Viewer supports an option to print mails directly to PDF file without any user interaction.<br>"
-		"<br>"
-		"Direct printing to PDF file invokes external application to convert HTML files to PDF.<br>"
-		"<br>"
-		"By default the standard Google Chrome browser in so called headless mode is invoked to perform conversion.<br>"
-		"<br>"
-		"The two options are provided to leverage developer version of Google Chrome Canary and free wkhtmltopdf application to covert HTML to PDF.<br>"
-		"<br>"
-		"Options to leverage the wkhtmltopdf and Chrome Canary are provided since the standard Chrome browser in the headless mode doesn't support options to control the page title, header and footer and the background color.<br>"
-		"<br>"
-		"User can set \"File -> Print Config -> Path To User Defined Script\" to invoke HTML2PDF-single-wkhtmltopdf.cmd script included in the release package.<br>"
-		"<br>"
-		"In order to leverage Chrome Canary browser, \"Path To User Defined Script\" needs to updated by the user to point to HTML2PDF-single-chrome-canary.cmd script.<br>"
-		"<br>"
-		"The Chrome Canary browser can be downloaded from <a href=\"https://www.google.com/chrome/canary\">Chrome Canary downloads</a>.<br>"
-		"<br>"
-		"HTML2PDF-single-wkhtmltopdf.cmd script creates PDF files with <u>the right footer \"Page Number of Total Pages\" and no page Title and Header</u>.<br>"
-		"<br>"
-		"The wkhtmltopdf can be downloaded from <a href=\"https://wkhtmltopdf.org/downloads.html\">wkhtmltopdf.org downloads</a>.<br>"
-		"<br>"
-		"The wkhtmltopdf command line options are documented in <a href=\"https://wkhtmltopdf.org/usage/wkhtmltopdf.txt\">wkhtmltopdf.org usage</a>.<br>"
-		"<br>"
-		"User can replicate HTML2PDF-single-wkhtmltopdf.cmd to new file and customize to leverage different converter possibly commercial.<br>"
-		"<br>"
-		"User will need to update \"Path To User Defined Script\" in \"File -> Print Config\" dialog to point to new script path.<br>"
-		"<br>"
-		"When printing multiple mails to a single PDF file, user can set \"File -> Print Config -> Page Break After Each Mail\" option <u>to start each mail at new page</u>.<br>"
-		"<br>"
-		"User can unset \"File -> Print Config -> Mail Hdr Background Color\" option to remove mail header background color and save on the ink when printing.<br>"
-		"<br>"
-		"Lastly, HTML file can be open within Firefox, Chrome, IE, etc. Browser and printed to PDF file.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+1\"><b>Mail Printing to PDF files by Power Users</b></font><br>"
-		"<br>"
-		"Some users may need to print larger number of mails to a single PDF file.<br>"
-		"<br>"
-		"This is supported by Mbox Viewer but one or more manual steps are required.<br>"
-		"<br>"
-		"User must first print all mails to separate PDF files and then merge them into a single PDF file by running the provided script.<br>"
-		"<br>"
-		"In order to print mails to separate files, user must first set \"File -> Print Config -> Print mails to separate files -> PDF\" option.<br>"
-		"<br>"
-		"After that, using standard mail print to PDF options, user can print all or large subset of mails to separate PDF files into sub-folder PDF_GROUP created by Mbox Viewer.<br>"
-		"<br>"
-		"Printing large number of mails to separate PDF files is time consuming.<br>"
-		"<br>"
-		"Depending on the size and content of a mail, it may take fraction of a second to create single PDF file or a tens of seconds.<br>"
-		"<br>"
-		"PDFMerge-pdfbox.cmd script included in the release package can be used to merge PDF files.<br>"
-		"<br>"
-		"PDFMerge-pdfbox.cmd script invokes free PDFBox java tool to merge PDF files.<br>"
-		"<br>"
-		"Free PDFBox java tool can be downloaded from <a href=\"https://pdfbox.apache.org/\">pdfbox.apache.org</a>.<br>"
-		"<br>"
-		"PDFBox command line tools usage example <a href=\"https://pdfbox.apache.org/2.0/commandline.html\">pdfbox.apache.org commandline tools</a>.<br>"
-		"<br>"
-		"Java 8 can be dowwnloaded from  <a href=\"https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html\">jdk8-downloads</a>.<br>"
-		"<br>"
-		"PDFMerge-pdfbox.cmd script must be copied into the directory housing all per mail PDF files and executed.<br>"
-		"<br>"
-		"PDFMerge-pdfbox.cmd script will create one or more merged PDF files in the PDF_MERGE sub-folder.<br>"
-		"<br>"
-		"If more than one merged PDF file is created in the PDF_MERGE sub-folder, PDFMerge-pdfbox.cmd script needs to be copied to that sub-folder and script executed again.<br>"
-		"<br>"
-		"The above steps need to be repeated until PDFMerge-pdfbox.cmd script creates single PDF file only.<br>"
-		"<br>"
-		"Printing mails to separate PDF files can also be done offline. User must first set \"File -> Print Config -> Print mails to separate files -> HTML\" option.<br>"
-		"<br>"
-		"After that, using standard mail print to HTML options, user can print all or large subset of mails to separate HTML files into sub-folder HTML_GROUP created by Mbox Viewer.<br>"
-		"<br>"
-		"HTML2PDF-all-chrome.cmd or HTML2PDF-all-wkhtmltopdf.cmd script included in the release package can then be used to convert HTML files to PDF files.<br>"
-		"<br>"
-		"One of these scripts must be copied into the directory housing all per mail HTML files, i.e. HTML_GROUP, and executed.<br>"
-		"<br>"
-		"Created PDF files can then be merged into a single PDF file using PDFMerge-pdfbox.cmd script as described above.<br>"
-		"<br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+2\"><u><b>Advanced Find Overview</b></u></font><br>"
-		"<br>"
-		"Advanced Find dialog allows users to use multiple fields to compose more complex search criteria.<br>"
-		"<br>"
-		"The search logic is hard-coded for the most common case and is as follow:<br>"
-		"<br>"
-		"(unidirectional or bidirectional and operator of From and To) and Subject and CC and BCC and (Message or Attachments)<br>"
-		"<br>"
-		"The search criteria is basically ANDing all checked fields or pairs of fields such as (From and To) and (Message and Attachment).<br>"
-		"<br>"
-		"Find Advanced dialog allows users to specify relation between From and To as biderectional or unidirectional and the result is ANDed with other checked fields.<br>"
-		"<br>"
-		"The Message and Attachment are handled as OR expression and the result is ANDed with other checked fields.<br>"
-		"<br>"
-		"More complex search criteria can be accomplished by leveraging User Selected Mails list.<br>"
-		"<br>"
-		"User can run Advanced Find multiple times and merge results into User Selected Mails list.<br>"
-		"<br><br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<font size=\"+2\"><u><b>Directory Structure</b></u></font><br>"
-		"<br>"
-		"MBox Viewer creates data directory and uses as target directory for files and sub-folders created by MboxViewer such as \"Print...\" export all mails as eml files, etc<br><br>"
-		"The DIRECTORY is constructed as follow depending on the selected data folder when running \"File-->Data Folder Config\" dialog.<br>"
-		"If the data folder is selected per each folder with mbox files, then DIRECTORY is constructed as follow (assuming the mbox folder is not read-only).<br>"
-		"DIRECTORY = PathToFolderHosingMboxFiles\\MBoxViewer<br>"
-		"Otherwise, that is, for data folder selected by user or created by Windows, DIRECTORY is constructed as follow :<br>"
-		"    DIRECTORY = UserSelectedDataFolder\\MBoxViewer\\MappedMboxFilePath<br>"
-		"Mapping example. Assuming<br>"
-		"MboxFilePath = F:\\Account\\Inbox.mbox, then it will be mapped to<br>"
-		"MappedMboxFilePath = F\\Account\\Inbox-mbox<br>"
-		"and DIRECTORY to<br>"
-		"DIRECTORY=UserSelectedDataFolder\\F\\Account\\Inbox-mbox<br>"
-		"The ‘:’ character will be removed and “.mbox” extension, if present, will be mapped to \"-mbox\"<br>"
-		"<br><br>"
-		"DIRECTORY - <font color=red>target directory for mbox mail index files, help Html files and various sub-directories</font><br>"
-		"DIRECTORY\\MailArchiveFile1.mbox<br>"
-		"DIRECTORY\\MailArchiveFile1.mbox.mboxview<br>"
-		"DIRECTORY\\MailArchiveFile2.mbox<br>"
-		"DIRECTORY\\MailArchiveFile2.mbox.mboxview<br>"
-		"DIRECTORY\\ImageCache<br>"
-		"DIRECTORY\\ImageCache\\MailArchiveFile1 - <font color=red>target directory for image files, such as png,jpg,etc, embeded into mails</font><br>"
-		"DIRECTORY\\ImageCache\\MailArchiveFile2<br>"
-		"DIRECTORY\\AttachmentCache<br>"
-		"DIRECTORY\\AttachmentCache\\MailArchiveFile1 - <font color=red>target directory for attachment files</font><br>"
-		"DIRECTORY\\AttachmentCache\\MailArchiveFile2<br>"
-		"DIRECTORY\\EmlCache<br>"
-		"DIRECTORY\\EmlCache\\MailArchiveFile1 - <font color=red>target directory for Eml files</font><br>"
-		"DIRECTORY\\EmlCache\\MailArchiveFile2<br>"
-		"DIRECTORY\\ArchiveCache<br>"
-		"DIRECTORY\\ArchiveCache\\MailArchiveFile1 - <font color=red>target directory for saving Found Mails and User Selected Mails to mbox and mboxlist files</font><br>"
-		"DIRECTORY\\ArchiveCache\\MailArchiveFile2<br>"
-		"DIRECTORY\\PrintCache<br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1  -  <font color=red>target directory for printing to single CSV,TEXT,HTML and PDF files</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP  -  <font color=red>target directory for printing to separate PDF files</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP\\PDF_MERGE  -  <font color=red>target directory for merged PDF files</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\PDF_GROUP\\PDF_MERGE\\PDF_MERGE  -  <font color=red>target directory for merged PDF files if multiple merge steps are needed</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP  -  <font color=red>target directory for printing to separate HTML files</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP\\PDF_MERGE  -  <font color=red>target directory for merged PDF files</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile1\\HTML_GROUP\\PDF_MERGE\\PDF_MERGE  -  <font color=red>target directory for merged PDF files if multiple merge steps are needed</font><br>"
-		"DIRECTORY\\PrintCache\\MailArchiveFile2<br>"
-		"DIRECTORY\\LabelCache - <font color=red>target directory for Label files and sub-folders</font><br>"
-		"DIRECTORY\\MergeCache - <font color=red>target directory for intermediate file created when “File-->Select root folder for merging” is selected</font><br>"
-		"<br>"
-		"<br>"
-		"Mbox Viewer also creates and manages temporary directory C:\\Users\\UserName\\AppData\\Local\\Temp\\mboxview directory to store temporary files (attachments, eml and htm) created when a single mail is selected by the user.<br>"
-		"Mbox Viewer created help files such as MailListsInfo.htm and MboxviewerHelp.htm are stored in the temporary directory C:\\Users\\UserName\\AppData\\Local\\Temp\\mboxview\\MboxHelp directory.<br>"
-		"<br><br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	text.Empty();
-	text.Append(
-		"<br><br>"
-		"<br><br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	CString htmlEnd = "\r\n</body></html>";
-	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
-
-	fp.Close();
-
-	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
 	int deb = 1;
 }
-
 
 void CMainFrame::OnMessagewindowBottom()
 {
@@ -2530,45 +2315,63 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 
 	int curMsgViewPosition = m_msgViewPosition;
 
-	CString curPos = "Bottom";
+	CString curPos = L"Bottom";
 	if (curMsgViewPosition == 1)
-		curPos = "Bottom";
+		curPos = L"Bottom";
 	else if (curMsgViewPosition == 2)
-		curPos = "Right";
+		curPos = L"Right";
 	else if (curMsgViewPosition == 3)
-		curPos = "Left";
+		curPos = L"Left";
 	else
 		; // shpould never be here
 
-	CString newPos = "Bottom";
+	CString newPos = L"Bottom";
 	if (msgViewPosition == 1)
-		newPos = "Bottom";
+		newPos = L"Bottom";
 	else if (msgViewPosition == 2)
-		newPos = "Right";
+		newPos = L"Right";
 	else if (msgViewPosition == 3)
-		newPos = "Left";
+		newPos = L"Left";
 	else
 		; // shpould never be here
 
 
 	HWND h = GetSafeHwnd();
 
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
 	if (msgViewPosition == curMsgViewPosition) {
-		CString txt = _T("New and current Message Window position are the same: ") + newPos + _T(" and ") + curPos + _T(".\nNo action will be taken.");
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		CString txt = L"New and current Message Window position are the same: " + newPos + L" and " + curPos + L".\nNo action will be taken.";
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 		m_newMsgViewPosition = msgViewPosition;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), m_newMsgViewPosition);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
+
+		CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+		else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", m_newMsgViewPosition);
 		return;
 	}
 
-	CString txt = _T("Do you want to configure Message Window position from " + curPos + " to " + newPos 
-		+ " ?\nIf you say Yes, please exit and restart mbox viewer for new position to take effect.");
+	CString txt = L"Do you want to configure Message Window position from " + curPos + " to " + newPos 
+		+ " ?\nIf you say Yes, please exit and restart mbox viewer for new position to take effect.";
 
-	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
 	{
 		m_newMsgViewPosition = msgViewPosition;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("messageWindowPosition"), m_newMsgViewPosition);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
+
+		CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+		else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", m_newMsgViewPosition);
 	}
 }
 
@@ -2671,10 +2474,10 @@ int CMainFrame::MergeArchiveFiles()
 	int FILE_LIST_BUFFER_SIZE = (MAX_CFileDialog_FILE_COUNT * (MAX_PATH + 1)) + 1;
 
 	MboxMail::m_outbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
-	TCHAR *fileNameBuffer = MboxMail::m_outbuf->Data();
+	wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_outbuf->Data();
 
 	//CString  sFilters  = "Mail Files (*.mbox)|*.mbox|All Files (*.*)|*.*||";
-	CString  sFilters = "Mail Files All Files (*.*)|*.*|(*.mbox;*.eml)|*.mbox;*eml|(*.mbox)|*.mbox|(*.eml)|*.eml||";
+	CString  sFilters = L"Mail Files All Files (*.*)|*.*|(*.mbox;*.eml)|*.mbox;*eml|(*.mbox)|*.mbox|(*.eml)|*.eml||";
 
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	CFileDialog dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
@@ -2698,14 +2501,14 @@ int CMainFrame::MergeArchiveFiles()
 	ofn.lpstrFile = fileNameBuffer;
 	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
 	ofn.lpstrInitialDir = inFolderPath;
-	ofn.lpstrTitle = "Select Mail Archives For Merging";
+	ofn.lpstrTitle = L"Select Mail Archives For Merging";
 
 restart:
 	INT_PTR ret = dlgFile.DoModal();
 	if (ret == IDOK)
 	{
 		CString folder = dlgFile.GetFolderPath();
-		TRACE("FOLDER=%s\n", folder);
+		TRACE(L"FOLDER=%s\n", folder);
 
 		int fileCount = 0;
 		CString strFilePath;
@@ -2716,32 +2519,32 @@ restart:
 			strFilePath = dlgFile.GetNextPathName(pos);
 			if (!FileUtils::PathFileExist(strFilePath))
 			{
-				CString txt = _T("File path invalid.\n");
+				CString txt = L"File path invalid.\n";
 				txt.Append(strFilePath);
-				txt.Append("\nRetry or Cancel?");
+				txt.Append(L"\nRetry or Cancel?");
 
-				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
+				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 				if (answer == IDRETRY)
 				{
 					goto restart;
 				}
 			}
-			TRACE("FILE=%s\n", strFilePath);
+			TRACE(L"FILE=%s\n", strFilePath);
 		}
 
 		// All archive files are valid; merge
-		CString title = "Enter Name for New Archive File";
-		CString  fileNameFilter = "Mail Files (*.mbox)|*.mbox||";
-		CString dfltExtension = ".mbox";
+		CString title = L"Enter Name for New Archive File";
+		CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
+		CString dfltExtension = L".mbox";
 
 		CString outFolderPath;
 		CString fileName;
 		CString datapath = MboxMail::GetLastDataPath();
 		if (inFolderPath.Compare(datapath))
 		{
-			CString appFolderPath = FileUtils::GetMboxviewLocalAppDataPath();
-			inFolderPath = appFolderPath + "MboxRepo";
-			FileUtils::CreateDirectory(inFolderPath);
+			CString appFolderPath = CMainFrame::GetMboxviewLocalAppDataPath();
+			inFolderPath = appFolderPath + L"MboxRepo";
+			FileUtils::CreateDir(inFolderPath);
 		}
 		BOOL ret = SaveFileDialog(fileName, fileNameFilter, dfltExtension, inFolderPath, outFolderPath, title);
 		if (ret == TRUE)
@@ -2757,7 +2560,7 @@ restart:
 			CString viewFile = dataFolder + "\\" + fileName + ".mboxview";
 			if (FileUtils::PathFileExist(viewFile))
 			{
-				if (FileUtils::DeleteFile(viewFile, FALSE))
+				if (FileUtils::DelFile(viewFile, FALSE))
 				{
 					int deb = 1;
 				}
@@ -2772,14 +2575,14 @@ restart:
 			{
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-				CString txt = _T("Could not create \"") + filePath;
-				txt += _T("\" file.\n");
+				CString txt = L"Could not create \"" + filePath;
+				txt += L"\" file.\n";
 				txt += exErrorStr;
 
-				//TRACE(_T("%s\n"), txt);
+				//TRACE(L"%s\n", txt);
 
 				HWND h = NULL; // we don't have any window yet
-				int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 				MboxMail::m_outbuf->Clear();
 				return -1;
@@ -2798,10 +2601,10 @@ restart:
 					{
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 
-						CString txt = _T("Could not open \"") + strFilePath;
-						txt += _T("\" file.\nMake sure file is not open on other applications.");
+						CString txt = L"Could not open \"" + strFilePath;
+						txt += L"\" file.\nMake sure file is not open on other applications.";
 						HWND h = NULL; // we don't have any window yet
-						int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 						fp.Close();
 
@@ -2812,7 +2615,7 @@ restart:
 					UINT wantBytes = 16 * 1024;
 					// don't use  MboxMail::m_oubuf is still used by dlgFile above !!!!! 
 					MboxMail::m_inbuf->ClearAndResize(wantBytes+2);
-					TCHAR *inBuffer = MboxMail::m_inbuf->Data();
+					char *inBuffer = MboxMail::m_inbuf->Data();
 
 					UINT readBytes = 0;
 					do {
@@ -2832,7 +2635,7 @@ restart:
 					fp_input.Close();
 
 				}
-				TRACE("FILE=%s\n", strFilePath);
+				TRACE(L"FILE=%s\n", strFilePath);
 			}
 			fp.Flush();
 			fp.Close();
@@ -2872,7 +2675,7 @@ restart:
 			{
 				if (FileUtils::BrowseToFile(filePath) == FALSE) {
 					HWND h = GetSafeHwnd();
-					HINSTANCE result = ShellExecute(h, _T("open"), outFolderPath, NULL, NULL, SW_SHOWNORMAL);
+					HINSTANCE result = ShellExecute(h, L"open", outFolderPath, NULL, NULL, SW_SHOWNORMAL);
 					CheckShellExecuteResult(result, h);
 				}
 			}
@@ -2896,17 +2699,17 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
-		CString txt = _T("Could not create Merge To File \"") + mergedMboxFilePath;
-		txt += _T("\" file.\n");
+		CString txt = L"Could not create Merge To File \"" + mergedMboxFilePath;
+		txt += L"\" file.\n";
 		txt += exErrorStr;
 
-		//TRACE(_T("%s\n"), txt);
+		//TRACE(L"%s\n", txt);
 
 		CFileStatus rStatus;
 		BOOL ret = fpMergeTo.GetStatus(rStatus);;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 		return -1;
 	}
@@ -2923,12 +2726,12 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 		MergeFileInfo &finfo = fileList.GetAt(i);
 		fullPath = finfo.m_filepath;
 
-		TRACE("FilePath=%s\n", filePath);
+		TRACE(L"FilePath=%s\n", filePath);
 
 		_int64 fileSize = FileUtils::FileSize(fullPath);
 		FileUtils::GetFileName(fullPath, fileName);
-		sText.Format("Merging %s (%lld bytes) ...", fileName, fileSize);
-		TRACE("%s\n", sText);
+		sText.Format(L"Merging %s (%lld bytes) ...", fileName, fileSize);
+		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -2939,7 +2742,7 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 	fpMergeTo.Close();
 
 	_int64 fileSize = FileUtils::FileSize(mergedMboxFilePath);
-	TRACE("Created merge file %s (%lld bytes) ...", mergedMboxFilePath, fileSize);
+	TRACE(L"Created merge file %s (%lld bytes) ...", mergedMboxFilePath, fileSize);
 
 	return 1;
 }
@@ -2968,7 +2771,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 		while (!filePath.IsEmpty())
 		{
-			filePath.TrimRight("\\");
+			filePath.TrimRight(L"\\");
 
 			FileUtils::GetFolderPath(filePath, folderPath);
 			int len = folderPath.GetLength();
@@ -2992,22 +2795,24 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 	CStdioFile fpList;
 	CFileException exList;
-	if (!fpList.Open(mboxListFilePath, CFile::typeText | CFile::modeRead | CFile::shareDenyNone, &exList))
+	//if (!fpList.Open(mboxListFilePath, CFile::typeText | CFile::modeRead | CFile::typeUnicode | CFile::shareDenyNone, &exList))
+	//if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::typeUnicode | CFile::shareDenyNone, &exList))
+	if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::shareDenyNone, &exList))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
-		CString txt = _T("Could not open list file \"") + mboxListFilePath;
-		txt += _T("\" file.\n");
+		CString txt = L"Could not open list file \"" + mboxListFilePath;
+		txt += L"\" file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("MergeMboxArchiveFiles: %s\n"), txt);
+		TRACE(L"MergeMboxArchiveFiles: %s\n", txt);
 		//errorText = txt;
 
 		CFileStatus rStatus;
 		BOOL ret = fpList.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -3019,41 +2824,81 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	CString fileNameExtentionRoot;
 
 	CString filePath;
+
+	unsigned char BOM[2];
+	UINT retlen = fpList.Read(BOM, 2);
+	unsigned char BOM1 = BOM[0];
+	unsigned char BOM2 = BOM[1];
+	if ((BOM1 == 0xFF) && (BOM2 == 0xFE))
+	{
+		fpList.Close();
+		if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::typeUnicode | CFile::shareDenyNone, &exList))
+		{
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+			CString txt = L"Could not open list file \"" + mboxListFilePath;
+			txt += L"\" file.\n";
+			txt += exErrorStr;
+
+			TRACE(L"MergeMboxArchiveFiles: %s\n", txt);
+			//errorText = txt;
+
+			CFileStatus rStatus;
+			BOOL ret = fpList.GetStatus(rStatus);
+
+			HWND h = NULL; // we don't have any window yet
+			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+		UINT retlen = fpList.Read(BOM, 2);
+		int deb = 1;
+	}
+	else
+	{
+
+		fpList.SeekToBegin();
+	}
+
+
 	// TODO: To optimize, save all results in an Array for further processing
 	CArray<MergeFileInfo> fileList;
 	while (fpList.ReadString(filePath))
 	{
+		const wchar_t* str = (LPCWSTR)filePath;
+
 		if (TextUtilsEx::isWhiteLine(filePath))
 			continue;
 
 		if (filePath.CompareNoCase(mergedMboxFilePath) == 0)
 		{
-			CString txt = _T("Invalid File Path:\n\n");
+			CString txt = L"Invalid File Path:\n\n";
 			txt.Append(filePath);
-			txt.Append("\n\nin List File:\n\n");
+			txt.Append(L"\n\nin List File:\n\n");
 			txt.Append(mboxListFilePath);
-			txt.Append("\n\nMbox File Path and Merge To File Path can't be the same\nCan't continue merging files\n");
+			txt.Append(L"\n\nMbox File Path and Merge To File Path can't be the same\nCan't continue merging files\n");
 
-			int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 			fpList.Close();
 			return -1;
 		}
 
+		filePath.TrimRight(L"\r\n"); // FIXMEFIXME I should not have to do that  to remeove \r
 		FileUtils::SplitFilePath(filePath, driveName, directory, fileNameBase, fileNameExtention);
 		folderPath = driveName + directory;
+		
 		// check if wildcard name 
 		// should we search for *.* rather than *; probably not if we want to examine file without extension
-		if (fileNameBase.Find("*") >= 0)  
+		if (fileNameBase.Find(L"*") >= 0)  
 		{
 			// examine all files in folderPath
 
 			if (!FileUtils::PathDirExists(folderPath))  // should never fail =:)  ???
 			{
 				CString txt;
-				txt.Format("Invalied Folder path \"%s\".\n\nCan't continue merging files\n", filePath);
+				txt.Format(L"Invalied Folder path \"%s\".\n\nCan't continue merging files\n", filePath);
 
-				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 				fpList.Close();
 				return -1;
@@ -3091,16 +2936,16 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		}
 		else
 		{
-			TRACE("FilePath=%s\n", filePath);
+			TRACE(L"FilePath=%s\n", filePath);
 			if (!FileUtils::PathFileExist(filePath))
 			{
-				CString txt = _T("Invalid File Path:\n\n");
+				CString txt = L"Invalid File Path:\n\n";
 				txt.Append(filePath);
-				txt.Append("\n\nin List File:\n\n");
+				txt.Append(L"\n\nin List File:\n\n");
 				txt.Append(mboxListFilePath);
-				txt.Append("\n\nCan't continue merging files\n");
+				txt.Append(L"\n\nCan't continue merging files\n");
 
-				int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 				fpList.Close();
 				return -1;
@@ -3129,9 +2974,12 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	hashsum_t hashsum = GlobalFolderInfoDB::GetHashsum(&mboxFolderPath);
 	FolderInfo* finfo = pTreeView->m_globalFolderInfoDB.Find(&mboxFolderPath, hashsum);
 
+	BOOL openret = TRUE;
 	if (finfoBeg == 0)
 	{
-		DoOpen(mboxFolderPath);
+		openret = DoOpen(mboxFolderPath);
+		if (openret == FALSE)
+			return -1;
 	}
 	else
 	{
@@ -3180,15 +3028,15 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-			CString txt = _T("Could not open \"") + mboxFilePath;
-			txt += _T("\" mail file.\n");
+			CString txt = L"Could not open \"" + mboxFilePath;
+			txt += L"\" mail file.\n";
 			txt += exErrorStr;
 
-			//TRACE(_T("%s\n"), txt);
+			//TRACE(L"%s\n", txt);
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 
@@ -3196,7 +3044,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		UINT wantBytes = 16 * 1024;
 		// don't use  MboxMail::m_oubuf is still used by dlgFile above !!!!! 
 		MboxMail::m_inbuf->ClearAndResize(wantBytes + 2);
-		TCHAR *inBuffer = MboxMail::m_inbuf->Data();
+		char *inBuffer = MboxMail::m_inbuf->Data();
 
 		UINT readBytes = 0;
 
@@ -3226,7 +3074,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 			// From 1513218656940664977@xxx Thu Sep 24 18:02:48 +0000 2015
 			// More parsing would be needed to find first line with Date and Time
 			// The below is safe for parsing the created mbox file
-			CString FromLine = "From 1513218656940664977@xxx ";
+			CStringA FromLine = "From 1513218656940664977@xxx ";
 
 			p_newline = MimeParser::EatNewLine(p, e);
 			char ch_last = *(p_newline - 1);
@@ -3284,12 +3132,12 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 	CString path = MboxMail::GetLastPath();
 	CString datapath = MboxMail::GetLastDataPath();
 	CString mergeCachePath = datapath + "MergeCache";
-	BOOL ret = FileUtils::CreateDirectory(mergeCachePath);
+	BOOL ret = FileUtils::CreateDir(mergeCachePath);
 
 	for (;;)
 	{
 		MboxMail::m_inbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
-		TCHAR *fileNameBuffer = MboxMail::m_inbuf->Data();
+		wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_inbuf->Data();
 
 		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 		dwFlags &= ~OFN_NOCHANGEDIR;
@@ -3310,17 +3158,17 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 			CString fileFilePath = dlgFile.GetPathName();
 			BOOL ret = FileUtils::CPathGetPath(fileFilePath, outFolderPath);
 
-			TRACE("FOLDER=%s\n", outFolderPath);
-			TRACE("FILE=%s\n", fileName);
+			TRACE(L"FOLDER=%s\n", outFolderPath);
+			TRACE(L"FILE=%s\n", fileName);
 
 			MboxMail::m_inbuf->Clear();
 
 			if (outFolderPath.Compare(mergeCachePath))
 			{
-				CString txt = _T("Changing target folder for merged file is not allowed.\n\n");
-				txt.Append(_T("Please try again."));
+				CString txt = L"Changing target folder for merged file is not allowed.\n\n";
+				txt.Append(L"Please try again.");
 				HWND h = GetSafeHwnd(); // we don't have any window yet
-				int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 			return TRUE;
@@ -3334,22 +3182,13 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 	return FALSE;
 }
 
-// Added to NTreeView as Folder option; Noy used anymore, to be removed later
-void CMainFrame::OnFileMergearchivefiles()
-{
-	// TODO: Add your command handler code here
-	HWND h = GetSafeHwnd();
-	MboxMail::ShowHint(HintConfig::MergeFilesHint, h);
-	MergeArchiveFiles();
-}
-
 void CMainFrame::OnPrinttoPdf()
 {
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
-		CString txt = _T("Please open mail file first.");
+		CString txt = L"Please open mail file first.";
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -3360,8 +3199,10 @@ void CMainFrame::OnPrinttoPdf()
 	{
 		if (pListView)
 		{
-			CString targetPrintSubFolderName = "PDF_GROUP";
-			pListView->PrintMailRangeToSeparatePDF_Thread(firstMail, lastMail, targetPrintSubFolderName);
+			CString targetPrintFolderPath;
+			CString targetPrintSubFolderName = L"PDF_GROUP";
+			BOOL mergePDFs = FALSE;
+			pListView->PrintMailRangeToSeparatePDF_Thread(firstMail, lastMail, targetPrintSubFolderName, targetPrintFolderPath, mergePDFs);
 		}
 	}
 	else
@@ -3387,9 +3228,9 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 		path = m_NamePatternParams.m_ChromeBrowserPath;
 		if (!FileUtils::PathFileExist(path))
 		{
-			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
+			errorText = L"Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
 				"\nOr configure Microsoft Edge Browser for printing."
-				"\nSelect File->Print Config to update the setup.");
+				"\nSelect File->Print Config to update the setup.";
 			return -1;
 		}
 	}
@@ -3398,9 +3239,9 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 		path = m_NamePatternParams.m_MSEdgeBrowserPath;
 		if (!FileUtils::PathFileExist(path))
 		{
-			errorText = _T("Path to MSEdge Browser not valid.\nPlease make sure Microsoft Edge is installed and path is correct."
+			errorText = L"Path to MSEdge Browser not valid.\nPlease make sure Microsoft Edge is installed and path is correct."
 				"\nOr configure Google Chrome Browser for printing."
-				"\nSelect File->Print Config to update the setup.");
+				"\nSelect File->Print Config to update the setup.";
 			return -1;
 		}
 	}
@@ -3409,16 +3250,21 @@ int CMainFrame::VerifyPathToHTML2PDFExecutable(CString &errorText)
 		path = m_NamePatternParams.m_UserDefinedScriptPath;
 		if (!FileUtils::PathFileExist(path))
 		{
-			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update the setup.");
+			errorText = L"Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update the setup.";
 			return -1;
 		}
 	}
 	return 1;
 }
 
-int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
+int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorText, BOOL progressBar, CString &progressText, 
+	int forcedTimeout, int headlessTimout)
 {
+	_ASSERTE(headlessTimout == -1);  // headlessTimout is broken in official Chrome and Edge
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	int timeout = forcedTimeout;  // set internal timout
 
 	// TODO: Duplicate check, done already in _Thread function calls 
 	if (pFrame)
@@ -3431,53 +3277,106 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	}
 	else
 	{
-		errorText.Append("Internal error. Try again.");
+		errorText.Append(L"Internal error. Try again.");
 		return -1;
 	}
+
+	CString htmlFilePath = htmFileName;
+	CString folderPath;
+	FileUtils::GetFolderPath(htmFileName, folderPath);
+	//FileUtils::GetFolderPathAndFileName(htmlFilePath, folderPath, htmFileName);
 
 	CString pdfFileName;
 	pdfFileName.Append(htmFileName);
 
 	CString newSuffix;
-	newSuffix.Append(".pdf");
+	newSuffix.Append(L".pdf");
 	FileUtils::UpdateFileExtension(pdfFileName, newSuffix);
 
-	BOOL delStatus = FileUtils::DeleteFile(pdfFileName);
+	BOOL delStatus = FileUtils::DelFile(pdfFileName);
 	if (delStatus == FALSE) {
 		DWORD error = GetLastError();
 		CString errorText = FileUtils::GetLastErrorAsString();
-		TRACE("ExecCommand_WorkerThread: DeleteFile error=%s\n", errorText);
+		TRACE(L"ExecCommand_WorkerThread: DeleteFile %s\nerror=%s\n", pdfFileName, errorText);
 	}
 
-	int bScriptType = 0;
-	CString path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-	CString args = "--headless --disable-gpu --print-to-pdf=\"" + pdfFileName + "\" \"" + htmFileName + "\"";
+	CString args;
+	CString path;
+	int bScriptType = pFrame->m_NamePatternParams.m_bScriptType;
 
-	if (pFrame->m_NamePatternParams.m_bScriptType == 0)
+	// Edge and Chrome configuration is basically the same for the latest versions
+	// except for --headless=new  option for Chrome. --headless=new doesn't work in official Chrome, works in Canary version
+	if (bScriptType == 0)   // Chrome
 	{
-		// args no change
+		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
+		{
+			args = L"--headless --disable-gpu";
+		}
+		else
+		{
+			args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
+			// args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
+		}
+#if 0
+		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
+#else
+		if (headlessTimout > 0)
+		{
+			int browserTimeout = headlessTimout;
+			timeout = headlessTimout + 3;  // ignore forcedTimeout, set new value larger than headlessTimout
+
+			CString tm;
+			tm.Format(L" --timeout=%d", browserTimeout * 1000);
+			args += tm;
+		}
+#endif
+
+		args += L" --print-to-pdf=\"" + pdfFileName + L"\" \"" + htmFileName + L"\"";
+
 		path = pFrame->m_NamePatternParams.m_ChromeBrowserPath;
-		if (!FileUtils::PathFileExist(path)) {
-			errorText = _T("Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
+		if (!FileUtils::PathFileExist(path))
+		{
+			errorText = L"Path to Chrome Browser not valid.\nPlease make sure Chrome is installed and path is correct."
 				"\nOr configure Microsoft Edge Browser for printing."
-				"\nSelect File->Print Config to update setup.");
+				"\nSelect File->Print Config to update setup.";
 			int deb = 1;
 			return -1;
 		}
 	}
-	else if (pFrame->m_NamePatternParams.m_bScriptType == 1)
+	else if (bScriptType == 1)   // Edge
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
-			args = "--headless --disable-gpu";
+		{
+			args = L" --headless --disable-gpu";  // header & footer is printer by default
+		}
 		else
-			args = "--headless --disable-gpu --print-to-pdf-no-header";
+		{
+			args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
+			//args = L" --headless --disable-gpu --no-pdf-header-footer"; //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
+		}
 
-		args += " --print-to-pdf=\"" + pdfFileName + "\" \"" + htmFileName + "\"";
+#if 0
+		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
+#else
+		if (headlessTimout > 0)
+		{
+			int browserTimeout = headlessTimout;
+			timeout = headlessTimout + 3;   // ignore forcedTimeout, set new value larger than headlessTimout
+
+			CString tm;
+			tm.Format(L" --timeout=%d", browserTimeout * 1000);
+			args += tm;
+		}
+#endif
+
+		args += L" --print-to-pdf=\"" + pdfFileName + L"\" \"" + htmFileName + L"\"";
+
 		path = pFrame->m_NamePatternParams.m_MSEdgeBrowserPath;
-		if (!FileUtils::PathFileExist(path)) {
-			errorText = _T("Path to MSEdge Browser not valid.\nPlease make sure MSEdge is installed and path is correct."
+		if (!FileUtils::PathFileExist(path))
+		{
+			errorText = L"Path to MSEdge Browser not valid.\nPlease make sure MSEdge is installed and path is correct."
 				"\nOr configure Google  Chrome Browser for printing."
-				"\nSelect File->Print Config to update the setup.");
+				"\nSelect File->Print Config to update the setup.";
 			int deb = 1;
 			return -1;
 		}
@@ -3485,12 +3384,12 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	else
 	{
 		if (pFrame->m_NamePatternParams.m_bKeepMailBodyBackgroundColor)
-			args = "\"" + htmFileName + "\"";
+			args = L"\"" + htmFileName + L"\"";
 		else
-			args = "\"" + htmFileName + "\"" + " " + "--no-background";
+			args = L"\"" + htmFileName + L"\"" + L" " + L"--no-background";
 		path = pFrame->m_NamePatternParams.m_UserDefinedScriptPath;
 		if (!FileUtils::PathFileExist(path)) {
-			errorText = _T("Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.");
+			errorText = L"Path to user defined HTML2PDF script not valid.\nPlease make sure script is installed.\nSelect File->Print Config to update setup.";
 			int deb = 1;
 			return -1;
 		}
@@ -3505,7 +3404,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	ShExecInfo.lpVerb = NULL;
 	ShExecInfo.lpFile = path;
 	ShExecInfo.lpParameters = args;
-	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.lpDirectory = folderPath;   // FIXME
 	ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = result;
 	BOOL retval = ShellExecuteEx(&ShExecInfo);
@@ -3532,7 +3431,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		switch (ret)
 		{
 		case WAIT_ABANDONED: {
-			errorText = "Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_ABANDONED";
+			errorText = L"Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_ABANDONED";
 			failed = TRUE;
 			break;
 		}
@@ -3541,14 +3440,13 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 			break;
 		}
 		case WAIT_FAILED: {
-			errorText = "Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_FAILED";
+			errorText = L"Conversion of HTML to PDF failed. WaitForSingleObject returns WAIT_FAILED";
 			failed = TRUE;
 			break;
 		}
 		case WAIT_TIMEOUT: {
 			if (MboxMail::pCUPDUPData)
 			{
-
 				if (MboxMail::pCUPDUPData->ShouldTerminate())
 				{
 					if (ShExecInfo.hProcess)
@@ -3564,10 +3462,12 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 					if (stepCnt % 10 == 0)
 					{
 						nSeconds++;
-						if (progressText.IsEmpty())
+						if (progressText.IsEmpty()) {
 							MboxMail::pCUPDUPData->SetProgress(step);
-						else {
-							secondsBar.Format(_T("%s  %d seconds"), progressText, nSeconds);
+						}
+						else
+						{
+							secondsBar.Format(L"%s  %d seconds", progressText, nSeconds);
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -3577,14 +3477,16 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 					stepCnt++;
 					if ((timeout >= 0) && (nSeconds > timeout))
 					{
-						errorText.Format("Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+						errorText.Format(L"Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+						TRACE(L"Internal %s\n\nArguments: %s\n", errorText, args);
 						failed = TRUE;
 						if (ShExecInfo.hProcess)
 						{
 							TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
 							CloseHandle(ShExecInfo.hProcess);
 						}
-						return -1;
+						Sleep(1000);
+						return -2;
 					}
 				}
 				else
@@ -3594,14 +3496,16 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 						nSeconds++;
 						if ((timeout >= 0) && (nSeconds > timeout))
 						{
-							errorText.Format("Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+							errorText.Format(L"Timeout. Conversion of HTML to PDF didn't finish within %d seconds", timeout);
+							TRACE(L"Internal %s\n\nArguments: %s\n", errorText, args);
 							failed = TRUE;
 							if (ShExecInfo.hProcess)
 							{
 								TerminateProcess(ShExecInfo.hProcess, IDCANCEL);
 								CloseHandle(ShExecInfo.hProcess);
 							}
-							return -1;
+							Sleep(1000);
+							return -2;
 						}
 					}
 					stepCnt++;
@@ -3610,7 +3514,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 			break;
 		}
 		default: {
-			errorText.Format("Conversion of HTML to PDF failed. WaitForSingleObject returns unknown code=%s", ret);
+			errorText.Format(L"Conversion of HTML to PDF failed. WaitForSingleObject returns unknown code=%s", ret);
 			failed = TRUE;
 			break;
 		}
@@ -3629,7 +3533,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	return returnCode;
 }
 
-int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
+int CMainFrame::ExecCommand_WorkerThread(CString &directory, CString &cmd, CString &args, CString &errorText, BOOL progressBar, CString &progressText, int timeout)
 {
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3644,7 +3548,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &e
 	ShExecInfo.lpVerb = NULL;
 	ShExecInfo.lpFile = cmd;
 	ShExecInfo.lpParameters = args;
-	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.lpDirectory = (LPCWSTR)directory;
 	ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = result;
 	BOOL retval = ShellExecuteEx(&ShExecInfo);
@@ -3714,7 +3618,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &cmd, CString &args, CString &e
 						if (progressText.IsEmpty())
 							MboxMail::pCUPDUPData->SetProgress(step);
 						else {
-							secondsBar.Format(_T("%s  %d seconds"), progressText, nSeconds);
+							secondsBar.Format(L"%s  %d seconds", progressText, nSeconds);
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -3756,7 +3660,7 @@ void CSVFILE_CONFIG::SetDflts()
 	m_bAttachmentNames = FALSE;
 	//m_bAttachmentNames = TRUE;
 	//m_MessageLimitString;
-	m_MessageLimitCharsString = "32500";
+	m_MessageLimitCharsString = L"32500";
 	m_AttachmentNamesSeparatorString = " CRLF";
 	m_dateFormat = 0;
 	m_bGMTTime = 0;
@@ -3793,7 +3697,11 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 
 void CSVFILE_CONFIG::SaveToRegistry()
 {
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "CSV_attachmentNamesSeparator", m_AttachmentNamesSeparatorString);
+	CString AttachmentNamesSeparatorString = m_AttachmentNamesSeparatorString;
+
+	CString section_csv = CString(sz_Software_mboxview) + L"\\PrintConfig\\CSV";
+
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_csv, L"CSV_attachmentNamesSeparator", AttachmentNamesSeparatorString);
 }
 
 void CSVFILE_CONFIG::LoadFromRegistry()
@@ -3801,8 +3709,12 @@ void CSVFILE_CONFIG::LoadFromRegistry()
 	SetDflts();
 
 	BOOL retval;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "CSV_attachmentNamesSeparator", m_AttachmentNamesSeparatorString))
+	CString section_csv = CString(sz_Software_mboxview) + L"\\PrintConfig\\CSV";
+
+	CString AttachmentNamesSeparatorString;
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_csv, L"CSV_attachmentNamesSeparator", AttachmentNamesSeparatorString))
 	{
+		m_AttachmentNamesSeparatorString = AttachmentNamesSeparatorString;
 		;
 	}
 }
@@ -3814,7 +3726,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 	int FILE_LIST_BUFFER_SIZE = (MAX_CFileDialog_FCOUNT * (MAX_PATH + 1)) + 1;
 
 	MboxMail::m_outbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
-	TCHAR *fileNameBuffer = MboxMail::m_outbuf->Data();
+	wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_outbuf->Data();
 
 	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
 
@@ -3828,13 +3740,13 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 	ofn.lpstrFile = fileNameBuffer;
 	ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
 	ofn.lpstrInitialDir = inFolderPath;
-	ofn.lpstrTitle = "Select Folder with Mail Archives";
+	ofn.lpstrTitle = L"Select Folder with Mail Archives";
 
 	INT_PTR ret = dlgFile.DoModal();
 	if (ret == IDOK)
 	{
 		folder = dlgFile.GetFolderPath();
-		TRACE("FOLDER=%s\n", folder);
+		TRACE(L"FOLDER=%s\n", folder);
 
 		int fileCount = 0;
 		CString strFilePath;
@@ -3844,7 +3756,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 			fileCount++;
 			strFilePath = dlgFile.GetNextPathName(pos);
 
-			TRACE("FILE=%s\n", strFilePath);
+			TRACE(L"FILE=%s\n", strFilePath);
 
 			BOOL retval = FileUtils::CPathGetPath(strFilePath, folder);
 			break;
@@ -3854,8 +3766,8 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 }
 
 MySelectFolder::MySelectFolder(
-		BOOL bOpenFileDialog, LPCTSTR lpszDefExt, LPCTSTR lpszFileName,
-		DWORD dwFlags, LPCTSTR lpszFilter, CWnd* pParentWnd, DWORD dwSize, BOOL bVistaStyle
+		BOOL bOpenFileDialog, LPCWSTR lpszDefExt, LPCWSTR lpszFileName,
+		DWORD dwFlags, LPCWSTR lpszFilter, CWnd* pParentWnd, DWORD dwSize, BOOL bVistaStyle
 		) : CFileDialog(bOpenFileDialog, lpszDefExt, lpszFileName, dwFlags, lpszFilter, pParentWnd, dwSize, bVistaStyle)
 {
 	int deb = 1;
@@ -3889,7 +3801,7 @@ int CMainFrame::CountMailFilesInFolder(CString &folder, CString &extension)
 BOOL MySelectFolder::OnFileNameOK()
 {
 	CString folder = GetFolderPath();
-	TRACE("FOLDER=%s\n", folder);
+	TRACE(L"FOLDER=%s\n", folder);
 
 	int fileCount = 0;
 	CString strFilePath;
@@ -3899,17 +3811,17 @@ BOOL MySelectFolder::OnFileNameOK()
 		fileCount++;
 		strFilePath = GetNextPathName(pos);
 
-		TRACE("FILE=%s\n", strFilePath);
+		TRACE(L"FILE=%s\n", strFilePath);
 
 		BOOL retval = FileUtils::CPathGetPath(strFilePath, folder);
 		break;
 	}
 
-	CString extension = "\\*.mbox";
+	CString extension = L"\\*.mbox";
 	int fcnt = CMainFrame::CountMailFilesInFolder(folder, extension);
 	if (fcnt == 0)
 	{
-		extension = "\\*.eml";
+		extension = L"\\*.eml";
 		fcnt = CMainFrame::CountMailFilesInFolder(folder, extension);
 	}
 	if (fcnt > 0)
@@ -3946,20 +3858,20 @@ void CMainFrame::OnClose()
 	}
 
 	BOOL ret;
-	CString m_section = CString(sz_Software_mboxview);
+	CString section_lastSelection = CString(sz_Software_mboxview) + L"\\LastSelection";
 
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, _T("lastMailFilePath"), lastMailFilePath);
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, _T("lastLabelFilePath"), lastLabelFilePath);
-	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, _T("lastMailIndex"), lastMailIndex);
-	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, _T("lastWhichSort"), lastWhichSort);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastMailFilePath", lastMailFilePath);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastLabelFilePath", lastLabelFilePath);
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_lastSelection, L"lastMailIndex", lastMailIndex);
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_lastSelection, L"lastWhichSort", lastWhichSort);
 
 	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if ((MboxMail::IsUserMailsSelected() && (MboxMail::s_mails.GetCount() > 0)) || (MboxMail::s_mails_edit.GetCount() > 0))
 	{
 		if (isDirty)
 		{
-			CString txt = _T("User Selected Mails List not empty. Terminate program?");
-			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+			CString txt = L"User Selected Mails List not empty. Terminate program?";
+			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 			if (answer == IDNO)
 				return;
 		}
@@ -4006,7 +3918,12 @@ void CMainFrame::OnClose()
 		}
 	}
 
-	m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
+	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+
 	WINDOWPLACEMENT wp;
 	GetWindowPlacement(&wp);
 
@@ -4015,45 +3932,95 @@ void CMainFrame::OnClose()
 	if ((wp.showCmd != SW_SHOWMAXIMIZED) && (wp.showCmd != SW_SHOW))
 		wp.showCmd = SW_SHOW;
 
-	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
-	{
-		BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame_EmlPreviewMode", (LPBYTE)&wp, sizeof(wp));
-		if (m_msgViewPosition != m_newMsgViewPosition)
-			DeleteAllPlacementKeys();		
-	}
-	else
-	{
-		BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, m_section, "MainFrame", (LPBYTE)&wp, sizeof(wp));
+	CRect rectMsgView;
+	CRect rectListView;
+	CRect rectTreeView;
+	CRect rectFrameView;
+	
 
-		if (m_msgViewPosition == m_newMsgViewPosition)
+	NMsgView* msgView = GetMsgView();
+	NListView* listView = GetListView();
+	NTreeView* treeView = GetTreeView();
+
+	msgView->GetClientRect(&rectMsgView);
+	listView->GetClientRect(&rectListView);
+	treeView->GetClientRect(&rectTreeView);
+
+	CRect rectMsgViewWindow;
+	CRect rectListViewWindow;
+	CRect rectTreeViewWindow;
+
+	msgView->GetWindowRect(rectMsgViewWindow);
+	listView->GetWindowRect(rectListViewWindow);
+	treeView->GetWindowRect(rectTreeViewWindow);
+
+	this->GetClientRect(rectFrameView);
+
+	{
+		BOOL ret = CProfile::_WriteProfileBinary(HKEY_CURRENT_USER, section_wnd, L"MainFrame", (LPBYTE)&wp, sizeof(wp));
+
+		int new_msgViewPosition = m_msgViewPosition;
+		ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", new_msgViewPosition);
+
+		BOOL isHidden = IsTreeHidden();
+		isHidden = FALSE;  // FIXMEFIXME
+
+		if (m_msgViewPosition != new_msgViewPosition)
+		{
+			DeleteAllPlacementKeys(section_wnd);
+		}
+		else
 		{
 			BOOL ret;
 			if (pMsgView)
 			{
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth", pMsgView->m_frameCx_TreeNotInHide);
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight", pMsgView->m_frameCy_TreeNotInHide);
+				if (!isHidden)
+				{
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth", rectMsgView.Width());
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight", rectMsgView.Height());
+				}
+				else
+				{
 
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth", pMsgView->m_frameCx_TreeInHide);
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight", pMsgView->m_frameCy_TreeInHide);
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth", pMsgView->m_frameCx_TreeNotInHide);
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight", pMsgView->m_frameCy_TreeNotInHide);
+				}
+
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenWidth", pMsgView->m_frameCx_TreeInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenHeight", pMsgView->m_frameCy_TreeInHide);
 			}
 
 			if (pListView)
 			{
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth", pListView->m_frameCx_TreeNotInHide);
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight", pListView->m_frameCy_TreeNotInHide);
+				if (!isHidden)
+				{
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenWidth", rectListView.Width());
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenHeight", rectListView.Height());
+				}
+				else
+				{
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenWidth", pListView->m_frameCx_TreeNotInHide);
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenHeight", pListView->m_frameCy_TreeNotInHide);
+				}
 
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth", pListView->m_frameCx_TreeInHide);
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight", pListView->m_frameCy_TreeInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeHiddenWidth", pListView->m_frameCx_TreeInHide);
+				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeHiddenHeight", pListView->m_frameCy_TreeInHide);
 			}
 
 			if (pTreeView)
 			{
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameWidth", m_pTreeView->m_frameCx);
-				ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "TreeFrameHeight", m_pTreeView->m_frameCy);
+				if (!isHidden)
+				{
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameWidth", rectTreeView.Width());
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameHeight", rectTreeView.Height());
+				}
+				else
+				{
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameWidth", m_pTreeView->m_frameCx);
+					ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameHeight", m_pTreeView->m_frameCy);
+				}
 			}
 		}
-		else
-			DeleteAllPlacementKeys();
 	}
 
 	CString ActiveMailService = m_mailDB.SMTPConfig.MailServiceName;;
@@ -4097,7 +4064,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				COLORREF txtColo = dc.GetTextColor();
 				CFont *curFont = dc.GetCurrentFont();
 				CFont newFont;
-				newFont.CreatePointFont(85, _T("Tahoma"));
+				newFont.CreatePointFont(85, L"Tahoma");
 
 				COLORREF crRet = 0;
 				if (setColor)
@@ -4155,7 +4122,6 @@ void CMainFrame::OnFileAttachmentsconfig()
 		m_attachmentConfigParams.UpdateRegistry(m_attachmentConfigParams, dlg.m_attachmentConfigParams);
 		m_attachmentConfigParams.Copy(dlg.m_attachmentConfigParams);
 
-		// TODO: Invalidate() below doesn't updates column labels, so call MarkColumns() directly
 		CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 		if (pFrame)
 		{
@@ -4238,7 +4204,6 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 
 	//m_ColorStylesDB.m_colorStyles.SetColorStyle(selectedColorStyle);
 
-
 	NTreeView * pTreeView = GetTreeView();
 	if (pTreeView)
 		pTreeView->Invalidate();
@@ -4256,11 +4221,11 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 		}
 		else if (pMsgView)
 		{
-			CString url = "about:blank";
+			CStringA url = "about:blank";
 			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
 
 			{
-				CString colorStr;
+				CStringA colorStr;
 				int retC2A = NListView::Color2Str(color, colorStr);
 
 				url = "about:<html><head><style>body{background-color: #";
@@ -4268,7 +4233,8 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 				url.Append(";}</style></head><body></body></html><br>");
 			}
 
-			pMsgView->m_browser.Navigate(url, NULL);
+			CString wurl = url;
+			pMsgView->m_browser.Navigate(wurl, NULL);
 			pMsgView->UpdateLayout();
 			pMsgView->PostMessage(WM_PAINT);
 		}
@@ -4344,21 +4310,19 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	NTreeView *pTreeView = GetTreeView();
 	NListView *pListView = GetListView();
 
-	CString saveDataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	int selectedDataFolderConfigMethod = -1;
-	int retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolderConfigMethod"), selectedDataFolderConfigMethod);
-	//retval = FALSE;
-	if (retval == FALSE)
+	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+
+	int actionCode = 0;
+	if (dataFolder.IsEmpty())
 	{
-		if (!saveDataFolder.IsEmpty())
-			MboxMail::assert_unexpected();
-
 		DataFolderConfigDlg dlg;
 
 		INT_PTR retCode = dlg.DoModal();
 		if (retCode == IDOK)
 		{
+			actionCode = dlg.m_returnCode; 
 			int deb = 1;
 		}
 		else if (retCode == IDCANCEL)
@@ -4367,22 +4331,44 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		}
 	}
 
-	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
+	dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+	if (dataFolder.IsEmpty())
+	{
+		CString txt;
+		txt.Format(L"Data Folder is not configured. Exitting.\n");
+
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		
+		AfxGetMainWnd()->PostMessage(WM_CLOSE);
+		return 0;
+	}
+
+	if (!dataFolder.IsEmpty())
+	{
+		if (!::SetCurrentDirectory((LPCWSTR)dataFolder))
+		{
+			int deb = 1;
+		}
+	}
+
+	if (actionCode == IDTRYAGAIN)
+	{
+		// dlete UMBoxViewer Folder under Data Folder
+		CString folder = dataFolder + L"UMBoxViewer";
+		bool recursive = true;
+		bool removeFolders = false;
+		BOOL retCode1 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+		removeFolders = true;
+		BOOL retCode2 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+		const int deb = 1;
+	}
+
 	MboxMail::s_folderContext.m_rootDataFolderPathConfig = dataFolder;
 
 	if (pTreeView)
 	{
-		//pTreeView->SimplyTest();  // just a test
-
-			// Move legacy folders created by older versions under a single folder
-		BOOL anwer = pTreeView->MoveMBoxViewerCreatedLegacyFolders();
-		if (anwer == FALSE)
-			return 0;
-	}
-
-	if (pTreeView)
-	{
-		if (!m_commandLineParms.m_bEmlPreviewMode)
+		if (!m_commandLineParms.m_bEmlPreviewMode && !m_commandLineParms.m_bDirectFileOpenMode)
 			pTreeView->LoadFolders();
 	}
 
@@ -4395,8 +4381,8 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		CString sText;
 		int paneId = 0;
 
-		sText.Format("Merging files listed in %s file ...", listFilePath);
-		TRACE("%s\n", sText);
+		sText.Format(L"Merging files listed in %s file ...", listFilePath);
+		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -4404,8 +4390,8 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		if (ret < 0)
 			int deb = 1;
 
-		sText.Format("Ready");
-		TRACE("%s\n", sText);
+		sText.Format(L"Ready");
+		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
@@ -4419,11 +4405,11 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		CString mboxFileName;
 		FileUtils::GetFolderPathAndFileName(m_commandLineParms.m_mboxFileNameOrPath, mboxFilePath, mboxFileName);
 
-		mboxFilePath.TrimRight("\\");
-		mboxFilePath.Append("\\");
+		mboxFilePath.TrimRight(L"\\");
+		mboxFilePath.Append(L"\\");
 
 		CString mboxFileNameOrPath = m_commandLineParms.m_mboxFileNameOrPath;
-		mboxFileNameOrPath.TrimRight("\\");
+		mboxFileNameOrPath.TrimRight(L"\\");
 		DoOpen(mboxFilePath);
 
 		// Don't delete any of ccreated files or folder i OnClose()
@@ -4437,26 +4423,29 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-BOOL CMainFrame::DeleteAllPlacementKeys()
+BOOL CMainFrame::DeleteAllPlacementKeys(CString & section_wnd)
 {
 	LSTATUS ret;
 
-	CString m_section = CString(sz_Software_mboxview) + "\\" + "Window Placement";
+	// Delete each value or delete key recursively
+	// ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, section_wnd, L"WindowPlacement", TRUE);
 
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenWidth");
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeNotHiddenHeight");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"MainFrame");
 
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenWidth");
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "MsgFrameTreeHiddenHeight");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight");
 
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenWidth");
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeNotHiddenHeight");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenWidth");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeHiddenHeight");
 
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenWidth");
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "ListFrameTreeHiddenHeight");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenWidth");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenHeight");
 
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "TreeFrameWidth");
-	ret = CProfile::_DeleteKey(HKEY_CURRENT_USER, m_section, "TreeFrameHeight");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeHiddenWidth");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeHiddenHeight");
+
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"TreeFrameWidth");
+	ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section_wnd, L"TreeFrameHeight");
 
 	return TRUE;
 }
@@ -4481,12 +4470,70 @@ void CMainFrame::OnFordevelopersMemory()
 
 	int mailCount = MboxMail::s_mails_ref.GetCount();
 	size_t allMailsSize = MboxMail::AllMailsSizeof(mailCount);
+
+	wchar_t sizeStr_inKB[256];
+	wchar_t sizeStr_inBytes[256];
+	int sizeStrSize = 256;
 	CString txt;
-	txt.Format("Allocated Memory: %d\n", allMailsSize);
+	CString tmp;
+
+	//_int64 fileSize = allMailsSize;
+	LPCWSTR fileSizeStr_inKB = StrFormatKBSize(allMailsSize, &sizeStr_inKB[0], sizeStrSize);
+	if (!fileSizeStr_inKB)
+		sizeStr_inKB[0] = 0;
+
+	LPCWSTR fileSizeStr_inBytes = StrFormatByteSize64(allMailsSize, &sizeStr_inBytes[0], sizeStrSize);
+	if (!fileSizeStr_inBytes)
+		sizeStr_inBytes[0] = 0;
+
+	txt.Empty();
+	CString cstr;
+	INT64 numb = allMailsSize;
+	TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+
+	tmp.Format(L"%s  (%s) (%s)\n", cstr, sizeStr_inKB, sizeStr_inBytes);
+	txt += tmp;
+
+	CString text;
+	text.Format(L"Allocated Memory: %s\n", txt);
 
 	HWND h = GetSafeHwnd();
-	int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	int deb = 1;
+
+	CString bufferSizes;
+	bufferSizes.Format(L"Static Buffer Sizes:\n"
+		L"\tm_outbuf=%s\n\tm_inbuf=%s\n\tm_outdata=%s\n\tm_indata=%s\n\tm_workbuf=%s\n\tm_tmpbuf=%s\n"
+		L"\tm_largebuf=%s\n\tm_largelocal1=%s\n\tm_largelocal2=%s\n\tm_largelocal3=%s\n\tm_smalllocal1=%s\n\tm_smalllocal2=%s\n\n",
+		FileUtils::SizeToString(MboxMail::m_outbuf->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_inbuf->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_outdata->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_indata->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_workbuf->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_tmpbuf->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_largebuf->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_largelocal1->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_largelocal2->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_largelocal3->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_smalllocal1->Capacity()),
+		FileUtils::SizeToString(MboxMail::m_smalllocal2->Capacity())
+	);
+	TRACE(L"%s", bufferSizes);
+	const int deb2 = 1;
+
+#if 1
+#if _DEBUG
+	MboxMail::m_textEncodingStats.Clear();
+	MboxMail::CollectTextEncodingStats(MboxMail::m_textEncodingStats);
+
+	CString stats2Text;
+	MboxMail::m_textEncodingStats.PrintTextEncodingStats(MboxMail::m_textEncodingStats, stats2Text);
+	TRACE(L"%s", stats2Text);
+
+	const int deb3 = 1;
+#endif
+#endif
+
 }
 
 
@@ -4589,25 +4636,25 @@ int CommandLineParms::VerifyParameters()
 	}
 	if (bError)
 	{
-		CString txt = _T("Invalid Command Line \n\n\"");
+		CString txt = L"Invalid Command Line \n\n\"";
 		CString opt = m_allCommanLineOptions;
 		txt += opt
-			+ _T("\"")
-			+ _T("\n\nValid option combinations are:\n\n")
-			+ _T("  -FOLDER=Folder Path to open\n")
-			+ _T("  \nor\n\n")
-			+ _T("  -MAIL_FILE=Mbox File Path to open\n")
-			+ _T("  \nor\n\n")
-			+ _T("  -MAIL_FILE=Mbox File Path to open\n")
-			+ _T("  -EML_PREVIEW_MODE\n")
-			+ _T("  \nor\n\n")
-			+ _T("  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n")
-			+ _T("  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n")
-			//+ _T("\nDo you want to continue?")
+			+ L"\""
+			+ L"\n\nValid option combinations are:\n\n"
+			+ L"  -FOLDER=Folder Path to open\n"
+			+ L"  \nor\n\n"
+			+ L"  -MAIL_FILE=Mbox File Path to open\n"
+			+ L"  \nor\n\n"
+			+ L"  -MAIL_FILE=Mbox File Path to open\n"
+			+ L"  -EML_PREVIEW_MODE\n"
+			+ L"  \nor\n\n"
+			+ L"  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n"
+			+ L"  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n"
+			//+ L"\nDo you want to continue?"
 			;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -4617,23 +4664,33 @@ int CommandLineParms::VerifyParameters()
 #endif
 	}
 
+	// cmd: mboxview -MAIL_FILE=m_mboxFileNameOrPath
 	if (!m_mboxFileNameOrPath.IsEmpty() && !m_bEmlPreviewMode)
 	{
 		if (!FileUtils::PathFileExist(m_mboxFileNameOrPath))
 		{
+#if 1  // FIXMEFIXME was commented  out why ??
 			CString txt;
-			txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\n"
-				"No such File or Directory\"%s\"\n"),
+			txt.Format(L"Invalid -MAIL_FILE=\"%s\" option.\n"
+				"No such File or Directory\n\n\"%s\"\n\n",
 				m_mboxFileNameOrPath, m_mboxFileNameOrPath);
-			txt += _T("Do you want to continue?");
+			txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-			return -1;
-#if 0
+			const int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
 			else
 				return -2;
+
+#else
+			CString txt;
+			txt.Format(L"Invalid -MAIL_FILE=\"%s\" option.\n"
+				"No such File or Directory\n\n\"%s\"\n\n",
+				m_mboxFileNameOrPath, m_mboxFileNameOrPath);
+			HWND h = NULL; // we don't have any window yet  
+			const int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+
+			return -1;
 #endif
 		}
 
@@ -4648,28 +4705,34 @@ int CommandLineParms::VerifyParameters()
 		CString fileNameBase;
 		CString fileNameExtention;
 
-		folderPath.TrimRight("\\");
-		folderPath.Append("\\");
+		folderPath.TrimRight(L"\\");
+		folderPath.Append(L"\\");
 
 		FileUtils::SplitFilePath(folderPath, driveName, directory, fileNameBase, fileNameExtention);
 		if (directory.GetLength() <= 1)
 		{
 			CString txt;
-			txt.Format(_T("Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
+			txt.Format(L"Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder.\n"
-				"Please create folder, move the mbox files to that folder and try again."),
+				"Please create folder, move the mbox files to that folder and try again.",
 				m_mboxFileNameOrPath, mboxFilePath);
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
 		}
 
-
 		// LoadFolders() needs "lastPath" to open folder housing "mailFile"
-		MboxMail::SetLastPath(folderPath);
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("mailFile"), m_mboxFileNameOrPath);
+		// MboxMail::SetLastPath(folderPath);  // FIXMEFIXME added explicit _WriteProfileString
+
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"mailFile", m_mboxFileNameOrPath);
+
+		CString section_lastSelection = CString(sz_Software_mboxview) + L"\\LastSelection";
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastPath", folderPath);
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastMailFilePath", m_mboxFileNameOrPath);
 	}
 
+	// Cmd: mboxview -FOLDER=m_mboxFolderPath
 	if (!m_mboxFolderPath.IsEmpty())
 	{
 		CString driveName;
@@ -4678,21 +4741,21 @@ int CommandLineParms::VerifyParameters()
 		CString fileNameExtention;
 
 		CString folderPath = m_mboxFolderPath;
-		folderPath.TrimRight("\\");
-		folderPath.Append("\\");
+		folderPath.TrimRight(L"\\");
+		folderPath.Append(L"\\");
 
 		FileUtils::SplitFilePath(folderPath, driveName, directory, fileNameBase, fileNameExtention);
 		if (directory.GetLength() <= 1)
 		{
 			CString txt;
-			folderPath.TrimRight("\\");
+			folderPath.TrimRight(L"\\");
 
-			txt.Format(_T("Invalid -FOLDER=\"%s\" option.\n\nInvalid folder \"%s\" .\n"
+			txt.Format(L"Invalid -FOLDER=\"%s\" option.\n\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder\n."
-				"Please create folder, move the mbox files to that folder and try again."),
+				"Please create folder, move the mbox files to that folder and try again.",
 				folderPath, folderPath);
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 		}
 
@@ -4700,12 +4763,12 @@ int CommandLineParms::VerifyParameters()
 		if (ret == FALSE)
 		{
 			CString txt;
-			txt.Format(_T("Invalid -FOLDER=\"%s\" option.\n\n"
-				"No such Folder \"%s\" .\n"),
+			txt.Format(L"Invalid -FOLDER=\"%s\" option.\n\n"
+				"No such Folder \"%s\" .\n",
 				folderPath, folderPath);
-			//txt += _T("Do you want to continue?");
+			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -4714,7 +4777,9 @@ int CommandLineParms::VerifyParameters()
 				return -2;
 #endif
 		}
-		MboxMail::SetLastPath(folderPath);
+		//MboxMail::SetLastPath(folderPath);
+		CString section_lastSelection = CString(sz_Software_mboxview) + L"\\LastSelection";
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastPath", folderPath);
 	}
 
 	if (!m_mboxListFilePath.IsEmpty() && !m_mergeToFilePath.IsEmpty())
@@ -4722,12 +4787,12 @@ int CommandLineParms::VerifyParameters()
 		if (!FileUtils::PathFileExist(m_mboxListFilePath))
 		{
 			CString txt;
-			txt.Format(_T("Invalid -MBOX_MERGE_LIST_FILE=\"%s\" option.\n"
-				"No such File:  \"%s\"\n\n"),
+			txt.Format(L"Invalid -MBOX_MERGE_LIST_FILE=\"%s\" option.\n"
+				"No such File:  \"%s\"\n\n",
 				m_mboxListFilePath, m_mboxListFilePath);
-			//txt += _T("Do you want to continue?");
+			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -4747,36 +4812,36 @@ int CommandLineParms::VerifyParameters()
 		CString fileNameExtention;
 
 		FileUtils::SplitFilePath(m_mergeToFilePath, driveName, directory, fileNameBase, fileNameExtention);
-		if (fileNameExtention.CompareNoCase(_T(".mbox")))
+		if (fileNameExtention.CompareNoCase(L".mbox"))
 		{
 			CString txt;
-				txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
-					"File extension must be set to .mbox.\n"),
+				txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
+					"File extension must be set to .mbox.\n",
 					m_mergeToFilePath, fileNameExtention);
 				HWND h = NULL; // we don't have any window yet  
-				int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+				int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 				return -1;
 		}
 
 		if (directory.GetLength() <= 1)
 		{
 			CString txt;
-			txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
+			txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder.\n"
-				"Please create folder, move the mbox files to that folder and try again."),
+				"Please create folder, move the mbox files to that folder and try again.",
 				m_mergeToFilePath, mboxFolderPath);
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
 		}
 
-		if (!CMainFrame::CanMboxBeSavedInFolder(mboxFolderPath))
+		if (!CMainFrame::CanMboxBeSavedInFolder(mboxFolderPath))   // FIXMEFIXME
 		{
 #if 0
-			CString txt = _T("The \"MBoxViewer\" name is reserved and it can't appear in the file path.\n"
-				"Please create different name and try again.");
+			CString txt = L"The \"MBoxViewer\" name is reserved and it can't appear in the file path.\n"
+				"Please create different name and try again.";
 			HWND h = NULL;
-			int answer = MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 #endif
 			return -1;
 		}
@@ -4785,11 +4850,11 @@ int CommandLineParms::VerifyParameters()
 		if (ret == FALSE)
 		{
 			CString txt;
-			txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nNo such folder: \"%s\".\n\nCommand line:\n\n\"%s\"\n\n"),
+			txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nNo such folder: \"%s\".\n\nCommand line:\n\n\"%s\"\n\n",
 				m_mergeToFilePath, mboxFolderPath, m_allCommanLineOptions);
-			//txt += _T("Do you want to continue?");
+			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -4802,19 +4867,19 @@ int CommandLineParms::VerifyParameters()
 		if (FileUtils::PathFileExist(m_mergeToFilePath))
 		{
 			CString txt;
-			txt.Format(_T("Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
+			txt.Format(L"Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
 				"File Exists\"%s\"\n\n"
 			"!!!  Make sure you are not overwritting original mbox file from mail service such as Gmail !!!\n\n"
-			"It is always good idea to have backup of original mbox mail files\n\n"),
+			"It is always good idea to have backup of original mbox mail files\n\n",
 				m_mergeToFilePath, m_mergeToFilePath);
-			txt += _T("Override and continue?");
+			txt += L"Override and continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
 			else
 			{
-				//FileUtils::DeleteFile(m_mergeToFilePath);
+				//FileUtils::DelFile(m_mergeToFilePath);
 				return 1;
 			}
 		}
@@ -4822,11 +4887,11 @@ int CommandLineParms::VerifyParameters()
 	else if (!m_mboxListFilePath.IsEmpty() && m_mergeToFilePath.IsEmpty())
 	{
 		CString txt;
-		txt.Format(_T("Missing or Invalid -MBOX_MERGE_TO_FILE option.\nCommand line:\n\n\"%s\"\n\n"),
+		txt.Format(L"Missing or Invalid -MBOX_MERGE_TO_FILE option.\nCommand line:\n\n\"%s\"\n\n",
 			m_allCommanLineOptions);
-		//txt += _T("\nDo you want to continue?");
+		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -4838,11 +4903,11 @@ int CommandLineParms::VerifyParameters()
 	else if (m_mboxListFilePath.IsEmpty() && !m_mergeToFilePath.IsEmpty())
 	{
 		CString txt;
-		txt.Format(_T("Missing or Invalid -MBOX_MERGE_LIST_FILE option.\nCommand line:\n\n\"%s\"\n\n"),
+		txt.Format(L"Missing or Invalid -MBOX_MERGE_LIST_FILE option.\nCommand line:\n\n\"%s\"\n\n",
 			m_allCommanLineOptions);
-		//txt += _T("\nDo you want to continue?");
+		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -4859,14 +4924,14 @@ int CommandLineParms::VerifyParameters()
 BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 {
 	// Imposed more restrictions to simplify
-	if ((destinationFolder.Find("\\MBoxViewer\\") >= 0) || (destinationFolder.Find("\\MBoxViewer") >= 0))
+	if ((destinationFolder.Find(L"\\UMBoxViewer\\") >= 0) || (destinationFolder.Find(L"\\UMBoxViewer") >= 0))
 	{
 		CString txt;
-		txt.Format(_T("Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n"),
+		txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n",
 			destinationFolder, destinationFolder);
-		txt.Append(_T("\nDestination folder can't contain \"MBoxViewer\" folder  in the path \n\n"));
+		txt.Append(L"\nDestination folder can't contain \"UMBoxViewer\" folder  in the path \n\n");
 			HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return FALSE;
 	}
 	else
@@ -4891,7 +4956,7 @@ void CMainFrame::OnFileSmtpmailserverconfig()
 	}
 	m_mailDB.Copy(dlg.m_mailDB);
 
-	CString appDataPath = FileUtils::GetMboxviewLocalAppDataPath("MailService");
+	CString appDataPath = CMainFrame::GetMboxviewLocalAppDataPath(L"MailService");
 	CString smtpConfigFilePath = appDataPath + "SMTP.ini";
 
 	CreateMailDbFile(m_mailDB, smtpConfigFilePath);
@@ -4903,7 +4968,10 @@ void CMainFrame::OnFileSmtpmailserverconfig()
 void CMainFrame::OnHelpUserguide()
 {
 	// TODO: Add your command handler code here
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
@@ -4911,14 +4979,14 @@ void CMainFrame::OnHelpUserguide()
 
 	if (FileUtils::PathFileExist(filePath))
 	{
-		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else
 	{
 		CString txt;
-		txt.Format("User Guide file \"%s\" doesn't exist", filePath);
+		txt.Format(L"User Guide file \"%s\" doesn't exist", filePath);
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 }
 
@@ -4926,7 +4994,10 @@ void CMainFrame::OnHelpUserguide()
 void CMainFrame::OnHelpReadme()
 {
 	// TODO: Add your command handler code here
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
@@ -4934,14 +5005,14 @@ void CMainFrame::OnHelpReadme()
 
 	if (FileUtils::PathFileExist(filePath))
 	{
-		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else
 	{
 		CString txt;
-		txt.Format("Change History file \"%s\" doesn't exist", filePath);
+		txt.Format(L"Change History file \"%s\" doesn't exist", filePath);
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 }
 
@@ -4949,7 +5020,10 @@ void CMainFrame::OnHelpReadme()
 void CMainFrame::OnHelpLicense()
 {
 	// TODO: Add your command handler code here
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
@@ -4957,20 +5031,22 @@ void CMainFrame::OnHelpLicense()
 
 	if (FileUtils::PathFileExist(filePath))
 	{
-		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else
 	{
 		CString txt;
-		txt.Format("License file \"%s\" doesn't exist", filePath);
+		txt.Format(L"License file \"%s\" doesn't exist", filePath);
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 }
 
 void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
 {
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
@@ -4978,17 +5054,19 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
 
 	if (FileUtils::PathFileExist(filePath))
 	{
-		ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else
 	{
 		CString txt;
-		txt.Format("Help file \"%s\" doesn't exist", filePath);
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		txt.Format(L"Help file \n\n\"%s\" doesn't exist", filePath);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 	int deb = 1;
 }
 
+
+// Convert to Unicode wchar ???  // FIXMEFIXME
 BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 {
 	CFile fp;
@@ -4997,18 +5075,19 @@ BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-		CString txt = _T("Could not create \"") + fileName;
-		txt += _T("\" file.\n");
+		CString txt = L"Could not create \"" + fileName;
+		txt += L"\" file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("%s\n"), txt);
+		TRACE(L"%s\n", txt);
 
 		return FALSE;
 	}
 
-	CString section = "[MailService]\r\n";
+	// Convert to wchar ???  // FIXMEFIXME
+	CStringA section = "[MailService]\r\n";
 	fp.Write(section, section.GetLength());
-	CString fld = "ActiveMailService=" + m_mailDB.ActiveMailService + "\r\n";
+	CStringA fld = "ActiveMailService=" + m_mailDB.ActiveMailService + "\r\n";
 	fp.Write(fld, fld.GetLength());
 
 	WriteMTPServerConfig(m_mailDB.GmailSMTPConfig, fp);
@@ -5019,12 +5098,16 @@ BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 	return TRUE;
 }
 
-BOOL CMainFrame::WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp)
+// Convert to Unicode wchar ???  // FIXMEFIXME
+BOOL CMainFrame::WriteMTPServerConfig(MailConfig &serverConfigW, CFile &fp)
 {
-	CString CR = "\r\n";
-	CString section = "[" + serverConfig.MailServiceName + "]" + CR;
+	MailConfigA serverConfig;
+	serverConfigW.WStr2Ansi(serverConfig);
+
+	CStringA CR = "\r\n";
+	CStringA section = "[" + serverConfig.MailServiceName + "]" + CR;
 	fp.Write(section, section.GetLength());
-	CString fld = "MailServiceName=" + serverConfig.MailServiceName + CR;
+	CStringA fld = "MailServiceName=" + serverConfig.MailServiceName + CR;
 	fp.Write(fld, fld.GetLength());
 	fld = "SmtpServerAddress=" + serverConfig.SmtpServerAddress + CR;
 	fp.Write(fld, fld.GetLength());
@@ -5080,6 +5163,15 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 }
 #endif
 
+
+// Top level handler to process root and subfolder
+// if treeType == 2, all mbox files discoverd will be merged.
+// Optionally, label will be inserted to each mail corresponding to mbox file name
+// If label is inserted, label based tree view will be created, otherwise flat mail view is created
+// If treeType == 1, the folder based tree is created and mbox files are not merged.
+// Merge option creates a single file so global search acress all mbox files is supported.
+//
+
 int CMainFrame::FileSelectrootfolder(int treeType)
 {
 	// TODO: Add your command handler code here
@@ -5102,7 +5194,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		if (bff.SelectFolder())
 		{
 			path = bff.GetSelectedFolder();
-			path.TrimRight(_T("\\"));
+			path.TrimRight(L"\\");
 		}
 		else
 		{
@@ -5115,7 +5207,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		INT_PTR ret = SelectFolder(path);
 		if (ret == IDOK)
 		{
-			path.TrimRight(_T("\\"));
+			path.TrimRight(L"\\");
 		}
 		else
 		{
@@ -5124,22 +5216,29 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		}
 	}
 
-	if (!FileUtils::PathDirExistsW(path))
+	if (!FileUtils::PathDirExists(path))
 	{
 		CString errorText = FileUtils::GetLastErrorAsString();
 
 		CString txt;
 		
-		txt.Format(_T("Selected Folder\n\n%s\n\ndoesn't exist. Error: \n\n%s\n\n"
-			"Only ANSI folder names are curently supported. Please verify and rename the folder if that is the case."),
+		txt.Format(L"Selected Folder\n\n%s\n\ndoesn't exist. Error: \n\n%s\n\n" ,
 			path, errorText);
 
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
-	if (treeType == 2)
+	if (treeType == 2)  // merge all mbox files and optinally create label based tree view
 	{
+		// m_mergeRootFolderStyle == 0 merge all mbox files under root folder only
+		// m_mergeRootFolderStyle == 1 merge all mbox files under root folder and all subfolders
+		//
+		// m_labelAssignmentStyle == 0 no labels
+		// m_labelAssignmentStyle == 1 assign mbox file name as label to each mail
+		// m_labelAssignmentStyle == 2 assign folder name as label to each mail in that folder
+		//
+
 		if ((m_mergeRootFolderStyle == 1) && (m_labelAssignmentStyle == 1))  // labels per mbox file
 		{
 			BOOL recursive = TRUE;
@@ -5148,14 +5247,14 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 			if (fileCnt > 1000)
 			{
 				CString txt;
-				txt.Format(_T("Found [%d] files under the root folder and sub-folders.\n\n"
-					"Content of files was not examined to determine if all files are of the mbox type.\n\n"
+				txt.Format(L"Found [%d] files under the root folder and sub-folders.\n\n"
+					"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
 					"In case all/most of files found are of the mbox type,"
 					" this will create very large number of labels under Mail Tree which could make viewing of mails very challenging.\n\n"
 					"Do you want to continue, cancel or retry Merge Configuration?"
-				), fileCnt);
+				, fileCnt);
 
-				int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 				if (answer == IDCANCEL)
 					return -1;
 				else if (answer == IDTRYAGAIN)
@@ -5163,8 +5262,11 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 				// else IDCONTINUE
 			}
 		}
+		// else if ((m_mergeRootFolderStyle == 1) &&	// merge all mbox files under root folder and all subfolders
+		//    (    (m_labelAssignmentStyle == 0)        // no labels
+		//      || (m_labelAssignmentStyle == 2))       // assign folder name as label for each mail in that folder
 	}
-	else if (treeType == 1)
+	else if (treeType == 1)  // create folder based tree view
 	{
 		BOOL recursive = TRUE;
 
@@ -5172,14 +5274,14 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		if (fileCnt > 1000)
 		{
 			CString txt;
-			txt.Format(_T("Found [%d] files under the root folder and sub-folders.\n\n"
-				"Content of files was not examined to determine if all files are of the mbox type.\n\n"
+			txt.Format(L"Found [%d] files under the root folder and sub-folders.\n\n"
+				"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
 				"In case all/most of files found are of the mbox type,"
-				" this will create very large number of items under Mail Tree which could make viewing of mails very challenging.\n\n"
+				" this will create very large number of folders under Mail Tree which could make viewing of mails challenging.\n\n"
 				"Do you want to continue, cancel or retry Select root folder dialog?"
-			), fileCnt);
+			, fileCnt);
 
-			int answer = MessageBox(txt, _T("Warning"), MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 			if (answer == IDCANCEL)
 				return -1;
 			else if (answer == IDTRYAGAIN)
@@ -5188,83 +5290,87 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		}
 	}
 
-	path.Append(_T("\\"));
+	path.Append(L"\\");
 
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
 	if (directory.GetLength() <= 1)
 	{
-		CString txt = _T("The mbox files must be installed under a named folder\n."
-			"Please create folder, move the mbox files to that folder and try again.");
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		CString txt = L"The mbox files must be installed under a named folder\n."
+			"Please create folder, move the mbox files to that folder and try again.";
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
 
-	path.TrimRight(_T("\\"));
+	path.TrimRight(L"\\");
 	//AfxGetApp()->AddToRecentFileList(path);
 
-	path.Append(_T("\\"));
+	path.Append(L"\\");
 	MboxMail::SetLastPath(path);
 
 	if (treeType == 1)
-		OpenRootFolderAndSubfolders(path);
+		OpenRootFolderAndSubfolders(path);   // create folder based tree view
 	else if (treeType == 2)
-		OpenRootFolderAndSubfolders_LabelView(path);
+		OpenRootFolderAndSubfolders_LabelView(path);  //  create label or no label based tree view
 	else
 		return -1;
 
 	return 1;
 }
 
-
+// Configure data folder for files created by MBox Viewer (such as PDF)
 void CMainFrame::OnFileDatafolderconfig()
 {
 	// TODO: Add your command handler code here
 
-	CString saveDataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	int selectedDataFolderConfigMethod = -1;
-	int retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("folderConfigMethod"), selectedDataFolderConfigMethod);
-	retval = FALSE;
-	if (retval == FALSE)
+	CString currentDataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+	_ASSERTE(!currentDataFolder.IsEmpty());
+
+	DataFolderConfigDlg dlg(TRUE);
+
+	int actionCode = 0;
+	INT_PTR retCode = dlg.DoModal();
+	if (retCode == IDOK)
 	{
-		if (!saveDataFolder.IsEmpty())
-			MboxMail::assert_unexpected();
-
-		DataFolderConfigDlg dlg(TRUE);
-
-		INT_PTR retCode = dlg.DoModal();
-		if (retCode == IDOK)
-		{
-			int deb = 1;
-		}
-		else if (retCode == IDCANCEL)
-		{
-			int deb = 1;
-		}
+		actionCode = dlg.m_returnCode;
+		int deb = 1;
+	}
+	else if (retCode == IDCANCEL)
+	{
+		int deb = 1;
 	}
 
-	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("dataFolder"));
-	MboxMail::s_folderContext.m_rootDataFolderPathConfig = dataFolder;
+	CString newDataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 
-	if (saveDataFolder.Compare(dataFolder))
+	if (currentDataFolder.Compare(newDataFolder))
 	{
 		NTreeView *pTreeView = GetTreeView();
 
 		if (pTreeView)
 		{
-			if (dataFolder.IsEmpty())
+			if (actionCode == IDTRYAGAIN)
 			{
-				pTreeView->DeleteOldDataFolder(saveDataFolder, dataFolder);
+				// dlete UMBoxViewer Folder under Data Folder
+				CString folder = newDataFolder + L"UMBoxViewer";
+				bool recursive = true;
+				bool removeFolders = false;
+				BOOL retCode1 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+				removeFolders = true;
+				BOOL retCode2 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+				const int deb = 1;
 			}
-			else
-				pTreeView->DeleteOldDataFolder(saveDataFolder, dataFolder);
+
+			_ASSERTE(!currentDataFolder.IsEmpty() && !newDataFolder.IsEmpty());
+			// Keep it simple for now. Later inspect data under old Root Data Folder and decide what to to
+			//pTreeView->DeleteOldDataFolder(currentDataFolder, newDataFolder);
 			int deb = 1;
 		}
+		MboxMail::s_folderContext.m_rootDataFolderPathConfig = newDataFolder;
 	}
-
-	MboxMail::s_folderContext.m_rootDataFolderPathConfig = dataFolder;
 }
 
+//  create label or no label based tree view
 void CMainFrame::OpenRootFolderAndSubfolders_LabelView(CString &path)
 {
 	NTreeView *pTreeView = GetTreeView();
@@ -5276,14 +5382,16 @@ void CMainFrame::OpenRootFolderAndSubfolders_LabelView(CString &path)
 	}
 }
 
+
+// Root function for merging all mbox files under root folder MergeFIXME
 void CMainFrame::OnFileMergerootfoldersub()
 {
 	// TODO: Add your command handler code here
 #if 0
-	CString txt = _T("MBox Viewer will traverse selected root folder and all sub-folders and merge all mbox files found into a single mbox file.\n\n"
+	CString txt = L"MBox Viewer will traverse selected root folder and all sub-folders and merge all mbox files found into a single mbox file.\n\n"
 		"MBox Viewer will assign a label to each folder and each mbox file and create Tree of Labels View\n\n"
-		"Do you want to continue?\n");
-	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+		"Do you want to continue?\n";
+	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		FileSelectrootfolder(2);
@@ -5297,10 +5405,17 @@ void CMainFrame::OnFileMergerootfoldersub()
 		INT_PTR retCode = dlg.DoModal();
 		if (retCode == IDOK)
 		{
-			m_mergeRootFolderStyle = dlg.m_mergeRootFolderStyle;
-			m_labelAssignmentStyle = dlg.m_labelAssignmentStyle;
+			// 0==merge mbox files discovered under root folder only;1==root and subfolders
+			m_mergeRootFolderStyle = dlg.m_mergeRootFolderStyle;  
+			// 0==no labels;1=labels per each mail same as mbox file name;2==same as folder name
+			m_labelAssignmentStyle = dlg.m_labelAssignmentStyle; 
 
-			wantsToRetry = FileSelectrootfolder(2); // retry == -2, cancel == -1, continue == 1
+			// user may decide to return and try different options
+			// wantsToRetry == -2, cancel == -1, continue == 1
+			int treeType = 2;
+			// create single folder based tree view
+			// create label or no label based tree view
+			wantsToRetry = FileSelectrootfolder(treeType);
 			int deb = 1;
 		}
 		else if (retCode == IDCANCEL)
@@ -5317,22 +5432,28 @@ void CMainFrame::OnFileMergerootfoldersub()
 void CMainFrame::OnFileSelectasrootfolder()
 {
 	// TODO: Add your command handler code here
-	CString txt = _T("MBox Viewer will traverse selected root folder and all sub-folders and create Tree of Folders View.\n\n"
-		"Do you want to continue?\n");
+	CString txt = L"MBox Viewer will traverse selected root folder and all sub-folders and create Tree of Folders View.\n\n"
+		L"Do you want to continue?\n\n\n"
+		L"Note that search arcoss all mails is not supported by this option. "
+		L"Select \"File->Select root folder for merging\" option to enable search across all mails\n"
+		;
 #if 0
-	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		FileSelectrootfolder(1);
 	}
 #else
-	int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		int wantsToRetry = -2;
 		while (wantsToRetry == -2)
 		{
-			wantsToRetry = FileSelectrootfolder(1); // retry == -2, cancel == -1, continue == 1
+			// user may decide to return and try different options
+			// wantsToRetry == -2, cancel == -1, continue == 1
+			int treeType = 1;   // create multiple sub-folder based tree view
+			wantsToRetry = FileSelectrootfolder(treeType);
 			int deb = 1;
 		}
 	}
@@ -5364,8 +5485,8 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	int maxIndex = MboxMail::s_mails.GetCount() - 1;
 	if ((selMailIndex < 0) || (selMailIndex > maxIndex))
 	{
-		CString txt = "Please select mail archive and one of mails.";
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		CString txt = L"Please select mail archive and one of mails.";
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -5374,8 +5495,8 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	int maxRefIndex = MboxMail::s_mails_ref.GetCount() - 1;
 	if ((lastMailIndex < 0) || (lastMailIndex > maxRefIndex))
 	{
-		CString txt = "Internal Error. Please re-select mail archive and one of mails.";
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		CString txt = L"Internal Error. Please re-select mail archive and one of mails.";
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -5393,10 +5514,10 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 
 	CString mboxFilePath = dlg.m_sourceArchiveFolder + dlg.m_createdArchiveName;
 
-	FileUtils::DeleteFile(mboxFilePath);
+	FileUtils::DelFile(mboxFilePath);
 	CString dataPath = MboxMail::GetLastDataPath();
-	CString indexFilePath = dataPath + "\\" + dlg.m_createdArchiveName + ".mboxview";
-	FileUtils::DeleteFile(indexFilePath);
+	CString indexFilePath = dataPath + L"\\" + dlg.m_createdArchiveName + L".mboxview";
+	FileUtils::DelFile(indexFilePath);
 
 	int firstIndex = lastMailIndex;
 	if (dlg.m_leadingMailCount < 0)
@@ -5434,15 +5555,15 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(rExError);
 
-		CString txt = _T("Could not open \"") + lastMailFilePath;
-		txt += _T("\" mbox mail archive file.\n");
+		CString txt = L"Could not open \"" + lastMailFilePath;
+		txt += L"\" mbox mail archive file.\n";
 		txt += exErrorStr;
 
-		TRACE(_T("%s\n"), txt);
+		TRACE(L"%s\n", txt);
 		//errorText = txt;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 		return;
 	}
@@ -5453,14 +5574,14 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(wExError);
 
-		CString txt = _T("Could not create \"") + mboxFilePath;
-		txt += _T("\" mail archive file.\n");
+		CString txt = L"Could not create \"" + mboxFilePath;
+		txt += L"\" mail archive file.\n";
 		txt += exErrorStr;
 
-		//TRACE(_T("%s\n"), txt);
+		//TRACE(L"%s\n", txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 		fpr.Close();
 		return;
@@ -5473,7 +5594,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 
 	UINT bytes2Read;
 	UINT bytes2Write;
-	fpr.Seek(firstStartOff, SEEK_SET);
+	_int64 filePos = fpr.Seek(firstStartOff, SEEK_SET);
 	while (bytesLeft > 0)
 	{
 		if (bytesLeft > RWBUFLEN)
@@ -5510,25 +5631,6 @@ void CMainFrame::OnDevelopmentoptionsDevelo()
 	else
 		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_UNCHECKED);
 
-	CString bufferSizes;
-	bufferSizes .Format("Static Buffer Sizes:\n"
-		"\tm_outbuf=%d\n\tm_inbuf=%d\n\tm_outdata=%d\n\tm_indata=%d\n\tm_workbuf=%d\n\tm_tmpbuf=%d\n"
-		"\tm_largebuf=%d\n\tm_largelocal1=%d\n\tm_largelocal2=%d\n\tm_largelocal3=%d\n\tm_smalllocal1=%d\n\tm_smalllocal2=%d\n\n",
-		MboxMail::m_outbuf->Capacity(),
-		MboxMail::m_inbuf->Capacity(),
-		MboxMail::m_outdata->Capacity(),
-		MboxMail::m_indata->Capacity(),
-		MboxMail::m_workbuf->Capacity(),
-		MboxMail::m_tmpbuf->Capacity(),
-		MboxMail::m_largebuf->Capacity(),
-		MboxMail::m_largelocal1->Capacity(),
-		MboxMail::m_largelocal2->Capacity(),
-		MboxMail::m_largelocal3->Capacity(),
-		MboxMail::m_smalllocal1->Capacity(),
-		MboxMail::m_smalllocal2->Capacity()
-		);
-	TRACE("%s", bufferSizes);
-
 }
 
 #include "PageCodeListDlg.h"
@@ -5554,26 +5656,100 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	BOOL ret = TextUtilsEx::Id2LongInfo(codePage, codePageInfo);
 
-	info.Format("Code Page: %d \"%s\"\n", codePage, codePageInfo);
+	info.Format(L"Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
 	aboutSystem.Append(info);
+
+	info.Format(L"\nMboxViewer Process  Path:\n\"%s\"\n", m_processPath);
+	aboutSystem.Append(info);
+
+	info.Format(L"\nMboxViewer Startup  Directory:\n\"%s\"\n", m_startupPath);
+	aboutSystem.Append(info);
+
+	DWORD BUFSIZE = 1024;
+	wchar_t Buffer[1024];
+
+	//if (!::SetCurrentDirectory((LPCWSTR)m_processPath))
+	{
+		int deb = 1;
+	}
+
+	DWORD dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
+	if (dwRet > 0)
+	{
+		info.Format(L"\nMboxViewer Current  Directory:\n\"%s\"\n", Buffer);
+		aboutSystem.Append(info);
+	}
+	aboutSystem.Append(L"\n");
 	
 	HWND h = GetSafeHwnd();
-	int answer = MessageBox(aboutSystem, _T("Info"), MB_APPLMODAL | MB_OK);
+	int answer = MessageBox(aboutSystem, L"Info", MB_APPLMODAL | MB_OK);
 
 	int deb = 1;
 }
 
-
-void CMainFrame::OnDevelopmentoptionsRelaxmailfilevalidation()
+void CMainFrame::OnFileGeneraloptions()
 {
 	// TODO: Add your command handler code here
-	m_relaxedMboxFileValidation = !m_relaxedMboxFileValidation;
 
-	CMenu* menu = this->GetMenu();
-	if (CMainFrame::m_relaxedMboxFileValidation)
-		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
+	GeneralOptionsDlg dlg;
+
+	dlg.m_relaxedMboxFileValidation = m_relaxedMboxFileValidation;
+	dlg.m_relativeInlineImageFilePath = m_relativeInlineImageFilePath;
+
+	if (dlg.DoModal() == IDOK)
+	{
+		m_relaxedMboxFileValidation = dlg.m_relaxedMboxFileValidation;
+		m_relativeInlineImageFilePath = dlg.m_relativeInlineImageFilePath;
+		NListView::m_fullImgFilePath_Config = !m_relativeInlineImageFilePath;
+
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation", (WORD)m_relaxedMboxFileValidation);
+
+		// FIXME relativeInlineImageFilePath is get in NListWiew and set here -:(((
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", (WORD)m_relativeInlineImageFilePath);
+
+		const int deb = 1;
+	}
+}
+
+
+CString CMainFrame::GetMboxviewTempPath(const wchar_t* name)
+{
+	CString tempFolder = L"UMBoxViewer";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		tempFolder = L"UMBoxViewerDirect";
+	if (name == 0)
+	{
+		if (m_mboxviewTempPath.IsEmpty())
+		{
+			m_mboxviewTempPath = FileUtils::GetMboxviewTempPath(tempFolder, name);
+		}
+		return m_mboxviewTempPath;
+	}
 	else
-		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+	{
+		CString path = FileUtils::GetMboxviewTempPath(tempFolder, name);
+		return path;
+	}
+}
 
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("relaxedMboxFileValidation"), (WORD)m_relaxedMboxFileValidation);
+
+CString CMainFrame::GetMboxviewLocalAppDataPath(const wchar_t* name)
+{
+	CString tempFolder = L"UMBoxViewer";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		tempFolder = L"UMBoxViewerDirect";
+
+	CString mboxviewLocalAppDataPath = FileUtils::GetMboxviewLocalAppDataPath(tempFolder, name);
+	return mboxviewLocalAppDataPath;
+}
+
+
+CString CMainFrame::CreateTempFileName(const wchar_t *ext)
+{
+	CString tempFolder = L"UMBoxViewer";
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		tempFolder = L"UMBoxViewerDirect";
+	CString fileName = FileUtils::CreateTempFileName(tempFolder, ext);
+	return fileName;
 }

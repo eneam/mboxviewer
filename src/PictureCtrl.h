@@ -91,7 +91,6 @@ protected:
 
 	//Draws the Control
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
-	Gdiplus::RotateFlipType DetermineNewOrientation(Gdiplus::Image &image);
 
 	void GetStringProperty(PROPID propid, Gdiplus::Image &image, CString &str);
 	BOOL GetIntProperty(PROPID propid, Gdiplus::Image &image, long &integer);

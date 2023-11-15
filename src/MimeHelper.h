@@ -38,22 +38,22 @@ class CMimeBody;
 class MboxCMimeHelper
 {
 public:
-	static void GetContentType(CMimeBody* pBP, CString &value);
-	static void GetContentLocation(CMimeBody* pBP, CString &value);
-	static void GetTransferEncoding(CMimeBody* pBP, CString &value);
-	static void GetContentID(CMimeBody* pBP, CString &value);
-	static void GetContentDescription(CMimeBody* pBP, CString &value);
-	static void GetContentDisposition(CMimeBody* pBP, CString &value);
-	static void GetCharset(CMimeBody* pBP, CString &value);
-	static void Name(CMimeBody* pBP, CString &value);
-	static void Filename(CMimeBody* pBP, CString &value);
+	static void GetContentType(CMimeBody* pBP, CStringA &value);
+	static void GetContentLocation(CMimeBody* pBP, CStringA &value);
+	static void GetTransferEncoding(CMimeBody* pBP, CStringA &value);
+	static void GetContentID(CMimeBody* pBP, CStringA &value);
+	static void GetContentDescription(CMimeBody* pBP, CStringA &value);
+	static void GetContentDisposition(CMimeBody* pBP, CStringA &value);
+	static void GetCharset(CMimeBody* pBP, CStringA &value);
+	static void Name(CMimeBody* pBP, CStringA &value);
+	static void Filename(CMimeBody* pBP, CStringA &value);
 	//
 	static bool IsAttachment(CMimeBody* pBP);
 	static bool IsInlineAttachment(CMimeBody* pBP);
 	static bool IsAttachmentDisposition(CMimeBody* pBP);
 	static bool IsInlineDisposition(CMimeBody* pBP);
 protected:
-	static void GetValue(CMimeBody* pBP, const char* fieldName, CString &value);
+	static void GetValue(CMimeBody* pBP, const char* fieldName, CStringA &value);
 };
 
 class MboxCMimeCodeBase64 : public CMimeCodeBase64

@@ -93,7 +93,7 @@ BOOL OpenArchiveFileDlg::OnInitDialog()
 		if (p)
 		{
 			CString targetFolder = m_targetFolder;
-			targetFolder.TrimRight("\\");
+			targetFolder.TrimRight(L"\\");
 			p->SetWindowText(targetFolder);
 			p->EnableWindow(FALSE);
 		}
@@ -122,13 +122,13 @@ void OpenArchiveFileDlg::OnBnClickedYes()
 {
 	// TODO: Add your control notification handler code here
 
-	CString mboxFilePath = m_targetFolder + "\\" + m_archiveFileName;
+	CString mboxFilePath = m_targetFolder + L"\\" + m_archiveFileName;
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
-		CString txt = _T("File \"") + mboxFilePath;
-		txt += _T("\" exists.\nOverwrite?");
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		CString txt = L"File \"" + mboxFilePath;
+		txt += L"\" exists.\nOverwrite?";
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;
 	}
@@ -149,9 +149,9 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
-		CString txt = _T("File \"") + mboxFilePath;
-		txt += _T("\" exists.\nOverwrite?");
-		int answer = MessageBox(txt, _T("Info"), MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		CString txt = L"File \"" + mboxFilePath;
+		txt += L"\" exists.\nOverwrite?";
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;
 	}

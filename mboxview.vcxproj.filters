@@ -193,6 +193,15 @@
     <ClCompile Include="src\PageCodeListDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\GdiUtils.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimpleTree.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GeneralOptionsDlg.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -397,6 +406,15 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\PageCodeListDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GdiUtils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimpleTree.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GeneralOptionsDlg.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

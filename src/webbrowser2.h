@@ -51,14 +51,14 @@ public:
 			= { 0x8856f961, 0x340a, 0x11d0, { 0xa9, 0x6b, 0x0, 0xc0, 0x4f, 0xd7, 0x5, 0xa2 } };
 		return clsid;
 	}
-	virtual BOOL Create(LPCTSTR lpszClassName,
-		LPCTSTR lpszWindowName, DWORD dwStyle,
+	virtual BOOL Create(LPCWSTR lpszClassName,
+		LPCWSTR lpszWindowName, DWORD dwStyle,
 		const RECT& rect,
 		CWnd* pParentWnd, UINT nID,
 		CCreateContext* pContext = NULL)
 	{ return CreateControl(GetClsid(), lpszWindowName, dwStyle, rect, pParentWnd, nID); }
 
-    BOOL Create(LPCTSTR lpszWindowName, DWORD dwStyle,
+    BOOL Create(LPCWSTR lpszWindowName, DWORD dwStyle,
 		const RECT& rect, CWnd* pParentWnd, UINT nID,
 		CFile* pPersist = NULL, BOOL bStorage = FALSE,
 		BSTR bstrLicKey = NULL)
@@ -74,7 +74,7 @@ public:
 	void GoForward();
 	void GoHome();
 	void GoSearch();
-	void Navigate(LPCTSTR URL, VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData, VARIANT* Headers);
+	void Navigate(LPCWSTR URL, VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData, VARIANT* Headers);
 	void Refresh();
 	void Refresh2(VARIANT* Level);
 	void Stop();
@@ -97,8 +97,8 @@ public:
 	BOOL GetBusy();
 	void Quit();
 	void ClientToWindow(long* pcx, long* pcy);
-	void PutProperty(LPCTSTR Property_, const VARIANT& vtValue);
-	VARIANT GetProperty_(LPCTSTR Property_);
+	void PutProperty(LPCWSTR Property_, const VARIANT& vtValue);
+	VARIANT GetProperty_(LPCWSTR Property_);
 	CString GetName();
 	long GetHwnd();
 	CString GetFullName();
@@ -108,14 +108,14 @@ public:
 	BOOL GetStatusBar();
 	void SetStatusBar(BOOL bNewValue);
 	CString GetStatusText();
-	void SetStatusText(LPCTSTR lpszNewValue);
+	void SetStatusText(LPCWSTR lpszNewValue);
 	long GetToolBar();
 	void SetToolBar(long nNewValue);
 	BOOL GetMenuBar();
 	void SetMenuBar(BOOL bNewValue);
 	BOOL GetFullScreen();
 	void SetFullScreen(BOOL bNewValue);
-	void Navigate(LPCSTR url, DWORD flags);
+	void Navigate(LPCWSTR url, DWORD flags);
 	void Navigate2(VARIANT* URL, VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData, VARIANT* Headers);
 	long QueryStatusWB(long cmdID);
 	void ExecWB(long cmdID, long cmdexecopt, VARIANT* pvaIn, VARIANT* pvaOut);

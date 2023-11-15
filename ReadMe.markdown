@@ -47,7 +47,20 @@ meaning that authors retain all rights to the source code and no one may reprodu
 The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to synchronize the License published on Sourceforge and Github.
 
 Changes
+
 ---
+
+v 1.0.3.40
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Ported MBox Viewer to Unicode. Porting required large number of code changes. Please report any old & new issues.;
+ - Improved handling of Unicode names of files and Gmail labels.;
+ - Enabled users to configure whether to append images at the end of viewed and printed mails.;
+ - Enhanced handling of attachments.;
+ - Fixed Gmail label sorting.;
+ - Not yet support for multiple file based session configurations.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.39
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

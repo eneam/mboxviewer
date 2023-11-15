@@ -74,7 +74,7 @@ void CMimeEnvironment::SetAutoFolding(bool bAutoFolding)
 
 void CMimeEnvironment::RegisterCoder(const char* pszCodingName, CODER_FACTORY pfnCreateObject/*=NULL*/)
 {
-	ASSERT(pszCodingName != NULL);
+	_ASSERTE(pszCodingName != NULL);
 	list<CODER_PAIR>::iterator it = m_listCoders.begin();
 	while (it != m_listCoders.end())
 	{
@@ -97,11 +97,11 @@ CMimeCodeBase* CMimeEnvironment::CreateCoder(const char* pszCodingName)
 
 	for (list<CODER_PAIR>::iterator it=m_listCoders.begin(); it!=m_listCoders.end(); it++)
 	{
-		ASSERT((*it).first != NULL);
+		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszCodingName, (*it).first))
 		{
 			CODER_FACTORY pfnCreateObject = (*it).second;
-			ASSERT(pfnCreateObject != NULL);
+			_ASSERTE(pfnCreateObject != NULL);
 			return pfnCreateObject();
 		}
 	}
@@ -111,7 +111,7 @@ CMimeCodeBase* CMimeEnvironment::CreateCoder(const char* pszCodingName)
 
 void CMimeEnvironment::RegisterFieldCoder(const char* pszFieldName, FIELD_CODER_FACTORY pfnCreateObject/*=NULL*/)
 {
-	ASSERT(pszFieldName != NULL);
+	_ASSERTE(pszFieldName != NULL);
 	list<FIELD_CODER_PAIR>::iterator it = m_listFieldCoders.begin();
 	while (it != m_listFieldCoders.end())
 	{
@@ -129,14 +129,14 @@ void CMimeEnvironment::RegisterFieldCoder(const char* pszFieldName, FIELD_CODER_
 
 CFieldCodeBase* CMimeEnvironment::CreateFieldCoder(const char* pszFieldName)
 {
-	ASSERT(pszFieldName != NULL);
+	_ASSERTE(pszFieldName != NULL);
 	for (list<FIELD_CODER_PAIR>::iterator it=m_listFieldCoders.begin(); it!=m_listFieldCoders.end(); it++)
 	{
-		ASSERT((*it).first != NULL);
+		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszFieldName, (*it).first))
 		{
 			FIELD_CODER_FACTORY pfnCreateObject = (*it).second;
-			ASSERT(pfnCreateObject != NULL);
+			_ASSERTE(pfnCreateObject != NULL);
 			return pfnCreateObject();
 		}
 	}
@@ -145,7 +145,7 @@ CFieldCodeBase* CMimeEnvironment::CreateFieldCoder(const char* pszFieldName)
 
 void CMimeEnvironment::RegisterMediaType(const char* pszMediaType, BODY_PART_FACTORY pfnCreateObject/*=NULL*/)
 {
-	ASSERT(pszMediaType != NULL);
+	_ASSERTE(pszMediaType != NULL);
 	list<MEDIA_TYPE_PAIR>::iterator it = m_listMediaTypes.begin();
 	while (it != m_listMediaTypes.end())
 	{
@@ -166,14 +166,14 @@ CMimeBody* CMimeEnvironment::CreateBodyPart(const char* pszMediaType)
 	if (!pszMediaType || !::strlen(pszMediaType))
 		pszMediaType = "text";
 
-	ASSERT(pszMediaType != NULL);
+	_ASSERTE(pszMediaType != NULL);
 	for (list<MEDIA_TYPE_PAIR>::iterator it=m_listMediaTypes.begin(); it!=m_listMediaTypes.end(); it++)
 	{
-		ASSERT((*it).first != NULL);
+		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszMediaType, (*it).first))
 		{
 			BODY_PART_FACTORY pfnCreateObject = (*it).second;
-			ASSERT(pfnCreateObject != NULL);
+			_ASSERTE(pfnCreateObject != NULL);
 			return pfnCreateObject();
 		}
 	}
@@ -517,7 +517,7 @@ int CMimeCodeBase64::Decode(unsigned char* pbOutput, int nMaxSize)
 
 	unsigned char prev_ch = 0;
 	int pos = 0;
-	while (m_pbData < pbEnd)
+	while (pbData < pbEnd)
 	{
 		if (pbOutput >= pbOutEnd)
 			break;
@@ -582,7 +582,7 @@ int CMimeEncodedWord::GetEncodeLength() const
 	}
 
 	nCodeLen += 4;
-	ASSERT(nCodeLen < MAX_ENCODEDWORD_LEN);
+	_ASSERTE(nCodeLen < MAX_ENCODEDWORD_LEN);
 	return (nLength / (MAX_ENCODEDWORD_LEN - nCodeLen) + 1) * nCodeLen + nLength;
 }
 
@@ -675,7 +675,7 @@ int CMimeEncodedWord::BEncode(unsigned char* pbOutput, int nMaxSize) const
 	int nCharsetLen = (int)m_strCharset.size();
 	int nBlockSize = MAX_ENCODEDWORD_LEN - nCharsetLen - 7;	// a single encoded-word cannot exceed 75 bytes
 	nBlockSize = nBlockSize / 4 * 3;
-	ASSERT(nBlockSize > 0);
+	_ASSERTE(nBlockSize > 0);
 
 	unsigned char* pbOutStart = pbOutput;
 	int nInput = 0;
@@ -706,6 +706,10 @@ int CMimeEncodedWord::BEncode(unsigned char* pbOutput, int nMaxSize) const
 			break;
 		*pbOutput++ = ' ';			// add a liner-white-space between adjacent encoded words
 		nMaxSize--;
+		*pbOutput++ = '\r';  // ZM added on 03/19/2023 to limit line length
+		*pbOutput++ = '\n';  // tested and BDecode seems to work -:)
+		*pbOutput++ = ' ';
+		nMaxSize -= 3;
 	}
 	return (int)(pbOutput - pbOutStart);
 }
@@ -731,11 +735,16 @@ int CMimeEncodedWord::QEncode(unsigned char* pbOutput, int nMaxSize) const
 
 		if (nLineLen+nCodeLen > nMaxLine)	// add encoded word tailer
 		{
-			if (pbOutput+3 > pbOutEnd)
+			//if (pbOutput + 3 > pbOutEnd)
+			if (pbOutput+6 > pbOutEnd)
 				break;
 			*pbOutput++ = '?';
 			*pbOutput++ = '=';
 			*pbOutput++ = ' ';
+			*pbOutput++ = '\r';  // ZM added on 03/19/2023 to limit line length
+			*pbOutput++ = '\n';  // tested and BDecode seems to work -:)
+			*pbOutput++ = ' ';
+			nMaxSize -= 3;
 			nLineLen = 0;
 		}
 

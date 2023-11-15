@@ -90,24 +90,27 @@ END_MESSAGE_MAP()
 
 void COptionsDlg::OnBnClickedOk()
 {
+	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
+	CString section_options_set_charset_ids = CString(sz_Software_mboxview) + L"\\Options\\SetCharacterSetIds";
 	if (UpdateData(TRUE))
 	{
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("format"), m_format);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), m_barDelay);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"dayMonthYearFormat", m_format);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"progressBarDelay", m_barDelay);
 		if (m_exportEML == 1)
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), CString(_T("y")));
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_options, L"exportEML", CString(L"y"));
 		else
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), CString(_T("n")));
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_options, L"exportEML", CString(L"n"));
 
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"), m_from_charsetId);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"), m_to_charsetId);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"), m_subj_charsetId);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"), m_show_charsets);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"), m_bImageViewer);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"), m_bTimeType);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"), m_bEnhancedSelectFolderDlg);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjectSortType"), m_bSubjectSortType);
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("filesToValidateAsMboxType"), m_filesToValidateAsMboxType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options_set_charset_ids, L"fromCharsetId", m_from_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options_set_charset_ids, L"toCharsetId", m_to_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options_set_charset_ids, L"subjCharsetId", m_subj_charsetId);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options_set_charset_ids, L"showCharsets", m_show_charsets);
+
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"imageViewer", m_bImageViewer);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"timeType", m_bTimeType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"enhancedSelectFolderDialog", m_bEnhancedSelectFolderDlg);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"subjectSortType", m_bSubjectSortType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType", m_filesToValidateAsMboxType);
 
 		CDialog::OnOK();
 	}
@@ -118,17 +121,19 @@ BOOL COptionsDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_format = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("format"));
+	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
+
+	m_format = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"dayMonthYearFormat");
 	DWORD barDelay = 0;
 	BOOL retval;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("progressBarDelay"), barDelay))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"progressBarDelay", barDelay))
 		m_barDelay = barDelay;
 	else
 		m_barDelay = 1;
 
 	CString exportEML;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("exportEML"), exportEML)) {
-		if (exportEML.Compare(_T("y")) == 0)
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_options, L"exportEML", exportEML)) {
+		if (exportEML.Compare(L"y") == 0)
 			m_exportEML = 1;
 		else
 			m_exportEML = 0;
@@ -136,15 +141,15 @@ BOOL COptionsDlg::OnInitDialog()
 	else
 		m_exportEML = 0;  // we should not be here; it should be initialized in NListView::NListView()
 
-	m_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("fromCharsetId"));
-	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("toCharsetId"));
-	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjCharsetId"));
-	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("showCharsets"));
-	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("imageViewer"));
-	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("timeType"));
-	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("enhancedSelectFolderDialog"));
-	m_bSubjectSortType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("subjectSortType"));
-	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("filesToValidateAsMboxType"));
+	m_from_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"fromCharsetId");
+	m_to_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"toCharsetId");
+	m_subj_charsetId = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"subjCharsetId");
+	m_show_charsets = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"showCharsets");
+	m_bImageViewer = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"imageViewer");
+	m_bTimeType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"timeType");
+	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"enhancedSelectFolderDialog");
+	m_bSubjectSortType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"subjectSortType");
+	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType");
 
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control

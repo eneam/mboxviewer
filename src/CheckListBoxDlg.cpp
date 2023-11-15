@@ -41,7 +41,7 @@ IMPLEMENT_DYNAMIC(CCheckListBoxDlg, CDialogEx)
 CCheckListBoxDlg::CCheckListBoxDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_CHECK_LIST_BOX_DLG, pParent)
 {
-	m_title = "Select Items";
+	m_title = L"Select Items";
 }
 
 CCheckListBoxDlg::~CCheckListBoxDlg()
@@ -58,7 +58,7 @@ int CCheckListBoxDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// TODO: Add your specialized creation code here
 	SetExtendedStyle(GetExtendedStyle());
-	ASSERT(GetHeaderCtrl() != NULL);
+	_ASSERTE(GetHeaderCtrl() != NULL);
 #endif
 	return 0;
 }
@@ -114,7 +114,7 @@ void CCheckListBoxDlg::OnBnClickedOk()
 	}
 
 	if (m_OutList.GetCount() <= 0) {
-		AfxMessageBox(_T("No folders selected!"), MB_OK | MB_ICONHAND);
+		AfxMessageBox(L"No folders selected!", MB_OK | MB_ICONHAND);
 		return;
 	}
 

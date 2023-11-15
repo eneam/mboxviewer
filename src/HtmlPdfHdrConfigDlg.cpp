@@ -33,6 +33,7 @@
 #include "FileUtils.h"
 #include "HtmlPdfHdrConfigDlg.h"
 #include "GenericFontFamilyDlg.h"
+#include "MainFrm.h"
 #include "afxdialogex.h"
 
 
@@ -40,7 +41,7 @@
 
 IMPLEMENT_DYNAMIC(HtmlPdfHdrConfigDlg, CDialogEx)
 
-extern const TCHAR *sz_Software_mboxview;
+extern const wchar_t *sz_Software_mboxview;
 
 HtmlPdfHdrConfigDlg::HtmlPdfHdrConfigDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HTML_PDF_HDR_DLG, pParent)
@@ -89,13 +90,13 @@ int HtmlPdfHdrConfigDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void HtmlPdfHdrConfigDlg::LoadData()
 {
-	m_fldListBox.AddString(_T("SUBJECT"));
-	m_fldListBox.AddString(_T("FROM"));
-	m_fldListBox.AddString(_T("TO"));
-	m_fldListBox.AddString(_T("CC"));
-	m_fldListBox.AddString(_T("BCC"));
-	m_fldListBox.AddString(_T("DATE"));
-	m_fldListBox.AddString(_T("ATTACHMENTS"));
+	m_fldListBox.AddString(L"SUBJECT");
+	m_fldListBox.AddString(L"FROM");
+	m_fldListBox.AddString(L"TO");
+	m_fldListBox.AddString(L"CC");
+	m_fldListBox.AddString(L"BCC");
+	m_fldListBox.AddString(L"DATE");
+	m_fldListBox.AddString(L"ATTACHMENTS");
 
 	int i;
 	for (i = 0; i < m_fldListBox.GetCount(); i++)
@@ -114,7 +115,7 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 	// TODO:  Add extra initialization here
 	m_fldListBox.SetFont(GetFont());
 
-	CString m_title = _T("HTML/PDF Mail Header Configuration");
+	CString m_title = L"HTML/PDF Mail Header Configuration";
 	SetWindowText(m_title);
 
 	LoadData();
@@ -139,45 +140,45 @@ void HtmlPdfHdrConfigDlg::OnBnClickedOk()
 	CString txt;
 	if ((m_HdrFldConfig.m_nHdrFontSize <= 0) || (m_HdrFldConfig.m_nHdrFontSize > 72))
 	{
-		txt.Format(_T("Default Font:  Invalid Font Size of %d! Valid Size is >0 and <72\n"), m_HdrFldConfig.m_nHdrFontSize);
+		txt.Format(L"Default Font:  Invalid Font Size of %d! Valid Size is >0 and <72\n", m_HdrFldConfig.m_nHdrFontSize);
 		errorTxt.Append(txt);
 	}
 
 	if (m_HdrFldConfig.m_HdrFldFontName.m_fontName.IsEmpty())
 	{
-		errorTxt.Append(_T("Field Name Font:  Empty!\n"));
+		errorTxt.Append(L"Field Name Font:  Empty!\n");
 	}
 
 	if (m_HdrFldConfig.m_HdrFldFontName.m_fontStyleName.IsEmpty())
 	{
-		errorTxt.Append(_T("Field Name Font Style:  Empty!\n"));
+		errorTxt.Append(L"Field Name Font Style:  Empty!\n");
 	}
 
 	if ((m_HdrFldConfig.m_HdrFldFontName.m_nFontSize <= 0) || (m_HdrFldConfig.m_HdrFldFontName.m_nFontSize > 72))
 	{
-		txt.Format(_T("Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n"), m_HdrFldConfig.m_HdrFldFontName.m_nFontSize);
+		txt.Format(L"Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", m_HdrFldConfig.m_HdrFldFontName.m_nFontSize);
 		errorTxt.Append(txt);
 	}
 
 	if (m_HdrFldConfig.m_HdrFldFontText.m_fontName.IsEmpty())
 	{
-		errorTxt.Append(_T("Field Text Font:  Empty!\n"));
+		errorTxt.Append(L"Field Text Font:  Empty!\n");
 	}
 
 	if (m_HdrFldConfig.m_HdrFldFontText.m_fontStyleName.IsEmpty())
 	{
-		errorTxt.Append(_T("Field Text Font Style:  Empty!\n"));
+		errorTxt.Append(L"Field Text Font Style:  Empty!\n");
 	}
 
 	if ((m_HdrFldConfig.m_HdrFldFontText.m_nFontSize <= 0) || (m_HdrFldConfig.m_HdrFldFontText.m_nFontSize > 72))
 	{
-		txt.Format(_T("Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n"), m_HdrFldConfig.m_HdrFldFontText.m_nFontSize);
+		txt.Format(L"Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", m_HdrFldConfig.m_HdrFldFontText.m_nFontSize);
 		errorTxt.Append(txt);
 	}
 
 	if (!errorTxt.IsEmpty())
 	{
-		int answer = MessageBox(errorTxt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
 	}
 
@@ -199,8 +200,8 @@ void HtmlPdfHdrConfigDlg::OnBnClickedOk()
 ///
 
 HdrFldConfig::HdrFldConfig() :
-	m_HdrFldFontName(CString(_T("hdrFldName_"))), 
-	m_HdrFldFontText(CString(_T("hdrFldText_")))
+	m_HdrFldFontName(CString(L"hdrFldName_")), 
+	m_HdrFldFontText(CString(L"hdrFldText_"))
 {
 	m_bHdrFldCustomNameFont = 0;
 	m_bHdrFontDflt = 0;
@@ -225,14 +226,15 @@ void HdrFldList::ClearFldBitmap()
 void HdrFldList::LoadFldBitmap()
 {
 	BOOL retval;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("hdrFldBitmap"), m_nFldBitmap))
+	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr, L"hdrFldListBitmap", m_nFldBitmap))
 	{
 		; //all done
 	}
 	else
 	{
 		m_nFldBitmap = 0xFFFFFFFF;
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("hdrFldBitmap"), m_nFldBitmap);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, L"hdrFldListBitmap", m_nFldBitmap);
 	}
 }
 
@@ -243,7 +245,8 @@ void HdrFldList::LoadFromRegistry()
 
 void HdrFldList::SaveToRegistry()
 {
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("hdrFldBitmap"), m_nFldBitmap);
+	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, L"hdrFldListBitmap", m_nFldBitmap);
 }
 
 BOOL HdrFldList::IsFldSet(int fldNumber)
@@ -357,17 +360,17 @@ void HtmlPdfHdrConfigDlg::OnBnClickedPickConcreteFont()
 			CString errorTxt;
 			if (m_HdrFldConfig.m_bHdrFldCustomNameFont == 0)
 			{
-				txt.Format(_T("Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n"), pFont->m_nFontSize);
+				txt.Format(L"Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", pFont->m_nFontSize);
 				errorTxt.Append(txt);
-				errorTxt.Append(_T("Setting Font Size to 16\n"));
+				errorTxt.Append(L"Setting Font Size to 16\n");
 			}
 			else
 			{
-				txt.Format(_T("Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n"), pFont->m_nFontSize);
+				txt.Format(L"Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", pFont->m_nFontSize);
 				errorTxt.Append(txt);
-				errorTxt.Append(_T("Setting Font Size to 16\n"));
+				errorTxt.Append(L"Setting Font Size to 16\n");
 			}
-			int answer = MessageBox(errorTxt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			pFont->m_nFontSize = 16;
 		}
 
@@ -524,15 +527,18 @@ void HtmlPdfHdrConfigDlg::OnBnClickedFontCustom()
 
 void HdrFldConfig::SaveToRegistry()
 {
+	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
 
-	CString id = "hdrFld_";
-	CString param = id + "FontStyleDflt";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bHdrFontDflt);
-	param = id + "BoldFontName";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bHdrBoldFldName);
+	CString param = L"ApplyCustomFonts";
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrFontDflt);
 
-	param = id + "FontSize";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nHdrFontSize);
+	CString section_hdr_sub = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields\\DefaultFont";
+
+	param = L"IsBold";
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bHdrBoldFldName);
+
+	param = L"Size";
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nHdrFontSize);
 
 	m_HdrFldList.SaveToRegistry();
 	m_HdrFldFontName.SaveToRegistry();
@@ -541,23 +547,26 @@ void HdrFldConfig::SaveToRegistry()
 
 void HdrFldConfig::LoadFromRegistry()
 {
-	CString id = "hdrFld_";
 	BOOL retval;
 
-	CString param = id + "FontStyleDflt";
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bHdrFontDflt))
+	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
+
+	CString param = L"ApplyCustomFonts";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrFontDflt))
 	{
 		;
 	}
 
-	param = id + "FontSize";
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nHdrFontSize))
+	CString section_hdr_sub = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields\\DefaultFont";
+
+	param = L"Size";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nHdrFontSize))
 	{
 		;
 	}
 
-	param = id + "BoldFontName";
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bHdrBoldFldName))
+	param = L"IsBold";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bHdrBoldFldName))
 	{
 		;
 	}
@@ -575,9 +584,9 @@ HdrFldFont::HdrFldFont(CString &id)
 
 void HdrFldFont::SetDflts()
 {
-	m_genericFontName = "sans-serif";
-	m_fontName = "Arial";
-	m_fontStyleName = "Regular";
+	m_genericFontName = L"sans-serif";
+	m_fontName = L"Arial";
+	m_fontStyleName = L"Regular";
 	m_nFontStyle = 400;
 	m_bIsBold = FALSE;
 	m_bIsItalic = FALSE;
@@ -586,72 +595,88 @@ void HdrFldFont::SetDflts()
 
 void HdrFldFont::SaveToRegistry()
 {
-	CString id = m_id;
-	CString param = id + "GenericFontName";
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_genericFontName);
+	CString subSection = L"";
+	if (m_id.Compare(L"hdrFldName_") == 0)
+		subSection = L"NameFont";
+	else
+		subSection = L"TextFont";
 
-	param = id + "FontName";
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_fontName);
+	CString section_hdr_sub = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields\\" + subSection;
 
-	param = id + "FontStyleName";
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_fontStyleName);
+	BOOL retval;
 
-	param = id + "FontStyle";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nFontStyle);
+	CString param = L"GenericName";
+	retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_genericFontName);
 
-	param = id + "FontIsBold";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bIsBold);
+	param = L"Name";
+	retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_fontName);
 
-	param = id + "FontIsItalic";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bIsItalic);
+	param = L"StyleName";
+	retval = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_fontStyleName);
 
-	param = id + "FontSize";
-	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nFontSize);
+	param = L"StyleNumber";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nFontStyle);
+
+	param = L"IsBold";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bIsBold);
+
+	param = L"IsItalic";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bIsItalic);
+
+	param = L"Size";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nFontSize);
 }
 
 void HdrFldFont::LoadFromRegistry()
 {
 	BOOL retval;
-	CString id = m_id;
 
-	CString param = id + _T("GenericFontName");
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_genericFontName))
+	CString subSection = L"";
+	if (m_id.Compare(L"hdrFldName_") == 0)
+		subSection = L"NameFont";
+	else
+		subSection = L"TextFont";
+
+	CString section_hdr_sub = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields\\" + subSection;
+
+	CString param = L"GenericName";
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_genericFontName))
 	{
 		;
 	}
 
-	param = id + _T("FontName");
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_fontName))
+	param = L"Name";
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_fontName))
 	{
 		;
 	}
 
-	param = id + _T("FontStyleName");
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_fontStyleName))
+	param = L"StyleName";
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_hdr_sub, param, m_fontStyleName))
 	{
 		;
 	}
 
-	param = id + _T("FontStyle");
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nFontStyle))
+	param = L"StyleNumber";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nFontStyle))
 	{
 		;
 	}
 
-	param = id + _T("FontIsBold");
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bIsBold))
+	param = L"IsBold";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bIsBold))
 	{
 		;
 	}
 
-	param = id + _T("FontIsItalic");
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_bIsItalic))
+	param = L"IsItalic";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_bIsItalic))
 	{
 		;
 	}
 
-	param = id + _T("FontSize");
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, param, m_nFontSize))
+	param = L"Size";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr_sub, param, m_nFontSize))
 	{
 		;
 	}
@@ -663,74 +688,9 @@ void HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp()
 {
 	// TODO: Add your control notification handler code here
 
-	CString HelpPath = FileUtils::GetMboxviewTempPath("MboxHelp");
+	CString helpFileName = "HTML_PDF_HdrConfigHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 
-	CString htmlHelpFileFile = "HTML_PDF_HdrConfigHelp.htm";
-	CString fullPath = HelpPath + "\\" + htmlHelpFileFile;
-
-	CFile fp;
-	CFileException ExError;
-	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
-	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
-		txt += exErrorStr;
-
-		//TRACE(_T("%s\n"), txt);
-
-		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
-		return;
-	}
-
-	CString htmlHdr;
-
-	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body style=\'margin-left:0.5cm\'>";
-	htmlHdr += "<br><font size=\"+2\"><b>Mbox Viewer HTML/PDF Mail Header Configuration Help</b></font><br><br>";
-
-	fp.Write((LPCSTR)htmlHdr, htmlHdr.GetLength());
-
-	CString text;
-
-	text.Empty();
-	text.Append(
-		"Please review the User Guide provided with the package for additional details on the HTML/PDF Mail Header Confguration feature.<br>"
-		"<br>"
-		"The HTML/PDF Header Configuration dialog allows users to select mail header fields for output and to configure fonts for the field name and field text.<br>"
-		"There are two options to configure fonts: Default and Custom.<br><br>"
-		"The Default option allows to configure:<br>"
-		"&nbsp;&nbsp;&nbsp;&nbsp;1) the font size which be applied to both the field name and text.<br>"
-		"&nbsp;&nbsp;&nbsp;&nbsp;2) the bold font style which will be applied to the field names only.<br>"
-		"<br>"
-		"The Custom option allows to configure:<br>"
-		"<br>"
-		"&nbsp;&nbsp;&nbsp;&nbsp;1) the same or different font for the header field names and text.<br>"
-		"&nbsp;&nbsp;&nbsp;&nbsp;2) the font dialog allows to configure the font name, style and size.<br>"
-		"&nbsp;&nbsp;&nbsp;&nbsp;2) the failback generic font in addition to the primary font configured via the font dialog.<br>"
-		"<br>"
-		"See the following links for an overview of fonts and font families.<br><br>"
-
-		"<a href=\"https://www.w3.org/TR/css-fonts-3/#font-matching-algorithm\">HTML Fonts</a><br>"
-		"<a href=\"https://www.granneman.com/webdev/coding/css/fonts-and-formatting\">Fonts & Formatting</a>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-
-	text.Empty();
-	text.Append(
-		"<br><br>"
-		"<br><br>"
-	);
-	fp.Write((LPCSTR)text, text.GetLength());
-
-	CString htmlEnd = "\r\n</body></html>";
-	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
-
-	fp.Close();
-
-	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
-
-	int deb = 1;
+	return;
 }

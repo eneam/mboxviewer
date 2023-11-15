@@ -37,6 +37,7 @@
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * **********************************************************************/
+//
 // #pragma once is supported starting with _MSC_VER 1000,
 // so we need not to check the version (because we only support _MSC_VER >= 1100)!
 #pragma once

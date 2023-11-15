@@ -53,7 +53,7 @@ public:
 	inline bool ShouldTerminate() const	{	return	this->bTerminate;		}
 
 	// Call this frequently inside the lengthy procedure to set the progress text
-	inline void SetProgress(LPCTSTR lpszProgressText) const
+	inline void SetProgress(LPCWSTR lpszProgressText) const
 	{
 		if(::IsWindow(this->hThreadWnd) && this->bTerminate == false)
 			::SendMessage(this->hThreadWnd,_ProgressThreadData::WM_PROGRESSTEXTUPDATE,0,(LPARAM)lpszProgressText);
@@ -65,7 +65,7 @@ public:
 			::SendMessage(this->hThreadWnd,_ProgressThreadData::WM_PROGRESSBARUPDATE,dwProgressbarPos,0);
 	}
 	// Call this frequently inside the lengthy procedure to set the progress bar position and text
-	inline void SetProgress(LPCTSTR lpszProgressText,UINT_PTR dwProgressbarPos) const
+	inline void SetProgress(LPCWSTR lpszProgressText,UINT_PTR dwProgressbarPos) const
 	{
 		SetProgress(lpszProgressText);
 		SetProgress(dwProgressbarPos);
@@ -79,7 +79,7 @@ public:
 			::SendMessage(this->hThreadWnd,bAllow?_ProgressThreadData::WM_ENABLECONTROLS:_ProgressThreadData::WM_DISABLECONTROLS,0,0);
 	}
 	// Modifies the Progress Dialog Caption
-	inline void SetDialogCaption(LPCTSTR lpszDialogCaption) const
+	inline void SetDialogCaption(LPCWSTR lpszDialogCaption) const
 	{
 		if(::IsWindow(this->hThreadWnd) && this->bTerminate == false)
 			::SendMessage(this->hThreadWnd,WM_SETTEXT,0,(LPARAM)lpszDialogCaption);
@@ -93,7 +93,7 @@ class CUPDialog : CInitCommonControls<CUPDIALOG_CONTROL_CLASSES>
 
 	HINSTANCE m_hInst;				//HINSTANCE of the Module that holds the Dialog Template. (If Dialog template is NULL, this will be ignored.)
 
-	LPCTSTR	m_lpszTemplateName;		//Dialog Template that should be used to display the progress dialog. (If NULL, built-in template will be used)
+	LPCWSTR	m_lpszTemplateName;		//Dialog Template that should be used to display the progress dialog. (If NULL, built-in template will be used)
 
 	int		m_nStaticControlId;		//Static Control Id
 	
@@ -107,7 +107,7 @@ class CUPDialog : CInitCommonControls<CUPDIALOG_CONTROL_CLASSES>
 
 	HANDLE	m_hThread;				//Holds the Handle to the Created Thread
 
-	TCHAR	m_szDialogCaption[256];	//Fill up with the Title of the DialogBox
+	wchar_t	m_szDialogCaption[256];	//Fill up with the Title of the DialogBox
 
 	CUPDUPDATA 	m_ThreadData;
 
@@ -122,7 +122,7 @@ public:
 	//		lpUserProcParam: Data that should be supplied to lpUserProc. (Accessible through CUPDUPDATA::GetAppData() in lpUserProc)
 	//		lpszDlgTitle: Title of the Dialog box
 	//		bAllowCancel: Is user allowed to cancel this dialog box? (Enables or Disables the Cancel button based on this value)
-	CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCTSTR lpszDlgTitle=_T("Please Wait.."),bool bAllowCancel=true);
+	CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCWSTR lpszDlgTitle=L"Please Wait..",bool bAllowCancel=true);
 
 	// SetDialogTemplate allows any custom dialox box to be used as the progress dialog.
 	// Make sure that the custom dialog has one static control, one progress bar control and one cancel button.
@@ -131,7 +131,7 @@ public:
 	//		StaticControlId:	Identifier of the Static Control on the dialog box. Used for displaying the Progress Messages
 	//		ProgressBarControlId: Identifier of the Progressbar Control on the Dialog Box
 	//		CancelButtonId:		Identifier of the Cancel Button Control on the Dialog Box.
-	inline void SetDialogTemplate(HINSTANCE hInst, LPCTSTR lpTemplateName, int StaticControlId, int ProgressBarControlId, int CancelButtonId)
+	inline void SetDialogTemplate(HINSTANCE hInst, LPCWSTR lpTemplateName, int StaticControlId, int ProgressBarControlId, int CancelButtonId)
 	{
 		m_hInst = hInst;
 

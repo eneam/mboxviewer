@@ -49,36 +49,46 @@
 
 class MboxMail;
 
-typedef std::vector <CString> MessageIdList;
+typedef std::vector <CStringA> MessageIdList;
 
 class MimeParser
 {
 public:
-	static char *GetMultiLine(char *p, char *e, CString &line);
-	static int GetFieldValue(CString &fieldLine, int startPos, CString &value);
-	static int GetMessageIdList(CString& fieldLine, int startPos, MessageIdList &msgIdList);
-	static int GetMessageId(CString &fieldLine, int startPos, CString &value);
-	static int GetMessageId(char* fieldLine, int startPos, CString& value);
-	static int GetThreadId(CString &fieldLine, int startPos, CString &value);
-	static int GetThreadId(CString &fieldLine, int startPos, unsigned __int64 &value);
-	static int GetParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value);
-	static int GetFilenameParamValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset);
-	static int GetFilenameParamPartValue(CString &fieldLine, int startPos, const char *param, int paramLen, CString &value, BOOL &hasCharset);
+	static char *GetMultiLine(char *p, char *e, CStringA &line, BOOL raw = FALSE);
+	static int GetFieldValue(CStringA &fieldLine, int startPos, CStringA &value);
+	static int GetMessageIdList(CStringA& fieldLine, int startPos, MessageIdList &msgIdList);
+	static int GetMessageId(CStringA &fieldLine, int startPos, CStringA &value);
+	static int GetMessageId(char* fieldLine, int startPos, CStringA& value);
+	static int GetThreadId(CStringA &fieldLine, int startPos, CStringA &value);
+	static int GetThreadId(CStringA &fieldLine, int startPos, unsigned __int64 &value);
+	static int GetParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value);
+	static int GetFilenameParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset);
+	static int GetFilenameParamPartValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset);
 	static BOOL isEmptyLine(const char* p, const char* e);
 	static char* SkipEmptyLines(const char* p, const char* e);
 	static char *EatNewLine(char* p, const char* e, bool &isEmpty);
 	static char *EatNewLine(char* p, char*e);
 	static char *EatNewLine(char* p, char*e, int &maxLineLength);
 #if 0
+	// Moved to MimeParser.ccp and  enhanced
 	inline static char *EatNewLine(char* p, char*e)
 	{
-		while ((p < e) && (*p++ != '\n'));
-		return p;
+		while ((p < e) && (*p != '\n')) {
+			p++;
+		};
+		if (p < e)
+			return ++p;
+		else
+			return p;
 	}
 	inline static char *EatNewLine(char* p, char*e, int &maxLineLength)
 	{
-		while ((p < e) && (*p++ != '\n') && (maxLineLength-- > 0));
-		return p;
+		while ((p < e) && (*p != '\n') && (maxLineLength > 0)) {
+			p++; maxLineLength--;
+		if ((p < e) && ( *p == '\n'))
+			return ++p;
+		else
+			return p;
 	}
 #endif
 };
@@ -104,29 +114,29 @@ public:
 	bool m_IsMessage;
 	bool m_IsAttachment;
 	bool m_IsMultiPart;
-	CString m_Charset;
+	CStringA m_Charset;
 	UINT m_PageCode;
-	CString m_Description;
-	CString m_Disposition;
-	CString m_TransferEncoding;
-	CString m_SubType;
-	CString m_MainType;
-	CString m_Boundary;
-	CString m_ContentType;
-	CString m_ContentId;
-	CString m_ContentLocation;
+	CStringA m_Description;
+	CStringA m_Disposition;
+	CStringA m_TransferEncoding;
+	CStringA m_SubType;
+	CStringA m_MainType;
+	CStringA m_Boundary;
+	CStringA m_ContentType;
+	CStringA m_ContentId;
+	CStringA m_ContentLocation;
 	CMimeHeader::MediaType m_MediaType;
-	CString m_Name;   // from Content-Type
+	CStringA m_Name;   // from Content-Type
 	UINT m_NamePageCode;
-	CString m_AttachmentName;  // filename From Content-Disposition
+	CStringA m_AttachmentName;  // filename From Content-Disposition
 	UINT m_AttachmentNamePageCode;
-	CString m_AttachmentName2;  // filename From Content-Disposition
+	CStringA m_AttachmentName2;  // filename From Content-Disposition
 	UINT m_AttachmentNamePageCode2;
-	CString m_MessageId;
-	CString m_ReplyId;
-	CString m_InReplyId;
+	CStringA m_MessageId;
+	CStringA m_ReplyId;
+	CStringA m_InReplyId;
 	//unsigned __int64 m_ThreadId;
-	CString m_ThreadId;
+	CStringA m_ThreadId;
 };
 
 class MailBodyPool;

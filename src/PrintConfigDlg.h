@@ -50,23 +50,29 @@ struct NamePatternParams
 	int m_bUniqueId;
 	int m_nFileNameFormatSizeLimit;
 	int m_nWantedFileNameFormatSizeLimit;
-	int m_bPrintDialog;
-	int m_bScriptType;
+	int m_bPrintDialog;  // Legacy CWebBrowser options: "Do Not Prompt" "Print Prompt" "Print Preview"
+	int m_bScriptType;  // 0=Chrome 1=Edge else DOS cmd batch file
 	CString	m_BrowserPath;
 	CString	m_ChromeBrowserPath;
 	CString	m_MSEdgeBrowserPath;
-	CString	m_UserDefinedScriptPath;
+	CString	m_UserDefinedScriptPath;  // path to user dflt or user defined cmd script
 	int m_bPrintToSeparatePDFFiles;
 	int m_bPrintToSeparateHTMLFiles;
 	int m_bPrintToSeparateTEXTFiles;
 	int m_bAddBackgroundColorToMailHeader;
-	int m_bAddBreakPageAfterEachMailInPDF;
-	int m_bAddBreakPageAfterEachMailConversationThreadInPDF;
+	int m_bAddPageBreakAfterEachMailInPDF;
+	int m_bAddPageBreakAfterEachMailConversationThreadInPDF;
 	int m_bKeepMailBodyBackgroundColor;
 	int m_bHeaderAndFooter;
-	int m_bCustomFormat;
+	int m_bCustomFormat;  // use Tem[plate for File Name
+	// m_bConvert2Ansi is set/reset by Print to PDF Merge option
+	// this is hack to avoid passing across multiple calls  // FIXME
+	int m_bConvert2Ansi;  
 
-	DWORD m_nAddressPartsBitmap;
+
+	// Represents BOOLs FromDomain, FromUsername, ToDomain, ToUsername, ReplaceWhiteWithUnderscore
+	// Should this be represented as seprated vars in Unicode version
+	DWORD m_nAddressPartsBitmap;  
 
 	struct NameTemplateCnf m_nameTemplateCnf;
 
@@ -114,7 +120,7 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnEnChangeFileNameMaxSize();
 	afx_msg void OnBnClickedPrtPageSetp();
-	afx_msg void OnBnClickedHtml2pdfScriptType();
+	afx_msg void OnBnClickedChrome();
 	afx_msg void OnBnClickedUserDefinedScript();
 	afx_msg void OnBnClickedMSEdge();
 

@@ -70,6 +70,8 @@ public:
 	BOOL m_ReplaceAllWhiteBackgrounTags;
 };
 
+
+// Defined as Global/static in MainFrame.h. Not defined anywhere else 
 class ColorStylesDB
 {
 public:
@@ -85,17 +87,23 @@ public:
 		ColorStyle6 = 7,
 		ColorStyle7 = 8,
 		ColorStyle8 = 9,
-		MaxColorStyles = 10
+		ColorStyle9 = 10,
+		ColorStyle10 = 11,
+		ColorStyle11 = 12,
+		ColorStyle12 = 13,
+		ColorStyle13 = 14,
+		ColorStyle14 = 15,
+		ColorStyle15 = 16,
+		ColorStyle16 = 17,
+		MaxColorStyles = 18
 	};
 	ColorStylesDB();
 	//
 	static int ID2ENUM(WORD nID);
 	static WORD ColorStylesDB::NUM2ID(int colorStyle);
 
-	ColorStyleConfig m_loadedColorStyles;
-	ColorStyleConfig m_colorStyles;
-	ColorStyleConfig m_customColorStyles;
-	ColorStyleConfig m_savedCustomColorStyles;
+	ColorStyleConfig m_colorStyles;        // array of current predefined or custom colors for all Panes
+	ColorStyleConfig m_customColorStyles;  // array of custom colors/user selected colors for all Panes
 };
 
 class ColorStyleConfigDlg : public CDialogEx
@@ -119,29 +127,30 @@ protected:
 	void LoadData();
 public:
 	CWnd *m_MainFrameWnd;
-	//CCheckListBox m_listBox;
-	CListBox m_listBox;
+	CListBox m_listBox;            // List of Panes
 
-	COLORREF m_buttonColor;
-	CButton m_ColorButton1;
+	COLORREF m_buttonColor;        // "Pick Color" button color
+	CButton m_ColorButton1;        // "Pick Color" button
 
-	int m_lastColorStyle;
-	int m_selectedColorStyle;
-	int m_selectedPane;
-	CString m_customStyleColorList;
-	CString m_customColorList;
-	int m_applyColor;
-	COLORREF m_customColors[16];
+	int m_lastColorStyle;            // last saved color style.
+	int m_selectedColorStyle;        // radio button to select Color style number from Default to ColorStyle8 range
+	int m_selectedPane;              // selected Pane number frpm Pane List in Custom config mode
+	CString m_customStyleColorList;  // list of Pane custom colors to be written into registry
+	CString m_customColorList;       // Not used // FIXME
+	int m_applyColorToSelectedPane;  // status of check box "Apply to Selected"
+	int m_applyColorToAllPanes;      // status of check box "Apply to All Panes"
+	COLORREF m_customColors[16];     // colors selected by user known to Color Picker Dialog
 
-	void EnableCustomStyle(BOOL enable);
+	void EnableCustomStyle(BOOL enable); // enable/disable custom configuration
+	void ClearCustomStyleChecks();
 	void UpdateRegistry();
 	void LoadFromRegistry();
 
-	afx_msg void OnNMCustomdrawColorButton(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMCustomdrawColorButton(NMHDR *pNMHDR, LRESULT *pResult);  // Draws "Pick Color" button
 	afx_msg void OnBnClickedColorButton();
-	afx_msg void OnBnClickedColorCheck();
-	afx_msg void OnLbnSelchangeList1();
-	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedColorCheck(); // Apply selected color to singl/selected Pane
+	afx_msg void OnLbnSelchangeList1();  // Called in Custom mode when new pane is selected
+	afx_msg void OnBnClickedOk();  // Invoked by Save button. Verifies and updates registry
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedColorStyle(UINT nID);
 	//
@@ -153,4 +162,5 @@ public:
 	virtual BOOL OnInitDialog();
 	
 	afx_msg void OnBnClickedButtonClose();
+	afx_msg void OnBnClickedApplyToAllPanes();  // Apply selected color to all Panes
 };

@@ -92,12 +92,12 @@ protected:
 
 #endif
 
-BOOL DumpStack(MyStackWalker *sw, char *fileName, const char *seText, UINT seNumb, PCONTEXT ContextRecord = 0, int mailPosition = -1);
-BOOL DumpStackEx(char *fileName, CException* e);
-BOOL DumpMailData(char *fileName, const char *seText, UINT seNumb, int mailPosition, char *data, int datalen);
+BOOL DumpStack(MyStackWalker *sw, wchar_t *fileName, const CHAR *seText, UINT seNumb, PCONTEXT ContextRecord = 0, int mailPosition = -1);
+BOOL DumpStackEx(wchar_t *fileName, CException* e);
+BOOL DumpMailData(wchar_t *fileName, const char *seText, UINT seNumb, int mailPosition, char *data, int datalen);
 
 BOOL GetProgramDir(CString &progDir);
-BOOL CreateDumpFilePath(char *fileName, CString &filePath);
+BOOL CreateDumpFilePath(wchar_t *fileName, CString &filePath);
 const char* seDescription(const int code);
 
 

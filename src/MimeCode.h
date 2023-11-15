@@ -23,12 +23,12 @@ using namespace std;
 
 #pragma warning(disable:4786)	// identifier was truncated to 'number' characters in the debug information
 
-#if !defined(ASSERT)
+#if !defined(_ASSERTE)
 #if defined(_DEBUG)
 	#include <assert.h>
-	#define ASSERT(exp)	assert(exp)
+	#define _ASSERTE(exp)	assert(exp)
 #else
-	#define ASSERT(exp)	((void)0)
+	#define _ASSERTE(exp)	((void)0)
 #endif
 #endif
 
@@ -275,6 +275,7 @@ private:
 	int m_nEncoding;
 	string m_strCharset;
 
+public:
 	int BEncode(unsigned char* pbOutput, int nMaxSize) const;
 	int QEncode(unsigned char* pbOutput, int nMaxSize) const;
 };

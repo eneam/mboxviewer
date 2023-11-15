@@ -28,6 +28,7 @@
 
 #include "stdafx.h"
 #include <afxtempl.h>
+#include "TextUtilsEx.h"
 #include "MyCTime.h"
 
 
@@ -38,13 +39,18 @@
 #endif
 
 
-// Microsoft CTime genrates exceptions which currently are not handled and that makes mboxview unusable
+// Microsoft CTime generates exceptions which currently are not handled and that makes mboxview unusable
 // Reimplemented subset of methods without exceptions
 // Also most important it assumes input time is GMT and not local
 // However, lowest/samllest Date is still January 1, 1970 which is the limitation to fix at later time
 //
 
 // time_t my_timegm(struct tm *tm) // Linux
+
+MyCTime::MyCTime()
+{
+	__time64_t UTCTime = _time64(&m_time);
+}
 
 MyCTime::MyCTime(__time64_t time) :
 	m_time(time)
@@ -76,12 +82,12 @@ MyCTime::MyCTime(
 	int nDST)
 {
 #if 0
-	ASSERT(nYear >= 1970);
-	ASSERT(nMonth >= 1 && nMonth <= 12);
-	ASSERT(nDay >= 1 && nDay <= 31);
-	ASSERT(nHour >= 0 && nHour <= 23);
-	ASSERT(nMin >= 0 && nMin <= 59);
-	ASSERT(nSec >= 0 && nSec <= 59);
+	_ASSERTE(nYear >= 1970);
+	_ASSERTE(nMonth >= 1 && nMonth <= 12);
+	_ASSERTE(nDay >= 1 && nDay <= 31);
+	_ASSERTE(nHour >= 0 && nHour <= 23);
+	_ASSERTE(nMin >= 0 && nMin <= 59);
+	_ASSERTE(nSec >= 0 && nSec <= 59);
 #endif
 
 	struct tm atm;
@@ -159,7 +165,7 @@ bool MyCTime::SetDate(
 struct tm* MyCTime::GetGmtTm(struct tm* ptm)
 {
 	// Ensure ptm is valid
-	//ASSERT(ptm != NULL);
+	//_ASSERTE(ptm != NULL);
 
 	if (ptm != NULL)
 	{
@@ -181,7 +187,7 @@ struct tm* MyCTime::GetGmtTm(struct tm* ptm)
 struct tm* MyCTime::GetLocalTm(struct tm* ptm)
 {
 	// Ensure ptm is valid
-	//ASSERT(ptm != NULL);
+	//_ASSERTE(ptm != NULL);
 
 	if (ptm != NULL)
 	{
@@ -205,9 +211,9 @@ __time64_t MyCTime::GetTime()
 	return(m_time);
 }
 
-CString MyCTime::Format(LPCTSTR pFormat)
+CString MyCTime::Format(LPCWSTR pFormat)
 {
-	TCHAR szBuffer[maxTimeBufferSize];
+	wchar_t szBuffer[maxTimeBufferSize];
 	if (pFormat == NULL)
 	{
 		//return pFormat;
@@ -231,9 +237,9 @@ CString MyCTime::Format(LPCTSTR pFormat)
 	return szBuffer;
 }
 
-CString MyCTime::FormatGmt(LPCTSTR pFormat)
+CString MyCTime::FormatGmt(LPCWSTR pFormat)
 {
-	TCHAR szBuffer[maxTimeBufferSize];
+	wchar_t szBuffer[maxTimeBufferSize];
 
 	if (pFormat == NULL)
 	{
@@ -362,6 +368,47 @@ bool MyCTime::fixSystemtime(SYSTEMTIME *sysTime)
 		sysTime->wMilliseconds = 999;
 
 	return true;
+}
+
+CStringA MyCTime::FormatLocalTmA(CStringA& format)
+{
+	CString formatW;
+	DWORD error;
+
+	BOOL retA2W = TextUtilsEx::Ansi2WStr(format, formatW, error);
+	CStringA tmA = MyCTime::FormatLocalTmA(formatW);
+	return tmA;
+}
+
+CStringA MyCTime::FormatLocalTmA(CString& format)
+{
+	CStringA tmA;
+	DWORD error;
+
+	CString tmW = MyCTime::FormatLocalTm(format);
+	BOOL retW2A = TextUtilsEx::WStr2Ansi(tmW, tmA, error);
+	return tmA;
+}
+
+
+CStringA MyCTime::FormatGmtTmA(CStringA& format)
+{
+	CString formatW;
+	DWORD error;
+
+	BOOL retA2W = TextUtilsEx::Ansi2WStr(format, formatW, error);
+	CStringA tmA = MyCTime::FormatGmtTmA(formatW);
+	return tmA;
+}
+
+CStringA MyCTime::FormatGmtTmA(CString& format)
+{
+	CStringA tmA;
+	DWORD error;
+
+	CString tmW = MyCTime::FormatGmtTm(format);
+	BOOL retW2A =  TextUtilsEx::WStr2Ansi(tmW, tmA, error);
+	return tmA;
 }
 
 CString MyCTime::FormatLocalTm(CString &format)

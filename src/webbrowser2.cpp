@@ -73,7 +73,7 @@ void CWebBrowser2::GoSearch()
 	InvokeHelper(0x67, DISPATCH_METHOD, VT_EMPTY, NULL, NULL);
 }
 
-void CWebBrowser2::Navigate(LPCTSTR URL, VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData, VARIANT* Headers)
+void CWebBrowser2::Navigate(LPCWSTR URL, VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData, VARIANT* Headers)
 {
 	static BYTE parms[] =
 		VTS_BSTR VTS_PVARIANT VTS_PVARIANT VTS_PVARIANT VTS_PVARIANT;
@@ -235,7 +235,7 @@ void CWebBrowser2::ClientToWindow(long* pcx, long* pcy)
 		 pcx, pcy);
 }
 
-void CWebBrowser2::PutProperty(LPCTSTR Property_, const VARIANT& vtValue)
+void CWebBrowser2::PutProperty(LPCWSTR Property_, const VARIANT& vtValue)
 {
 	static BYTE parms[] =
 		VTS_BSTR VTS_VARIANT;
@@ -243,7 +243,7 @@ void CWebBrowser2::PutProperty(LPCTSTR Property_, const VARIANT& vtValue)
 		 Property_, &vtValue);
 }
 
-VARIANT CWebBrowser2::GetProperty_(LPCTSTR Property_)
+VARIANT CWebBrowser2::GetProperty_(LPCWSTR Property_)
 {
 	VARIANT result;
 	static BYTE parms[] =
@@ -318,7 +318,7 @@ CString CWebBrowser2::GetStatusText()
 	return result;
 }
 
-void CWebBrowser2::SetStatusText(LPCTSTR lpszNewValue)
+void CWebBrowser2::SetStatusText(LPCWSTR lpszNewValue)
 {
 	static BYTE parms[] =
 		VTS_BSTR;
@@ -371,14 +371,14 @@ void CWebBrowser2::SetFullScreen(BOOL bNewValue)
 		 bNewValue);
 }
 
-void CWebBrowser2::Navigate(LPCSTR url, DWORD flags)
+void CWebBrowser2::Navigate(LPCWSTR url, DWORD flags)
 {
 	COleVariant* pvarURL = new COleVariant( url );
 	COleVariant* pvarEmpty = new COleVariant;
 	COleVariant* pvarFlags = new COleVariant((long)(flags), VT_I4);
-	ASSERT(pvarURL);
-	ASSERT(pvarEmpty);
-	ASSERT(pvarFlags);
+	_ASSERTE(pvarURL);
+	_ASSERTE(pvarEmpty);
+	_ASSERTE(pvarFlags);
 	Navigate2( pvarURL, pvarFlags, pvarEmpty, pvarEmpty, pvarEmpty );
 	delete pvarURL;
 	delete pvarEmpty;

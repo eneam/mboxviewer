@@ -31,6 +31,7 @@
 
 #include "stdafx.h"
 #include "mboxview.h"
+#include "TextUtilsEx.h"
 #include "FindDlg.h"
 
 #ifdef _DEBUG
@@ -48,9 +49,15 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(CFindDlg)
 	m_params.SetDflts();
+	m_params.ResetFilterDates();
+
+	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
+	m_checkedColor = RGB(255, 255, 0);
+
+	m_brBkDate.CreateSolidBrush(m_dflBkColor);
+
 	//}}AFX_DATA_INIT
 }
-
 
 void CFindDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -75,20 +82,23 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_FIND_ALL, m_params.m_bFindAll);
 	DDX_Check(pDX, IDC_CHECK_NEGATE_SEARCH_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 	DDX_Check(pDX, IDC_FILTERDATES, m_params.m_filterDates);
+#if 0
 	if (pDX->m_bSaveAndValidate) {
 		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
 		GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
 	}
+#endif
 }
-
 
 BEGIN_MESSAGE_MAP(CFindDlg, CDialog)
 	//{{AFX_MSG_MAP(CFindDlg)
 	//}}AFX_MSG_MAP
+	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_CHECK1, &CFindDlg::OnBnClickedFilterDates)
 	ON_BN_CLICKED(IDC_CHECK_FIND_ALL, &CFindDlg::OnBnClickedCheckFindAll)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER1, &CFindDlg::OnDtnDatetimechangeDatetimepicker1)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindDlg::OnDtnDatetimechangeDatetimepicker2)
+	ON_BN_CLICKED(IDC_BUTTON1, &CFindDlg::OnBnClickedButtonHelp)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -96,7 +106,11 @@ END_MESSAGE_MAP()
 
 void CFindDlg::OnOK()
 {
-	UpdateData();
+	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
+	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
+
+	BOOL bSaveAndValidate = TRUE;  
+	UpdateData(bSaveAndValidate);
 
 	SYSTEMTIME endDateSysTime;
 	bool res1 = m_params.m_endDate.GetAsSystemTime(endDateSysTime);
@@ -106,39 +120,95 @@ void CFindDlg::OnOK()
 	bool res3 = MyCTime::fixSystemtime(&startDateSysTime);
 	bool res4 = MyCTime::fixSystemtime(&endDateSysTime);
 
-
 	m_params.m_endDate.SetDate(m_params.m_endDate.GetYear(), m_params.m_endDate.GetMonth(), m_params.m_endDate.GetDay());
 	m_params.m_startDate.SetDate(m_params.m_startDate.GetYear(), m_params.m_startDate.GetMonth(), m_params.m_startDate.GetDay());
 
-	m_params.m_string.TrimRight();
-	g_tu.MakeLower(m_params.m_string);
-	if (m_params.m_string.IsEmpty()) {
-		AfxMessageBox(_T("Cannot search for an empty string!"), MB_OK | MB_ICONHAND);
+	m_params.m_string.TrimRight();  // FIXMEFIXME do we need to enforce this
+	if (m_params.m_string.IsEmpty())
+	{
+		AfxMessageBox(L"Cannot search for an empty string!", MB_OK | MB_ICONHAND);
 		return;
 	}
 
-	//TRACE(_T("Extended: %u %u\n"), m_string.GetAt(0), m_string.GetAt(1));	
+	DWORD error;
+	TextUtilsEx::WStr2UTF8(&m_params.m_string, &m_params.m_stringA, error);  // FIXMEFIXME
+
+	//TRACE(L"Extended: %u %u\n", m_string.GetAt(0), m_string.GetAt(1));	
 	CDialog::OnOK();
 }
 
-
 BOOL CFindDlg::OnInitDialog()
 {
+	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
+	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
+
 	CDialog::OnInitDialog();
 
-	UpdateData(TRUE);
+	GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
+	GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
+
+	CWnd *p = GetDlgItem(IDC_FILTERDATES);
+	CButton* b = (CButton*)p;
+	if (b)
+	{
+		int state = b->GetCheck();
+		if (state == BST_CHECKED)
+		{
+			m_brBkDate.DeleteObject();
+			m_brBkDate.CreateSolidBrush(m_checkedColor);
+		}
+	}
+
+	UpdateData(FALSE);  // FIXMEFIXME
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
+HBRUSH CFindDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	// The below works. It is called for every object in the dialog. May not be the most efficient.
+	// TODO: Use MyCButton instead ??
+	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	if (pWnd->GetDlgCtrlID() == IDC_FILTERDATES)
+	{
+		return (HBRUSH)m_brBkDate;
+	}
+	else
+		return hbr;
+}
 
 void CFindDlg::OnBnClickedFilterDates()
 {
-	UpdateData(TRUE);  // from UI controls --> class memeber varuables
+	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
+	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
+
+	// Any problem with updating all class member variables ? ?
+	//UpdateData(TRUE);
+
+	//GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
+	//GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
+
+	CWnd* p = GetDlgItem(IDC_FILTERDATES);
+	CButton* b = (CButton*)p;
+	if (b)
+	{
+		int state = b->GetCheck();
+		m_params.m_filterDates = state;  // or uncomment UpdateData(TRUE); above
+
+		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(state);
+		GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(state);
+
+		m_brBkDate.DeleteObject();
+		if (state == BST_CHECKED)
+			m_brBkDate.CreateSolidBrush(m_checkedColor);
+		else
+			m_brBkDate.CreateSolidBrush(m_dflBkColor);
+	}
+
 	int deb = 1;
 }
-
 
 void CFindDlgParams::SetDflts()
 {
@@ -147,7 +217,7 @@ void CFindDlgParams::SetDflts()
 	m_bFindNext = TRUE;
 	m_filterDates = FALSE;
 
-	m_string = _T("");
+	m_string = L"";
 	m_bWholeWord = FALSE;
 	m_bCaseSensitive = FALSE;
 
@@ -189,9 +259,15 @@ void CFindDlgParams::Copy(CFindDlgParams &src)
 	m_bHighlightAll = src.m_bHighlightAll;
 	m_bFindAll = src.m_bFindAll;
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
+
+	// FIXMEFIXME
+	m_lastStartDate = src.m_lastStartDate;
+	m_lastEndDate = src.m_lastEndDate;
+	m_mboxMailStartDate = src.m_mboxMailStartDate;
+	m_mboxMailEndDate = src.m_mboxMailEndDate;
+	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
+	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
 }
-
-
 
 void CFindDlg::OnBnClickedCheckFindAll()
 {
@@ -234,9 +310,11 @@ void CFindDlg::OnBnClickedCheckFindAll()
 	}
 }
 
-
 void CFindDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult)
 {
+	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
+	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
+
 	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
 	// TODO: Add your control notification handler code here
 
@@ -253,9 +331,11 @@ void CFindDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResul
 	*pResult = 0;
 }
 
-
 void CFindDlg::OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult)
 {
+	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
+	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
+
 	LPNMDATETIMECHANGE pDTChange = reinterpret_cast<LPNMDATETIMECHANGE>(pNMHDR);
 	// TODO: Add your control notification handler code here
 
@@ -272,3 +352,35 @@ void CFindDlg::OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResul
 	*pResult = 0;
 }
 
+CFindDlgParams::CFindDlgParams()
+{
+	SetDflts();
+	ResetFilterDates();
+	int deb = 1;
+}
+
+CFindDlgParams::~CFindDlgParams()
+{
+	int deb = 1;
+}
+
+void CFindDlgParams::ResetFilterDates()
+{
+	m_lastStartDate = (time_t)-1;
+	m_lastEndDate = (time_t)-1;
+	m_mboxMailStartDate = (time_t)-1;
+	m_mboxMailEndDate = (time_t)-1;
+	m_needToRestoreArchiveListDateTime = FALSE;
+	m_bNeedToFindMailMinMaxTime = TRUE;
+}
+
+void CFindDlg::OnBnClickedButtonHelp()
+{
+	// TODO: Add your control notification handler code here
+
+	CString helpFileName = L"BasicSearchHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
+
+	int deb = 1;
+}

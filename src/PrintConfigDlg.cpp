@@ -74,8 +74,8 @@ void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SEPARATE_HTML, m_NamePatternParams.m_bPrintToSeparateHTMLFiles);
 	DDX_Check(pDX, IDC_SEPARATE_TEXT, m_NamePatternParams.m_bPrintToSeparateTEXTFiles);
 	DDX_Check(pDX, IDC_ADD_HDR_COLOR, m_NamePatternParams.m_bAddBackgroundColorToMailHeader);
-	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailInPDF);
-	DDX_Check(pDX, IDC_THREAD_BREAK, m_NamePatternParams.m_bAddBreakPageAfterEachMailConversationThreadInPDF);
+	DDX_Check(pDX, IDC_PAGE_BREAK, m_NamePatternParams.m_bAddPageBreakAfterEachMailInPDF);
+	DDX_Check(pDX, IDC_THREAD_BREAK, m_NamePatternParams.m_bAddPageBreakAfterEachMailConversationThreadInPDF);
 	DDX_Check(pDX, IDC_KEEP_BODY_BKGRND_COLOR, m_NamePatternParams.m_bKeepMailBodyBackgroundColor);
 	DDX_Check(pDX, IDC_HEADER_AND_FOOTER, m_NamePatternParams.m_bHeaderAndFooter);
 	DDX_Check(pDX, IDC_CUSTOM_TEMPLATE, m_NamePatternParams.m_bCustomFormat);
@@ -86,7 +86,7 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &PrintConfigDlg::OnBnClickedOk)
 	ON_EN_CHANGE(IDC_FILE_NAME_MAX_SIZE, &PrintConfigDlg::OnEnChangeFileNameMaxSize)
 	ON_BN_CLICKED(IDC_PRT_PAGE_SETP, &PrintConfigDlg::OnBnClickedPrtPageSetp)
-	ON_BN_CLICKED(IDC_HTML2PDF_SCRIPT_TYPE, &PrintConfigDlg::OnBnClickedHtml2pdfScriptType)
+	ON_BN_CLICKED(IDC_HTML2PDF_SCRIPT_TYPE, &PrintConfigDlg::OnBnClickedChrome)
 	ON_BN_CLICKED(IDC_USER_SCRIPT, &PrintConfigDlg::OnBnClickedUserDefinedScript)
 	ON_BN_CLICKED(IDC_MSEDGE, &PrintConfigDlg::OnBnClickedMSEdge)
 	ON_BN_CLICKED(IDC_CUSTOM_TEMPLATE, &PrintConfigDlg::OnBnClickedCustomTemplate)
@@ -138,7 +138,7 @@ BOOL PrintConfigDlg::OnInitDialog()
 		if (p) {
 			NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
 			CString adjustedMaxSize;
-			adjustedMaxSize.Format("%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
+			adjustedMaxSize.Format(L"%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
 			((CButton*)p)->SetWindowText(adjustedMaxSize);
 			p->EnableWindow(FALSE);
 		}
@@ -158,7 +158,8 @@ BOOL PrintConfigDlg::OnInitDialog()
 		}
 
 		p = GetDlgItem(IDC_KEEP_BODY_BKGRND_COLOR);
-		if (p) {
+		if (p)
+		{
 			if ((m_NamePatternParams.m_bScriptType == 0) || (m_NamePatternParams.m_bScriptType == 1))
 			{
 				((CButton*)p)->SetCheck(1);
@@ -169,17 +170,10 @@ BOOL PrintConfigDlg::OnInitDialog()
 		}
 
 		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
-		if (p) {
-			if (m_NamePatternParams.m_bScriptType != 1)
-			{
-				((CButton*)p)->SetCheck(1);
-				p->EnableWindow(FALSE);
-			}
-			else
-			{
-				((CButton*)p)->SetCheck(m_NamePatternParams.m_bHeaderAndFooter);
-				p->EnableWindow(TRUE);
-			}
+		if (p)
+		{
+			((CButton*)p)->SetCheck(m_NamePatternParams.m_bHeaderAndFooter);
+			p->EnableWindow(TRUE);
 		}
 
 		p = GetDlgItem(IDC_SET_CUSTOM_TEMPLATE);
@@ -221,22 +215,22 @@ void PrintConfigDlg::OnEnChangeFileNameMaxSize()
 		CWnd *p = GetDlgItem(IDC_FILE_NAME_MAX_SIZE);
 		if (p) {
 			((CButton*)p)->GetWindowText(wantedMaxSize);
-			int nWantedMaxSize = atoi((LPCSTR)wantedMaxSize);
+			int nWantedMaxSize = _tstoi((LPCWSTR)wantedMaxSize);
 			if (nWantedMaxSize > 260)
 			{
-				wantedMaxSize = "260";
+				wantedMaxSize = L"260";
 				((CButton*)p)->SetWindowText(wantedMaxSize);
 			}
 		}
 		else
 			return;
 
-		m_NamePatternParams.m_nWantedFileNameFormatSizeLimit = atoi((LPCSTR)wantedMaxSize);
+		m_NamePatternParams.m_nWantedFileNameFormatSizeLimit = _tstoi((LPCWSTR)wantedMaxSize);
 		NamePatternParams::UpdateFilePrintconfig(m_NamePatternParams);
 		p = GetDlgItem(IDC_FILE_NAME_ADJUSTED_MAX_SIZE);
 		if (p) {
 			CString adjustedMaxSize;
-			adjustedMaxSize.Format("%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
+			adjustedMaxSize.Format(L"%d", m_NamePatternParams.m_nFileNameFormatSizeLimit);
 			((CButton*)p)->SetWindowText(adjustedMaxSize);
 			p->EnableWindow(FALSE);
 		}
@@ -256,26 +250,27 @@ void NamePatternParams::SetDflts()
 	m_nWantedFileNameFormatSizeLimit = m_nFileNameFormatSizeLimit;
 	m_bPrintDialog = 1;
 	m_bScriptType = 1;
-	m_ChromeBrowserPath = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-	m_MSEdgeBrowserPath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+	m_ChromeBrowserPath = L"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
+	m_MSEdgeBrowserPath = L"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 	m_BrowserPath = m_MSEdgeBrowserPath;
 	m_bPrintToSeparatePDFFiles = FALSE;
 	m_bPrintToSeparateHTMLFiles = FALSE;
 	m_bPrintToSeparateTEXTFiles = FALSE;
 
 	m_bAddBackgroundColorToMailHeader = TRUE;
-	m_bAddBreakPageAfterEachMailInPDF = FALSE;
-	m_bAddBreakPageAfterEachMailConversationThreadInPDF = FALSE;
+	m_bAddPageBreakAfterEachMailInPDF = FALSE;
+	m_bAddPageBreakAfterEachMailConversationThreadInPDF = FALSE;
 	m_bKeepMailBodyBackgroundColor = TRUE;
 	m_bHeaderAndFooter = FALSE;
 	m_bCustomFormat = FALSE;
+	m_bConvert2Ansi = FALSE;
 
 	m_nameTemplateCnf.SetDflts();
 
 	AddressParts2Bitmap();
 
-	char *pValue;
-	errno_t  er = _get_pgmptr(&pValue);
+	wchar_t *pValue;
+	errno_t  er = _get_wpgmptr(&pValue);
 	CString procFullPath;
 	if ((er == 0) && pValue)
 		procFullPath.Append(pValue);
@@ -290,7 +285,7 @@ void NamePatternParams::SetDflts()
 	CString procPath;
 	BOOL ret = FileUtils::CPathGetPath(procFullPath, procPath);
 
-	m_UserDefinedScriptPath = procPath + "\\scripts\\HTML2PDF-single-wkhtmltopdf.cmd";
+	m_UserDefinedScriptPath = procPath + L"\\scripts\\HTML2PDF-single-wkhtmltopdf.cmd";
 
 	int deb = 1;
 }
@@ -318,8 +313,8 @@ void NamePatternParams::Copy(NamePatternParams &src)
 	m_bPrintToSeparateHTMLFiles = src.m_bPrintToSeparateHTMLFiles;
 	m_bPrintToSeparateTEXTFiles = src.m_bPrintToSeparateTEXTFiles;
 	m_bAddBackgroundColorToMailHeader = src.m_bAddBackgroundColorToMailHeader;
-	m_bAddBreakPageAfterEachMailInPDF = src.m_bAddBreakPageAfterEachMailInPDF;
-	m_bAddBreakPageAfterEachMailConversationThreadInPDF = src.m_bAddBreakPageAfterEachMailConversationThreadInPDF;
+	m_bAddPageBreakAfterEachMailInPDF = src.m_bAddPageBreakAfterEachMailInPDF;
+	m_bAddPageBreakAfterEachMailConversationThreadInPDF = src.m_bAddPageBreakAfterEachMailConversationThreadInPDF;
 	m_bKeepMailBodyBackgroundColor = src.m_bKeepMailBodyBackgroundColor;
 	m_bHeaderAndFooter = src.m_bHeaderAndFooter;
 	m_bCustomFormat = src.m_bCustomFormat;
@@ -332,77 +327,82 @@ void NamePatternParams::UpdateRegistry(NamePatternParams &current, NamePatternPa
 	if (&current == &updated)
 		return;
 
+	CString section_print = CString(sz_Software_mboxview) + L"\\PrintConfig";
+
+	CString section_print_fname_dflt_template = CString(sz_Software_mboxview) + L"\\PrintConfig\\FileNameDefaultTemplate";
+
 	if (updated.m_bDate != current.m_bDate) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameDate", updated.m_bDate);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameDate", updated.m_bDate);
 	}
 	if (updated.m_bTime != current.m_bTime) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameTime", updated.m_bTime);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameTime", updated.m_bTime);
 	}
 	if (updated.m_bFrom != current.m_bFrom) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameFrom", updated.m_bFrom);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameFrom", updated.m_bFrom);
 	}
 	if (updated.m_bTo != current.m_bTo) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameTo", updated.m_bTo);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameTo", updated.m_bTo);
 	}
 	if (updated.m_bSubject != current.m_bSubject) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameSubject", updated.m_bSubject);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameSubject", updated.m_bSubject);
 	}
+	//
 	if (updated.m_nFileNameFormatSizeLimit != current.m_nFileNameFormatSizeLimit) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameMaxLength", updated.m_nWantedFileNameFormatSizeLimit);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"fileNameMaxLength", updated.m_nWantedFileNameFormatSizeLimit);
 	}
 	if (updated.m_bPrintDialog != current.m_bPrintDialog) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printDialogType", updated.m_bPrintDialog);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printDialogType", updated.m_bPrintDialog);
 	}
 	if (updated.m_bScriptType != current.m_bScriptType) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printHTML2PDFScriptType", updated.m_bScriptType);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printHTML2PDFScriptType", updated.m_bScriptType);
 	}
 	if (updated.m_bScriptType == 0)
 	{
 		if (updated.m_BrowserPath != current.m_ChromeBrowserPath) {
 			updated.m_ChromeBrowserPath = updated.m_BrowserPath;
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printChromeBrowserPath", updated.m_ChromeBrowserPath);
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_print, L"ChromeBrowserPath", updated.m_ChromeBrowserPath);
 		}
 	}
 	else if (updated.m_bScriptType == 1)
 	{
 		if (updated.m_BrowserPath != current.m_MSEdgeBrowserPath) {
 			updated.m_MSEdgeBrowserPath = updated.m_BrowserPath;
-			CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printMSEdgeBrowserPath", updated.m_MSEdgeBrowserPath);
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_print, L"MSEdgeBrowserPath", updated.m_MSEdgeBrowserPath);
 		}
 	}
 	if (updated.m_UserDefinedScriptPath != current.m_UserDefinedScriptPath) {
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printUserDefinedScriptPath", updated.m_UserDefinedScriptPath);
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_print, L"userDefinedScriptPath", updated.m_UserDefinedScriptPath);
 	}
 	if (updated.m_bAddBackgroundColorToMailHeader != current.m_bAddBackgroundColorToMailHeader) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailHdrBackgroundColor", updated.m_bAddBackgroundColorToMailHeader);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printMailHdrBackgroundColor", updated.m_bAddBackgroundColorToMailHeader);
 	}
-	if (updated.m_bAddBreakPageAfterEachMailInPDF != current.m_bAddBreakPageAfterEachMailInPDF) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMail", updated.m_bAddBreakPageAfterEachMailInPDF);
+	if (updated.m_bAddPageBreakAfterEachMailInPDF != current.m_bAddPageBreakAfterEachMailInPDF) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printPageBreakAfterEachMail", updated.m_bAddPageBreakAfterEachMailInPDF);
 	}
-	if (updated.m_bAddBreakPageAfterEachMailConversationThreadInPDF != current.m_bAddBreakPageAfterEachMailConversationThreadInPDF) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMailConversationThread", updated.m_bAddBreakPageAfterEachMailConversationThreadInPDF);
+	if (updated.m_bAddPageBreakAfterEachMailConversationThreadInPDF != current.m_bAddPageBreakAfterEachMailConversationThreadInPDF) {
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printPageBreakAfterEachMailConversationThread", updated.m_bAddPageBreakAfterEachMailConversationThreadInPDF);
 	}
 	if (updated.m_bKeepMailBodyBackgroundColor != current.m_bKeepMailBodyBackgroundColor) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printMailBodyBackgroundColor", updated.m_bKeepMailBodyBackgroundColor);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printMailBodyBackgroundColor", updated.m_bKeepMailBodyBackgroundColor);
 	}
 	if (updated.m_bHeaderAndFooter != current.m_bHeaderAndFooter) {
-		if (updated.m_bScriptType == 1)
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPageHeaderAndFooter", updated.m_bHeaderAndFooter);
-		else
-			updated.m_bHeaderAndFooter = current.m_bHeaderAndFooter; // update m_bHeaderAndFooter only when m_bScriptType == 1
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"printPageHeaderAndFooter", updated.m_bHeaderAndFooter);
 	}
+
+	CString section_print_fname_custom_template = CString(sz_Software_mboxview) + "\\PrintConfig\\FileNameCustomTemplate";
+
 	if (updated.m_bCustomFormat != current.m_bCustomFormat) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplate", updated.m_bCustomFormat);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print, L"useFileNameCustomTemplate", updated.m_bCustomFormat);
 	}
 	if (updated.m_nameTemplateCnf.m_TemplateFormat != current.m_nameTemplateCnf.m_TemplateFormat) {
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplateFormat", updated.m_nameTemplateCnf.m_TemplateFormat);
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_print_fname_custom_template, L"templateFormat", updated.m_nameTemplateCnf.m_TemplateFormat);
 	}
 	if (updated.m_nameTemplateCnf.m_DateFormat != current.m_nameTemplateCnf.m_DateFormat) {
-		CProfile::_WriteProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, "printFileNameCustomTemplateDateFormat", updated.m_nameTemplateCnf.m_DateFormat);
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_print_fname_custom_template, L"dateFormat", updated.m_nameTemplateCnf.m_DateFormat);
 	}
 	AddressParts2Bitmap();
 	if (updated.m_nAddressPartsBitmap != current.m_nAddressPartsBitmap) {
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printAddressPartsBitmap", updated.m_nAddressPartsBitmap);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print_fname_custom_template, L"addressPartsBitmap", updated.m_nAddressPartsBitmap);
 	}
 }
 
@@ -411,7 +411,7 @@ void NamePatternParams::LoadFromRegistry()
 	BOOL retval;
 	DWORD bDate, bTime, bFrom, bTo, bSubject, bPrintDialog, bScriptType, nWantedFileNameFormatSizeLimit;
 	DWORD bAddBackgroundColorToMailHeader, bAddBreakPageAfterEachMailInPDF, bKeepMailBodyBackgroundColor, bHeaderAndFooter;
-	DWORD bAddBreakPageAfterEachMailConversationThreadInPDF;
+	DWORD bAddPageBreakAfterEachMailConversationThreadInPDF;
 	DWORD nAddressPartsBitmap;
 	CString chromeBrowserPath;
 	CString msedgeBrowserPath;
@@ -420,63 +420,71 @@ void NamePatternParams::LoadFromRegistry()
 	CString templateFormat;
 	CString dateFormat;
 
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameDate"), bDate))
+	CString section_print = CString(sz_Software_mboxview) + "\\PrintConfig";
+
+	CString section_print_fname_dflt_template = CString(sz_Software_mboxview) + "\\PrintConfig\\FileNameDefaultTemplate";
+
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameDate", bDate))
 		m_bDate = bDate;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameTime"), bTime))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameTime", bTime))
 		m_bTime = bTime;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameFrom"), bFrom))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameFrom", bFrom))
 		m_bFrom = bFrom;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameTo"), bTo))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameTo", bTo))
 		m_bTo = bTo;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameSubject"), bSubject))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_dflt_template, L"nameSubject", bSubject))
 		m_bSubject = bSubject;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameMaxLength"), nWantedFileNameFormatSizeLimit))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"fileNameMaxLength", nWantedFileNameFormatSizeLimit))
 		m_nWantedFileNameFormatSizeLimit = nWantedFileNameFormatSizeLimit;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printDialogType"), bPrintDialog))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printDialogType", bPrintDialog))
 		m_bPrintDialog = bPrintDialog;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printHTML2PDFScriptType"), bScriptType))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printHTML2PDFScriptType", bScriptType))
 		m_bScriptType = bScriptType;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printChromeBrowserPath"), chromeBrowserPath))
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_print, L"ChromeBrowserPath", chromeBrowserPath))
 		m_ChromeBrowserPath = chromeBrowserPath;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMSEdgeBrowserPath"), msedgeBrowserPath))
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_print, L"MSEdgeBrowserPath", msedgeBrowserPath))
 		m_MSEdgeBrowserPath = msedgeBrowserPath;
 
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printUserDefinedScriptPath"), userDefinedScriptPath))
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_print, L"userDefinedScriptPath", userDefinedScriptPath))
 		m_UserDefinedScriptPath = userDefinedScriptPath;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailHdrBackgroundColor"), bAddBackgroundColorToMailHeader))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printMailHdrBackgroundColor", bAddBackgroundColorToMailHeader))
 		m_bAddBackgroundColorToMailHeader = bAddBackgroundColorToMailHeader;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPDFPageBreakAfterEachMail"), bAddBreakPageAfterEachMailInPDF))
-		m_bAddBreakPageAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPDFPageBreakAfterEachMailConversationThread"), bAddBreakPageAfterEachMailConversationThreadInPDF))
-		m_bAddBreakPageAfterEachMailConversationThreadInPDF = bAddBreakPageAfterEachMailConversationThreadInPDF;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printMailBodyBackgroundColor"), bKeepMailBodyBackgroundColor))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printPageBreakAfterEachMail", bAddBreakPageAfterEachMailInPDF))
+		m_bAddPageBreakAfterEachMailInPDF = bAddBreakPageAfterEachMailInPDF;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printPageBreakAfterEachMailConversationThread", bAddPageBreakAfterEachMailConversationThreadInPDF))
+		m_bAddPageBreakAfterEachMailConversationThreadInPDF = bAddPageBreakAfterEachMailConversationThreadInPDF;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printMailBodyBackgroundColor", bKeepMailBodyBackgroundColor))
 		m_bKeepMailBodyBackgroundColor = bKeepMailBodyBackgroundColor;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printPageHeaderAndFooter"), bHeaderAndFooter))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"printPageHeaderAndFooter", bHeaderAndFooter))
 		m_bHeaderAndFooter = bHeaderAndFooter;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplate"), bCustomFormat))
+
+	CString section_print_fname_custom_template = CString(sz_Software_mboxview) + "\\PrintConfig\\FileNameCustomTemplate";
+
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print, L"useFileNameCustomTemplate", bCustomFormat))
 		m_bCustomFormat = bCustomFormat;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplateFormat"), templateFormat))
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_print_fname_custom_template, L"templateFormat", templateFormat))
 		m_nameTemplateCnf.m_TemplateFormat = templateFormat;
-	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printFileNameCustomTemplateDateFormat"), dateFormat))
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_print_fname_custom_template, L"dateFormat", dateFormat))
 		m_nameTemplateCnf.m_DateFormat = dateFormat;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, _T("printAddressPartsBitmap"), nAddressPartsBitmap))
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_print_fname_custom_template, L"addressPartsBitmap", nAddressPartsBitmap))
 	{
 		m_nAddressPartsBitmap = nAddressPartsBitmap;
 		Bitmap2AddressParts();
 	}
 
-	if (m_bAddBreakPageAfterEachMailInPDF)
+	if (m_bAddPageBreakAfterEachMailInPDF)
 	{
-		if (m_bAddBreakPageAfterEachMailConversationThreadInPDF)
+		if (m_bAddPageBreakAfterEachMailConversationThreadInPDF)
 		{
-			m_bAddBreakPageAfterEachMailConversationThreadInPDF = 0;
-			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, "printPDFPageBreakAfterEachMailConversationThread", m_bAddBreakPageAfterEachMailConversationThreadInPDF);
+			m_bAddPageBreakAfterEachMailConversationThreadInPDF = 0;
+			CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_print,
+				L"printPageBreakAfterEachMailConversationThread", m_bAddPageBreakAfterEachMailConversationThreadInPDF);
 		}
 	}
 
 	if (m_bScriptType == 0)
 	{
-		m_bHeaderAndFooter = TRUE;
+		// m_bHeaderAndFooter = TRUE;  // Chrome can now be configured by user  // FIXME
 		if (chromeBrowserPath.IsEmpty())
 			m_BrowserPath = m_ChromeBrowserPath;
 		else
@@ -518,7 +526,7 @@ void PrintConfigDlg::OnBnClickedPrtPageSetp()
 	HtmlUtils::PrintToPrinterPageSetup(this);
 }
 
-void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
+void PrintConfigDlg::OnBnClickedChrome()
 {
 	// TODO: Add your control notification handler code here
 
@@ -540,8 +548,8 @@ void PrintConfigDlg::OnBnClickedHtml2pdfScriptType()
 
 		p = GetDlgItem(IDC_HEADER_AND_FOOTER);
 		if (p) {
-			((CButton*)p)->SetCheck(1);
-			p->EnableWindow(FALSE);
+			((CButton*)p)->SetCheck(m_NamePatternParams.m_bHeaderAndFooter);
+			p->EnableWindow(TRUE);
 		}
 	}
 	int deb = 1;

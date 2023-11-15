@@ -14,12 +14,12 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define MES_UNDO        _T("&Undo")
-#define MES_CUT         _T("Cu&t")
-#define MES_COPY        _T("&Copy")
-#define MES_PASTE       _T("&Paste")
-#define MES_DELETE      _T("&Delete")
-#define MES_SELECTALL   _T("Select &All")
+#define MES_UNDO        L"&Undo"
+#define MES_CUT         L"Cu&t"
+#define MES_COPY        L"&Copy"
+#define MES_PASTE       L"&Paste"
+#define MES_DELETE      L"&Delete"
+#define MES_SELECTALL   L"Select &All"
 #define ME_SELECTALL    WM_USER + 0x7000
 
 BEGIN_MESSAGE_MAP(CMenuEdit, CEdit)
@@ -78,6 +78,9 @@ void CMenuEdit::OnContextMenu(CWnd* pWnd, CPoint point)
     flags = (!len || (LOWORD(sel) == 0 && HIWORD(sel) == len)) ? MF_GRAYED : 0;
     menu.InsertMenu(7, MF_BYPOSITION | flags, ME_SELECTALL, MES_SELECTALL);
 	menu.InsertMenu(6, MF_BYPOSITION | MF_SEPARATOR);
+
+    CString txt;
+    this->GetWindowText(txt);
 
     menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, point.x, point.y, this);
 }

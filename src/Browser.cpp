@@ -105,23 +105,23 @@ void CBrowser::OnSize(UINT nType, int cx, int cy)
 	m_ie.MoveWindow( 0, 0, cx, cy );
 }
 
-void CBrowser::Navigate(LPCSTR url, DWORD flags)
+void CBrowser::Navigate(LPCWSTR url, DWORD flags)
 {
 	COleVariant* pvarURL = new COleVariant( url );
 	COleVariant* pvarEmpty = new COleVariant;
 	COleVariant* pvarFlags = new COleVariant((long)(flags), VT_I4);
-	ASSERT(pvarURL);
-	ASSERT(pvarEmpty);
-	ASSERT(pvarFlags);
+	_ASSERTE(pvarURL);
+	_ASSERTE(pvarEmpty);
+	_ASSERTE(pvarFlags);
 	m_url = url;
-	TRACE("CBrowser::Navigate(%s)... m_bNavigateComplete(%d)\n", url, m_bNavigateComplete);
+	TRACE(L"CBrowser::Navigate(%s)... m_bNavigateComplete(%d)\n", url, m_bNavigateComplete);
 	m_bNavigateComplete = FALSE;
 	//m_ie.Stop();
 	m_ie.Navigate2( pvarURL, pvarFlags, pvarEmpty, pvarEmpty, pvarEmpty );
 	CString loc = m_ie.GetLocationURL();
 	if (loc.CompareNoCase(url))
 		int deb = 1;
-	TRACE("Done.\n");
+	TRACE(L"Done.\n");
 	delete pvarURL;
 	delete pvarEmpty;
 	delete pvarFlags;
@@ -145,14 +145,14 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 	CString strURL = V_BSTR(URL);
 	CString locURL = m_ie.GetLocationURL();
 	
-	TRACE("CBrowser::OnDocumentCompleteExplorer(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
+	TRACE(L"CBrowser::OnDocumentCompleteExplorer(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
 		strURL, m_bNavigateComplete, m_url, locURL);
 
 	pUnk = m_ie.GetControlUnknown();
-	ASSERT(pUnk);
+	_ASSERTE(pUnk);
 
 	hr = pUnk->QueryInterface(IID_IDispatch, (void**)&lpWBDisp);
-	ASSERT(SUCCEEDED(hr));
+	_ASSERTE(SUCCEEDED(hr));
 
 	if (lpWBDisp) {
 		if (pDisp == lpWBDisp)
@@ -183,7 +183,7 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 #if 0
 	// Already set by Command UI in void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 	if (pFrame) {
-		CString sText = _T("Ready");
+		CString sText = L"Ready";
 		int paneId = 0;
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
@@ -194,14 +194,14 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		VARIANT* Flags, VARIANT* TargetFrameName,
 		VARIANT* PostData, VARIANT* Headers, BOOL* Cancel)
 {
-	ASSERT(V_VT(URL) == VT_BSTR);
-	ASSERT(Cancel != NULL);
+	_ASSERTE(V_VT(URL) == VT_BSTR);
+	_ASSERTE(Cancel != NULL);
 	USES_CONVERSION;
 
 	CString strURL = V_BSTR(URL);
 	CString locURL = m_ie.GetLocationURL();
 
-	TRACE("CBrowser::BeforeNavigate(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
+	TRACE(L"CBrowser::BeforeNavigate(%s)... m_bNavigateComplete(%d) currURL(%s) locURL(%s)\n",
 		strURL, m_bNavigateComplete, m_url, locURL);
 
 	m_bDidNavigate = true;
@@ -217,21 +217,20 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 	if (Cancel)
 		*Cancel = FALSE;
 
-#if 1
 	// Open link clicked by a user in the external browser
 	// TODO: Best effort. Microsoft recommded solution not clear.
 	// May need to intercept mouse click, update doc to attach action events to all links ?
 
-	CString url = "about:blank";
+	CString url = L"about:blank";
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
 
 	{
 		CString colorStr;
 		int retC2A = NListView::Color2Str(color, colorStr);
 
-		url = "about:<html><head><style>body{background-color: #";
+		url = L"about:<html><head><style>body{background-color: #";
 		url.Append(colorStr);
-		url.Append(";}</style></head><body></body></html><br>");
+		url.Append(L";}</style></head><body></body></html><br>");
 	}
 
 	if ((strURL.CompareNoCase(url) != 0) 
@@ -242,7 +241,7 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		//m_ie.Stop();
 		ShellExecute(0, NULL, strURL, NULL, NULL, SW_SHOWDEFAULT);
 	}
-#endif
+
 	return;
 }
 

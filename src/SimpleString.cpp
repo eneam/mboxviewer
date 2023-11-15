@@ -31,12 +31,13 @@
 #include "SimpleString.h"
 #include "TextUtilsEx.h"
 
-int SimpleString::FindNoCase(int offset, void const* Src, int  Size)
+
+// Expensive !!!
+int SimpleString::FindNoCase(int offset, char const* Src, int  Size)
 {
 	int i;
 	char *p;
-	int count = m_count - offset;
-	for (i = offset; i < (count - Size); i++)
+	for (i = offset; i < (m_count - Size); i++)
 	{
 		p = &m_data[i];
 		if (TextUtilsEx::strncmpUpper2Lower(p, (m_count - i), (char*)Src, Size) == 0)
@@ -45,7 +46,25 @@ int SimpleString::FindNoCase(int offset, void const* Src, int  Size)
 	return -1;
 }
 
-int SimpleString::FindAny(int offset, void const* Src)
+
+// Expensive !!!
+int SimpleString::FindNoCase(int offset, char const* Src, int  Size, int ncount)
+{
+	int i;
+	char* p;
+	if (ncount > m_count)
+		ncount = m_count;
+
+	for (i = offset; i < (ncount - Size); i++)
+	{
+		p = &m_data[i];
+		if (TextUtilsEx::strncmpUpper2Lower(p, ncount - i, (char*)Src, Size) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int SimpleString::FindAny(int offset, char const* Src)
 {
 	int i;
 	const char *p = m_data;
@@ -69,6 +88,114 @@ int SimpleString::Find(int offset, char const c)
 		return -1;
 }
 
+int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char const* newSrc, int newSize, int ncount)
+{
+	int ret = -1;
+	int findSrcPos = FindNoCase(offset, Src, Size, ncount);
+	if (findSrcPos >= 0)
+	{
+#if _DEBUG
+		// Make local
+		SimpleString tmp;
+		{
+			int needSize = m_count;
+			if (newSize > Size)
+			{
+				needSize = m_count + (newSize - Size);
+			}
+			tmp.Resize(needSize);
+			char* p = this->Data();
+
+			tmp.Append(p, findSrcPos);
+			tmp.Append(newSrc, newSize);
+
+			char* pNext = this->Data() + findSrcPos + Size;
+			tmp.Append(pNext, this->Count() - (findSrcPos + Size));
+		}
+#endif
+		int needSize = m_count;
+		if (newSize > Size)
+		{
+			int oldCapacity = Capacity();
+			needSize = m_count + (newSize - Size);
+			int newCapacity = Resize(needSize);
+
+			int i;
+			char* pNew = &m_data[needSize];
+			char *pOld = &m_data[needSize - Size];
+			for (i = m_count; i > findSrcPos; i--)
+			{
+				*pNew-- = *pOld--;
+			}
+			char *p = p = &m_data[findSrcPos];
+			// Replace inplace
+			memcpy(p, newSrc, newSize);
+		}
+		else
+		{
+			needSize = m_count - Size + newSize;
+
+			char* p = &m_data[findSrcPos];
+			// Replace inplace
+			memcpy(p, newSrc, newSize);
+
+			int i;
+			char* pNew = &m_data[findSrcPos + newSize];
+			char* pOld = &m_data[findSrcPos + Size];
+			for (i = findSrcPos + Size; i < m_count; i++)
+			{
+				*pNew++ = *pOld++;
+			}
+		}
+		SetCount(needSize);
+
+		ret = findSrcPos;
+#if _DEBUG
+		// Make local
+		{
+			_ASSERTE(tmp.Count() == this->Count());
+			int j = 0;
+			for (j = 0; j < tmp.Count(); j++)
+			{
+				char c1 = tmp.GetAt(j);
+				char c2 = this->GetAt(j);
+				if (c1 != c2)
+					int deb = 1;
+			}
+			_ASSERTE(memcmp(tmp.Data(), this->Data(), tmp.Count()) == 0);
+		}
+#endif
+		int deb = 1;
+
+	}
+	return ret;
+}
+
+int SimpleString::Remove(int offsetBegin, int offsetEnd)
+{
+	_ASSERTE(offsetBegin >= 0);
+	_ASSERTE(offsetBegin <= offsetEnd);
+
+	if (offsetBegin <= 0)
+		return m_count;
+
+	if (offsetBegin >= offsetEnd)
+		return m_count;
+
+	int removeCnt = offsetEnd - offsetBegin;
+	int newCnt = m_count - removeCnt;
+
+	char* pDest = &m_data[offsetBegin];
+	char* pSrc = &m_data[offsetEnd];
+	int i;
+	for (i = offsetEnd; i < m_count; i++)
+	{
+		*pDest++ = *pSrc++;
+	}
+	SetCount(newCnt);
+	return m_count;
+}
+
 int SimpleString::Resize(int size)
 {
 	if (size > m_capacity)
@@ -89,7 +216,7 @@ int SimpleString::Resize(int size)
 	return m_capacity;
 }
 
-void SimpleString::append_internal(void const* Src, int  Size) {
+void SimpleString::append_internal(char const* Src, int  Size) {
 	int spaceNeeded = m_count + Size;
 	if (spaceNeeded > m_capacity)
 		Resize(spaceNeeded);

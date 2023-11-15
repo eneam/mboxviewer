@@ -53,6 +53,8 @@
 #define IDD_MERGE_FOLDER_AND_SUBFOLDERS 232
 #define IDD_DEV_CREATE_ARCHIVE          234
 #define IDD_PAGE_CODE_LIST_DLG          236
+#define IDD_PROGRESS_DLG                238
+#define IDD_GENERAL_OPTIONS_DLG         240
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -83,7 +85,6 @@
 #define IDC_ARCHIVE_LIST                1056
 #define IDC_FILTER1                     1056
 #define IDC_PRT_DO_NOT_PROMPT           1056
-#define IDC_COLOR_DFLT                  1056
 #define IDC_FONT_DFLT                   1056
 #define IDC_FILTER_NUMBER0              1056
 #define IDC_RADIO2                      1057
@@ -103,6 +104,7 @@
 #define IDC_FLD_NAME_BOLD               1059
 #define IDC_FILTER_NUMBER2              1059
 #define IDC_SSL_ON                      1059
+#define IDC_RELAX_MBOX_FILE_VALIDATION  1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060
@@ -126,7 +128,6 @@
 #define IDC_CONFIG_FOLDER_STYLE_3       1073
 #define IDC_SHOW_CHARSETS               1074
 #define IDC_SHOW_CHARSETS_Y             1075
-#define IDC_COLOR_STYLE4                1075
 #define IDC_CHECK_FROM                  1076
 #define IDC_CHECK_TO                    1077
 #define IDC_CHECK_SUBJECT               1078
@@ -137,7 +138,6 @@
 #define IDC_SEPARATE_TEXT               1080
 #define IDC_SEARCH_NEXT                 1081
 #define IDC_BUTTON_ZOOM                 1083
-#define IDC_CHECK3                      1085
 #define IDC_IMAGE_VIEWER                1085
 #define IDC_EXPORT_SUBJECT              1085
 #define IDC_MATCH_CASE                  1085
@@ -169,7 +169,6 @@
 #define IDC_EXPORT_TO                   1096
 #define IDC_EXPORT_DATE                 1097
 #define IDC_EXPORT_MESSAGE              1098
-#define IDC_COLOR_CUSTOM                1101
 #define IDC_ENCODING_UTF8               1106
 #define IDC_ENCODING_CODE_PAGE          1107
 #define IDC_ENCODING_CODE_PAGE_ID       1108
@@ -258,6 +257,8 @@
 #define IDC_CHECK_NEGATE_FIND_CRITERIA  1184
 #define IDC_KEEP_BODY_BKGRND_COLOR      1184
 #define IDC_TEMPL_FROM_USERNAME         1184
+#define IDC_APPEND_SINGLE_MAIL_VIEW     1184
+#define IDC_RELATIVE_ATTACHMENT_FILE_PATH 1184
 #define IDC_TEMPL_TO_USERNAME           1185
 #define IDC_INPUT_LABEL                 1186
 #define IDC_LIST2                       1187
@@ -278,13 +279,6 @@
 #define IDC_TEMPL_WHITE_TO_UNDERSCORE   1207
 #define IDC_TEMPL_TO_ADDRESS_TEXT       1208
 #define IDC_COLOR_BUTTON                1212
-#define IDC_COLOR_STYLE1                1214
-#define IDC_COLOR_STYLE2                1215
-#define IDC_COLOR_STYLE3                1216
-#define IDC_COLOR_STYLE5                1217
-#define IDC_COLOR_STYLE6                1218
-#define IDC_COLOR_STYLE7                1219
-#define IDC_COLOR_STYLE8                1220
 #define IDC_BUTTON_HELP                 1221
 #define IDC_BUTTON_CLOSE                1222
 #define IDC_PICK_FAMILY_FONT            1223
@@ -308,6 +302,7 @@
 #define IDC_CHECK4                      1244
 #define IDC_HEADER_AND_FOOTER           1244
 #define IDC_PLAIN_TEXT                  1244
+#define IDC_APPEND_SINGLE_MAIL_PRINT    1244
 #define IDC_GMAIL                       1245
 #define IDC_YAHOO                       1246
 #define IDC_OUTLOOK                     1247
@@ -350,6 +345,29 @@
 #define IDC_HTML_IF                     1288
 #define IDC_HTML_TEXT_IF                1288
 #define IDC_RESET_MAX_MAIL_SIZE         1289
+#define IDC_COLOR_CHECK_ALL             1290
+#define IDC_PROGRESS_BAR                1291
+#define IDC_COLOR_DFLT                  1292
+#define IDC_COLOR_CUSTOM                1293
+#define IDC_COLOR_STYLE1                1294
+#define IDC_COLOR_STYLE2                1295
+#define IDC_COLOR_STYLE3                1296
+#define IDC_COLOR_STYLE4                1297
+#define IDC_COLOR_STYLE5                1298
+#define IDC_COLOR_STYLE6                1299
+#define IDC_COLOR_STYLE7                1300
+#define IDC_COLOR_STYLE8                1301
+#define IDC_COLOR_STYLE_9               1302
+#define IDC_COLOR_STYLE_10              1303
+#define IDC_COLOR_STYLE_11              1304
+#define IDC_COLOR_STYLE_12              1305
+#define IDC_COLOR_STYLE_13              1306
+#define IDC_COLOR_STYLE_14              1307
+#define IDC_COLOR_STYLE_15              1308
+#define IDC_COLOR_STYLE_16              1309
+#define IDC_APPEND_MULTIPLE_MAILS_VIEW  1310
+#define IDC_APPEND_MULTIPLE_MAILS_PRINT 1311
+#define IDC_CURRENT_FOLDER_PATH         1312
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -413,6 +431,8 @@
 #define ID_DEVELOPMENTOPTIONS_DEVELO    32915
 #define ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM 32916
 #define ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION 32917
+#define ID_FILE_GENERALOPTIONS          32918
+#define ID_FILE_GENERALOPTIONS32919     32919
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -421,9 +441,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        238
-#define _APS_NEXT_COMMAND_VALUE         32918
-#define _APS_NEXT_CONTROL_VALUE         1290
+#define _APS_NEXT_RESOURCE_VALUE        242
+#define _APS_NEXT_COMMAND_VALUE         32920
+#define _APS_NEXT_CONTROL_VALUE         1313
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -317,7 +317,7 @@ namespace ForwardEmlFile
             currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
 
             string dataPath = GetLocalAppDataPath();
-            string MBoxViewerPath = Path.Combine(dataPath, "MBoxViewer");
+            string MBoxViewerPath = Path.Combine(dataPath, "UMBoxViewer");
             string MailServicePath = Path.Combine(MBoxViewerPath, "MailService");
             string TempPath = Path.Combine(MailServicePath, "Temp");
 

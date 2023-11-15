@@ -86,6 +86,29 @@ struct NamePatternParams;
 
 typedef CArray<int, int> MailIndexList;
 
+class ProgressTimer
+{
+public:
+	// LONGLONG == _int64
+	ProgressTimer(ULONGLONG workRangeFirstPos, ULONGLONG workRangeLastPos);
+	BOOL UpdateWorkPos(ULONGLONG workRangeFirstPos, UINT_PTR& dwProgressbarPos, BOOL force = FALSE);
+
+	int m_progressBarSize;
+	double m_workStepSize;
+	ULONGLONG m_checkNewWorkPosRate;
+
+	ULONGLONG m_maxTimeValue;
+	ULONGLONG m_startTime;
+	ULONGLONG m_CurrentTime;
+	//
+	LONGLONG m_workUpdateCnt;
+	ULONGLONG m_workRangeFirstPos;
+	ULONGLONG m_workRangeLastPos;
+	ULONGLONG m_workSize;
+	ULONGLONG m_workLastPos;
+	ULONGLONG m_workCurrentPos;
+};
+
 class MyMailArray : public CArray<MboxMail*, MboxMail*>
 {
 public:
@@ -206,14 +229,14 @@ class MailBodyContent
 public:
 	MailBodyContent() { m_pageCode = 0; m_contentOffset = 0; m_contentLength = 0; m_attachmentNamePageCode = 0; m_isEmbeddedImage = false; };
 	~MailBodyContent() {};
-	CString m_contentType;
-	CString m_contentTransferEncoding;
-	CString m_contentDisposition;
-	CString m_contentId;
-	CString m_attachmentName;
+	CStringA m_contentType;
+	CStringA m_contentTransferEncoding;
+	CStringA m_contentDisposition;
+	CStringA m_contentId;
+	CStringA m_attachmentName;
 	UINT m_attachmentNamePageCode;
 	//CString m_Name;  // TODO: do we need both name and filename/attachment name
-	CString m_contentLocation;
+	CStringA m_contentLocation;
 	UINT m_pageCode;
 	int  m_contentOffset;
 	int m_contentLength;
@@ -236,8 +259,8 @@ struct ThreadIdEqual;
 
 class MboxMail;
 
-typedef std::unordered_map<CString*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
-typedef std::unordered_map<CString*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
+typedef std::unordered_map<CStringA*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
+typedef std::unordered_map<CStringA*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
 typedef std::unordered_map<MboxMail*, MboxMail*, MboxHash, MboxEqual> MboxMailTableType;
 
 class CMBodyHdr;
@@ -315,6 +338,43 @@ struct SubjectThreadHelper
 };
 #endif
 
+enum MailTextEncodingTypes
+{
+	TEXT_ENCODING_0 = 0,
+	TEXT_ENCODING_ASCII = 1,
+	TEXT_ENCODING_UTF8 = 2,
+	TEXT_ENCODING_OTHER = 3,
+	TEXT_ENCODING_TYPE_MAX = 4
+};
+
+struct MailEncodingStats
+{
+	MailEncodingStats() { Clear(); }
+
+	INT m_from[TEXT_ENCODING_TYPE_MAX];
+	INT m_to[TEXT_ENCODING_TYPE_MAX];
+	INT m_cc[TEXT_ENCODING_TYPE_MAX];
+	INT m_bcc[TEXT_ENCODING_TYPE_MAX];
+	INT m_subj[TEXT_ENCODING_TYPE_MAX];
+	INT m_bodyTEXT[TEXT_ENCODING_TYPE_MAX];
+	INT m_bodyHTML[TEXT_ENCODING_TYPE_MAX];
+
+	static void UpdateTextEncodingStats(INT* stats, CStringA &fld, UINT code);
+	static void MailEncodingStats::PrintTextEncodingStats(CString& label, INT stats[], CString& stats2Text);
+	void PrintTextEncodingStats(MailEncodingStats& textEncodingStats, CString& Text);
+	void Clear();
+};
+
+struct MboxMailBoolFields
+{
+	unsigned int m_duplicateId : 1;
+	unsigned int m_DetermineEmbeddedImagesDone : 2;
+	unsigned int m_isOnUserSelectedMailList : 1;
+	unsigned int m_done : 1;
+	unsigned int m_hasAttachments : 1;
+	unsigned int m_recv : 1;
+} ;
+
 class MboxMail
 {
 public:
@@ -339,15 +399,28 @@ public:
 		m_isOnUserSelectedMailList = false;
 		m_DetermineEmbeddedImagesDone = 0;
 		//m_crc32 = 0xffffffff;
+#if 0
+		// TODO: Could save 20 bytes. May not be worth for now given CString memory inefficiency
+		m_boolFields.m_done = FALSE;
+		m_boolFields.m_hasAttachments = FALSE;
+		m_boolFields.m_duplicateId = FALSE;
+		m_boolFields.m_isOnUserSelectedMailList = FALSE;
+		m_boolFields.m_DetermineEmbeddedImagesDone = 0;
+		m_boolFields.m_recv = FALSE;
+#endif
+
 	}
 	static MyStackWalker *glStackWalker;
 	static BOOL ignoreException;
 	static int runningWorkerThreadType;
+	static void CollectTextEncodingStats(MailEncodingStats &textEncodingStats);
+	static MailEncodingStats m_textEncodingStats;
 	//
 
 	static BOOL developerMode; 
 
 	dlink_node<MboxMail> m_hashMapLink;
+	// Need to handle Content-Type: multipart/mixed;  ZMFIXME
 	std::vector <MailBodyContent*> m_ContentDetailsArray;
 
 	//UINT32 m_crc32;
@@ -357,18 +430,19 @@ public:
 	int m_length, m_headLength;
 	int m_recv;         // TODO: check if it can be reused
 	time_t m_timeDate;
-	CString m_from, m_to, m_subj;
+	CStringA m_from, m_to, m_subj;
 	//CString m_from_name, m_to_name;  // TODO: should we precalculate ? or calculate run time ?
-	CString m_cc, m_bcc;
-	CString m_from_charset, m_to_charset, m_subj_charset;
-	CString m_cc_charset, m_bcc_charset;
+	CStringA m_cc, m_bcc;
+	CStringA m_from_charset, m_to_charset, m_subj_charset;
+	CStringA m_cc_charset, m_bcc_charset;
 	UINT m_from_charsetId, m_to_charsetId, m_subj_charsetId;
 	UINT m_cc_charsetId, m_bcc_charsetId;
-	CString m_messageId;
-	CString m_replyId;
-	CString m_threadId;
+	CStringA m_messageId;
+	CStringA m_replyId;
+	CStringA m_threadId;
+	CStringA m_contentType;
 	// Commented out m_referenceId for now
-	//CString m_referenceId;
+	//CStringA m_referenceId;
 	//unsigned _int64 m_threadId; // conversation thread id
 	int m_groupId;       // can't be reused
 	int m_groupColor;    // TODO: can't be reused practicaly
@@ -392,15 +466,17 @@ public:
 	int m_index;         // serves as unique id == index
 	bool m_isOnUserSelectedMailList;    // TODO: check if and/or when it can be reused
 	int m_DetermineEmbeddedImagesDone;  // can't be reused  !!!
+	//
+	// struct MboxMailBoolFields m_boolFields;
 //
 
 	//CFile fp;
-	BOOL GetBody(CFile fp, CString &str);
-	BOOL GetBody(CString &str);
-	BOOL GetBody(CFile &fp, SimpleString *str, int maxLength = -1);
-	BOOL GetBody(SimpleString *str, int maxLength = -1);
-	int DumpMailBox(MboxMail *mailBox, int which);
+	BOOL GetBody(CStringA &str);
+	BOOL GetBodySS(CFile &fp, SimpleString *str, int maxLength = -1);
+	BOOL GetBodySS(SimpleString *str, int maxLength = -1);
+	//
 	int SingleMailSizeof();
+	//
 	static size_t AllMailsSizeof(int count);
 
 	static ThreadIdTableType *m_pThreadIdTable;
@@ -412,14 +488,14 @@ public:
 	//
 	static UINT createMessageIdTable(UINT count);
 	static void clearMessageIdTable();
-	static int getMessageId(CString *key);
-	static bool insertMessageId(CString *key, int val);
+	static int getMessageId(CStringA*key);
+	static bool insertMessageId(CStringA*key, int val);
 	static int add2ConversationGroup(int mid, MboxMail *m);
 
 	static UINT createThreadIdTable(UINT count);
 	static void clearThreadIdTable();
-	static int getThreadId(CString *key);
-	static bool insertThreadId(CString *key, int val);
+	static int getThreadId(CStringA*key);
+	static bool insertThreadId(CStringA*key, int val);
 
 	//static MboxMail* getMboxMail(CString *key);
 	//static bool insertMboxMail(CString *key, MboxMail *mbox);
@@ -482,7 +558,6 @@ public:
 	static CString s_datapath;  //current root directory for .mboxview and index files and many temp files
 	static void SetLastPath(CString &path);
 	static CString GetLastPath();
-	static CString GetDataPath(CString &path);
 	//
 	static CString GetLastDataPath();
 	static CString SetLastDataPath(CString *lastMboxDirPath = 0);
@@ -493,14 +568,15 @@ public:
 	
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
-	static void Parse(LPCSTR path);
-	static bool Process(char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
-	static void MboxMail::FindDateInHeader(char *data, int datelen,  CString &dateStr);
-	static void MboxMail::MonthToString(int month, CString &monthStr);
-	static time_t MboxMail::parseRFC822Date(CString &date, CString &format);
-	static BOOL MboxMail::CreateRFC822Date(CString &date, CString &rfcDateString);
+	static void Parse(LPCWSTR path);
+	static bool Process(ProgressTimer &progressTimer, char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
+	static void FindDateInHeader(char *data, int datelen, CStringA& dateStr);
+	static void MonthToString(int month, CStringA &monthStr);
+	static time_t parseRFC822Date(CStringA &date, CStringA &format);
+	static BOOL CreateRFC822Date(CStringA &date, CStringA &rfcDateString);
+	static int NormalizeText(MboxMail* m);
 	//
-	static void Parse_LabelView(LPCSTR path);
+	static void Parse_LabelView(LPCWSTR path);
 
 	static BOOL m_seExceptionMsgBox;
 	static BOOL m_cppExceptionMsgBox;
@@ -577,7 +653,6 @@ public:
 	static void SortByFileOffset(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByConverstionGroups(MailArray *s_mails = 0, bool bDesc = false);
 	static void SortByIndex(MailArray *s_mails = 0, bool bDesc = false);
-	static void assignColor2ConvesationGroups();
 	static void assignColor2ConvesationGroups(MailArray *mails);
 	static void Destroy(MailArray *marray = 0);
 	static void DestroyMboxMail(MboxMail *m);
@@ -590,12 +665,14 @@ public:
 	static int nstrcpy(char *dst, char *src);
 	static int escapeSeparators(char *workbuff, char *fldstr, int fldlen, char sepchar);
 	static int splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr);
+	static int splitMailAddress(const char* buff, int bufflen, CStringA &name, CStringA& addr);
+	static int splitMailAddress(const char* buff, int bufflen, CString& name, CString& addr);
 	static int EnforceCharacterLimit(SimpleString *buffer, CString &characterLimit);
 	static int EnforceFieldTextCharacterLimit(char *buffer, int bufferLength, CString &characterLimit);
 	//
-	static int CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CString &fldNameFontStyle, CString &fldTextFontStyle);
-	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
-	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded);
+	static int CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldNameFontStyle, CStringA &fldTextFontStyle);
+	static int printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig, CString &attachmentFilesFolderPath);
+	static int printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded, BOOL fullImgFilePath);
 	static int printSingleMailToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, bool singleMail, BOOL pageBreakNeeded);
 	static int printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig);
 	static int exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, int textType, BOOL progressBar);
@@ -618,8 +695,9 @@ public:
 	//
 	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
 	//
-	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);  // 0 if text/plain, 1 if text/html
-	static int GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textMinorType = 0);
+	// textMinorType = 0 if text/plain, 1 if text/html;  plainTextMode = 0 for old mode no image info, 1 for plain text, 2 for html text
+	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType, int plainTextMode);  
+	static int GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textMinorType, int plainTextMode);
 	static int AppendInlineAttachmentNameSeparatorLine(MailBodyContent* body, int bodyCnt, SimpleString* outbuf, int textType);
 	//
 	static int GetMailBody_MailBody(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode);
@@ -629,7 +707,10 @@ public:
 	static char *ParseContent(MboxMail *mail, char *startPos, char *endPos);
 	static int CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf);
 	static int DecodeBody(CFile &fpm, MailBodyContent *body, int mailPosition, SimpleString *outbuf);
+	//
+	static int DumpMailSummaryToFile(MailArray* mailsArray, int mailArrayCount);
 	static int DumpMailStatsToFile(MailArray *mailsArray, int mailArrayCount);
+	//
 	static int DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit);
 	static int MergeTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
 	static BOOL VerifyMergeOfTwoMailLists(MailArray *mails1, MailArray *mails2, MailArray *merged_mails);
@@ -637,15 +718,14 @@ public:
 	static void PopulateCArray(MailArray *mails, int *carray, int carrayCnt);
 	static BOOL VerifyMerge(MailArray *mails, int *carray, int carrayCnt);
 	//static void ShellExecuteError2Text(UINT errorCode, CString errorText);
-	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName);
-	static int MakeFileName(MboxMail *m, struct NameTemplateCnf &nameTemplateCnf, CString &fileName, int maxFileNameLength);
-	static CString MatchFldLabel(char *p, char *e);
+	static int MakeFileName(MboxMail *m, struct NamePatternParams *namePatternParams, CString &fileName, CStringA &fileNameA);
+	static int MakeFileName(MboxMail *m, struct NamePatternParams* namePatternParams, struct NameTemplateCnf &nameTemplateCnf, CString &fileName, int maxFileNameLength, CStringA& fileNameA);
+	static CString MatchFldLabel(LPCWSTR p, LPCWSTR e);
 	static BOOL ParseTemplateFormat(CString &templateFormat, CArray<CString> &labelArray);
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
 	static CString GetDateFormat(int i);
-	static int RemoveDuplicateMails_Generic(MailArray &s_mails_array);
-	static int RemoveDuplicateMails(MailArray &s_mails_array);
+	static int RemoveDuplicateMails(MailArray &s_mails_array, BOOL putDuplicatesOnFindArray);
 	static int LinkDuplicateMails(MailArray &s_mails_array);
 
 	static int MakeFileNameFromMailArchiveName(int fileType, CString &fileName, CString &targetPrintSubFolder, bool &fileExists, CString &errorText);
@@ -671,9 +751,8 @@ public:
 	static BOOL ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime);
 
 	static int DetermineEmbeddedImages(int mailPosition, /*in - mail body*/ CFile &fpm);
-	static int DetermineEmbeddedImages(MboxMail *m, /*in - mail body*/ CFile &fpm);
 	//static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, CStringW &htmlbuf);
-	static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
+	static int printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix, CString& attachmentFilesFolderPath);
 	static int printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleString *outbuf, CString &attachmentFileNamePrefix);
 
 	static void DumpMailParseException(_int64 msgOffset);

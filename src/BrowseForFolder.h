@@ -134,10 +134,10 @@ protected:
 private:
 	static int __stdcall BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData);
 
-	TCHAR m_pchTitle[MAX_PATH];
+	wchar_t m_pchTitle[MAX_PATH];
 
 	BROWSEINFO m_bi;
-	TCHAR m_szSelected[MAX_PATH];
+	wchar_t m_szSelected[MAX_PATH];
 	CString m_strPath;
 	HWND m_hwnd;
 	CString m_defaultFolder;

@@ -36,13 +36,19 @@
 //
 
 #include "ATLComTime.h"
+#include "MyCTime.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // CFindDlg dialog
 
 struct CFindDlgParams
 {
+	CFindDlgParams();
+	~CFindDlgParams();
+
 	CString	m_string;
+	CStringA	m_stringA;
 	BOOL	m_bWholeWord;
 	BOOL	m_bCaseSensitive;
 
@@ -63,8 +69,17 @@ struct CFindDlgParams
 	BOOL m_bFindAll;
 	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
+	// Run time args
+	BOOL m_bNeedToFindMailMinMaxTime;
+	MyCTime m_mboxMailStartDate;
+	MyCTime m_mboxMailEndDate;
+	BOOL m_needToRestoreArchiveListDateTime;
+	MyCTime m_lastStartDate;
+	MyCTime m_lastEndDate;
+
 	void SetDflts();
 	void Copy(CFindDlgParams &src);
+	void ResetFilterDates();
 };
 
 class CFindDlg : public CDialog
@@ -78,6 +93,10 @@ public:
 	enum { IDD = IDD_FIND };
 
 	struct CFindDlgParams m_params;
+
+	COLORREF m_dflBkColor;
+	COLORREF m_checkedColor;
+	CBrush m_brBkDate;
 	//}}AFX_DATA
 
 
@@ -99,10 +118,12 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg void OnBnClickedFilterDates();
 	afx_msg void OnBnClickedCheckFindAll();
 	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonHelp();
 };
 
 //{{AFX_INSERT_LOCATION}}

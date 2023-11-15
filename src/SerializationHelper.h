@@ -46,7 +46,7 @@ private:
 	int m_buffCnt;	// bytes in m_buff
 
 public:
-	SerializerHelper(LPCSTR fn)
+	SerializerHelper(LPCWSTR fn)
 	{
 		m_writing = FALSE;
 		m_path = fn;
@@ -60,6 +60,9 @@ public:
 	~SerializerHelper() {
 		close();
 	}
+	CString GetFileName() {
+		return m_path;
+	};
 	void close();
 	BOOL open(BOOL bWrite, int buffSize = 0);
 	BOOL GetReadPointer(__int64 &fileReadPosition);
@@ -67,7 +70,7 @@ public:
 	BOOL readN(void *v, int sz);
 	BOOL writeN(void *v, int sz);
 	BOOL writeString(LPCSTR val);
-	BOOL readString(CString &val);
+	BOOL readString(CStringA &val);
 
 	BOOL writeInt(int val) {
 		return writeN(&val, sizeof(int));

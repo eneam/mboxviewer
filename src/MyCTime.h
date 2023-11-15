@@ -136,19 +136,26 @@ public:
 
 	// formatting using "C" strftime
 #if 0
-	CString Format(LPCTSTR pszFormat);
-	CString FormatGmt(LPCTSTR pszFormat);
+	CString Format(LPCWSTR pszFormat);
+	CString FormatGmt(LPCWSTR pszFormat);
 #endif
-	CString FormatLocalTm(CString &format);  // mboxview custom
-	CString FormatGmtTm(CString &format);  // mboxview custom
+	CStringA FormatLocalTmA(CStringA &format);  // mboxview custom
+	CStringA FormatGmtTmA(CStringA &format);  // mboxview custom
+	//
+	//
+	CStringA FormatLocalTmA(CString &format);  // mboxview custom
+	CStringA FormatGmtTmA(CString& format);  // mboxview custom
+	//
+	CString FormatLocalTm(CString& format);  // mboxview custom
+	CString FormatGmtTm(CString& format);  // mboxview custom
 #if 0
 	CString Format(UINT nFormatID);
 	CString FormatGmt(UINT nFormatID);
 #endif
 
 private:
-	CString Format(LPCTSTR pszFormat);
-	CString FormatGmt(LPCTSTR pszFormat);
+	CString Format(LPCWSTR pszFormat);
+	CString FormatGmt(LPCWSTR pszFormat);
 	__time64_t MaxTime();
 	//
 	__time64_t m_time;

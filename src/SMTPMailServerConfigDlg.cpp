@@ -34,6 +34,7 @@
 #include "mboxview.h"
 #include "SMTPMailServerConfigDlg.h"
 #include "afxdialogex.h"
+#include "TextUtilsEx.h"
 
 
 #define GMAIL_MAX_MAIL_SIZE 25590
@@ -117,11 +118,11 @@ BOOL SMTPMailServerConfigDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	TLSOptions.AddString("None");
-	TLSOptions.AddString("Auto");
-	TLSOptions.AddString("SslOnConnect");
-	TLSOptions.AddString("StartTls");
-	TLSOptions.AddString("StartTlsWhenAvailable");
+	TLSOptions.AddString(L"None");
+	TLSOptions.AddString(L"Auto");
+	TLSOptions.AddString(L"SslOnConnect");
+	TLSOptions.AddString(L"StartTls");
+	TLSOptions.AddString(L"StartTlsWhenAvailable");
 
 	// m_mailDB is already set from  void CMainFrame::OnFileSmtpmailserverconfig()
 	TLSOptions.SetCurSel(m_mailDB.SMTPConfig.EncryptionType);
@@ -153,13 +154,26 @@ void SMTPMailServerConfigDlg::OnBnClickedBbuttonSave()
 void SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp()
 {
 	// TODO: Add your control notification handler code here
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, sz_Software_mboxview, _T("processPath"));
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\ForwardMails.pdf";
+	CString filePath = processDir + L"\\HelpFiles\\ForwardMails.pdf";
 
-	ShellExecute(NULL, _T("open"), filePath, NULL, NULL, SW_SHOWNORMAL);
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		HWND h = GetSafeHwnd();
+		CString txt;
+		txt.Format(L"Help file \"%s\" doesn't exist", filePath);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
+
 	int deb = 1;
 }
 
@@ -178,29 +192,48 @@ void MailConfig::Copy(MailConfig &config)
 void MailConfig::Write2Registry()
 {
 	BOOL ret;
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService\\" + MailServiceName;
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "MailServiceName", MailServiceName);
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "SmtpServerAddress", SmtpServerAddress);
-	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "SmtpServerPort", SmtpServerPort);
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "UserAccount", UserAccount);
-	//ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "UserPassword", UserPassword);
-	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "EncryptionType", EncryptionType);
-	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section, "MaxMailSize", MaxMailSize);
-	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "UserMailAddress", UserMailAddress);
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + "\\MailService\\" + MailServiceName;
+
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"MailServiceName", MailServiceName);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"SmtpServerAddress", SmtpServerAddress);
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"SmtpServerPort", SmtpServerPort);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserAccount", UserAccount);
+	//ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserPassword", UserPassword);
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"EncryptionType", EncryptionType);
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"MaxMailSize", MaxMailSize);
+	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserMailAddress", UserMailAddress);
 }
 
 void MailConfig::ReadFromRegistry(CString &serviceName)
 {
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService\\" + serviceName;
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + "\\MailService\\" + serviceName;
 
-	MailServiceName = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "MailServiceName");
-	SmtpServerAddress = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "SmtpServerAddress");
-	SmtpServerPort = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "SmtpServerPort");
-	UserAccount = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "UserAccount");
-	//UserPassword = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "UserPassword");
-	EncryptionType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "EncryptionType");
-	MaxMailSize = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section, "MaxMailSize");
-	UserMailAddress = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "UserMailAddress");
+	MailServiceName = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"MailServiceName");
+	SmtpServerAddress = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"SmtpServerAddress");
+	SmtpServerPort = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"SmtpServerPort");
+	UserAccount = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserAccount");
+	//UserPassword = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserPassword");
+	EncryptionType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"EncryptionType");
+	MaxMailSize = CProfile::_GetProfileInt(HKEY_CURRENT_USER, m_section_mail_forward, L"MaxMailSize");
+	UserMailAddress = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"UserMailAddress");
+}
+
+// Not used at the moment. Consider to use if it simplies the code
+DWORD MailConfig::WStr2Ansi(MailConfigA& mailConfig)
+{
+	DWORD error;
+	BOOL retW2A;
+
+	retW2A = TextUtilsEx::WStr2Ansi(MailServiceName, mailConfig.MailServiceName, error);
+	retW2A = TextUtilsEx::WStr2Ansi(SmtpServerAddress, mailConfig.SmtpServerAddress, error);
+	mailConfig.SmtpServerPort = SmtpServerPort;
+	retW2A = TextUtilsEx::WStr2Ansi(UserAccount, mailConfig.UserAccount, error);
+	retW2A = TextUtilsEx::WStr2Ansi(UserPassword, mailConfig.UserPassword, error);
+	mailConfig.EncryptionType = EncryptionType;
+	mailConfig.MaxMailSize = MaxMailSize;
+	retW2A = TextUtilsEx::WStr2Ansi(UserMailAddress, mailConfig.UserMailAddress, error);
+
+	return 0;
 }
 
 MailDB::MailDB()
@@ -222,56 +255,56 @@ void MailDB::Initialize()
 void MailDB::InitConfigsToDflts()
 {
 	ActiveMailServiceType = 0;
-	ActiveMailService = "Gmail";
+	ActiveMailService = L"Gmail";
 
-	GmailSMTPConfig.MailServiceName = "Gmail";
-	GmailSMTPConfig.SmtpServerAddress = "smtp.gmail.com";
+	GmailSMTPConfig.MailServiceName = L"Gmail";
+	GmailSMTPConfig.SmtpServerAddress = L"smtp.gmail.com";
 	GmailSMTPConfig.SmtpServerPort = 587;
-	GmailSMTPConfig.UserAccount = "";
-	GmailSMTPConfig.UserPassword = "";
+	GmailSMTPConfig.UserAccount = L"";
+	GmailSMTPConfig.UserPassword = L"";
 	GmailSMTPConfig.EncryptionType = StartTls;
 	GmailSMTPConfig.MaxMailSize = GMAIL_MAX_MAIL_SIZE;
-	GmailSMTPConfig.UserMailAddress = "";
+	GmailSMTPConfig.UserMailAddress = L"";
 
-	YahooSMTPConfig.MailServiceName = "Yahoo";
-	YahooSMTPConfig.SmtpServerAddress = "smtp.mail.yahoo.com";
+	YahooSMTPConfig.MailServiceName = L"Yahoo";
+	YahooSMTPConfig.SmtpServerAddress = L"smtp.mail.yahoo.com";
 	YahooSMTPConfig.SmtpServerPort = 587;
-	YahooSMTPConfig.UserAccount = "";
-	YahooSMTPConfig.UserPassword = "";
+	YahooSMTPConfig.UserAccount = L"";
+	YahooSMTPConfig.UserPassword = L"";
 	YahooSMTPConfig.EncryptionType = StartTls;
 	//YahooSMTPConfig.MaxMailSize = 25590;
 	YahooSMTPConfig.MaxMailSize = YAHOO_MAX_MAIL_SIZE; // ~39MB reported by Yahoo SMPT Server Nov/20/2022 and it seems to work
-	YahooSMTPConfig.UserMailAddress = "";
+	YahooSMTPConfig.UserMailAddress = L"";
 
-	OutlookSMTPConfig.MailServiceName = "Outlook";
-	OutlookSMTPConfig.SmtpServerAddress = "smtp-mail.outlook.com";
+	OutlookSMTPConfig.MailServiceName = L"Outlook";
+	OutlookSMTPConfig.SmtpServerAddress = L"smtp-mail.outlook.com";
 	OutlookSMTPConfig.SmtpServerPort = 587;
-	OutlookSMTPConfig.UserAccount = "";
-	OutlookSMTPConfig.UserPassword = "";
+	OutlookSMTPConfig.UserAccount = L"";
+	OutlookSMTPConfig.UserPassword = L"";
 	OutlookSMTPConfig.EncryptionType = StartTls;
 	OutlookSMTPConfig.MaxMailSize = OUTLOOK_MAX_MAIL_SIZE;
-	OutlookSMTPConfig.UserMailAddress = "";
+	OutlookSMTPConfig.UserMailAddress = L"";
 
-	CustomSMTPConfig.MailServiceName = "Custom";
-	CustomSMTPConfig.SmtpServerAddress = "";
+	CustomSMTPConfig.MailServiceName = L"Custom";
+	CustomSMTPConfig.SmtpServerAddress = L"";
 	CustomSMTPConfig.SmtpServerPort = 0;
-	CustomSMTPConfig.UserAccount = "";
-	CustomSMTPConfig.UserPassword = "";
+	CustomSMTPConfig.UserAccount = L"";
+	CustomSMTPConfig.UserPassword = L"";
 	CustomSMTPConfig.EncryptionType = None;
 	CustomSMTPConfig.MaxMailSize = 0;
-	CustomSMTPConfig.UserMailAddress = "";
+	CustomSMTPConfig.UserMailAddress = L"";
 
 }
 
 void MailDB::LoadData()
 {
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + L"\\MailService";
 
 	CString ActiveMailService;
-	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"ActiveMailService", ActiveMailService);
 	if (ret == FALSE)  // assume this is first time
 	{
-		CString ActiveMailService = "Gmail";
+		CString ActiveMailService = L"Gmail";
 		Write2Registry(ActiveMailService);
 	}
 	ReadFromRegistry();
@@ -294,10 +327,10 @@ void MailDB::Copy(MailDB &db)
 // Only called once to populate registry
 void MailDB::Write2Registry(CString &ActiveMailService)
 {
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + L"\\MailService";
 
 	//CString ActiveMailService = "Gmail";
-	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"ActiveMailService", ActiveMailService);
 
 	GmailSMTPConfig.Write2Registry();;
 	YahooSMTPConfig.Write2Registry();
@@ -307,25 +340,25 @@ void MailDB::Write2Registry(CString &ActiveMailService)
 
 void MailDB::ReadFromRegistry()
 {
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + "\\MailService";
 
-	ActiveMailService = "Gmail";
-	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
-	if (ActiveMailService.CompareNoCase("Gmail") == 0)
+	ActiveMailService = L"Gmail";
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"ActiveMailService", ActiveMailService);
+	if (ActiveMailService.CompareNoCase(L"Gmail") == 0)
 		ActiveMailServiceType = 0; // gmail
-	else if (ActiveMailService.CompareNoCase("Yahoo") == 0)
+	else if (ActiveMailService.CompareNoCase(L"Yahoo") == 0)
 		ActiveMailServiceType = 1; // yahoo
-	else if (ActiveMailService.CompareNoCase("Outlook") == 0)
+	else if (ActiveMailService.CompareNoCase(L"Outlook") == 0)
 		ActiveMailServiceType = 2; // outlook
-	else if (ActiveMailService.CompareNoCase("Custom") == 0)
+	else if (ActiveMailService.CompareNoCase(L"Custom") == 0)
 		ActiveMailServiceType = 3; // custom
 	else
 		; // ???
 
-	GmailSMTPConfig.ReadFromRegistry(CString("Gmail"));
-	YahooSMTPConfig.ReadFromRegistry(CString("Yahoo"));
-	OutlookSMTPConfig.ReadFromRegistry(CString("Outlook"));
-	CustomSMTPConfig.ReadFromRegistry(CString("Custom"));
+	GmailSMTPConfig.ReadFromRegistry(CString(L"Gmail"));
+	YahooSMTPConfig.ReadFromRegistry(CString(L"Yahoo"));
+	OutlookSMTPConfig.ReadFromRegistry(CString(L"Outlook"));
+	CustomSMTPConfig.ReadFromRegistry(CString(L"Custom"));
 
 	if (ActiveMailServiceType == 0)
 		SMTPConfig.Copy(GmailSMTPConfig);
@@ -363,10 +396,10 @@ void MailDB::SaveChangesToActiveService(int encryptionType)
 
 	SMTPConfig.Write2Registry();
 
-	CString m_section = CString(sz_Software_mboxview) + "\\MailService";
+	CString m_section_mail_forward = CString(sz_Software_mboxview) + L"\\MailService";
 
 	ActiveMailService = SMTPConfig.MailServiceName;
-	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section, "ActiveMailService", ActiveMailService);
+	BOOL ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, m_section_mail_forward, L"ActiveMailService", ActiveMailService);
 }
 
 void MailDB::SwitchToNewService(UINT nID)
@@ -394,25 +427,25 @@ void SMTPMailServerConfigDlg::OnBnClickedResetMaxMailSize()
 	int maxMailSize = 0;
 	int ActiveMailServiceType = 0;
 
-	if (m_mailDB.ActiveMailService.CompareNoCase("Gmail") == 0)
+	if (m_mailDB.ActiveMailService.CompareNoCase(L"Gmail") == 0)
 	{
 		maxMailSize = GMAIL_MAX_MAIL_SIZE;
 		m_mailDB.GmailSMTPConfig.MaxMailSize = maxMailSize;
 		ActiveMailServiceType = 0; // gmail
 	}
-	else if (m_mailDB.ActiveMailService.CompareNoCase("Yahoo") == 0)
+	else if (m_mailDB.ActiveMailService.CompareNoCase(L"Yahoo") == 0)
 	{
 		maxMailSize = YAHOO_MAX_MAIL_SIZE;
 		m_mailDB.YahooSMTPConfig.MaxMailSize = maxMailSize;
 		ActiveMailServiceType = 1; // yahoo
 	}
-	else if (m_mailDB.ActiveMailService.CompareNoCase("Outlook") == 0)
+	else if (m_mailDB.ActiveMailService.CompareNoCase(L"Outlook") == 0)
 	{
 		maxMailSize = OUTLOOK_MAX_MAIL_SIZE;
 		m_mailDB.OutlookSMTPConfig.MaxMailSize = maxMailSize;
 		ActiveMailServiceType = 2; // outlook
 	}
-	else if (m_mailDB.ActiveMailService.CompareNoCase("Custom") == 0)
+	else if (m_mailDB.ActiveMailService.CompareNoCase(L"Custom") == 0)
 	{
 		ActiveMailServiceType = 3; // custom
 	}

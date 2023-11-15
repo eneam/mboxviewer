@@ -37,7 +37,7 @@
 // search for a character in the current line (before CRLF)
 static const char* LineFind(const char* pszString, int ch)
 {
-	ASSERT(pszString != NULL);
+	_ASSERTE(pszString != NULL);
 	while (*pszString != 0 && *pszString != ch && *pszString != '\r' && *pszString != '\n')
 		pszString++;
 	return *pszString == ch ? pszString : NULL;
@@ -142,7 +142,7 @@ int CMimeField::GetLength() const
 // store a field to string buffer
 int CMimeField::Store(char* pszData, int nMaxSize) const
 {
-	ASSERT(pszData != NULL);
+	_ASSERTE(pszData != NULL);
 	int nMinSize = (int)m_strName.size() + 4;
 	if (nMaxSize < nMinSize)
 		return 0;
@@ -167,7 +167,7 @@ int CMimeField::Store(char* pszData, int nMaxSize) const
 int CMimeField::Load(const char* pszData, int nDataSize)
 {
 	Clear();
-	ASSERT(pszData != NULL);
+	_ASSERTE(pszData != NULL);
 	const char *pszEnd, *pszStart = pszData;
 	// find the next field (e.g. "\r\nContent...")
 	while (CMimeChar::IsSpace((unsigned char)*pszStart))
@@ -213,7 +213,7 @@ int CMimeField::Load(const char* pszData, int nDataSize)
 
 bool CMimeField::FindParameter(const char* pszAttr, int& nPos, int& nSize) const
 {
-	ASSERT(pszAttr != NULL);
+	_ASSERTE(pszAttr != NULL);
 	const char* pszParms = ::strchr(m_strValue.data(), ';');
 	int nAttrSize = (int)::strlen(pszAttr);
 	while (pszParms != NULL)
@@ -334,7 +334,7 @@ void CMimeHeader::SetName(const char* pszName)
 	if (!pfd)
 	{
 		// get the appropriate media-type/subtype according to file extension
-		ASSERT(pszName != NULL);
+		_ASSERTE(pszName != NULL);
 		string strType;
 		const char* pszType = "application/octet-stream";
 		const char* pszFileExt = ::strrchr(pszName, '.');
@@ -415,7 +415,7 @@ int CMimeHeader::GetLength() const
 // store the header to string buffer
 int CMimeHeader::Store(char* pszData, int nMaxSize) const
 {
-	ASSERT(pszData != NULL);
+	_ASSERTE(pszData != NULL);
 	int nOutput = 0;
 	list<CMimeField>::const_iterator it;
 	for (it = m_listFields.begin(); it != m_listFields.end(); it++)
@@ -435,7 +435,7 @@ int CMimeHeader::Store(char* pszData, int nMaxSize) const
 // load a header from string buffer
 int CMimeHeader::Load(const char* pszData, int nDataSize)
 {
-	ASSERT(pszData != NULL);
+	_ASSERTE(pszData != NULL);
 	int nInput = 0;
 	while (pszData[nInput] != 0 && pszData[nInput] != '\r' && pszData[nInput] != '\n')
 	{ 
@@ -497,7 +497,7 @@ list<CMimeField>::iterator CMimeHeader::FindField(const char* pszFieldName)
 // initialize the content with text
 int CMimeBody::SetText(const char* pbText, int nLength/*=0*/)
 {
-	ASSERT(pbText != NULL);
+	_ASSERTE(pbText != NULL);
 	if (!nLength)
 		nLength = (int)::strlen((char*)pbText);
 
@@ -528,7 +528,7 @@ int CMimeBody::GetText(string& strText)
 // initialize the content of this body part with a mail message
 bool CMimeBody::SetMessage(const CMimeMessage* pMM)
 {
-	ASSERT(pMM != NULL);
+	_ASSERTE(pMM != NULL);
 	int nSize = pMM->GetLength();
 	if (!AllocateBuffer(nSize+4))
 		return false;
@@ -546,8 +546,8 @@ bool CMimeBody::SetMessage(const CMimeMessage* pMM)
 
 void CMimeBody::GetMessage(CMimeMessage* pMM) const
 {
-	ASSERT(pMM != NULL);
-	ASSERT(m_pbText != NULL);
+	_ASSERTE(pMM != NULL);
+	_ASSERTE(m_pbText != NULL);
 	const char* bodyData = (const char*)m_pbText;
 	pMM->Load(bodyData, (const char*)m_pbText, m_nTextSize);
 }
@@ -562,7 +562,7 @@ bool CMimeBody::ReadFromFile(const char* pszFilename)
 	try
 	{
 		int nFileSize = (int)::_lseek(hFile, 0L, SEEK_END);	// get file length
-		::_lseek(hFile, 0L, SEEK_SET);
+		long filePos = ::_lseek(hFile, 0L, SEEK_SET);
 
 		FreeBuffer();
 		if (nFileSize > 0)
@@ -650,7 +650,7 @@ void CMimeBody::DeleteAll()
 	{
 		CMimeBody* pBP = m_listBodies.back();
 		m_listBodies.pop_back();
-		ASSERT(pBP != NULL);
+		_ASSERTE(pBP != NULL);
 		delete pBP;					// surely delete because it was allocated by CreatePart()
 	}
 }
@@ -659,7 +659,7 @@ void CMimeBody::DeleteAll()
 CMimeBody* CMimeBody::CreatePart(const char* pszMediaType/*=NULL*/, CMimeBody* pWhere/*=NULL*/)
 {
 	CMimeBody* pBP = CMimeEnvironment::CreateBodyPart(pszMediaType);
-	ASSERT(pBP != NULL);
+	_ASSERTE(pBP != NULL);
 	if (pWhere != NULL)
 	{
 		 for (CBodyList::iterator it = m_listBodies.begin(); it != m_listBodies.end(); it++)
@@ -676,7 +676,7 @@ CMimeBody* CMimeBody::CreatePart(const char* pszMediaType/*=NULL*/, CMimeBody* p
 // remove and delete a child body part
 void CMimeBody::ErasePart(CMimeBody* pBP)
 {
-	ASSERT(pBP != NULL);
+	_ASSERTE(pBP != NULL);
 	m_listBodies.remove(pBP);
 	delete pBP;
 }
@@ -763,7 +763,7 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 				}
 			}
 #endif
-			ASSERT(pBP != NULL);
+			_ASSERTE(pBP != NULL);
 			nCount += pBP->GetBodyPartList(rList);
 		}
 	}
@@ -791,7 +791,7 @@ int CMimeBody::GetAttachmentList(CBodyList& rList) const
 		for (it=m_listBodies.begin(); it!=m_listBodies.end(); it++)
 		{
 			CMimeBody* pBP = *it;
-			ASSERT(pBP != NULL);
+			_ASSERTE(pBP != NULL);
 			nCount += pBP->GetAttachmentList(rList);
 		}
 	}
@@ -811,7 +811,7 @@ int CMimeBody::GetLength() const
 {
 	int nLength = CMimeHeader::GetLength();
 	CMimeCodeBase* pCoder = CMimeEnvironment::CreateCoder(GetTransferEncoding());
-	ASSERT(pCoder != NULL);
+	_ASSERTE(pCoder != NULL);
 	pCoder->SetInput((const char*)m_pbText, m_nTextSize, true);
 	nLength += pCoder->GetOutputLength();
 	delete pCoder;
@@ -826,7 +826,7 @@ int CMimeBody::GetLength() const
 	{
 		nLength += nBoundSize + 6;	// include 2 leading hyphens and 2 pair of CRLFs
 		CMimeBody* pBP = *it;
-		ASSERT(pBP != NULL);
+		_ASSERTE(pBP != NULL);
 		nLength += pBP->GetLength();
 	}
 	nLength += nBoundSize + 8;		// include 2 leading hyphens, 2 trailng hyphens and 2 pair of CRLFs
@@ -847,7 +847,7 @@ int CMimeBody::Store(char* pszData, int nMaxSize) const
 	nMaxSize -= nSize;
 
 	CMimeCodeBase* pCoder = CMimeEnvironment::CreateCoder(GetTransferEncoding());
-	ASSERT(pCoder != NULL);
+	_ASSERTE(pCoder != NULL);
 	pCoder->SetInput((const char*)m_pbText, m_nTextSize, true);
 	int nOutput = pCoder->GetOutput((unsigned char*)pszData, nMaxSize);
 	delete pCoder;
@@ -879,7 +879,7 @@ int CMimeBody::Store(char* pszData, int nMaxSize) const
 		nMaxSize -= nBoundSize;
 
 		CMimeBody* pBP = *it;
-		ASSERT(pBP != NULL);
+		_ASSERTE(pBP != NULL);
 		nOutput = pBP->Store(pszData, nMaxSize);
 		if (nOutput < 0)
 			return nOutput;
@@ -935,7 +935,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 
 
 		CMimeCodeBase* pCoder = CMimeEnvironment::CreateCoder(GetTransferEncoding());
-		ASSERT(pCoder != NULL);
+		_ASSERTE(pCoder != NULL);
 		pCoder->SetInput(pszData, nSize, false);
 		int nOutput = pCoder->GetOutputLength();
 		if (AllocateBuffer(nOutput+4))
@@ -946,7 +946,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 		if (nOutput < 0)
 			return nOutput;
 
-		ASSERT(nOutput < m_nTextSize);
+		_ASSERTE(nOutput < m_nTextSize);
 		m_pbText[nOutput] = 0;
 		m_nTextSize = nOutput;
 		pszData += nSize;
@@ -957,7 +957,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 
 	// load child body parts
 	string strBoundary = GetBoundary();
-	ASSERT(strBoundary.size() > 0);
+	_ASSERTE(strBoundary.size() > 0);
 	strBoundary = "\n--" + strBoundary;
 
 	// look for the first boundary (case sensitive)
@@ -1028,7 +1028,7 @@ void CMimeMessage::SetDate(int nYear, int nMonth, int nDay, int nHour, int nMinu
 	time_t timeDate = ::mktime(&tmDate);
 	if (timeDate < 0)
 	{
-		ASSERT(false);
+		_ASSERTE(false);
 		return;
 	}
 
@@ -1047,8 +1047,8 @@ void CMimeMessage::SetDate(int nYear, int nMonth, int nDay, int nHour, int nMinu
 		nTimeDiff -= 60;
 
 	char szDate[40];
-	ASSERT(tmDate.tm_wday < 7);
-	ASSERT(tmDate.tm_mon < 12);
+	_ASSERTE(tmDate.tm_wday < 7);
+	_ASSERTE(tmDate.tm_mon < 12);
 	::sprintf(szDate, "%s, %d %s %d %02d:%02d:%02d %c%02d%02d",
 		s_DayNames[tmDate.tm_wday],
 		tmDate.tm_mday, s_MonthNames[tmDate.tm_mon], tmDate.tm_year+1900,

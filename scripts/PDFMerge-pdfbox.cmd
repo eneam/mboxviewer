@@ -38,8 +38,8 @@ REM Download java from  https://www.oracle.com/technetwork/java/javase/downloads
 REM Update path to PDFBox jar file if needed
 REM Download PDFBox from https://pdfbox.apache.org/
 REM Command tools example https://pdfbox.apache.org/2.0/commandline.html
-set PDFBox=pdfbox-app-2.0.15.jar
-set PDFBoxDirectoryPath=C:/Users/tata/Downloads
+set PDFBox=pdfbox-app-3.0.0-alpha3.jar
+set PDFBoxDirectoryPath=F:\Documents\GIT1.0.3.38\mboxviewer\x64\Debug
 set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
 
 if NOT exist "%PDFBoxJarFilePath%" (
@@ -61,8 +61,8 @@ del "%PDF_MERGE_DIR%\*.pdf"
 
 for %%A in ("*.pdf") do (
 
-	if !count!==%firstIndex% set list="%%A"
-	if NOT !count!==%firstIndex% set list=!list! "%%~nxA"
+	if !count!==%firstIndex% set list=-i "%%A"
+	if NOT !count!==%firstIndex% set list=!list! -i "%%~nxA"
 
 	set /A count=!count!+1
 	set /A totalCount=!totalCount!+1
@@ -83,7 +83,7 @@ REM Max string length seem to be limited to 8191, MAX_FILE_PATH ~ 260
 		echo COUNT=!count!
 		echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-		set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+		set coptions=merge !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
 		@echo java -jar "%PDFBoxJarFilePath%" !coptions!
 		java -jar  "%PDFBoxJarFilePath%" !coptions!
 
@@ -97,7 +97,7 @@ REM Replace next 3 lines with another HTML to PDF converion tool if desired
 			echo COUNT=!count!
 			echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-			set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+			set coptions=merge !list! -o %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
 			@echo java -jar "%PDFBoxJarFilePath%" !coptions!
 			java -jar "%PDFBoxJarFilePath%" !coptions!
 
@@ -111,7 +111,7 @@ if NOT %count%==0 (
 	echo COUNT=!count!
 	echo TOTAL_COUNT=%totalCount%
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
-	set coptions=PDFMerger !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
+	set coptions=merge !list! -o %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
 	@echo java -jar "%PDFBoxJarFilePath%" !coptions!
 	java -jar "%PDFBoxJarFilePath%" !coptions!
 )

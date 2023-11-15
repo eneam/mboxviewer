@@ -72,6 +72,9 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	BOOL PreTranslateMessage(MSG* pMsg);
+	virtual void PreSubclassWindow();
+
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	//afx_msg void OnSetFocus(CWnd* pOldWnd);

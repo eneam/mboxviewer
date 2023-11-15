@@ -41,7 +41,7 @@ IMPLEMENT_DYNAMIC(GenericFontFamilyDlg, CDialogEx)
 GenericFontFamilyDlg::GenericFontFamilyDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_GENERIC_FONT_DLG, pParent)
 {
-	m_genericFontName = "serif";
+	m_genericFontName = L"serif";
 
 }
 
@@ -65,11 +65,11 @@ END_MESSAGE_MAP()
 
 void GenericFontFamilyDlg::LoadData()
 {
-	m_listBox.AddString(_T("serif"));
-	m_listBox.AddString(_T("sans-serif"));
-	m_listBox.AddString(_T("monospace"));
-	m_listBox.AddString(_T("cursive"));
-	m_listBox.AddString(_T("fantasy"));
+	m_listBox.AddString(L"serif");
+	m_listBox.AddString(L"sans-serif");
+	m_listBox.AddString(L"monospace");
+	m_listBox.AddString(L"cursive");
+	m_listBox.AddString(L"fantasy");
 }
 
 BOOL GenericFontFamilyDlg::OnInitDialog()

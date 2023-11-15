@@ -32,8 +32,8 @@
 #include "SimpleString.h"
 #include <algorithm>
 #include "FileUtils.h"
+#include "MimeCode.h"
 
-#if 1
 void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 {
 	// Assume out is done by caller
@@ -77,54 +77,6 @@ void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out
 		out->Append("\r\n", 2);
 	}
 }
-#else
-void ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
-{
-	// Assume out is done by caller
-	out->ClearAndResize(inLength * 2);
-	register char *p = (char*)in;
-	register char *e = p + inLength;
-	char *p_beg = p;
-	int len;
-
-	p_beg = p;
-	while (p < e)
-	{
-		while ((p < e) && (*p != '\n')) p++;
-		if (p < e)  // found NL
-		{
-			if (p == in)
-			{
-				out->Append("\r\n", 2);
-				p++;  // jump over NL
-				p_beg = p;
-			}
-			else if (*(p - 1) != '\r')
-			{
-				len = p - p_beg;
-				if (len > 0)
-					out->Append(p_beg, len);
-
-				out->Append("\r\n", 2);
-				p++;  // jump over NL
-				p_beg = p;
-			}
-			else
-				p++;
-		}
-		else // p >= e didn't found NL done with looping
-		{
-			// we can be here if input is not terminated by NL
-			len = p - p_beg;
-			if (len > 0)
-			{
-				out->Append(p_beg, len);
-				out->Append("\r\n", 2);
-			}
-		}
-	}
-}
-#endif
 
 void TextUtilsEx::EncodeAsHtml(const char *in, int inLength, SimpleString *out)
 {
@@ -216,6 +168,8 @@ void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *o
 {
 	static char *prefixTable[] = { "http:", "https:", "ftp:", "mailto:", "file:", };
 	static int prefixLengthTable[] = { istrlen("http:"), istrlen("https:"), istrlen("ftp:"), istrlen("mailto:"), istrlen("file:") };
+	static char *pImgTag = "img";
+	static int imgTagLen = istrlen(pImgTag);
 
 	// Assume out is done by caller
 	out->ClearAndResize(inLength * 3);
@@ -235,7 +189,31 @@ void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *o
 	{
 		c = *p;
 		p_save = p;
-		if (c == ':')
+		if (c == '<')
+		{
+			char* pBeg = p + 1;
+			char* pEnd = pBeg + 3;
+			int retlen = TextUtilsEx::strncmpUpper2Lower(pBeg, pEnd, pImgTag, imgTagLen);
+			if (retlen == 0)
+			{
+				p = p + 4;
+				while (p < e)
+				{
+					if (*p == '\r')
+						break;
+					else
+						p++;
+				}
+				p++;  // skip CR
+				_ASSERTE(*p == '\n');
+				p++;  // skip NL
+				int len = IntPtr2Int(p - p_beg);
+				out->Append(p_beg, len);
+				p_beg = p;
+				continue;
+			}
+		}
+		else if (c == ':')
 		{
 			int i = 0;
 			char *pEnd = p+1;
@@ -313,21 +291,37 @@ void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *o
 	out->Append("</pre>");
 }
 
-BOOL TextUtilsEx::Wide2Ansi(CStringW &strW, CString &strA, DWORD &error)
+BOOL TextUtilsEx::WStr2Ansi(CString &strW, CStringA &strA, DWORD &error)
 {
 	UINT outCodePage = CP_ACP;
 	BOOL ret = WStr2CodePage((wchar_t*)((LPCWSTR)strW), strW.GetLength(), outCodePage, &strA, error);
 	return ret;
 }
 
-BOOL TextUtilsEx::Ansi2Wide(CString &strA, CStringW &strW, DWORD &error)
+BOOL TextUtilsEx::WStr2Ascii(CString& strW, CStringA& strA, DWORD& error)
+{
+	UINT CP_US_ASCII = 20127;
+	UINT outCodePage = CP_US_ASCII;
+	BOOL ret = WStr2CodePage((wchar_t*)((LPCWSTR)strW), strW.GetLength(), outCodePage, &strA, error);
+	return ret;
+}
+
+BOOL TextUtilsEx::Ansi2WStr(CStringA &strA, CString &strW, DWORD &error)
 {
 	UINT strCodePage = CP_ACP;
 	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error);
 	return ret;
 }
 
-UINT TextUtilsEx::Str2PageCode(const  char* PageCodeStr)
+BOOL TextUtilsEx::Ascii2Wstr(CStringA &strA, CString &strW, DWORD &error)
+{
+	UINT CP_US_ASCII = 20127;
+	UINT strCodePage = CP_US_ASCII;
+	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error);
+	return ret;
+}
+
+UINT TextUtilsEx::StrPageCodeName2PageCode(const  char* PageCodeStr)
 {
 	UINT CodePage = 0;
 
@@ -336,235 +330,277 @@ UINT TextUtilsEx::Str2PageCode(const  char* PageCodeStr)
 	return CodePage;
 }
 
-// TODO: Find time to reduce number of conversion functions, duplicates
-
-DWORD TextUtilsEx::Str2Ansi(CString& str, UINT strCodePage)
+DWORD TextUtilsEx::Str2Ansi(CStringA& str, UINT strCodePage, DWORD& error)
 {
 	UINT toPageCode = CP_ACP;
-	DWORD retCode = TextUtilsEx::Str2PageCode(str, strCodePage, toPageCode);
-	return retCode;
+
+	SimpleString result;  // Str2CodePage will resize
+	SimpleString workBuff; // Str2CodePage will resize
+	BOOL retA2A = TextUtilsEx::Str2CodePage((LPCSTR)str, str.GetLength(), strCodePage, toPageCode, &result, &workBuff, error);
+	if (retA2A == TRUE)
+	{
+		char *buff = str.GetBufferSetLength(result.Count());
+		memcpy(buff, result.Data(), result.Count());
+		str.ReleaseBuffer();
+	}
+	return retA2A;
 }
 
-DWORD TextUtilsEx::Str2PageCode(CString &str, UINT strCodePage, UINT toPageCode)
+
+BOOL TextUtilsEx::Str2UTF8(const char* instr, int instrlen, UINT inCodePage, CStringA& outstr, DWORD& error)
 {
-	int len = str.GetLength() * 4 + 2;
-	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
-	int len1 = MultiByteToWideChar(strCodePage, 0, str, str.GetLength(), buff, len);
-	if (len1 == 0) {
-		free(buff);
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		return error;
-	}
-	int outlen = 4 * len1 + 2;
-	char * buff1 = (char *)malloc(outlen); // or could  call WideCharToMultiByte first to get the required length
-	int len2 = WideCharToMultiByte(toPageCode, 0, buff, len1, buff1, outlen, NULL, NULL);
-	if (len2 == 0) {
-		free(buff);
-		free(buff1);
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		CString errText = FileUtils::GetLastErrorAsString();
-		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
-		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
-		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
-		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
-		return error;
-	}
-	buff1[len2] = 0;
-	str = buff1;
-	free(buff);
-	free(buff1);
+	SimpleString workBuff;
+	SimpleString outBuff;
+	BOOL retStr2CP = TextUtilsEx::Str2CodePage(instr, instrlen, inCodePage, CP_UTF8,
+		&outBuff, &workBuff, error);
 
-	return 0;
+	outstr.Empty();
+	if (retStr2CP)
+	{
+		outstr.Append(outBuff.Data(), outBuff.Count());
+	}
+	else  // return original string. Sould work better than empty string  // FIXME
+	{
+		outstr.Append(instr, instrlen);
+	}
+	return retStr2CP;
 }
 
-BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff)
+BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff, DWORD& error)
 {
-	int buffLen = strlen * 4 + 2;
-	workBuff->ClearAndResize(buffLen);
-	LPWSTR buff = (LPWSTR)workBuff->Data();  // or  we could call MultiByteToWideChar first to get the required length
-	int wlen = MultiByteToWideChar(inCodePage, 0, str, strlen, buff, buffLen);
-	if (wlen == 0) {
-		result->Clear();
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		return FALSE;
-	}
+	BOOL retA2W = TextUtilsEx::CodePage2WStr(str, strlen, inCodePage, workBuff, error);
 
-	int outLen = wlen * 4 + 2;
-	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
-	if (outCodePage == 0)
-		outCodePage = CP_UTF8;
-	//int utf8Len = WideCharToMultiByte(CP_UTF8,     0, buff, wlen, result->Data(), outLen, NULL, NULL);
-	int utf8Len = WideCharToMultiByte(outCodePage, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
-	if (utf8Len == 0) {
-		result->Clear();
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
-		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
-		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
-		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
-		return FALSE;
+	const wchar_t* wbuff = (wchar_t*)workBuff->Data();
+	int wlen = workBuff->Count() / 2;
+
+	BOOL  retW2A = FALSE;
+	if (retA2W)
+	{
+		retW2A = TextUtilsEx::WStr2CodePage(wbuff, wlen, outCodePage, result, error);
 	}
-	result->SetCount(utf8Len);
-	return TRUE;
+	return retW2A;
 }
 
-BOOL TextUtilsEx::Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff)
+BOOL TextUtilsEx::Str2UTF8(const char* str, int strlen, UINT inCodePage, SimpleString* result, SimpleString* workBuff, DWORD& error)
 {
-	int buffLen = str->Count() * 4 + 2;
-	workBuff->ClearAndResize(buffLen);
-	LPWSTR buff = (LPWSTR)workBuff->Data();  // or  we could call MultiByteToWideChar first to get the required length
-	int wlen = MultiByteToWideChar(inCodePage, 0, str->Data(), str->Count(), buff, buffLen);
-	if (wlen == 0) {
-		result->Clear();
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		return FALSE;
-	}
-
-	int outLen = wlen * 4 + 2;
-	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
-	if (outCodePage == 0)
-		outCodePage = CP_UTF8;
-	//int utf8Len = WideCharToMultiByte(CP_UTF8,     0, buff, wlen, result->Data(), outLen, NULL, NULL);
-	int utf8Len = WideCharToMultiByte(outCodePage, 0, buff, wlen, result->Data(), outLen, NULL, NULL);
-	if (utf8Len == 0) {
-		result->Clear();
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
-		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
-		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
-		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
-		return FALSE;
-	}
-	result->SetCount(utf8Len);
-	return TRUE;
+	UINT outCodePage = CP_UTF8;
+	return TextUtilsEx::Str2CodePage(str, strlen, inCodePage, outCodePage, result, workBuff, error);
 }
 
-BOOL TextUtilsEx::WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, CString *result, DWORD &error)
+BOOL TextUtilsEx::Str2CodePage(SimpleString *str, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff, DWORD& error)
 {
-	SimpleString outbuf(4 * wlen + 2);
-
-	BOOL ret = WStr2CodePage(wbuff, wlen, outCodePage, &outbuf, error);
-
-	*result = outbuf.Data();
-	return ret;
+	BOOL retA2A = TextUtilsEx::Str2CodePage(str->Data(), str->Count(), inCodePage, outCodePage, result, workBuff, error);
+	return retA2A;
 }
 
-BOOL TextUtilsEx::WStr2CodePage(wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result, DWORD &error)
+BOOL TextUtilsEx::WStr2CodePage(const wchar_t *wbuff, int wbufflen, UINT outCodePage, CStringA *astr, DWORD &error)
 {
 	error = 0;
-	int outLen = wlen * 4 + 2;
-	result->ClearAndResize(outLen); // or could  call WideCharToMultiByte first to get the required length
-	if (outCodePage == 0)
-		outCodePage = CP_UTF8;
-
-	int utf8Len = WideCharToMultiByte(outCodePage, 0, wbuff, wlen, result->Data(), outLen, NULL, NULL);
-	if (utf8Len == 0) 
+	if (wbufflen == 0)
 	{
-		result->Clear();
-		// error - implement error log file
+		astr->Empty();
+		return TRUE;
+	}
+
+	UINT CP_ASCII = 20127;
+
+	// worst case scenario. Estimated length
+	int sbufflen = wbufflen * 4 + 2;  // This likely overkill or call WideCharToMultiByte first to get the required length
+	sbufflen = ((sbufflen / 128) + 1) * 128;  // may help to reduce memory fragmentation ?
+
+	if (outCodePage == CP_ASCII)
+	{
+		//_ASSERTE(FALSE);
+		outCodePage = CP_UTF8;  // FIXME ?? 
+	}
+
+	char* sbuff = astr->GetBuffer(sbufflen);
+	int slen = WideCharToMultiByte(outCodePage, 0, wbuff, wbufflen, sbuff, sbufflen-1, NULL, NULL);
+	_ASSERTE(slen != 0);
+	if (slen == 0)
+	{
 		error = ::GetLastError();
-		/*ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
-		ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
-		ERROR_INVALID_PARAMETER.Any of the parameter values was invalid.
-		ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.*/
+		CString errorText = FileUtils::GetLastErrorAsString();
+
+		// ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		// ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		// ERROR_INVALID_PARAMETER. Any of the parameter values was invalid.
+		// ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.
+
+		astr->ReleaseBuffer(0);
 		return FALSE;
 	}
-	result->SetCount(utf8Len);
+	astr->ReleaseBuffer(slen);  // TODO: check if extra space is freed
 	return TRUE;
+}
+
+BOOL TextUtilsEx::WStr2CodePage(const wchar_t *wbuff, int wlen, UINT outCodePage, SimpleString *result, DWORD &error)
+{
+	error = 0;
+	if (wlen == 0)
+	{
+		result->ClearAndResize(1);
+		return TRUE;
+	}
+
+	UINT CP_ASCII = 20127;
+
+	int outLen = wlen * 4 + 2;  // This likely overkill or call WideCharToMultiByte first to get the required length
+	outLen = ((outLen / 128) + 1) * 128;  // may help to reduce memory fragmentation ?
+
+	if (outCodePage == CP_ASCII)
+	{
+		outCodePage = CP_UTF8;  // FIXME ?? 
+	}
+
+	result->ClearAndResize(outLen); 
+	int cpLen = WideCharToMultiByte(outCodePage, 0, wbuff, wlen, result->Data(), outLen-1, NULL, NULL);
+	_ASSERTE(cpLen != 0);
+	if (cpLen == 0)
+	{
+		error = ::GetLastError();
+		CString errorText = FileUtils::GetLastErrorAsString();
+		// ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		// ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		// ERROR_INVALID_PARAMETER. Any of the parameter values was invalid.
+		// ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.
+
+		result->Clear();
+		return FALSE;
+	}
+	result->SetCount(cpLen);
+	return TRUE;
+}
+
+BOOL TextUtilsEx::WStr2UTF8(const wchar_t* wbuff, int wlen, SimpleString* result, DWORD& error)
+{
+	UINT outCodePage = CP_UTF8;
+	return TextUtilsEx::WStr2CodePage(wbuff, wlen, outCodePage, result, error);
 }
 
 BOOL TextUtilsEx::CodePage2WStr(SimpleString *str, UINT strCodePage, SimpleString *wstr, DWORD &error)
 {
-	error = 0;
-	// SimpleString doesn't support UTF16 characters so be carfull
-	int wbuffLen = str->Count() * 4 + 2;
-	wstr->ClearAndResize(wbuffLen);
-
-	int wlen = MultiByteToWideChar(strCodePage, 0, str->Data(), str->Count(), (LPWSTR)((void*)wstr->Data()), wbuffLen);
-	if (wlen == 0) {
-		wstr->Clear();
-		// error - implement error log file
-		error = ::GetLastError();
-		return FALSE;
-	}
-	wstr->SetCount(wlen * 2);
-	*wstr->Data(wlen * 2 + 1) = 0;
-	*wstr->Data(wlen * 2 + 2) = 0;
-	wchar_t *wbuf = (LPWSTR)((void*)wstr->Data());
-	return TRUE;
+	BOOL ret = CodePage2WStr(str->Data(), str->Count(), strCodePage, wstr, error);
+	return ret;
 }
-
-BOOL TextUtilsEx::CodePage2WStr(CString *str, UINT strCodePage, SimpleString *wstr, DWORD &error)
+//
+BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, SimpleString *wstr, DWORD &error)
 {
-	error = 0;
-	int wbuffLen = str->GetLength() * 4 + 2;
-	wstr->ClearAndResize(wbuffLen);
-
-	int wlen = MultiByteToWideChar(strCodePage, 0, str->operator LPCSTR(), str->GetLength(), (LPWSTR)((void*)wstr->Data()), wbuffLen);
-	if (wlen == 0) {
-		wstr->Clear();
-		// error - implement error log file
-		error = ::GetLastError();
-		return FALSE;
-	}
-	wstr->SetCount(wlen * 2);
-	*wstr->Data(wlen * 2 + 1) = 0;
-	*wstr->Data(wlen * 2 + 2) = 0;
-	wchar_t *wbuf = (LPWSTR)((void*)wstr->Data());
-	return TRUE;
-}
-
-BOOL TextUtilsEx::CodePage2WStr(CString *str, UINT strCodePage, CStringW *wstr, DWORD &error)
-{
-	error = 0;
-	int wbuffLen = str->GetLength() * 4 + 2;
-	SimpleString ss_wstr(wbuffLen);
-
-	int wlen = MultiByteToWideChar(strCodePage, 0, str->operator LPCSTR(), str->GetLength(), (LPWSTR)((void*)ss_wstr.Data()), wbuffLen);
-	if (wlen == 0) 
-	{
-		wstr->Empty();
-		// error - implement error log file
-		error = ::GetLastError();
-		return FALSE;
-	}
-
-	ss_wstr.SetCount(wlen * 2);
-	ss_wstr.SetAt(wlen * 2 + 1, 0);
-	ss_wstr.SetAt(wlen * 2 + 2, 0);
-
-	wchar_t *wbuf = (LPWSTR)((void*)ss_wstr.Data());
-	*wstr = wbuf;
-
-	return TRUE;
-}
-
-BOOL TextUtilsEx::Str2UTF8(SimpleString *str, UINT strCodePage, SimpleString *result, SimpleString *workBuff)
-{
-	BOOL ret = Str2CodePage(str, strCodePage, CP_UTF8, result, workBuff);
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error);
 	return ret;
 }
 
-BOOL TextUtilsEx::Str2CurrentCodepage(SimpleString *str, UINT strCodePage, SimpleString *result, SimpleString *workBuff)
+BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, SimpleString *wstr, DWORD &error)
+{
+	error = 0;
+	if (slen == 0)
+	{
+		wstr->ClearAndResize(2);
+		wchar_t* wbuff = (wchar_t*)wstr->Data();
+		wbuff[0] = L'\0';  // will set two 0 trailing bytes
+		return TRUE;
+	}
+
+	// worst case scenario. Estimated length
+	int buffLen = slen * 4 + 2;  // This is likely overkill or call MultiByteToWideChar first to get the required length
+	buffLen = ((buffLen / 128) + 1) * 128;  // may help to reduce memory fragmentation ??
+
+	wstr->ClearAndResize(buffLen);
+	wchar_t* wbuff = (wchar_t*)wstr->Data();
+	int wbuffLen = buffLen/2 - 1;
+
+	int wlen = MultiByteToWideChar(strCodePage, 0, str, slen, wbuff, wbuffLen);
+	_ASSERTE(wlen != 0);
+	if (wlen == 0)
+	{
+		error = ::GetLastError();
+		CString errorText = FileUtils::GetLastErrorAsString();
+		// ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		// ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		// ERROR_INVALID_PARAMETER. Any of the parameter values was invalid.
+		// ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.
+
+		wstr->Clear();
+		return FALSE;
+	}
+	wstr->SetCount(wlen * 2);  // sets one 0 trailing byte
+	wbuff[wlen] = L'\0';  // will set two 0 trailing bytes
+
+	return TRUE;
+}
+
+BOOL TextUtilsEx::WStr2UTF8(CString* str, CStringA* outstr, DWORD& error)
+{
+	UINT outCodePage = CP_UTF8;
+	BOOL ret = WStr2CodePage(str->operator LPCWSTR(), str->GetLength(), outCodePage, outstr, error);
+	return ret;
+}
+
+
+BOOL TextUtilsEx::UTF82WStr(CStringA* str, CString* wstr, DWORD& error)
+{
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), CP_UTF8, wstr, error);
+	return ret;
+}
+
+BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, CString *wstr, DWORD &error)
+{
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error);
+	return ret;
+}
+
+BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, CString *wstr, DWORD &error)
+{
+	error = 0;
+	wstr->Empty();
+	if (slen == 0)
+		return TRUE;
+
+	// worst case scenario. Estimated length
+	int wbuffLen = slen * 4 + 2;  // This is likely overkill or call MultiByteToWideChar first to get the required length
+	wbuffLen = ((wbuffLen / 128) + 1) * 128;  // may help to reduce memory fragmentation ??
+	wbuffLen = wbuffLen/2 -2;
+
+	wchar_t* wbuff = wstr->GetBuffer(wbuffLen + 1);
+	int wlen = MultiByteToWideChar(strCodePage, 0, str, slen, wbuff, wbuffLen);
+	_ASSERTE(wlen != 0);
+	if (wlen == 0)
+	{
+		error = ::GetLastError();
+		CString errorText = FileUtils::GetLastErrorAsString();
+		// ERROR_INSUFFICIENT_BUFFER.A supplied buffer size was not large enough, or it was incorrectly set to NULL.
+		// ERROR_INVALID_FLAGS.The values supplied for flags were not valid.
+		// ERROR_INVALID_PARAMETER. Any of the parameter values was invalid.
+		// ERROR_NO_UNICODE_TRANSLATION.Invalid Unicode was found in a string.
+
+		wstr->ReleaseBuffer(0);
+		return FALSE;
+	}
+	wstr->ReleaseBuffer(wlen);
+	return TRUE;
+}
+
+BOOL TextUtilsEx::Str2UTF8(SimpleString *str, UINT strCodePage, SimpleString *result, SimpleString *workBuff, DWORD& error)
+{
+	BOOL ret = Str2CodePage(str, strCodePage, CP_UTF8, result, workBuff, error);
+	return ret;
+}
+
+BOOL TextUtilsEx::Str2Ansi(SimpleString *str, UINT strCodePage, SimpleString *result, SimpleString *workBuff, DWORD& error)
 {
 	UINT currentCodePage = GetACP();
-	BOOL ret = Str2CodePage(str, strCodePage, currentCodePage, result, workBuff);
+	BOOL ret = Str2CodePage(str, strCodePage, currentCodePage, result, workBuff, error);
 	return ret;
 }
 
 #include "MimeCode.h"
 
 // TODO: toCharacterId is ignored for now
-CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charsetId, UINT toCharacterId)
+CStringA TextUtilsEx::DecodeString(CStringA &subj, CStringA &charset, UINT &charsetId, UINT toCharacterId, DWORD& error)
 {
 	CFieldCodeText tfc;
-	tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);
+	//tfc.SetInput(subj.GetBuffer(), subj.GetLength(), false);  // FIXME
+	tfc.SetInput((LPCSTR)subj, subj.GetLength(), false);
 	int outputLen = tfc.GetOutputLength();
 	if (outputLen > 0) 
 	{
@@ -572,16 +608,16 @@ CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charset
 		unsigned char *outBuf = (unsigned char*)malloc(maxOutputLen);
 		int decodeLen = tfc.GetOutput(outBuf, maxOutputLen);
 		outBuf[decodeLen] = 0;
-		CString str(outBuf);
+		CStringA str(outBuf);
 		free(outBuf);
 		charset = tfc.GetCharset();
-		UINT CodePage = TextUtilsEx::Str2PageCode(tfc.GetCharset());
+		UINT CodePage = TextUtilsEx::StrPageCodeName2PageCode(tfc.GetCharset());
 		charsetId = CodePage;
 		// No remapping for now. Header of message windows should show text properly
 		return str;
 
 		if ((CodePage > 0) && (toCharacterId > 0)) {
-			TextUtilsEx::Str2Ansi(str, CodePage);
+			TextUtilsEx::Str2Ansi(str, CodePage, error);
 			return str;
 		}
 		else
@@ -589,6 +625,71 @@ CString TextUtilsEx::DecodeString(CString &subj, CString &charset, UINT &charset
 	}
 	else
 		return subj;
+}
+
+int TextUtilsEx::DecodeString(CStringA& inStr, CStringA &outStr, CStringA& charset, UINT& charsetId, DWORD& error)
+{
+	CFieldCodeText tfc;
+
+	tfc.SetInput((LPCSTR)inStr, inStr.GetLength(), false);
+	int outputLen = tfc.GetOutputLength();
+	if (outputLen > 0)
+	{
+		int maxOutputLen = 2 * outputLen + 2;
+
+		outStr.GetBuffer(maxOutputLen);
+		int decodeLen = tfc.GetOutput((unsigned char*)((LPCSTR)outStr), maxOutputLen);
+
+		if (decodeLen >= 0)
+		{
+			outStr.ReleaseBuffer(decodeLen);
+
+			charset = tfc.GetCharset();
+			UINT CodePage = TextUtilsEx::StrPageCodeName2PageCode(tfc.GetCharset());
+			charsetId = CodePage;
+
+			return decodeLen;
+		}
+		else
+		{
+			outStr.ReleaseBuffer(0);
+			return 0;
+		}
+	}
+	else
+		return 0;
+}
+
+int TextUtilsEx::EncodeString(CStringA& inStr,  CStringA &outStr, UINT charsetId, DWORD& error)
+{
+	CFieldCodeText tfc;
+
+	std::string charset;
+	BOOL ret = id2charset(charsetId, charset);
+
+	tfc.SetInput((LPCSTR)inStr, inStr.GetLength(), true);
+	tfc.SetCharset(charset.c_str());
+	int outputLen = tfc.GetOutputLength();
+
+	if (outputLen > 0)
+	{
+		int maxOutputLen = 2 * outputLen + 2;
+
+		outStr.GetBuffer(maxOutputLen);
+		int decodeLen = tfc.GetOutput((unsigned char*)((LPCSTR)outStr), maxOutputLen);
+		if (decodeLen >= 0)
+		{
+			outStr.ReleaseBuffer(decodeLen);
+			return decodeLen;
+		}
+		else
+		{
+			outStr.ReleaseBuffer(0);
+			return 0;
+		}
+	}
+	else
+		return 0;
 }
 
 int  TextUtilsEx::hextob(char ch)
@@ -599,12 +700,16 @@ int  TextUtilsEx::hextob(char ch)
 	return -1;
 }
 
-int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UINT &charsetId,  BOOL hasCharset, CString &outString)
+int TextUtilsEx::DecodeMimeChunkedString(CStringA &inString, CStringA &charset, UINT &charsetId,  BOOL hasCharset, CStringA &outString)
 {
 	const char *p_beg = (LPCSTR)inString;
 	const char *p = p_beg;
 	int length = inString.GetLength();
 	const char *e = p + length;
+
+	// example string UTF-8''Copy%20of%20JOHN%20KOWALSKI%20SECOND%20PRIORITIES%20Rev%201%20with%20effort%20cost.xlsx
+	// value looks like URL, may contatin %20 for example
+	// can value look like URL but without charset ?? try to verify
 
 	charsetId = 0;
 	if (hasCharset)
@@ -621,7 +726,7 @@ int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UI
 		}
 
 		charset.Append(p_beg, IntPtr2Int(p - p_beg));
-		charsetId = TextUtilsEx::Str2PageCode(charset);
+		charsetId = TextUtilsEx::StrPageCodeName2PageCode(charset);
 
 		// skip first '\''
 		p++;
@@ -639,8 +744,11 @@ int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UI
 		}
 
 		p++;
+	}
 
+	const char* p_val_beg = p;
 
+	{
 		// decode
 
 		SimpleString out(length * 2);
@@ -655,11 +763,11 @@ int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UI
 				c = *p++;
 				int first = hextob(c);
 				if (first < 0)
-					return 0;
+					break;
 				c = *p++;
 				int second = hextob(c);
 				if (second < 0)
-					return 0;
+					break;
 				unsigned char uc = first * 16 + second;
 				out.Append(uc);
 			}
@@ -669,13 +777,22 @@ int TextUtilsEx::DecodeMimeChunkedString(CString &inString, CString &charset, UI
 				p++;
 			}
 		}
-
-		outString.Empty();
-		outString.Append(out.Data(), out.Count());
+		if (p < e)  // not a URL
+		{
+			outString.Empty();
+			int vlen = IntPtr2Int(e - p_val_beg);
+			outString.Append(p_val_beg, vlen);
+		}
+		else
+		{
+			outString.Empty();
+			outString.Append(out.Data(), out.Count());
+		}
 	}
 
 	return 1;
 }
+
 
 CP2NM cp2name[] = {
 	//{ Info.CodePage , "Info.Name" , "Info.DisplayName" },
@@ -884,7 +1001,7 @@ UINT TextUtilsEx::charset2Id(const char *char_set)
 	}
 #if 0
 	for (it = cids->begin(); it != cids->end(); it++) {
-		TRACE(_T("%d %s\n"), it->second, it->first);
+		TRACE(L"%d %s\n", it->second, it->first);
 	}
 #endif
 	std::string charset = char_set;
@@ -938,7 +1055,7 @@ BOOL TextUtilsEx::id2charset(UINT id, std::string &charset)
 	}
 #if 0
 	for (it = ids->begin(); it != ids->end(); it++) {
-		TRACE(_T("%d %s\n"), it->first, it->second);
+		TRACE(L"%d %s\n", it->first, it->second);
 	}
 #endif
 	if ((it = ids->find(id)) != ids->end()) {
@@ -957,19 +1074,19 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	CFileException ExError;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
-		TCHAR szCause[2048];
+		wchar_t szCause[2048];
 		ExError.GetErrorMessage(szCause, 2048);
 
-		CString txt = _T("Could not create \"") + fullPath;
-		txt += _T("\" file.\n");
+		CString txt = L"Could not create \"" + fullPath;
+		txt += L"\" file.\n";
 		txt += szCause;
 
 		HWND h = NULL; // we don't have any window yet ??
-		int answer = ::MessageBox(h, txt, _T("Error"), MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
-	CString htmlHdr;
+	CStringA htmlHdr;
 
 	htmlHdr += "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=US-ASCII\"></head><body>";
 	htmlHdr += "<br><br><font size=\"+2\"><b>WINDOWS CODE PAGE IDENTIFIERS TABLE<br><br><br></font>";
@@ -980,7 +1097,7 @@ int TextUtilsEx::showCodePageTable(CString &path)
 
 	CP2NM *item;
 
-	CString txt;
+	CStringA txt;
 	txt.Format(" %22s  %26s  %42s  \n",
 		" ", " ", " ");
 	fp.Write((LPCSTR)txt, txt.GetLength());
@@ -1000,18 +1117,28 @@ int TextUtilsEx::showCodePageTable(CString &path)
 		fp.Write((LPCSTR)txt, txt.GetLength());
 	}
 
-	CString htmlEnd = "\r\n</pre></body></html>";
+	CStringA htmlEnd = "\r\n</pre></body></html>";
 	fp.Write((LPCSTR)htmlEnd, htmlEnd.GetLength());
 
 	fp.Close();
 
-	ShellExecute(NULL, _T("open"), fullPath, NULL, NULL, SW_SHOWNORMAL);
+	ShellExecute(NULL, L"open", fullPath, NULL, NULL, SW_SHOWNORMAL);
 
-	int deb = 1;
 	return 1;
 }
 
-BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString &codePageInfo)
+BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString& codePageInfo)
+{
+	CStringA codePageInfoA;
+	BOOL ret = TextUtilsEx::Id2LongInfoA(codePage, codePageInfoA);
+
+	DWORD error = 0;
+	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, codePage, &codePageInfo, error);
+
+	return retA2W;
+}
+
+BOOL TextUtilsEx::Id2LongInfoA(UINT codePage, CStringA &codePageInfo)
 {
 	CP2NM* item;
 	//CString codePageInfo;
@@ -1061,21 +1188,10 @@ BOOL TextUtilsEx::isNumeric(CString &str) {
 	return TRUE;
 }
 
-BOOL TextUtilsEx::Str2Wide(CString &res, UINT CodePage, CStringW &m_strW)
+BOOL TextUtilsEx::Str2WStr(CStringA &str, UINT strCodePage, CString &wstr, DWORD& error)
 {
-	int len = res.GetLength() * 4 + 2;
-	LPWSTR buff = (LPWSTR)malloc(len);  // or  we could call MultiByteToWideChar first to get the required length
-	int len1 = MultiByteToWideChar(CodePage, 0, res, res.GetLength(), buff, len);
-	if (len1 == 0) {
-		free(buff);
-		// error - implement error log file
-		const DWORD error = ::GetLastError();
-		return FALSE;
-	}
-	buff[len1] = 0;
-	m_strW = buff;
-	free(buff);
-	return TRUE;
+	BOOL ret = CodePage2WStr(&str, strCodePage, &wstr, error);
+	return ret;
 }
 
 char *TextUtilsEx::strchar(char *beg, char *end, char c)
@@ -1239,14 +1355,31 @@ int TextUtilsEx::DecodeURL(char *URL, int urlLen)
 	return retLen;
 }
 
-BOOL TextUtilsEx::isWhiteLine(CString &str)
+BOOL TextUtilsEx::isWhiteLine(CString& str)
 {
-	const char* p = (LPCSTR)str;
-	const char* e = p + str.GetLength();
+	const wchar_t* p = (LPCWSTR)str;
+	const wchar_t* e = p + str.GetLength();
 	return isWhiteLine(p, e);
 }
 
-BOOL TextUtilsEx::isWhiteLine(const char* p, const char* e)
+BOOL TextUtilsEx::isWhiteLine(const wchar_t* p, const wchar_t* e)
+{
+	while ((p < e) && ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t')))  // eat white
+		p++;
+	if (p == e)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+BOOL TextUtilsEx::isWhiteLineA(CStringA &str)
+{
+	const char* p = (LPCSTR)str;
+	const char* e = p + str.GetLength();
+	return isWhiteLineA(p, e);
+}
+
+BOOL TextUtilsEx::isWhiteLineA(const char* p, const char* e)
 {
 	while ((p < e) && ((*p == '\r') || (*p == '\n') || (*p == ' ') || (*p == '\t')))  // eat white
 		p++;
@@ -1257,7 +1390,100 @@ BOOL TextUtilsEx::isWhiteLine(const char* p, const char* e)
 }
 
 // Very inefficient
-void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStringArray &a) 
+// SplitStringW and SplitStringA candidates for template ??
+//
+#if 0
+template <typename T, typename A, typename C>
+static int Tokenize(T& str, A& a, C del)
+//void TextUtilsEx::SplitString(const T& strIn, const T& delim, A& a)
+{
+	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes };
+
+	int state = inHunt;
+	T token;
+
+	int strLength = str.GetLength();
+	for (int i = 0; i < strLength; i++)
+	{
+		C c = str.GetAt(i);
+		if (state == inHunt)
+		{
+			if ((c == ' ') || (c == '\t'))
+				continue;
+			else if (c == del)  // separator
+				; // state = notInsideDoubleQuotes;  // stay inHunt
+			else if (c == '"')
+			{
+				state = insideDoubleQuotes;
+				//token.AppendChar(c);  // doesn't work, best is to ignore
+			}
+			else if ((c != del) && (c != '"'))  // No need to check just Append
+			{
+				state = notInsideDoubleQuotes;
+				token.AppendChar(c);
+			}
+		}
+		else if (state == notInsideDoubleQuotes)
+		{
+			int bytesLeft = strLength - i;
+			if (c == '"')
+			{
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == '"'))
+				{
+					token.AppendChar('"');
+					i += 1;
+				}
+				else
+					token.AppendChar(c);
+			}
+			else if (c != del)
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				token.Trim(C(" \t"));
+				if (!token.IsEmpty())
+					a.Add(token);
+				token.Empty();
+				state = inHunt;
+			}
+		}
+		else  // state == insideDoubleQuotes
+		{
+			if (c != '"')
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == '"'))
+				{
+					token.AppendChar('"');
+					i += 1;
+				}
+				else
+				{
+					token.Trim(C(" \t"));
+					if (!token.IsEmpty())
+						a.Add(token);
+					token.Empty();
+					state = inHunt;
+				}
+			}
+		}
+	}
+
+	token.Trim(C(" \t"));
+	if (!token.IsEmpty())
+		a.Add(token);
+	return 1;
+}
+
+#endif
+
+void TextUtilsEx::SplitStringW(const CString &strIn, const CString &delim, CStringArray &a) 
 {
 	int position = 0;
 	CString strToken;
@@ -1265,7 +1491,7 @@ void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStrin
 	a.RemoveAll();
 	strToken = strIn.Tokenize(delim, position);
 	while (!strToken.IsEmpty()) {
-		strToken.Trim(" \t");
+		strToken.Trim(L" \t");
 		if (!strToken.IsEmpty())
 			a.Add(strToken);
 		strToken = strIn.Tokenize(delim, position);
@@ -1276,12 +1502,153 @@ void TextUtilsEx::SplitString(const CString &strIn, const CString &delim, CStrin
 // Will support: a bc d, xy z, "k l, n,'"'","a b", "a,b"
 // '"' escapes " character
 
-int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
+int TextUtilsEx::TokenizeW(CString &str, CStringArray &a, wchar_t del)
 {
 	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes };
 
 	int state = inHunt;
 	CString token;
+
+	int strLength = str.GetLength();
+	for (int i = 0; i < strLength; i++)
+	{
+		wchar_t c = str.GetAt(i);
+		if (state == inHunt)
+		{
+			if ((c == L' ') || (c == L'\t'))
+				continue;
+			else if (c == del)  // separator
+				; // state = notInsideDoubleQuotes;  // stay inHunt
+			else if (c == L'"')
+			{
+				state = insideDoubleQuotes;
+				//token.AppendChar(c);  // doesn't work, best is to ignore
+			}
+			else if ((c != del) && (c != L'"'))  // No need to check just Append
+			{
+				state = notInsideDoubleQuotes;
+				token.AppendChar(c);
+			}
+		}
+		else if (state == notInsideDoubleQuotes)
+		{
+			int bytesLeft = strLength - i;
+			if (c == L'"')
+			{
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == L'"'))
+				{
+					token.AppendChar(L'"');
+					i += 1;
+				}
+				else
+					token.AppendChar(c);
+			}
+			else if (c != del)
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				token.Trim(L" \t");
+				if (!token.IsEmpty())
+					a.Add(token);
+				token.Empty();
+				state = inHunt;
+			}
+		}
+		else  // state == insideDoubleQuotes
+		{
+			if (c != L'"')
+			{
+				token.AppendChar(c);
+			}
+			else
+			{
+				int bytesLeft = strLength - i;
+				if ((bytesLeft >= 2) && (str.GetAt(i + 1) == L'"'))
+				{
+					token.AppendChar(L'"');
+					i += 1;
+				}
+				else
+				{
+					token.Trim(L" \t");
+					if (!token.IsEmpty())
+						a.Add(token);
+					token.Empty();
+					state = inHunt;
+				}
+			}
+		}
+	}
+
+	token.Trim(L" \t");
+	if (!token.IsEmpty())
+		a.Add(token);
+	return 1;
+}
+
+void TextUtilsEx::TraceStringArrayW(CStringArray &a)
+{
+	CString el;
+	TRACE(L"StringArray:\n");
+	for (int i = 0; i < a.GetSize(); i++)
+	{
+		el = a.ElementAt(i);
+		TRACE(L"\t|%s|\n", el);
+	}
+}
+
+// Very inefficient
+
+void TextUtilsEx::SplitStringA(const CStringA& strIn, const CStringA& delim, CStringArray& a)
+{
+	int position = 0;
+	CStringA strToken;
+
+	a.RemoveAll();
+	strToken = strIn.Tokenize(delim, position);
+	while (!strToken.IsEmpty())
+	{
+		strToken.Trim(" \t");
+		if (!strToken.IsEmpty())
+		{
+			CString strTokenW = strToken;
+			a.Add(strTokenW);
+		}
+		strToken = strIn.Tokenize(delim, position);
+	}
+}
+
+void TextUtilsEx::SplitStringA2A(const CStringA& strIn, const CStringA& delim, CStringArrayA& a)
+{
+	int position = 0;
+	CStringA strToken;
+
+	a.RemoveAll();
+	strToken = strIn.Tokenize(delim, position);
+	while (!strToken.IsEmpty())
+	{
+		strToken.Trim(" \t");
+		if (!strToken.IsEmpty())
+		{
+			a.Add(strToken);
+		}
+		strToken = strIn.Tokenize(delim, position);
+	}
+}
+
+// Simple tokenizer, heavy
+// Will support: a bc d, xy z, "k l, n,'"'","a b", "a,b"
+// '"' escapes " character
+
+
+int TextUtilsEx::TokenizeA(CStringA& str, CStringArrayA& a, char del)
+{
+	enum { inHunt, notInsideDoubleQuotes, insideDoubleQuotes };
+
+	int state = inHunt;
+	CStringA token;
 
 	int strLength = str.GetLength();
 	for (int i = 0; i < strLength; i++)
@@ -1359,17 +1726,113 @@ int TextUtilsEx::Tokenize(CString str, CStringArray &a, char del)
 	token.Trim(" \t");
 	if (!token.IsEmpty())
 		a.Add(token);
+
 	return 1;
 }
 
-void TextUtilsEx::TraceStringArray(CStringArray &a)
+void TextUtilsEx::TraceStringArrayA(CStringArray& a)
 {
-	CString el;
-	int first = 0;
-	TRACE(_T("StringArray:\n"));
+	CStringA el;
+	TRACE(L"StringArray:\n");
 	for (int i = 0; i < a.GetSize(); i++)
 	{
 		el = a.ElementAt(i);
-		TRACE(_T("\t|%s|\n"), el);
+		TRACE("\t|%s|\n", el);
 	}
+}
+
+// based on MimeCode.cpp
+
+int TextUtilsEx::SelectEncoding(int nLength, int nNonAsciiChars)
+{
+	int nQEncodeSize = nLength + nNonAsciiChars * 2;
+	int nBEncodeSize = (nLength + 2) / 3 * 4;
+	return (nQEncodeSize <= nBEncodeSize || nNonAsciiChars * 5 <= nLength) ? 'Q' : 'B';
+}
+
+int TextUtilsEx::WordEncode(CStringA& txt, CStringA& encodedTxt, int encodeType)
+{
+	int nLength = txt.GetLength();
+
+#if 0
+	// int SelectEncoding(int nLength, int nNonAsciiChars)
+	int nQEncodeSize = nLength + nNonAsciiChars * 2;
+	int nBEncodeSize = (nLength + 2) / 3 * 4;
+	int encMethos =  ((nQEncodeSize <= nBEncodeSize) || (nNonAsciiChars * 5 <= nLength)) ? 'Q' : 'B';
+#endif
+
+	CMimeEncodedWord coder;
+	char* charset = "UTF-8";
+	const char* pszInput = (LPCSTR)txt;
+	//int encType = SelectEncoding(nUnitSize, nNonAsciiChars);
+	// Hardcoded
+	int encType = encodeType;
+	coder.SetEncoding(encType, charset);
+	coder.SetInput(pszInput, nLength, true);
+
+	int outLength = coder.GetOutputLength();
+	if (outLength <= 0)
+		return 0;
+
+	int encodedTxlength = 2 * outLength + 2;
+
+	char* buff = encodedTxt.GetBuffer(encodedTxlength);
+	int nEncoded = coder.GetOutput((unsigned char*)buff, encodedTxlength);
+	if (nEncoded <= 0)
+		nEncoded = 0;
+	encodedTxt.ReleaseBuffer(nEncoded);
+
+#if 0
+	// just a test
+	CStringA strCharset;
+	UINT charsetId;
+	UINT toCharacterId = 0; // ignored for now
+	CStringA result = TextUtilsEx::DecodeString(encodedTxt, strCharset, charsetId, toCharacterId);
+#endif
+
+	return nEncoded;
+}
+
+void TextUtilsEx::WStr2WstrWithCommas(const wchar_t* wstr, int wstrlen, CString& cstr)
+{
+	_ASSERTE(wstr[wstrlen] == 0);
+	cstr.Empty();
+	if (wstrlen <= 0)
+		return;
+
+	int wlen = wstrlen;
+	int j = 0;
+	while (!iswdigit(wstr[j++]))
+		wlen--;
+
+#if 0
+	int groups = wlen / 3;
+	int partial = wlen % 3;
+
+	if ((groups > 0) && (partial == 0))
+		groups--;
+#else
+	int groups = (wlen -1)/3;
+#endif
+
+	int i = 0;
+	int len = wstrlen - groups * 3;
+	cstr.Append(wstr, len);
+	for (i = groups; i > 0; i--)
+	{
+		cstr.AppendChar(L',');
+		cstr.Append(&wstr[len], 3);
+		len += 3;
+	}
+
+	const int deb = 1;
+}
+
+// No need to optimize perf so rely on WStr2WstrWithCommas()
+void TextUtilsEx::Int2WstrWithCommas(INT64 numb, CString& cstr)
+{
+	CString str;
+	str.Format(L"%lld", numb);
+	WStr2WstrWithCommas((LPCWSTR)str, str.GetLength(), cstr);
+	const int deb = 1;
 }

@@ -37,12 +37,14 @@
 #include "CPictureCtrlDemoDlg.h"
 
 BEGIN_MESSAGE_MAP(CAttachments, CListCtrl)
-	ON_WM_PAINT()
+	//ON_WM_PAINT()
+	ON_WM_ERASEBKGND()
 	// OWNERDRAW didn't work but PAINT seem to work
 	//ON_NOTIFY(NM_CUSTOMDRAW, IDC_ATTACHMENTS, OnCustomDraw)
 	ON_NOTIFY_REFLECT(NM_CLICK, OnActivating)
 	ON_NOTIFY_REFLECT(NM_DBLCLK, OnDoubleClick)
 	ON_NOTIFY_REFLECT(NM_RCLICK, OnRClick)  // Right Click Menu
+
 END_MESSAGE_MAP()
 
 
@@ -55,110 +57,6 @@ CAttachments::CAttachments(NMsgView *pMsgView)
 CAttachments::~CAttachments()
 {
 	int deb = 1;
-}
-
-void CAttachments::OnPaint()
-{
-	CPaintDC dc(this); // device context for painting
-					   // TODO: Add your message handler code here
-					   // Do not call CListCtrl::OnPaint() for painting messages
-
-	NListView *pListView = 0;
-	NMsgView *pMsgView = 0;
-	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
-	if (pFrame)
-	{
-		pListView = pFrame->GetListView();
-		pMsgView = pFrame->GetMsgView();
-	}
-
-	HDC hDC = dc.GetSafeHdc();
-
-	CRect cr;
-	GetClientRect(cr);
-	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageAttachments);
-	if (pListView && !pListView->m_bApplyColorStyle)
-		color = RGB(255, 255, 255);
-	dc.FillRect(&cr, &CBrush(color));
-
-	CFont newFont;
-	newFont.CreatePointFont(85, _T("Tahoma"));
-
-	// Set new font. Should reinstall old oldFont?? doesn't seem to matter
-	CFont  *pOldFont = dc.SelectObject(&newFont);
-
-	DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
-	DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
-
-	CStringW mboxFileName;
-	CStringW mboxFolderPath;
-	CStringW mboxFilePath;
-
-	CRect rect;
-	int xpos;
-	int ypos;
-	int rectLen = 0;
-
-	int iCnt = (int)m_attachmentTbl.GetCount();
-	for (int ii = 0; ii < iCnt; ii++)
-	{
-		GetItemRect(ii, &rect, LVIR_BOUNDS);
-		if (rect.IsRectNull())
-			continue;
-
-		int w = rect.right - rect.left;
-
-		UINT nMask = LVIS_SELECTED | LVIS_FOCUSED;
-
-		UINT nState = GetItemState(ii, nMask);
-		if (nState & LVIS_SELECTED)
-		{
-			dc.FillRect(&rect, &CBrush(bkcolor));
-			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(txcolor);
-		}
-		else
-		{
-			dc.FillRect(&rect, &CBrush(color));
-			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(RGB(0, 0, 0));
-		}
-
-		mboxFileName = m_attachmentTbl[ii]->m_nameW;
-		mboxFolderPath = FileUtils::GetMboxviewTempPathW();
-		mboxFilePath = mboxFolderPath + mboxFileName;
-
-		int iIcon = 0;
-		SHFILEINFOW shFinfo;
-		if (!SHGetFileInfoW(mboxFilePath,
-			0,
-			&shFinfo,
-			sizeof(shFinfo),
-			SHGFI_ICON |
-			SHGFI_SMALLICON))
-		{
-			if (FileUtils::PathFileExistW(mboxFilePath))
-				int deb = 1;
-			TRACE("Error Gettting SystemFileInfo!\n");
-		}
-		else 
-		{
-			xpos = rect.left + 1;
-			ypos = rect.top + 3;
-
-			int w = 14;
-			int h = rect.Height() - 3;
-			BOOL r = DrawIconEx(hDC, xpos, ypos, shFinfo.hIcon, w, h, 0, 0, DI_NORMAL);
-
-			DestroyIcon(shFinfo.hIcon);
-		}
-		xpos = rect.left + 4;
-		ypos = rect.top + 3;
-
-		xpos += 14;
-
-		BOOL retW = ::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, rect, (LPCWSTR)mboxFileName, mboxFileName.GetLength(), NULL);
-	}
 }
 
 void CAttachments::OnActivating(NMHDR* pNMHDR, LRESULT* pResult)
@@ -175,11 +73,11 @@ void CAttachments::OnActivating(NMHDR* pNMHDR, LRESULT* pResult)
 	CString attachmentName = GetItemText(nItem, LVIR_BOUNDS);
 }
 
-int CAttachments::FindAttachmentByName(CString &name)
+int CAttachments::FindAttachmentByNameA(CStringA &name)
 {
 	CStringW nameW;
 	DWORD error;
-	BOOL ret = TextUtilsEx::Ansi2Wide(name, nameW, error);
+	BOOL ret = TextUtilsEx::Ansi2WStr(name, nameW, error);
 	int result = FindAttachmentByNameW(nameW);
 	return result;
 }
@@ -231,7 +129,7 @@ int __cdecl AttachmentPred(void const * first, void const * second)
 {
 	AttachmentInfo *f = *((AttachmentInfo**)first);
 	AttachmentInfo *s = *((AttachmentInfo**)second);
-	int ret = wcscmp(f->m_nameW.operator LPCWSTR(), s->m_nameW.operator LPCWSTR());
+	int ret = _wcsicmp(f->m_nameW.operator LPCWSTR(), s->m_nameW.operator LPCWSTR());
 	return ret;
 }
 
@@ -239,10 +137,16 @@ void CAttachments::Complete()
 {
 	std::qsort(m_attachmentTbl.GetData(), m_attachmentTbl.GetCount(), sizeof(void*), AttachmentPred);
 
+	//m_attachmentTbl.RemoveAll();
+
+	CString path = CMainFrame::GetMboxviewTempPath();
 	for (int i = 0; i < m_attachmentTbl.GetCount(); i++)
 	{
 		CStringW nameW = m_attachmentTbl[i]->m_nameW;
-		CStringW cStrNamePath = FileUtils::GetMboxviewTempPathW() + nameW;
+		CStringW cStrNamePath = path + nameW;
+
+		if (!FileUtils::PathFileExist(cStrNamePath))
+			int deb = 1;
 
 		int iIcon = 0;
 		SHFILEINFOW shFinfo;
@@ -253,7 +157,7 @@ void CAttachments::Complete()
 			SHGFI_ICON |
 			SHGFI_SMALLICON))
 		{
-			TRACE("Error Gettting SystemFileInfo!\n");
+			TRACE(L"Error Gettting SystemFileInfo for \"%s\" file!\n", cStrNamePath);
 		}
 		else {
 			iIcon = shFinfo.iIcon;
@@ -261,38 +165,7 @@ void CAttachments::Complete()
 			DestroyIcon(shFinfo.hIcon);
 		}
 
-		CPaintDC dc(this);
-		HDC hDC = dc.GetSafeHdc();
-
-		SIZE size;
-		int wlen = nameW.GetLength();
-		BOOL ret = GetTextExtentPoint32W(hDC, nameW, wlen, &size);
-
-		SIZE size1A;
-		CString nameA = "MMM";
-		BOOL retA = GetTextExtentPoint32(hDC, nameA, nameA.GetLength(), &size1A);
-
-		int multiplier = size.cx / size1A.cx;
-
-		SIZE size2A;
-		for (int k = 0; k < 100; k++)
-		{
-			BOOL retA = GetTextExtentPoint32(hDC, nameA, nameA.GetLength(), &size2A);
-			int fudge = size1A.cx;
-
-			if (multiplier > 10)
-				fudge = 3 * size1A.cx;
-			else if (multiplier > 5)
-				fudge = 2 * size1A.cx;
-
-			if (size2A.cx <= (size.cx + fudge))
-				nameA.Append("MMM");
-			else
-			{
-				break;
-			}
-		}
-		int inserRet = CListCtrl::InsertItem(GetItemCount(), nameA, iIcon);
+		int inserRet = CListCtrl::InsertItem(GetItemCount(), nameW, iIcon);
 		int deb = 1;
 	}
 	return;
@@ -300,56 +173,12 @@ void CAttachments::Complete()
 
 BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
 {
-	CStringW validNameW;
-
-	BOOL bReplaceWhiteWithUnderscore = FALSE;
-	FileUtils::MakeValidFileNameW(cStrName, validNameW, bReplaceWhiteWithUnderscore);
-
-	// Check for duplicate names. Sometimes two or more names can represent diffrent content
-	int pos = FindAttachmentByNameW(validNameW);
-	if (pos >= 0)
-	{
-		CStringW fileExtension = ::PathFindExtensionW(validNameW);
-		CStringW fileName = ::PathFindFileNameW(validNameW);
-
-		int pos2 = fileName.ReverseFind('.');
-		CStringW fileNameBase = fileName;
-		if (pos2 >= 0) {
-			fileNameBase = fileName.Mid(0, pos2);
-		}
-		validNameW.Format(L"%s%s%d%s", fileNameBase, L"_", id, fileExtension);
-		int deb = 1;
-	}
-	else
-	{
-		int deb = 1;
-	}
-
-	CStringW cStrNamePathW = FileUtils::GetMboxviewTempPathW() + validNameW;
-	CString cStrNamePathA;
-	DWORD error;
-	BOOL retW2A = TextUtilsEx::Wide2Ansi(cStrNamePathW, cStrNamePathA, error);
-
-	const unsigned char* data = pBP->GetContent();
-	int dataLength = pBP->GetContentLength();
-
-	BOOL retWrite = FileUtils::Write2File(cStrNamePathW, data, dataLength);
+	int index = CAttachments::FindAttachmentByNameW(cStrName);
+	// Caller must assure names are unique
+	_ASSERTE(index < 0);
 
 	AttachmentInfo *item = new AttachmentInfo;
-	retW2A = TextUtilsEx::Wide2Ansi(validNameW, item->m_name, error);
-	item->m_nameW = validNameW;
-	m_attachmentTbl.Add(item);
-
-	return TRUE;
-}
-
-BOOL CAttachments::AddInlineAttachment(CString &name)
-{
-	// name already validated in DetermineImageFileName_SelectedItem
-	AttachmentInfo *item = new AttachmentInfo;
-	item->m_name.Append(name);
-	DWORD error;
-	BOOL retW2A = TextUtilsEx::Ansi2Wide(name, item->m_nameW, error);
+	item->m_nameW = cStrName;
 	m_attachmentTbl.Add(item);
 
 	return TRUE;
@@ -357,9 +186,9 @@ BOOL CAttachments::AddInlineAttachment(CString &name)
 
 void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	const char *Open = _T("Open");
-	const char *Print = _T("Print");
-	const char *OpenFileLocation = _T("Open File Location");
+	const wchar_t *Open = L"Open";
+	const wchar_t *Print = L"Print";
+	const wchar_t *OpenFileLocation = L"Open File Location";
 
 	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
@@ -371,7 +200,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	CStringW attachmentName = m_attachmentTbl[nItem]->m_nameW;
 
-	TRACE("Selecting %d\n", pnm->iItem);
+	TRACE(L"Selecting %d\n", pnm->iItem);
 
 	// TODO: Add your control notification handler code here
 #define MaxShellExecuteErrorCode 32
@@ -406,17 +235,19 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	bool forceOpen = false;
 	HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+
+	CString path = CMainFrame::GetMboxviewTempPath();
 	if (command == M_PRINT_Id)
 	{
-		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
-		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOWNORMAL);
-		if ((UINT_PTR)result <= MaxShellExecuteErrorCode) {
+		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOW);
+		if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
+		{
 			CString errorText;
 			ShellExecuteError2Text((UINT_PTR)result, errorText);
-			errorText += _T(".\nOk to try to open this file ?");
+			errorText += L".\nOk to try to open this file ?";
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, _T("Info"), MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+			int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 			if (answer == IDYES)
 				forceOpen = true;
 		}
@@ -424,7 +255,6 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	if ((command == M_OPEN_Id) || forceOpen)
 	{
-		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 
 		DWORD binaryType = 0;
@@ -438,10 +268,9 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else if (command == M_OpenFileLocation_Id)
 	{
-		CStringW path = FileUtils::GetMboxviewTempPathW();
 		CStringW filePath = path + attachmentName;
 
-		if (FileUtils::BrowseToFileW(filePath) == FALSE) {
+		if (FileUtils::BrowseToFile(filePath) == FALSE) {
 			HWND h = GetSafeHwnd();
 			HINSTANCE result = ShellExecuteW(h, L"open", path, NULL, NULL, SW_SHOWNORMAL);
 			CMainFrame::CheckShellExecuteResult(result, h);
@@ -469,14 +298,14 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CStringW attachmentNameW = m_attachmentTbl[nItem]->m_nameW;
 	CStringW ext = PathFindExtensionW(attachmentNameW);
 
-	CString extA;
+	CStringA extA;
 	DWORD error;
-	BOOL retW2A = TextUtilsEx::Wide2Ansi(ext, extA, error);
+	BOOL retW2A = TextUtilsEx::WStr2Ansi(ext, extA, error);
 
 	bool isSupportedPictureFile = false;
 
-	// Need to create tavble of extensions so this class and Picture viewr class can share the list
-	if (CCPictureCtrlDemoDlg::isSupportedPictureFile(extA))
+	// Need to create table of extensions so this class and Picture viewer class can share the list
+	if (CCPictureCtrlDemoDlg::isSupportedPictureFile(ext))
 	{
 		isSupportedPictureFile = true;
 	}
@@ -495,10 +324,10 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else
 	{
-		CStringW path = FileUtils::GetMboxviewTempPathW();
+		CStringW path = CMainFrame::GetMboxviewTempPath();
 		CStringW filePath = path + attachmentNameW;
-		// Photos application doesn't show next/prev photo even with path specified
-		// Buils in Picture Viewer is set as deafault
+		// Windows Photos application doesn't show next/prev photo even with path specified
+		// Build in Picture Viewer is set as deafault
 		HWND h = GetSafeHwnd();
 		HINSTANCE result = ShellExecuteW(h, L"open", attachmentNameW, NULL, path, SW_SHOWNORMAL);
 		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
@@ -526,4 +355,20 @@ int CAttachments::PreTranslateMessage(MSG* pMsg)
 	}
 
 	return CWnd::PreTranslateMessage(pMsg);
+}
+
+BOOL CAttachments::OnEraseBkgnd(CDC* pDC)
+{
+	//BOOL ret = CWnd::OnEraseBkgnd(pDC);
+
+	CRect rect;
+	GetClientRect(&rect);
+
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageAttachments);
+
+	SetBkColor(color);
+	BOOL ret = SetTextBkColor(color);
+	pDC->FillRect(&rect, &CBrush(color));
+
+	return TRUE;
 }

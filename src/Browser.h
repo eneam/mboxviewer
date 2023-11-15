@@ -72,7 +72,7 @@ protected:
 	void PrintCurrentPage();
 public:
 	void PageSetup();
-	void Navigate(LPCSTR url, DWORD flags);
+	void Navigate(LPCWSTR url, DWORD flags);
 	CWebBrowser2 m_ie;
 	BOOL m_bNavigateComplete;
 

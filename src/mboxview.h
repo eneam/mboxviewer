@@ -45,7 +45,7 @@
 #include "MainFrm.h"       // main symbols
 #include "TextUtilities.h"
 
-extern const char *sz_Software_mboxview;
+extern const wchar_t *sz_Software_mboxview;
 
 // Define below in single location if more user messages are implemented
 #define WM_CMD_PARAM_FILE_NAME_MESSAGE  (WM_APP + 1)
@@ -54,6 +54,7 @@ extern const char *sz_Software_mboxview;
 #define WM_CMD_PARAM_NEW_COLOR_MESSAGE  (WM_APP + 4)
 #define WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE  (WM_APP + 5)
 #define WM_CMD_PARAM_RESET_TREE_POS_MESSAGE  (WM_APP + 6)
+#define WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE  (WM_APP + 7)
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:
@@ -73,7 +74,7 @@ public:
 public:
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
-	virtual void AddToRecentFileList(LPCTSTR lpszPathName);
+	virtual void AddToRecentFileList(LPCWSTR lpszPathName);
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -81,8 +82,12 @@ public:
 	static DWORD m_versionMS;
 	static DWORD m_versionLS;
 	static CString m_savedVer;
+	//
+	static CString m_processPath;
+	static CString m_startupPath;
+	static CString m_currentPath;
 
-	static BOOL GetProcessPath(CString &procresspath);
+	static BOOL GetProcessPath(CString &processpath);
 
 public:
 	//{{AFX_MSG(CmboxviewApp)
@@ -99,8 +104,8 @@ public:
 extern CmboxviewApp theApp;
 
 void ShellExecuteError2Text(UINT_PTR errorCode, CString &errorText);
-void MyAppendMenu(CMenu *menu, int commandId, const char *commandName, BOOL checkMark = FALSE);
-int AttachIcon(CMenu* Menu, LPCTSTR MenuName, int resourceId, CBitmap  &cmap);
+void MyAppendMenu(CMenu *menu, int commandId, const wchar_t *commandName, BOOL checkMark = FALSE);
+int AttachIcon(CMenu* Menu, LPCWSTR MenuName, int resourceId, CBitmap  &cmap);
 void Com_Initialize();
 void SetMyExceptionHandler();
 void UnSetMyExceptionHandler();

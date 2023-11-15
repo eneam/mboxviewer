@@ -42,7 +42,7 @@ MyTcpClient::~MyTcpClient()
 
 int  MyTcpClient::Connect()
 {
-	m_connected = s.Connect("127.0.0.1", m_TcpPort);
+	m_connected = s.Connect(L"127.0.0.1", m_TcpPort);
 	return 0;
 }
 
@@ -52,20 +52,20 @@ int  MyTcpClient::Close()
 	return 0;
 }
 
-int  MyTcpClient::Send(CString &msg)
+int  MyTcpClient::Send(CStringA &msg)
 {
 	int length = s.Send(msg, msg.GetLength());
 	return length;
 }
 
-int  MyTcpClient::ConnectSendClose(CString &msg, CString &errorText)
+int  MyTcpClient::ConnectSendClose(CStringA &msg, CString &errorText)
 {
 	char buff[2048];
 	CSocket s;
 
 	BOOL ret = s.Create();
 	int error = 0;
-	if (s.Connect("127.0.0.1", m_TcpPort))
+	if (s.Connect(L"127.0.0.1", m_TcpPort))
 	{
 		int length = s.Send(msg, msg.GetLength());
 
@@ -78,9 +78,9 @@ int  MyTcpClient::ConnectSendClose(CString &msg, CString &errorText)
 	else
 	{
 		error = GetLastError();
-		TRACE("Error: %d\n", error);
+		TRACE(L"Error: %d\n", error);
 		CString msg = FileUtils::GetLastErrorAsString();
-		TRACE("Error Msg: %s\n", msg);
+		TRACE(L"Error Msg: %s\n", msg);
 	}
 	s.Close();
 

@@ -40,14 +40,14 @@
 #include <atlbase.h>
 
 #ifdef _DEBUG
-#define HTML_ASSERT ASSERT
+#define HTML_ASSERT _ASSERTE
 #else
 #define HTML_ASSERT(x)
 #endif
 
-char *EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; }
+//char * HtmlUtils::EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; }
 
-char *SkipEmptyLine(char* p, char* e)
+char * HtmlUtils::SkipEmptyLine(char* p, char* e)
 {
 	char *p_save = p;
 	while ((p < e) && ((*p == ' ') || (*p == '\t')))  // eat empty lines
@@ -166,7 +166,7 @@ void HtmlUtils::MergeWhiteLines(SimpleString *workbuf, int maxOutLines)
 
 void HtmlUtils::PrintToPrinterPageSetup(CWnd *parent)
 {
-	//CComBSTR cmdID(_T("PRINT"));
+	//CComBSTR cmdID(L"PRINT");
 	//VARIANT_BOOL vBool;
 
 	IHTMLDocument2 *lpHtmlDocument = 0;
@@ -217,7 +217,7 @@ cleanup:
 
 void HtmlUtils::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *workbuf, UINT inCodePage, int printDialogType)
 {
-	//CComBSTR cmdID(_T("PRINT"));
+	//CComBSTR cmdID(L"PRINT");
 	//VARIANT_BOOL vBool;
 
 	IHTMLDocument2 *lpHtmlDocument = 0;
@@ -237,7 +237,7 @@ void HtmlUtils::PrintHTMLDocumentToPrinter(SimpleString *inbuf, SimpleString *wo
 
 	if (!PrintCtrl.Create(NULL, WS_CHILD, CRect(0, 0, 0, 0), this, 1))
 	{
-		ASSERT(FALSE);
+		_ASSERTE(FALSE);
 		return; // Error!
 	}
 
@@ -412,8 +412,12 @@ BOOL HtmlUtils::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *in
 
 	// put_designMode(L"on");  should disable all activity such as running scripts
 	// May need better solution
-	hr = lpDoc->put_designMode(L"on");
+	hr = lpDoc->put_designMode(L"off");
 	hr = lpDoc->writeln(psaStrings);
+
+	//Sleep(2000);
+	//BSTR* p = 0;
+	//HRESULT hready = lpDoc->get_readyState(p);
 
 	HTML_ASSERT(SUCCEEDED(hr));
 	if (FAILED(hr)) {
@@ -509,7 +513,7 @@ void HtmlUtils::RemoveStyleTagFromIHTMLDocument(IHTMLElement *lpElm)
 				//ppvElement->get_outerHTML(&bstrHTML);
 				//ppvElement->get_innerText(&bstrTEXT);
 
-				CString tag(bstrTag);
+				CStringA tag(bstrTag);
 				if (tag.CompareNoCase("style") == 0) {
 					ppvElement->put_innerText(emptyText);
 					int deb = 1;
@@ -543,7 +547,7 @@ cleanup:
 }
 
 
-BOOL HtmlUtils::FindElementByTagInIHTMLDocument(IHTMLDocument2 *lpDocument, IHTMLElement **ppvEl, CString &tag)
+BOOL HtmlUtils::FindElementByTagInIHTMLDocument(IHTMLDocument2 *lpDocument, IHTMLElement **ppvEl, CStringA &tag)
 {
 	// browse all elements and return first element found
 	IHTMLElementCollection *pAll = 0;
@@ -593,7 +597,7 @@ BOOL HtmlUtils::FindElementByTagInIHTMLDocument(IHTMLDocument2 *lpDocument, IHTM
 				//ppvElement->get_innerHTML(&bstrHTML);
 				//ppvElement->get_innerText(&bstrTEXT);
 
-				CString eltag(bstrTag);
+				CStringA eltag(bstrTag);
 				TRACE("TAG=%s\n", (LPCSTR)eltag);
 
 				if (eltag.CompareNoCase(tag))
@@ -628,7 +632,7 @@ cleanup:
 void HtmlUtils::PrintIHTMLDocument(IHTMLDocument2 *lpDocument, SimpleString *workbuf)
 {
 	// Actually this will print BODY
-	CString tag("body");
+	CStringA tag("body");
 	IHTMLElement *lpElm = 0;
 	FindElementByTagInIHTMLDocument(lpDocument, &lpElm, tag);
 	if (!lpElm)
@@ -700,7 +704,7 @@ void HtmlUtils::PrintIHTMLElement(IHTMLElement *lpElm, CStringW &text)
 
 		text.Append(bstrTEXT);
 
-		CString tag(bstrTag);
+		CStringA tag(bstrTag);
 		//text.Append("\r\n\r\n");
 		TRACE("TAG=%s\n", (LPCSTR)tag);
 		//TRACE("TEXT=%s\n", (LPCSTR)innerText);
@@ -736,7 +740,7 @@ void HtmlUtils::PrintIHTMLElement(IHTMLElement *lpElm, CStringW &text)
 				ppvElement->get_innerText(&bstrTEXT);
 
 
-				CString tag(bstrTag);
+				CStringA tag(bstrTag);
 				TRACE("TAG=%s\n", (LPCSTR)tag);
 
 				if (tag.CompareNoCase("style") == 0)
@@ -825,6 +829,8 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 		return;
 	}
 	lpDispatch->Release();
+	lpDispatch = 0;
+
 
 	IHTMLElement *lpBodyElm = 0;
 	IHTMLBodyElement *lpBody = 0;
@@ -837,6 +843,7 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 		return;
 	}
 	lpHtmlDocument->Release();
+	lpHtmlDocument = 0;
 
 	hr = lpBodyElm->QueryInterface(IID_IHTMLBodyElement, (void**)&lpBody);
 	HTML_ASSERT(SUCCEEDED(hr) && lpBody);
@@ -845,6 +852,7 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 		return;
 	}
 	lpBodyElm->Release();
+	lpBodyElm = 0;
 
 	hr = lpBody->createTextRange(&lpTxtRange);
 	HTML_ASSERT(SUCCEEDED(hr) && lpTxtRange);
@@ -853,10 +861,11 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 		return;
 	}
 	lpBody->Release();
+	lpBody = 0;
 
 	CComBSTR html;
 	CComBSTR newhtml;
-	CComBSTR search(searchText.GetLength() + 1, (LPCTSTR)searchText);
+	CComBSTR search(searchText);
 
 	long t;
 	VARIANT_BOOL bFound;
@@ -865,11 +874,11 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 	CComBSTR Character(L"Character");
 	CComBSTR Textedit(L"Textedit");
 
-	htmlPrfix.Append("<span id='");
-	htmlPrfix.Append((LPCTSTR)searchID);
-	htmlPrfix.Append("' style='");
-	htmlPrfix.Append((LPCTSTR)matchStyle);
-	htmlPrfix.Append("'>");
+	htmlPrfix.Append(L"<span id='");
+	htmlPrfix.Append(searchID);
+	htmlPrfix.Append(L"' style='");
+	htmlPrfix.Append(matchStyle);
+	htmlPrfix.Append(L"'>");
 
 	bool firstRange = false;
 	while ((lpTxtRange->findText(search, count, lFlags, (VARIANT_BOOL*)&bFound) == S_OK) && (VARIANT_TRUE == bFound))
@@ -897,12 +906,17 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 				lpTxtRange->moveEnd(Textedit, 1, &t);
 
 				parentText->Release();
+				parentText = 0;
 				continue;
 			}
 			parentText->Release();
+			parentText = 0;
 		}
 		if (parentText)
+		{
 			parentText->Release();
+			parentText = 0;
+		}
 
 		if (firstRange == false) {
 			firstRange = true;
@@ -912,12 +926,12 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 
 		newhtml.Empty();
 		lpTxtRange->get_htmlText(&html);
-		newhtml.Append((LPCTSTR)htmlPrfix);
-		if (searchText == " ")
-			newhtml.Append("&nbsp;"); // doesn't work very well, but prevents (some) strange presentation
+		newhtml.Append(htmlPrfix);
+		if (searchText == L" ")
+			newhtml.Append(L"&nbsp;"); // doesn't work very well, but prevents (some) strange presentation
 		else
 			newhtml.AppendBSTR(html);
-		newhtml.Append("</span>");
+		newhtml.Append(L"</span>");
 
 		lpTxtRange->pasteHTML(newhtml);
 
@@ -925,10 +939,13 @@ void HtmlUtils::FindStringInIHTMLDocument(CBrowser &browser, CString searchID, C
 		lpTxtRange->moveEnd(Textedit, 1, &t);
 	}
 	if (lpTxtRange)
+	{
 		lpTxtRange->Release();
+		lpTxtRange = 0;
+	}
 }
 
-void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &searchID)
+void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser& browser, CString& searchID)
 {
 	// Based on "Adding a custom search feature to CHtmlViews" on the codeproject by  Marc Richarme, 22 Nov 2000
 	// without explicit license
@@ -936,11 +953,11 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 	// mboxview development team did resolve some code issues, enhanced and optimized
 	// TODO: should we just use DOM instead of this hack ??
 
-	CComBSTR testid(searchID.GetLength() + 1, searchID);
-	CComBSTR testtag(5, "SPAN");
+	CComBSTR testid(searchID);
+	CComBSTR testtag(L"SPAN");
 
 	HRESULT hr;
-	IHTMLDocument2 *lpHtmlDocument = NULL;
+	IHTMLDocument2* lpHtmlDocument = NULL;
 	LPDISPATCH lpDispatch = NULL;
 	lpDispatch = browser.m_ie.GetDocument();
 	HTML_ASSERT(lpDispatch);
@@ -955,7 +972,7 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 	}
 	lpDispatch->Release();
 
-	IHTMLElementCollection *lpAllElements = 0;
+	IHTMLElementCollection* lpAllElements = 0;
 	hr = lpHtmlDocument->get_all(&lpAllElements);
 	HTML_ASSERT(SUCCEEDED(hr) && lpAllElements);
 	if (!lpAllElements) {
@@ -968,8 +985,8 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 	CComBSTR tag;
 	CComBSTR innerText;
 
-	IUnknown *lpUnk;
-	IEnumVARIANT *lpNewEnum;
+	IUnknown* lpUnk;
+	IEnumVARIANT* lpNewEnum;
 	if (SUCCEEDED(lpAllElements->get__newEnum(&lpUnk)) && (lpUnk != NULL))
 	{
 		hr = lpUnk->QueryInterface(IID_IEnumVARIANT, (void**)&lpNewEnum);
@@ -979,7 +996,7 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 			return;
 		}
 		VARIANT varElement;
-		IHTMLElement *lpElement;
+		IHTMLElement* lpElement;
 
 		VariantInit(&varElement);
 		while (lpNewEnum->Next(1, &varElement, NULL) == S_OK)
@@ -1007,8 +1024,17 @@ void HtmlUtils::ClearSearchResultsInIHTMLDocument(CBrowser &browser, CString &se
 	lpAllElements->Release();
 }
 
+void HtmlUtils::CommonMimeType2DocumentTypes(CStringA &contentType, CString &documentExtension)
+{
+	CStringA documentExtensionA;
+	CommonMimeType2DocumentTypes(contentType, documentExtensionA);
+	DWORD error;
+	UINT CP_US_ASCII = 20127;
+	UINT strCodePage = CP_US_ASCII;
+	BOOL ret = TextUtilsEx::CodePage2WStr(&documentExtensionA, strCodePage, &documentExtension, error);
+}
 
-void HtmlUtils::CommonMimeType2DocumentTypes(CString &contentType, CString &documentExtension)
+void HtmlUtils::CommonMimeType2DocumentTypes(CStringA &contentType, CStringA &documentExtension)
 {
 	// use the hash table to optimize
 
@@ -1077,6 +1103,14 @@ void HtmlUtils::CommonMimeType2DocumentTypes(CString &contentType, CString &docu
 	{
 		documentExtension.Append(".eml");
 	}
+	else if (contentType.CompareNoCase("application/epub+zip") == 0)
+	{
+		documentExtension.Append(".epub");
+	}
+	else if (contentType.CompareNoCase("video/mp2t") == 0)
+	{
+		documentExtension.Append(".ts");
+	}
 }
 
 // Best Effort only. Text is not formatted properly but that is fine for searching text
@@ -1099,7 +1133,7 @@ void HtmlUtils::ExtractTextFromHTML_BestEffort(SimpleString *inbuf, SimpleString
 	{
 		char *inData = tagBeg + tagLenRet;
 		datalen = inbuf->Count() - IntPtr2Int(tagBeg + tagLenRet - inbuf->Data());
-		ASSERT(datalen >= 0);
+		_ASSERTE(datalen >= 0);
 
 		if (*inData == '<')
 		{
@@ -1125,8 +1159,8 @@ void HtmlUtils::ExtractTextFromHTML_BestEffort(SimpleString *inbuf, SimpleString
 					return;
 
 				dataLen = inbuf->Count() - IntPtr2Int(inData - inbuf->Data());
-				ASSERT(datalen >= 0);
-				ASSERT(dataLen == datalen);
+				_ASSERTE(datalen >= 0);
+				_ASSERTE(dataLen == datalen);
 
 				int deb = 1;
 			}
@@ -1195,7 +1229,7 @@ int HtmlUtils::FindHtmlTag(char *inData, int indDataLen, char *tag, int tagLen, 
 		if (*p == '>')
 		{
 			tagLenRet = IntPtr2Int(p + 1 -tagBeg);
-			ASSERT(tagLenRet >= 0);
+			_ASSERTE(tagLenRet >= 0);
 			break;
 		}
 	}
@@ -1221,19 +1255,19 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 			break;
 
 		len = IntPtr2Int(tagBeg - p);
-		ASSERT(len >= 0);
+		_ASSERTE(len >= 0);
 		outbuf->Append(p, len);
 		outbuf->Append(' ');
 
 		p = tagBeg + tagLenRet;
 		datalen -= len + tagLenRet;
-		ASSERT(datalen == (e - p));
+		_ASSERTE(datalen == (e - p));
 		int deb = 1;
 	}
 	if (outbuf->Count())
 	{
 		len = IntPtr2Int(e - p);
-		ASSERT(len >= 0);
+		_ASSERTE(len >= 0);
 		outbuf->Append(p, len);
 	}
 
@@ -1241,6 +1275,7 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 }
 
 #if 0
+// For possible future  as an example
 import java.io.*;
 import java.util.Scanner;
 

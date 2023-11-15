@@ -68,19 +68,19 @@ void PageCodeListDlg::OnGetdispinfoCodePageEnumeration(NMHDR* pNMHDR, LRESULT* p
 
 		switch (pDispInfo->item.iSubItem) {
 		case 0:
-			m_tmpstr.Format("%d", info->codePage);
+			m_tmpstr.Format(L"%d", info->codePage);
 			break;
 		case 1:
 			m_tmpstr = info->codePageName;
 			break;
 		case 2:
-			m_tmpstr.Format("%d", info->maxCharSize);
+			m_tmpstr.Format(L"%d", info->maxCharSize);
 			break;
 
 		default:
 			break;
 		}
-		pDispInfo->item.pszText = (char*)((LPCSTR)m_tmpstr);
+		pDispInfo->item.pszText = (wchar_t*)((LPCWSTR)m_tmpstr);
 	}
 	*pResult = 0;
 }
@@ -109,16 +109,16 @@ void PageCodeListDlg::OnItemclickCodePageEnumeration(NMHDR* pNMHDR, LRESULT* pRe
 		//errno_t _itoa_s(int value, char* buffer, size_t size, int radix);
 
 		CString codePageStr;
-		codePageStr.Format("%d", info->codePage);
+		codePageStr.Format(L"%d", info->codePage);
 		CString maxCharSizeStr;
-		maxCharSizeStr.Format("%d", info->maxCharSize);
+		maxCharSizeStr.Format(L"%d", info->maxCharSize);
 
 		//nItem = m_list.InsertItem(ii, (LPCSTR)codePageStr);
 		nItem = ii;
 
-		t1 = m_list.SetItemText(nItem, 0, (LPCSTR)codePageStr);
-		t2 = m_list.SetItemText(nItem, 1, (LPCSTR)info->codePageName);
-		t3 = m_list.SetItemText(nItem, 2, (LPCSTR)maxCharSizeStr);
+		t1 = m_list.SetItemText(nItem, 0, (LPCWSTR)codePageStr);
+		t2 = m_list.SetItemText(nItem, 1, (LPCWSTR)info->codePageName);
+		t3 = m_list.SetItemText(nItem, 2, (LPCWSTR)maxCharSizeStr);
 	}
 
 	int pos = CodePage2Index(m_CodePageSelected);
@@ -158,9 +158,9 @@ BOOL PageCodeListDlg::OnInitDialog()
 
 	m_list.SetFont(GetFont());
 
-	int r1 = m_list.InsertColumn(0, "CodePage Id", LVCFMT_LEFT, 100, 0);
-	int r2 = m_list.InsertColumn(1, "Code Page Name", LVCFMT_LEFT, 320);
-	int r3 = m_list.InsertColumn(2, "Max Character Size", LVCFMT_LEFT, 120,0);
+	int r1 = m_list.InsertColumn(0, L"CodePage Id", LVCFMT_LEFT, 100, 0);
+	int r2 = m_list.InsertColumn(1, L"Code Page Name", LVCFMT_LEFT, 320);
+	int r3 = m_list.InsertColumn(2, L"Max Character Size", LVCFMT_LEFT, 120,0);
 
 	EnumSystemCodePages(EnumCodePagesProc, CP_INSTALLED);
 
@@ -180,14 +180,14 @@ BOOL PageCodeListDlg::OnInitDialog()
 		//errno_t _itoa_s(int value, char* buffer, size_t size, int radix);
 
 		CString codePageStr;
-		codePageStr.Format("%d", info->codePage);
+		codePageStr.Format(L"%d", info->codePage);
 		CString maxCharSizeStr;
-		maxCharSizeStr.Format("%d", info->maxCharSize);
+		maxCharSizeStr.Format(L"%d", info->maxCharSize);
 
-		nItem = m_list.InsertItem(ii, (LPCSTR)codePageStr);
-		t1 = m_list.SetItemText(nItem, 0, (LPCSTR)codePageStr);
-		t2 = m_list.SetItemText(nItem, 1, (LPCSTR)info->codePageName);
-		t3 = m_list.SetItemText(nItem, 2, (LPCSTR)maxCharSizeStr);
+		nItem = m_list.InsertItem(ii, (LPCWSTR)codePageStr);
+		t1 = m_list.SetItemText(nItem, 0, (LPCWSTR)codePageStr);
+		t2 = m_list.SetItemText(nItem, 1, (LPCWSTR)info->codePageName);
+		t3 = m_list.SetItemText(nItem, 2, (LPCWSTR)maxCharSizeStr);
 
 		//UINT nId = m_list.MapIndexToID((UINT)nItem);
 	}
@@ -225,7 +225,7 @@ BOOL PageCodeListDlg::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-BOOL PageCodeListDlg::EnumCodePagesProc(LPTSTR  pCodePage)
+BOOL PageCodeListDlg::EnumCodePagesProc(LPWSTR  pCodePage)
 {
 	UINT codePage = _ttoi(pCodePage);
 
@@ -400,31 +400,31 @@ void PageCodeListDlg::ItemState2Str(UINT uState, CString& strState)
 	strState.Empty();
 
 	if (uState & LVIS_ACTIVATING) {
-		strState.Append("LVIS_ACTIVATING");
+		strState.Append(L"LVIS_ACTIVATING");
 	}
 	if (uState & LVIS_CUT) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_CUT");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_CUT");
 	}
 	if (uState & LVIS_DROPHILITED) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_DROPHILITED");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_DROPHILITED");
 	}
 	if (uState & LVIS_FOCUSED) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_FOCUSED");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_FOCUSED");
 	}
 	if (uState & LVIS_OVERLAYMASK) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_OVERLAYMASK");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_OVERLAYMASK");
 	}
 	if (uState & LVIS_SELECTED) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_SELECTED");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_SELECTED");
 	}
 	if (uState & LVIS_STATEIMAGEMASK) {
-		if (!strState.IsEmpty()) { strState.Append(" | "); }
-		strState.Append("LVIS_STATEIMAGEMASK");
+		if (!strState.IsEmpty()) { strState.Append(L" | "); }
+		strState.Append(L"LVIS_STATEIMAGEMASK");
 	}
 }
 
