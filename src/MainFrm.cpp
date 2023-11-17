@@ -576,6 +576,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		sizeof(LocSigEx) / sizeof(WCHAR));
 #endif
 
+	CString version;
+	BOOL retGetVersion = CmboxviewApp::GetMboxviewLongVersion(version);
+	if (retGetVersion)
+		SetWindowText(version);
+
 	SetFocus();
 	SetActiveWindow();
 	SetForegroundWindow();
@@ -5659,10 +5664,10 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	info.Format(L"Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
 	aboutSystem.Append(info);
 
-	info.Format(L"\nMboxViewer Process  Path:\n\"%s\"\n", m_processPath);
+	info.Format(L"\nmboxview Process  Path:\n\"%s\"\n", m_processPath);
 	aboutSystem.Append(info);
 
-	info.Format(L"\nMboxViewer Startup  Directory:\n\"%s\"\n", m_startupPath);
+	info.Format(L"\nmboxview Startup  Directory:\n\"%s\"\n", m_startupPath);
 	aboutSystem.Append(info);
 
 	DWORD BUFSIZE = 1024;
@@ -5676,7 +5681,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	DWORD dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
 	if (dwRet > 0)
 	{
-		info.Format(L"\nMboxViewer Current  Directory:\n\"%s\"\n", Buffer);
+		info.Format(L"\nmboxview Current  Directory:\n\"%s\"\n", Buffer);
 		aboutSystem.Append(info);
 	}
 	aboutSystem.Append(L"\n");

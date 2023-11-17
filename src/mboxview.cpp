@@ -391,6 +391,7 @@ public:
 	CStringW m_to;
 };
 
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
 
 HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* fDefault)
 {
@@ -413,7 +414,7 @@ HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* f
 
 	return hr;
 }
-
+#endif
 
 CmboxviewApp::CmboxviewApp()
 {
@@ -1003,6 +1004,31 @@ void SetBrowserEmulation()
 
 #pragma comment(linker, "/defaultlib:version.lib")
 
+BOOL CmboxviewApp::GetMboxviewLongVersion(CString& version)
+{
+	DWORD ms, ls;
+	if (CmboxviewApp::GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
+	{
+		CmboxviewApp::m_versionMS = ms;
+		CmboxviewApp::m_versionLS = ls;
+
+		CString txt;
+		// display file version from VS_FIXEDFILEINFO struct
+		txt.Format(L"Version %d.%d.%d.%d",
+			HIWORD(ms), LOWORD(ms),
+			HIWORD(ls), LOWORD(ls));
+
+		if (sizeof(INT_PTR) == 4)
+			txt.Append(L" 32bit");
+		else if (sizeof(INT_PTR) == 8)
+			txt.Append(L" 64bit");
+		txt.Append(L" Unicode");
+		version = txt;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD& ms, DWORD& ls)
 {
 	// get module handle
@@ -1124,25 +1150,12 @@ void CmboxviewApp::OnHelpDonate()
 BOOL CAboutDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	DWORD ms, ls;
-	if (CmboxviewApp::GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
-	{
-		CmboxviewApp::m_versionMS = ms;
-		CmboxviewApp::m_versionLS = ls;
 
-		CString txt;
-		// display file version from VS_FIXEDFILEINFO struct
-		txt.Format(L"Version %d.%d.%d.%d",
-			HIWORD(ms), LOWORD(ms),
-			HIWORD(ls), LOWORD(ls));
+	CString version;
+	BOOL retGetVersion = CmboxviewApp::GetMboxviewLongVersion(version);
+	if (retGetVersion)
+		GetDlgItem(IDC_STATIC1)->SetWindowText(version);
 
-		if (sizeof(INT_PTR) == 4)
-			txt.Append(L" 32bit");
-		else if (sizeof(INT_PTR) == 8)
-			txt.Append(L" 64bit");
-		txt.Append(L" Unicode");
-		GetDlgItem(IDC_STATIC1)->SetWindowText(txt);
-	}
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -1504,8 +1517,6 @@ BOOL CmboxviewApp::InitInstance()
 		if ((msgViewPosition < 1) && (msgViewPosition > 3))
 			msgViewPosition = 1;  // bottom=1
 	}
-
-	//CMainFrame* pFrame = new CMainFrame(msgViewPosition);
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)

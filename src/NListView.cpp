@@ -16782,7 +16782,7 @@ void NListView::PreSubclassWindow()
 
 #if 0
 	// Focus retangle is not painted properly without double-buffering
-#if (_WIN32_WINNT >= 0x501)
+#if (_WIN32_WINNT >= _WIN32_WINNT_WINXP)
 	m_list.SetExtendedStyle(LVS_EX_DOUBLEBUFFER | m_list.GetExtendedStyle());
 #endif
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT);

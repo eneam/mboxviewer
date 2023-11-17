@@ -49,8 +49,8 @@
 #endif
 
 //#define NTDDI_VERSION NTDDI_WIN10
-//#define NTDDI_VERSION NTDDI_WINXP
-#define NTDDI_VERSION NTDDI_WIN7
+#define NTDDI_VERSION NTDDI_WINXP
+//#define NTDDI_VERSION NTDDI_WIN7
 #endif
 
 #ifdef WINVER
@@ -58,8 +58,8 @@
 #endif
 
 //#define SUPPORTED_WINVER _WIN32_WINNT_WIN10
-//#define SUPPORTED_WINVER _WIN32_WINNT_WINXP
-#define SUPPORTED_WINVER _WIN32_WINNT_WIN7
+#define SUPPORTED_WINVER _WIN32_WINNT_WINXP
+//#define SUPPORTED_WINVER _WIN32_WINNT_WIN7
 
 #define WINVER SUPPORTED_WINVER
 
@@ -113,6 +113,10 @@ inline int istrlen(const char* _Str) { return ((int)strlen(_Str)); }
 inline int uistrlen(const char* _Str) { return ((UINT)strlen(_Str)); }
 inline int iwstrlen(const wchar_t* _Str) { return ((int)_tcslen(_Str)); }
 inline int uiwstrlen(const wchar_t* _Str) { return ((UINT)_tcslen(_Str)); }
+
+#if (_WIN32_WINNT < _WIN32_WINNT_WIN7)
+#define GetTickCount64 GetTickCount
+#endif
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

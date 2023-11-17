@@ -78,6 +78,7 @@ public:
 	//}}AFX_VIRTUAL
 
 // Implementation
+	static BOOL GetMboxviewLongVersion(CString &version);
 	static BOOL GetFileVersionInfo(HMODULE hModule, DWORD &ms, DWORD &ls);
 	static DWORD m_versionMS;
 	static DWORD m_versionLS;

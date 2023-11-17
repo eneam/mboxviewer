@@ -10,7 +10,7 @@ v 1.0.3.40
  - Enabled users to configure whether to append image attachments at the end of viewed and printed mails.;
  - Enhanced handling of attachments.;
  - Fixed Gmail label sorting order.;
- - Not yet support for multiple file based session configurations.;
+ - No support yet for multiple file based session configurations.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.39

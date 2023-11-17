@@ -55,10 +55,10 @@ v 1.0.3.40
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
  - Ported MBox Viewer to Unicode. Porting required large number of code changes. Please report any old & new issues.;
  - Improved handling of Unicode names of files and Gmail labels.;
- - Enabled users to configure whether to append images at the end of viewed and printed mails.;
+ - Enabled users to configure whether to append image attachments at the end of viewed and printed mails.;
  - Enhanced handling of attachments.;
- - Fixed Gmail label sorting.;
- - Not yet support for multiple file based session configurations.;
+ - Fixed Gmail label sorting order.;
+ - No support yet for multiple file based session configurations.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.39

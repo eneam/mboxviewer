@@ -5022,7 +5022,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 			href.Append(attachmentFilePathA_SS);
 			//href.Append('\\');
 			//href.Append(fileName.Data(), fileName.Count());
-			href.Append("\"target=\"_blank\">");
+			href.Append(" \"target=\"_blank\">");
 			href.Append(validNameUTF8.Data(), validNameUTF8.Count());
 			href.Append("</a>");
 
@@ -10936,7 +10936,8 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 				"are shown in the attachment window.\n\n"
 				"You can configure to shown all attachments, both inline and\n"
 				"non-inline, by selecting\n"
-				"\"File->Attachments Config->Attachment Window\" dialog\n"
+				"\"File->Attachments Config->Attachment Window\" dialog\n\n"
+				"Attachment Config dialog enables users to append image attachments to mails when viewing and/or ptinting\n"
 			);
 		}
 		else if (hintNumber == HintConfig::MessageHeaderConfigHint)
