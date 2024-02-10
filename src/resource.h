@@ -92,6 +92,7 @@
 #define IDC_FIND_LIST                   1057
 #define IDC_FILTER_NUMBER1              1057
 #define IDC_MERGE_ROOT_FOLDER_AND_SUBFOLDERS 1057
+#define IDC_OPEN_LINK_IN_NEW_TAB        1057
 #define IDC_FILTER_NUMBER3              1058
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
@@ -368,6 +369,7 @@
 #define IDC_APPEND_MULTIPLE_MAILS_VIEW  1310
 #define IDC_APPEND_MULTIPLE_MAILS_PRINT 1311
 #define IDC_CURRENT_FOLDER_PATH         1312
+#define IDC_OPEN_LINK_IN_CURRENT_TAB    1313
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -443,7 +445,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        242
 #define _APS_NEXT_COMMAND_VALUE         32920
-#define _APS_NEXT_CONTROL_VALUE         1313
+#define _APS_NEXT_CONTROL_VALUE         1314
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

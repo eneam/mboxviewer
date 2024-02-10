@@ -1257,7 +1257,8 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 		len = IntPtr2Int(tagBeg - p);
 		_ASSERTE(len >= 0);
 		outbuf->Append(p, len);
-		outbuf->Append(' ');
+		if (outbuf->Data()[outbuf->Count()-1] != ' ')
+			outbuf->Append(' ');
 
 		p = tagBeg + tagLenRet;
 		datalen -= len + tagLenRet;

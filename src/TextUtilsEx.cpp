@@ -1036,6 +1036,28 @@ void TextUtilsEx::delete_id2charset()
 	ids = 0;
 }
 
+BOOL TextUtilsEx::id2name(UINT codePage, CString& codePageName)
+{
+	CP2NM* item;
+	int cp2name_size = sizeof(cp2name) / sizeof(CP2NM);
+	for (int i = 0; i < cp2name_size; i++)
+	{
+		item = &cp2name[i];
+		if (codePage == item->m_charsetId)
+		{
+			CStringA codePageNameA = item->m_charset;
+			CString codePageNameW;
+			DWORD error = 0;
+			UINT cp = GetACP();
+			BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageNameA, cp, &codePageNameW, error);
+			if (retA2W)
+				codePageName = codePageNameW;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 BOOL TextUtilsEx::id2charset(UINT id, std::string &charset)
 {
 	CP2NM *item;

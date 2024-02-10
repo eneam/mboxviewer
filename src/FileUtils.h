@@ -53,7 +53,7 @@ public:
 	static CString CreateMboxviewLocalAppDataPath(const wchar_t *name = 0);
 	//
 	static BOOL OSRemoveDirectory(CString &dir, CString &errorText);
-	static BOOL RemoveDir(CString & dir, bool recursive = false, bool removeFolders = false);
+	static BOOL RemoveDir(CString & dir, bool recursive = false, bool removeFolders = false, CString *errorText = 0);
 	//
 	static CString CreateTempFileName(const wchar_t *folderName, CString ext = L"htm");
 	//

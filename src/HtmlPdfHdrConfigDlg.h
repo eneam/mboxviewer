@@ -88,6 +88,7 @@ public:
 	BOOL m_bHdrBoldFldName;
 	int  m_nHdrFontSize;
 	BOOL m_bHdrFldCustomNameFont;
+	int m_bHdrAttachmentLinkOpenMode;
 	HdrFldList m_HdrFldList;
 	HdrFldFont m_HdrFldFontName;
 	HdrFldFont m_HdrFldFontText;
@@ -123,6 +124,7 @@ public:
 	int m_bPickFamilyFont;
 	int m_bPickConcreteFont;
 	int m_bHdrFldName;
+	int m_bHdrAttachmentLinkOpenMode;
 
 	virtual BOOL OnInitDialog();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -134,4 +136,6 @@ public:
 	afx_msg void OnBnClickedFontDflt();
 	afx_msg void OnBnClickedFontCustom();
 	afx_msg void OnBnClickedHdrFldHelp();
+	afx_msg void OnBnClickedOpenLinkInCurrentTab();
+	afx_msg void OnBnClickedOpenLinkInNewTab();
 };

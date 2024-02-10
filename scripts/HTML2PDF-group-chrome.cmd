@@ -60,8 +60,8 @@ REM echo HTMLFileName=!HTMLFileName!
 REM echo HTMLFileNameBase=!HTMLFileNameBase!
 REM echo PDF_GROUP_DIR=!PDF_GROUP_DIR!
 
-echo "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
-call "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
+echo "%CmdPath%"  --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
+call "%CmdPath%"  --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDF_GROUP_DIR%\%HTMLNameBase%.pdf" !%HTMLFilePath%!
 
 echo.
 

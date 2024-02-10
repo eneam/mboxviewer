@@ -183,6 +183,33 @@ bool MailBodyContent::IsAttachment()
 bool MailBodyContent::IsAttachment()
 {
 	// Temp fix in 1.0.3.39 for incorrect determination of attachment type. Review in v1.0.3.40 UNICODE
+
+	BOOL isContentTypeText;
+	BOOL isTextPlain;
+	BOOL isTextHtml;
+	CStringA contentSubType;
+	CStringA contentTypeMain;
+
+	MailBodyContent* body = this;
+
+	int pos = body->m_contentType.ReverseFind('/');
+	if (pos > 0)
+	{
+		contentSubType = body->m_contentType.Mid(pos + 1);
+		contentTypeMain = body->m_contentType.Left(pos);
+	}
+
+	if (contentTypeMain.CompareNoCase("text") != 0) {
+		isContentTypeText = TRUE;
+	}
+	if (contentSubType.CompareNoCase("plain") != 0) {
+		isTextPlain = TRUE;
+	}
+	if (contentSubType.CompareNoCase("html") != 0) {
+		isTextHtml = TRUE;
+	}
+
+	// Consider all text type blocks; not only plain and html
 	if (((m_contentType.CompareNoCase("text/html") == 0) || (m_contentType.CompareNoCase("text/plain") == 0)) &&
 		(m_contentDisposition.CompareNoCase("attachment") != 0))
 	{
@@ -205,6 +232,33 @@ bool MailBodyContent::IsAttachment()
 bool MailBodyContent::IsInlineAttachment()
 {
 	// Temp fix in 1.0.3.39 for incorrect determination of attachment type. Review in v1.0.3.40 UNICODE
+
+	BOOL isContentTypeText;
+	BOOL isTextPlain;
+	BOOL isTextHtml;
+	CStringA contentSubType;
+	CStringA contentTypeMain;
+
+	MailBodyContent* body = this;
+
+	int pos = body->m_contentType.ReverseFind('/');
+	if (pos > 0)
+	{
+		contentSubType = body->m_contentType.Mid(pos + 1);
+		contentTypeMain = body->m_contentType.Left(pos);
+	}
+
+	if (contentTypeMain.CompareNoCase("text") != 0) {
+		isContentTypeText = TRUE;
+	}
+	if (contentSubType.CompareNoCase("plain") != 0) {
+		isTextPlain = TRUE;
+	}
+	if (contentSubType.CompareNoCase("html") != 0) {
+		isTextHtml = TRUE;
+	}
+
+	// Consider all text type blocks; not only plain and html
 	if (((m_contentType.CompareNoCase("text/html") == 0) || (m_contentType.CompareNoCase("text/plain") == 0)) &&
 		(m_contentDisposition.CompareNoCase("inline") == 0))
 	{
@@ -229,6 +283,58 @@ public:
 		return hashsum;
 	}
 };
+
+bool MailBodyContent::DecodeBodyData(char* msgData, int msgLength, SimpleString* outbuf)
+{
+	MailBodyContent* body = this;
+
+	int bodyLength = body->m_contentLength;
+	_ASSERTE((body->m_contentOffset + body->m_contentLength) <= msgLength);
+	if ((body->m_contentOffset + body->m_contentLength) > msgLength) {
+		// something is not consistent
+		bodyLength = msgLength - body->m_contentOffset;
+	}
+	char* bodyBegin = msgData + body->m_contentOffset;
+
+	if (body->m_contentTransferEncoding.CompareNoCase("base64") == 0)
+	{
+		MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
+		int dlength = d64.GetOutputLength();
+		outbuf->ClearAndResize(dlength + 1);
+
+		int retlen = d64.GetOutput((unsigned char*)outbuf->Data(), dlength);
+		if (retlen > 0)
+		{
+			outbuf->SetCount(retlen);
+		}
+		else
+		{
+			outbuf->Clear();
+		}
+	}
+	else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
+	{
+		MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
+		int dlength = dGP.GetOutputLength();
+		outbuf->ClearAndResize(dlength + 1);
+
+		int retlen = dGP.GetOutput((unsigned char*)outbuf->Data(), dlength);
+		if (retlen > 0)
+		{
+			outbuf->SetCount(retlen);
+		}
+		else
+		{
+			outbuf->Clear();
+		}
+	}
+	else
+	{
+		outbuf->ClearAndResize(bodyLength + 1);
+		outbuf->Append(bodyBegin, bodyLength);
+	}
+	return true;
+}
 
 struct MboxHash {
 public:
@@ -327,6 +433,26 @@ public:
 	bool operator()(const CStringA *key1, const CStringA *key2) const
 	{
 		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+};
+
+struct AddressHash {
+public:
+	hashsum_t operator()(const CStringA* key) const
+	{
+		hashsum_t hashsum = StrHash((const char*)(LPCSTR)*key, key->GetLength());
+		return hashsum;
+	}
+};
+
+struct MailFromToAddressInfoEqual {
+public:
+	bool operator()(const CStringA* key1, const MailFromToAddressInfo* key2) const
+	{
+		if (*key1 == key2->m_fromAddress)
 			return true;
 		else
 			return false;
@@ -4876,6 +5002,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CStringW printCachePathW;
 	CString rootPrintSubFolder = "AttachmentCache";
 	CString targetPrintSubFolder;
+	if (NListView::m_exportMailsMode)
+	{
+		rootPrintSubFolder = L"ExportCache";
+		targetPrintSubFolder = L"Attachments";
+	}
 
 	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, attachmentCachePath, errorText);
 	if (retval == FALSE)
@@ -4954,6 +5085,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 		encodeTextAsHtmlLink(attachmentFilePathA_SS_Root);
 	}
 
+	CMainFrame* pFrame = 0;
+	pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	//if (!pFrame)
+		//return -1;
+
 	AttachmentMgr attachmentDB;
 	int attachmentCnt = 0;
 	SimpleString fileName(1024);
@@ -5022,7 +5158,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 			href.Append(attachmentFilePathA_SS);
 			//href.Append('\\');
 			//href.Append(fileName.Data(), fileName.Count());
-			href.Append(" \"target=\"_blank\">");
+
+			if (pFrame && (pFrame->m_HdrFldConfig.m_bHdrAttachmentLinkOpenMode == 1))
+				href.Append("\"target=\"_blank\">");
+			else
+				href.Append("\">");
 			href.Append(validNameUTF8.Data(), validNameUTF8.Count());
 			href.Append("</a>");
 
@@ -5275,21 +5415,41 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 	MboxMail *m = s_mails[mailPosition];
 
-	CString attachmentFilesFolderPath = "..\\AttachmentCache";
+	CString attachmentFilesFolderPath = L"..\\AttachmentCache";
+	if (NListView::m_exportMailsMode)
+		attachmentFilesFolderPath = L"..\\ExportCache";
+
+
 
 	CString errorText;
 	CString aboluteImageCachePath;
 	CString rootSubFolder = L"ImageCache";
 	CString targetSubFolder;
+	if (NListView::m_exportMailsMode)
+	{
+		rootSubFolder = L"ExportCache";
+		targetSubFolder = L"Attachments";
+	}
 
 	BOOL retval = MboxMail::CreateCachePath(rootSubFolder, targetSubFolder, aboluteImageCachePath, errorText);
 	aboluteImageCachePath.Append(L"\\");
 
+	//////////////////////
+
 	CString absoluteAttachmentCachePath;
 	rootSubFolder = L"AttachmentCache";
 
+	CString attachmentRootSubFolder = L"AttachmentCache";
+	if (NListView::m_exportMailsMode)
+	{
+		rootSubFolder = L"ExportCache";
+		attachmentRootSubFolder = L"Attachments";
+	}
+
 	retval = MboxMail::CreateCachePath(rootSubFolder, targetSubFolder, absoluteAttachmentCachePath, errorText);
 	absoluteAttachmentCachePath.Append(L"\\");
+
+	//////////////////////
 
 	CString fpath = fp.GetFilePath();
 	fpath.TrimRight(L"\\");
@@ -5300,16 +5460,28 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 #endif
 	// Sort of hack to avoid changes to interfaces // FIXME
 	// Determine relative folder path for links to inline pictures
+
+	CString cacheName = L"PrintCache";
+	if (NListView::m_exportMailsMode)
+		cacheName = L"ExportCache";
 	CString pref;
 	int pos = fpath.ReverseFind('\\');
+	int itercationCnt = 0;
 	while (pos >= 0)
 	{
 		CString tok = fpath.Mid(pos);
 		tok.TrimLeft(L"\\");
-		if (tok.Compare(L"PrintCache") == 0)
+		if (tok.Compare(cacheName) == 0)
 			break;
 
-		pref += L"..\\";
+		if (NListView::m_exportMailsMode)
+		{
+			if (itercationCnt++ > 0)
+			pref += L"..\\";
+		}
+		else
+			pref += L"..\\";
+
 		if (pos > 0)
 		{
 			fpath = fpath.Mid(0, pos);
@@ -5321,7 +5493,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 	if (pos >= 0)
 	{
-		attachmentFilesFolderPath = pref + "AttachmentCache";
+		attachmentFilesFolderPath = pref + attachmentRootSubFolder;
 	}
 	else
 	{
@@ -5393,7 +5565,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	CStringA preStyle = "pre { overflow-x:break-word; white-space:pre; white-space:hp-pre-wrap; white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
 
 	CStringA bdyy;
-	bdyy.Append("\r\n\r\n<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
+	bdyy.Append("\r\n\r\n<!DOCTYPE html>\r\n");
+	bdyy.Append("<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
 	bdyy.Append("<article style=\"width:");
 	bdyy.Append("100%;");
 	bdyy.Append("float:left; position:left;background-color:#FFFFFF; margin: 0mm 0mm 0mm 0mm; \">");
@@ -5438,7 +5611,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		AttachmentMgr embededAttachmentDB;
 
 		CString absoluteSrcImgFilePath = aboluteImageCachePath;
-		CString relativeSrcImgFilePath = pref + L"ImageCache\\";
+
+		CString cacheSubFolder = L"ImageCache";
+		CString relativeSrcImgFilePath = pref + cacheSubFolder + L"\\";
+
+		if (NListView::m_exportMailsMode)
+		{
+			cacheSubFolder = L"ExportCache";
+			relativeSrcImgFilePath = pref + L"Attachments\\";  // TODOE
+		}
 
 		BOOL verifyAttachmentDataAsImageType = FALSE;
 		BOOL insertMaxWidthForImgTag = TRUE;
@@ -5543,9 +5724,6 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			}
 		}
 
-
-
-
 		//bdy = "\r\n<div style=\'width:100%;position:initial;float:left;background-color:transparent;" + margin + "text-align:left\'>\r\n";
 		CStringA newBodyWidth = "width:";
 		newBodyWidth.Append("100%;");
@@ -5566,9 +5744,15 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CStringA hdrWidth = "width:";
 		hdrWidth.Append("100%;");
 		CStringA hdrMargin = "";
+		CStringA base;
+		if (NListView::m_exportMailsMode)
+		{
+			base = "<base href=\"\"/>";  // TODOE define empty base ??
+		}
 		if (pFrame)
 		{
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">"
+				+ base
 				+ htmlHdrFldNameStyle + "</head>\r\n"
 				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;float:left;text-align:left;font-weight:normal;"   // div #2
 				+ hdrWidth + hdrMargin + hdrBackgroundColor
@@ -5738,8 +5922,14 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		//CString* srcImgFilePath = 0; // UpdateInlineSrcImgPathEx will generate srcImgFilePath
 
 		CString absoluteSrcImgFilePath = aboluteImageCachePath;
-		CString relativeSrcImgFilePath = pref + L"ImageCache\\";
-
+		CString cacheSubFolder = L"ImageCache";
+		CString relativeSrcImgFilePath = pref + cacheSubFolder + L"\\";
+		if (NListView::m_exportMailsMode)
+		{
+			cacheSubFolder = L"ExportCache";
+			relativeSrcImgFilePath = pref + L"Attachments\\";  // TODOE
+		}
+		
 		BOOL verifyAttachmentDataAsImageType = FALSE;
 		BOOL insertMaxWidthForImgTag = TRUE;
 		CStringA maxWidth = "40%";
@@ -5789,6 +5979,22 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				+ hdrWidth + hdrMargin + hdrBackgroundColor
 				+ font;
 			fp.Write(bdy, bdy.GetLength());
+		}
+
+		BOOL printAttachments = TRUE;
+		if (pFrame)
+		{
+			printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS - 1);
+		}
+
+		if (printAttachments)
+		{
+			//AttachmentMgr attachmentDB;
+			//attachmentDB.Clear();
+			CString* attachmentFolderPath = 0;
+			BOOL prependMailId = TRUE;
+
+			NListView::CreateMailAttachments(&fpm, mailPosition, attachmentFolderPath, prependMailId, attachmentDB);
 		}
 
 		int ret;
@@ -5949,8 +6155,9 @@ void MboxMail::encodeTextAsHtmlLink(SimpleString &txt)
 void MboxMail::encodeTextAsHtmlLinkLabel(SimpleString &txt)
 {
 	SimpleString buffer(256);
-	for (int pos = 0; pos != txt.Count(); ++pos) {
-		char c = txt.GetAt(pos);
+	for (int pos = 0; pos != txt.Count(); ++pos)
+	{
+		const char c = txt.GetAt(pos);
 		switch (c) {
 		case '&':  buffer.Append("&amp;");       break;
 		case '\"': buffer.Append("&quot;");      break;
@@ -5964,6 +6171,29 @@ void MboxMail::encodeTextAsHtmlLinkLabel(SimpleString &txt)
 		}
 	}
 	txt.Copy(buffer);
+}
+
+void MboxMail::encodeTextAsHtmlLinkLabel(CStringA link, CStringA& htmlLink)
+{
+#if 0
+	SimpleString txt;
+	txt.Append((LPCSTR)link, link.GetLength());
+	MboxMail::encodeTextAsHtmlLinkLabel(txt);
+	htmlLink.Append(txt.Data(), txt.Count());
+#else
+	SimpleString buffer(256);
+	for (int pos = 0; pos != link.GetLength(); ++pos) {
+		char c = link.GetAt(pos);
+		switch (c) {
+		case '&':  htmlLink.Append("&amp;");       break;
+		case '\"': htmlLink.Append("&quot;");      break;
+		case '\'': htmlLink.Append("&apos;");      break;
+		case '<':  htmlLink.Append("&lt;");        break;
+		case '>':  htmlLink.Append("&gt;");        break;
+		default:   htmlLink.AppendChar(c); break;
+		}
+	}
+#endif
 }
 
 int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldNameFontStyle, CStringA &fldTextFontStyle)
@@ -9952,6 +10182,8 @@ int MboxMail::MakeFileNameFromMailArchiveName(int fileType, CString &fileName, C
 
 	CString printCachePath;
 	CString rootPrintSubFolder = "PrintCache";
+	if (NListView::m_exportMailsMode)
+		rootPrintSubFolder = L"ExportCache";
 
 	BOOL retval = CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
@@ -9989,6 +10221,8 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 
 	CString printCachePath;
 	CString rootPrintSubFolder = "PrintCache";
+	if (NListView::m_exportMailsMode)
+		rootPrintSubFolder = L"ExportCache";
 	BOOL retval = CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		return -1;

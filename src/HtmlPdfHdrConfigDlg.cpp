@@ -48,6 +48,7 @@ HtmlPdfHdrConfigDlg::HtmlPdfHdrConfigDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_bPickFamilyFont = 0;
 	m_bPickConcreteFont = 0;
+	m_bHdrAttachmentLinkOpenMode = 0;
 
 	m_HdrFldConfig.LoadFromRegistry();
 }
@@ -66,6 +67,7 @@ void HtmlPdfHdrConfigDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_HDR_FLD_NAME, m_HdrFldConfig.m_bHdrFldCustomNameFont);
 	DDX_Check(pDX, IDC_FLD_NAME_BOLD, m_HdrFldConfig.m_bHdrBoldFldName);
 	DDX_Text(pDX, IDC_FLD_SIZE, m_HdrFldConfig.m_nHdrFontSize);
+	DDX_Radio(pDX, IDC_OPEN_LINK_IN_CURRENT_TAB, m_HdrFldConfig.m_bHdrAttachmentLinkOpenMode);
 }
 
 
@@ -78,6 +80,8 @@ BEGIN_MESSAGE_MAP(HtmlPdfHdrConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_FONT_DFLT, &HtmlPdfHdrConfigDlg::OnBnClickedFontDflt)
 	ON_BN_CLICKED(IDC_FONT_CUSTOM, &HtmlPdfHdrConfigDlg::OnBnClickedFontCustom)
 	ON_BN_CLICKED(IDC_HDR_FLD_HELP, &HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp)
+	ON_BN_CLICKED(IDC_OPEN_LINK_IN_CURRENT_TAB, &HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInCurrentTab)
+	ON_BN_CLICKED(IDC_OPEN_LINK_IN_NEW_TAB, &HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInNewTab)
 END_MESSAGE_MAP()
 
 
@@ -529,8 +533,11 @@ void HdrFldConfig::SaveToRegistry()
 {
 	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
 
-	CString param = L"ApplyCustomFonts";
-	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrFontDflt);
+	CString param = L"AttachmentLinkOpenMode";
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrAttachmentLinkOpenMode);
+
+	param = L"ApplyCustomFonts";
+	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrFontDflt);
 
 	CString section_hdr_sub = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields\\DefaultFont";
 
@@ -551,7 +558,14 @@ void HdrFldConfig::LoadFromRegistry()
 
 	CString section_hdr = CString(sz_Software_mboxview) + L"\\PrintConfig\\HeaderFields";
 
-	CString param = L"ApplyCustomFonts";
+	CString param = L"AttachmentLinkOpenMode";
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrAttachmentLinkOpenMode))
+	{
+		;
+	}
+
+
+	param = L"ApplyCustomFonts";
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_hdr, param, m_bHdrFontDflt))
 	{
 		;
@@ -693,4 +707,18 @@ void HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp()
 	CMainFrame::OpenHelpFile(helpFileName, h);
 
 	return;
+}
+
+
+void HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInCurrentTab()
+{
+	// TODO: Add your control notification handler code here
+	int deb = 1;
+}
+
+
+void HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInNewTab()
+{
+	// TODO: Add your control notification handler code here
+	int deb = 1;
 }

@@ -278,7 +278,10 @@ int TextUtilities::StrSearchW(unsigned char* srcText, int n, UINT textCP, unsign
 		int deb = 1;
 	}
 
-	if (n < 1024)  // 256 selected without any investigation to decide on the optimal length
+	if (n < m)
+		return -1;
+
+	if (n < 1024)  // 1024 selected without any investigation to decide on the optimal length
 	{
 		int strl = n;
 		char* textBegin = (char*)text;
@@ -295,22 +298,27 @@ int TextUtilities::StrSearchW(unsigned char* srcText, int n, UINT textCP, unsign
 
 			if ((found != (char*)textBegin) && !IsWordSeparator(*(found - 1)))
 			{
-				strl = (int)(textEnd - found -1);
-				if (strl >= m)
+				strl = (int)(textEnd - found);
+				if (strl > m)
 				{
 					text = (unsigned char*)++found;
+					//text = (unsigned char*)found + m; // // not valid since  search pattern may contain separators
+					_ASSERTE(text <= (unsigned char*)textEnd);
 					continue;
 				}
 				else
 					return -1;
 			}
 			wordLastPlus = found + m;
+			_ASSERTE(wordLastPlus <= textEnd);
 			if ((wordLastPlus != textEnd) && !IsWordSeparator(*wordLastPlus))
 			{
-				strl = (int)(textEnd - found -1);
-				if (strl >= m)
+				strl = (int)(textEnd - found);
+				if (strl > m)
 				{
 					text = (unsigned char*)++found;
+					//text = (unsigned char*)found + m; // not valid since search pattern may contain separators
+					_ASSERTE(text <= (unsigned char*)textEnd);
 					continue;
 				}
 				else
@@ -322,6 +330,7 @@ int TextUtilities::StrSearchW(unsigned char* srcText, int n, UINT textCP, unsign
 				return pos;
 			}
 		}
+		return -1;
 	}
 	else
 	{

@@ -269,7 +269,7 @@ public:
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename);
 
-	INT_PTR SelectFolder(CString &folder);
+	static INT_PTR SelectFolder(CString &folder);
 	static int CountMailFilesInFolder(CString &folder, CString &extension);
 
 	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);

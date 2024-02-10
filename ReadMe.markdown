@@ -5,7 +5,7 @@ A simple viewer to view mbox files such as Thunderbird Archives, Google mail arc
 [![Download Windows MBox Viewer](https://img.shields.io/sourceforge/dm/mbox-viewer.svg)](https://sourceforge.net/projects/mbox-viewer/files/latest/download)
 
 Features
------
+--------
 
 * large file support > 4Gb;
 * fast parsing of mbox;
@@ -35,7 +35,7 @@ Features
 * support for Thunderbird exported mail files;
 
 License
------
+-------
 Mbox viewer is a free software. Most of it is licensed under AGPLv3.
 Small parts are licenced under CPOL 1.02.
 MailKit open source library linked to connect to SMTP servers is licensed under MIT.
@@ -47,8 +47,16 @@ meaning that authors retain all rights to the source code and no one may reprodu
 The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to synchronize the License published on Sourceforge and Github.
 
 Changes
+-------
 
----
+v 1.0.3.41
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Fixed print of footer and header enable/disable option.;
+ - Improved handling of Mbox File Parsing Cancellation.;
+ - Added Export Mails option to more easily share mails with other people.;
+ - Added option to configure on how to open linked document.;
+ - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.40
 

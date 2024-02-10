@@ -244,6 +244,9 @@ public:
 
 	bool IsAttachment();
 	bool IsInlineAttachment();
+	// DecodeBodyData() doesn't merge multiple blocks of the same type
+	// MboxMail::GetMailBody_mboxview() will merge multiple blocks
+	bool DecodeBodyData(char* viewMapBegin, int msgLength, SimpleString* outbuf);
 };
 
 unsigned long StrHash(const char* buf, const UINT length);
@@ -262,6 +265,35 @@ class MboxMail;
 typedef std::unordered_map<CStringA*, int, ThreadIdHash, ThreadIdEqual> ThreadIdTableType;
 typedef std::unordered_map<CStringA*, int, MessageIdHash, MessageIdEqual> MessageIdTableType;
 typedef std::unordered_map<MboxMail*, MboxMail*, MboxHash, MboxEqual> MboxMailTableType;
+
+
+// Candidate for v1.0.3.42
+class MailFromToAddressInfo
+{
+public:
+	MailFromToAddressInfo() {};
+	~MailFromToAddressInfo() {};
+
+	CStringA m_fromAddress;
+	long m_cnt;
+};
+
+struct AddressHash;
+struct MailFromToAddressInfoEqual;
+
+typedef std::unordered_map<CStringA*, MailFromToAddressInfo*, AddressHash, MailFromToAddressInfoEqual> MailsFromAnyToAddressTable;
+
+class MailsFromAnyToAddressStats
+{
+	MailsFromAnyToAddressStats() {};
+	~MailsFromAnyToAddressStats() {};
+
+	CStringA m_toAddress;
+	MailsFromAnyToAddressTable* m_receiverStats;
+	long m_cnt;
+
+	bool sortsSenders() {};
+};
 
 class CMBodyHdr;
 
@@ -760,6 +792,7 @@ public:
 	static void encodeTextAsHtml(SimpleString &txt);
 	static void encodeTextAsHtmlLink(SimpleString &txt);
 	static void encodeTextAsHtmlLinkLabel(SimpleString &txt);
+	static void encodeTextAsHtmlLinkLabel(CStringA link, CStringA& htmlLink);
 
 	static void mbassert();
 };

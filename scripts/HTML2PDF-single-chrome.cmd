@@ -51,7 +51,7 @@ REM echo File Name Ext is: %HTMLNameExt%
 
 del "%PDFdir%\%HTMLNameBase%.pdf"
 
-call "%CmdPath%"  --headless --disable-gpu --print-to-pdf="%PDFdir%\%HTMLNameBase%.pdf" "%HTMLFilePath%"
+call "%CmdPath%"  --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDFdir%\%HTMLNameBase%.pdf" "%HTMLFilePath%"
 
 REM Replace "REM pause" with "pause" for testing.
 REM pause

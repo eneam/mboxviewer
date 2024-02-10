@@ -205,8 +205,9 @@ BOOL FileUtils::OSRemoveDirectory(CString &dir, CString &errorText)
 }
 
 // Removes files and optionally folders
-BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolders)
+BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolders, CString *errorText)
 {
+	CString errText;
 	if (!FileUtils::VerifyName(directory))
 	{
 		TRACE(L"RemoveDir: Failed to delete, VerifyName failed \"%s\"\n", directory);
@@ -237,7 +238,12 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 				FileUtils::DelFile(fileFound, TRUE);
 			else if (recursive)
-				FileUtils::RemoveDir(fileFound, recursive, removeFolders);
+			{
+				CString eText;
+				FileUtils::RemoveDir(fileFound, recursive, removeFolders, &eText);
+				if (!eText.IsEmpty())
+					int deb = 1;
+			}
 		}
 		if (!FindNextFileW(hSearch, &FileData))
 			bFinished = TRUE;
@@ -246,8 +252,12 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	if (removeFolders)
 	{
 		// Will fail if recursive=false and sub-directories exist
-		CStringW errorText;
-		BOOL retRD = FileUtils::OSRemoveDirectory(dir, errorText);
+		BOOL retRD = FileUtils::OSRemoveDirectory(dir, errText);
+		if (errorText)
+		{
+			errorText->Empty();
+			errorText->Append(errText);
+		}
 	}
 	return TRUE;
 }
@@ -612,6 +622,9 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 	HANDLE hFile = CreateFileW(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+		TRACE(L"(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errText);
 		int deb = 1;
 		return FALSE;
 	}

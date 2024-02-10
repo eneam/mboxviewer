@@ -1,6 +1,15 @@
 
 Changes
----
+-------
+
+v 1.0.3.41
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Fixed print of footer and header enable/disable option.;
+ - Improved handling of Mbox File Parsing Cancellation.;
+ - Added Export Mails option to more easily share mails with other people.;
+ - Added option to configure on how to open linked document.;
+ - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.40
 

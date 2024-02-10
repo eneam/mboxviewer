@@ -367,7 +367,7 @@ int NTreeView::ImboxviewFile(CString& fName)
 	else if (fileNameExtention.CompareNoCase(L".mboxlist") == 0)
 		return 0;
 
-	else if (fileNameExtention.CompareNoCase(L".rootfolder") == 0)
+	else if (fileNameExtention.CompareNoCase(L".urootfolder") == 0)
 		return 0;
 
 	CFileException ExError;
@@ -3330,7 +3330,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int mailCount = MboxMail::s_mails_ref.GetCount();
 
 		txt.Empty();
-		txt.Format(L"File: %s\n", mailFile);
+		CString folder;
+		FileUtils::GetFolderPath(MboxMail::s_path, folder);
+		txt.Format(L"Folder: %s\n", folder);
+
+		tmp.Format(L"File: %s\n", mailFile);
+		txt.Append(tmp);
 
 		CString cstr;
 		INT64 numb = fileSize;
@@ -6496,7 +6501,7 @@ BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 	CString datapath = MboxMail::GetLastDataPath();
 	CFile fp;
 	CFileException ExError;
-	CString rootFolderFile = datapath + L".rootfolder";
+	CString rootFolderFile = datapath + L".urootfolder";
 	if (!fp.Open(rootFolderFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -6525,7 +6530,7 @@ BOOL NTreeView::RemoveFolderAsRootFolder(CString& folderPath)
 	lastPath.TrimRight(L"\\");
 
 	CString datapath = MboxMail::GetLastDataPath();
-	CString rootFolderFile = datapath + L".rootfolder";
+	CString rootFolderFile = datapath + L".urootfolder";
 	BOOL retval = FileUtils::DelFile(rootFolderFile, FALSE);
 	return retval;
 }
@@ -6533,7 +6538,7 @@ BOOL NTreeView::RemoveFolderAsRootFolder(CString& folderPath)
 BOOL NTreeView::IsFolderARootFolder(CString& folderPath)
 {
 	CString datapath = MboxMail::GetLastDataPath();
-	CString rootFolderFile = datapath + L".rootfolder";
+	CString rootFolderFile = datapath + L".urootfolder";
 	BOOL retval = FileUtils::PathFileExist(rootFolderFile);
 	return retval;
 }
@@ -6545,7 +6550,7 @@ BOOL NTreeView::IsFolderOpenAsRootFolder(CString& folderPath)
 	MboxMail::SetLastPath(folderPath);
 	CString datapath = MboxMail::GetLastDataPath();
 
-	CString rootFolderFile = datapath + L".rootfolder";
+	CString rootFolderFile = datapath + L".urootfolder";
 	BOOL retval = FileUtils::PathFileExist(rootFolderFile);
 
 	MboxMail::SetLastPath(sv_lastPath);

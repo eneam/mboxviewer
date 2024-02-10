@@ -234,7 +234,8 @@ public:
 	// and in NListView::OnRClickMultipleSelect: case S_PRINTER_GROUP_Id: 
 	static BOOL m_fullImgFilePath;   // examined in NListView::UpdateInlineSrcImgPathEx
 	static BOOL m_fullImgFilePath_Config;
-	static BOOL m_appendAttachmentPictures;;
+	static BOOL m_appendAttachmentPictures;
+	static BOOL m_exportMailsMode;
 	//
 	// Global Vars  -- FIXME
 
@@ -297,6 +298,7 @@ public:
 	void DetermineKeywordsForProgresBar(CString *m_string, CString &keyword1, CString &keyword2);  // for Advanced Find
 	BOOL FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CStringA &searchString);
 	BOOL AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams &params);
+	int  AdvancedFindInMailContent_DevTest(int mailPosition, BOOL bContent, BOOL bAttachment, CFindAdvancedParams& params);
 	void CloseMailFile();
 	void ResetFileMapView();
 	void SortByColumn(int colNumber, BOOL sortByPosition = FALSE);
@@ -547,7 +549,9 @@ public:
 	// Selected to Separate HTML
 	int PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
-	//
+	BOOL  CanGoAheadWithExport();
+	int ExportMails_CopyExportMails2PDF();
+		//
 	// Selected to Single HTML
 	int PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);
 	int PrintMailSelectedToSingleHTML_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
@@ -577,6 +581,10 @@ public:
 	//
 	int CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+
+	// Export Files
+	int CreateIndexFileForExportedMails_Thread(MailIndexList* selectedMailsIndexList, CString& targetPrintSubFolderName,
+		CString& targetPrintFolderPath);
 
 	static BOOL IsSingleAddress(CStringA *to);
 	static void TrimToAddr(CStringA *to, CStringA &toAddr, int maxNumbOfAddr);
@@ -627,6 +635,8 @@ public:
 	void SetListFocus();
 
 	static BOOL SaveMails(LPCWSTR cache, BOOL mainThread, CString& errorText);
+
+	BOOL ConfigureExportOfMails();
 
 	BOOL m_developmentMode;
 

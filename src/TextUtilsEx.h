@@ -93,6 +93,7 @@ public:
 	static void delete_charset2Id();
 	static UINT charset2Id(const char *char_set);
 	static void delete_id2charset();
+	static BOOL id2name(UINT id, CString& charsetName);
 	static BOOL id2charset(UINT id, std::string &charset);
 	static BOOL Id2LongInfoA(UINT id, CStringA& codePageInfo);
 	static BOOL Id2LongInfo(UINT id, CString& codePageInfo);

@@ -317,10 +317,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_bUserSelectedMailsCheckSet = FALSE;  // User Selected List checked/unched state
 	m_bEnhancedSelectFolderDlg = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"enhancedSelectFolderDialog");
 
-	DWORD fullImgFilePath_Config;
-	BOOL found = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", fullImgFilePath_Config);
+	DWORD relativeImgFilePath_Config;
+	BOOL found = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", relativeImgFilePath_Config);
 	if (found)
-		m_relativeInlineImageFilePath = fullImgFilePath_Config;
+		m_relativeInlineImageFilePath = relativeImgFilePath_Config;
 
 	CString section_lastSelection = CString(sz_Software_mboxview) + L"\\LastSelection";
 	m_lastPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastPath");
@@ -844,7 +844,7 @@ void CMainFrame::OnFileOpen()
 	{
 		CString txt;
 		txt.Format(L"Trying to open folder \"%s\" that doesn't exist.\n\n\n",path);
-		HWND h = NULL; // we don't have any window yet
+		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 
@@ -3319,8 +3319,9 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		}
 		else
 		{
-			args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
-			// args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
+			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
+			//args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
+			args = L" --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 #if 0
 		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
@@ -3356,8 +3357,9 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		}
 		else
 		{
-			args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
+			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer"; //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
+			args = L" --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 
 #if 0
@@ -3732,6 +3734,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 
 	MboxMail::m_outbuf->ClearAndResize(FILE_LIST_BUFFER_SIZE);
 	wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_outbuf->Data();
+	fileNameBuffer[0] = 0;
 
 	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
 
@@ -4935,7 +4938,7 @@ BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 		txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n",
 			destinationFolder, destinationFolder);
 		txt.Append(L"\nDestination folder can't contain \"UMBoxViewer\" folder  in the path \n\n");
-			HWND h = NULL; // we don't have any window yet
+		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return FALSE;
 	}

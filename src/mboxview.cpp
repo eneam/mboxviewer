@@ -1330,7 +1330,7 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 		procressPath.Append(pValue);
 
 		CString txt;
-		txt.Format(L"GetModuleFileName=\n%s\n\n_get_wpgmptr     =\n%s\n", processFilePath, procressPath);
+		txt.Format(L"\nGetModuleFileName=\"%s\"\n_get_wpgmptr     =\"%s\"\n", processFilePath, procressPath);
 		TRACE(L"%s", txt);
 
 #if _DEBUG
