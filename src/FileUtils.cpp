@@ -869,6 +869,30 @@ BOOL FileUtils::DelFile(const wchar_t *path, BOOL verify)
 	return ret;
 }
 
+BOOL FileUtils::WCopyFile(LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists, CString& errorText)
+{
+	if (!::CopyFileW(lpExistingFileName, lpNewFileName, bFailIfExists))
+	{
+		errorText = FileUtils::GetLastErrorAsString();
+		TRACE(L"WCopyFile: %s\n%s", lpExistingFileName, errorText);
+		return FALSE;
+	}
+	else
+		return TRUE;
+}
+
+BOOL FileUtils::ACopyFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExists, CString& errorText)
+{
+	if (!::CopyFileA(lpExistingFileName, lpNewFileName, bFailIfExists))
+	{
+		errorText = FileUtils::GetLastErrorAsString();
+		TRACE(L"ACopyFile: %s\n%s", CStringW(lpExistingFileName), errorText);
+		return FALSE;
+	}
+	else
+		return TRUE;
+}
+
 // Optimistic Copy, ignores many errors
 // TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
 // Try to copy first and remove from directory only if no errors ??

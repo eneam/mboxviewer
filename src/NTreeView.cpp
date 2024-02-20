@@ -9001,6 +9001,8 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	DeleteMBoxAllWorkFolders(filePath);
 
 
+	// TODO: this should be moved to ArchiveMailsRemoveDuplicates to avoid confusion
+	//
 	if (!m_rootMboxCfile.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
@@ -9032,8 +9034,8 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 
 	MboxMail::Destroy(&MboxMail::s_mails);
 
-	m_rootMboxCfile.Close();
-
+	if (m_rootMboxCfile.m_hFile != CFile::hFileNull )
+		m_rootMboxCfile.Close();
 
 	FileUtils::DelFile(m_rootMboxFilePath);
 
@@ -9743,6 +9745,14 @@ int NTreeView::ArchiveMailsRemoveDuplicates(CFile& fp, CString& filePath)
 	int dupCnt = MboxMail::RemoveDuplicateMails(s_mails_array, putDuplicatesOnFindArray);
 	if (dupCnt == 0)
 	{
+#if 1
+		// TODO: MoveFileEx fails because fp is open
+		// Need to close fp or use WCopyFile
+		// MoveFileEx avoids copy file if source and destinations are on the the volume
+		// More efficient if merge file is very large
+		if (m_rootMboxCfile.m_hFile != CFile::hFileNull)  // use of m_hFile not recommended in some cases according to windows doc
+			fp.Close();
+
 		DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
 		BOOL retMove = MoveFileEx(m_rootMboxFilePath, filePath, nFlags);
 		if (retMove == FALSE)
@@ -9758,6 +9768,24 @@ int NTreeView::ArchiveMailsRemoveDuplicates(CFile& fp, CString& filePath)
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
+#else
+		// Works, no surprises but less effcient for large merged files
+		CString errorText;
+		BOOL bFailIfExists = FALSE;
+		BOOL retCopy = FileUtils::WCopyFile(m_rootMboxFilePath, filePath, bFailIfExists, errorText);
+		if (retCopy == FALSE)
+		{
+			TRACE(L"ArchiveMailsRemoveDuplicates: WCopyFile failed \"%s\"\n", errorText);
+
+			CString txt = L"Failed to copy file \"" + m_rootMboxFilePath;
+			txt += L"\" file.\n\n";
+			txt.Append(errorText);
+
+			HWND h = NULL; // we don't have any window yet
+			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			return -1;
+		}
+#endif
 	}
 	else
 	{

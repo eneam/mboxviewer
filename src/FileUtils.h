@@ -98,6 +98,9 @@ public:
 	static BOOL DelFile(const wchar_t *path, BOOL verify = TRUE);  // It was FALSE, chnaged to see if that vcan remain TRUE
 	static BOOL DelFile(CString &path, BOOL verify = TRUE);  // It was FALSE, chnaged to see if that vcan remain TRUE
 	//
+	static BOOL WCopyFile(LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists, CString &errorText);
+	static BOOL ACopyFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExists, CString &errorText);
+	//
 	static CStringW CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPath, CStringArray *excludeFilter = 0, BOOL bFailIfExists = FALSE, BOOL removeFolderAfterCopy = FALSE);
 	//
 	static CString MoveDirectory(const wchar_t *cFromPath, const wchar_t *cToPath);
