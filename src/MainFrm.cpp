@@ -5858,7 +5858,7 @@ void CMainFrame::OnHelpShortcuts()
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\ShortcutsSummary.pdf";
+	CString filePath = processDir + ".\\HelpFiles\\ShortcutsSummary.pdf";
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -5867,7 +5867,7 @@ void CMainFrame::OnHelpShortcuts()
 	else
 	{
 		CString txt;
-		txt.Format(L"SHORTCUTS file \"%s\" doesn't exist", filePath);
+		txt.Format(L"ShortcutsSummary file \"%s\" doesn't exist", filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}

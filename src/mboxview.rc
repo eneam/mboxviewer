@@ -127,8 +127,8 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "Mboxview Help",               ID_HELP_MBOXVIEWHELP
         MENUITEM "&About mboxview...",          ID_APP_ABOUT
+        MENUITEM "Mboxview Help",               ID_HELP_MBOXVIEWHELP
         MENUITEM "User Guide",                  ID_HELP_USERGUIDE
         MENUITEM "Readme",                      ID_HELP_README
         MENUITEM "Change Log",                  ID_HELP_CHANGE_LOG
