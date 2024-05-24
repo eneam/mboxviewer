@@ -2,6 +2,14 @@
 Changes
 -------
 
+v 1.0.3.42
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Addedd ability to cycle through mail summary and mail message panes using CTRL+n.;
+ - Fixed bug when merging files under root when no duplicate mails detected.;
+ - Fixed configuration of option on how to open linked document.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.41
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

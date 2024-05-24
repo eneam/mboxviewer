@@ -55,6 +55,7 @@ extern const wchar_t *sz_Software_mboxview;
 #define WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE  (WM_APP + 5)
 #define WM_CMD_PARAM_RESET_TREE_POS_MESSAGE  (WM_APP + 6)
 #define WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE  (WM_APP + 7)
+#define WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE  (WM_APP + 8)
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:
@@ -89,6 +90,8 @@ public:
 	static CString m_currentPath;
 
 	static BOOL GetProcessPath(CString &processpath);
+
+	static CWnd* wndFocus;
 
 public:
 	//{{AFX_MSG(CmboxviewApp)

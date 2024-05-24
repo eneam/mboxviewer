@@ -35,6 +35,7 @@
 #include "stdafx.h"
 #include "MainFrm.h"
 #include "webbrowser2.h"
+#include "mboxview.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -534,6 +535,11 @@ void CWebBrowser2::SetResizable(BOOL bNewValue)
 
 BOOL CWebBrowser2::PreTranslateMessage(MSG* pMsg)
 {
+	if (((pMsg->message & 0xffff) >= WM_LBUTTONDOWN)  && ((pMsg->message & 0xffff) <= WM_MOUSEWHEEL))
+	{
+		CmboxviewApp::wndFocus = this;
+		int deb = 1;
+	}
 	if ((pMsg->message & 0xffff) == WM_MOUSEMOVE)
 	{
 		int deb = 1;
@@ -589,6 +595,37 @@ BOOL CWebBrowser2::PreTranslateMessage(MSG* pMsg)
 					lpd->Release();
 				}
 			}
+			int deb = 1;
+		}
+		else if ((pMsg->wParam == 'N') || (pMsg->wParam == 'n'))
+		{
+			SHORT ctrlState = GetAsyncKeyState(VK_CONTROL);
+			SHORT CState = GetAsyncKeyState('N');
+			BOOL CtrlKeyDown = FALSE;
+			BOOL CKeyDown = FALSE;
+
+			if ((ctrlState & 0x8000) != 0) {
+				CtrlKeyDown = TRUE;
+			}
+
+			if ((CState & 0x8000) != 0) {
+				CKeyDown = TRUE;
+			}
+
+			if (CKeyDown && CtrlKeyDown)
+			{
+				CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+				if (pFrame)
+				{
+					NListView* m_pListView = pFrame->DetListView();
+					if (m_pListView)
+					{
+						LRESULT lres = m_pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+						int deb = 0;
+					}
+				}
+			}
+
 			int deb = 1;
 		}
 	}

@@ -61,8 +61,9 @@ BEGIN_MESSAGE_MAP(CWheelListCtrl, CListCtrl)
 	//}}AFX_MSG_MAP
 	ON_WM_DRAWITEM()
 	//ON_WM_MOUSEHOVER()
-	//ON_WM_SETFOCUS()
+	ON_WM_SETFOCUS()
 	//ON_WM_MOUSEACTIVATE()
+	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &CWheelListCtrl::OnCmdParam_OnSwitchWindow)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -221,17 +222,23 @@ void CWheelListCtrl::OnMouseHover(UINT nFlags, CPoint point)
 
 #endif
 
-#if 0
-
+#if 1
 
 void CWheelListCtrl::OnSetFocus(CWnd* pOldWnd)
 {
+	static int id = 0;
+
+	TRACE(L"CWheelListCtrl::OnSetFocus id=%d\n", id);
+
 	CListCtrl::OnSetFocus(pOldWnd);
+	CmboxviewApp::wndFocus = this;
+	id++;
 
 	// TODO: Add your message handler code here
 }
+#endif
 
-
+#if 0
 int CWheelListCtrl::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
 {
 	// TODO: Add your message handler code here and/or call default
@@ -240,3 +247,11 @@ int CWheelListCtrl::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT messa
 }
 
 #endif
+
+LRESULT CWheelListCtrl::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
+{
+	TRACE(L"CWheelListCtrl::OnCmdParam_OnSwitchWindow\n");
+	CWnd* wnd = CMainFrame::SetWindowFocus(this);
+
+	return 0;
+}

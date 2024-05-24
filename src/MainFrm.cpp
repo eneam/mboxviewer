@@ -508,8 +508,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	{
 		// TODO: ESC not accepted until window is selected
 		// How to fix that so app is ready to accept ESC from keyboard upon startup
-		; // SetFocus();
-		//OnSetFocus(0);
+		; // this->SetSetFocus();
+		//OnSetFocus(0);  // ???
 	}
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
@@ -581,12 +581,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (retGetVersion)
 		SetWindowText(version);
 
-	SetFocus();
-	SetActiveWindow();
-	SetForegroundWindow();
-
+	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
 }
+
+
 
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 {
@@ -633,6 +632,7 @@ void CMainFrame::OnActivateApp(BOOL bActive, DWORD dwThreadID)
 	if (bActive)
 	{
 		TRACE(L"OnActivateApp: ACTIVE\n");
+		CMainFrame::RestoreWindowFocus();
 		int deb = 1;
 	}
 	else
@@ -640,7 +640,8 @@ void CMainFrame::OnActivateApp(BOOL bActive, DWORD dwThreadID)
 		TRACE(L"OnActivateApp: INACTIVE\n");
 		// Hack to prevent selected text from being erased when switching to differnt application
 		// Doesn't work when you minimize window via minimize button
-		m_wndView.SetFocus();
+		//m_wndView.SetFocus();
+
 		int deb = 1;
 	}
 }
@@ -2407,7 +2408,11 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 	int deb1, deb2, deb3, deb4;
 
 	if (nType == SIZE_RESTORED)
+	{
+		CMainFrame::RestoreWindowFocus();
 		int deb = 1;
+	}
+
 
 	switch (nType)
 	{
@@ -5009,7 +5014,7 @@ void CMainFrame::OnHelpReadme()
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\README.txt";
+	CString filePath = processDir + "\\CHANGE_LOG.md";
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -5760,4 +5765,83 @@ CString CMainFrame::CreateTempFileName(const wchar_t *ext)
 		tempFolder = L"UMBoxViewerDirect";
 	CString fileName = FileUtils::CreateTempFileName(tempFolder, ext);
 	return fileName;
+}
+
+CWnd * CMainFrame::SetWindowFocus(CWnd* wnd)
+{
+	//CWnd* wnd1 = wnd->SetActiveWindow();
+	BOOL ret = wnd->SetForegroundWindow();
+	CWnd* wnd1 = wnd->SetActiveWindow();
+	CWnd *wnd2 = wnd->SetFocus();
+
+#if _DEBUG
+	if (wnd2 == 0)
+	{
+		CString errorText = FileUtils::GetLastErrorAsString();
+		TRACE(L"SetWindowFocus: \"%s\"\n", errorText);
+	}
+#endif
+
+	return wnd2;
+}
+
+// TODO: there must simpler way to accomplish focus restoartion
+CWnd* CMainFrame::RestoreWindowFocus()
+{
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		NTreeView* m_pTreeView = pFrame->DetTreeView();
+		NListView* m_pListView = pFrame->DetListView();
+		NMsgView* m_pMsgView = pFrame->DetMsgView();
+
+		CBrowser* m_browser = &m_pMsgView->m_browser;
+		CWebBrowser2* m_browser2 = &m_pMsgView->m_browser.m_ie;
+
+		CWheelTreeCtrl* m_tree = &m_pTreeView->m_tree;
+		CWheelListCtrl* m_wheelList = m_pListView->GetListCtrl();
+
+		//TRACE(L"OnActivateApp: ACTIVE\n");
+
+		CWnd* old = GetFocus();
+
+		if (CmboxviewApp::wndFocus == m_wheelList)
+		{
+			LRESULT lres = m_wheelList->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			//CWnd *w = SetWindowFocus(m_wheelList);
+			TRACE(L"PostMessage to CWheelListCtrl\n");
+			int deb = 0;
+		}
+		else if (CmboxviewApp::wndFocus == m_pListView)
+		{
+			LRESULT lres = m_pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			TRACE(L"PostMessage to ListView\n");
+			int deb = 0;
+		}
+		else if (CmboxviewApp::wndFocus == m_tree)
+		{
+			LRESULT lres = m_pTreeView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			TRACE(L"PostMessage to TreeView\n");
+			int deb = 0;
+		}
+		else if (CmboxviewApp::wndFocus == m_browser)
+		{
+			LRESULT lres = m_browser->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			TRACE(L"PostMessage to Browser\n");
+			int deb = 0;
+		}
+		else if (CmboxviewApp::wndFocus == m_browser2)
+		{
+			LRESULT lres = m_browser->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			TRACE(L"PostMessage to Browser2\n");
+			int deb = 0;
+		}
+		else
+		{
+			CWnd* old = GetFocus();
+			LRESULT lres = pFrame->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			TRACE(L"PostMessage to Frame\n");
+		}
+	}
+	return CmboxviewApp::wndFocus;
 }

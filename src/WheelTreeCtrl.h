@@ -63,6 +63,7 @@ public:
 protected:
 	//{{AFX_MSG(CWheelTreeCtrl)
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()

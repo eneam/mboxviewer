@@ -1491,7 +1491,8 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 #if 0
 			if ((s_mails.GetCount() == 50) && (exceptionDone == FALSE))
 			{
-				//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
+				int i = 0; 
+				//int Ex = rand() / i;   // This will throw a SE (divide by zero).
 				//char* szTemp = (char*)1;
 				//strcpy_s(szTemp, 1000, "A");
 				*badPtr = 'a';
@@ -1979,7 +1980,7 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 #if 0
 				//if (s_mails.GetCount() == 200)
 				{
-					//int i = 0;  intEx = rand() / i;   // This will throw a SE (divide by zero).
+					//int i = 0;  int Ex = rand() / i;   // This will throw a SE (divide by zero).
 					char* szTemp = (char*)1;
 					//strcpy_s(szTemp, 1000, "A");
 					//*badPtr = 'a';

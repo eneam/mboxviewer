@@ -214,7 +214,8 @@ public:
 public:
 	CString m_format;
 	void ResetSize();
-	void SetSetFocus();
+	CWnd * SetSetFocus();
+	CWheelListCtrl* GetListCtrl() { return &m_list; }
 // Operations
 public:
 
@@ -632,7 +633,7 @@ public:
 
 	//static BOOL loadImage(BYTE* pData, size_t nSize, CStringW &extensionW, CStringA &extension);
 	static int DetermineListFileName(CString &fileName, CString &listFileName);
-	void SetListFocus();
+	CWnd* SetListFocus();
 
 	static BOOL SaveMails(LPCWSTR cache, BOOL mainThread, CString& errorText);
 
@@ -670,7 +671,8 @@ public:
 	afx_msg void OnEditFindadvanced();
 	afx_msg void OnUpdateEditFindadvanced(CCmdUI *pCmdUI);
 	//virtual BOOL PreTranslateMessage(MSG* pMsg);
-	//afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg LRESULT OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg LRESULT OnCmdParam_AttachmentHint(WPARAM wParam, LPARAM lParam);

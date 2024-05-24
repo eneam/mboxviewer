@@ -512,6 +512,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_WM_CLOSE()
 	ON_MESSAGE(WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE, &NListView::OnCmdParam_AttachmentHint)
 	//ON_NOTIFY(LVN_GETINFOTIP, IDC_LIST, OnTvnGetInfoTip)
+	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NListView::OnCmdParam_OnSwitchWindow)
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -2240,6 +2241,7 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 //	m_headerCtrl.PostMessage(WM_CANCELMODE);
 	NMLVKEYDOWN* pLVKeyDow = (NMLVKEYDOWN*)pNMHDR;
 	*pResult = 0;
+
 	int whichSel;
 	m_bApplyColorStyle = TRUE;
 	switch( pLVKeyDow->wVKey ) {
@@ -2296,6 +2298,7 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	break;
+
 	case 'A':
 	case 'a':
 	{
@@ -2318,6 +2321,48 @@ void NListView::OnKeydown(NMHDR* pNMHDR, LRESULT* pResult)
 		int deb = 1;
 	}
 	break;
+
+	case 'N':
+	case 'n':
+	{
+		SHORT ctrlState = GetAsyncKeyState(VK_CONTROL);
+		SHORT AState = GetAsyncKeyState('N');
+		BOOL CtrlKeyDown = FALSE;
+		BOOL AKeyDown = FALSE;
+		if ((ctrlState & 0x8000) != 0) {
+			CtrlKeyDown = TRUE;
+		}
+
+		if ((AState & 0x8000) != 0) {
+			AKeyDown = TRUE;
+		}
+
+		if (AKeyDown && CtrlKeyDown)
+		{
+			CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+			if (pFrame)
+			{
+				NMsgView* m_pMsgView = pFrame->DetMsgView();
+				if (m_pMsgView)
+				{
+					LRESULT lres = m_pMsgView->m_browser.PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+					int deb = 1;
+				}
+			}
+		}
+		int deb = 1;
+	}
+	break;
+
+	default:
+	{
+		SHORT ctrlState = GetAsyncKeyState(VK_CONTROL);
+		BOOL CtrlKeyDown = FALSE;
+		if ((ctrlState & 0x8000) != 0) {
+			CtrlKeyDown = TRUE;
+		}
+		int deb = 1;
+	}
 
 /*	case VK_BACK:
 	case VK_DELETE:
@@ -9704,7 +9749,6 @@ MailIndexList * NListView::PopulateSelectedMailsList()
 BOOL NListView::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: Add your specialized code here and/or call the base class
-
 	//if (pMsg->message == WM_KEYDOWN)
 	{
 		//::SetFocus(GetSafeHwnd());
@@ -9712,6 +9756,9 @@ BOOL NListView::PreTranslateMessage(MSG* pMsg)
 
 	return CWnd::PreTranslateMessage(pMsg);
 }
+#endif
+
+#if 1
 
 void NListView::OnSetFocus(CWnd* pOldWnd)
 {
@@ -9723,6 +9770,7 @@ void NListView::OnSetFocus(CWnd* pOldWnd)
 }
 
 #endif
+
 void NListView::OnMouseHover(UINT nFlags, CPoint point)   // FIXME review why it was enabled
 {
 	// TODO: Add your message handler code here and/or call default
@@ -9731,10 +9779,12 @@ void NListView::OnMouseHover(UINT nFlags, CPoint point)   // FIXME review why it
 }
 
 
-void NListView::SetSetFocus()
+CWnd * NListView::SetSetFocus()
 {
 	SetFocus();
 	m_list.SetFocus();
+
+	return &m_list;
 }
 
 int NListView::DeleteAllHtmAndPDFFiles(CString &targetPath)
@@ -15774,9 +15824,10 @@ int NListView::DetermineListFileName(CString &fileName, CString &listFileName)
 	return 1;
 }
 
-void NListView::SetListFocus()
+CWnd * NListView::SetListFocus()
 {
 	m_list.SetFocus();
+	return &m_list;
 }
 
 void AttachmentMgr::Clear()
@@ -18912,4 +18963,12 @@ BOOL NListView::ConfigureExportOfMails()
 		return TRUE;
 	}
 	return FALSE;
+}
+
+LRESULT NListView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
+{
+	TRACE(L"NListView::OnCmdParam_OnSwitchWindow\n");
+	CWnd *wnd = CMainFrame::SetWindowFocus(&m_list);
+	
+	return 0;
 }

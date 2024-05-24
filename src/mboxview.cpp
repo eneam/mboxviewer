@@ -80,6 +80,8 @@ CString CmboxviewApp::m_processPath = L"";
 CString CmboxviewApp::m_startupPath = L"";
 CString CmboxviewApp::m_currentPath = L"";
 
+CWnd* CmboxviewApp::wndFocus = 0;
+
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
 	// Do something, for example generate error report
@@ -1622,7 +1624,6 @@ BOOL CmboxviewApp::InitInstance()
 	}
 	return TRUE;
 }
-
 
 void CAboutDlg::OnStnClickedDonation()
 {

@@ -58,6 +58,7 @@ BEGIN_MESSAGE_MAP(CWheelTreeCtrl, CTreeCtrl)
 	//}}AFX_MSG_MAP
 	//ON_NOTIFY_REFLECT(NM_RCLICK, &CWheelTreeCtrl::OnNMRClick)
 	ON_WM_ERASEBKGND()
+	ON_WM_SETFOCUS()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,3 +95,17 @@ BOOL CWheelTreeCtrl::OnEraseBkgnd(CDC* pDC)
 
 	return FALSE;
 }
+
+#if 1
+
+void CWheelTreeCtrl::OnSetFocus(CWnd* pOldWnd)
+{
+	TRACE(L"CWheelTreeCtrl::OnSetFocus\n");
+
+	CTreeCtrl::OnSetFocus(pOldWnd);
+	CmboxviewApp::wndFocus = this;
+
+	int deb = 1;
+	// TODO: Add your message handler code here
+}
+#endif

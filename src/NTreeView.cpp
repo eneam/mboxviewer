@@ -183,6 +183,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_MESSAGE(WM_CMD_PARAM_GENERAL_HINT_MESSAGE, OnCmdParam_GeneralHint)
 	ON_NOTIFY(TVN_GETINFOTIP, IDC_TREE, OnTvnGetInfoTip)
 	ON_MESSAGE(WM_CMD_PARAM_RESET_TREE_POS_MESSAGE, &NTreeView::OnCmdParam_ResetTreePos)
+	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NTreeView::OnCmdParam_OnSwitchWindow)
 END_MESSAGE_MAP()
 
 
@@ -1932,6 +1933,11 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		TRACE(L"OnSelchanged_Folder: AssertNTreeView\n");
 		BOOL retAssert = AssertNTreeView();
+
+		if (pListView)
+		{
+			LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+		}
 		return;
 	}  // end of if ((linfoNew->m_nodeType == LabelInfo::MailFolder) || (linfoNew->m_nodeType == LabelInfo::MailSubFolder))
 
@@ -1976,6 +1982,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			if (lPath.IsEmpty())
 				MboxMail::assert_unexpected();
 
+			if (pListView)
+			{
+				LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			}
 			return;
 		}
 
@@ -2046,6 +2056,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			if (lPath.IsEmpty())
 				MboxMail::assert_unexpected();
 
+			if (pListView)
+			{
+				LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			}
 			return;
 		}
 
@@ -2088,6 +2102,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		TRACE(L"OnSelchanged_Label: AssertNTreeView\n");
 		BOOL retAssert = AssertNTreeView();
 
+		if (pListView)
+		{
+			LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+		}
 		return;
 	}  // end of if (linfoNew && (linfoNew->m_nodeType == LabelInfo::MailLabel)) // label
 
@@ -2127,6 +2145,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			if (lPath.IsEmpty())
 				MboxMail::assert_unexpected();
 
+			if (pListView)
+			{
+				LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+			}
 			return;
 		}
 	}
@@ -2209,6 +2231,11 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	TRACE(L"OnSelchanged_MailArchive: AssertNTreeView\n");
 	BOOL retAssert = AssertNTreeView();
+
+	if (pListView)
+	{
+		LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+	}
 }
 
 void NTreeView::ForceParseMailFile(HTREEITEM hItem)
@@ -2427,6 +2454,12 @@ void NTreeView::OpenLastSelection(MailSelectionInfo* mailSelection)
 	if (hFolder)
 		folderName = m_tree.GetItemText(hFolder);
 #endif
+
+	if (pListView)
+	{
+		LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+		int deb = 0;
+	}
 
 	int deb = 1;
 }
@@ -9901,4 +9934,11 @@ void NTreeView::SetupCacheFolderList(CArray<CString>& cacheFolderList)
 	cacheFolderList.Add(L"ListCache");
 	cacheFolderList.Add(L"MergeCache");
 	cacheFolderList.Add(L"LabelCache");  // keep as the last
+}
+
+LRESULT NTreeView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
+{
+	CWheelTreeCtrl	*tree = &m_tree;
+	CMainFrame::SetWindowFocus(tree);
+	return 0;
 }

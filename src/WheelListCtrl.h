@@ -77,8 +77,9 @@ public:
 
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
-	//afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
+	afx_msg LRESULT OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam);
 };
 
 /////////////////////////////////////////////////////////////////////////////

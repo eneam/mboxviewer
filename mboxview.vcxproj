@@ -1041,18 +1041,18 @@
     <ClInclude Include="Thirdparty\jsoncpp\json\json.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="CHANGE_LOG.md" />
+    <None Include="README.md" />
     <None Include="res\imview.ico" />
     <None Include="res\mboxview.ico" />
     <None Include="res\mboxview.rc2" />
     <None Include="res\Toolbar.bmp" />
     <None Include="res\treelist256.bmp" />
-    <None Include="ReadMe.markdown" />
     <None Include="src\xptheme.xml" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="HELP.txt" />
     <Text Include="LICENSE.txt" />
-    <Text Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\bitmap1.bmp" />

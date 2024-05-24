@@ -4,6 +4,7 @@ GNU AFFERO GENERAL PUBLIC LICENSE version 3 which permits free use of the code b
 and organizations. Small portion of the source code is from Code Project site and licensed under 
 the Code Project Open License (CPOL) 1.02 which permits, as we understand, free use 
 of the that code except in a few unusual cases such as for example the immoral usage.
+MailKit open source library linked to connect to SMTP servers is licensed under MIT.
 
 The mbox viewer executable doesn't link any non-free usage library and therefore it can be 
 freely used, as we understand, by individuals and organizations.

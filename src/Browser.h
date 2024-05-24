@@ -84,6 +84,7 @@ protected:
 	afx_msg void OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL);
 	afx_msg void BeforeNavigate(LPDISPATCH, VARIANT* URL,VARIANT* Flags, VARIANT* TargetFrameName,VARIANT* PostData, VARIANT* Headers, BOOL* Cancel);
 	afx_msg void OnTimer(UINT nIDEvent);
+	afx_msg LRESULT OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 	DECLARE_EVENTSINK_MAP()

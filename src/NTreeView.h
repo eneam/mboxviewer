@@ -797,6 +797,7 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg LRESULT OnCmdParam_ResetTreePos(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

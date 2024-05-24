@@ -36,6 +36,7 @@
 #include "FileUtils.h"
 #include "HtmlUtils.h"
 #include <atlconv.h>
+#include "mboxview.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -61,6 +62,7 @@ BEGIN_MESSAGE_MAP(CBrowser, CWnd)
 	//{{AFX_MSG_MAP(CBrowser)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
+	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &CBrowser::OnCmdParam_OnSwitchWindow)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -261,4 +263,11 @@ USES_CONVERSION;
 	}
 
 	return CWnd::OnAmbientProperty(pSite, dispid, pvar);
+}
+
+LRESULT CBrowser::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
+{
+	CMainFrame::SetWindowFocus(&m_ie);
+	CmboxviewApp::wndFocus = &m_ie;
+	return 0;
 }

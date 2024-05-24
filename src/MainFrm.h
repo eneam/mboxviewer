@@ -265,6 +265,9 @@ public:
 
 	void PrintMailsToCSV(int firstMail, int lastMail, BOOL selecteMails);
 
+	static CWnd * SetWindowFocus(CWnd* wnd);
+	static CWnd* RestoreWindowFocus();
+
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringA *filePath = 0);
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename);
