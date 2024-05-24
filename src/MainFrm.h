@@ -435,6 +435,8 @@ public:
 	afx_msg void OnDevelopmentoptionsDevelo();
 	afx_msg void OnDeveloperOptionsAboutSystem();
 	afx_msg void OnFileGeneraloptions();
+	afx_msg void OnHelpShortcuts();
+	afx_msg void OnHelpChangeLog();
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -130,7 +130,9 @@ BEGIN
         MENUITEM "Mboxview Help",               ID_HELP_MBOXVIEWHELP
         MENUITEM "&About mboxview...",          ID_APP_ABOUT
         MENUITEM "User Guide",                  ID_HELP_USERGUIDE
-        MENUITEM "Change History",              ID_HELP_README
+        MENUITEM "Readme",                      ID_HELP_README
+        MENUITEM "Change Log",                  ID_HELP_CHANGE_LOG
+        MENUITEM "Shortcuts",                   ID_HELP_SHORTCUTS
         MENUITEM "License",                     ID_HELP_LICENSE
         MENUITEM "Donate",                      ID_HELP_DONATE
     END
@@ -1316,7 +1318,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "mboxview 1.0.3.40 Unicode"
+    IDR_MAINFRAME           "mboxview 1.0.3.42 Unicode"
     IDS_SELECT_FOLDER       "Select folder"
 END
 

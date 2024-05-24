@@ -44,23 +44,23 @@ License
 Mbox viewer is a free software. Most of it is licensed under AGPLv3.
 Small parts are licenced under CPOL 1.02.
 MailKit open source library linked to connect to SMTP servers is licensed under MIT.
-See the LICENCE.txt file included in the distribution for further details.
+See the [LICENSE.txt](LICENSE.txt) file included in the distribution for further details.
 
 NOTE: The source code and executable were released under GPLv2 on Sourceforge since the project inception as shown on the Summary page.
 There was no explicit license information for the project on the Github. However, without a license, the default copyright laws apply, 
 meaning that authors retain all rights to the source code and no one may reproduce, distribute, or create derivative works from the work.
-The LICENSE.txt file was added in v1.0.3.4 to make the licensing explicit and to synchronize the License published on Sourceforge and Github.
+The [LICENSE.txt](LICENSE.txt)  file was added in v1.0.3.4 to make the licensing explicit and to synchronize the License published on Sourceforge and Github.
 
 
 Documents
 ---------
 
-UserGuide.pdf provides comprehensive information how to install MBox Viewer, start and use supported features.
+[UserGuide.pdf](UserGuide.pdf) provides comprehensive information how to install MBox Viewer, start and use supported features.
 
 Videos
 ------
 
-Open [Introduction to MBox Viewer](https://www.youtube.com/watch?v=qrjjR9Bvz8k) link to view "Introduction to MBox Viewer" video. It is somewhat outdated but it covers basics.
+Refer to [Introduction to MBox Viewer](https://www.youtube.com/watch?v=qrjjR9Bvz8k) video (somewhat outdated) for introduction.
 
 
 Installation
@@ -73,16 +73,31 @@ The mbox-viewer.exe-v1.0.3.XX subfolder will contain two executable files mboxvi
 Running
 --------
 
-Open created mbox-viewer.exe-v1.0.3.XX subfolder. Double left click on the mboxview.exe or mboxview64.exe file to start MBox Viewer.
+Open created mbox-viewer.exe-v1.0.3.XX subfolder. Double left click on the mboxview.exe or mboxview64.exe file to start MBox Viewer. 
+You will be asked to configure folder for all temporary files created by MBox Viewer.
 
-Refer to provided UserGuide.pdf how to run MBox Viewer from command line.
-Refer to provided link to "Introduction to MBox Viewer" video for basic information on hoe to run MBox Viewer.
+On the main top tool bar, select the `File` option to open the drop menu and then select the `Select folder...` option. 
+Browse to the folder containing one or more mbox and/or eml mail archive files and select it. All valid mail archive files will appear in the Mail Archive Tree window.
+
+Left click on one of the archive files to load all mails within that archive.  Progress bar will appear and automatically close after the selected archive is fully processed. 
+Mail header information of each email will appear in the Summary window. 
+Note that parsing of very large archive file may take some time since the mail archives are text files and every character has to be examine one by one.  
+However, subsequent loading of mails is done from the index file created by the mboxview during the initial parsing of the archive file and is much faster.
+The created index file contains content meta data of each mail in the archive file. i.e. the mail header information and the position of each mail within the mail file for quick access to the mail message/body. 
+The index files have the .mboxview extension.
+	   
+Left Click on one of the mails in the Summary window to show the Message/Body of that email in the Message window.
+The mail retrieval state, total number of mails in the archive and the position of the selected mail within the archive is shown on the status bar.
+	   
+Refer to [Introduction to MBox Viewer](https://www.youtube.com/watch?v=qrjjR9Bvz8k) video for basic information on how to run MBox Viewer.
+
+Refer to provided [UserGuide.pdf](UserGuide.pdf)  how to run MBox Viewer from command line.
 
 
 Changes
 -------
 
-See CHANGE_LOG.md file.
+See [CHANGE_LOG.md](CHANGE_LOG.md) file.
 
 Building
 --------

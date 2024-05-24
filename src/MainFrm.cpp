@@ -279,6 +279,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_DEVELO, &CMainFrame::OnDevelopmentoptionsDevelo)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_ABOUTSYSTEM, &CMainFrame::OnDeveloperOptionsAboutSystem)
 	ON_COMMAND(ID_FILE_GENERALOPTIONS, &CMainFrame::OnFileGeneraloptions)
+	ON_COMMAND(ID_HELP_SHORTCUTS, &CMainFrame::OnHelpShortcuts)
+	ON_COMMAND(ID_HELP_CHANGE_LOG, &CMainFrame::OnHelpChangeLog)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5014,7 +5016,7 @@ void CMainFrame::OnHelpReadme()
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\CHANGE_LOG.md";
+	CString filePath = processDir + "\\README.md.txt";
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -5023,7 +5025,7 @@ void CMainFrame::OnHelpReadme()
 	else
 	{
 		CString txt;
-		txt.Format(L"Change History file \"%s\" doesn't exist", filePath);
+		txt.Format(L"README file \"%s\" doesn't exist", filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5844,4 +5846,55 @@ CWnd* CMainFrame::RestoreWindowFocus()
 		}
 	}
 	return CmboxviewApp::wndFocus;
+}
+
+void CMainFrame::OnHelpShortcuts()
+{
+	// TODO: Add your command handler code here
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\ShortcutsSummary.pdf";
+
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format(L"SHORTCUTS file \"%s\" doesn't exist", filePath);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
+}
+
+
+void CMainFrame::OnHelpChangeLog()
+{
+	// TODO: Add your command handler code here
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+
+	CString processDir;
+	FileUtils::CPathGetPath(processPath, processDir);
+	CString filePath = processDir + "\\CHANGE_LOG.md.txt";
+
+	if (FileUtils::PathFileExist(filePath))
+	{
+		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else
+	{
+		CString txt;
+		txt.Format(L"CHANGE_LOG file \"%s\" doesn't exist", filePath);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+	}
 }
