@@ -911,8 +911,9 @@ namespace ForwardEmlFile
                     , CancellationToken.None
                     , AppFileDataStore).Result;
 
-            if (credential.Token.IsExpired(SystemClock.Default))
-                credential.RefreshTokenAsync(CancellationToken.None);
+            //if (credential.Token.IsExpired(SystemClock.Default))  // use recommended credential.Token.IsStale
+            if (credential.Token.IsStale)
+                  credential.RefreshTokenAsync(CancellationToken.None);
 
             // Note: We use credential.UserId here instead of GMail account because the user *may* have chosen a
             // different GMail account when presented with the browser window during the authentication process.

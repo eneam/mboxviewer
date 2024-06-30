@@ -70,12 +70,16 @@ struct CFindDlgParams
 	BOOL m_bFindAllMailsThatDontMatch;  // find all mails that didn't match
 
 	// Run time args
+	// Following vars are not set or updated by FindDlg dialog
+	// They are to help to maintain proper state
 	BOOL m_bNeedToFindMailMinMaxTime;
 	MyCTime m_mboxMailStartDate;
 	MyCTime m_mboxMailEndDate;
+	//
 	BOOL m_needToRestoreArchiveListDateTime;
 	MyCTime m_lastStartDate;
 	MyCTime m_lastEndDate;
+	CString m_dateTimeFormat;
 
 	void SetDflts();
 	void Copy(CFindDlgParams &src);

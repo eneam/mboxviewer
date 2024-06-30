@@ -404,6 +404,9 @@ NListView::NListView() : m_list(this)
 
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"dayMonthYearFormat");
 	m_format = MboxMail::GetDateFormat(iFormat);
+	m_advancedParams.m_dateTimeFormat = MboxMail::GetPickerDateFormat(iFormat);
+	m_findParams.m_dateTimeFormat = MboxMail::GetPickerDateFormat(iFormat);
+
 	m_gmtTime = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"timeType");
 
 	CString exportEML;
@@ -4795,6 +4798,9 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	if (pMsgView->m_attachments.GetItemCount())
 		PostMsgCmdParamAttachmentHint();
 
+	if (MboxMail::nWhichMailList == IDC_FIND_LIST)
+		m_bHighlightAllSet = m_bHighlightAll;
+
 	_ASSERTE(!MboxMail::m_tmpbufBusy);
 	return 1;
 }
@@ -4949,6 +4955,8 @@ void NListView::OnEditFind()
 			}
 		}
 
+		m_bHighlightAll = m_findParams.m_bHighlightAll;
+
 		BOOL isTextUnicode = IsWindowUnicode(this->GetSafeHwnd());
 		UINT localCP = GetACP();
 		std::string str;
@@ -5078,7 +5086,6 @@ void NListView::OnEditFind()
 			}
 			else if (w >= 0)
 			{
-				m_bHighlightAllSet = m_findParams.m_bHighlightAll;
 				SelectItemFound(w);  // sets m_lastFindPos
 			}
 			else {
@@ -5553,6 +5560,16 @@ int NListView::DoFastFindAdvanced(int which, BOOL mainThreadContext, int maxSear
 		}
 	}
 
+	int messageIndx = 5;
+	if (m_advancedParams.m_bEditChecked[messageIndx])
+	{
+		m_searchString = m_advancedParams.m_string[messageIndx];
+		if (m_advancedParams.m_bCaseSensitive[messageIndx] == FALSE)
+		{
+			m_searchString.MakeLower();
+		}
+	}
+
 	CString searchText;
 	if (MboxMail::pCUPDUPData && !mainThreadContext)
 	{
@@ -5608,6 +5625,8 @@ int NListView::DoFastFindAdvanced(int which, BOOL mainThreadContext, int maxSear
 		{
 			if (m->m_timeDate >= sd && m->m_timeDate <= ed)
 				process = true;
+			else
+				int deb = 1;
 		}
 		else
 			process = true;
@@ -5833,7 +5852,6 @@ void NListView::OnEditFindAgain()
 	}
 	if (w >= 0)
 	{
-		m_bHighlightAllSet = m_findParams.m_bHighlightAll;
 		SelectItemFound(w); // sets m_lastFindPos
 	}
 	else
@@ -7825,8 +7843,6 @@ void NListView::EditFindAdvanced(MboxMail *m)
 		PrepopulateAdvancedSearchParams(m);
 	}
 
-	dlg.m_params.Copy(m_advancedParams);
-
 	// The m_lastStartDate and m_lastEndDate are shared across Find and Advanced Find
 	// Should eventually make them independed
 	// MyCTime m_lastStartDate;
@@ -7840,8 +7856,11 @@ void NListView::EditFindAdvanced(MboxMail *m)
 		m_advancedParams.m_bNeedToFindMailMinMaxTime = FALSE;
 	}
 
-	if (MboxMail::nWhichMailList != IDC_ARCHIVE_LIST)
+	// m_advancedParams.m_mboxMailStartDate, m_advancedParams.m_mboxMailEndDate are already determined
+	if (MboxMail::nWhichMailList != IDC_ARCHIVE_LIST)   // All Mails are in IDC_ARCHIVE_LIST, otherwise they are in Find or User Selected
 	{
+		// we need to update m_advancedParams.m_lastStartDate, m_advancedParams.m_lastEndDate
+		// 
 		FindMinMaxTime(m_advancedParams.m_lastStartDate, m_advancedParams.m_lastEndDate);
 		m_advancedParams.m_needToRestoreArchiveListDateTime = TRUE;
 	}
@@ -7852,17 +7871,21 @@ void NListView::EditFindAdvanced(MboxMail *m)
 		m_advancedParams.m_needToRestoreArchiveListDateTime = FALSE;
 	}
 
-	BOOL retDT = MyCTimeToOleTime(m_advancedParams.m_lastStartDate, dlg.m_params.m_startDate);
-	retDT = MyCTimeToOleTime(m_advancedParams.m_lastEndDate, dlg.m_params.m_endDate);
+	BOOL retDT = MyCTimeToOleTime(m_advancedParams.m_lastStartDate, m_advancedParams.m_startDate);
+	retDT = MyCTimeToOleTime(m_advancedParams.m_lastEndDate, m_advancedParams.m_endDate);
+
+	dlg.m_params.Copy(m_advancedParams);
 
 	if (dlg.DoModal() == IDOK) 
 	{
 		m_SearchType = 1;  // Advanced
 
-		retDT = NListView::OleTime2MyCTime(dlg.m_params.m_startDate, m_advancedParams.m_lastStartDate, FALSE);
-		retDT = NListView::OleTime2MyCTime(dlg.m_params.m_endDate, m_advancedParams.m_lastEndDate, TRUE);
-
 		m_advancedParams.Copy(dlg.m_params);
+
+		// mails betwenn m_advancedParams.m_lastStartDate and m_advancedParams.m_lastEndDate will be processed
+		retDT = NListView::OleTime2MyCTime(m_advancedParams.m_startDate, m_advancedParams.m_lastStartDate, FALSE);
+		retDT = NListView::OleTime2MyCTime(m_advancedParams.m_endDate, m_advancedParams.m_lastEndDate, TRUE);
+
 		m_lastFindPos = -1;
 
 		// To optimize content/message and/or attachments search performance
@@ -7879,6 +7902,8 @@ void NListView::EditFindAdvanced(MboxMail *m)
 				RedrawMails();
 			}
 		}
+
+		m_bHighlightAll = m_advancedParams.m_bHighlightAll;
 
 		BOOL isTextUnicode = IsWindowUnicode(this->GetSafeHwnd());
 		UINT localCP = GetACP();

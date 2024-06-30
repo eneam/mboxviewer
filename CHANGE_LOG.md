@@ -2,6 +2,13 @@
 Changes
 -------
 
+v 1.0.3.43
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added Find Advanced option to highligt search string in Message for all mails matched.;
+ - Fixed search by date range.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.42
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

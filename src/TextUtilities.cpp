@@ -140,11 +140,14 @@ int TextUtilities::StrSearch(unsigned char* srcText, int n, UINT textCP, unsigne
 			NORM_FORM form = NormalizationC;
 			if (IsNormalizedString(form, (LPCWSTR)m_strW, m_strW.GetLength()))
 			{
-				TRACE(L"Already normalized in this form\n");
+				//TRACE(L"Already normalized in form C\n");
 				int deb = 1;
 			}
 			else
+			{
+				TRACE(L"Text not normalized in form C !!!\n");
 				int deb = 1;
+			}
 #else
 			int deb = 1;
 #endif
@@ -185,7 +188,7 @@ int TextUtilities::StrSearch(unsigned char* srcText, int n, UINT textCP, unsigne
 		int deb = 1;
 	}
 
-	if (n < 1024)  // 256 selected without any investigation to help to select the optimal length
+	if (n < 1024)  // 1024 selected without any investigation to help to select the optimal length
 	{
 		char* found = 0;
 		if (bCaseSens)
@@ -233,11 +236,14 @@ int TextUtilities::StrSearchW(unsigned char* srcText, int n, UINT textCP, unsign
 			NORM_FORM form = NormalizationC;
 			if (IsNormalizedString(form, (LPCWSTR)m_strW, m_strW.GetLength()))
 			{
-				TRACE(L"Already normalized in this form\n");
+				//TRACE(L"Already normalized in form C\n");
 				int deb = 1;
 			}
 			else
+			{
+				TRACE(L"Text not normalized in form C  !!!!\n");
 				int deb = 1;
+			}
 #else
 			int deb = 1;
 #endif

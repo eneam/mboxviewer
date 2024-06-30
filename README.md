@@ -102,6 +102,10 @@ See [CHANGE_LOG.md](CHANGE_LOG.md) file.
 Building
 --------
 
-Pending
+MBox Viewer project executables are built under VS 2022. Project contains two solution files:
+
+**mboxview.sln** - this will build Release and Debug versions of mboxview.exe and mboxview64.exe executables
+
+**ForwardEmlFile/ForwardEmlFile.sln** -  this will build  Release and Debug versions of ForwardEmlFile.exe
 
 

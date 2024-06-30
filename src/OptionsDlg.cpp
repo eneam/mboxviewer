@@ -124,6 +124,7 @@ BOOL COptionsDlg::OnInitDialog()
 	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
 
 	m_format = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"dayMonthYearFormat");
+
 	DWORD barDelay = 0;
 	BOOL retval;
 	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"progressBarDelay", barDelay))

@@ -756,6 +756,7 @@ public:
 	static BOOL ParseTemplateFormat(CString &templateFormat, CArray<CString> &labelArray);
 	static BOOL TemplateFormatHasLabel(CString &label, CArray<CString> &labelArray);
 	//
+	static CString GetPickerDateFormat(int i);
 	static CString GetDateFormat(int i);
 	static int RemoveDuplicateMails(MailArray &s_mails_array, BOOL putDuplicatesOnFindArray);
 	static int LinkDuplicateMails(MailArray &s_mails_array);

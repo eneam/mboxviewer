@@ -56,12 +56,13 @@ const wchar_t  *ruleText[] = {
 	L"(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"
 };
 
-
 CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CFindAdvancedDlg::IDD, pParent)
 
 {
 	//{{AFX_DATA_INIT(CFindAdvancedDlg)
+
+	m_params.SetDflts();
 
 	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
 	m_checkedColor = RGB(255, 255, 0);
@@ -71,7 +72,6 @@ CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 
 	//}}AFX_DATA_INIT
 }
-
 
 void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -129,13 +129,14 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 
 	DDX_Check(pDX, IDC_CHECK_NEGATE_FIND_CRITERIA, m_params.m_bFindAllMailsThatDontMatch);
 
+	DDX_Check(pDX, IDC_HIGHLIGHT_ALL, m_params.m_bHighlightAll);
+
 	DDX_Check(pDX, IDC_FILTERDATES, m_params.m_filterDates);
 	if (pDX->m_bSaveAndValidate) {
 		GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
 		GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
 	}
 }
-
 
 BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	//{{AFX_MSG_MAP(CFindAdvancedDlg)
@@ -216,7 +217,6 @@ void CFindAdvancedDlg::OnOK()
 	//TRACE(L"Extended: %u %u\n", m_string.GetAt(0), m_string.GetAt(1));	
 	CDialog::OnOK();
 }
-
 
 BOOL CFindAdvancedDlg::OnInitDialog()
 {
@@ -304,6 +304,34 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 				m_brBkMailsDontMatch.CreateSolidBrush(m_checkedColor);
 			}
 		}
+
+		p = GetDlgItem(IDC_DATETIMEPICKER1);
+		if (p)
+		{
+			BOOL ret = ((CDateTimeCtrl*)p)->SetFormat(m_params.m_dateTimeFormat);
+			int deb = 1;
+		}
+		p = GetDlgItem(IDC_DATETIMEPICKER2);
+		if (p)
+		{
+			BOOL ret = ((CDateTimeCtrl*)p)->SetFormat(m_params.m_dateTimeFormat);
+			int deb = 1;
+		}
+
+		p = GetDlgItem(IDC_FIND_ADV_DATE_FMT);
+		if (p)
+		{
+			CString dateFmt = L"type new value.  Date format: ";
+			if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
+				dateFmt.Append(L"month/day/year");
+			else if (m_params.m_dateTimeFormat.Compare(L"dd/MM/yyyy") == 0)
+				dateFmt.Append(L"day/month/year");
+			else if (m_params.m_dateTimeFormat.Compare(L"yyyy/MM/dd") == 0)
+				dateFmt.Append(L"year/month/day");
+
+			(p)->SetWindowText(dateFmt);
+			int deb = 1;
+		}
 	}
 
 	UpdateData(TRUE);
@@ -311,7 +339,6 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
-
 
 void CFindAdvancedDlg::OnBnClickedFilterDates()
 {
@@ -377,7 +404,6 @@ void CFindAdvancedDlg::OnBnClickedEditSetAllWhole()
 		((CButton*)p)->SetCheck(nFlags);
 	}
 }
-
 
 void CFindAdvancedDlg::OnBnClickedEditSetAllCase()
 {
@@ -452,8 +478,12 @@ void CFindAdvancedParams::SetDflts()
 	m_plainText = 1;
 	m_htmlText = 0;
 	m_htmlTextOnlyIfNoPlainText = 1;
-
 	m_bFindAllMailsThatDontMatch = FALSE;
+	m_bHighlightAll = FALSE;
+
+	// Following vars are not set or updated by FindDlg dialog
+	// They are to help to maintain proper state
+	ResetFilterDates();
 }
 
 void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
@@ -492,15 +522,17 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_htmlTextOnlyIfNoPlainText = src.m_htmlTextOnlyIfNoPlainText;
 
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
+	m_bHighlightAll = src.m_bHighlightAll;
 
+	// FIXMEFIXME  CopyFilterDates() ??
 	m_lastStartDate = src.m_lastStartDate;
 	m_lastEndDate = src.m_lastEndDate;
 	m_mboxMailStartDate = src.m_mboxMailStartDate;
 	m_mboxMailEndDate = src.m_mboxMailEndDate;
 	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
 	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
+	m_dateTimeFormat = src.m_dateTimeFormat;
 };
-
 
 void CFindAdvancedDlg::OnBnClickedEditReset()
 {
@@ -530,7 +562,6 @@ void CFindAdvancedDlg::OnBnClickedEditReset()
 
 	UpdateData(FALSE);
 }
-
 
 void CFindAdvancedDlg::OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -651,7 +682,6 @@ void CFindAdvancedDlg::SetRuleInfoText()
 	}
 }
 
-
 void CFindAdvancedDlg::OnBnClickedCheckNegateFindCriteria()
 {
 	// TODO: Add your control notification handler code here
@@ -733,4 +763,5 @@ void CFindAdvancedParams::ResetFilterDates()
 	m_mboxMailEndDate = (time_t)-1;
 	m_needToRestoreArchiveListDateTime = FALSE;
 	m_bNeedToFindMailMinMaxTime = TRUE;
+	//m_dateTimeFormat = L"MM/dd/yyyy";
 }

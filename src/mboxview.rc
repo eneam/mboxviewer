@@ -196,7 +196,7 @@ BEGIN
     EDITTEXT        IDC_EDIT_MAIL_HDR,206,69,52,50,ES_MULTILINE | WS_VSCROLL | WS_HSCROLL,WS_EX_CLIENTEDGE
 END
 
-IDD_FIND DIALOGEX 0, 0, 233, 241
+IDD_FIND DIALOGEX 0, 0, 233, 258
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -209,29 +209,30 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,43,39,129,10
     DEFPUSHBUTTON   "OK",IDOK,176,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,176,24,50,14
-    GROUPBOX        "Search scope",IDC_STATIC,7,56,219,154
+    GROUPBOX        "Search scope",IDC_STATIC,7,105,219,118
     CONTROL         "From",IDC_CHECK_FROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,74,27,10
     CONTROL         "To",IDC_CHECK_TO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,49,74,21,10
     CONTROL         "Subject",IDC_CHECK_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,78,74,36,10
     CONTROL         "Message",IDC_CHECK_CONTENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,120,74,42,10
     CONTROL         "Attachment Text",IDC_CHECK_ATTACHMENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,92,68,10
     CONTROL         "Filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,116,52,10
-    LTEXT           "start date:",IDC_STATIC,61,157,32,8
-    LTEXT           "end date:",IDC_STATIC,62,176,31,8
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,173,100,15
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,154,100,15
-    GROUPBOX        "Search Direction",IDC_STATIC,7,211,219,20
-    CONTROL         "previous",IDC_SEARCH_PREV,"Button",BS_AUTORADIOBUTTON | WS_GROUP,97,218,43,10
-    CONTROL         "next",IDC_SEARCH_NEXT,"Button",BS_AUTORADIOBUTTON,165,218,29,10
-    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,196,77,10
+    LTEXT           "start date:",IDC_FIND_START_DATE,61,170,32,8
+    LTEXT           "end date:",IDC_FIND_END_DATE,62,189,31,8
+    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,186,100,15
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,167,100,15
+    GROUPBOX        "Search Direction",IDC_STATIC,7,227,219,20
+    CONTROL         "previous",IDC_SEARCH_PREV,"Button",BS_AUTORADIOBUTTON | WS_GROUP,97,234,43,10
+    CONTROL         "next",IDC_SEARCH_NEXT,"Button",BS_AUTORADIOBUTTON,165,234,29,10
+    CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,209,91,10
     CONTROL         "CC",IDC_CHECK_CC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,74,19,10
     CONTROL         "BCC",IDC_CHECK_BCC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,194,74,25,10
     CONTROL         "Attachment Name",IDC_CHECK_ATTACHMENT_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,86,92,73,10
     CONTROL         "Find mails that don't match",IDC_CHECK_NEGATE_SEARCH_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,196,99,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,119,209,99,10
     LTEXT           "To set new dates, open calendar by selecting down arrow, or",IDC_STATIC,15,130,211,8
     LTEXT           "Left click on month, day or year field and type new value",IDC_STATIC,16,142,210,8
     PUSHBUTTON      "Help",IDC_BUTTON1,176,41,50,14
+    LTEXT           "Date format: ",IDC_FIND_DATE_FMT,16,155,199,8
 END
 
 IDD_OPTIONS DIALOGEX 0, 0, 167, 281
@@ -381,7 +382,7 @@ BEGIN
     CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,330,100,15
     LTEXT           "end date:",IDC_STATIC,56,333,38,8
     CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,77,10
-    CONTROL         "Find all occurences",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,76,10
+    CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,92,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,176,35,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,176,35,10
     GROUPBOX        "",IDC_STATIC,7,206,373,42
@@ -402,20 +403,22 @@ BEGIN
     CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,281,153,19,10
     LTEXT           "Name",IDC_STATIC,35,161,34,8
     CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,192,111,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,125,353,111,10
     LTEXT           "Text",IDC_STATIC,34,142,16,8
-    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,31,286,349,8
-    LTEXT           "type new value",IDC_STATIC,20,297,100,8
+    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,21,286,349,8
+    LTEXT           "type new value",IDC_FIND_ADV_DATE_FMT,22,297,346,8
     PUSHBUTTON      "Configure Filter Rule",IDC_BUTTON1,14,214,83,14
     LTEXT           "",IDC_RULE_NUMBER_TEXT,110,219,251,8
     LTEXT           "",IDC_RULE_TEXT,14,233,366,8
     CONTROL         "Match TO field only if single recipient on the list",IDC_SINGLE_TO,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,150,192,167,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,192,167,10
     CONTROL         "plain",IDC_PLAIN_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,254,31,10
     CONTROL         "html",IDC_HTML_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,254,29,10
     LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8
     CONTROL         "html if no plain text",IDC_HTML_TEXT_IF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,254,77,10
     PUSHBUTTON      "Help",IDC_BUTTON_HELP,299,251,50,14
+    CONTROL         "Highlight all occurences in Message",IDC_HIGHLIGHT_ALL,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,213,192,144,10
 END
 
 IDD_FIND_IN_MAIL DIALOGEX 0, 0, 309, 45
@@ -840,7 +843,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,42
+ FILEVERSION 1,0,3,43
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -857,7 +860,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.42"
+            VALUE "FileVersion", "1.0.3.43"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -901,7 +904,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 226
         TOPMARGIN, 7
-        BOTTOMMARGIN, 234
+        BOTTOMMARGIN, 251
     END
 
     IDD_OPTIONS, DIALOG

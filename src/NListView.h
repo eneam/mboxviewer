@@ -342,6 +342,7 @@ public:
 
 	// m_bHighlightAllSet is set when Highlight option is selected in Find to highlight all search string occurences 
 	// when page is loaded , see CBrowser::OnDocumentCompleteExplorer
+	BOOL m_bHighlightAll;
 	BOOL m_bHighlightAllSet;    
 	// Used by Search Text option
 	BOOL	m_bCaseSens;

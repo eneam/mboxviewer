@@ -709,6 +709,8 @@ void CMainFrame::OnFileOptions()
 		CString format = MboxMail::GetDateFormat(d.m_format);
 		if (pListView->m_format.Compare(format) != 0) {
 			pListView->m_format = MboxMail::GetDateFormat(d.m_format);
+			pListView->m_advancedParams.m_dateTimeFormat = MboxMail::GetPickerDateFormat(d.m_format);
+			pListView->m_findParams.m_dateTimeFormat = MboxMail::GetPickerDateFormat(d.m_format);
 			needRedraw = true;
 		}
 
@@ -2061,6 +2063,11 @@ void CMainFrame::OnBnClickedArchiveList()
 			SetMailList(IDC_ARCHIVE_LIST);
 		}
 	}
+
+	if (pListView)
+	{
+		LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+	}
 	int deb = 1;
 }
 
@@ -2075,6 +2082,10 @@ void CMainFrame::OnBnClickedFindList()
 	if (pListView) {
 		pListView->SwitchToMailList(nID);
 	}
+	if (pListView)
+	{
+		LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+	}
 	int deb = 1;
 }
 
@@ -2088,6 +2099,10 @@ void CMainFrame::OnBnClickedEditList()
 	NListView * pListView = GetListView();
 	if (pListView) {
 		pListView->SwitchToMailList(nID);
+	}
+	if (pListView)
+	{
+		LRESULT lres = pListView->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 	}
 	int deb = 1;
 }

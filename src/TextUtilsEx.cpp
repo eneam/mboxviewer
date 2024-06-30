@@ -306,18 +306,18 @@ BOOL TextUtilsEx::WStr2Ascii(CString& strW, CStringA& strA, DWORD& error)
 	return ret;
 }
 
-BOOL TextUtilsEx::Ansi2WStr(CStringA &strA, CString &strW, DWORD &error)
+BOOL TextUtilsEx::Ansi2WStr(CStringA &strA, CString &strW, DWORD &error, DWORD dwFlags)
 {
 	UINT strCodePage = CP_ACP;
-	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error);
+	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error, dwFlags);
 	return ret;
 }
 
-BOOL TextUtilsEx::Ascii2Wstr(CStringA &strA, CString &strW, DWORD &error)
+BOOL TextUtilsEx::Ascii2Wstr(CStringA &strA, CString &strW, DWORD &error, DWORD dwFlags)
 {
 	UINT CP_US_ASCII = 20127;
 	UINT strCodePage = CP_US_ASCII;
-	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error);
+	BOOL ret = CodePage2WStr(&strA, strCodePage, &strW, error, dwFlags);
 	return ret;
 }
 
@@ -368,7 +368,8 @@ BOOL TextUtilsEx::Str2UTF8(const char* instr, int instrlen, UINT inCodePage, CSt
 
 BOOL TextUtilsEx::Str2CodePage(const char *str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString *result, SimpleString *workBuff, DWORD& error)
 {
-	BOOL retA2W = TextUtilsEx::CodePage2WStr(str, strlen, inCodePage, workBuff, error);
+	DWORD dwFlags = 0;
+	BOOL retA2W = TextUtilsEx::CodePage2WStr(str, strlen, inCodePage, workBuff, error, dwFlags);
 
 	const wchar_t* wbuff = (wchar_t*)workBuff->Data();
 	int wlen = workBuff->Count() / 2;
@@ -478,20 +479,38 @@ BOOL TextUtilsEx::WStr2UTF8(const wchar_t* wbuff, int wlen, SimpleString* result
 	return TextUtilsEx::WStr2CodePage(wbuff, wlen, outCodePage, result, error);
 }
 
-BOOL TextUtilsEx::CodePage2WStr(SimpleString *str, UINT strCodePage, SimpleString *wstr, DWORD &error)
+BOOL TextUtilsEx::CodePage2WStr(SimpleString *str, UINT strCodePage, SimpleString *wstr, DWORD &error, DWORD dwFlags)
 {
-	BOOL ret = CodePage2WStr(str->Data(), str->Count(), strCodePage, wstr, error);
+	BOOL ret = CodePage2WStr(str->Data(), str->Count(), strCodePage, wstr, error, dwFlags);
 	return ret;
 }
 //
-BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, SimpleString *wstr, DWORD &error)
+BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, SimpleString *wstr, DWORD &error, DWORD dwFlags)
 {
-	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error);
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error, dwFlags);
 	return ret;
 }
 
-BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, SimpleString *wstr, DWORD &error)
+BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, SimpleString *wstr, DWORD &error, DWORD dwFlags)
 {
+	/*
+	int MultiByteToWideChar(
+		[in]            UINT                              CodePage,
+		[in]            DWORD                             dwFlags,
+		[in]            _In_NLS_string_(cbMultiByte)LPCCH lpMultiByteStr,
+		[in]            int                               cbMultiByte,
+		[out, optional] LPWSTR                            lpWideCharStr,
+		[in]            int                               cchWideChar
+	);
+
+	dwFlags:
+	0 - output is in KC ??
+	MB_COMPOSITE  - output is in NormalizationD 
+	MB_ERR_INVALID_CHARS, 
+	MB_PRECOMPOSED - output is in NormalizationC 
+	MB_USEGLYPHCHARS
+
+	*/
 	error = 0;
 	if (slen == 0)
 	{
@@ -537,20 +556,38 @@ BOOL TextUtilsEx::WStr2UTF8(CString* str, CStringA* outstr, DWORD& error)
 }
 
 
-BOOL TextUtilsEx::UTF82WStr(CStringA* str, CString* wstr, DWORD& error)
+BOOL TextUtilsEx::UTF82WStr(CStringA* str, CString* wstr, DWORD& error, DWORD dwFlags)
 {
-	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), CP_UTF8, wstr, error);
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), CP_UTF8, wstr, error, dwFlags);
 	return ret;
 }
 
-BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, CString *wstr, DWORD &error)
+BOOL TextUtilsEx::CodePage2WStr(CStringA *str, UINT strCodePage, CString *wstr, DWORD &error, DWORD dwFlags)
 {
-	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error);
+	BOOL ret = CodePage2WStr((char*)(str->operator LPCSTR()), str->GetLength(), strCodePage, wstr, error, dwFlags);
 	return ret;
 }
 
-BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, CString *wstr, DWORD &error)
+BOOL TextUtilsEx::CodePage2WStr(const char *str, int slen, UINT strCodePage, CString *wstr, DWORD &error, DWORD dwFlags)
 {
+	/*
+	int MultiByteToWideChar(
+		[in]            UINT                              CodePage,
+		[in]            DWORD                             dwFlags,
+		[in]            _In_NLS_string_(cbMultiByte)LPCCH lpMultiByteStr,
+		[in]            int                               cbMultiByte,
+		[out, optional] LPWSTR                            lpWideCharStr,
+		[in]            int                               cchWideChar
+	);
+
+	dwFlags:
+	0 - output is in KC ??
+	MB_COMPOSITE  - output is in NormalizationD 
+	MB_ERR_INVALID_CHARS, 
+	MB_PRECOMPOSED - output is in NormalizationC 
+	MB_USEGLYPHCHARS
+
+	*/
 	error = 0;
 	wstr->Empty();
 	if (slen == 0)
@@ -1049,7 +1086,8 @@ BOOL TextUtilsEx::id2name(UINT codePage, CString& codePageName)
 			CString codePageNameW;
 			DWORD error = 0;
 			UINT cp = GetACP();
-			BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageNameA, cp, &codePageNameW, error);
+			DWORD dwFlags = 0;
+			BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageNameA, cp, &codePageNameW, error, dwFlags);
 			if (retA2W)
 				codePageName = codePageNameW;
 			return TRUE;
@@ -1155,7 +1193,8 @@ BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString& codePageInfo)
 	BOOL ret = TextUtilsEx::Id2LongInfoA(codePage, codePageInfoA);
 
 	DWORD error = 0;
-	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, codePage, &codePageInfo, error);
+	DWORD dwFlags = 0;
+	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, codePage, &codePageInfo, error, dwFlags);
 
 	return retA2W;
 }
@@ -1210,9 +1249,9 @@ BOOL TextUtilsEx::isNumeric(CString &str) {
 	return TRUE;
 }
 
-BOOL TextUtilsEx::Str2WStr(CStringA &str, UINT strCodePage, CString &wstr, DWORD& error)
+BOOL TextUtilsEx::Str2WStr(CStringA &str, UINT strCodePage, CString &wstr, DWORD& error, DWORD dwFlags)
 {
-	BOOL ret = CodePage2WStr(&str, strCodePage, &wstr, error);
+	BOOL ret = CodePage2WStr(&str, strCodePage, &wstr, error, dwFlags);
 	return ret;
 }
 

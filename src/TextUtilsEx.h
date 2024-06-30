@@ -52,16 +52,16 @@ public:
 	static BOOL WStr2Ansi(CString& strW, CStringA& resultA, DWORD& error);
 	static BOOL WStr2Ascii(CString& strW, CStringA& resultA, DWORD& error);
 	//
-	static BOOL CodePage2WStr(const char *str, int strlen, UINT strCodePage, SimpleString *wstr, DWORD &error);
-	static BOOL CodePage2WStr(const char* str, int strlen, UINT strCodePage, CString* wstr, DWORD& error);
-	static BOOL CodePage2WStr(SimpleString* str, UINT strCodePage, SimpleString* wstr, DWORD& error);
-	static BOOL CodePage2WStr(CStringA* str, UINT strCodePage, SimpleString* wstr, DWORD& error);
-	static BOOL CodePage2WStr(CStringA* str, UINT strCodePage, CString* wstr, DWORD& error);
+	static BOOL CodePage2WStr(const char *str, int strlen, UINT strCodePage, SimpleString *wstr, DWORD &error, DWORD dwFlags = 0);
+	static BOOL CodePage2WStr(const char* str, int strlen, UINT strCodePage, CString* wstr, DWORD& error, DWORD dwFlags = 0);
+	static BOOL CodePage2WStr(SimpleString* str, UINT strCodePage, SimpleString* wstr, DWORD& error, DWORD dwFlags = 0);
+	static BOOL CodePage2WStr(CStringA* str, UINT strCodePage, SimpleString* wstr, DWORD& error, DWORD dwFlags = 0);
+	static BOOL CodePage2WStr(CStringA* str, UINT strCodePage, CString* wstr, DWORD& error, DWORD dwFlags = 0);
 	//
-	static BOOL UTF82WStr(CStringA* str, CString* wstr, DWORD& error);
-	static BOOL Ansi2WStr(CStringA& strA, CString& strW, DWORD& error);
-	static BOOL Ascii2Wstr(CStringA& strA, CString& strW, DWORD& error);
-	static BOOL Str2WStr(CStringA& res, UINT CodePage, CString& m_strW, DWORD& error);
+	static BOOL UTF82WStr(CStringA* str, CString* wstr, DWORD& error, DWORD dwFlags = 0);
+	static BOOL Ansi2WStr(CStringA& strA, CString& strW, DWORD& error, DWORD dwFlags = 0);
+	static BOOL Ascii2Wstr(CStringA& strA, CString& strW, DWORD& error, DWORD dwFlags = 0);
+	static BOOL Str2WStr(CStringA& res, UINT CodePage, CString& m_strW, DWORD& error, DWORD dwFlags = 0);
 	//
 	// PageCode -> PageCode number
 	static BOOL Str2CodePage(const char* str, int strlen, UINT inCodePage, UINT outCodePage, SimpleString* result, SimpleString* workBuff, DWORD& error);

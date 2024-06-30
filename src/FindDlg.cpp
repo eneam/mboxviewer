@@ -49,7 +49,7 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(CFindDlg)
 	m_params.SetDflts();
-	m_params.ResetFilterDates();
+	//m_params.ResetFilterDates();
 
 	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
 	m_checkedColor = RGB(255, 255, 0);
@@ -159,6 +159,34 @@ BOOL CFindDlg::OnInitDialog()
 		}
 	}
 
+	p = GetDlgItem(IDC_DATETIMEPICKER1);
+	if (p)
+	{
+		BOOL ret = ((CDateTimeCtrl*)p)->SetFormat(m_params.m_dateTimeFormat);
+		int deb = 1;
+	}
+	p = GetDlgItem(IDC_DATETIMEPICKER2);
+	if (p)
+	{
+		BOOL ret = ((CDateTimeCtrl*)p)->SetFormat(m_params.m_dateTimeFormat);
+		int deb = 1;
+	}
+
+	p = GetDlgItem(IDC_FIND_DATE_FMT);
+	if (p)
+	{
+		CString dateFmt = L"Date format: ";
+		if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
+			dateFmt.Append(L"month/day/year");
+		else if (m_params.m_dateTimeFormat.Compare(L"dd/MM/yyyy") == 0)
+			dateFmt.Append(L"day/month/year");
+		else if (m_params.m_dateTimeFormat.Compare(L"yyyy/MM/dd") == 0)
+			dateFmt.Append(L"year/month/day");
+
+		(p)->SetWindowText(dateFmt);
+		int deb = 1;
+	}
+
 	UpdateData(FALSE);  // FIXMEFIXME
 
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -232,6 +260,12 @@ void CFindDlgParams::SetDflts()
 	m_bHighlightAll = FALSE;
 	m_bFindAll = FALSE;
 	m_bFindAllMailsThatDontMatch = FALSE;
+
+	// Following vars are not set or updated by FindDlg dialog
+	// They are to help to maintain proper state
+	// see CFindDlg::CFindDlg()
+
+	ResetFilterDates();
 }
 
 void CFindDlgParams::Copy(CFindDlgParams &src)
@@ -260,13 +294,14 @@ void CFindDlgParams::Copy(CFindDlgParams &src)
 	m_bFindAll = src.m_bFindAll;
 	m_bFindAllMailsThatDontMatch = src.m_bFindAllMailsThatDontMatch;
 
-	// FIXMEFIXME
+	// FIXMEFIXME  CopyFilterDates() ??
 	m_lastStartDate = src.m_lastStartDate;
 	m_lastEndDate = src.m_lastEndDate;
 	m_mboxMailStartDate = src.m_mboxMailStartDate;
 	m_mboxMailEndDate = src.m_mboxMailEndDate;
 	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
 	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
+	m_dateTimeFormat = src.m_dateTimeFormat;
 }
 
 void CFindDlg::OnBnClickedCheckFindAll()
@@ -372,6 +407,7 @@ void CFindDlgParams::ResetFilterDates()
 	m_mboxMailEndDate = (time_t)-1;
 	m_needToRestoreArchiveListDateTime = FALSE;
 	m_bNeedToFindMailMinMaxTime = TRUE;
+	//m_dateTimeFormat = L"MM/dd/yyyy";
 }
 
 void CFindDlg::OnBnClickedButtonHelp()

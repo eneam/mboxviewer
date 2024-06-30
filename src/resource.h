@@ -370,6 +370,12 @@
 #define IDC_APPEND_MULTIPLE_MAILS_PRINT 1311
 #define IDC_CURRENT_FOLDER_PATH         1312
 #define IDC_OPEN_LINK_IN_CURRENT_TAB    1313
+#define IDC_FIND_END_DATE               1314
+#define IDC_FIND_START_DATE             1315
+#define IDC_FIND_DATE_FMT               1316
+#define IDC_FIND_ADV_DATE_FMT           1317
+#define IDC_CHECK3                      1318
+#define IDC_HIGHLIGHT_ALL               1318
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -447,7 +453,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        242
 #define _APS_NEXT_COMMAND_VALUE         32922
-#define _APS_NEXT_CONTROL_VALUE         1314
+#define _APS_NEXT_CONTROL_VALUE         1319
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

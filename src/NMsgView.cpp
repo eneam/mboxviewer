@@ -759,6 +759,7 @@ int NMsgView::PaintHdrField(CPaintDC &dc, CRect	&r, int x_pos, int y_pos, BOOL b
 	_ASSERTE(done);
 	if (!done)
 	{
+		// I guess TextUtilsEx::Str2WStr above failed so we call ExtTextOutA instead of  ExtTextOut
 		BOOL retval = ::ExtTextOutA(hDC, xpos, ypos, ETO_CLIPPED, r, (LPCSTR)FieldText, FieldText.GetLength(), NULL);
 		CSize szText = { 0,0 };
 		BOOL ret = GetTextExtentPoint32A(hDC, (LPCSTR)FieldText, FieldText.GetLength(), &szText);

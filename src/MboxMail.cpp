@@ -649,13 +649,29 @@ CString MboxMail::GetDateFormat(int i)
 	CString format;
 	switch (i) {
 	case 1:
-		format = "%m/%d/%Y %H:%M";
+		format = L"%m/%d/%Y %H:%M";
 		break;
 	case 2:
-		format = "%Y/%m/%d %H:%M";
+		format = L"%Y/%m/%d %H:%M";
 		break;
 	default:
-		format = "%d/%m/%Y %H:%M";
+		format = L"%d/%m/%Y %H:%M";
+		break;
+	}
+	return format;
+}
+CString MboxMail::GetPickerDateFormat(int i)
+{
+	CString format;
+	switch (i) {
+	case 1:
+		format = L"MM/dd/yyyy";
+		break;
+	case 2:
+		format = L"yyyy/MM/dd";
+		break;
+	default:
+		format = L"dd/MM/yyyy";
 		break;
 	}
 	return format;
