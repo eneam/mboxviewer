@@ -5086,6 +5086,7 @@ void NListView::OnEditFind()
 			}
 			else if (w >= 0)
 			{
+				m_bHighlightAllSet = m_findParams.m_bHighlightAll;
 				SelectItemFound(w);  // sets m_lastFindPos
 			}
 			else {
@@ -5852,6 +5853,7 @@ void NListView::OnEditFindAgain()
 	}
 	if (w >= 0)
 	{
+		m_bHighlightAllSet = m_findParams.m_bHighlightAll;
 		SelectItemFound(w); // sets m_lastFindPos
 	}
 	else
