@@ -660,6 +660,8 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		OnRClickSingleSelect(pNMHDR, pResult);
 	else
 		OnRClickMultipleSelect(pNMHDR, pResult);
+
+	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 }
 
 void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
@@ -5079,6 +5081,8 @@ void NListView::OnEditFind()
 				m_bInFind = false;
 				MboxMail::ShowHint(HintConfig::FindDialogHint, GetSafeHwnd());
 
+				LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+
 				// FIXMEFIXME
 				// To compare search results with non-unicode MBox Viewer
 				// int d = MboxMail::DumpMailSummaryToFile(&MboxMail::s_mails, MboxMail::s_mails.GetCount());
@@ -5102,6 +5106,8 @@ void NListView::OnEditFind()
 	m_bInFind = false;
 
 	MboxMail::ShowHint(HintConfig::FindDialogHint, GetSafeHwnd());
+
+	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 }
 
 int NListView::CheckMatch(int i, CStringA &searchString)
@@ -8009,6 +8015,7 @@ void NListView::EditFindAdvanced(MboxMail *m)
 		}
 	}
 	m_bInFind = false;
+	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 }
 
 int NListView::MatchHeaderFldSingleAddress(int fldIndx, CStringA &hdrFld, UINT hdrFldCodePage, CFindAdvancedParams &params, int pos)
