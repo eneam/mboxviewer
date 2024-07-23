@@ -63,6 +63,7 @@ CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 	//{{AFX_DATA_INIT(CFindAdvancedDlg)
 
 	m_params.SetDflts();
+	m_params.ResetFilterDates();
 
 	m_dflBkColor = ::GetSysColor(COLOR_3DFACE);
 	m_checkedColor = RGB(255, 255, 0);
@@ -222,6 +223,16 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	InitDialogControls();
+
+	UpdateData(TRUE);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL CFindAdvancedDlg::InitDialogControls()
+{
 	if (GetSafeHwnd()) 
 	{
 		CWnd *p = GetDlgItem(IDC_CHECK_FIND_ALL);
@@ -321,7 +332,7 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 		p = GetDlgItem(IDC_FIND_ADV_DATE_FMT);
 		if (p)
 		{
-			CString dateFmt = L"type new value.  Date format: ";
+			CString dateFmt = L"type new value.           Date format: ";
 			if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
 				dateFmt.Append(L"month/day/year");
 			else if (m_params.m_dateTimeFormat.Compare(L"dd/MM/yyyy") == 0)
@@ -332,12 +343,11 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 			(p)->SetWindowText(dateFmt);
 			int deb = 1;
 		}
+
+		return TRUE;
 	}
-
-	UpdateData(TRUE);
-
-	return TRUE;  // return TRUE unless you set the focus to a control
-	// EXCEPTION: OCX Property Pages should return FALSE
+	else
+		return FALSE;
 }
 
 void CFindAdvancedDlg::OnBnClickedFilterDates()
@@ -483,7 +493,7 @@ void CFindAdvancedParams::SetDflts()
 
 	// Following vars are not set or updated by FindDlg dialog
 	// They are to help to maintain proper state
-	ResetFilterDates();
+	//ResetFilterDates();
 }
 
 void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
@@ -532,33 +542,37 @@ void CFindAdvancedParams::Copy(CFindAdvancedParams &src)
 	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
 	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
 	m_dateTimeFormat = src.m_dateTimeFormat;
+	m_last_nWhichMailList = src.m_last_nWhichMailList;
 };
+
+void CFindAdvancedParams::ResetFilterFields()
+{
+	for (int i = 0; i < FILTER_FIELDS_NUMB; i++)
+	{
+		m_string[i] = L"";
+		m_bWholeWord[i] = FALSE;
+		m_bCaseSensitive[i] = FALSE;
+		m_bEditChecked[i] = FALSE;
+
+		m_stringA[i] = "";
+	}
+
+	m_bSetAllWholeWords = FALSE;
+	m_bSetAllCaseSensitive = FALSE;
+
+	m_bHighlightAll = FALSE;
+	m_bSingleTo = FALSE;
+}
 
 void CFindAdvancedDlg::OnBnClickedEditReset()
 {
 	// TODO: Add your control notification handler code here
 
-	int m_filterNumb = m_params.m_filterNumb;
-	int m_bSingleTo = m_params.m_bSingleTo;
-	// TODO: Need to reset to initial range
-	COleDateTime startDate = m_params.m_startDate;
-	COleDateTime endDate = m_params.m_endDate;
+	UpdateData(TRUE);
 
-	m_params.SetDflts();
-	// m_params.ResetFilterDates(); do we want this reset ??    // FIXMEFIXME
+	m_params.ResetFilterFields();
 
-	m_params.m_filterNumb = m_filterNumb;
-	//m_params.m_bSingleTo = m_bSingleTo;  // FIXMEFIXME why not ??
-	m_params.m_startDate = startDate;
-	m_params.m_endDate = endDate;
-
-	m_brBkMailsDontMatch.DeleteObject();
-	m_brBkDate.DeleteObject();
-	m_brBkMailsDontMatch.CreateSolidBrush(m_dflBkColor);
-	m_brBkDate.CreateSolidBrush(m_dflBkColor);
-
-	GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
-	GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
+	InitDialogControls();
 
 	UpdateData(FALSE);
 }
@@ -763,5 +777,7 @@ void CFindAdvancedParams::ResetFilterDates()
 	m_mboxMailEndDate = (time_t)-1;
 	m_needToRestoreArchiveListDateTime = FALSE;
 	m_bNeedToFindMailMinMaxTime = TRUE;
+	m_last_nWhichMailList = 0;
+	m_filterDates = FALSE;
 	//m_dateTimeFormat = L"MM/dd/yyyy";
 }

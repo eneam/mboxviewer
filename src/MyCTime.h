@@ -112,7 +112,7 @@ public:
 	struct tm* GetGmtTm(struct tm* ptm);
 	struct tm* GetLocalTm(struct tm* ptm);
 
-	bool GetAsSystemTime(SYSTEMTIME& st);
+	bool GetAsSystemTime(SYSTEMTIME& st, BOOL gmtTime = TRUE);
 #if 0
 	bool GetAsDBTIMESTAMP(_Out_ DBTIMESTAMP& dbts);
 #endif

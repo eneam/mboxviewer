@@ -660,8 +660,6 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		OnRClickSingleSelect(pNMHDR, pResult);
 	else
 		OnRClickMultipleSelect(pNMHDR, pResult);
-
-	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 }
 
 void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
@@ -3108,7 +3106,7 @@ BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 		m = MboxMail::s_mails[i];
 		if (m->m_timeDate < oldestMailTime)
 			oldestMailTime = m->m_timeDate;
-		else if (m->m_timeDate < latestMailTime)
+		else if (m->m_timeDate > latestMailTime)
 			latestMailTime = m->m_timeDate;
 	}
 	sz.writeInt64(oldestMailTime);
@@ -3810,11 +3808,11 @@ void NListView::FillCtrl()
 		//MboxMail::s_path = m_path;
 		MboxMail::SetMboxFilePath(m_path);
 		// it populates s_mails from mail index/mboxview file
-		MailArchiveFileInfo maileFileInfo;
 		CString errorText;
 		MailArray* marray = 0;
-		ni = LoadMails(cache, maileFileInfo, marray, errorText);
-		if( ni < 0 )
+		m_maileFileInfo.Clear();
+		ni = LoadMails(cache, m_maileFileInfo, marray, errorText);
+		if ( ni < 0 )
 		{
 			if (ni != -2)
 			{
@@ -4094,10 +4092,10 @@ int NListView::MailFileFillCtrl(CString &errorText)
 		//MboxMail::s_path = m_path;
 		MboxMail::SetMboxFilePath(m_path);
 		// it populates s_mails from mail index/mboxview file
-		MailArchiveFileInfo maileFileInfo;
 		CString errorText;
 		MailArray* marray = 0;
-		ni = LoadMails(cache, maileFileInfo, marray, errorText);
+		m_maileFileInfo.Clear();
+		ni = LoadMails(cache, m_maileFileInfo, marray, errorText);
 		if (ni < 0)
 		{
 			if (ni != -2)
@@ -4518,7 +4516,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 				{
 					CStringA colorStr;
 					int retC2S = Color2Str(color, colorStr);
-					CStringA hdr = "<html><head><style>body{background-color: ";
+					CStringA hdr = "<html><head><style>body{background-color: #";
 					hdr.Append(colorStr);
 					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
 					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
@@ -4899,38 +4897,67 @@ void NListView::OnEditFind()
 	m_bInFind = true;
 	CFindDlg dlg;
 
-	// The m_lastStartDate and m_lastEndDate are shared across Find and Advanced Find
-	// Should eventually make them independed
-	// MyCTime m_lastStartDate;
-	// MyCTime m_lastEndDate;
+	// This code is too comples and error prone. Find time to fix this
+	// same in OnEdistAdvancedFind. Create function to initialize param structure ?
 
-	if (m_findParams.m_bNeedToFindMailMinMaxTime)
+	int nWhichMailList = MboxMail::nWhichMailList;
+
+	if ((nWhichMailList != m_findParams.m_last_nWhichMailList) && (nWhichMailList != IDC_LABEL_LIST))
 	{
-		FindMinMaxTime(m_findParams.m_mboxMailStartDate, m_findParams.m_mboxMailEndDate);
-		m_findParams.m_lastStartDate = m_findParams.m_mboxMailStartDate;
-		m_findParams.m_lastEndDate = m_findParams.m_mboxMailEndDate;
-		m_findParams.m_bNeedToFindMailMinMaxTime = FALSE;
+		m_findParams.m_filterDates = FALSE;
+		m_findParams.m_last_nWhichMailList = nWhichMailList;
 	}
 
-	if (MboxMail::nWhichMailList != IDC_ARCHIVE_LIST)
+	if (m_findParams.m_mboxMailStartDate.GetTime() < 0)
+	{
+		_ASSERTE(m_findParams.m_bNeedToFindMailMinMaxTime == TRUE);
+		if (m_maileFileInfo.m_oldestMailTime == m_maileFileInfo.m_latestMailTime)  // old version possibly
+			FindMinMaxTime(m_findParams.m_mboxMailStartDate, m_findParams.m_mboxMailEndDate);
+		else
+		{
+			m_findParams.m_mboxMailStartDate = m_maileFileInfo.m_oldestMailTime;
+			m_findParams.m_mboxMailEndDate = m_maileFileInfo.m_latestMailTime;
+		}
+	}
+
+	if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+	{
+		if (m_findParams.m_bNeedToFindMailMinMaxTime)
+		{
+			m_findParams.m_lastStartDate = m_findParams.m_mboxMailStartDate;
+			m_findParams.m_lastEndDate = m_findParams.m_mboxMailEndDate;
+
+			m_findParams.m_archiveList_lastStartDate = m_findParams.m_lastStartDate;
+			m_findParams.m_archiveList_lastEndDate = m_findParams.m_lastEndDate;
+			m_findParams.m_archiveList_filterDates = m_findParams.m_filterDates;
+
+			m_findParams.m_bNeedToFindMailMinMaxTime = FALSE;
+		}
+	}
+
+	MailArchiveFileInfo* maileFileInfo = &m_maileFileInfo;
+
+	_ASSERTE(m_findParams.m_mboxMailStartDate.GetTime() == m_maileFileInfo.m_oldestMailTime);
+	_ASSERTE(m_findParams.m_mboxMailEndDate.GetTime() == m_maileFileInfo.m_latestMailTime);
+
+	if ((MboxMail::nWhichMailList != IDC_ARCHIVE_LIST) && (MboxMail::nWhichMailList != IDC_LABEL_LIST))
 	{
 		FindMinMaxTime(m_findParams.m_lastStartDate, m_findParams.m_lastEndDate);
-		m_findParams.m_needToRestoreArchiveListDateTime = TRUE;
 	}
-	else if ((m_findParams.m_filterDates == FALSE) || m_findParams.m_needToRestoreArchiveListDateTime)
+	else
 	{
-		m_findParams.m_lastStartDate = m_findParams.m_mboxMailStartDate;
-		m_findParams.m_lastEndDate = m_findParams.m_mboxMailEndDate;
-		m_findParams.m_needToRestoreArchiveListDateTime = FALSE;
+		m_findParams.m_lastStartDate = m_findParams.m_archiveList_lastStartDate;
+		m_findParams.m_lastEndDate = m_findParams.m_archiveList_lastEndDate;
+		m_findParams.m_filterDates = m_findParams.m_archiveList_filterDates;
 	}
+
+	BOOL retDT = MyCTimeToOleTime(m_findParams.m_lastStartDate, m_findParams.m_startDate, 1);  // DOWN
+	retDT = MyCTimeToOleTime(m_findParams.m_lastEndDate, m_findParams.m_endDate, 2);  // UP
+
 
 	m_findParams.m_string = m_searchString;
 
-	BOOL retDT = MyCTimeToOleTime(m_findParams.m_lastStartDate, m_findParams.m_startDate);
-	retDT = MyCTimeToOleTime(m_findParams.m_lastEndDate, m_findParams.m_endDate);
-
 	dlg.m_params.Copy(m_findParams);
-
 
 	if (dlg.DoModal() == IDOK) 
 	{
@@ -4939,8 +4966,27 @@ void NListView::OnEditFind()
 		if (m_findParams.m_bFindAll && !m_findParams.m_bFindNext)  // not implemented and it makes no difference if we set m_bFindNext to TRUE
 			m_findParams.m_bFindNext = TRUE;
 
-		retDT = NListView::OleTime2MyCTime(m_findParams.m_startDate, m_findParams.m_lastStartDate, FALSE);
-		retDT = NListView::OleTime2MyCTime(m_findParams.m_endDate, m_findParams.m_lastEndDate, TRUE);
+		if (m_findParams.m_filterDates == TRUE)
+		{
+			// mails betwenn m_findParams.m_lastStartDate and m_findParams.m_lastEndDate will be processed
+			retDT = NListView::OleTime2MyCTime(m_findParams.m_startDate, m_findParams.m_lastStartDate, FALSE);
+			retDT = NListView::OleTime2MyCTime(m_findParams.m_endDate, m_findParams.m_lastEndDate, TRUE);
+
+			if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+			{
+				m_findParams.m_archiveList_lastStartDate = m_findParams.m_lastStartDate;
+				m_findParams.m_archiveList_lastEndDate = m_findParams.m_lastEndDate;
+				m_findParams.m_archiveList_filterDates = TRUE;
+
+			}
+		}
+		else  // all mails will be processed
+		{
+			if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+			{
+				m_findParams.m_archiveList_filterDates = FALSE;
+			}
+		}
 
 		m_lastFindPos = -1;
 
@@ -7814,17 +7860,7 @@ void NListView::FindMinMaxTime(MyCTime &minTime, MyCTime &maxTime)
 		maxTime = 0; // TODO: need to handle < 0 better
 	else
 	{
-		MyCTime maxT(max);
-		SYSTEMTIME endDateSystemTime;
-		maxT.GetAsSystemTime(endDateSystemTime);
-		endDateSystemTime.wMinute = 59;
-		endDateSystemTime.wHour = 23;
-		endDateSystemTime.wSecond = 59;
-		endDateSystemTime.wMilliseconds = 999;
-		MyCTime::fixSystemtime(&endDateSystemTime);
-		maxT.SetDateTime(endDateSystemTime);
-
-		maxTime = maxT;
+		maxTime = MyCTime(max);
 	}
 
 	if ((minTime.GetTime() < 0) || (maxTime.GetTime() < 0))
@@ -7851,36 +7887,62 @@ void NListView::EditFindAdvanced(MboxMail *m)
 		PrepopulateAdvancedSearchParams(m);
 	}
 
-	// The m_lastStartDate and m_lastEndDate are shared across Find and Advanced Find
-	// Should eventually make them independed
-	// MyCTime m_lastStartDate;
-	// MyCTime m_lastEndDate;
+	// This code is too comples and error prone. Find time to fix this
 
-	if (m_advancedParams.m_bNeedToFindMailMinMaxTime)
+	int nWhichMailList = MboxMail::nWhichMailList;
+
+	if ((nWhichMailList != m_advancedParams.m_last_nWhichMailList) && (nWhichMailList != IDC_LABEL_LIST))
 	{
-		FindMinMaxTime(m_advancedParams.m_mboxMailStartDate, m_advancedParams.m_mboxMailEndDate);
-		m_advancedParams.m_lastStartDate = m_advancedParams.m_mboxMailStartDate;
-		m_advancedParams.m_lastEndDate = m_advancedParams.m_mboxMailEndDate;
-		m_advancedParams.m_bNeedToFindMailMinMaxTime = FALSE;
+		m_advancedParams.m_filterDates = FALSE;
+		m_advancedParams.m_last_nWhichMailList = nWhichMailList;
 	}
 
-	// m_advancedParams.m_mboxMailStartDate, m_advancedParams.m_mboxMailEndDate are already determined
-	if (MboxMail::nWhichMailList != IDC_ARCHIVE_LIST)   // All Mails are in IDC_ARCHIVE_LIST, otherwise they are in Find or User Selected
+	if (m_advancedParams.m_mboxMailStartDate.GetTime() < 0)
 	{
-		// we need to update m_advancedParams.m_lastStartDate, m_advancedParams.m_lastEndDate
-		// 
+		_ASSERTE(m_advancedParams.m_bNeedToFindMailMinMaxTime == TRUE);
+		if (m_maileFileInfo.m_oldestMailTime == m_maileFileInfo.m_latestMailTime)  // old version possibly
+			FindMinMaxTime(m_advancedParams.m_mboxMailStartDate, m_advancedParams.m_mboxMailEndDate);
+		else
+		{
+			m_advancedParams.m_mboxMailStartDate = m_maileFileInfo.m_oldestMailTime;
+			m_advancedParams.m_mboxMailEndDate = m_maileFileInfo.m_latestMailTime;
+		}
+	}
+
+
+	if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+	{
+		if (m_advancedParams.m_bNeedToFindMailMinMaxTime)
+		{
+			m_advancedParams.m_lastStartDate = m_advancedParams.m_mboxMailStartDate;
+			m_advancedParams.m_lastEndDate = m_advancedParams.m_mboxMailEndDate;
+
+			m_advancedParams.m_archiveList_lastStartDate = m_advancedParams.m_lastStartDate;
+			m_advancedParams.m_archiveList_lastEndDate = m_advancedParams.m_lastEndDate;
+			m_advancedParams.m_archiveList_filterDates = m_advancedParams.m_filterDates;
+
+			m_advancedParams.m_bNeedToFindMailMinMaxTime = FALSE;
+		}
+	}
+
+	MailArchiveFileInfo* maileFileInfo = &m_maileFileInfo;
+
+	_ASSERTE(m_advancedParams.m_mboxMailStartDate.GetTime() == m_maileFileInfo.m_oldestMailTime);
+	_ASSERTE(m_advancedParams.m_mboxMailEndDate.GetTime() == m_maileFileInfo.m_latestMailTime);
+
+	if ((MboxMail::nWhichMailList != IDC_ARCHIVE_LIST) && (MboxMail::nWhichMailList != IDC_LABEL_LIST))
+	{
 		FindMinMaxTime(m_advancedParams.m_lastStartDate, m_advancedParams.m_lastEndDate);
-		m_advancedParams.m_needToRestoreArchiveListDateTime = TRUE;
 	}
-	else if ((m_advancedParams.m_filterDates == FALSE) || m_advancedParams.m_needToRestoreArchiveListDateTime)
+	else
 	{
-		m_advancedParams.m_lastStartDate = m_advancedParams.m_mboxMailStartDate;
-		m_advancedParams.m_lastEndDate = m_advancedParams.m_mboxMailEndDate;
-		m_advancedParams.m_needToRestoreArchiveListDateTime = FALSE;
+		m_advancedParams.m_lastStartDate = m_advancedParams.m_archiveList_lastStartDate;
+		m_advancedParams.m_lastEndDate = m_advancedParams.m_archiveList_lastEndDate;
+		m_advancedParams.m_filterDates = m_advancedParams.m_archiveList_filterDates;
 	}
-
-	BOOL retDT = MyCTimeToOleTime(m_advancedParams.m_lastStartDate, m_advancedParams.m_startDate);
-	retDT = MyCTimeToOleTime(m_advancedParams.m_lastEndDate, m_advancedParams.m_endDate);
+	 
+	BOOL retDT = MyCTimeToOleTime(m_advancedParams.m_lastStartDate, m_advancedParams.m_startDate, 1);  // DOWN
+	retDT = MyCTimeToOleTime(m_advancedParams.m_lastEndDate, m_advancedParams.m_endDate, 2);  // UP
 
 	dlg.m_params.Copy(m_advancedParams);
 
@@ -7890,9 +7952,26 @@ void NListView::EditFindAdvanced(MboxMail *m)
 
 		m_advancedParams.Copy(dlg.m_params);
 
-		// mails betwenn m_advancedParams.m_lastStartDate and m_advancedParams.m_lastEndDate will be processed
-		retDT = NListView::OleTime2MyCTime(m_advancedParams.m_startDate, m_advancedParams.m_lastStartDate, FALSE);
-		retDT = NListView::OleTime2MyCTime(m_advancedParams.m_endDate, m_advancedParams.m_lastEndDate, TRUE);
+		if (m_advancedParams.m_filterDates == TRUE)
+		{
+			// mails betwenn m_advancedParams.m_lastStartDate and m_advancedParams.m_lastEndDate will be processed
+			retDT = NListView::OleTime2MyCTime(m_advancedParams.m_startDate, m_advancedParams.m_lastStartDate, FALSE);
+			retDT = NListView::OleTime2MyCTime(m_advancedParams.m_endDate, m_advancedParams.m_lastEndDate, TRUE);
+
+			if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+			{
+				m_advancedParams.m_archiveList_lastStartDate = m_advancedParams.m_lastStartDate;
+				m_advancedParams.m_archiveList_lastEndDate = m_advancedParams.m_lastEndDate;
+				m_advancedParams.m_archiveList_filterDates = TRUE;
+			}
+		}
+		else  // all mails will be processed
+		{
+			if ((MboxMail::nWhichMailList == IDC_ARCHIVE_LIST) || (MboxMail::nWhichMailList == IDC_LABEL_LIST))
+			{
+				m_advancedParams.m_archiveList_filterDates = FALSE;
+			}
+		}
 
 		m_lastFindPos = -1;
 
@@ -7950,7 +8029,9 @@ void NListView::EditFindAdvanced(MboxMail *m)
 
 				if (!nResult) { // should never be true ? 
 					m_bInFind = false;
+					LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 					MboxMail::assert_unexpected();
+					// Or goto ??
 					return;
 				}
 
@@ -8006,7 +8087,7 @@ void NListView::EditFindAdvanced(MboxMail *m)
 			// FIXMEFIXME
 			// To compare search results with non-unicode MBox Viewer
 			//  int d = MboxMail::DumpMailSummaryToFile(&MboxMail::s_mails, MboxMail::s_mails.GetCount());
-			return;
+			// return;
 		}
 		else
 		{
@@ -8014,6 +8095,7 @@ void NListView::EditFindAdvanced(MboxMail *m)
 			m_lastFindPos = -1;
 		}
 	}
+
 	m_bInFind = false;
 	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
 }
@@ -8794,7 +8876,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 				if (mergeErrorFileSize > 0)
 				{
 					CString text = L"Merge File was created.\n"
-						L"However, one or more emails didn't finish printing to PDF in 5 minutes and were not merged\n"
+						L"However, one or more mails didn't finish printing to PDF in 5 minutes and were not merged\n"
 						L"Select OK to open the file with the list of failed mails\n";
 					int answer = ::MessageBox(h, text, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 
@@ -13865,11 +13947,41 @@ BOOL NListView::HasAnyAttachment(MboxMail *m)
 }
 
 
-BOOL NListView::MyCTimeToOleTime(MyCTime &ctimeDateTime, COleDateTime &coleDateTime)
+BOOL NListView::MyCTimeToOleTime(MyCTime &ctimeDateTime, COleDateTime &coleDateTime, int rounding)
 {
-
+	// FIXMEFIXME: need to find time to investigate proper solution
 	SYSTEMTIME sysTime;
-	ctimeDateTime.GetAsSystemTime(sysTime);
+	SYSTEMTIME sysTimeGMT;
+	SYSTEMTIME sysTimeLocal;
+	ctimeDateTime.GetAsSystemTime(sysTimeGMT, TRUE);
+	ctimeDateTime.GetAsSystemTime(sysTimeLocal, FALSE);
+	if (rounding == 2)  // DOWN
+	{
+		if (sysTimeGMT.wYear < sysTimeLocal.wYear)
+			sysTime = sysTimeGMT;
+		else if (sysTimeGMT.wMonth < sysTimeLocal.wMonth)
+			sysTime = sysTimeGMT;
+		else if (sysTimeGMT.wDay < sysTimeLocal.wDay)
+			sysTime = sysTimeGMT;
+		else
+			sysTime = sysTimeLocal;
+	}
+	else if (rounding == 1)  // UP
+	{
+		if (sysTimeGMT.wYear < sysTimeLocal.wYear)
+			sysTime = sysTimeLocal;
+		else if (sysTimeGMT.wMonth < sysTimeLocal.wMonth)
+			sysTime = sysTimeLocal;
+		else if (sysTimeGMT.wDay < sysTimeLocal.wDay)
+			sysTime = sysTimeLocal;
+		else
+			sysTime = sysTimeGMT;
+	}
+	else
+	{
+		sysTime = sysTimeGMT;
+	}
+
 	MyCTime::fixSystemtime(&sysTime);
 
 	coleDateTime.SetDate(sysTime.wYear, sysTime.wMonth, sysTime.wDay);
@@ -16144,7 +16256,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 		CString txt = L"Mail sending limit imposed by Mail Service is not well defined.\n"
 			L"Number of mails you selected to forward is greater than 100\n"
 			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n\n"
-			L"Do you want to forward selected emails anyway?\n";
+			L"Do you want to forward selected mails anyway?\n";
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 		{

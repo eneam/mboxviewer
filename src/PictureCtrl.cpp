@@ -158,16 +158,18 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		if (m_cimage == 0) {
 			m_cimage = Image::FromFile(f);
-		}
-
-		Status sts = m_cimage->GetLastStatus();
-		if (sts != Gdiplus::Status::Ok)
-		{
-			return;
+			Status sts = m_cimage->GetLastStatus();
+			if (sts != Gdiplus::Status::Ok)
+			{
+				return;
+			}
 		}
 
 		if (m_cimage == 0)
-			int deb = 1;
+		{
+			_ASSERTE(m_cimage == 0);
+			return;
+		}
 
 		Image *image = m_cimage;
 
@@ -224,13 +226,21 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			CLSID Clsid;
 			EncoderParameters encoderParameters;
 			m_rotateType = GdiUtils::DetermineReorder(*image, Clsid, encoderParameters);
-			image->RotateFlip(m_rotateType);
+			Status sts = image->RotateFlip(m_rotateType);
 			m_rotateType = Gdiplus::RotateNoneFlipNone;
+			if (sts != Gdiplus::Status::Ok)
+			{
+				int deb = 1;
+			}
 		}
 
 		if (m_rotateType != Gdiplus::RotateNoneFlipNone) {
-			image->RotateFlip(m_rotateType);
+			Status sts = image->RotateFlip(m_rotateType);
 			m_rotateType = Gdiplus::RotateNoneFlipNone;
+			if (sts != Gdiplus::Status::Ok)
+			{
+				int deb = 1;
+			}
 		}
 
 		m_bFixOrientation = FALSE;

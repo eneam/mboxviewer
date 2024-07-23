@@ -86,9 +86,17 @@ struct CFindAdvancedParams
 	MyCTime m_lastStartDate;
 	MyCTime m_lastEndDate;
 	CString m_dateTimeFormat;
+	MyCTime m_archiveList_lastStartDate;
+	MyCTime m_archiveList_lastEndDate;
+	BOOL m_archiveList_filterDates;
+	int m_last_nWhichMailList;
+	// in case we decide to keep last range per list
+	//MyCTime m_lastStartDateByMailList[3];
+	//MyCTime m_lastEndDateByMailList[3];
 
 	void SetDflts();
 	void Copy(CFindAdvancedParams &src);
+	void ResetFilterFields();
 
 	void ResetFilterDates();
 };
@@ -113,6 +121,7 @@ public:
 
 
 	void SetRuleInfoText();
+	BOOL InitDialogControls();
 
 // Overrides
 	// ClassWizard generated virtual function overrides

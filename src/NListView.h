@@ -188,6 +188,10 @@ public:
 
 struct MailArchiveFileInfo
 {
+	MailArchiveFileInfo()
+	{
+		Clear();
+	};
 	int m_version;
 	_int64 m_fileSize;
 	_int64 m_oldestMailTime;
@@ -197,6 +201,19 @@ struct MailArchiveFileInfo
 	_int64 m_reservedInt1;
 	_int64 m_reservedInt2;
 	int m_mailCount;
+
+	void Clear()
+	{
+		m_version = -1;
+		m_fileSize = -1;
+		m_oldestMailTime = -1;
+		m_latestMailTime = -1;
+		m_reservedString1.Empty();
+		m_reservedString2.Empty();
+		m_reservedInt1 = -1;
+		m_reservedInt2 = -1;
+		m_mailCount = 0;
+	};
 };
 
 class NListView : public CWnd
@@ -331,7 +348,7 @@ public:
 	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	int DoFastFindLegacy(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	int DoFastFindAdvanced(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
-	static BOOL MyCTimeToOleTime(MyCTime& ctimeDateTime, COleDateTime& coleDateTime);
+	static BOOL MyCTimeToOleTime(MyCTime& ctimeDateTime, COleDateTime& coleDateTime, int rounding);
 	static BOOL OleTime2MyCTime(COleDateTime& coleDateTime, MyCTime& ctimeDateTime, BOOL roundUP);
 
 	CString m_searchString;
@@ -363,6 +380,8 @@ public:
 	int m_gmtTime;
 	CString m_path;
 	CString m_path_label;
+
+	MailArchiveFileInfo m_maileFileInfo;
 
 	// Used in Custom Draw
 	SimpleString *m_name;

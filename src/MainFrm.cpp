@@ -4365,7 +4365,8 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	if (dataFolder.IsEmpty())
 	{
 		CString txt;
-		txt.Format(L"Data Folder is not configured. Exitting.\n");
+		txt.Format(L"Data Folder is not configured. Exiting.\n\n");
+		txt.Append(L"Please restart MBox Viewer and configure Data Folder by selecting \"File -> Data Folder Config\" option.");
 
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);

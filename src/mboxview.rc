@@ -215,7 +215,8 @@ BEGIN
     CONTROL         "Subject",IDC_CHECK_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,78,74,36,10
     CONTROL         "Message",IDC_CHECK_CONTENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,120,74,42,10
     CONTROL         "Attachment Text",IDC_CHECK_ATTACHMENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,92,68,10
-    CONTROL         "Filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,116,52,10
+    CONTROL         "Filter dates (if not set all mails on the list are searched):",IDC_FILTERDATES,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,116,186,10
     LTEXT           "start date:",IDC_FIND_START_DATE,61,170,32,8
     LTEXT           "end date:",IDC_FIND_END_DATE,62,189,31,8
     CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,186,100,15
@@ -381,7 +382,8 @@ BEGIN
     LTEXT           "start date:",IDC_STATIC,56,314,40,8
     CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,330,100,15
     LTEXT           "end date:",IDC_STATIC,56,333,38,8
-    CONTROL         "filter dates:",IDC_FILTERDATES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,77,10
+    CONTROL         "filter dates (if not set all mails on the list are searched):",IDC_FILTERDATES,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,193,10
     CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,92,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,176,35,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,176,35,10
@@ -396,7 +398,7 @@ BEGIN
     EDITTEXT        IDC_EDIT_BCC,77,98,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_BCC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,98,16,10
     CONTROL         "",IDC_EDIT_BCC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,98,16,10
-    PUSHBUTTON      "Reset All",IDC_EDIT_RESET,19,175,50,9
+    PUSHBUTTON      "Reset all filter fields",IDC_EDIT_RESET,19,175,74,9
     CONTROL         "Attachment",IDC_EDIT_ATTACHMENT_NAME_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,153,51,10
     EDITTEXT        IDC_EDIT_ATTACHMENT_NAME,77,153,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,241,153,12,10
@@ -843,7 +845,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,43
+ FILEVERSION 1,0,3,44
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -860,7 +862,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.43"
+            VALUE "FileVersion", "1.0.3.44"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"

@@ -2025,6 +2025,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 			CString errorText;
 			int rval = pListView->MailFileFillCtrl(errorText);
 			MboxMail::nWhichMailList = IDC_ARCHIVE_LIST;
+
+			pListView->ResetFilterDates();
 		}
 
 		lastPath = MboxMail::GetLastPath();

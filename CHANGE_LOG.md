@@ -2,6 +2,13 @@
 Changes
 -------
 
+v 1.0.3.44
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Date range in All Mails list is now fully controlled by a user and not affected by other user actions.;
+ - ForwardEmlFile.exe is Self-contained again, independed from the .NET version installed on user's system.
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.43
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

@@ -302,6 +302,7 @@ void CFindDlgParams::Copy(CFindDlgParams &src)
 	m_needToRestoreArchiveListDateTime = src.m_needToRestoreArchiveListDateTime;
 	m_bNeedToFindMailMinMaxTime = src.m_bNeedToFindMailMinMaxTime;
 	m_dateTimeFormat = src.m_dateTimeFormat;
+	m_last_nWhichMailList = src.m_last_nWhichMailList;
 }
 
 void CFindDlg::OnBnClickedCheckFindAll()
@@ -407,6 +408,8 @@ void CFindDlgParams::ResetFilterDates()
 	m_mboxMailEndDate = (time_t)-1;
 	m_needToRestoreArchiveListDateTime = FALSE;
 	m_bNeedToFindMailMinMaxTime = TRUE;
+	m_last_nWhichMailList = 0;
+	m_filterDates = FALSE;
 	//m_dateTimeFormat = L"MM/dd/yyyy";
 }
 

@@ -11090,11 +11090,11 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		if (hintNumber == HintConfig::GeneralUsageHint)
 		{
 			hintText.Append(
-				"To get started, please install one or more mbox files in\n"
+				"To get started, please place one or more mbox files in\n"
 				"the local folder and then select \"File->Select Folder...\"\n"
 				"menu option to open that folder.\n"
 				"\n"
-				"Left-click on one of the loaded mbox file to view all associated mails.\n"
+				"Left-click on one of the loaded mbox files to view all associated mails.\n"
 				"\n"
 				"Please review the User Guide provided with the package\n"
 				"and/or single and double right-click/left-click on any item\n"

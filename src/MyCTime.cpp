@@ -263,13 +263,15 @@ CString MyCTime::FormatGmt(LPCWSTR pFormat)
 	return szBuffer;
 }
 
-bool MyCTime::GetAsSystemTime(SYSTEMTIME& timeDest)
+bool MyCTime::GetAsSystemTime(SYSTEMTIME& timeDest, int gmtTime)
 {
 	struct tm ttm;
 	struct tm* ptm;
 
-	//ptm = GetLocalTm(&ttm);
-	ptm = GetGmtTm(&ttm);
+	if (gmtTime)
+		ptm = GetGmtTm(&ttm);
+	else
+		ptm = GetLocalTm(&ttm);
 	if (!ptm)
 	{
 		return false;
