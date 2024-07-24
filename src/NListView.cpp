@@ -10125,10 +10125,15 @@ BOOL  NListView::CanGoAheadWithExport()
 					if (!errorText.IsEmpty())
 					{
 						CString txt;
-						txt.Format(L"Failed to remove folder \n\n\"%s\"\n\n", exportCachePath);
+						txt.Format(L"Failed to remove and recreate folder for Export:\n\n\"%s\"\n\n", exportCachePath);
 						txt.Append(errorText);
 						txt.Append(L"\n\nFolder or subfolders or files in the folder are likely used by other programs.\n\n");
-						HWND h = NULL; // we don't have any window yet  
+						txt.Append(L"\nNOTE: This issue will happen if the folder or folder's items are open in Command Prompt.\n\n");
+						txt.Append(L"\nNOTE: This issue will NOT happen if the folder or folder's items are open in File Explorer or Windows Terminal or Windows PowerShell.\n\n");
+						txt.Append(L"\nNOTE: Other than above programs may cause this issue as well. You can use Handle.exe or Process Explorer.exe programs to discover programs creating the issue. ");
+						txt.Append(L"Handle.exe and Process Explorer.exe programs are part of Microsoft Sysinternal package. They can also be downloaded as individual programs\n\n");
+
+						HWND h = GetSafeHwnd();
 						int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						int deb = 1;
 					}
