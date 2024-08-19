@@ -5983,7 +5983,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		// Setp mail header
 		CStringA hdrBackgroundColor = "background-color:#eee9e9;";
 		if (pFrame && (pFrame->m_NamePatternParams.m_bAddBackgroundColorToMailHeader == FALSE))
-			hdrBackgroundColor == "";
+			hdrBackgroundColor = "";
 
 		CStringA hdrWidth = "width:";
 		hdrWidth.Append(scale);

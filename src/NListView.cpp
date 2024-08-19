@@ -53,6 +53,7 @@
 #include "ForwardMailDlg.h"
 #include "MyTcpClient.h"
 #include "GdiUtils.h"
+#include "ResHelper.h"
 
 
 #ifdef _DEBUG
@@ -869,6 +870,12 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	UINT nFlags = TPM_RETURNCMD;
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+#ifdef _DEBUG
+	int index = 1;
+	ResHelper::IterateMenuItems(&menu, index);
+	ResHelper::IterateMenuItemsSetPopMenuData(&menu, index);
+#endif
 
 	BOOL multipleSelectedMails = FALSE;
 	BOOL itemSelected = FALSE;

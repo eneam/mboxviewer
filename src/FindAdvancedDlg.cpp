@@ -35,6 +35,7 @@
 #include "FindAdvancedDlg.h"
 #include "FindFilterRuleDlg.h"
 #include "MboxMail.h"   // looking for MboxMail::developerMode
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -226,6 +227,9 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 	InitDialogControls();
 
 	UpdateData(TRUE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::IterateWindowChilds(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

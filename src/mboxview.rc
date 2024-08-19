@@ -44,7 +44,7 @@ IDB_BITMAP1             BITMAP                  "..\\res\\bitmap1.bmp"
 
 IDR_MAINFRAME TOOLBAR 16, 15
 BEGIN
-    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_FILE_SELECT_FOLDER
     SEPARATOR
     BUTTON      ID_FILE_REFRESH
     SEPARATOR
@@ -67,7 +67,7 @@ IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "Select &folder...\tF2",       ID_FILE_OPEN
+        MENUITEM "Select &folder...\tF2",       ID_FILE_SELECT_FOLDER
         MENUITEM "Select folder as root folder...", ID_FILE_SELECTASROOTFOLDER
         MENUITEM "Select root folder for merging ...", ID_FILE_MERGEROOTFOLDERSUB
         MENUITEM "Options...",                  ID_FILE_OPTIONS
@@ -379,17 +379,17 @@ BEGIN
     CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,135,12,10
     CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,135,19,10
     CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,311,100,15
-    LTEXT           "start date:",IDC_STATIC,56,314,40,8
+    LTEXT           "start date:",IDC_STATIC,56,314,40,8,WS_TABSTOP
     CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,330,100,15
-    LTEXT           "end date:",IDC_STATIC,56,333,38,8
+    LTEXT           "end date:",IDC_STATIC,56,333,38,8,WS_TABSTOP
     CONTROL         "filter dates (if not set all mails on the list are searched):",IDC_FILTERDATES,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,193,10
     CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,92,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,176,35,10
     CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,176,35,10
-    GROUPBOX        "",IDC_STATIC,7,206,373,42
-    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,373,200
-    GROUPBOX        "",IDC_STATIC,7,267,373,82
+    GROUPBOX        "",IDC_STATIC,7,206,373,42,WS_TABSTOP
+    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,373,200,WS_TABSTOP
+    GROUPBOX        "",IDC_STATIC,7,267,373,82,WS_TABSTOP
     CONTROL         "CC",IDC_EDIT_CC_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,80,25,10
     EDITTEXT        IDC_EDIT_CC,77,80,155,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_EDIT_CC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,80,22,10
@@ -407,16 +407,16 @@ BEGIN
     CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,125,353,111,10
     LTEXT           "Text",IDC_STATIC,34,142,16,8
-    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,21,286,349,8
-    LTEXT           "type new value",IDC_FIND_ADV_DATE_FMT,22,297,346,8
+    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,21,286,349,8,WS_TABSTOP
+    LTEXT           "type new value",IDC_FIND_ADV_DATE_FMT,22,297,346,8,WS_TABSTOP
     PUSHBUTTON      "Configure Filter Rule",IDC_BUTTON1,14,214,83,14
-    LTEXT           "",IDC_RULE_NUMBER_TEXT,110,219,251,8
-    LTEXT           "",IDC_RULE_TEXT,14,233,366,8
+    LTEXT           "",IDC_RULE_NUMBER_TEXT,110,219,251,8,WS_TABSTOP
+    LTEXT           "",IDC_RULE_TEXT,14,233,366,8,WS_TABSTOP
     CONTROL         "Match TO field only if single recipient on the list",IDC_SINGLE_TO,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,192,167,10
     CONTROL         "plain",IDC_PLAIN_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,254,31,10
     CONTROL         "html",IDC_HTML_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,254,29,10
-    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8
+    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8,WS_TABSTOP
     CONTROL         "html if no plain text",IDC_HTML_TEXT_IF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,254,77,10
     PUSHBUTTON      "Help",IDC_BUTTON_HELP,299,251,50,14
     CONTROL         "Highlight all occurences in Message",IDC_HIGHLIGHT_ALL,
@@ -1323,7 +1323,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "mboxview 1.0.3.42 Unicode"
+    IDR_MAINFRAME           "mboxview 1.0.3.44 Unicode"
     IDS_SELECT_FOLDER       "Select folder"
 END
 
@@ -1439,6 +1439,11 @@ BEGIN
     IDS_TITLE_CC            "CC:"
     IDS_TITLE_BCC           "BCC:"
     IDS_TITLE_MAIL_HEADER   "HEADER:"
+END
+
+STRINGTABLE
+BEGIN
+    ID_FILE_SELECT_FOLDER   "Select folder containing mails\nSelect folder"
 END
 
 #endif    // English (United States) resources

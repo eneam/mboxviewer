@@ -202,6 +202,9 @@
     <ClCompile Include="src\GeneralOptionsDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\ResHelper.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -415,6 +418,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\GeneralOptionsDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ResHelper.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

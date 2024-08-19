@@ -32,6 +32,7 @@
 #include "stdafx.h"
 #include "mboxview.h"
 #include "OptionsDlg.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -153,6 +154,10 @@ BOOL COptionsDlg::OnInitDialog()
 	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType");
 
 	UpdateData(FALSE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::IterateWindowChilds(h);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// ECCEZIONE: le pagine delle proprietà OCX devono restituire FALSE
 }

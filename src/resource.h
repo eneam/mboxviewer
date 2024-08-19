@@ -374,7 +374,6 @@
 #define IDC_FIND_START_DATE             1315
 #define IDC_FIND_DATE_FMT               1316
 #define IDC_FIND_ADV_DATE_FMT           1317
-#define IDC_CHECK3                      1318
 #define IDC_HIGHLIGHT_ALL               1318
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
@@ -443,6 +442,7 @@
 #define ID_FILE_GENERALOPTIONS32919     32919
 #define ID_HELP_CHANGE_LOG              32920
 #define ID_HELP_SHORTCUTS               32921
+#define ID_FILE_SELECT_FOLDER           32922
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -452,7 +452,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        242
-#define _APS_NEXT_COMMAND_VALUE         32922
+#define _APS_NEXT_COMMAND_VALUE         32923
 #define _APS_NEXT_CONTROL_VALUE         1319
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

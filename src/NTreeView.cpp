@@ -8768,6 +8768,13 @@ BOOL MySaveFileDialog::OnFileNameOK()
 LRESULT NTreeView::OnCmdParam_ResetTreePos(WPARAM wParam, LPARAM lParam)
 {
 	LRESULT lres = m_tree.SendMessage(WM_HSCROLL, SB_LEFT, 0);
+
+	// call DrawMenuBar if it is updated (text, etc)
+#ifdef _DEBUG
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	pFrame->DrawMenuBar();
+#endif
+
 	return 0;
 }
 

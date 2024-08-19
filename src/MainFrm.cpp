@@ -213,9 +213,9 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_ACTIVATEAPP()
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
-	ON_UPDATE_COMMAND_UI(ID_FILE_OPEN, OnUpdateFileOpen)
+	ON_UPDATE_COMMAND_UI(ID_FILE_SELECT_FOLDER, OnUpdateFileOpen)
 	ON_UPDATE_COMMAND_UI(ID_FILE_OPTIONS, OnUpdateFileOpen)
-	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
+	ON_COMMAND(ID_FILE_SELECT_FOLDER, OnFileOpen)
 	ON_COMMAND(ID_FILE_OPTIONS, OnFileOptions)
 	ON_COMMAND(ID_TREE_HIDE, OnTreeHide)
 	ON_WM_ERASEBKGND()
@@ -1179,10 +1179,11 @@ BOOL CMainFrame::DoOpen(CString& path)
 				}
 
 				CMenu* menu = this->GetMenu();
+				UINT retval = 0;
 				if (CMainFrame::m_relaxedMboxFileValidation)
-					menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
+					retval = menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_CHECKED);
 				else
-					menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
+					retval = menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_RELAXMAILFILEVALIDATION, MF_UNCHECKED);
 
 				CString section_general = CString(sz_Software_mboxview) + L"\\General";
 				CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation", (WORD)m_relaxedMboxFileValidation);
@@ -1978,7 +1979,8 @@ void CMainFrame::SetupMailListsToInitialState()
 
 	CMenu *menu = this->GetMenu();
 
-	menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
+	UINT retval = 0;
+	retval = menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
 	m_bUserSelectedMailsCheckSet = TRUE;
 	EnableMailList(IDC_EDIT_LIST, TRUE);
 
@@ -2233,8 +2235,10 @@ void CMainFrame::OnViewUserselectedmails()
 {
 	// TODO: Add your command handler code here
 	CMenu *menu = this->GetMenu();
-	if (m_bUserSelectedMailsCheckSet) {
-		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
+	UINT retval = 0;
+	if (m_bUserSelectedMailsCheckSet)
+	{
+		retval = menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_UNCHECKED);
 		m_bUserSelectedMailsCheckSet = FALSE;
 		EnableMailList(IDC_EDIT_LIST, FALSE);
 		//TRACE(L"OnViewUserselectedmails: MF_CHECKED->MF_UNCHECKED\n");
@@ -2254,7 +2258,7 @@ void CMainFrame::OnViewUserselectedmails()
 	}
 	else
 	{
-		menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_VIEW_USERSELECTEDMAILS, MF_CHECKED);
 		m_bUserSelectedMailsCheckSet = TRUE;
 		EnableMailList(IDC_EDIT_LIST, TRUE);
 		//TRACE(L"OnViewUserselectedmails: MF_UNCHECKED->MF_CHECKED\n");
@@ -2309,23 +2313,24 @@ void CMainFrame::OnMessagewindowLeft()
 void CMainFrame::CheckMessagewindowPositionMenuOption(int msgViewPosition)
 {
 	CMenu *menu = this->GetMenu();
+	UINT retval = 0;
 	if (msgViewPosition == 1)
 	{
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_CHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
 	}
 	else if (msgViewPosition == 2)
 	{
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_CHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_UNCHECKED);
 	}
 	else if (msgViewPosition == 3)
 	{
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
-		menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_BOTTOM, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_RIGHT, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEWINDOW_LEFT, MF_CHECKED);
 	}
 }
 
@@ -4594,10 +4599,11 @@ void CMainFrame::OnViewMessageheaders()
 	}
 
 	CMenu *menu = this->GetMenu();
+	UINT retval = 0;
 	if (m_bViewMessageHeaders)
-		menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_CHECKED);
 	else
-		menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_VIEW_MESSAGEHEADERS, MF_UNCHECKED);
 
 	int deb = 1;
 }
@@ -4621,8 +4627,9 @@ void CMainFrame::OnMessageheaderpanelayoutDefault()
 		pMsgView->OnMessageheaderpanelayoutDefault();
 
 		CMenu *menu = this->GetMenu();
-		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_CHECKED);
-		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_UNCHECKED);
+		UINT retval = 0;
+		retval = menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_UNCHECKED);
 	}
 }
 
@@ -4636,8 +4643,9 @@ void CMainFrame::OnMessageheaderpanelayoutExpanded()
 		pMsgView->OnMessageheaderpanelayoutExpanded();
 
 		CMenu *menu = this->GetMenu();
-		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_UNCHECKED);
-		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_CHECKED);
+		UINT retval = 0;
+		retval = menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_CHECKED);
 	}
 }
 
@@ -5657,10 +5665,11 @@ void CMainFrame::OnDevelopmentoptionsDevelo()
 	MboxMail::developerMode = !MboxMail::developerMode;
 
 	CMenu *menu = this->GetMenu();
+	UINT retval = 0;
 	if (MboxMail::developerMode)
-		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_CHECKED);
+		retval = menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_CHECKED);
 	else
-		menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_UNCHECKED);
+		retval = menu->CheckMenuItem(ID_DEVELOPMENTOPTIONS_DEVELO, MF_UNCHECKED);
 
 }
 

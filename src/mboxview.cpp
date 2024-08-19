@@ -51,6 +51,7 @@
 
 #include "MimeHelper.h"
 #include "SimpleString.h"
+#include "ResHelper.h"
 
 #include "Shobjidl.h"
 #include "shobjidl_core.h"
@@ -1580,6 +1581,14 @@ BOOL CmboxviewApp::InitInstance()
 	pFrame->ShowWindow(SW_SHOW);
 	pFrame->UpdateWindow();
 
+#ifdef _DEBUG
+	CMenu* menu = pFrame->GetMenu();
+	int index = 1;
+	ResHelper::IterateMenuItems(menu, index);
+	ResHelper::IterateMenuItemsSetPopMenuData(menu, index);
+	int deb = 1;
+#endif
+
 	DWORD ms, ls;
 	if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
 	{
@@ -1656,6 +1665,7 @@ void CAboutDlg::OnClose()
 
 	CDialog::OnClose();
 }
+
 
 #ifdef IHASH_MAP_TEST
 

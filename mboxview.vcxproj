@@ -885,6 +885,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\ResHelper.cpp" />
     <ClCompile Include="src\SerializationHelper.cpp" />
     <ClCompile Include="src\SimpleString.cpp" />
     <ClCompile Include="src\SimpleTree.cpp" />
@@ -1024,6 +1025,7 @@
     <ClInclude Include="src\PictureCtrl.h" />
     <ClInclude Include="src\PrintConfigDlg.h" />
     <ClInclude Include="src\Profile.h" />
+    <ClInclude Include="src\ResHelper.h" />
     <ClInclude Include="src\Resource.h" />
     <ClInclude Include="src\SerializationHelper.h" />
     <ClInclude Include="src\SimpleString.h" />
