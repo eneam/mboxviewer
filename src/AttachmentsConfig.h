@@ -72,4 +72,5 @@ public:
 
 	AttachmentConfigParams m_attachmentConfigParams;
 	afx_msg void OnBnClickedOk();
+	virtual BOOL OnInitDialog();
 };

@@ -33,6 +33,7 @@
 #include "ForwardMailDlg.h"
 #include "TextUtilsEx.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // ForwardMailDlg dialog
@@ -101,6 +102,10 @@ BOOL ForwardMailDlg::OnInitDialog()
 
 		}
 	}
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
 	return TRUE;
 }
 

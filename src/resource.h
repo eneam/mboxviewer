@@ -5,6 +5,9 @@
 #define IDD_ABOUTBOX                    100
 #define IDS_MAIN_TOOLBAR                101
 #define IDD_CPICTURECTRLDEMO_DIALOG     102
+#define IDS_DAY_MONTH_YEAR              102
+#define IDS_MONTH_DAY_YEAR              103
+#define IDS_YEAR_MONTH_DAY              104
 #define IDR_MAINFRAME                   128
 #define IDR_mboxviewTYPE                129
 #define IDS_SELECT_FOLDER               129
@@ -375,6 +378,18 @@
 #define IDC_FIND_DATE_FMT               1316
 #define IDC_FIND_ADV_DATE_FMT           1317
 #define IDC_HIGHLIGHT_ALL               1318
+#define IDC_STATIC_FIND_ADV             1319
+#define IDC_STATIC_GB_FIND_ADV_1        1320
+#define IDC_STATIC_FIND_ADV_FIIND_WHAT  1321
+#define IDC_STATIC_FIND_ADV_MATCH_WORD  1322
+#define IDC_STATIC_FIND_ADV_MATCH_CASE  1323
+#define IDC_STATIC_GB_FIND_ADV_2        1324
+#define IDC_STATIC_GB_FIND_ADV_3        1325
+#define IDC_STATIC_FIND_FIND_WHAT       1326
+#define IDC_STATIC_GB_FIND_1            1327
+#define IDC_STATIC_GB_FIND_2            1328
+#define IDC_STATIC_FIND_ADV_START_DATE  1329
+#define IDC_STATIC_FIND_ADV_END_DATE    1330
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -443,6 +458,7 @@
 #define ID_HELP_CHANGE_LOG              32920
 #define ID_HELP_SHORTCUTS               32921
 #define ID_FILE_SELECT_FOLDER           32922
+#define ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES 32923
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -452,8 +468,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        242
-#define _APS_NEXT_COMMAND_VALUE         32923
-#define _APS_NEXT_CONTROL_VALUE         1319
+#define _APS_NEXT_COMMAND_VALUE         32924
+#define _APS_NEXT_CONTROL_VALUE         1331
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

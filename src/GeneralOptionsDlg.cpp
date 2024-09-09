@@ -33,6 +33,7 @@
 #include "StdAfx.h"
 #include "afxdialogex.h"
 #include "GeneralOptionsDlg.h"
+#include "ResHelper.h"
 
 // GeneralOptionsDlg dialog
 
@@ -85,6 +86,9 @@ BOOL GeneralOptionsDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

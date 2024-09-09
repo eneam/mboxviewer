@@ -3057,17 +3057,6 @@ void MboxMail::Destroy(MailArray *array)
 	MboxMail::nWhichMailList = -1;
 };
 
-unsigned long StrHash(const char* buf, const UINT length)
-{
-	register unsigned long hash = 0;
-	register UINT len = length;
-	while (len-- > 0)
-	{
-		hash = (hash << 4) + (unsigned long)*buf++;
-		hash ^= (hash >> 12);
-	}
-	return hash;
-}
 #define HASH_ARRAY_SIZE 50013
 //
 int MboxMail::getMessageId(CStringA *key)

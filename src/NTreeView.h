@@ -172,8 +172,6 @@ public:
 // Folder name is the key. The same as m_folderPath in ArchiveFileInfoMap
 typedef unordered_map<std::wstring, ArchiveFileInfoMap*> GlobalFileSizeMap;
 
-unsigned long StrHash(const char* buf, const UINT length);
-
 class MySimpleDeque;
 
 // Used during parsing. It represent label and the list of associated mails
@@ -382,7 +380,7 @@ struct FolderInfoHelper
 {
 	hashsum_t operator()(const CString *key) const
 	{
-		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const
@@ -475,7 +473,7 @@ struct TreeCtrlInfoHelper
 {
 	hashsum_t operator()(const CString *key) const
 	{
-		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
+		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
 		return hashsum;
 	}
 	bool operator()(CString *key1, CString *key2) const

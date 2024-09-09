@@ -35,6 +35,7 @@
 #include "BrowseForFolder.h"
 #include "DataFolderConfigDlg.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // DataFolderCponfigDlg dialog
@@ -125,6 +126,9 @@ BOOL DataFolderConfigDlg::OnInitDialog()
 
 	m_currentDataFolder.SetFont(&m_BoldFont);
 	m_currentDataFolder.SetWindowText(m_strCurrentDataFolder);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

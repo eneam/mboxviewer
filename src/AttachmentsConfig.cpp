@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "AttachmentsConfig.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // AttachmentsConfig dialog
@@ -181,4 +182,18 @@ void AttachmentsConfig::OnBnClickedOk()
 		return;
 	}
 	CDialogEx::OnOK();
+}
+
+
+BOOL AttachmentsConfig::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  Add extra initialization here
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
 }

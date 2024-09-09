@@ -34,6 +34,7 @@
 #include "DevelopmentCreateArchive.h"
 #include "afxdialogex.h"
 #include "FileUtils.h"
+#include "ResHelper.h"
 
 
 // DevelopmentCreateArchive dialog
@@ -69,6 +70,9 @@ BOOL DevelopmentCreateArchive::OnInitDialog()
 	m_createdArchiveName = fileBaseName + L"_subset" + fileNameExtention;
 
 	UpdateData(FALSE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

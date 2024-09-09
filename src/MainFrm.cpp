@@ -49,6 +49,7 @@
 #include "MergeRootFolderAndSubfolders.h"
 #include "DevelopmentCreateArchive.h"  // this is dialog
 #include "GeneralOptionsDlg.h"
+#include "ResHelper.h"
 
 #include "NTreeView.h"
 
@@ -281,6 +282,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_GENERALOPTIONS, &CMainFrame::OnFileGeneraloptions)
 	ON_COMMAND(ID_HELP_SHORTCUTS, &CMainFrame::OnHelpShortcuts)
 	ON_COMMAND(ID_HELP_CHANGE_LOG, &CMainFrame::OnHelpChangeLog)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES, &CMainFrame::OnDevelopmentoptionsPrintresourcces)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -4063,6 +4065,8 @@ void CMainFrame::OnClose()
 
 	MboxMail::ReleaseResources();
 
+	ResHelper::ReleaseResources();
+
 	CFrameWnd::OnClose();
 }
 
@@ -5922,4 +5926,21 @@ void CMainFrame::OnHelpChangeLog()
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
+}
+
+
+void CMainFrame::OnDevelopmentoptionsPrintresourcces()
+{
+	// TODO: Add your command handler code here
+#if 0
+	TRACE(L"BEGIN PrintResInfoMap\n");
+	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
+	TRACE(L"END PrintResInfoMap\n");
+#endif
+	TRACE(L"BEGIN PrintResInfoArray\n");
+	int sortCnt = ResHelper::SortResInfoArray(ResHelper::resInfoArray);
+	int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray);
+	TRACE(L"END PrintResInfo\n");
+
+	int deb = 1;
 }

@@ -36,6 +36,7 @@
 #include "mboxview.h"
 #include "MainFrm.h"
 #include "NListView.h"
+#include "ResHelper.h"
 
 
 // ColorStyleConfigDlg dialog
@@ -179,6 +180,9 @@ BOOL ColorStyleConfigDlg::OnInitDialog()
 	OnBnClickedColorStyle(nID);
 
 	CheckRadioButton(IDC_COLOR_DFLT, IDC_COLOR_STYLE_16, nID);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

@@ -38,6 +38,7 @@
 #include "FileUtils.h"
 #include "HtmlUtils.h"
 #include "HtmlPdfHdrConfigDlg.h"
+#include "ResHelper.h"
 
 
 // PrintConfigDlg dialog
@@ -195,6 +196,9 @@ BOOL PrintConfigDlg::OnInitDialog()
 		if (m_NamePatternParams.m_bCustomFormat)
 			EnableNonCustomWindows(FALSE);
 	}
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

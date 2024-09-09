@@ -354,6 +354,10 @@ public:
 	//
 	int FileSelectrootfolder(int treeType);
 
+	CDialogBar& GetDialogBar() { return m_wndDlgBar; }
+	CStatusBar& GetStatusBar() { return m_wndStatusBar; }
+	CToolBar&	GetToolBar() { return m_wndToolBar; }
+
 
 	//BOOL PreTranslateMessage(MSG* pMsg);
 
@@ -437,6 +441,7 @@ public:
 	afx_msg void OnFileGeneraloptions();
 	afx_msg void OnHelpShortcuts();
 	afx_msg void OnHelpChangeLog();
+	afx_msg void OnDevelopmentoptionsPrintresourcces();
 };
 
 /////////////////////////////////////////////////////////////////////////////

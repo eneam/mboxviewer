@@ -35,6 +35,7 @@
 #include "SMTPMailServerConfigDlg.h"
 #include "afxdialogex.h"
 #include "TextUtilsEx.h"
+#include "ResHelper.h"
 
 
 #define GMAIL_MAX_MAIL_SIZE 25590
@@ -128,6 +129,9 @@ BOOL SMTPMailServerConfigDlg::OnInitDialog()
 	TLSOptions.SetCurSel(m_mailDB.SMTPConfig.EncryptionType);
 
 	UpdateData(FALSE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

@@ -85,6 +85,7 @@ BEGIN
             MENUITEM "Allocated Memory",            ID_FORDEVELOPERS_MEMORY
             MENUITEM "Create Mail Archive File",    ID_DEVELOPMENTOPTIONS_DUMPRAWDATA
             MENUITEM "Developer Mode",              ID_DEVELOPMENTOPTIONS_DEVELO
+            MENUITEM "Print Resourcces",            ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES
         END
         MENUITEM SEPARATOR
         MENUITEM "most recent folders",         ID_FILE_MRU_FILE1
@@ -176,10 +177,10 @@ BEGIN
     LTEXT           "Simple MBox Viewer",IDC_STATIC,40,7,119,8,SS_NOPREFIX
     DEFPUSHBUTTON   "Close",IDOK,158,7,50,14,WS_GROUP
     LTEXT           " ",IDC_STATIC1,40,20,119,8
-    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,21,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,20,20
     LTEXT           "If you like this program please consider making a donation",IDC_DONATION,7,86,201,12,SS_NOTIFY
-    LTEXT           "This program is free to use under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE version 3.",IDC_LICENSE,7,36,193,22
-    LTEXT           "The executable, associated source code files and User Guide  can be downloaded from  Github and Sourceforge sites.",IDC_STATIC,7,60,201,27
+    LTEXT           "This program is free to use under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE version 3.",IDC_LICENSE,7,36,193,22,SS_NOTIFY
+    LTEXT           "The executable, associated source code files and User Guide  can be downloaded from  Github and Sourceforge sites.",IDC_STATIC,7,60,201,27,SS_NOTIFY
 END
 
 IDD_CONTROLS_DLG DIALOGEX 0, 0, 394, 239
@@ -192,16 +193,16 @@ BEGIN
     CONTROL         "Custom1",IDC_BROWSER,"",WS_TABSTOP,14,129,50,14
     CONTROL         "Custom1",IDC_EXPLORER,"",WS_TABSTOP,82,131,50,14
     CONTROL         "List1",IDC_ATTACHMENTS,"SysListView32",WS_BORDER | WS_TABSTOP,7,67,60,50
-    LTEXT           "This dialog is not used. I create here all controls that are created dinamically so\nvstudio defines id automatically in resource.h",IDC_STATIC,13,7,256,32
+    LTEXT           "This dialog is not used. I create here all controls that are created dinamically so\nvstudio defines id automatically in resource.h",IDC_STATIC,13,7,256,32,SS_NOTIFY
     EDITTEXT        IDC_EDIT_MAIL_HDR,206,69,52,50,ES_MULTILINE | WS_VSCROLL | WS_HSCROLL,WS_EX_CLIENTEDGE
 END
 
 IDD_FIND DIALOGEX 0, 0, 233, 258
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find"
-FONT 8, "MS Sans Serif", 0, 0, 0x0
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    LTEXT           "&Find what:",IDC_STATIC,7,8,34,8
+    LTEXT           "&Find what:",IDC_STATIC_FIND_FIND_WHAT,7,8,34,8,SS_NOTIFY
     EDITTEXT        IDC_STRING,43,7,123,14,ES_AUTOHSCROLL
     CONTROL         "&Whole word",IDC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,43,24,54,10
     CONTROL         "&Case sensitive",IDC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,100,24,61,10
@@ -209,7 +210,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,43,39,129,10
     DEFPUSHBUTTON   "OK",IDOK,176,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,176,24,50,14
-    GROUPBOX        "Search scope",IDC_STATIC,7,105,219,118
+    GROUPBOX        "Search scope",IDC_STATIC_GB_FIND_1,7,105,219,118
     CONTROL         "From",IDC_CHECK_FROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,74,27,10
     CONTROL         "To",IDC_CHECK_TO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,49,74,21,10
     CONTROL         "Subject",IDC_CHECK_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,78,74,36,10
@@ -217,23 +218,22 @@ BEGIN
     CONTROL         "Attachment Text",IDC_CHECK_ATTACHMENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,92,68,10
     CONTROL         "Filter dates (if not set all mails on the list are searched):",IDC_FILTERDATES,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,116,186,10
-    LTEXT           "start date:",IDC_FIND_START_DATE,61,170,32,8
-    LTEXT           "end date:",IDC_FIND_END_DATE,62,189,31,8
+    LTEXT           "start date:",IDC_FIND_START_DATE,61,170,32,8,SS_NOTIFY
+    LTEXT           "end date:",IDC_FIND_END_DATE,62,189,31,8,SS_NOTIFY
     CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,186,100,15
     CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,98,167,100,15
-    GROUPBOX        "Search Direction",IDC_STATIC,7,227,219,20
+    GROUPBOX        "Search Direction",IDC_STATIC_GB_FIND_2,7,227,219,20
     CONTROL         "previous",IDC_SEARCH_PREV,"Button",BS_AUTORADIOBUTTON | WS_GROUP,97,234,43,10
     CONTROL         "next",IDC_SEARCH_NEXT,"Button",BS_AUTORADIOBUTTON,165,234,29,10
     CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,209,91,10
     CONTROL         "CC",IDC_CHECK_CC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,74,19,10
     CONTROL         "BCC",IDC_CHECK_BCC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,194,74,25,10
     CONTROL         "Attachment Name",IDC_CHECK_ATTACHMENT_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,86,92,73,10
-    CONTROL         "Find mails that don't match",IDC_CHECK_NEGATE_SEARCH_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,119,209,99,10
-    LTEXT           "To set new dates, open calendar by selecting down arrow, or",IDC_STATIC,15,130,211,8
-    LTEXT           "Left click on month, day or year field and type new value",IDC_STATIC,16,142,210,8
+    CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_SEARCH_CRITERIA,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,119,209,108,10
+    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and type new value",IDC_STATIC,15,130,211,19,SS_NOTIFY
     PUSHBUTTON      "Help",IDC_BUTTON1,176,41,50,14
-    LTEXT           "Date format: ",IDC_FIND_DATE_FMT,16,155,199,8
+    LTEXT           "Date format: ",IDC_FIND_DATE_FMT,16,153,199,8,SS_NOTIFY
 END
 
 IDD_OPTIONS DIALOGEX 0, 0, 167, 281
@@ -241,17 +241,17 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Date format:",IDC_STATIC,7,1,42,8
+    LTEXT           "Date format:",IDC_STATIC,7,1,42,8,SS_NOTIFY
     CONTROL         "dd/mm/yyyy",IDC_DMY,"Button",BS_AUTORADIOBUTTON | WS_GROUP,53,1,56,10
     CONTROL         "mm/dd/yyyy",IDC_MDY,"Button",BS_AUTORADIOBUTTON,53,12,56,10
     CONTROL         "yyyy/mm/dd",IDC_YMD,"Button",BS_AUTORADIOBUTTON,53,24,56,10
-    LTEXT           "Time:",IDC_TIME_TYPE,27,37,20,8
+    LTEXT           "Time:",IDC_TIME_TYPE,27,37,20,8,SS_NOTIFY
     CONTROL         "Local",IDC_TIME_LOCAL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,53,36,32,10
     CONTROL         "GMT",IDC_TIME_GMT,"Button",BS_AUTORADIOBUTTON,86,37,30,10
     CONTROL         "",IDC_OPTIONS_SEPARATOR,"Static",SS_ETCHEDHORZ,7,48,145,1
     EDITTEXT        IDC_PROGRESS_BAR_DELAY,17,62,57,12,ES_AUTOHSCROLL
     GROUPBOX        "",IDC_GROUP_EML,7,78,153,19
-    LTEXT           "Export EML:",IDC_STATIC,15,85,51,9
+    LTEXT           "Export EML:",IDC_STATIC,15,85,51,9,SS_NOTIFY
     CONTROL         "no",IDC_EXPORT_EML,"Button",BS_AUTORADIOBUTTON | WS_GROUP,69,85,24,10
     CONTROL         "yes",IDC_EXPORT_EML_Y,"Button",BS_AUTORADIOBUTTON,99,85,27,10
     LTEXT           "  Message Header Character Set IDs (0-65001)",IDC_GROUP_SET_IDS,7,102,153,8
@@ -260,7 +260,7 @@ BEGIN
     EDITTEXT        IDC_TO_ID,62,120,45,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_SUBJ_ID,115,120,45,12,ES_AUTOHSCROLL
     GROUPBOX        "",IDC_GROUP_SHOW_CHARSETS,7,134,153,17
-    LTEXT           "Show Charsets:",IDC_STATIC,13,139,54,9
+    LTEXT           "Show Charsets:",IDC_STATIC,13,139,54,9,SS_NOTIFY
     CONTROL         "no",IDC_SHOW_CHARSETS,"Button",BS_AUTORADIOBUTTON | WS_GROUP,71,139,24,10
     CONTROL         "yes",IDC_SHOW_CHARSETS_Y,"Button",BS_AUTORADIOBUTTON,98,139,27,10
     GROUPBOX        "",IDC_PICTURE_VIEWER,7,151,153,16
@@ -314,7 +314,7 @@ BEGIN
     CONTROL         "dd/mm/yyyy",IDC_DMY,"Button",BS_AUTORADIOBUTTON | WS_GROUP,63,159,56,10
     CONTROL         "mm/dd/yyyy",IDC_MDY,"Button",BS_AUTORADIOBUTTON,63,174,56,10
     CONTROL         "yyyy/mm/dd",IDC_YMD,"Button",BS_AUTORADIOBUTTON,63,187,56,10
-    LTEXT           "Time:",IDC_STATIC,32,204,18,8
+    LTEXT           "Time:",IDC_STATIC,32,202,18,8,SS_NOTIFY
     CONTROL         "Local",IDC_TIME_LOCAL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,63,202,32,10
     CONTROL         "GMT",IDC_TIME_GMT,"Button",BS_AUTORADIOBUTTON,100,202,30,10
     LTEXT           "Encoding:",IDC_STATIC,14,95,37,8
@@ -324,17 +324,17 @@ BEGIN
                     "Button",BS_AUTORADIOBUTTON,55,111,101,10
     EDITTEXT        IDC_ENCODING_CODE_PAGE_ID,163,108,35,14,ES_AUTOHSCROLL | ES_NUMBER
     GROUPBOX        "",IDC_STATIC,7,150,209,70
-    LTEXT           "Open ""View"" menu to view All  Code Page Ids",IDC_STATIC,54,129,146,10
+    LTEXT           "Open ""View"" menu to view All  Code Page Ids",IDC_STATIC,54,129,146,10,SS_NOTIFY
     GROUPBOX        "",IDC_STATIC,7,88,209,59
     EDITTEXT        IDC_EXPORT_MESSAGE_LIMIT,163,53,40,14,ES_AUTOHSCROLL
-    LTEXT           "Limit Message to N Lines",IDC_STATIC,81,55,77,11
+    LTEXT           "Limit Message to N Lines",IDC_STATIC,81,55,77,11,SS_NOTIFY
     CONTROL         "CC",IDC_EXPORT_CC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,157,16,22,10
     CONTROL         "BCC",IDC_EXPORT_BCC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,16,24,10
     EDITTEXT        IDC_EXPORT_MESSAGE_LIMIT_CHARS,163,72,40,14,ES_AUTOHSCROLL
-    LTEXT           "Limit Message to N Characters",IDC_STATIC,61,74,98,8
+    LTEXT           "Limit Message to N Characters",IDC_STATIC,61,74,98,8,SS_NOTIFY
     CONTROL         "Attachment Names",IDC_EXPORT_ATTACHMENT_NAMES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,35,77,10
     EDITTEXT        IDC_EXPORT_ATTACHMENT_SEPARATOR,163,32,40,14,ES_MULTILINE | ES_AUTOHSCROLL
-    LTEXT           "Separator",IDC_STATIC,126,36,34,8
+    LTEXT           "Separator",IDC_STATIC,126,36,34,8,SS_NOTIFY
 END
 
 IDD_OPEN_FOLDER DIALOGEX 0, 0, 579, 69
@@ -348,75 +348,74 @@ BEGIN
     PUSHBUTTON      "Open File",IDYES,383,48,56,14
 END
 
-IDD_FIND_ADVANCED DIALOGEX 0, 0, 385, 368
+IDD_FIND_ADVANCED DIALOGEX 0, 0, 385, 379
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Find Advanced"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,267,352,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,323,352,50,14
+    DEFPUSHBUTTON   "OK",IDOK,267,363,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,323,363,50,14
     CONTROL         "From",IDC_EDIT_FROM_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,27,51,10
-    EDITTEXT        IDC_EDIT_FROM,77,27,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_FROM_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,27,12,10
-    CONTROL         "",IDC_EDIT_FROM_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,27,19,10
-    LTEXT           "Match case",IDC_STATIC,288,13,37,8
-    LTEXT           "Find what",IDC_STATIC,77,13,32,8
-    LTEXT           "Match word",IDC_STATIC,242,13,38,8
+    EDITTEXT        IDC_EDIT_FROM,104,27,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_FROM_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,27,12,10
+    CONTROL         "",IDC_EDIT_FROM_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,27,19,10
+    LTEXT           "Match case",IDC_STATIC_FIND_ADV_MATCH_CASE,308,13,37,8,SS_NOTIFY
+    LTEXT           "Find what",IDC_STATIC_FIND_ADV_FIIND_WHAT,104,13,32,8,SS_NOTIFY
+    LTEXT           "Match word",IDC_STATIC_FIND_ADV_MATCH_WORD,262,13,38,8,SS_NOTIFY
     CONTROL         "To",IDC_EDIT_TO_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,45,50,10
-    EDITTEXT        IDC_EDIT_TO,77,45,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_TO_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,45,12,10
-    CONTROL         "",IDC_EDIT_TO_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,45,19,10
+    EDITTEXT        IDC_EDIT_TO,104,45,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_TO_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,45,12,10
+    CONTROL         "",IDC_EDIT_TO_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,45,15,10
     CONTROL         "Subject",IDC_EDIT_SUBJECT_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,63,51,10
-    EDITTEXT        IDC_EDIT_SUBJECT,77,63,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_SUBJECT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,63,12,10
-    CONTROL         "",IDC_EDIT_SUBJECT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,63,19,10
+    EDITTEXT        IDC_EDIT_SUBJECT,104,63,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_SUBJECT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,63,12,10
+    CONTROL         "",IDC_EDIT_SUBJECT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,63,19,10
     CONTROL         "Message",IDC_EDIT_MESSAGE_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,116,50,10
-    EDITTEXT        IDC_EDIT_MESSAGE,77,116,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_MESSAGE_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,116,12,10
-    CONTROL         "",IDC_EDIT_MESSAGE_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,116,19,10
-    CONTROL         "Attachment",IDC_EDIT_ATTACHMENT_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,134,51,10
-    EDITTEXT        IDC_EDIT_ATTACHMENT,77,135,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,135,12,10
-    CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,135,19,10
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,311,100,15
-    LTEXT           "start date:",IDC_STATIC,56,314,40,8,WS_TABSTOP
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,330,100,15
-    LTEXT           "end date:",IDC_STATIC,56,333,38,8,WS_TABSTOP
+    EDITTEXT        IDC_EDIT_MESSAGE,104,116,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_MESSAGE_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,116,12,10
+    CONTROL         "",IDC_EDIT_MESSAGE_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,116,19,10
+    CONTROL         "Attachment Text",IDC_EDIT_ATTACHMENT_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,134,81,10
+    EDITTEXT        IDC_EDIT_ATTACHMENT,104,135,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_ATTACHMENT_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,135,12,10
+    CONTROL         "",IDC_EDIT_ATTACHMENT_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,135,13,10
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,321,100,15
+    LTEXT           "start date:",IDC_STATIC_FIND_ADV_START_DATE,56,324,40,8,WS_TABSTOP
+    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,101,340,100,15
+    LTEXT           "end date:",IDC_STATIC_FIND_ADV_END_DATE,56,343,38,8,WS_TABSTOP
     CONTROL         "filter dates (if not set all mails on the list are searched):",IDC_FILTERDATES,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,273,193,10
-    CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,353,92,10
-    CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,176,35,10
-    CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,176,35,10
-    GROUPBOX        "",IDC_STATIC,7,206,373,42,WS_TABSTOP
-    GROUPBOX        "Select filter fields",IDC_STATIC,7,7,373,200,WS_TABSTOP
-    GROUPBOX        "",IDC_STATIC,7,267,373,82,WS_TABSTOP
+    CONTROL         "Find all mails that match",IDC_CHECK_FIND_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,361,92,10
+    CONTROL         "Set all",IDC_EDIT_SET_ALL_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,271,176,35,10
+    CONTROL         "Set all",IDC_EDIT_SET_ALL_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,176,35,10
+    GROUPBOX        "",IDC_STATIC_GB_FIND_ADV_3,7,204,373,42,WS_TABSTOP
+    GROUPBOX        "Select filter fields",IDC_STATIC_GB_FIND_ADV_1,7,7,373,200,WS_TABSTOP
+    GROUPBOX        "",IDC_STATIC_GB_FIND_ADV_2,7,267,373,92,WS_TABSTOP
     CONTROL         "CC",IDC_EDIT_CC_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,80,25,10
-    EDITTEXT        IDC_EDIT_CC,77,80,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_CC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,80,22,10
-    CONTROL         "",IDC_EDIT_CC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,80,16,10
+    EDITTEXT        IDC_EDIT_CC,104,80,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_CC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,80,12,10
+    CONTROL         "",IDC_EDIT_CC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,80,16,10
     CONTROL         "BCC",IDC_EDIT_BCC_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,98,29,10
-    EDITTEXT        IDC_EDIT_BCC,77,98,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_BCC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,98,16,10
-    CONTROL         "",IDC_EDIT_BCC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,282,98,16,10
+    EDITTEXT        IDC_EDIT_BCC,104,98,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_BCC_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,98,13,10
+    CONTROL         "",IDC_EDIT_BCC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,98,16,10
     PUSHBUTTON      "Reset all filter fields",IDC_EDIT_RESET,19,175,74,9
-    CONTROL         "Attachment",IDC_EDIT_ATTACHMENT_NAME_CHECKED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,153,51,10
-    EDITTEXT        IDC_EDIT_ATTACHMENT_NAME,77,153,155,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,241,153,12,10
-    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,281,153,19,10
-    LTEXT           "Name",IDC_STATIC,35,161,34,8
+    CONTROL         "Attachment Name",IDC_EDIT_ATTACHMENT_NAME_CHECKED,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,153,79,10
+    EDITTEXT        IDC_EDIT_ATTACHMENT_NAME,104,153,155,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_WHOLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,272,153,12,10
+    CONTROL         "",IDC_EDIT_ATTACHMENT_NAME_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,311,153,15,10
     CONTROL         "Find all mails that don't match",IDC_CHECK_NEGATE_FIND_CRITERIA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,125,353,111,10
-    LTEXT           "Text",IDC_STATIC,34,142,16,8
-    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and",IDC_STATIC,21,286,349,8,WS_TABSTOP
-    LTEXT           "type new value",IDC_FIND_ADV_DATE_FMT,22,297,346,8,WS_TABSTOP
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,125,361,111,10
+    LTEXT           "To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and type new value",IDC_STATIC_FIND_ADV,21,286,349,18,SS_NOTIFY | WS_TABSTOP
+    LTEXT           "Date Format:  ",IDC_FIND_ADV_DATE_FMT,22,307,346,8,SS_NOTIFY | WS_TABSTOP
     PUSHBUTTON      "Configure Filter Rule",IDC_BUTTON1,14,214,83,14
-    LTEXT           "",IDC_RULE_NUMBER_TEXT,110,219,251,8,WS_TABSTOP
-    LTEXT           "",IDC_RULE_TEXT,14,233,366,8,WS_TABSTOP
+    LTEXT           "",IDC_RULE_NUMBER_TEXT,110,217,263,8,WS_TABSTOP
+    LTEXT           "",IDC_RULE_TEXT,14,233,359,8,WS_TABSTOP
     CONTROL         "Match TO field only if single recipient on the list",IDC_SINGLE_TO,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,192,167,10
     CONTROL         "plain",IDC_PLAIN_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,254,31,10
     CONTROL         "html",IDC_HTML_TEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,254,29,10
-    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8,WS_TABSTOP
+    LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,254,106,8,SS_NOTIFY | WS_TABSTOP
     CONTROL         "html if no plain text",IDC_HTML_TEXT_IF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,254,77,10
     PUSHBUTTON      "Help",IDC_BUTTON_HELP,299,251,50,14
     CONTROL         "Highlight all occurences in Message",IDC_HIGHLIGHT_ALL,
@@ -433,7 +432,7 @@ BEGIN
     CONTROL         "&Case sensitive",IDC_CASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,100,24,61,10
     DEFPUSHBUTTON   "Find",IDOK,252,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,252,22,50,14
-    LTEXT           "&Find what:",IDC_STATIC,7,8,34,8
+    LTEXT           "&Find what:",IDC_STATIC,7,8,34,8,SS_NOTIFY
 END
 
 IDD_EDITOR DIALOGEX 0, 0, 332, 14
@@ -452,17 +451,17 @@ CAPTION "Print Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     GROUPBOX        "File Name Configuration",IDC_STATIC,7,7,224,105
-    LTEXT           "Compose File Name Template From",IDC_STATIC,17,18,124,8
+    LTEXT           "Compose File Name Template From",IDC_STATIC,17,18,124,8,SS_NOTIFY
     CONTROL         "Date",IDC_FILE_DATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,33,31,10
     CONTROL         "Time",IDC_FILE_TIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,48,33,31,10
     CONTROL         "From",IDC_FILE_FROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,79,33,32,10
     CONTROL         "To",IDC_FILE_TO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,111,33,24,10
     CONTROL         "Subject",IDC_FILE_SUBJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,33,40,10
     CONTROL         "Unique Id",IDC_FILE_UNIQUE_ID,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,177,33,47,10
-    LTEXT           "Max file path length supported by Windows is 260 characters",IDC_STATIC,15,48,208,8
-    LTEXT           "Wanted Max File Name Length",IDC_STATIC,14,64,102,8
+    LTEXT           "Max file path length supported by Windows is 260 characters",IDC_STATIC,15,48,208,8,SS_NOTIFY
+    LTEXT           "Wanted Max File Name Length",IDC_STATIC,14,64,102,8,SS_NOTIFY
     EDITTEXT        IDC_FILE_NAME_MAX_SIZE,127,59,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Adjusted Max File Name Length",IDC_STATIC,14,81,101,8
+    LTEXT           "Adjusted Max File Name Length",IDC_STATIC,14,81,101,8,SS_NOTIFY
     EDITTEXT        IDC_FILE_NAME_ADJUSTED_MAX_SIZE,127,76,40,14,ES_AUTOHSCROLL
     CONTROL         "CUSTOM TEMPLATE",IDC_CUSTOM_TEMPLATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,97,75,10
     PUSHBUTTON      "Compose Custom Template",IDC_SET_CUSTOM_TEMPLATE,95,94,98,14
@@ -475,9 +474,9 @@ BEGIN
     CONTROL         "Chrome Browser",IDC_HTML2PDF_SCRIPT_TYPE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,13,177,64,10
     CONTROL         "MSEdge Browser",IDC_MSEDGE,"Button",BS_AUTORADIOBUTTON,82,177,66,10
     CONTROL         "User Defined Script",IDC_USER_SCRIPT,"Button",BS_AUTORADIOBUTTON,153,177,74,10
-    LTEXT           "Path to Chrome/MSEdge Browser executable",IDC_STATIC,15,190,193,8
+    LTEXT           "Path to Chrome/MSEdge Browser executable",IDC_STATIC,15,190,193,8,SS_NOTIFY
     EDITTEXT        IDC_CHROME_EXE_PATH,15,201,211,14,ES_AUTOHSCROLL
-    LTEXT           "Path To User Defined Script",IDC_STATIC,15,222,122,8
+    LTEXT           "Path To User Defined Script",IDC_STATIC,15,222,122,8,SS_NOTIFY
     EDITTEXT        IDC_HTML2PDF_SCRIPT_PATH,15,233,211,14,ES_AUTOHSCROLL
     GROUPBOX        "Print selected mails to separate files",IDC_PRINT_TO_SEPARATE_FILES,7,256,227,24
     CONTROL         "PDF",IDC_SEPARATE_PDF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,267,29,10
@@ -505,8 +504,8 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,247,80,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,305,80,50,14
     EDITTEXT        IDC_EDIT1,14,22,336,14,ES_AUTOHSCROLL
-    LTEXT           "Enter New Folder Name:",IDC_INPUT_LABEL,14,10,136,8
-    LTEXT           "Under Parent Folder:",IDC_STATIC,15,46,135,8
+    LTEXT           "Enter New Folder Name:",IDC_INPUT_LABEL,14,10,136,8,SS_NOTIFY
+    LTEXT           "Under Parent Folder:",IDC_STATIC,15,46,135,8,SS_NOTIFY
     EDITTEXT        IDC_EDIT2,15,59,333,14,ES_AUTOHSCROLL
 END
 
@@ -519,14 +518,14 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,322,176,50,14
     GROUPBOX        "Attachment Window",IDC_ATTACHMENT_WNDW_CFG,7,7,365,80
     EDITTEXT        IDC_ATTACHMENT_MAX_SIZE,138,16,44,14,ES_AUTOHSCROLL
-    LTEXT           "Max Size in % of Message Window",IDC_STATIC,19,21,115,8
+    LTEXT           "Max Size in % of Message Window",IDC_STATIC,19,21,115,8,SS_NOTIFY
     CONTROL         "Show All Attachments",IDC_ALL_ATTACHMENT_TYPES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,49,96,10
-    LTEXT           "By default the attachment indicator is set when the mail has at least one attachment marked as Attachment Type",IDC_STATIC,19,101,269,16,NOT WS_GROUP
+    LTEXT           "By default the attachment indicator is set when the mail has at least one attachment marked as Attachment Type",IDC_STATIC,19,101,269,16,SS_NOTIFY | NOT WS_GROUP
     GROUPBOX        "Mail Attachment Indicator",IDC_STATIC,7,91,365,45
     CONTROL         "Set when any attachment present",IDC_ALL_ATTACHMENT_TYPES_INDICATOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,122,125,10
-    LTEXT           "By default attachments other than those embeded into mail message are shown in the attachment window",IDC_STATIC,20,36,342,8,NOT WS_GROUP
-    LTEXT           "NOTE that ""Show All Attachments"" will affect output from Print To, View in Browser and Export All Mail Attachmensts options",IDC_STATIC,20,64,344,18
+    LTEXT           "By default attachments other than those embeded into mail message are shown in the attachment window",IDC_STATIC,20,36,342,8,SS_NOTIFY | NOT WS_GROUP
+    LTEXT           "NOTE that ""Show All Attachments"" will affect output from Print To, View in Browser and Export All Mail Attachmensts options",IDC_STATIC,20,64,344,18,SS_NOTIFY
     GROUPBOX        "Append Picture Attachments to Mail View",IDC_STATIC,7,140,170,30
     CONTROL         "Single Mail",IDC_APPEND_SINGLE_MAIL_VIEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,156,47,10
     CONTROL         "Multiple Selected Mails",IDC_APPEND_MULTIPLE_MAILS_VIEW,
@@ -557,19 +556,19 @@ BEGIN
     LTEXT           "Template Format",IDC_STATIC,13,12,105,8
     EDITTEXT        IDC_EDIT_TEMPL_FMT,12,25,505,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_DATE_FMT,12,45,147,14,ES_AUTOHSCROLL
-    LTEXT           "Date and Time Format",IDC_STATIC,167,49,85,8
-    LTEXT           "Valid template format keywords that will be replaced by values from mail. UNIQUE_ID is generated by the mbox viewer to eliminate name clashes.",IDC_STATIC,12,108,505,8
-    LTEXT           "%DATE_TIME%   %FROM_NAME%   %FROM_ADDR%   %TO_NAME%   %TO_ADDR%   %SUBJECT%  %UNIQUE_ID%",IDC_STATIC,19,123,399,8
-    LTEXT           "Date and Time Format follows format accepted by the  standard ",IDC_STATIC,14,157,207,8
-    LTEXT           "%Y-%m-%d %H:%M:%S  will  expand to for example  2020-1-31  16:59:59",IDC_STATIC,23,170,302,8
-    LTEXT           "function. For example:",IDC_STATIC,265,157,74,8
+    LTEXT           "Date and Time Format",IDC_STATIC,167,49,85,8,SS_NOTIFY
+    LTEXT           "Valid template format keywords that will be replaced by values from mail. UNIQUE_ID is generated by the mbox viewer to eliminate name clashes.",IDC_STATIC,12,108,505,8,SS_NOTIFY
+    LTEXT           "%DATE_TIME%   %FROM_NAME%   %FROM_ADDR%   %TO_NAME%   %TO_ADDR%   %SUBJECT%  %UNIQUE_ID%",IDC_STATIC,19,123,399,8,SS_NOTIFY
+    LTEXT           "Date and Time Format follows format accepted by the  standard ",IDC_STATIC,14,157,207,8,SS_NOTIFY
+    LTEXT           "%Y-%m-%d %H:%M:%S  will  expand to for example  2020-1-31  16:59:59",IDC_STATIC,23,170,302,8,SS_NOTIFY
+    LTEXT           "function. For example:",IDC_STATIC,265,157,74,8,SS_NOTIFY
     CONTROL         "User Account Name  @",IDC_TEMPL_FROM_USERNAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,65,71,85,10
     CONTROL         "Domain Name",IDC_TEMPL_FROM_DOMAIN_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,153,71,59,10
-    LTEXT           "From Address:",IDC_TEMPL_FROM_ADDRESS_TEXT,13,71,48,8
+    LTEXT           "From Address:",IDC_TEMPL_FROM_ADDRESS_TEXT,13,71,48,8,SS_NOTIFY
     CONTROL         "User Account Name  @",IDC_TEMPL_TO_USERNAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,284,71,84,10
     CONTROL         "Domain Name",IDC_TEMPL_TO_DOMAIN_NAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,372,71,59,10
-    LTEXT           "To Address:",IDC_TEMPL_TO_ADDRESS_TEXT,238,71,40,8
-    LTEXT           "Keywords can be specified in any order. Any text can be specified between keywords.",IDC_STATIC,13,137,416,8
+    LTEXT           "To Address:",IDC_TEMPL_TO_ADDRESS_TEXT,238,71,40,8,SS_NOTIFY
+    LTEXT           "Keywords can be specified in any order. Any text can be specified between keywords.",IDC_STATIC,13,137,416,8,SS_NOTIFY
     CONTROL         "Replace white spaces with underscore",IDC_TEMPL_WHITE_TO_UNDERSCORE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,87,138,10
     PUSHBUTTON      "srcftime",IDC_SRCFTIME,223,157,35,9
@@ -670,11 +669,11 @@ BEGIN
     CONTROL         "(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER5,
                     "Button",BS_AUTORADIOBUTTON,22,114,344,10
     GROUPBOX        "NOTE:",IDC_STATIC,7,138,407,83
-    LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC,21,153,381,8
-    LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC,21,165,381,8
-    LTEXT           "3.  and no CC and no BCC will match mails without CC and BCC fields",IDC_STATIC,21,178,381,8
-    LTEXT           "4.  If field is not selected in the parent dialog, it is removed from the rule",IDC_STATIC,21,190,381,8
-    LTEXT           "5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field",IDC_STATIC,21,202,381,8
+    LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC,21,153,381,8,SS_NOTIFY
+    LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC,21,165,381,8,SS_NOTIFY
+    LTEXT           "3.  and no CC and no BCC will match mails without CC and BCC fields",IDC_STATIC,21,178,381,8,SS_NOTIFY
+    LTEXT           "4.  If field is not selected in the parent dialog, it is removed from the rule",IDC_STATIC,21,190,381,8,SS_NOTIFY
+    LTEXT           "5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field",IDC_STATIC,21,202,381,8,SS_NOTIFY
     DEFPUSHBUTTON   "OK",IDOK,307,227,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,364,227,50,14
 END
@@ -689,11 +688,11 @@ BEGIN
     EDITTEXT        IDC_EDIT_TARGET_FOLDER,15,75,339,14,ES_AUTOHSCROLL,WS_EX_RTLREADING
     EDITTEXT        IDC_EDIT_ARCHIVE_FILE_NAME,15,112,339,14,ES_AUTOHSCROLL
     CONTROL         "Created Archive File will be moved from the Default Folder",IDC_STATIC,
-                    "Static",SS_LEFTNOWORDWRAP,15,28,253,10
-    LTEXT           "Proposed Archive File Name. Rename as needed",IDC_STATIC,16,99,193,9,NOT WS_GROUP
+                    "Static",SS_LEFTNOWORDWRAP | SS_NOTIFY,15,28,253,10
+    LTEXT           "Proposed Archive File Name. Rename as needed",IDC_STATIC,16,99,193,9,SS_NOTIFY | NOT WS_GROUP
     LTEXT           "To the Target Folder",IDC_STATIC,16,64,144,8,NOT WS_GROUP
     EDITTEXT        IDC_EDIT_DFLT_FOLDER,16,41,338,14,ES_AUTOHSCROLL
-    LTEXT           "Created Archive File can't be viewed from ArchiveCache folder",IDC_STATIC,15,13,269,8
+    LTEXT           "Created Archive File can't be viewed from ArchiveCache folder",IDC_STATIC,15,13,269,8,SS_NOTIFY
 END
 
 IDD_SMTP_DLG DIALOGEX 0, 0, 189, 288
@@ -713,18 +712,18 @@ BEGIN
     EDITTEXT        IDC_USER_ACCOUNT,55,179,112,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_USER_PASSWORD,55,198,111,14,ES_AUTOHSCROLL
     GROUPBOX        "SMTP Server Addres",IDC_STATIC,7,79,175,50
-    LTEXT           "Name",IDC_STATIC,15,95,22,8
-    LTEXT           "Port",IDC_STATIC,15,108,30,8
+    LTEXT           "Name",IDC_STATIC,15,95,22,8,SS_NOTIFY
+    LTEXT           "Port",IDC_STATIC,15,108,30,8,SS_NOTIFY
     GROUPBOX        "SMTP User",IDC_STATIC,7,169,175,51
-    LTEXT           "Account",IDC_STATIC,15,181,35,8
-    LTEXT           "Password",IDC_STATIC,15,200,34,8
+    LTEXT           "Account",IDC_STATIC,15,181,35,8,SS_NOTIFY
+    LTEXT           "Password",IDC_STATIC,15,200,34,8,SS_NOTIFY
     COMBOBOX        IDC_TLS_OPTION,55,144,52,26,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "SMTP Server Connection Encryption Type",IDC_STATIC,7,132,175,30
     PUSHBUTTON      "Save",IDC_BBUTTON_SAVE,79,267,50,14
     PUSHBUTTON      "Help",IDC_SMTP_SERVER_HELP,125,18,50,14
-    LTEXT           "Please read the overview first -->",IDC_STATIC,14,20,109,8
+    LTEXT           "Please read the overview first -->",IDC_STATIC,14,20,109,8,SS_NOTIFY
     EDITTEXT        IDC_MAX_MAIL_SIZE,86,227,79,14,ES_AUTOHSCROLL
-    LTEXT           "Max Mail Size in KB",IDC_FORWARD_MAX_MAIL_SIZE_LABEL,15,230,63,8
+    LTEXT           "Max Mail Size in KB",IDC_FORWARD_MAX_MAIL_SIZE_LABEL,15,230,63,8,SS_NOTIFY
     PUSHBUTTON      "Reset Max Mail Size to Default",IDC_RESET_MAX_MAIL_SIZE,13,246,152,14
 END
 
@@ -735,20 +734,20 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Send",IDOK,198,254,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,253,254,50,14
-    LTEXT           "To:",IDC_FORWARD_TO,16,79,12,8
-    LTEXT           "CC:",IDC_SSL_ON,16,102,13,8
-    LTEXT           "BCC:",IDC_SSL_OPTION,16,126,17,8
+    LTEXT           "To:",IDC_FORWARD_TO,16,79,12,8,SS_NOTIFY
+    LTEXT           "CC:",IDC_SSL_ON,16,102,13,8,SS_NOTIFY
+    LTEXT           "BCC:",IDC_SSL_OPTION,16,126,17,8,SS_NOTIFY
     EDITTEXT        IDC_EDIT_FORWARD_TO,46,77,257,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_FORWARD_CC,46,100,257,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_FORWARD_BCC,46,124,257,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_FORWARD_TEXT,17,167,284,75,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
-    LTEXT           "User Text:",IDC_FORWARD_USER_TEXT,15,150,64,8
+    LTEXT           "User Text:",IDC_FORWARD_USER_TEXT,15,150,64,8,SS_NOTIFY
     EDITTEXT        IDC_EDIT_FORWARD_SUBJECT,46,33,258,14,ES_AUTOHSCROLL | ES_NOHIDESEL | ES_READONLY
-    LTEXT           "Subject:",IDC_STATIC,13,37,26,8
+    LTEXT           "Subject:",IDC_STATIC,13,37,26,8,SS_NOTIFY
     PUSHBUTTON      "Clear",IDC_FORWARD_CLEAR,18,254,50,14
     EDITTEXT        IDC_EDIT_FORWARD_FROM,45,55,258,14,ES_AUTOHSCROLL | ES_NOHIDESEL
-    LTEXT           "From:",IDC_STATIC,16,58,20,8
-    LTEXT           "Service:",IDC_STATIC,14,15,27,8
+    LTEXT           "From:",IDC_STATIC,16,58,20,8,SS_NOTIFY
+    LTEXT           "Service:",IDC_STATIC,14,15,27,8,SS_NOTIFY
     EDITTEXT        IDC_EDIT_FORWARD_SERVICE,46,14,81,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
 END
 
@@ -763,7 +762,7 @@ BEGIN
     PUSHBUTTON      "Select New Data Folder",IDC_SELECT_DATA_FOLDER_BUTTON,24,146,82,14
     EDITTEXT        IDC_EDIT_INTRO,22,7,412,85,ES_MULTILINE | ES_READONLY | NOT WS_BORDER
     EDITTEXT        IDC_CURRENT_FOLDER_PATH,24,111,424,18,ES_AUTOHSCROLL
-    LTEXT           "Current Data Folder",IDC_STATIC,26,96,105,9
+    LTEXT           "Current Data Folder",IDC_STATIC,26,96,105,9,SS_NOTIFY
 END
 
 IDD_MERGE_FOLDER_AND_SUBFOLDERS DIALOGEX 0, 0, 351, 218
@@ -794,14 +793,14 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,198,155,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,252,155,50,14
     EDITTEXT        IDC_SOURCE_ARCHIVE,91,19,206,14,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "Source Mail Archive",IDC_STATIC,14,19,69,8
-    LTEXT           "Selected Mail Subject",IDC_STATIC,14,42,92,8
+    LTEXT           "Source Mail Archive",IDC_STATIC,14,19,69,8,SS_NOTIFY
+    LTEXT           "Selected Mail Subject",IDC_STATIC,14,42,92,8,SS_NOTIFY
     EDITTEXT        IDC_SELECTED_SUBJECT,91,42,206,14,ES_AUTOHSCROLL
-    LTEXT           "Leading Mail Count",IDC_STATIC,14,71,81,8
-    LTEXT           "Trailing Mail Count",IDC_STATIC,14,95,59,8
+    LTEXT           "Leading Mail Count",IDC_STATIC,14,71,81,8,SS_NOTIFY
+    LTEXT           "Trailing Mail Count",IDC_STATIC,14,95,59,8,SS_NOTIFY
     EDITTEXT        IDC_MAIL_LEADING_CNT,91,71,77,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MAIL_TRAILING_CNT,91,95,77,14,ES_AUTOHSCROLL
-    LTEXT           "Created Archive Name",IDC_STATIC,14,115,75,8
+    LTEXT           "Created Archive Name",IDC_STATIC,14,115,75,8,SS_NOTIFY
     EDITTEXT        IDC_CREATED_ARCHIVE,91,115,205,14,ES_AUTOHSCROLL
 END
 
@@ -945,7 +944,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 380
         TOPMARGIN, 7
-        BOTTOMMARGIN, 366
+        BOTTOMMARGIN, 377
     END
 
     IDD_FIND_IN_MAIL, DIALOG
@@ -1403,6 +1402,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_MAIN_TOOLBAR        "Standard"
+    IDS_DAY_MONTH_YEAR      "day/month/year"
+    IDS_MONTH_DAY_YEAR      "month/day/year"
+    IDS_YEAR_MONTH_DAY      "year/month/day"
 END
 
 STRINGTABLE

@@ -113,6 +113,7 @@ protected:
 
 public:
 	bool isequal(K *elem1, K *elem2) {  return m_Equal(elem1, elem2);  }
+	hashsum_t hash(K* key) { return m_Hash(key); }
 
 	dllist<T, NODE> *get_collision_list(K *key)
 	{
@@ -318,6 +319,7 @@ public:
 			return false;
 	}
 
+
 protected:
 	dllist<T, NODE> *m_ar;
 	int m_hashMapSize;
@@ -325,6 +327,18 @@ protected:
 	HASH m_Hash;
 	EQUAL m_Equal;
 };
+
+static hashsum_t StrHash(const char* buf, const UINT length)
+{
+	register hashsum_t hash = 0;
+	register UINT len = length;
+	while (len-- > 0)
+	{
+		hash = (hash << 4) + (hashsum_t)*buf++;
+		hash ^= (hash >> 12);
+	}
+	return hash;
+}
 
 #if 0
 

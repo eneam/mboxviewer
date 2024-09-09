@@ -625,7 +625,6 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
 		TRACE(L"(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errText);
-		int deb = 1;
 		return FALSE;
 	}
 	else
@@ -657,9 +656,64 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 	return TRUE;
 }
 
+HANDLE FileUtils::FileOpen(CString& cStrNamePath, CString &errorText, BOOL truncate)
+{
+	DWORD dwAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+	//if (truncate)
+		//dwCreationDisposition = CREATE_ALWAYS | TRUNCATE_EXISTING;
+
+	HANDLE hFile = CreateFileW(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		errorText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+		TRACE(L"(OpenFile)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errorText);
+		return FALSE;
+	}
+	return hFile;
+}
+
+void FileUtils::FileClose(HANDLE hFile)
+{
+	if (hFile != INVALID_HANDLE_VALUE)
+		CloseHandle(hFile);
+}
+
+BOOL FileUtils::Write2File(CString& cStrNamePath, const wchar_t* data, int dataLength)
+{
+	DWORD dwAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+
+	HANDLE hFile = CreateFileW(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+		TRACE(L"(Write2File)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errText);
+		int deb = 1;
+		return FALSE;
+	}
+	else
+	{
+		const unsigned char* dataA = (unsigned char*)data;
+		int dataLengthA = dataLength * 2;
+
+		DWORD numberOfBytesWritten = 0;
+		int retval = FileUtils::Write2File(hFile, dataA, dataLengthA, &numberOfBytesWritten);
+
+		BOOL retClose = CloseHandle(hFile);
+		if (retClose == FALSE)
+			int deb = 1;
+	}
+	return TRUE;
+}
+
+
 int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten)
 {
 	DWORD bytesToWrite = nNumberOfBytesToWrite;
+	const wchar_t* pszDataW = (wchar_t*)lpBuffer;
 	const unsigned char* pszData = (unsigned char*)lpBuffer;
 	DWORD nwritten = 0;
 	while (bytesToWrite > 0)

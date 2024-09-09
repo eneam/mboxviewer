@@ -249,8 +249,6 @@ public:
 	bool DecodeBodyData(char* viewMapBegin, int msgLength, SimpleString* outbuf);
 };
 
-unsigned long StrHash(const char* buf, const UINT length);
-
 struct MboxHash;
 struct MboxEqual;
 

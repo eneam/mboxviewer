@@ -32,6 +32,7 @@
 #include "StdAfx.h"
 #include "FindFilterRuleDlg.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // FindFilterRuleDlg dialog
@@ -61,3 +62,17 @@ END_MESSAGE_MAP()
 
 
 // FindFilterRuleDlg message handlers
+
+
+BOOL FindFilterRuleDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  Add extra initialization here
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
+}

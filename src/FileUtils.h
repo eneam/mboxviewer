@@ -90,6 +90,10 @@ public:
 	static BOOL ReadEntireFile(CString &cStrNamePath, SimpleString &data);
 	static int Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten);
 	//
+	static HANDLE FileOpen(CString& cStrNamePath, CString &errorText, BOOL truncate);
+	static void FileClose(HANDLE hFile);
+	static BOOL Write2File(CString& cStrNamePath, const wchar_t* data, int dataLength);
+	//
 	static BOOL NormalizeFilePath(CString &filePath);
 	//
 	// Create all subfolders if they don't exist

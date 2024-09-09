@@ -5,6 +5,7 @@
 #include "afxdialogex.h"
 #include "TextUtilsEx.h"
 #include "PageCodeListDlg.h"
+#include "ResHelper.h"
 
 
 // PageCodeListDlg dialog
@@ -220,6 +221,9 @@ BOOL PageCodeListDlg::OnInitDialog()
 	NMHEADER nmHdr;
 	nmHdr.iItem = 0;
 	//m_list.PostMessage(HDN_ITEMCLICK, 0, 0);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

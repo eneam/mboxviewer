@@ -68,4 +68,5 @@ protected:
 public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedSrcftime();
+	virtual BOOL OnInitDialog();
 };

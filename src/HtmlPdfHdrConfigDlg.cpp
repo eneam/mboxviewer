@@ -35,6 +35,7 @@
 #include "GenericFontFamilyDlg.h"
 #include "MainFrm.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // HtmlPdfHdrConfigDlg dialog
@@ -128,6 +129,9 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 		OnBnClickedFontDflt();
 	else
 		OnBnClickedFontCustom();
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "TextUtilsEx.h"
 #include "FindDlg.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -175,19 +176,35 @@ BOOL CFindDlg::OnInitDialog()
 	p = GetDlgItem(IDC_FIND_DATE_FMT);
 	if (p)
 	{
-		CString dateFmt = L"Date format: ";
-		if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
-			dateFmt.Append(L"month/day/year");
-		else if (m_params.m_dateTimeFormat.Compare(L"dd/MM/yyyy") == 0)
-			dateFmt.Append(L"day/month/year");
-		else if (m_params.m_dateTimeFormat.Compare(L"yyyy/MM/dd") == 0)
-			dateFmt.Append(L"year/month/day");
+		CString dateFmt;
+		CString wTxt;
+		p->GetWindowText(wTxt);
 
-		(p)->SetWindowText(dateFmt);
+		if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
+		{
+			dateFmt.LoadStringW(IDS_MONTH_DAY_YEAR);
+			//dateFmt.Append(L"month/day/year");
+		}
+		else if (m_params.m_dateTimeFormat.Compare(L"dd/MM/yyyy") == 0)
+		{
+			dateFmt.LoadStringW(IDS_DAY_MONTH_YEAR);
+			//dateFmt.Append(L"day/month/year");
+		}
+		else if (m_params.m_dateTimeFormat.Compare(L"yyyy/MM/dd") == 0)
+		{
+			dateFmt.LoadStringW(IDS_YEAR_MONTH_DAY);
+			//dateFmt.Append(L"year/month/day");
+		}
+
+		wTxt.Append(dateFmt);
+		(p)->SetWindowText(wTxt);
 		int deb = 1;
 	}
 
 	UpdateData(FALSE);  // FIXMEFIXME
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

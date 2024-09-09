@@ -31,6 +31,7 @@
 
 #include "stdafx.h"
 #include "ColorPickerDlg.h"
+#include "ResHelper.h"
 
 #ifndef _WIN32_WCE // CColorDialog is not supported for Windows CE.
 
@@ -75,6 +76,9 @@ BOOL ColorPickerDlg::OnInitDialog()
 	if (xpos < 0)
 		xpos = 0;
 	SetWindowPos(pwnd, pr.left, pr.bottom, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

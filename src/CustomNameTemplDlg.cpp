@@ -35,6 +35,7 @@
 
 #include "mainFrm.h"
 #include "MboxMail.h"
+#include "ResHelper.h"
 
 // CustomNameTemplDld dialog
 
@@ -150,4 +151,18 @@ void CustomNameTemplDlg::OnBnClickedSrcftime()
 	HINSTANCE result = ShellExecute(NULL, L"open", 
 		L"https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l?view=vs-2019", NULL, NULL, SW_SHOWNORMAL);
 	int deb = 1;
+}
+
+
+BOOL CustomNameTemplDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  Add extra initialization here
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
 }

@@ -33,6 +33,7 @@
 #include "OpenArchiveFileDlg.h"
 #include "FileUtils.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // OpenArchiveFileDlg dialog
@@ -112,6 +113,9 @@ BOOL OpenArchiveFileDlg::OnInitDialog()
 	//GetDlgItem(IDC_STATIC)->SetWindowText(m_text);
 
 	;// SetWindowText(caption);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

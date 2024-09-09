@@ -1159,6 +1159,9 @@ BOOL CAboutDlg::OnInitDialog()
 	if (retGetVersion)
 		GetDlgItem(IDC_STATIC1)->SetWindowText(version);
 
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -1581,14 +1584,6 @@ BOOL CmboxviewApp::InitInstance()
 	pFrame->ShowWindow(SW_SHOW);
 	pFrame->UpdateWindow();
 
-#ifdef _DEBUG
-	CMenu* menu = pFrame->GetMenu();
-	int index = 1;
-	ResHelper::IterateMenuItems(menu, index);
-	ResHelper::IterateMenuItemsSetPopMenuData(menu, index);
-	int deb = 1;
-#endif
-
 	DWORD ms, ls;
 	if (GetFileVersionInfo((HMODULE)AfxGetInstanceHandle(), ms, ls))
 	{
@@ -1631,6 +1626,69 @@ BOOL CmboxviewApp::InitInstance()
 		AfxMessageBox(L"Sockets Could Not Be Initialized");
 		return FALSE;
 	}
+
+
+#ifdef _DEBUG
+
+	TRACE(L"LoadMenuItemsInfo\n");
+	CMenu* menu = pFrame->GetMenu();
+	int index = 1;
+	ResHelper::LoadMenuItemsInfo(menu, index);
+
+	TRACE(L"LoadDialogItemsInfo\n");
+	CDialogBar& dbar = pFrame->GetDialogBar();;
+	HWND h = dbar.GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
+
+	TRACE(L"LoadToolBarItemsInfo\n");
+	CToolBar& cbar = pFrame->GetToolBar();
+	ResHelper::LoadToolBarItemsInfo(&cbar);
+
+	TRACE(L"Load ResInfo END\n");
+
+#if 0
+	TRACE(L"PrintResInfoMap\n");
+	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
+	TRACE(L"PrintResInfoArray\n");
+	//int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray);
+	TRACE(L"PrintResInfo END\n");
+#endif
+
+	//ResHelper::IterateMenuItems(menu, index);
+	//ResHelper::IterateMenuItemsSetPopMenuData(menu, index);
+
+
+	//CDialogBar &dbar = pFrame->m_wndDlgBar;
+	//HWND h = dbar.GetSafeHwnd();
+	//ResHelper::IterateWindowChilds(h);
+
+	int deb3 = 1;
+	//m_wndDlgBar
+
+	//HWND h = pFrame->m_wndToolBar.m_GetSafeHwnd();
+	//ResHelper::IterateWindowChilds(h);
+
+#if 0
+	CString tbarTxt;
+	index = 0;
+	pFrame->GetToolBar().GetButtonText(index, tbarTxt);
+	UINT bID = pFrame->GetToolBar().GetItemID(index);
+
+
+	CToolBarCtrl& cbar = pFrame->GetToolBar().GetToolBarCtrl();
+	int bCnt = cbar.GetButtonCount();
+
+
+	CToolTipCtrl* ttips = cbar.GetToolTips();
+	int ttipsCnt = 0;
+	if (ttips)
+		ttipsCnt = ttips->GetToolCount();
+#endif
+
+	int deb2 = 1;
+#endif
+
+
 	return TRUE;
 }
 

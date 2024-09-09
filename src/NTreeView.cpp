@@ -8464,7 +8464,7 @@ void GlobalFolderInfoDB::Print()
 
 hashsum_t GlobalFolderInfoDB::GetHashsum(CString* key)
 {
-	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
+	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
 	return hashsum;
 };
 
@@ -8660,7 +8660,7 @@ void TreeCtrlInfoDB::Print()
 
 hashsum_t TreeCtrlInfoDB::GetHashsum(CString* key)
 {
-	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength());
+	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
 	return hashsum;
 };
 

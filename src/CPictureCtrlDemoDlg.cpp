@@ -51,6 +51,7 @@
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
 #include "GdiUtils.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -160,6 +161,9 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 	EnableZoom(FALSE);
 
 	UpdateData(TRUE);
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten

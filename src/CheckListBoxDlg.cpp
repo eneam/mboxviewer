@@ -32,6 +32,7 @@
 #include "stdafx.h"
 #include "CheckListBoxDlg.h"
 #include "afxdialogex.h"
+#include "ResHelper.h"
 
 
 // CCheckListBoxDlg dialog
@@ -88,6 +89,9 @@ BOOL CCheckListBoxDlg::OnInitDialog()
 	SetWindowText(m_title);
 
 	LoadData();
+
+	HWND h = this->GetSafeHwnd();
+	ResHelper::LoadDialogItemsInfo(h);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
