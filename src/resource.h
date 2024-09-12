@@ -8,6 +8,9 @@
 #define IDS_DAY_MONTH_YEAR              102
 #define IDS_MONTH_DAY_YEAR              103
 #define IDS_YEAR_MONTH_DAY              104
+#define IDS_PAGE_CODE_LIST_CODEPAGE_ID  105
+#define IDS_PAGE_CODE_LIST_CODEPAGE_NAME 106
+#define IDS_PAGE_CODE_LIST_MAX_CHAR_SIZE 107
 #define IDR_MAINFRAME                   128
 #define IDR_mboxviewTYPE                129
 #define IDS_SELECT_FOLDER               129
@@ -390,6 +393,8 @@
 #define IDC_STATIC_GB_FIND_2            1328
 #define IDC_STATIC_FIND_ADV_START_DATE  1329
 #define IDC_STATIC_FIND_ADV_END_DATE    1330
+#define IDC_STATICOPEN_FILE_OR_FOLDER   1331
+#define IDC_STATIC_OPEN_FILE_OR_FOLDER  1331
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -459,6 +464,7 @@
 #define ID_HELP_SHORTCUTS               32921
 #define ID_FILE_SELECT_FOLDER           32922
 #define ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES 32923
+#define ID_DEVELOPMENTOPTIONS_CODEPAGEINSTALLED 32924
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -468,8 +474,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        242
-#define _APS_NEXT_COMMAND_VALUE         32924
-#define _APS_NEXT_CONTROL_VALUE         1331
+#define _APS_NEXT_COMMAND_VALUE         32925
+#define _APS_NEXT_CONTROL_VALUE         1332
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -7572,7 +7572,10 @@ restart:
 				if (pFrame->MergeMboxArchiveFiles(fileList, filePath) < 0)
 					return -1;
 
-				CString txt = L"Created Mbox Mail Archive file \n\n" + filePath;
+				//CString txt = L"Created Mbox Mail Archive file \n\n" + filePath;
+				CString txt;
+				CString fmt = L"Created Mbox Mail Archive file \n\n%s";
+				txt.Format(fmt, filePath);
 				BOOL supressOpenFileOption = FALSE;
 				//if (filePath.Compare(datapath) == 0)  // TODO: 
 					//supressOpenFileOption = TRUE;

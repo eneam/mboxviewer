@@ -33,6 +33,8 @@
 #include "ResHelper.h"
 #include "TextUtilsEx.h"
 
+
+ResInfoMapType ResHelper::mergedResInfoMap(2000);
 ResInfoMapType ResHelper::resInfoMap(2000);
 ResInfoArrayType ResHelper::resInfoArray;
 
@@ -40,12 +42,96 @@ int ResHelper::maxWindowTextLength = WINDOW_TEXT_LENGTH;
 wchar_t ResHelper::windowText[WINDOW_TEXT_LENGTH + 1];
 int ResHelper::maxClassNameLength = CLASS_NAME_LENGTH;
 wchar_t ResHelper::className[CLASS_NAME_LENGTH + 1];
+CString ResHelper::wndText;
 
 CString ResHelper::resourceFile = L"resource.txt";
 HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
 // Iterates all child windows in the window defined by hwndParent window
 
+
+void ResHelper::LoadDialogItemsInfo(CDialog* dlg)
+{
+#ifdef _DEBUG
+
+	HWND hwndParent = dlg->GetSafeHwnd();
+
+	if (hwndParent == 0)
+		return;
+
+	CWnd* wnd = (CWnd*)dlg;
+
+	LoadDialogItemsInfo(wnd);
+
+#endif
+}
+
+void ResHelper::LoadDialogItemsInfo(CWnd *wnd)
+{
+#ifdef _DEBUG
+
+	HWND hwndParent = wnd->GetSafeHwnd();
+
+	if (hwndParent == 0)
+		return;
+
+	//CWnd* wnd = (CWnd*)dlg;
+
+	::GetWindowText(hwndParent, windowText, maxWindowTextLength);
+	wnd->GetWindowTextW(wndText);
+
+	AddItemInfo(CString(windowText), CString(L"DIALOGEX"));
+
+	int maxcnt = 512;
+	int iter = 1;
+	LoadDialogItemsInfo(wnd, hwndParent, maxcnt, iter);
+
+#endif
+}
+
+void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int iter)
+{
+#ifdef _DEBUG
+	CString strClassName;
+	HWND hwndChild = GetWindow(hwndParent, GW_CHILD);
+	while ((hwndChild != NULL) && maxcnt > 0)
+	{
+		int slen = ::GetWindowText(hwndChild, windowText, maxWindowTextLength);
+		int sclasslen = GetClassName(hwndChild, className, maxClassNameLength);
+
+		strClassName = className;
+		if (strClassName.CompareNoCase(L"EDIT"))
+			AddItemInfo(CString(windowText), CString(className));
+
+		UINT nID = ::GetDlgCtrlID(hwndChild);
+		if (nID == IDC_TLS_OPTION)
+			int deb = 1;
+
+		CWnd* pw = wnd->GetDlgItem(nID);
+		if (strClassName.CompareNoCase(L"ListBox") == 0)
+		{
+			int index = 0;
+			CListBox* listBox = (CListBox*)pw;
+			LoadListBoxItemsInfo(listBox, index);
+			int deb = 1;
+		}
+		else if (strClassName.CompareNoCase(L"ComboBox") == 0)
+		{
+			int index = 0;
+			CComboBox* comboBox = (CComboBox*)pw;
+			LoadComboBoxItemsInfo(comboBox, index);
+			int deb = 1;
+		}
+		else
+		{
+			LoadDialogItemsInfo(wnd, hwndChild, --maxcnt, ++iter);
+		}
+		hwndChild = GetWindow(hwndChild, GW_HWNDNEXT);
+	}
+#endif
+}
+
+#if 0
 void ResHelper::LoadDialogItemsInfo(HWND hwndParent)
 {
 #ifdef _DEBUG
@@ -77,6 +163,18 @@ void ResHelper::LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter)
 		if (strClassName.CompareNoCase(L"EDIT"))
 			AddItemInfo(CString(windowText), CString(className));
 
+#if 0
+		if (strClassName.CompareNoCase(L"ListBox") == 0)
+		{
+			int index = 0;
+			UINT nID = ::GetDlgCtrlID(hwndChild);
+			CWnd* pw = 0; // ::GetDlgItem(hwndParent, nID);
+			CListBox* listBox = (CListBox*)pw;
+			LoadListBoxItemsInfo(listBox, index);
+			int deb = 1;
+		}
+#endif
+
 		UINT id = ::GetDlgCtrlID(hwndChild);
 
 		LoadDialogItemsInfo(hwndChild, --maxcnt, ++iter);
@@ -84,6 +182,82 @@ void ResHelper::LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter)
 	}
 #endif
 }
+#endif
+
+void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
+{
+	ResourceInfo* rinfo;
+	int count = menu->GetCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+
+	for (i = 0; i < count; i++)
+	{
+		menu->GetText(i, label);
+		rinfo = AddItemInfo(label, CString(L"LISTBOXITEM"));
+#if 0
+		itemID = menu->GetMenuItemID(i);
+		retval = menu->GetText(i, label);
+		retval = GetMenuItemString(menu, i, label, nFlags);
+
+		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+		menuItemInfo.cbSize = sizeof(menuItemInfo);
+		menuItemInfo.fMask = MIIM_ID | MIIM_DATA;
+		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, nFlags);
+		if (retval == FALSE)
+			int deb = 1; // ignore/return;
+
+		if (itemID == (UINT)0)
+		{
+			; // MENUITEM SEPARATOR
+		}
+		else if (itemID == (UINT)-1)
+		{
+			AddItemInfo(label, CString(L"LISTBOXITEM"));
+		}
+		else
+		{
+			AddItemInfo(label, CString(L"MENUITEM"));
+		}
+
+		if (itemID == (UINT)-1)
+		{
+			CMenu* submenu = menu->GetSubMenu(i);
+
+			LoadMenuItemsInfo(submenu, index + 1);
+		}
+#endif
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
+void ResHelper::LoadComboBoxItemsInfo(CComboBox* menu, int index)
+{
+	ResourceInfo* rinfo;
+	int count = menu->GetCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+
+	for (i = 0; i < count; i++)
+	{
+		menu->GetLBText(i, label);
+		rinfo = AddItemInfo(label, CString(L"COMBOBOXITEM"));
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
 
 void ResHelper::LoadMenuItemsInfo(CMenu* menu, int index)
 {
@@ -191,7 +365,7 @@ int ResHelper::PrintResInfoMap(ResInfoMapType& resInfoMap)
 	return resInfoMap.count();
 }
 
-int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray)
+int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort)
 {
 	CString errorTxt;
 	CString resInfoTxt;
@@ -199,18 +373,34 @@ int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray)
 	DWORD nNumberOfBytesToWrite;
 	DWORD nNumberOfBytesWritten;
 	int retval = 0;
+	ResInfoArrayType* resourceInfoArray = 0;
+	ResInfoArrayType sorted_resourcefoArray;
 
 	CString processPath;
 	CmboxviewApp::GetProcessPath(processPath);
 	CString folderPath;
 	FileUtils::GetFolderPath(processPath, folderPath);
-	CString resourceFilePath = folderPath + L"\\" + resourceFile;
+	CString resourceFilePath = folderPath + L"\\";
+	if (mustSort)
+	{
+		sorted_resourcefoArray.Append(resInfoArray);
+		resourceInfoArray = &sorted_resourcefoArray;
+
+		int sortCnt = ResHelper::SortResInfoArray(*resourceInfoArray);
+		resourceFilePath = folderPath + L"\\sorted_" + resourceFile;
+	}
+	else
+	{
+		resourceInfoArray = &resInfoArray;
+		resourceFilePath = folderPath + L"\\unsorted_" + resourceFile;
+	}
 
 	hResourceFile = FileUtils::FileOpen(resourceFilePath, errorTxt, TRUE);
 #if 1
-	for (int i = 0; i < resInfoArray.GetCount(); i++)
+
+	for (int i = 0; i < resourceInfoArray->GetCount(); i++)
 	{
-		ResourceInfo* rinfo = resInfoArray[i];
+		ResourceInfo* rinfo = (*resourceInfoArray)[i];
 		TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
 		resInfoTxt.Format(L"%s\r\n", rinfo->m_label);
 

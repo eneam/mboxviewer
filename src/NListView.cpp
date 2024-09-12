@@ -873,8 +873,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 
 #ifdef _DEBUG
 	int index = 1;
-	ResHelper::IterateMenuItems(&menu, index);
-	ResHelper::IterateMenuItemsSetPopMenuData(&menu, index);
+	ResHelper::LoadMenuItemsInfo(&menu, index);
+	//ResHelper::IterateMenuItemsSetPopMenuData(&menu, index);
 #endif
 
 	BOOL multipleSelectedMails = FALSE;
@@ -6950,7 +6950,10 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 		{
 			if (FileUtils::PathDirExists(datapath))
 			{ // likely :) 
-				CString txt = L"Created file \n\n" + textFileName;
+				//CString text = L"Created file \n\n" + textFileName;
+				CString text;
+				CString fmt = L"Created file \n\n%s";
+				text.Format(fmt, textFileName);
 				if (createFileOnly) {
 					int deb = 1;
 				}
@@ -6982,7 +6985,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 				}
 				else if (forceOpen == FALSE) 
 				{
-					OpenContainingFolderDlg dlg(txt);
+					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -8859,7 +8862,10 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 		{
 			if (mergePDFs == FALSE)
 			{
-				CString txt = L"Created separate PDF files in \n\n" + printCachePath + L" \n\ndirectory.";
+				//CString txt = L"Created separate PDF files in \n\n" + printCachePath + L" \n\ndirectory.";
+				CString txt;
+				CString fmt = L"Created separate PDF files in \n\n%s \n\ndirectory.";
+				txt.Format(fmt, printCachePath);
 				OpenContainingFolderDlg dlg(txt, TRUE);
 				INT_PTR nResponse = dlg.DoModal();
 				if (nResponse == IDOK)
@@ -8893,7 +8899,10 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 
 				CString pdfFileName = args.mergedPDFPath;
 
-				CString txt = L"Created PDF file \n\n" + pdfFileName;
+				//CString txt = L"Created PDF file \n\n" + pdfFileName;
+				CString txt;
+				CString fmt = L"Created PDF file \n\n%s";
+				txt.Format(fmt, pdfFileName);
 				OpenContainingFolderDlg dlg(txt, FALSE);
 				INT_PTR nResponse = dlg.DoModal();
 				////////////
@@ -9052,7 +9061,10 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 			else
 				int ret = MboxMail::MakeFileNameFromMailHeader(selectedMailsIndexList->GetAt(0), fileType, pdfFileName, targetPrintSubFolderName, fileExists, errorText);
 
-			CString txt = L"Created PDF file \n\n" + pdfFileName;
+			//CString txt = L"Created PDF file \n\n" + pdfFileName;
+			CString txt;
+			CString fmt = L"Created PDF file \n\n%s";
+			txt.Format(fmt, pdfFileName);
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -10276,7 +10288,10 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 		{
 			if (!NListView::m_exportMailsMode)
 			{
-				CString txt = L"Created separate HTML files in \n\n" + printCachePath + L" \n\ndirectory.";
+				//CString txt = L"Created separate HTML files in \n\n" + printCachePath + L" \n\ndirectory.";
+				CString txt;
+				CString fmt = L"Created separate HTML files in \n\n%s \n\ndirectory.";
+				txt.Format(fmt, printCachePath);
 				OpenContainingFolderDlg dlg(txt, TRUE);
 				INT_PTR nResponse = dlg.DoModal();
 				if (nResponse == IDOK)
@@ -10461,7 +10476,10 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 			if (NListView::m_exportMailsMode)
 				int exret = ExportMails_CopyExportMails2PDF();
 
-			CString txt = L"Created HTML file \n\n" + fileName;
+			//CString txt = L"Created HTML file \n\n" + fileName;
+			CString txt;
+			CString fmt = L"Created HTML file \n\n%s";
+			txt.Format(fmt, fileName);
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
@@ -11342,7 +11360,10 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 	MboxMail::m_editMails.m_bIsDirty = FALSE;
 
-	CString txt = L"Created Mbox Mail Archive file \n\n" + mboxFilePath;
+	//CString txt = L"Created Mbox Mail Archive file \n\n" + mboxFilePath;
+	CString txt;
+	CString fmt = L"Created Mbox Mail Archive file \n\n%s";
+	txt.Format(fmt, mboxFilePath);
 	BOOL supressOpenFileOption = FALSE;
 	if (path.Compare(datapath) == 0)
 		supressOpenFileOption = TRUE;
@@ -11360,7 +11381,10 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	}
 	else if (nResponse == IDYES)
 	{
-		CString txt = L"Open Created Archive File \n\n" + mboxFilePath;
+		//CString txt = L"Open Created Archive File \n\n" + mboxFilePath;
+		CString txt;
+		CString fmt = L"Open Created Archive File \n\n%s";
+		txt.Format(fmt, mboxFilePath);
 		OpenArchiveFileDlg dlg;
 		dlg.m_sourceFolder = archiveCachePath;
 		dlg.m_targetFolder = path;
@@ -12636,7 +12660,10 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 			else
 				ret = MboxMail::MakeFileNameFromMailHeader(selectedMailsIndexList->GetAt(0), textType, fileName, targetPrintSubFolder, fileExists, errorText);
 
-			CString txt = L"Created TEXT file \n\n" + fileName;
+			//CString txt = L"Created TEXT file \n\n" + fileName;
+			CString txt;
+			CString fmt = L"Created TEXT file \n\n%s";
+			txt.Format(fmt, fileName);
 			OpenContainingFolderDlg dlg(txt, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////

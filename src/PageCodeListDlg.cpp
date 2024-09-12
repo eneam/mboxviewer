@@ -159,11 +159,22 @@ BOOL PageCodeListDlg::OnInitDialog()
 
 	m_list.SetFont(GetFont());
 
-	int r1 = m_list.InsertColumn(0, L"CodePage Id", LVCFMT_LEFT, 100, 0);
-	int r2 = m_list.InsertColumn(1, L"Code Page Name", LVCFMT_LEFT, 320);
-	int r3 = m_list.InsertColumn(2, L"Max Character Size", LVCFMT_LEFT, 120,0);
+	CString CodePageId;
+	CodePageId.LoadString(IDS_PAGE_CODE_LIST_CODEPAGE_ID);
+	CString CodePageName;
+	CodePageName.LoadString(IDS_PAGE_CODE_LIST_CODEPAGE_NAME);
+	CString MaxCharSize;
+	MaxCharSize.LoadString(IDS_PAGE_CODE_LIST_MAX_CHAR_SIZE);
 
-	EnumSystemCodePages(EnumCodePagesProc, CP_INSTALLED);
+	int r1 = m_list.InsertColumn(0, CodePageId, LVCFMT_LEFT, 100, 0);
+	int r2 = m_list.InsertColumn(1, CodePageName, LVCFMT_LEFT, 320);
+	int r3 = m_list.InsertColumn(2, MaxCharSize, LVCFMT_LEFT, 120, 0);
+
+	//int r1 = m_list.InsertColumn(0, L"CodePage Id", LVCFMT_LEFT, 100, 0);
+	//int r2 = m_list.InsertColumn(1, L"Code Page Name", LVCFMT_LEFT, 320);
+	//int r3 = m_list.InsertColumn(2, L"Max Character Size", LVCFMT_LEFT, 120,0);
+
+	BOOL retval = EnumSystemCodePages(EnumCodePagesProc, CP_INSTALLED);
 
 	int column = 0;
 	SortCodePageList(column, m_descendingSort);
@@ -222,8 +233,7 @@ BOOL PageCodeListDlg::OnInitDialog()
 	nmHdr.iItem = 0;
 	//m_list.PostMessage(HDN_ITEMCLICK, 0, 0);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -251,8 +261,10 @@ void PageCodeListDlg::AddCodePage(UINT codePage)
 
 	BOOL ret2 = GetCPInfoEx(codePage, dwFlags, &CPInfoEx);
 	//IMultiLanguage::GetCharsetInfo 
-	//BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString & codePageInfo)
+
 	BOOL ret1 = TextUtilsEx::Id2LongInfo(codePage, cpInfo.codePageName);
+
+	int namelen = cpInfo.codePageName.GetLength();
 
 	if (ret1 == TRUE)
 	{

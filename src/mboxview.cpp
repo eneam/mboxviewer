@@ -1159,8 +1159,7 @@ BOOL CAboutDlg::OnInitDialog()
 	if (retGetVersion)
 		GetDlgItem(IDC_STATIC1)->SetWindowText(version);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -1638,7 +1637,7 @@ BOOL CmboxviewApp::InitInstance()
 	TRACE(L"LoadDialogItemsInfo\n");
 	CDialogBar& dbar = pFrame->GetDialogBar();;
 	HWND h = dbar.GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(&dbar);
 
 	TRACE(L"LoadToolBarItemsInfo\n");
 	CToolBar& cbar = pFrame->GetToolBar();

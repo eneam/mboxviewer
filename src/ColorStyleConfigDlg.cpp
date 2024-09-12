@@ -181,8 +181,7 @@ BOOL ColorStyleConfigDlg::OnInitDialog()
 
 	CheckRadioButton(IDC_COLOR_DFLT, IDC_COLOR_STYLE_16, nID);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

@@ -155,8 +155,7 @@ BOOL COptionsDlg::OnInitDialog()
 
 	UpdateData(FALSE);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// ECCEZIONE: le pagine delle proprietà OCX devono restituire FALSE

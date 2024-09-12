@@ -106,21 +106,33 @@ public:
 	static wchar_t windowText[WINDOW_TEXT_LENGTH+1];
 	static int maxClassNameLength;
 	static wchar_t className[CLASS_NAME_LENGTH+1];
+	//
+	static CString wndText;
 
 	static void ReleaseResources();
 
 	static ResourceInfo* AddItemInfo(CString & label, CString &controlName);
 	static ResourceInfo* AddItemInfo(CString& label);
 	static int PrintResInfoMap(ResInfoMapType& resStringMap);
-	static int PrintResInfoArray(ResInfoArrayType& resInfoArray);
+	static int PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort);
 	static int SortResInfoArray(ResInfoArrayType& resInfoArray);
 
 	static ResInfoArrayType resInfoArray;
 	static ResInfoMapType resInfoMap;
+	static ResInfoMapType mergedResInfoMap;
 	static int PopulateResStringList() { return 0; }
 
-	static void LoadDialogItemsInfo(HWND hwndParent);
-	static void LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter);
+	//static void LoadDialogItemsInfo(HWND hwndParent);
+	//static void LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter);
+	//
+	static void LoadDialogItemsInfo(CDialog *dlg);
+	static void LoadDialogItemsInfo(CWnd* wnd);
+	static void LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int iter);
+	//
+	static void LoadListBoxItemsInfo(CListBox* menu, int index);
+	//
+	static void LoadComboBoxItemsInfo(CComboBox* menu, int index);
+	//
 	static void LoadMenuItemsInfo(CMenu* menu);
 	static void LoadMenuItemsInfo(CMenu* menu, int index);
 	static void LoadToolBarItemsInfo(CToolBar* tbar);

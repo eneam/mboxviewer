@@ -442,6 +442,7 @@ public:
 	afx_msg void OnHelpShortcuts();
 	afx_msg void OnHelpChangeLog();
 	afx_msg void OnDevelopmentoptionsPrintresourcces();
+	afx_msg void OnDevelopmentoptionsCodepageinstalled();
 };
 
 /////////////////////////////////////////////////////////////////////////////

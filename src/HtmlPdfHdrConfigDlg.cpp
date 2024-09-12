@@ -121,7 +121,7 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 	m_fldListBox.SetFont(GetFont());
 
 	CString m_title = L"HTML/PDF Mail Header Configuration";
-	SetWindowText(m_title);
+	//SetWindowText(m_title);
 
 	LoadData();
 
@@ -130,8 +130,7 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 	else
 		OnBnClickedFontCustom();
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

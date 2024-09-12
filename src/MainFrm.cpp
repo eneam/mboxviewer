@@ -283,6 +283,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_HELP_SHORTCUTS, &CMainFrame::OnHelpShortcuts)
 	ON_COMMAND(ID_HELP_CHANGE_LOG, &CMainFrame::OnHelpChangeLog)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES, &CMainFrame::OnDevelopmentoptionsPrintresourcces)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_CODEPAGEINSTALLED, &CMainFrame::OnDevelopmentoptionsCodepageinstalled)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -461,6 +462,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_attachmentConfigParams.LoadFromRegistry();
 	m_HdrFldConfig.LoadFromRegistry();
 
+#if 0
 	ColorStyleConfigDlg *dlg = new ColorStyleConfigDlg(this);
 	//dlg->Create(IDD_COLOR_STYLE_DLG, GetDesktopWindow());
 	if (dlg->Create(IDD_COLOR_STYLE_DLG, this) == FALSE)
@@ -472,6 +474,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_colorStyleDlg = dlg;
 		m_colorStyleDlg->ShowWindow(SW_HIDE);
 	}
+#endif
 
 	SetIcon(m_hIcon, TRUE);			// use big icon
 	SetIcon(m_hIcon, FALSE);		// Use a small icon
@@ -1333,7 +1336,10 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					CString text = L"Created file \n\n" + csvFileName;
+					//CString text = L"Created file \n\n" + csvFileName;
+					CString text;
+					CString fmt = L"Created file \n\n%s";
+					text.Format(fmt, csvFileName);
 					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
@@ -1454,8 +1460,11 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					CString txt = L"Created file \n\n" + textFileName;
-					OpenContainingFolderDlg dlg(txt);
+					//CString text = L"Created file \n\n" + textFileName;
+					CString text;
+					CString fmt = L"Created file \n\n%s";
+					text.Format(fmt, textFileName);
+					OpenContainingFolderDlg dlg(text);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -1542,7 +1551,10 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 			{
 				if (FileUtils::PathDirExists(datapath))
 				{ // likely :) 
-					CString txt = L"Created file \n\n" + textFileName;
+					//CString text = L"Created file \n\n" + textFileName;
+					CString text;
+					CString fmt = L"Created file \n\n%s";
+					text.Format(fmt, textFileName);
 					if (createFileOnly) {
 						int deb = 1;
 					}
@@ -1604,7 +1616,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 					}
 					else if (forceOpen == FALSE)
 					{
-						OpenContainingFolderDlg dlg(txt);
+						OpenContainingFolderDlg dlg(text);
 						INT_PTR nResponse = dlg.DoModal();
 						if (nResponse == IDOK)
 						{
@@ -5681,11 +5693,6 @@ void CMainFrame::OnDevelopmentoptionsDevelo()
 
 void CMainFrame::OnDeveloperOptionsAboutSystem()
 {
-#if 0
-	PageCodeListDlg dlg;
-	INT_PTR retcode = dlg.DoModal();
-#endif
-
 	// TODO: Add your command handler code here
 	CString aboutSystem;
 	CString info;
@@ -5938,9 +5945,18 @@ void CMainFrame::OnDevelopmentoptionsPrintresourcces()
 	TRACE(L"END PrintResInfoMap\n");
 #endif
 	TRACE(L"BEGIN PrintResInfoArray\n");
-	int sortCnt = ResHelper::SortResInfoArray(ResHelper::resInfoArray);
-	int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray);
+	//int sortCnt = ResHelper::SortResInfoArray(ResHelper::resInfoArray);
+	int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray, FALSE);
+	int cnt5 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray, TRUE);
 	TRACE(L"END PrintResInfo\n");
 
 	int deb = 1;
+}
+
+
+void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
+{
+	// TODO: Add your command handler code here
+	PageCodeListDlg dlg;
+	INT_PTR retcode = dlg.DoModal();
 }

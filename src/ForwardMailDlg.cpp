@@ -103,8 +103,7 @@ BOOL ForwardMailDlg::OnInitDialog()
 		}
 	}
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;
 }

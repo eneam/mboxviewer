@@ -162,8 +162,7 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 
 	UpdateData(TRUE);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	// Return TRUE unless a control is to receive the focus
 	return TRUE;  // Geben Sie TRUE zurück, außer ein Steuerelement soll den Fokus erhalten

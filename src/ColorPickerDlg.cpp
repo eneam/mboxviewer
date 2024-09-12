@@ -77,8 +77,7 @@ BOOL ColorPickerDlg::OnInitDialog()
 		xpos = 0;
 	SetWindowPos(pwnd, pr.left, pr.bottom, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE);
 
-	HWND h = this->GetSafeHwnd();
-	ResHelper::LoadDialogItemsInfo(h);
+	ResHelper::LoadDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

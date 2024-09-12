@@ -1191,10 +1191,14 @@ BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString& codePageInfo)
 {
 	CStringA codePageInfoA;
 	BOOL ret = TextUtilsEx::Id2LongInfoA(codePage, codePageInfoA);
+	if (ret == 0)
+		return FALSE;
 
 	DWORD error = 0;
 	DWORD dwFlags = 0;
-	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, codePage, &codePageInfo, error, dwFlags);
+	UINT tableCodePage = 1252; // ANSI Latin 1; Western European (Windows)
+	//UINT tableCodePage = 20127; // US_ASCII
+	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, tableCodePage, &codePageInfo, error, dwFlags);
 
 	return retA2W;
 }
