@@ -41,6 +41,7 @@
 #include "TextUtilsEx.h"
 #include "MimeParser.h"
 #include "TextUtilities.h"
+#include "ResHelper.h"
 
 
 #ifdef _DEBUG
@@ -2976,6 +2977,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 				const UINT M_MergeMailArchiveFiles_Id = 5;
 				MyAppendMenu(&menu, M_MergeMailArchiveFiles_Id, L"Merge Mail Archive Files");
 
+				int index = 1;
+				ResHelper::LoadMenuItemsInfo(&menu, index);
+
 				CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 				UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -3071,6 +3075,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		MyAppendMenu(&menu, M_OpenHiddenFiles_Id, L"Restore Removed Files");
 		const UINT M_MergeMailArchiveFiles_Id = 6;
 		MyAppendMenu(&menu, M_MergeMailArchiveFiles_Id, L"Merge Mail Archive Files");
+
+		int index = 1;
+		ResHelper::LoadMenuItemsInfo(&menu, index);
 
 		CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3272,6 +3279,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		//AppendMenu(&menu, M_CreateFolder_Id, L"Create Folder");  // TODO: later
 	}
+
+	int index = 1;
+	ResHelper::LoadMenuItemsInfo(&menu, index);
 
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 

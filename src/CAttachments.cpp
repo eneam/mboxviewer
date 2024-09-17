@@ -35,6 +35,7 @@
 #include "NMsgView.h"
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
+#include "ResHelper.h"
 
 BEGIN_MESSAGE_MAP(CAttachments, CListCtrl)
 	//ON_WM_PAINT()
@@ -228,6 +229,9 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	retval = AttachIcon(&menu, OpenFileLocation, IDB_FOLDER, foldertMap);
 
 	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	int index = 0;
+	ResHelper::LoadMenuItemsInfo(&menu, index);
 
 	UINT nFlags = TPM_RETURNCMD;
 	CString menuString;

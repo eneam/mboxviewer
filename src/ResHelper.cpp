@@ -34,9 +34,15 @@
 #include "TextUtilsEx.h"
 
 
-ResInfoMapType ResHelper::mergedResInfoMap(2000);
-ResInfoMapType ResHelper::resInfoMap(2000);
-ResInfoArrayType ResHelper::resInfoArray;
+//
+
+ResInfoMapType ResHelper::g_LanguageMap(2000);
+
+ResInfoMapType ResHelper::g_resInfoMap(2000);
+ResInfoArrayType ResHelper::g_resInfoArray;
+
+ResInfoArrayType ResHelper::resArray1;
+ResInfoArrayType ResHelper::resArray2;
 
 int ResHelper::maxWindowTextLength = WINDOW_TEXT_LENGTH;
 wchar_t ResHelper::windowText[WINDOW_TEXT_LENGTH + 1];
@@ -49,6 +55,40 @@ HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
 // Iterates all child windows in the window defined by hwndParent window
 
+
+BOOL ResHelper::GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags)
+{
+	MENUITEMINFO menuItemInfo;
+	memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+	rString.Empty();
+
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+	menuItemInfo.fMask = MIIM_STRING;
+	menuItemInfo.fType = MFT_STRING;
+
+	menuItemInfo.dwTypeData = 0;
+
+	// Get the required string length
+	menuItemInfo.cch = 0;
+	BOOL retval = menu->GetMenuItemInfo(nIDItem, &menuItemInfo, nFlags);
+	if (retval == FALSE)
+		return FALSE;
+
+	menuItemInfo.cch += 1;
+	wchar_t* nametext = new wchar_t[menuItemInfo.cch];
+	menuItemInfo.dwTypeData = nametext;
+
+	retval = menu->GetMenuItemInfo(nIDItem, &menuItemInfo, nFlags);
+	if (retval == FALSE)
+	{
+		delete[] nametext;
+		return FALSE;
+	}
+
+	rString.Append(nametext);
+	delete[] nametext;
+	return TRUE;
+}
 
 void ResHelper::LoadDialogItemsInfo(CDialog* dlg)
 {
@@ -75,10 +115,8 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd)
 	if (hwndParent == 0)
 		return;
 
-	//CWnd* wnd = (CWnd*)dlg;
-
 	::GetWindowText(hwndParent, windowText, maxWindowTextLength);
-	wnd->GetWindowTextW(wndText);
+	wnd->GetWindowText(wndText);
 
 	AddItemInfo(CString(windowText), CString(L"DIALOGEX"));
 
@@ -100,15 +138,15 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int 
 		int sclasslen = GetClassName(hwndChild, className, maxClassNameLength);
 
 		strClassName = className;
-		if (strClassName.CompareNoCase(L"EDIT"))
-			AddItemInfo(CString(windowText), CString(className));
 
 		UINT nID = ::GetDlgCtrlID(hwndChild);
-		if (nID == IDC_TLS_OPTION)
-			int deb = 1;
 
 		CWnd* pw = wnd->GetDlgItem(nID);
-		if (strClassName.CompareNoCase(L"ListBox") == 0)
+		if (strClassName.CompareNoCase(L"EDIT"))
+		{
+			AddItemInfo(CString(windowText), CString(className));
+		}
+		else if (strClassName.CompareNoCase(L"ListBox") == 0)
 		{
 			int index = 0;
 			CListBox* listBox = (CListBox*)pw;
@@ -131,59 +169,6 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int 
 #endif
 }
 
-#if 0
-void ResHelper::LoadDialogItemsInfo(HWND hwndParent)
-{
-#ifdef _DEBUG
-	if (hwndParent == 0)
-		return;
-
-	::GetWindowText(hwndParent, windowText, maxWindowTextLength);
-
-	AddItemInfo(CString(windowText), CString(L"DIALOGEX"));
-
-	int maxcnt = 512;
-	int iter = 1;
-	LoadDialogItemsInfo(hwndParent, maxcnt, iter);
-
-#endif
-}
-
-void ResHelper::LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter)
-{
-#ifdef _DEBUG
-	CString strClassName;
-	HWND hwndChild = GetWindow(hwndParent, GW_CHILD);
-	while ((hwndChild != NULL) && maxcnt > 0)
-	{
-		int slen = ::GetWindowText(hwndChild, windowText, maxWindowTextLength);
-		int sclasslen = GetClassName(hwndChild, className, maxClassNameLength);
-
-		strClassName = className;
-		if (strClassName.CompareNoCase(L"EDIT"))
-			AddItemInfo(CString(windowText), CString(className));
-
-#if 0
-		if (strClassName.CompareNoCase(L"ListBox") == 0)
-		{
-			int index = 0;
-			UINT nID = ::GetDlgCtrlID(hwndChild);
-			CWnd* pw = 0; // ::GetDlgItem(hwndParent, nID);
-			CListBox* listBox = (CListBox*)pw;
-			LoadListBoxItemsInfo(listBox, index);
-			int deb = 1;
-		}
-#endif
-
-		UINT id = ::GetDlgCtrlID(hwndChild);
-
-		LoadDialogItemsInfo(hwndChild, --maxcnt, ++iter);
-		hwndChild = GetWindow(hwndChild, GW_HWNDNEXT);
-	}
-#endif
-}
-#endif
-
 void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
 {
 	ResourceInfo* rinfo;
@@ -200,38 +185,6 @@ void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
 	{
 		menu->GetText(i, label);
 		rinfo = AddItemInfo(label, CString(L"LISTBOXITEM"));
-#if 0
-		itemID = menu->GetMenuItemID(i);
-		retval = menu->GetText(i, label);
-		retval = GetMenuItemString(menu, i, label, nFlags);
-
-		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
-		menuItemInfo.cbSize = sizeof(menuItemInfo);
-		menuItemInfo.fMask = MIIM_ID | MIIM_DATA;
-		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, nFlags);
-		if (retval == FALSE)
-			int deb = 1; // ignore/return;
-
-		if (itemID == (UINT)0)
-		{
-			; // MENUITEM SEPARATOR
-		}
-		else if (itemID == (UINT)-1)
-		{
-			AddItemInfo(label, CString(L"LISTBOXITEM"));
-		}
-		else
-		{
-			AddItemInfo(label, CString(L"MENUITEM"));
-		}
-
-		if (itemID == (UINT)-1)
-		{
-			CMenu* submenu = menu->GetSubMenu(i);
-
-			LoadMenuItemsInfo(submenu, index + 1);
-		}
-#endif
 		int deb = 1;
 	}
 	int debM = 1;
@@ -341,15 +294,15 @@ ResourceInfo* ResHelper::AddItemInfo(CString& label)
 ResourceInfo* ResHelper::AddItemInfo(CString & label, CString& controlName)
 {
 	CString key;
-	key.Format(L"\"%s\"", label);
-	hashsum_t hsum = resInfoMap.hash(&key);
+	key.Format(L"%s", label);
+	hashsum_t hsum = g_resInfoMap.hash(&key);
 
-	ResourceInfo *rinfo = resInfoMap.find(&key, hsum);
+	ResourceInfo *rinfo = g_resInfoMap.find(&key, hsum);
 	if (rinfo == 0)
 	{
 		ResourceInfo* rinfo = new ResourceInfo(key, controlName);
-		resInfoMap.insert(hsum, rinfo);
-		resInfoArray.Add(rinfo);
+		g_resInfoMap.insert(hsum, rinfo);
+		g_resInfoArray.Add(rinfo);
 	}
 
 	return rinfo;
@@ -360,89 +313,112 @@ int ResHelper::PrintResInfoMap(ResInfoMapType& resInfoMap)
 	ResInfoMapType::IHashMapIter iter = resInfoMap.first();
 	for (; !resInfoMap.last(iter); resInfoMap.next(iter))
 	{
-		TRACE(L"%8s %s\n", iter.element->m_controlName, iter.element->m_label);
+		TRACE(L"\"%8s\" %s\n", iter.element->m_controlName, iter.element->m_label);
 	}
 	return resInfoMap.count();
 }
 
-int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort)
+int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort, BOOL printAsUnicode)
 {
 	CString errorTxt;
 	CString resInfoTxt;
 	CStringA resInfoTxtA;
+	CStringA resInfoTxtAnsi;
 	DWORD nNumberOfBytesToWrite;
 	DWORD nNumberOfBytesWritten;
 	int retval = 0;
 	ResInfoArrayType* resourceInfoArray = 0;
 	ResInfoArrayType sorted_resourcefoArray;
 
-	CString processPath;
-	CmboxviewApp::GetProcessPath(processPath);
 	CString folderPath;
-	FileUtils::GetFolderPath(processPath, folderPath);
-	CString resourceFilePath = folderPath + L"\\";
+	GetProcessFolderPath(folderPath);
+	//CString resourceFilePath = folderPath + L"\\";
+	CString resourceFilePath;
+
 	if (mustSort)
 	{
 		sorted_resourcefoArray.Append(resInfoArray);
 		resourceInfoArray = &sorted_resourcefoArray;
 
 		int sortCnt = ResHelper::SortResInfoArray(*resourceInfoArray);
-		resourceFilePath = folderPath + L"\\sorted_" + resourceFile;
+
+		if (printAsUnicode)
+			resourceFilePath = folderPath + L"sorted_unicode_" + resourceFile;
+		else
+			resourceFilePath = folderPath + L"sorted_" + resourceFile;
 	}
 	else
 	{
 		resourceInfoArray = &resInfoArray;
-		resourceFilePath = folderPath + L"\\unsorted_" + resourceFile;
+		if (printAsUnicode)
+			resourceFilePath = folderPath + L"unsorted_unicode_" + resourceFile;
+		else
+			resourceFilePath = folderPath + L"unsorted_" + resourceFile;
 	}
 
 	hResourceFile = FileUtils::FileOpen(resourceFilePath, errorTxt, TRUE);
-#if 1
-
-	for (int i = 0; i < resourceInfoArray->GetCount(); i++)
+	if (hResourceFile == INVALID_HANDLE_VALUE)
 	{
-		ResourceInfo* rinfo = (*resourceInfoArray)[i];
-		TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
-		resInfoTxt.Format(L"%s\r\n", rinfo->m_label);
+		return -1;
+	}
 
-		DWORD error;
-		BOOL retW2A = TextUtilsEx::WStr2UTF8(&resInfoTxt, &resInfoTxtA, error);
-
-		if (hResourceFile != INVALID_HANDLE_VALUE)
+	if (printAsUnicode == FALSE)
+	{
+		for (int i = 0; i < resourceInfoArray->GetCount(); i++)
 		{
-			nNumberOfBytesToWrite = resInfoTxtA.GetLength();
-			nNumberOfBytesWritten = 0;
-			retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoTxtA, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
-			int deb = 1;
+			ResourceInfo* rinfo = (*resourceInfoArray)[i];
+			TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
+			resInfoTxt.Format(L"\"%s\"\r\n", rinfo->m_label);
+
+			DWORD error;
+			BOOL retW2A = TextUtilsEx::WStr2UTF8(&resInfoTxt, &resInfoTxtA, error);
+			BOOL retW2Ansi = TextUtilsEx::WStr2Ansi(resInfoTxt, resInfoTxtAnsi, error);
+
+			int retComp = resInfoTxtA.CompareNoCase(resInfoTxtAnsi);
+			if (retComp)
+			{
+				_ASSERTE(retComp);
+			}
+
+			if (hResourceFile != INVALID_HANDLE_VALUE)
+			{
+				nNumberOfBytesToWrite = resInfoTxtA.GetLength();
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoTxtA, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+				int deb = 1;
+			}
 		}
 	}
-#else
-	const char* BOM_UTF16_LE = "\xFF\xFE";
-	if (hResourceFile)
+	else
 	{
-		nNumberOfBytesToWrite = 2;
-		nNumberOfBytesWritten = 0;
-
-		retval = FileUtils::Write2File(hResourceFile, BOM_UTF16_LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
-	}
-
-	for (int i = 0; i < resInfoArray.GetCount(); i++)
-	{
-		ResourceInfo* rinfo = resInfoArray[i];
-		TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
-		resInfoTxt.Format(L"\"%s\"\n", rinfo->m_label);
-
-		if (hResourceFile != INVALID_HANDLE_VALUE)
+		const char* BOM_UTF16_LE = "\xFF\xFE";
+		if (hResourceFile)
 		{
-			nNumberOfBytesToWrite = resInfoTxt.GetLength()*2;
+			nNumberOfBytesToWrite = 2;
 			nNumberOfBytesWritten = 0;
-			retval = FileUtils::Write2File(hResourceFile, (LPCWSTR)resInfoTxt, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
-			int deb = 1;
+
+			retval = FileUtils::Write2File(hResourceFile, BOM_UTF16_LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+		}
+
+		for (int i = 0; i < resourceInfoArray->GetCount(); i++)
+		{
+			ResourceInfo* rinfo = (*resourceInfoArray)[i];
+			TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
+			resInfoTxt.Format(L"\"%s\"\r\n", rinfo->m_label);
+
+			if (hResourceFile != INVALID_HANDLE_VALUE)
+			{
+				nNumberOfBytesToWrite = resInfoTxt.GetLength() * 2;
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCWSTR)resInfoTxt, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+				int deb = 1;
+			}
 		}
 	}
-#endif
+
 	FileUtils::FileClose(hResourceFile);
 
-	return (int)resInfoArray.GetCount();
+	return (int)resourceInfoArray->GetCount();
 }
 
 int __cdecl ResourceInfoPred(void const* first, void const* second)
@@ -451,7 +427,8 @@ int __cdecl ResourceInfoPred(void const* first, void const* second)
 	ResourceInfo* s = *((ResourceInfo**)second);
 
 	//int ret = _wcsicmp(f->m_label.operator LPCWSTR(), s->m_label.operator LPCWSTR());
-	int ret = f->m_label.CompareNoCase(s->m_label);
+	//int ret = f->m_label.CompareNoCase(s->m_label);
+	int ret = f->m_label.Compare(s->m_label);
 	return ret;
 }
 
@@ -460,6 +437,264 @@ int ResHelper::SortResInfoArray(ResInfoArrayType& resInfoArray)
 	std::qsort(resInfoArray.GetData(), resInfoArray.GetCount(), sizeof(void*), ResourceInfoPred);
 	return (int)resInfoArray.GetCount();
 }
+
+
+void ResHelper::MergeAllResInfo()
+{
+	CStringArray fileList;
+	fileList.Add(L"sorted_resource.txt");
+	fileList.Add(L"german.ini");
+
+	CString folderPath;
+	GetProcessFolderPath(folderPath);
+	CString resourceFilePath = folderPath + L"\\";
+
+	CString sortedResFile = resourceFilePath + L"sorted_resource.txt";
+	//CString germanResFile = resourceFilePath + L"german.ini";
+	CString germanResFile = L"F:\\Documents\\GIT1.0.3.41.bak\\DLL\\german.ini";
+
+
+	MergeResInfoFile(sortedResFile);
+	MergeResInfoFile(germanResFile);
+}
+
+void ResHelper::MergeResInfoFile(CString &resFile)
+{
+	if (!FileUtils::PathFileExist(resFile))
+		return;
+
+	CString strLine;
+	CString str;
+	CStdioFile file(resFile, CFile::modeRead);
+	while (file.ReadString(strLine))
+	{
+		str = strLine.Trim(L"\"");
+		AddItemInfo(str);
+		int deb = 1;
+	}
+}
+
+void ResHelper::GetProcessFolderPath(CString &folderPath)
+{
+	CString processPath;
+	CmboxviewApp::GetProcessPath(processPath);
+	FileUtils::GetFolderPath(processPath, folderPath);
+}
+
+int ResHelper::CreateLanguageFile()
+{
+	CString folderPath;
+	GetProcessFolderPath(folderPath);
+
+	CString resourceFilePath = folderPath;
+
+	//CString resFile1 = resourceFilePath + L"sorted_unicode_resource.txt";
+	CString resFile1 = resourceFilePath + L"sorted_resource.txt";
+	CString resFile2 = resourceFilePath + L"german.txt";
+
+	CString languageFilePath = resourceFilePath + L"lang-german.txt";
+
+	resArray1.RemoveAll();
+	resArray2.RemoveAll();
+	ResHelper::LoadResInfoFromFile(resFile1, resArray1);
+	ResHelper::LoadResInfoFromFile(resFile2, resArray2);
+
+	int cnt = resArray1.GetCount();
+	_ASSERTE(resArray1.GetCount() == resArray2.GetCount());
+
+	CString resInfoText1;
+	CString resInfoText2;
+
+	CStringA resInfoText1A;
+	CStringA resInfoText2A;
+
+	DWORD nNumberOfBytesToWrite = 0;
+	DWORD nNumberOfBytesWritten = 0;
+
+	int retval;
+	CString errorText;
+
+	hResourceFile = FileUtils::FileOpen(languageFilePath, errorText, TRUE);
+	if (hResourceFile == INVALID_HANDLE_VALUE)
+	{
+		return -1;
+	}
+
+	int i;
+	for (i = 0; i < cnt; i++)
+	{
+		BOOL unicodeFile = FALSE;
+		if (unicodeFile == FALSE)
+		{
+			//for (int i = 0; i < resArray1.GetCount(); i++)
+			{
+				ResourceInfo* rinfo1 = resArray1[i];
+				ResourceInfo* rinfo2 = resArray2[i];
+
+				//TRACE(L"%8s %s\n", rinfo->m_controlName, rinfo->m_label);
+				//resInfoText1.Format(L"[\"%s\"]\n", rinfo1->m_label);
+				//resInfoText2.Format(L"\"%s\"\n", rinfo2->m_label);
+
+				resInfoText1.Format(L"[%s]\n", rinfo1->m_label);
+				resInfoText2.Format(L"%s\n\n", rinfo2->m_label);
+
+				DWORD error;
+				//BOOL retW2A = TextUtilsEx::WStr2UTF8(&resInfoText1, &resInfoText1A, error);
+				//retW2A = TextUtilsEx::WStr2UTF8(&resInfoText2, &resInfoText2A, error);
+				BOOL retW2A = TextUtilsEx::WStr2Ansi(resInfoText1, resInfoText1A, error);
+				retW2A = TextUtilsEx::WStr2Ansi(resInfoText2, resInfoText2A, error);
+
+				if (hResourceFile != INVALID_HANDLE_VALUE)
+				{
+					nNumberOfBytesToWrite = resInfoText1A.GetLength();
+					nNumberOfBytesWritten = 0;
+					retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoText1A, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+					nNumberOfBytesToWrite = resInfoText2A.GetLength();
+					nNumberOfBytesWritten = 0;
+					retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoText2A, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+					int deb = 1;
+				}
+			}
+		}
+	}
+	FileUtils::FileClose(hResourceFile);
+	return 1;
+}
+
+
+void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray)
+{
+	if (!FileUtils::PathFileExist(resFile))
+		return;
+
+	CString controlName;
+	CString strLine;
+	CString str;
+
+	CStdioFile file;
+	CFileException exList;
+	//if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
+	if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone, &exList))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = L"Could not open list file \"" + resFile;
+		txt += L"\" file.\n";
+		txt += exErrorStr;
+
+		TRACE(L"ResHelper: %s\n", txt);
+		//errorText = txt;
+
+		CFileStatus rStatus;
+		BOOL ret = file.GetStatus(rStatus);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return;
+	}
+	while (file.ReadString(strLine))
+	{
+		str = strLine.TrimRight(L"\r\n");
+
+		//ResourceInfo* rinfo = new ResourceInfo(strLine, controlName);
+		ResourceInfo* rinfo = new ResourceInfo(str, controlName);
+		resArray.Add(rinfo);
+
+		int deb = 1;
+	}
+}
+
+void ResHelper::LoadLanguageMap()
+{
+	CString folderPath;
+	GetProcessFolderPath(folderPath);
+
+	CString controlName;
+	CString strLine;
+	CString str;
+	CString languageFile = folderPath + L"lang-german.txt";
+
+	CStdioFile file;
+	CFileException exList;
+	//if (!file.Open(languageFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
+	if (!file.Open(languageFile, CFile::modeRead | CFile::shareDenyNone, &exList))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = L"Could not open list file \"" + languageFile;
+		txt += L"\" file.\n";
+		txt += exErrorStr;
+
+		TRACE(L"ResHelper: %s\n", txt);
+		//errorText = txt;
+
+		CFileStatus rStatus;
+		BOOL ret = file.GetStatus(rStatus);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return;
+	}
+	while (file.ReadString(strLine))
+	{
+		if (strLine[0] == L'[')
+		{
+			CString key = strLine.Trim(L"[]\"\r\n");
+
+			hashsum_t hsum = g_LanguageMap.hash(&key);
+
+			ResourceInfo* rinfo = g_LanguageMap.find(&key, hsum);
+			if (rinfo == 0)
+			{
+				if (!file.ReadString(strLine))
+					break;
+
+				controlName = strLine.Trim(L"[]\"\r\n");
+				ResourceInfo* rinfo = new ResourceInfo(key, controlName);
+				g_LanguageMap.insert(hsum, rinfo);
+			}
+			else
+				int deb = 1;
+		}
+	}
+	int deb = 1;
+}
+
+int ResHelper::PrintResInfo()
+{
+	// TODO: Add your command handler code here
+#if 0
+	TRACE(L"BEGIN PrintResInfoMap\n");
+	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
+	TRACE(L"END PrintResInfoMap\n");
+#endif
+	TRACE(L"BEGIN PrintResInfoArray\n");
+	//int sortCnt = ResHelper::SortResInfoArray(ResHelper::resInfoArray);
+	ResHelper::MergeAllResInfo();
+
+	BOOL sort = FALSE;
+	BOOL printAsUnicode = TRUE;
+	int cnt4 = ResHelper::PrintResInfoArray(ResHelper::g_resInfoArray, sort, printAsUnicode);
+	printAsUnicode = FALSE;
+	int cnt5 = ResHelper::PrintResInfoArray(ResHelper::g_resInfoArray, sort, printAsUnicode);
+
+
+	sort = TRUE;
+	printAsUnicode = TRUE;
+	int cnt6 = ResHelper::PrintResInfoArray(ResHelper::g_resInfoArray, sort, printAsUnicode);
+	printAsUnicode = FALSE;
+	int cnt7 = ResHelper::PrintResInfoArray(ResHelper::g_resInfoArray, sort, printAsUnicode);
+
+	TRACE(L"END PrintResInfo\n");
+
+	int deb = 1;
+
+	return 1;
+}
+
+
+//////////////////////////////////////////////////////////////////////
 
 void ResHelper::IterateWindowChilds(HWND hwndParent)
 {
@@ -509,41 +744,6 @@ void ResHelper::IterateWindowChilds(HWND hwndParent, int maxcnt, int iter)
 	delete[] text;
 	delete[] className;
 }
-
-BOOL ResHelper::GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags)
-{
-	MENUITEMINFO menuItemInfo;
-	memset(&menuItemInfo, 0, sizeof(menuItemInfo));
-	rString.Empty();
-
-	menuItemInfo.cbSize = sizeof(menuItemInfo);
-	menuItemInfo.fMask = MIIM_STRING;
-	menuItemInfo.fType = MFT_STRING;
-
-	menuItemInfo.dwTypeData = 0;
-
-	// Get the required string length
-	menuItemInfo.cch = 0;
-	BOOL retval = menu->GetMenuItemInfo(nIDItem, &menuItemInfo, nFlags);
-	if (retval == FALSE)
-		return FALSE;
-
-	menuItemInfo.cch += 1;
-	wchar_t* nametext = new wchar_t[menuItemInfo.cch];
-	menuItemInfo.dwTypeData = nametext;
-
-	retval = menu->GetMenuItemInfo(nIDItem, &menuItemInfo, nFlags);
-	if (retval == FALSE)
-	{
-		delete[] nametext;
-		return FALSE;
-	}
-
-	rString.Append(nametext);
-	delete[] nametext;
-	return TRUE;
-}
-
 
 
 void ResHelper::IterateMenuItems(CMenu* menu)
@@ -705,13 +905,13 @@ void ResHelper::IterateMenuItemsSetPopMenuData(CMenu* menu, int index)
 
 void ResHelper::ReleaseResources()
 {
-	resInfoMap.clear();
+	g_resInfoMap.clear();
 
-	for (int i = 0; i < resInfoArray.GetCount(); i++)
+	for (int i = 0; i < g_resInfoArray.GetCount(); i++)
 	{
-		ResourceInfo* rinfo = resInfoArray[i];
+		ResourceInfo* rinfo = g_resInfoArray[i];
 		delete rinfo;
-		resInfoArray[i] = 0;
+		g_resInfoArray[i] = 0;
 	}
 }
 

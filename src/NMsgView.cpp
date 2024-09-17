@@ -40,6 +40,7 @@
 #include "MboxMail.h"
 #include "MimeParser.h"
 #include "MenuEdit.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -1081,6 +1082,9 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 #endif
 
 	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+	int index = 0;
+	ResHelper::LoadMenuItemsInfo(&menu, index);
 
 	UINT n_Flags = TPM_RETURNCMD;
 	CString menuString;

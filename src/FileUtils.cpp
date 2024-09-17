@@ -660,17 +660,24 @@ HANDLE FileUtils::FileOpen(CString& cStrNamePath, CString &errorText, BOOL trunc
 {
 	DWORD dwAccess = GENERIC_WRITE;
 	DWORD dwCreationDisposition = CREATE_ALWAYS;
-	//if (truncate)
-		//dwCreationDisposition = CREATE_ALWAYS | TRUNCATE_EXISTING;
 
-	HANDLE hFile = CreateFileW(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+
+	HANDLE hFile = CreateFile(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
 		errorText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
 		TRACE(L"(OpenFile)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errorText);
-		return FALSE;
+		return hFile;
 	}
+
+	if (truncate)  // dwCreationDisposition = CREATE_ALWAYS;  truncate file suppose truncate but it doesnt seem work ??
+	{
+		LARGE_INTEGER li = { 0, 0 };
+		BOOL ret = SetFilePointerEx(hFile, li, 0, FILE_BEGIN);
+		int deb = 1;
+	};
+
 	return hFile;
 }
 
@@ -719,7 +726,8 @@ int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesTo
 	while (bytesToWrite > 0)
 	{
 		nwritten = 0;
-		if (!::WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL)) {
+		int retW = WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL);
+		if (retW == 0) {
 			DWORD retval = GetLastError();
 			break;
 		}

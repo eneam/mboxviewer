@@ -293,7 +293,8 @@ void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *o
 
 BOOL TextUtilsEx::WStr2Ansi(CString &strW, CStringA &strA, DWORD &error)
 {
-	UINT outCodePage = CP_ACP;
+	//UINT outCodePage = CP_ACP;
+	UINT outCodePage = 1252;
 	BOOL ret = WStr2CodePage((wchar_t*)((LPCWSTR)strW), strW.GetLength(), outCodePage, &strA, error);
 	return ret;
 }

@@ -87,6 +87,8 @@ BEGIN
             MENUITEM "Create Mail Archive File",    ID_DEVELOPMENTOPTIONS_DUMPRAWDATA
             MENUITEM "Developer Mode",              ID_DEVELOPMENTOPTIONS_DEVELO
             MENUITEM "Print Resourcces",            ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES
+            MENUITEM "Create Language File",        ID_DEVELOPMENTOPTIONS_CREATELANGUAGEFILE
+            MENUITEM "Select Language",             ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE
         END
         MENUITEM SEPARATOR
         MENUITEM "most recent folders",         ID_FILE_MRU_FILE1

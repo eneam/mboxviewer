@@ -284,6 +284,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_HELP_CHANGE_LOG, &CMainFrame::OnHelpChangeLog)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES, &CMainFrame::OnDevelopmentoptionsPrintresourcces)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_CODEPAGEINSTALLED, &CMainFrame::OnDevelopmentoptionsCodepageinstalled)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_CREATELANGUAGEFILE, &CMainFrame::OnDevelopmentoptionsCreatelanguagefile)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE, &CMainFrame::OnDevelopmentoptionsSelectlanguage)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5939,16 +5941,8 @@ void CMainFrame::OnHelpChangeLog()
 void CMainFrame::OnDevelopmentoptionsPrintresourcces()
 {
 	// TODO: Add your command handler code here
-#if 0
-	TRACE(L"BEGIN PrintResInfoMap\n");
-	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
-	TRACE(L"END PrintResInfoMap\n");
-#endif
-	TRACE(L"BEGIN PrintResInfoArray\n");
-	//int sortCnt = ResHelper::SortResInfoArray(ResHelper::resInfoArray);
-	int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray, FALSE);
-	int cnt5 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray, TRUE);
-	TRACE(L"END PrintResInfo\n");
+
+	ResHelper::PrintResInfo();
 
 	int deb = 1;
 }
@@ -5959,4 +5953,22 @@ void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
 	// TODO: Add your command handler code here
 	PageCodeListDlg dlg;
 	INT_PTR retcode = dlg.DoModal();
+}
+
+
+void CMainFrame::OnDevelopmentoptionsCreatelanguagefile()
+{
+	// TODO: Add your command handler code here
+	TRACE(L"BEGIN Create Language File\n");
+	ResHelper::CreateLanguageFile();
+	TRACE(L"END Create Language File\n");
+}
+
+
+void CMainFrame::OnDevelopmentoptionsSelectlanguage()
+{
+	// TODO: Add your command handler code here
+
+	ResHelper::LoadLanguageMap();
+	int deb = 1;
 }

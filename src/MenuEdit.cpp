@@ -7,6 +7,7 @@
 
 #include "stdafx.h"
 #include "MenuEdit.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -83,6 +84,9 @@ void CMenuEdit::OnContextMenu(CWnd* pWnd, CPoint point)
     this->GetWindowText(txt);
 
     menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, point.x, point.y, this);
+
+    int index = 0;
+    ResHelper::LoadMenuItemsInfo(&menu, index);
 }
 
 BOOL CMenuEdit::OnCommand(WPARAM wParam, LPARAM lParam)

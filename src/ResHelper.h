@@ -51,8 +51,11 @@ class ResourceInfo
 {
 public:
 	ResourceInfo(CString& label, CString &controlName) { m_label = label; m_controlName = controlName;  }
+	ResourceInfo(CStringA& labelA, CString& controlName) { m_labelA = labelA; m_controlName = controlName; }
+
 	dlink_node<ResourceInfo> m_hashMapLink;
 	CString m_label;
+	CStringA m_labelA;
 	CString m_controlName;
 };
 
@@ -113,13 +116,27 @@ public:
 
 	static ResourceInfo* AddItemInfo(CString & label, CString &controlName);
 	static ResourceInfo* AddItemInfo(CString& label);
+
+	static int PrintResInfo();
 	static int PrintResInfoMap(ResInfoMapType& resStringMap);
-	static int PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort);
+	static int PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort, BOOL printAsUnicode);
 	static int SortResInfoArray(ResInfoArrayType& resInfoArray);
 
-	static ResInfoArrayType resInfoArray;
-	static ResInfoMapType resInfoMap;
-	static ResInfoMapType mergedResInfoMap;
+	static void MergeAllResInfo();
+	static void MergeResInfoFile(CString& resFile);
+
+	// Create language file by merigin info from .rc file and manually discovered info
+	static int CreateLanguageFile();
+	static void LoadResInfoFromFile(CString& resFile, ResInfoArrayType& resArray);
+
+	static ResInfoArrayType resArray1;
+	static ResInfoArrayType resArray2;
+
+	static ResInfoMapType g_LanguageMap;
+
+	static ResInfoArrayType g_resInfoArray;
+	static ResInfoMapType g_resInfoMap;
+
 	static int PopulateResStringList() { return 0; }
 
 	//static void LoadDialogItemsInfo(HWND hwndParent);
@@ -137,12 +154,16 @@ public:
 	static void LoadMenuItemsInfo(CMenu* menu, int index);
 	static void LoadToolBarItemsInfo(CToolBar* tbar);
 
+	static void LoadLanguageMap();
+
 	static void IterateWindowChilds(HWND hwndParent);
 	static void IterateWindowChilds(HWND hwndParent, int maxcnt, int iter);
 	static void IterateMenuItems(CMenu* menu);
 	static void IterateMenuItems(CMenu* menu, int index);
 	static void IterateMenuItemsSetPopMenuData(CMenu* menu, int index);
 	static BOOL GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags);
+
+	static void GetProcessFolderPath(CString& folderPath);
 protected:
 };
 

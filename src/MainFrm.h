@@ -443,6 +443,8 @@ public:
 	afx_msg void OnHelpChangeLog();
 	afx_msg void OnDevelopmentoptionsPrintresourcces();
 	afx_msg void OnDevelopmentoptionsCodepageinstalled();
+	afx_msg void OnDevelopmentoptionsCreatelanguagefile();
+	afx_msg void OnDevelopmentoptionsSelectlanguage();
 };
 
 /////////////////////////////////////////////////////////////////////////////
