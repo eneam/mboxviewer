@@ -128,6 +128,8 @@ BOOL SMTPMailServerConfigDlg::OnInitDialog()
 	// m_mailDB is already set from  void CMainFrame::OnFileSmtpmailserverconfig()
 	TLSOptions.SetCurSel(m_mailDB.SMTPConfig.EncryptionType);
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
 	UpdateData(FALSE);
 
 	ResHelper::LoadDialogItemsInfo(this);

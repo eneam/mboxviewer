@@ -118,8 +118,8 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 	// Set TABSTOPS to FALSE to stop highlighting text
 	m_introText.EnableWindow(TRUE);
 
-	HWND h = this->GetSafeHwnd();
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

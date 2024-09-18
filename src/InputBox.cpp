@@ -71,6 +71,7 @@ BOOL InputBox::OnInitDialog()
 	// TODO:  Add extra initialization here
 
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	if (GetSafeHwnd()) {
 		CWnd *p = GetDlgItem(IDC_EDIT2);

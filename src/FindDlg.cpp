@@ -201,6 +201,8 @@ BOOL CFindDlg::OnInitDialog()
 		int deb = 1;
 	}
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
 	UpdateData(FALSE);  // FIXMEFIXME
 
 	ResHelper::LoadDialogItemsInfo(this);

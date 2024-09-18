@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(PrintConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_HTML_PDF_CNF, &PrintConfigDlg::OnBnClickedHtmlPdfCnf)
 	ON_BN_CLICKED(IDC_PAGE_BREAK, &PrintConfigDlg::OnBnClickedPageBreak)
 	ON_BN_CLICKED(IDC_THREAD_BREAK, &PrintConfigDlg::OnBnClickedThreadBreak)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &PrintConfigDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 // PrintConfigDlg message handlers
@@ -197,7 +198,10 @@ BOOL PrintConfigDlg::OnInitDialog()
 			EnableNonCustomWindows(FALSE);
 	}
 
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
+
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -762,4 +766,16 @@ void PrintConfigDlg::OnBnClickedThreadBreak()
 		((CButton*)p)->SetCheck(0);
 		//p->EnableWindow(FALSE);
 	}
+}
+
+BOOL PrintConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

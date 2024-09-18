@@ -104,6 +104,7 @@ BOOL ForwardMailDlg::OnInitDialog()
 	}
 
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;
 }

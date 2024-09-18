@@ -160,6 +160,8 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 
 	EnableZoom(FALSE);
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
 	UpdateData(TRUE);
 
 	ResHelper::LoadDialogItemsInfo(this);

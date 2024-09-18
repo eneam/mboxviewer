@@ -69,6 +69,8 @@ BOOL DevelopmentCreateArchive::OnInitDialog()
 
 	m_createdArchiveName = fileBaseName + L"_subset" + fileNameExtention;
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
 	UpdateData(FALSE);
 
 	ResHelper::LoadDialogItemsInfo(this);

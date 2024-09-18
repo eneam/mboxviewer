@@ -65,8 +65,11 @@ public:
 	int m_bSubjectSortType;
 	int m_filesToValidateAsMboxType;
 	//
+	CToolTipCtrl m_toolTip;
+	//
 	afx_msg void OnBnClickedRadio2();
 	afx_msg void OnBnClickedPictureViewer();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };
 
 #endif // _OPTIONS_DLG_

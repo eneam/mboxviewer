@@ -112,6 +112,8 @@ protected:
 	virtual BOOL OnInitDialog();
 
 	void EnableNonCustomWindows(BOOL enable);
+
+	CToolTipCtrl m_toolTip;
 public:
 	struct NamePatternParams m_NamePatternParams;
 
@@ -129,6 +131,8 @@ public:
 	afx_msg void OnBnClickedHtmlPdfCnf();
 	afx_msg void OnBnClickedPageBreak();
 	afx_msg void OnBnClickedThreadBreak();
+
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };
 
 #endif _PRINT_CONFIG_DLG_

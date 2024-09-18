@@ -226,6 +226,8 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 
 	InitDialogControls();
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
 	UpdateData(TRUE);
 
 	ResHelper::LoadDialogItemsInfo(this);

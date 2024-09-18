@@ -36,6 +36,9 @@
 
 //
 
+BOOL ResHelper::g_LoadMenuItemsInfo = FALSE;
+BOOL ResHelper::g_UpdateMenuItemsInfo = TRUE;
+
 ResInfoMapType ResHelper::g_LanguageMap(2000);
 
 ResInfoMapType ResHelper::g_resInfoMap(2000);
@@ -93,6 +96,9 @@ BOOL ResHelper::GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, U
 void ResHelper::LoadDialogItemsInfo(CDialog* dlg)
 {
 #ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
 
 	HWND hwndParent = dlg->GetSafeHwnd();
 
@@ -109,6 +115,9 @@ void ResHelper::LoadDialogItemsInfo(CDialog* dlg)
 void ResHelper::LoadDialogItemsInfo(CWnd *wnd)
 {
 #ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
 
 	HWND hwndParent = wnd->GetSafeHwnd();
 
@@ -130,6 +139,130 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd)
 void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int iter)
 {
 #ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
+
+	CString strClassName;
+	CString strWindowText;
+	CString strWindowText2;
+	HWND hwndChild = GetWindow(hwndParent, GW_CHILD);
+	while ((hwndChild != NULL) && maxcnt > 0)
+	{
+		int slen = ::GetWindowText(hwndChild, windowText, maxWindowTextLength);
+		int sclasslen = GetClassName(hwndChild, className, maxClassNameLength);
+
+		strWindowText = windowText;
+		strClassName = className;
+
+		UINT nID = ::GetDlgCtrlID(hwndChild);
+
+		CWnd* pw = wnd->GetDlgItem(nID);
+
+		pw->GetWindowText(strWindowText2);
+
+		if (strClassName.CompareNoCase(L"Edit") == 0)
+		{
+			AddItemInfo(strWindowText, strClassName);
+		}
+		else if (strClassName.CompareNoCase(L"ListBox") == 0)
+		{
+			int index = 0;
+			CListBox* listBox = (CListBox*)pw;
+			LoadListBoxItemsInfo(listBox, index);
+			int deb = 1;
+		}
+		else if (strClassName.CompareNoCase(L"ComboBox") == 0)
+		{
+			int index = 0;
+			CComboBox* comboBox = (CComboBox*)pw;
+			LoadComboBoxItemsInfo(comboBox, index);
+			int deb = 1;
+		}
+		else if (strClassName.CompareNoCase(L"Button") == 0)
+		{
+			AddItemInfo(strWindowText, strClassName);
+		}
+		else if (strClassName.CompareNoCase(L"Static") == 0)
+		{
+			AddItemInfo(strWindowText, strClassName);
+		}
+		else if (strClassName.CompareNoCase(L"SysListView32") == 0)
+		{
+			AddItemInfo(strWindowText, strClassName);
+#if 0
+			int index = 0;
+			CListBox* listBox = (CListBox*)pw;
+			LoadListBoxItemsInfo(listBox, index);
+#endif
+		}
+		else
+		{
+			AddItemInfo(strWindowText, strClassName);
+			LoadDialogItemsInfo(wnd, hwndChild, --maxcnt, ++iter);
+		}
+		hwndChild = GetWindow(hwndChild, GW_HWNDNEXT);
+	}
+#endif
+}
+
+
+void ResHelper::UpdateDialogItemsInfo(CDialog* dlg)
+{
+#ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	HWND hwndParent = dlg->GetSafeHwnd();
+
+	if (hwndParent == 0)
+		return;
+
+	CWnd* wnd = (CWnd*)dlg;
+
+	UpdateDialogItemsInfo(wnd);
+
+#endif
+}
+
+void ResHelper::UpdateDialogItemsInfo(CWnd* wnd)
+{
+#ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	HWND hwndParent = wnd->GetSafeHwnd();
+
+	if (hwndParent == 0)
+		return;
+
+	::GetWindowText(hwndParent, windowText, maxWindowTextLength);
+	wnd->GetWindowText(wndText);
+
+	CString newWndText;
+	BOOL retFind = DetermineString(wndText, newWndText);
+
+	if (newWndText.GetLength())
+	{
+		wnd->SetWindowText(newWndText);
+	}
+
+	int maxcnt = 512;
+	int iter = 1;
+	UpdateDialogItemsInfo(wnd, hwndParent, maxcnt, iter);
+
+#endif
+}
+
+void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, int iter)
+{
+#ifdef _DEBUG
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
 	CString strClassName;
 	HWND hwndChild = GetWindow(hwndParent, GW_CHILD);
 	while ((hwndChild != NULL) && maxcnt > 0)
@@ -137,14 +270,18 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int 
 		int slen = ::GetWindowText(hwndChild, windowText, maxWindowTextLength);
 		int sclasslen = GetClassName(hwndChild, className, maxClassNameLength);
 
+		CString wndText = windowText;
 		strClassName = className;
+
+		CString newWndText;
+		BOOL retFind = DetermineString(wndText, newWndText);
 
 		UINT nID = ::GetDlgCtrlID(hwndChild);
 
 		CWnd* pw = wnd->GetDlgItem(nID);
-		if (strClassName.CompareNoCase(L"EDIT"))
+		if (strClassName.CompareNoCase(L"Edit") == 0)
 		{
-			AddItemInfo(CString(windowText), CString(className));
+			;// pw->SetWindowText(newWndText);
 		}
 		else if (strClassName.CompareNoCase(L"ListBox") == 0)
 		{
@@ -162,15 +299,25 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int 
 		}
 		else
 		{
-			LoadDialogItemsInfo(wnd, hwndChild, --maxcnt, ++iter);
+			if (newWndText.GetLength())
+			{
+				pw->SetWindowText(newWndText);
+			}
+
+			UpdateDialogItemsInfo(pw, hwndChild, --maxcnt, ++iter);
 		}
 		hwndChild = GetWindow(hwndChild, GW_HWNDNEXT);
 	}
 #endif
 }
 
+
 void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
+
 	ResourceInfo* rinfo;
 	int count = menu->GetCount();
 	CString label;
@@ -190,8 +337,44 @@ void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
 	int debM = 1;
 }
 
+void ResHelper::UpdateListBoxItemsInfo(CListBox* menu, int index)
+{
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	ResourceInfo* rinfo;
+	int count = menu->GetCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+
+	for (i = 0; i < count; i++)
+	{
+		menu->GetText(i, label);
+
+		CString newLabel;
+		BOOL retFind = DetermineString(wndText, newLabel);
+		if (newLabel.GetLength())
+		{
+			menu->InsertString(i, newLabel);
+		}
+
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
 void ResHelper::LoadComboBoxItemsInfo(CComboBox* menu, int index)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
+
 	ResourceInfo* rinfo;
 	int count = menu->GetCount();
 	CString label;
@@ -212,8 +395,44 @@ void ResHelper::LoadComboBoxItemsInfo(CComboBox* menu, int index)
 }
 
 
+void ResHelper::UpdateComboBoxItemsInfo(CComboBox* menu, int index)
+{
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	ResourceInfo* rinfo;
+	int count = menu->GetCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+
+	for (i = 0; i < count; i++)
+	{
+		menu->GetLBText(i, label);
+
+		CString newLabel;
+		BOOL retFind = DetermineString(wndText, newLabel);
+		if (newLabel.GetLength())
+		{
+			menu->InsertString(i, newLabel);
+		}
+
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
 void ResHelper::LoadMenuItemsInfo(CMenu* menu, int index)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
+
 	int count = menu->GetMenuItemCount();
 	CString label;
 	UINT itemID = 0;
@@ -261,9 +480,78 @@ void ResHelper::LoadMenuItemsInfo(CMenu* menu, int index)
 	int debM = 1;
 }
 
+BOOL  ResHelper::DetermineString(CString &str, CString &newString)
+{
+	hashsum_t hsum = g_LanguageMap.hash(&str);
+
+	ResourceInfo* rinfo = g_LanguageMap.find(&str, hsum);
+	if (rinfo)
+	{
+		newString = rinfo->m_controlName;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+void ResHelper::UpdateMenuItemsInfo(CMenu* menu, int index)
+{
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	int count = menu->GetMenuItemCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+
+	for (i = 0; i < count; i++)
+	{
+		itemID = menu->GetMenuItemID(i);
+		retval = menu->GetMenuString(i, label, nFlags);
+		retval = GetMenuItemString(menu, i, label, nFlags);
+
+		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+		menuItemInfo.cbSize = sizeof(menuItemInfo);
+		menuItemInfo.fMask = MIIM_ID | MIIM_DATA;
+		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, nFlags);
+		if (retval == FALSE)
+			int deb = 1; // ignore/return;
+
+		CString newLabel;
+		BOOL retFind = DetermineString(label, newLabel);
+
+		DWORD nFlags2 = MF_STRING | MF_BYPOSITION;
+		UINT_PTR nIDNewItem = (UINT_PTR)itemID;
+
+		if (retFind && (itemID != (UINT)0))
+		{
+			BOOL retMod = menu->ModifyMenu((UINT)i, nFlags2, nIDNewItem, (LPCWSTR)newLabel);
+			WORD nItemID = menu->GetMenuItemID(i);
+			int deb = 1;
+		}
+
+		if (itemID == (UINT)-1)
+		{
+			CMenu* submenu = menu->GetSubMenu(i);
+
+			UpdateMenuItemsInfo(submenu, index + 1);
+		}
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
 
 void ResHelper::LoadToolBarItemsInfo(CToolBar* tbar)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
 
 	CToolBarCtrl& cbar = tbar->GetToolBarCtrl();
 	int count = cbar.GetButtonCount();
@@ -276,6 +564,34 @@ void ResHelper::LoadToolBarItemsInfo(CToolBar* tbar)
 	{
 		tbar->GetButtonText(i, label);
 		rinfo = AddItemInfo(label, CString(L"TOOLBARITEM"));
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
+void ResHelper::UpdateToolBarItemsInfo(CToolBar* tbar)
+{
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
+	CToolBarCtrl& cbar = tbar->GetToolBarCtrl();
+	int count = cbar.GetButtonCount();
+
+	CString label;
+	ResourceInfo* rinfo;
+	int i;
+
+	for (i = 0; i < count; i++)
+	{
+		tbar->GetButtonText(i, label);
+		CString newLabel;
+		BOOL retFind = DetermineString(label, newLabel);
+		if (newLabel.GetLength())
+		{
+			tbar->GetButtonText(i, newLabel);
+		}
+
 		int deb = 1;
 	}
 	int debM = 1;
@@ -310,6 +626,10 @@ ResourceInfo* ResHelper::AddItemInfo(CString & label, CString& controlName)
 
 int ResHelper::PrintResInfoMap(ResInfoMapType& resInfoMap)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return -1;
+
 	ResInfoMapType::IHashMapIter iter = resInfoMap.first();
 	for (; !resInfoMap.last(iter); resInfoMap.next(iter))
 	{
@@ -320,6 +640,10 @@ int ResHelper::PrintResInfoMap(ResInfoMapType& resInfoMap)
 
 int ResHelper::PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort, BOOL printAsUnicode)
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return -1;
+
 	CString errorTxt;
 	CString resInfoTxt;
 	CStringA resInfoTxtA;
@@ -441,6 +765,10 @@ int ResHelper::SortResInfoArray(ResInfoArrayType& resInfoArray)
 
 void ResHelper::MergeAllResInfo()
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return;
+
 	CStringArray fileList;
 	fileList.Add(L"sorted_resource.txt");
 	fileList.Add(L"german.ini");
@@ -483,6 +811,10 @@ void ResHelper::GetProcessFolderPath(CString &folderPath)
 
 int ResHelper::CreateLanguageFile()
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return -1;
+
 	CString folderPath;
 	GetProcessFolderPath(folderPath);
 
@@ -607,6 +939,10 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 
 void ResHelper::LoadLanguageMap()
 {
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)
+		return;
+
 	CString folderPath;
 	GetProcessFolderPath(folderPath);
 
@@ -640,7 +976,9 @@ void ResHelper::LoadLanguageMap()
 	{
 		if (strLine[0] == L'[')
 		{
-			CString key = strLine.Trim(L"[]\"\r\n");
+			int slen = strLine.GetLength();
+			CString key = strLine.Mid(2, slen - 4);
+			//CString key = strLine.Trim(L"[]\"\r\n");
 
 			hashsum_t hsum = g_LanguageMap.hash(&key);
 
@@ -650,7 +988,10 @@ void ResHelper::LoadLanguageMap()
 				if (!file.ReadString(strLine))
 					break;
 
-				controlName = strLine.Trim(L"[]\"\r\n");
+
+				int slen = strLine.GetLength();
+				controlName = strLine.Mid(1, slen - 2);
+				//controlName = strLine.Trim(L"[]\"\r\n");
 				ResourceInfo* rinfo = new ResourceInfo(key, controlName);
 				g_LanguageMap.insert(hsum, rinfo);
 			}
@@ -664,6 +1005,10 @@ void ResHelper::LoadLanguageMap()
 int ResHelper::PrintResInfo()
 {
 	// TODO: Add your command handler code here
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_LoadMenuItemsInfo == FALSE)
+		return -1;
+
 #if 0
 	TRACE(L"BEGIN PrintResInfoMap\n");
 	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
@@ -693,6 +1038,71 @@ int ResHelper::PrintResInfo()
 	return 1;
 }
 
+
+BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipText)
+{
+	//static CString txt;
+
+	NMTTDISPINFO* pTTT = (NMTTDISPINFO*)pNMHDR;
+	UINT_PTR nID = pNMHDR->idFrom;
+	BOOL bRet = FALSE;
+
+	if (pTTT->uFlags & TTF_IDISHWND)
+	{
+		// idFrom is actually the HWND of the tool
+		nID = ::GetDlgCtrlID((HWND)nID);
+		if (nID && (nID != IDC_EDIT_INTRO))
+		{
+			CWnd* p = parentWnd->GetDlgItem(nID);
+			if (p)
+			{
+				p->GetWindowText(toolTipText);
+
+				CPaintDC dc(p);
+				HDC hDC = dc.GetSafeHdc();
+
+				SIZE sizeItem;
+				BOOL retA = GetTextExtentPoint32(hDC, toolTipText, toolTipText.GetLength(), &sizeItem);
+
+				CRect rec;
+				p->GetClientRect(&rec);
+				//rec.InflateRect(-5, 0);
+
+				if (sizeItem.cx > rec.Width())
+				{
+					//int w = m_toolTip.SetMaxTipWidth(200);
+
+					pTTT->lpszText = (LPWSTR)((LPCWSTR)toolTipText);
+
+					RECT rec;
+					p->GetWindowRect(&rec);
+
+					HWND hwndToolTip = pNMHDR->hwndFrom;
+
+					RECT rc = rec;
+					::SendMessage(hwndToolTip, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);
+					bRet = TRUE;
+				}
+			}
+		}
+	}
+
+	return bRet;
+}
+
+BOOL ResHelper::ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl)
+{
+	parentWnd->EnableToolTips(TRUE);
+	BOOL cret = toolTipCtrl.Create(parentWnd);
+	if (cret)
+	{
+		toolTipCtrl.AddTool(parentWnd, LPSTR_TEXTCALLBACK);
+		//int w = toolTipCtrl.SetMaxTipWidth(600);
+		toolTipCtrl.Activate(TRUE);
+		return TRUE;
+	}
+	return FALSE;
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -902,17 +1312,38 @@ void ResHelper::IterateMenuItemsSetPopMenuData(CMenu* menu, int index)
 	int debM = 1;
 }
 
+int ResHelper::ReleaseResInfoMap(ResInfoMapType& resInfoMap)
+{
+	ResInfoMapType::IHashMapIter iter = resInfoMap.first();
+	for (; !resInfoMap.last(iter); )
+	{
+		ResourceInfo* l = iter.element;
+		resInfoMap.remove(iter);
+		delete l;
+	}
+	resInfoMap.clear();
+
+	return resInfoMap.count();
+}
+
+void ResHelper::ReleaseResInfoArray(ResInfoArrayType &resInfoArray)
+{
+	for (int i = 0; i < resInfoArray.GetCount(); i++)
+	{
+		ResourceInfo* rinfo = resInfoArray[i];
+		delete rinfo;
+		resInfoArray[i] = 0;
+	}
+}
 
 void ResHelper::ReleaseResources()
 {
 	g_resInfoMap.clear();
+	ReleaseResInfoMap(g_LanguageMap);
 
-	for (int i = 0; i < g_resInfoArray.GetCount(); i++)
-	{
-		ResourceInfo* rinfo = g_resInfoArray[i];
-		delete rinfo;
-		g_resInfoArray[i] = 0;
-	}
+	ReleaseResInfoArray(g_resInfoArray);
+	ReleaseResInfoArray(resArray1);
+	ReleaseResInfoArray(resArray2);
 }
 
 #if 0

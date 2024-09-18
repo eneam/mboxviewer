@@ -83,6 +83,7 @@ BEGIN_MESSAGE_MAP(COptionsDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &COptionsDlg::OnBnClickedOk)
 	//ON_BN_CLICKED(IDC_RADIO2, &COptionsDlg::OnBnClickedRadio2)
 	//ON_BN_CLICKED(IDC_PICTURE_VIEWER, &COptionsDlg::OnBnClickedPictureViewer)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &COptionsDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -153,6 +154,10 @@ BOOL COptionsDlg::OnInitDialog()
 	m_bSubjectSortType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"subjectSortType");
 	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType");
 
+	ResHelper::UpdateDialogItemsInfo(this);
+
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
+
 	UpdateData(FALSE);
 
 	ResHelper::LoadDialogItemsInfo(this);
@@ -174,3 +179,16 @@ void COptionsDlg::OnBnClickedPictureViewer()
 	// TODO: Add your control notification handler code here
 	int deb = 1;
 }
+
+BOOL COptionsDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
+}
+

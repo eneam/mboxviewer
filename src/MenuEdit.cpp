@@ -83,10 +83,14 @@ void CMenuEdit::OnContextMenu(CWnd* pWnd, CPoint point)
     CString txt;
     this->GetWindowText(txt);
 
+    int index1 = 0;
+    ResHelper::UpdateMenuItemsInfo(&menu, index1);
+
     menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, point.x, point.y, this);
 
     int index = 0;
     ResHelper::LoadMenuItemsInfo(&menu, index);
+    //ResHelper::UpdateMenuItemsInfo(&menu, index);
 }
 
 BOOL CMenuEdit::OnCommand(WPARAM wParam, LPARAM lParam)

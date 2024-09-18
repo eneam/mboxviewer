@@ -621,6 +621,9 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
+			int index = 0;
+			ResHelper::LoadMenuItemsInfo(&menu, index);
+
 			UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 			UINT nFlags = TPM_RETURNCMD;
@@ -863,6 +866,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mail");
 	menu.AppendMenu(MF_SEPARATOR);
 
+	int index1 = 1;
+	ResHelper::UpdateMenuItemsInfo(&menu, index1);
+
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
 	DWORD error = GetLastError();
@@ -874,6 +880,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 #ifdef _DEBUG
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(&menu, index);
+	//ResHelper::UpdateMenuItemsInfo(&menu, index);
 	//ResHelper::IterateMenuItemsSetPopMenuData(&menu, index);
 #endif
 
@@ -1599,6 +1606,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_SEPARATOR);
 	
 	//////////////
+
+	int index1 = 0;
+	ResHelper::UpdateMenuItemsInfo(&menu, index1);
 	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 

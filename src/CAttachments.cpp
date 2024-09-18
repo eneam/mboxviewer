@@ -228,10 +228,14 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CBitmap  foldertMap;
 	retval = AttachIcon(&menu, OpenFileLocation, IDB_FOLDER, foldertMap);
 
+	int index1 = 0;
+	ResHelper::UpdateMenuItemsInfo(&menu, index1);
+
 	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	int index = 0;
 	ResHelper::LoadMenuItemsInfo(&menu, index);
+	//ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 	UINT nFlags = TPM_RETURNCMD;
 	CString menuString;

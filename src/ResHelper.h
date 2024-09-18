@@ -103,6 +103,9 @@ using ResInfoArrayType = CArray<ResourceInfo*, ResourceInfo*>;
 class ResHelper
 {
 public:
+	static BOOL g_LoadMenuItemsInfo;
+	static BOOL g_UpdateMenuItemsInfo;
+
 	static CString resourceFile;
 	static HANDLE hResourceFile;
 	static int maxWindowTextLength;
@@ -113,6 +116,8 @@ public:
 	static CString wndText;
 
 	static void ReleaseResources();
+	static void ReleaseResInfoArray(ResInfoArrayType& resInfoArray);
+	static int ReleaseResInfoMap(ResInfoMapType& resInfoMap);
 
 	static ResourceInfo* AddItemInfo(CString & label, CString &controlName);
 	static ResourceInfo* AddItemInfo(CString& label);
@@ -146,15 +151,29 @@ public:
 	static void LoadDialogItemsInfo(CWnd* wnd);
 	static void LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int iter);
 	//
+	static void UpdateDialogItemsInfo(CDialog *dlg);
+	static void UpdateDialogItemsInfo(CWnd* wnd);
+	static void UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, int iter);
+	//
 	static void LoadListBoxItemsInfo(CListBox* menu, int index);
+	static void UpdateListBoxItemsInfo(CListBox* menu, int index);
 	//
 	static void LoadComboBoxItemsInfo(CComboBox* menu, int index);
+	static void UpdateComboBoxItemsInfo(CComboBox* menu, int index);
 	//
 	static void LoadMenuItemsInfo(CMenu* menu);
 	static void LoadMenuItemsInfo(CMenu* menu, int index);
+	static void UpdateMenuItemsInfo(CMenu* menu, int index);
+
 	static void LoadToolBarItemsInfo(CToolBar* tbar);
+	static void UpdateToolBarItemsInfo(CToolBar* tbar);
 
 	static void LoadLanguageMap();
+	static BOOL DetermineString(CString& str, CString& newString);
+
+	static BOOL OnTtnNeedText(CWnd* parentWindow, NMHDR* pNMHDR, CString &toolTipText);
+	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl);
+	
 
 	static void IterateWindowChilds(HWND hwndParent);
 	static void IterateWindowChilds(HWND hwndParent, int maxcnt, int iter);

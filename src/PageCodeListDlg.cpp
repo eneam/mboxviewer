@@ -234,6 +234,7 @@ BOOL PageCodeListDlg::OnInitDialog()
 	//m_list.PostMessage(HDN_ITEMCLICK, 0, 0);
 
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE

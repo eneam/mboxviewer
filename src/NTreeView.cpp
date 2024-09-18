@@ -2979,6 +2979,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 				int index = 1;
 				ResHelper::LoadMenuItemsInfo(&menu, index);
+				ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 				CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3078,6 +3079,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		int index = 1;
 		ResHelper::LoadMenuItemsInfo(&menu, index);
+		ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 		CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3282,6 +3284,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(&menu, index);
+	ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 

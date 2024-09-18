@@ -1160,6 +1160,7 @@ BOOL CAboutDlg::OnInitDialog()
 		GetDlgItem(IDC_STATIC1)->SetWindowText(version);
 
 	ResHelper::LoadDialogItemsInfo(this);
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -1353,6 +1354,8 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 
 BOOL CmboxviewApp::InitInstance()
 {
+	ResHelper::LoadLanguageMap();
+
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	BOOL retExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview));
 
@@ -1633,15 +1636,18 @@ BOOL CmboxviewApp::InitInstance()
 	CMenu* menu = pFrame->GetMenu();
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(menu, index);
+	ResHelper::UpdateMenuItemsInfo(menu, index);
 
 	TRACE(L"LoadDialogItemsInfo\n");
 	CDialogBar& dbar = pFrame->GetDialogBar();;
 	HWND h = dbar.GetSafeHwnd();
 	ResHelper::LoadDialogItemsInfo(&dbar);
+	ResHelper::UpdateDialogItemsInfo(&dbar);
 
 	TRACE(L"LoadToolBarItemsInfo\n");
 	CToolBar& cbar = pFrame->GetToolBar();
 	ResHelper::LoadToolBarItemsInfo(&cbar);
+	ResHelper::UpdateToolBarItemsInfo(&cbar);
 
 	TRACE(L"Load ResInfo END\n");
 
