@@ -129,6 +129,7 @@ BOOL DataFolderConfigDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -149,6 +150,7 @@ BEGIN_MESSAGE_MAP(DataFolderConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SELECT_DATA_FOLDER_BUTTON, &DataFolderConfigDlg::OnBnClickedSelectDataFolderButton)
 	ON_EN_CHANGE(IDC_USER_SELECTED_FOLDER_PATH, &DataFolderConfigDlg::OnEnChangeUserSelectedFolderPath)
 	ON_EN_CHANGE(IDC_CURRENT_FOLDER_PATH, &DataFolderConfigDlg::OnEnChangeCurrentFolderPath)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &DataFolderConfigDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -393,3 +395,14 @@ void DataFolderConfigDlg::OnEnChangeCurrentFolderPath()
 	int deb = 1;
 }
 
+BOOL DataFolderConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
+}

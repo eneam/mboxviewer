@@ -68,6 +68,7 @@ void CustomNameTemplDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CustomNameTemplDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &CustomNameTemplDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDC_SRCFTIME, &CustomNameTemplDlg::OnBnClickedSrcftime)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CustomNameTemplDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -162,7 +163,20 @@ BOOL CustomNameTemplDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL CustomNameTemplDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

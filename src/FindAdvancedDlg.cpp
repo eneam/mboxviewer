@@ -156,6 +156,7 @@ BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_HELP, &CFindAdvancedDlg::OnBnClickedButtonHelp)
 	ON_BN_CLICKED(IDC_HTML_TEXT, &CFindAdvancedDlg::OnBnClickedHtmlText)
 	ON_BN_CLICKED(IDC_HTML_IF, &CFindAdvancedDlg::OnBnClickedHtmlIf)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CFindAdvancedDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -227,6 +228,7 @@ BOOL CFindAdvancedDlg::OnInitDialog()
 	InitDialogControls();
 
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	UpdateData(TRUE);
 
@@ -798,4 +800,16 @@ void CFindAdvancedParams::ResetFilterDates()
 	m_last_nWhichMailList = 0;
 	m_filterDates = FALSE;
 	//m_dateTimeFormat = L"MM/dd/yyyy";
+}
+
+BOOL CFindAdvancedDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

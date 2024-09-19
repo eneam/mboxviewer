@@ -59,6 +59,9 @@ public:
 	AttachmentsConfig(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~AttachmentsConfig();
 
+	//
+	CToolTipCtrl m_toolTip;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ATTACHMENTS_CONFIG };
@@ -73,4 +76,5 @@ public:
 	AttachmentConfigParams m_attachmentConfigParams;
 	afx_msg void OnBnClickedOk();
 	virtual BOOL OnInitDialog();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

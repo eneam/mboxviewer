@@ -55,6 +55,8 @@ public:
 	virtual ~CustomNameTemplDlg();
 
 	struct NameTemplateCnf m_nameTemplateCnf;
+	//
+	CToolTipCtrl m_toolTip;
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -69,4 +71,5 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedSrcftime();
 	virtual BOOL OnInitDialog();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

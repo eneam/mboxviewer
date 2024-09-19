@@ -140,6 +140,8 @@ public:
 	int m_applyColorToSelectedPane;  // status of check box "Apply to Selected"
 	int m_applyColorToAllPanes;      // status of check box "Apply to All Panes"
 	COLORREF m_customColors[16];     // colors selected by user known to Color Picker Dialog
+	//
+	CToolTipCtrl m_toolTip;
 
 	void EnableCustomStyle(BOOL enable); // enable/disable custom configuration
 	void ClearCustomStyleChecks();
@@ -163,4 +165,5 @@ public:
 	
 	afx_msg void OnBnClickedButtonClose();
 	afx_msg void OnBnClickedApplyToAllPanes();  // Apply selected color to all Panes
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

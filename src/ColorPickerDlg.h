@@ -39,9 +39,12 @@ class ColorPickerDlg : public CColorDialog
 public:
 	ColorPickerDlg(COLORREF clrInit = 0, DWORD dwFlags = 0, CWnd* pParentWnd = nullptr);
 	virtual ~ColorPickerDlg();
+	//
+	CToolTipCtrl m_toolTip;
 
 protected:
 	DECLARE_MESSAGE_MAP()
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 public:
 	virtual BOOL OnInitDialog();
 

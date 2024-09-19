@@ -623,6 +623,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 			int index = 0;
 			ResHelper::LoadMenuItemsInfo(&menu, index);
+			ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 			UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -866,8 +867,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mail");
 	menu.AppendMenu(MF_SEPARATOR);
 
-	int index1 = 1;
-	ResHelper::UpdateMenuItemsInfo(&menu, index1);
+	int index = 1;
+	ResHelper::LoadMenuItemsInfo(&menu, index);
+	ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -876,13 +878,6 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	UINT nFlags = TPM_RETURNCMD;
 	CString menuString;
 	int chrCnt = menu.GetMenuString(command, menuString, nFlags);
-
-#ifdef _DEBUG
-	int index = 1;
-	ResHelper::LoadMenuItemsInfo(&menu, index);
-	//ResHelper::UpdateMenuItemsInfo(&menu, index);
-	//ResHelper::IterateMenuItemsSetPopMenuData(&menu, index);
-#endif
 
 	BOOL multipleSelectedMails = FALSE;
 	BOOL itemSelected = FALSE;
@@ -1607,8 +1602,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	
 	//////////////
 
-	int index1 = 0;
-	ResHelper::UpdateMenuItemsInfo(&menu, index1);
+	int index = 0;
+	ResHelper::UpdateMenuItemsInfo(&menu, index);
+	ResHelper::LoadMenuItemsInfo(&menu, index);
 	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 

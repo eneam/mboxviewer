@@ -42,6 +42,8 @@ public:
 	CString m_title;
 	CArray<CString> m_InList;
 	CArray<CString> m_OutList;
+	//
+	CToolTipCtrl m_toolTip;
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -57,6 +59,7 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 protected:
 	void LoadData();
 	void ResizeDialogWindow();

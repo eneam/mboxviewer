@@ -108,6 +108,8 @@ public:
 	COLORREF m_dflBkColor;
 	COLORREF m_checkedColor;
 	CBrush m_brBkDate;
+	//
+	CToolTipCtrl m_toolTip;
 	//}}AFX_DATA
 
 
@@ -135,6 +137,7 @@ public:
 	afx_msg void OnDtnDatetimechangeDatetimepicker1(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnDtnDatetimechangeDatetimepicker2(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonHelp();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };
 
 //{{AFX_INSERT_LOCATION}}

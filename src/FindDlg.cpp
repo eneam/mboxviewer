@@ -100,6 +100,7 @@ BEGIN_MESSAGE_MAP(CFindDlg, CDialog)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER1, &CFindDlg::OnDtnDatetimechangeDatetimepicker1)
 	ON_NOTIFY(DTN_DATETIMECHANGE, IDC_DATETIMEPICKER2, &CFindDlg::OnDtnDatetimechangeDatetimepicker2)
 	ON_BN_CLICKED(IDC_BUTTON1, &CFindDlg::OnBnClickedButtonHelp)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CFindDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -202,6 +203,7 @@ BOOL CFindDlg::OnInitDialog()
 	}
 
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	UpdateData(FALSE);  // FIXMEFIXME
 
@@ -440,4 +442,16 @@ void CFindDlg::OnBnClickedButtonHelp()
 	CMainFrame::OpenHelpFile(helpFileName, h);
 
 	int deb = 1;
+}
+
+BOOL CFindDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

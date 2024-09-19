@@ -116,6 +116,8 @@ public:
 	COLORREF m_checkedColor;
 	CBrush m_brBkMailsDontMatch;
 	CBrush m_brBkDate;
+	//
+	CToolTipCtrl m_toolTip;
 
 	//}}AFX_DATA
 
@@ -152,6 +154,7 @@ public:
 	afx_msg void OnBnClickedButtonHelp();
 	afx_msg void OnBnClickedHtmlText();
 	afx_msg void OnBnClickedHtmlIf();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };
 
 //{{AFX_INSERT_LOCATION}}

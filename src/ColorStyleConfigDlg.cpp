@@ -97,6 +97,7 @@ BEGIN_MESSAGE_MAP(ColorStyleConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_HELP, &ColorStyleConfigDlg::OnBnClickedButtonHelp)
 	ON_BN_CLICKED(IDC_BUTTON_CLOSE, &ColorStyleConfigDlg::OnBnClickedButtonClose)
 	ON_BN_CLICKED(IDC_COLOR_CHECK_ALL, &ColorStyleConfigDlg::OnBnClickedApplyToAllPanes)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CFindDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -120,14 +121,14 @@ void ColorStyleConfigDlg::OnClose()
 
 void ColorStyleConfigDlg::LoadData()
 {
-	m_listBox.AddString(L"MailArchiveTree");
-	m_listBox.AddString(L"MailSummary");
-	m_listBox.AddString(L"MailMessage");
-	m_listBox.AddString(L"MailAttachments");
-	m_listBox.AddString(L"MailSummaryColumnTitles");
-	m_listBox.AddString(L"MailMessageHeaderFields");
-	m_listBox.AddString(L"MailConversation1");
-	m_listBox.AddString(L"MailConversation2");
+	m_listBox.AddString(L"Mail Archive Tree");
+	m_listBox.AddString(L"Mail Summary");
+	m_listBox.AddString(L"Mail Message");
+	m_listBox.AddString(L"Mail Attachments");
+	m_listBox.AddString(L"Mail Summary Column Titles");
+	m_listBox.AddString(L"Mail MessageHeader Fields");
+	m_listBox.AddString(L"Mail Conversation1");
+	m_listBox.AddString(L"Mail Conversation2");
 
 	ColorStyleConfig &customColorStyle = CMainFrame::m_ColorStylesDB.m_customColorStyles;
 
@@ -183,6 +184,7 @@ BOOL ColorStyleConfigDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -1103,4 +1105,16 @@ void ColorStyleConfigDlg::OnBnClickedApplyToAllPanes()
 		m_MainFrameWnd->PostMessage(WM_CMD_PARAM_NEW_COLOR_MESSAGE, ColorStylesDB::ColorCustom, 0);
 
 	int deb = 1;
+}
+
+BOOL ColorStyleConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

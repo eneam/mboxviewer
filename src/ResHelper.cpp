@@ -37,7 +37,7 @@
 //
 
 BOOL ResHelper::g_LoadMenuItemsInfo = FALSE;
-BOOL ResHelper::g_UpdateMenuItemsInfo = TRUE;
+BOOL ResHelper::g_UpdateMenuItemsInfo = FALSE;
 
 ResInfoMapType ResHelper::g_LanguageMap(2000);
 
@@ -248,6 +248,10 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd)
 	{
 		wnd->SetWindowText(newWndText);
 	}
+	else
+	{
+		int deb = 1; // keep old text
+	}
 
 	int maxcnt = 512;
 	int iter = 1;
@@ -287,14 +291,14 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 		{
 			int index = 0;
 			CListBox* listBox = (CListBox*)pw;
-			LoadListBoxItemsInfo(listBox, index);
+			UpdateListBoxItemsInfo(listBox, index);
 			int deb = 1;
 		}
 		else if (strClassName.CompareNoCase(L"ComboBox") == 0)
 		{
 			int index = 0;
 			CComboBox* comboBox = (CComboBox*)pw;
-			LoadComboBoxItemsInfo(comboBox, index);
+			UpdateComboBoxItemsInfo(comboBox, index);
 			int deb = 1;
 		}
 		else
@@ -302,6 +306,10 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 			if (newWndText.GetLength())
 			{
 				pw->SetWindowText(newWndText);
+			}
+			else
+			{
+				int deb = 0;; // keep old text
 			}
 
 			UpdateDialogItemsInfo(pw, hwndChild, --maxcnt, ++iter);
@@ -350,22 +358,47 @@ void ResHelper::UpdateListBoxItemsInfo(CListBox* menu, int index)
 	int retval;
 	UINT nFlags = MF_BYPOSITION;
 	int i;
-	MENUITEMINFO menuItemInfo;
-	menuItemInfo.cbSize = sizeof(menuItemInfo);
 
+	// Threre is no SetString() support. Clear current list and add new translated strings
+	StringArray ar;
 	for (i = 0; i < count; i++)
 	{
 		menu->GetText(i, label);
+		ar.Add(label);
+	}
 
-		CString newLabel;
-		BOOL retFind = DetermineString(wndText, newLabel);
+	_ASSERTE(count == ar.GetCount());
+
+	int currSel = menu->GetCurSel();
+
+	menu->ResetContent();
+
+	CString newLabel;
+	for (i = 0; i < count; i++)
+	{
+		label = ar[i];
+		newLabel.Empty();
+		BOOL retFind = DetermineString(label, newLabel);
 		if (newLabel.GetLength())
 		{
-			menu->InsertString(i, newLabel);
+			menu->AddString(newLabel);
+		}
+		else
+		{
+			menu->AddString(label);  // keep old label/text
 		}
 
 		int deb = 1;
 	}
+	_ASSERTE(count == menu->GetCount());
+	
+	count = menu->GetCount();
+
+	if ((currSel >= 0) && (currSel < count))
+	{
+		menu->SetCurSel(currSel);
+	}
+
 	int debM = 1;
 }
 
@@ -408,21 +441,45 @@ void ResHelper::UpdateComboBoxItemsInfo(CComboBox* menu, int index)
 	int retval;
 	UINT nFlags = MF_BYPOSITION;
 	int i;
-	MENUITEMINFO menuItemInfo;
-	menuItemInfo.cbSize = sizeof(menuItemInfo);
 
+	// Threre is no SetString() support. Clear current list and add new translated strings
+	StringArray ar;
 	for (i = 0; i < count; i++)
 	{
 		menu->GetLBText(i, label);
+		ar.Add(label);
+	}
 
-		CString newLabel;
-		BOOL retFind = DetermineString(wndText, newLabel);
+	_ASSERTE(count == ar.GetCount());
+
+	int currSel = menu->GetCurSel();
+
+	menu->ResetContent();
+
+	CString newLabel;
+	for (i = 0; i < count; i++)
+	{
+		label = ar[i];
+		newLabel.Empty();
+		BOOL retFind = DetermineString(label, newLabel);
 		if (newLabel.GetLength())
 		{
-			menu->InsertString(i, newLabel);
+			menu->AddString(newLabel);
+		}
+		else
+		{
+			menu->AddString(label);  // keep old label/text
 		}
 
 		int deb = 1;
+	}
+	_ASSERTE(count == menu->GetCount());
+
+	count = menu->GetCount();
+
+	if ((currSel >= 0) && (currSel < count))
+	{
+		menu->SetCurSel(currSel);
 	}
 	int debM = 1;
 }
@@ -534,6 +591,10 @@ void ResHelper::UpdateMenuItemsInfo(CMenu* menu, int index)
 			WORD nItemID = menu->GetMenuItemID(i);
 			int deb = 1;
 		}
+		else
+		{
+			int deb = 1; // keep old text
+		}
 
 		if (itemID == (UINT)-1)
 		{
@@ -589,7 +650,11 @@ void ResHelper::UpdateToolBarItemsInfo(CToolBar* tbar)
 		BOOL retFind = DetermineString(label, newLabel);
 		if (newLabel.GetLength())
 		{
-			tbar->GetButtonText(i, newLabel);
+			tbar->SetButtonText(i, newLabel);
+		}
+		else
+		{
+			int deb = 1; // keep old text
 		}
 
 		int deb = 1;

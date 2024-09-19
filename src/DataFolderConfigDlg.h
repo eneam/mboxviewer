@@ -63,6 +63,8 @@ public:
 	CFont m_BoldFont;
 	CFont m_TextFont;
 	CBrush m_ButtonBrush;
+	//
+	CToolTipCtrl m_toolTip;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -77,4 +79,5 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnEnChangeUserSelectedFolderPath();
 	afx_msg void OnEnChangeCurrentFolderPath();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

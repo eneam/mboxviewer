@@ -73,6 +73,7 @@ void CCheckListBoxDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CCheckListBoxDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &CCheckListBoxDlg::OnBnClickedOk)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CCheckListBoxDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -190,6 +191,18 @@ void CCheckListBoxDlg::ResizeDialogWindow()
 	}
 
 	SetWindowPos(0, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER);
+}
+
+BOOL CCheckListBoxDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }
 
 #if 0

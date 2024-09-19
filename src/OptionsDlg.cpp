@@ -155,7 +155,6 @@ BOOL COptionsDlg::OnInitDialog()
 	m_filesToValidateAsMboxType = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType");
 
 	ResHelper::UpdateDialogItemsInfo(this);
-
 	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	UpdateData(FALSE);

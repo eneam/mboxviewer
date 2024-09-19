@@ -78,6 +78,7 @@ BEGIN_MESSAGE_MAP(SMTPMailServerConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SMTP_SERVER_HELP, &SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp)
 	ON_BN_CLICKED(IDCANCEL, &SMTPMailServerConfigDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_RESET_MAX_MAIL_SIZE, &SMTPMailServerConfigDlg::OnBnClickedResetMaxMailSize)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &SMTPMailServerConfigDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -129,6 +130,7 @@ BOOL SMTPMailServerConfigDlg::OnInitDialog()
 	TLSOptions.SetCurSel(m_mailDB.SMTPConfig.EncryptionType);
 
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	UpdateData(FALSE);
 
@@ -462,4 +464,16 @@ void SMTPMailServerConfigDlg::OnBnClickedResetMaxMailSize()
 		m_mailDB.SMTPConfig.MaxMailSize = maxMailSize;
 		UpdateData(FALSE);
 	}
+}
+
+BOOL SMTPMailServerConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

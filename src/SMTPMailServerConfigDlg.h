@@ -112,6 +112,8 @@ public:
 
 	MailDB m_mailDB;
 	CComboBox TLSOptions;
+	//
+	CToolTipCtrl m_toolTip;
 
 protected:
 	virtual BOOL OnInitDialog();
@@ -125,4 +127,5 @@ public:
 	afx_msg void OnBnClickedSmtpServerHelp();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedResetMaxMailSize();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };
