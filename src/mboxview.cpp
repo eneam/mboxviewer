@@ -1354,8 +1354,6 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 
 BOOL CmboxviewApp::InitInstance()
 {
-	ResHelper::LoadLanguageMap();
-
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	BOOL retExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview));
 
@@ -1374,6 +1372,26 @@ BOOL CmboxviewApp::InitInstance()
 			MboxMail::ReleaseResources(FALSE);
 			return FALSE;
 		}
+	}
+
+	CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
+	if (!languageFolderPath.IsEmpty())
+	{
+		CString FolderPath = languageFolderPath;
+		FolderPath.TrimRight(L"\\");
+
+		CString folderName;
+		FileUtils::CPathStripPath((LPCWSTR)FolderPath, folderName);
+
+		CString translationFileName = folderName + L".txt";
+		CString translationFileNamePath = languageFolderPath + L"\\" + translationFileName;
+
+		ResHelper::EnableLanguageLoading();
+		ResHelper::LoadLanguageMap(translationFileNamePath);
+	}
+	else
+	{
+		ResHelper::DisableLanguageLoading();
 	}
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");  // FIXME Redundant check ??
@@ -1651,48 +1669,14 @@ BOOL CmboxviewApp::InitInstance()
 
 	TRACE(L"Load ResInfo END\n");
 
-#if 0
-	TRACE(L"PrintResInfoMap\n");
-	int cnt3 = ResHelper::PrintResInfoMap(ResHelper::resInfoMap);
-	TRACE(L"PrintResInfoArray\n");
-	//int cnt4 = ResHelper::PrintResInfoArray(ResHelper::resInfoArray);
-	TRACE(L"PrintResInfo END\n");
-#endif
-
-	//ResHelper::IterateMenuItems(menu, index);
-	//ResHelper::IterateMenuItemsSetPopMenuData(menu, index);
-
-
-	//CDialogBar &dbar = pFrame->m_wndDlgBar;
-	//HWND h = dbar.GetSafeHwnd();
-	//ResHelper::IterateWindowChilds(h);
-
-	int deb3 = 1;
-	//m_wndDlgBar
-
-	//HWND h = pFrame->m_wndToolBar.m_GetSafeHwnd();
-	//ResHelper::IterateWindowChilds(h);
-
-#if 0
-	CString tbarTxt;
-	index = 0;
-	pFrame->GetToolBar().GetButtonText(index, tbarTxt);
-	UINT bID = pFrame->GetToolBar().GetItemID(index);
-
-
-	CToolBarCtrl& cbar = pFrame->GetToolBar().GetToolBarCtrl();
-	int bCnt = cbar.GetButtonCount();
-
-
-	CToolTipCtrl* ttips = cbar.GetToolTips();
-	int ttipsCnt = 0;
-	if (ttips)
-		ttipsCnt = ttips->GetToolCount();
-#endif
-
 	int deb2 = 1;
 #endif
 
+	if (pFrame)
+	{
+		pFrame->UpdateWindow();
+		pFrame->DrawMenuBar();
+	}
 
 	return TRUE;
 }

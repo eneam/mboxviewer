@@ -50,6 +50,7 @@
 #include "DevelopmentCreateArchive.h"  // this is dialog
 #include "GeneralOptionsDlg.h"
 #include "ResHelper.h"
+#include "SelectLanguageDlg.h"
 
 #include "NTreeView.h"
 
@@ -282,10 +283,11 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_GENERALOPTIONS, &CMainFrame::OnFileGeneraloptions)
 	ON_COMMAND(ID_HELP_SHORTCUTS, &CMainFrame::OnHelpShortcuts)
 	ON_COMMAND(ID_HELP_CHANGE_LOG, &CMainFrame::OnHelpChangeLog)
-	ON_COMMAND(ID_DEVELOPMENTOPTIONS_PRINTRESOURCCES, &CMainFrame::OnDevelopmentoptionsPrintresourcces)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_CODEPAGEINSTALLED, &CMainFrame::OnDevelopmentoptionsCodepageinstalled)
-	ON_COMMAND(ID_DEVELOPMENTOPTIONS_CREATELANGUAGEFILE, &CMainFrame::OnDevelopmentoptionsCreatelanguagefile)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE, &CMainFrame::OnDevelopmentoptionsSelectlanguage)
+	//ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
+	ON_COMMAND(ID_LANGUAGETOOLS_CREATERESOURCEFILE, &CMainFrame::OnLanguagetoolsCreateresourcefile)
+	ON_COMMAND(ID_LANGUAGETOOLS_CREATETRANSLATIONFILE, &CMainFrame::OnLanguagetoolsCreatetranslationfile)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -3769,7 +3771,7 @@ void CSVFILE_CONFIG::LoadFromRegistry()
 	}
 }
 
-INT_PTR CMainFrame::SelectFolder(CString &folder)
+INT_PTR CMainFrame::SelectFolder(CString &folder, CString *path)
 {
 	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
 #define MAX_CFileDialog_FCOUNT 10
@@ -3779,12 +3781,14 @@ INT_PTR CMainFrame::SelectFolder(CString &folder)
 	wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_outbuf->Data();
 	fileNameBuffer[0] = 0;
 
-	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
+	CString  sFilters = "Mail Files (*.txt)|*.txt||";
 
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	MySelectFolder dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
 
 	CString inFolderPath = MboxMail::GetLastPath();
+	if (path)
+		inFolderPath = *path;
 
 	OPENFILENAME& ofn = dlgFile.GetOFN();
 	//ofn.Flags |= OFN_ALLOWMULTISELECT;
@@ -5937,17 +5941,6 @@ void CMainFrame::OnHelpChangeLog()
 	}
 }
 
-
-void CMainFrame::OnDevelopmentoptionsPrintresourcces()
-{
-	// TODO: Add your command handler code here
-
-	ResHelper::PrintResInfo();
-
-	int deb = 1;
-}
-
-
 void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
 {
 	// TODO: Add your command handler code here
@@ -5955,20 +5948,63 @@ void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
 	INT_PTR retcode = dlg.DoModal();
 }
 
-
-void CMainFrame::OnDevelopmentoptionsCreatelanguagefile()
-{
-	// TODO: Add your command handler code here
-	TRACE(L"BEGIN Create Language File\n");
-	ResHelper::CreateLanguageFile();
-	TRACE(L"END Create Language File\n");
-}
-
-
 void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 {
 	// TODO: Add your command handler code here
 
-	ResHelper::LoadLanguageMap();
+	CString languageFolder;
+	SelectLanguageDlg dlg;
+
+	INT_PTR nResponse = dlg.DoModal();
+	if (nResponse == IDOK) {
+		languageFolder = dlg.m_LanguagetName;
+		int deb = 1;
+	}
+	else if (nResponse == IDCANCEL)
+	{
+		int deb = 1;
+	}
+
+	if (languageFolder.IsEmpty())
+		return;
+
+	CString processFolderPath;
+	ResHelper::GetProcessFolderPath(processFolderPath);
+	
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString languageFolderPath = processFolderPath + L"Languages" + L"\\" + languageFolder;
+	if (languageFolder.CompareNoCase(L"english") == 0)
+		languageFolderPath.Empty();
+
+	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath", languageFolderPath);
+	CString translationFileName = languageFolder + L".txt";
+
+	CString languageTranslationFilePath = processFolderPath + L"Languages\\" + languageFolder + L"\\" + translationFileName;
+	//ResHelper::LoadLanguageMap(languageTranslationFilePath);
 	int deb = 1;
+}
+
+
+void CMainFrame::OnLanguagetoolsCreateresourcefile()
+{
+	// TODO: Add your command handler code here
+	
+#ifdef _DEBUG
+	ResHelper::PrintResInfo();
+	int deb = 1;
+#endif
+}
+
+
+void CMainFrame::OnLanguagetoolsCreatetranslationfile()
+{
+	// TODO: Add your command handler code here
+		// TODO: Add your command handler code here
+#ifdef _DEBUG
+	TRACE(L"BEGIN Create Language Translation File\n");
+	ResHelper::CreateLanguageFile();
+	int deb = 1;
+	TRACE(L"END Create Language Translation File\n");
+#endif
 }

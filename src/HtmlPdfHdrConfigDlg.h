@@ -117,6 +117,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 	void LoadData();
+	CToolTipCtrl m_toolTip;
 
 public:
 	CCheckListBox m_fldListBox;
@@ -138,4 +139,5 @@ public:
 	afx_msg void OnBnClickedHdrFldHelp();
 	afx_msg void OnBnClickedOpenLinkInCurrentTab();
 	afx_msg void OnBnClickedOpenLinkInNewTab();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

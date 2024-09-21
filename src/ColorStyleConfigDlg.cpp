@@ -78,7 +78,7 @@ ColorStyleConfigDlg::~ColorStyleConfigDlg()
 void ColorStyleConfigDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_LIST1, m_listBox);
+	DDX_Control(pDX, IDC_LIST_COLOR_STYLE_PANES, m_listBox);
 	DDX_Radio(pDX, IDC_COLOR_DFLT, m_selectedColorStyle);
 	DDX_Check(pDX, IDC_COLOR_CHECK, m_applyColorToSelectedPane);
 	DDX_Check(pDX, IDC_COLOR_CHECK_ALL, m_applyColorToAllPanes);
@@ -90,7 +90,7 @@ BEGIN_MESSAGE_MAP(ColorStyleConfigDlg, CDialogEx)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_COLOR_BUTTON, &ColorStyleConfigDlg::OnNMCustomdrawColorButton)
 	ON_BN_CLICKED(IDC_COLOR_BUTTON, &ColorStyleConfigDlg::OnBnClickedColorButton)
 	ON_BN_CLICKED(IDC_COLOR_CHECK, &ColorStyleConfigDlg::OnBnClickedColorCheck)
-	ON_LBN_SELCHANGE(IDC_LIST1, &ColorStyleConfigDlg::OnLbnSelchangeList1)
+	ON_LBN_SELCHANGE(IDC_LIST_COLOR_STYLE_PANES, &ColorStyleConfigDlg::OnLbnSelchangeList1)
 	ON_BN_CLICKED(IDOK, &ColorStyleConfigDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &ColorStyleConfigDlg::OnBnClickedCancel)
 	ON_COMMAND_RANGE(IDC_COLOR_DFLT, IDC_COLOR_STYLE_16, &ColorStyleConfigDlg::OnBnClickedColorStyle)

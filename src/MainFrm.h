@@ -272,7 +272,7 @@ public:
 	static int CheckShellExecuteResult(HINSTANCE  result, CString &errorText);
 	static int CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *filename);
 
-	static INT_PTR SelectFolder(CString &folder);
+	static INT_PTR SelectFolder(CString &folder, CString *path = 0);
 	static int CountMailFilesInFolder(CString &folder, CString &extension);
 
 	void SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor);
@@ -441,10 +441,10 @@ public:
 	afx_msg void OnFileGeneraloptions();
 	afx_msg void OnHelpShortcuts();
 	afx_msg void OnHelpChangeLog();
-	afx_msg void OnDevelopmentoptionsPrintresourcces();
 	afx_msg void OnDevelopmentoptionsCodepageinstalled();
-	afx_msg void OnDevelopmentoptionsCreatelanguagefile();
 	afx_msg void OnDevelopmentoptionsSelectlanguage();
+	afx_msg void OnLanguagetoolsCreateresourcefile();
+	afx_msg void OnLanguagetoolsCreatetranslationfile();
 };
 
 /////////////////////////////////////////////////////////////////////////////

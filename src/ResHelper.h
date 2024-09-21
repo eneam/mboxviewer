@@ -31,22 +31,6 @@
 
 #pragma once
 
-typedef CArray<CString, CString> StringArray;
-
-#if 0
-sort(MboxMail::s_mails.GetData(), MboxMail::s_mails.GetData() + MboxMail::s_mails.GetSize(),
-	[](MboxMail* o1, MboxMail* o2) {
-		return cmpMbox(o1, o2);
-	}
-);
-
-StringArray strArray;
-
-BOOL ascedingOrder = TRUE;
-std::sort(strArray.GetData(), strArray.GetData() + strArray.GetSize(), ascedingOrder);
-
-#endif
-
 class ResourceInfo
 {
 public:
@@ -143,9 +127,6 @@ public:
 	static ResInfoMapType g_resInfoMap;
 
 	static int PopulateResStringList() { return 0; }
-
-	//static void LoadDialogItemsInfo(HWND hwndParent);
-	//static void LoadDialogItemsInfo(HWND hwndParent, int maxcnt, int iter);
 	//
 	static void LoadDialogItemsInfo(CDialog *dlg);
 	static void LoadDialogItemsInfo(CWnd* wnd);
@@ -168,18 +149,17 @@ public:
 	static void LoadToolBarItemsInfo(CToolBar* tbar);
 	static void UpdateToolBarItemsInfo(CToolBar* tbar);
 
-	static void LoadLanguageMap();
+	static void LoadLanguageMap(CString & languageFolder);
+	static void DisableLanguageLoading();
+	static void EnableLanguageLoading();
+
+	static void EnableResInfoCollecting();
+
 	static BOOL DetermineString(CString& str, CString& newString);
 
 	static BOOL OnTtnNeedText(CWnd* parentWindow, NMHDR* pNMHDR, CString &toolTipText);
 	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl);
 	
-
-	static void IterateWindowChilds(HWND hwndParent);
-	static void IterateWindowChilds(HWND hwndParent, int maxcnt, int iter);
-	static void IterateMenuItems(CMenu* menu);
-	static void IterateMenuItems(CMenu* menu, int index);
-	static void IterateMenuItemsSetPopMenuData(CMenu* menu, int index);
 	static BOOL GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags);
 
 	static void GetProcessFolderPath(CString& folderPath);

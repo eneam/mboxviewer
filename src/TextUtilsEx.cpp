@@ -1657,7 +1657,7 @@ int TextUtilsEx::TokenizeW(CString &str, CStringArray &a, wchar_t del)
 void TextUtilsEx::TraceStringArrayW(CStringArray &a)
 {
 	CString el;
-	TRACE(L"StringArray:\n");
+	TRACE(L"TraceStringArrayW:StringArray:\n");
 	for (int i = 0; i < a.GetSize(); i++)
 	{
 		el = a.ElementAt(i);
@@ -1799,7 +1799,7 @@ int TextUtilsEx::TokenizeA(CStringA& str, CStringArrayA& a, char del)
 void TextUtilsEx::TraceStringArrayA(CStringArray& a)
 {
 	CStringA el;
-	TRACE(L"StringArray:\n");
+	TRACE(L"TraceStringArrayA:StringArray:\n");
 	for (int i = 0; i < a.GetSize(); i++)
 	{
 		el = a.ElementAt(i);

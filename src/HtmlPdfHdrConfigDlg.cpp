@@ -83,6 +83,7 @@ BEGIN_MESSAGE_MAP(HtmlPdfHdrConfigDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_HDR_FLD_HELP, &HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp)
 	ON_BN_CLICKED(IDC_OPEN_LINK_IN_CURRENT_TAB, &HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInCurrentTab)
 	ON_BN_CLICKED(IDC_OPEN_LINK_IN_NEW_TAB, &HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInNewTab)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &HtmlPdfHdrConfigDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -130,6 +131,8 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 	else
 		OnBnClickedFontCustom();
 
+
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
 
@@ -725,4 +728,16 @@ void HtmlPdfHdrConfigDlg::OnBnClickedOpenLinkInNewTab()
 {
 	// TODO: Add your control notification handler code here
 	int deb = 1;
+}
+
+BOOL HtmlPdfHdrConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }
