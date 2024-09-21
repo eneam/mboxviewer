@@ -148,6 +148,8 @@ public:
 
 	void CalculateViewRec(CRect& rc, int cx, int cy);
 
+	CMenu m_menu;
+
 	// Generated message map functions
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);

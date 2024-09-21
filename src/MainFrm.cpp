@@ -422,7 +422,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 
 	if (!m_wndDlgBar.Create(this, IDD_EDITOR,
-		CBRS_ALIGN_TOP | CBRS_ALIGN_LEFT, AFX_IDW_DIALOGBAR))
+		CBRS_ALIGN_TOP | CBRS_ALIGN_LEFT | CBRS_TOOLTIPS, AFX_IDW_DIALOGBAR))
 	{
 		TRACE0("Failed to create dialogbar\n");
 		return -1;		// fail to create

@@ -1019,9 +1019,12 @@ void NMsgView::OnClose()
 	CWnd::OnClose();
 }
 
+
 void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
+
+	static BOOL nMenuInitialed = FALSE;
 
 	const wchar_t *ClearFindtext = L"Clear Find Text";
 	const wchar_t*CustomColor = L"Custom Color Style";
@@ -1042,57 +1045,69 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
 
-	CMenu menu;
-	menu.CreatePopupMenu();
-	menu.AppendMenu(MF_SEPARATOR);
-
 	const UINT M_CLEAR_FIND_TEXT_Id = 1;
-	MyAppendMenu(&menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
-
 	const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
-	MyAppendMenu(&menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, pListView->m_bApplyColorStyle);
-
 	const UINT M_SHOW_MAIL_HEADER_Id = 3;
-	MyAppendMenu(&menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, m_hdrWindowLen == 100);
-
 	const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
 	const UINT M_SHOW_MAIL_TEXT_Id = 5;
 	const UINT M_SHOW_MAIL_HTML_Id = 6;
-	if (MboxMail::developerMode)
+
+	// To avoid multiple initializations
+	// TODO: Simplify menu  item check state handling
+	if (nMenuInitialed == FALSE)
 	{
-		MyAppendMenu(&menu, M_SHOW_MAIL_HTML_AS_TEXT_Id, ShowMailHtmlAsText, m_hdrWindowLen == 400);
-		MyAppendMenu(&menu, M_SHOW_MAIL_TEXT_Id, ShowMailText, m_hdrWindowLen == 200);
-		MyAppendMenu(&menu, M_SHOW_MAIL_HTML_Id, ShowMailHtml, m_hdrWindowLen == 300);
-	}
+		//CMenu menu;
+		m_menu.CreatePopupMenu();
+		m_menu.AppendMenu(MF_SEPARATOR);
+
+		//const UINT M_CLEAR_FIND_TEXT_Id = 1;
+		MyAppendMenu(&m_menu, M_CLEAR_FIND_TEXT_Id, ClearFindtext);
+
+		//const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
+		MyAppendMenu(&m_menu, M_ENABLE_DISABLE_COLOR_Id, CustomColor, MF_UNCHECKED);
+
+		//const UINT M_SHOW_MAIL_HEADER_Id = 3;
+		MyAppendMenu(&m_menu, M_SHOW_MAIL_HEADER_Id, ShowMailHdr, MF_UNCHECKED);
+
+		//const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
+		//const UINT M_SHOW_MAIL_TEXT_Id = 5;
+		//const UINT M_SHOW_MAIL_HTML_Id = 6;
+		if (MboxMail::developerMode)
+		{
+			MyAppendMenu(&m_menu, M_SHOW_MAIL_HTML_AS_TEXT_Id, ShowMailHtmlAsText, m_hdrWindowLen == 400);
+			MyAppendMenu(&m_menu, M_SHOW_MAIL_TEXT_Id, ShowMailText, m_hdrWindowLen == 200);
+			MyAppendMenu(&m_menu, M_SHOW_MAIL_HTML_Id, ShowMailHtml, m_hdrWindowLen == 300);
+		}
 
 #if 0
-	// Added global option under View
-	CMenu hdrLayout;
-	hdrLayout.CreatePopupMenu();
-	hdrLayout.AppendMenu(MF_SEPARATOR);
+		// Added global option under View
+		CMenu hdrLayout;
+		hdrLayout.CreatePopupMenu();
+		hdrLayout.AppendMenu(MF_SEPARATOR);
 
-	const UINT S_DEFAULT_LAYOUT_Id = 4;
-	MyAppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, L"Default", m_hdrPaneLayout == 0);
+		const UINT S_DEFAULT_LAYOUT_Id = 4;
+		MyAppendMenu(&hdrLayout, S_DEFAULT_LAYOUT_Id, L"Default", m_hdrPaneLayout == 0);
 
-	const UINT S_EXPANDED_LAYOUT_Id = 5;
-	MyAppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, L"Expanded", m_hdrPaneLayout == 1);
+		const UINT S_EXPANDED_LAYOUT_Id = 5;
+		MyAppendMenu(&hdrLayout, S_EXPANDED_LAYOUT_Id, L"Expanded", m_hdrPaneLayout == 1);
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), L"Header Fields Layout");
-	menu.AppendMenu(MF_SEPARATOR);
+		menu.AppendMenu(MF_POPUP | MF_STRING, (UINT)hdrLayout.GetSafeHmenu(), L"Header Fields Layout");
+		menu.AppendMenu(MF_SEPARATOR);
 #endif
 
-	int index1 = 0;
-	ResHelper::UpdateMenuItemsInfo(&menu, index1);
+		int index1 = 0;
+		ResHelper::UpdateMenuItemsInfo(&m_menu, index1);
+		int index = 0;
+		ResHelper::LoadMenuItemsInfo(&m_menu, index);
 
-	int command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+		nMenuInitialed = TRUE;
+	}
 
-	int index = 0;
-	ResHelper::LoadMenuItemsInfo(&menu, index);
-	//ResHelper::UpdateMenuItemsInfo(&menu, index);
+	int command = m_menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
 	UINT n_Flags = TPM_RETURNCMD;
 	CString menuString;
-	int chrCnt = menu.GetMenuString(command, menuString, n_Flags);
+	int chrCnt = m_menu.GetMenuString(command, menuString, n_Flags);
 
 	if (command == M_CLEAR_FIND_TEXT_Id)
 	{
@@ -1104,6 +1119,13 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		if (pListView)
 		{
 			pListView->m_bApplyColorStyle = !pListView->m_bApplyColorStyle;
+
+			UINT nCheck = MF_CHECKED;
+			if (pListView->m_bApplyColorStyle)
+				nCheck = MF_UNCHECKED;;
+
+			UINT retval = m_menu.CheckMenuItem(M_ENABLE_DISABLE_COLOR_Id, nCheck);
+
 			int iItem = pListView->m_lastSel;
 			if (m_hdrWindowLen)
 			{
@@ -1122,12 +1144,15 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		int iItem = pListView->m_lastSel;
 		if (m_hdrWindowLen == 100)
 		{
+			UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_UNCHECKED);
+
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
 			pListView->SelectItem(pListView->m_lastSel, TRUE);
 		}
 		else
 		{
+			UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_CHECKED);
 			this->ShowMailHeader(iItem);
 		}
 		int deb = 1;
