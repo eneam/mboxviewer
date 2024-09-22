@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "WheelListCtrl.h"
 #include "NListView.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -111,22 +112,29 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	{
 		CStringW txtW;
 		if (lpDrawItemStruct->itemID == 0)
-			txtW = L"! ";
+			txtW = L"!";
 		else if (lpDrawItemStruct->itemID == 1) {
 			txtW = L"date";
 			if (m_list->m_gmtTime == 1)
-				txtW += L" (GMT) ";
+				txtW += L" (GMT)";
 			else
-				txtW += L" (Local) ";
+				txtW += L" (Local)";
 		}
 		if (lpDrawItemStruct->itemID == 2)
-			txtW = L"from ";
+			txtW = L"from";
 		if (lpDrawItemStruct->itemID == 3)
-			txtW = L"to ";
+			txtW = L"to";
 		if (lpDrawItemStruct->itemID == 4)
-			txtW = L"subject ";
+			txtW = L"subject";
 		if (lpDrawItemStruct->itemID == 5)
-			txtW = L"size(KB) ";
+			txtW = L"size(KB)";
+
+		CString newText;
+		BOOL retFind = ResHelper::DetermineString(txtW, newText);
+		if (!newText.IsEmpty())
+			txtW = newText;
+
+		txtW.Append(L" ");
 
 		int x_offset = 6;
 		int xpos = rect.left + x_offset;

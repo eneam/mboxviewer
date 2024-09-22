@@ -41,7 +41,7 @@ public:
 	SelectLanguageDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~SelectLanguageDlg();
 
-
+	CString m_lastFolderName;
 	CListBox m_listBox;
 	CString m_LanguagetName;  // font family such as 
 

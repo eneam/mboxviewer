@@ -1647,9 +1647,6 @@ BOOL CmboxviewApp::InitInstance()
 		return FALSE;
 	}
 
-
-#ifdef _DEBUG
-
 	TRACE(L"LoadMenuItemsInfo\n");
 	CMenu* menu = pFrame->GetMenu();
 	int index = 1;
@@ -1670,7 +1667,6 @@ BOOL CmboxviewApp::InitInstance()
 	TRACE(L"Load ResInfo END\n");
 
 	int deb2 = 1;
-#endif
 
 	if (pFrame)
 	{
@@ -1685,7 +1681,6 @@ void CAboutDlg::OnStnClickedDonation()
 {
 	HINSTANCE result = ShellExecute(NULL, L"open", L"https://sourceforge.net/p/mbox-viewer/donate/", NULL, NULL, SW_SHOWNORMAL);
 }
-
 
 HBRUSH CAboutDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {

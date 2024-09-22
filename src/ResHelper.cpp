@@ -228,7 +228,6 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int 
 
 void ResHelper::UpdateDialogItemsInfo(CDialog* dlg)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -241,13 +240,10 @@ void ResHelper::UpdateDialogItemsInfo(CDialog* dlg)
 	CWnd* wnd = (CWnd*)dlg;
 
 	UpdateDialogItemsInfo(wnd);
-
-#endif
 }
 
 void ResHelper::UpdateDialogItemsInfo(CWnd* wnd)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -275,13 +271,10 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd)
 	int maxcnt = 512;
 	int iter = 1;
 	UpdateDialogItemsInfo(wnd, hwndParent, maxcnt, iter);
-
-#endif
 }
 
 void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, int iter)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -335,7 +328,6 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 		}
 		hwndChild = GetWindow(hwndChild, GW_HWNDNEXT);
 	}
-#endif
 }
 
 
@@ -368,7 +360,6 @@ void ResHelper::LoadListBoxItemsInfo(CListBox* menu, int index)
 
 void ResHelper::UpdateListBoxItemsInfo(CListBox* menu, int index)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -422,7 +413,6 @@ void ResHelper::UpdateListBoxItemsInfo(CListBox* menu, int index)
 	}
 
 	int debM = 1;
-#endif
 }
 
 void ResHelper::LoadComboBoxItemsInfo(CComboBox* menu, int index)
@@ -455,7 +445,6 @@ void ResHelper::LoadComboBoxItemsInfo(CComboBox* menu, int index)
 
 void ResHelper::UpdateComboBoxItemsInfo(CComboBox* menu, int index)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -509,7 +498,7 @@ void ResHelper::UpdateComboBoxItemsInfo(CComboBox* menu, int index)
 	}
 	int debM = 1;
 }
-#endif
+
 
 void ResHelper::LoadMenuItemsInfo(CMenu* menu, int index)
 {
@@ -582,7 +571,6 @@ BOOL  ResHelper::DetermineString(CString &str, CString &newString)
 
 void ResHelper::UpdateMenuItemsInfo(CMenu* menu, int index)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -635,7 +623,6 @@ void ResHelper::UpdateMenuItemsInfo(CMenu* menu, int index)
 		int deb = 1;
 	}
 	int debM = 1;
-#endif
 }
 
 
@@ -665,7 +652,6 @@ void ResHelper::LoadToolBarItemsInfo(CToolBar* tbar)
 
 void ResHelper::UpdateToolBarItemsInfo(CToolBar* tbar)
 {
-#ifdef _DEBUG
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
@@ -694,7 +680,6 @@ void ResHelper::UpdateToolBarItemsInfo(CToolBar* tbar)
 		int deb = 1;
 	}
 	int debM = 1;
-#endif
 }
 
 
@@ -851,8 +836,8 @@ int __cdecl ResourceInfoPred(void const* first, void const* second)
 	ResourceInfo* s = *((ResourceInfo**)second);
 
 	//int ret = _wcsicmp(f->m_label.operator LPCWSTR(), s->m_label.operator LPCWSTR());
-	//int ret = f->m_label.CompareNoCase(s->m_label);
-	int ret = f->m_label.Compare(s->m_label);
+	int ret = f->m_label.CompareNoCase(s->m_label);
+	//int ret = f->m_label.Compare(s->m_label);
 	return ret;
 }
 
@@ -993,6 +978,97 @@ int ResHelper::CreateLanguageFile()
 	return 1;
 }
 
+int ResHelper::ResortLanguageFile()
+{
+	CString label;
+	CString translatedLabel;
+	ResInfoMapType::IHashMapIter iter = g_LanguageMap.first();
+
+	resArray1.RemoveAll();
+	for (; !g_LanguageMap.last(iter); g_LanguageMap.next(iter))
+	{
+		ResourceInfo* rinfo = iter.element;
+
+		//TRACE(L"\"%8s\" %s\n", rinfo->m_controlName, rinfo->m_label);
+
+		label.Format(L"\"%s\"", rinfo->m_label);
+		translatedLabel.Format(L"\"%s\"", rinfo->m_controlName);
+
+		ResourceInfo* rinfo2 = new ResourceInfo(label, translatedLabel);
+
+		resArray1.Add(rinfo2);
+		//resArray1.Add(rinfo);
+	}
+
+	int sortCnt = ResHelper::SortResInfoArray(resArray1);
+
+	int mapCnt = g_LanguageMap.count();
+	int arrayCnt = resArray1.GetCount();
+
+	CString resInfoText1;
+	CString resInfoText2;
+
+	CStringA resInfoText1A;
+	CStringA resInfoText2A;
+
+	DWORD nNumberOfBytesToWrite = 0;
+	DWORD nNumberOfBytesWritten = 0;
+
+	CString folderPath;
+	GetProcessFolderPath(folderPath);
+
+	CString resourceFilePath = folderPath;
+
+	CString languageFilePath = resourceFilePath + L"resorted-lang-german.txt";
+
+	int retval;
+	CString errorText;
+
+	SimpleMemoryFile file;
+	BOOL retOpen = file.Open(languageFilePath);
+	CString str;
+
+	hResourceFile = FileUtils::FileOpen(languageFilePath, errorText, TRUE);
+	if (hResourceFile == INVALID_HANDLE_VALUE)
+	{
+		return -1;
+	}
+
+	int i;
+	for (i = 0; i < arrayCnt; i++)
+	{
+		BOOL unicodeFile = FALSE;
+		if (unicodeFile == FALSE)
+		{
+			ResourceInfo* rinfo1 = resArray1[i];
+
+			if (rinfo1->m_label.Find(L"Valid template format") >= 0)
+				int deb = 1;
+
+			resInfoText1.Format(L"[%s]\n", rinfo1->m_label);
+			resInfoText2.Format(L"%s\n\n", rinfo1->m_controlName);
+
+			DWORD error;
+			BOOL retW2A = TextUtilsEx::WStr2Ansi(resInfoText1, resInfoText1A, error);
+			retW2A = TextUtilsEx::WStr2Ansi(resInfoText2, resInfoText2A, error);
+
+			if (hResourceFile != INVALID_HANDLE_VALUE)
+			{
+				nNumberOfBytesToWrite = resInfoText1A.GetLength();
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoText1A, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+				nNumberOfBytesToWrite = resInfoText2A.GetLength();
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCSTR)resInfoText2A, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+				int deb = 1;
+			}
+		}
+	}
+	FileUtils::FileClose(hResourceFile);
+	return 1;
+}
+
 
 void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray)
 {
@@ -1045,8 +1121,13 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 	CString controlName;
 	CString strLine;
 	CString str;
+	CString strW;
 
 	CString languageFile = languageTranslationFilePath;
+
+	SimpleMemoryFile memFile;
+	BOOL retOpen = memFile.Open(languageFile);
+	CStringA strA;
 
 	CStdioFile file;
 	CFileException exList;
@@ -1071,6 +1152,22 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 	}
 	while (file.ReadString(strLine))
 	{
+		int retEof  = memFile.ReadString(strA);
+
+		DWORD dwFlags = 0;
+		DWORD error;
+		BOOL a2W = TextUtilsEx::Ansi2WStr(strA, strW, error, dwFlags);
+
+		if (strW.Compare(strLine))
+			int deb = 1;
+
+		CString line = strLine;
+
+		if (line.Find(L"Valid template format") >= 0)
+			int deb = 1;
+		if (line.Compare(L"[\"from\"]") == 0)
+			int deb = 1;
+
 		if (strLine[0] == L'[')
 		{
 			int slen = strLine.GetLength();
@@ -1084,6 +1181,14 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 			{
 				if (!file.ReadString(strLine))
 					break;
+
+				int retEof = memFile.ReadString(strA);
+				DWORD dwFlags = 0;
+				DWORD error;
+				BOOL a2W = TextUtilsEx::Ansi2WStr(strA, strW, error, dwFlags);
+
+				if (strW.Compare(strLine))
+					int deb = 1;
 
 				int slen = strLine.GetLength();
 				controlName = strLine.Mid(1, slen - 2);
@@ -1237,3 +1342,67 @@ void ResHelper::ReleaseResources()
 	ReleaseResInfoArray(resArray1);
 	ReleaseResInfoArray(resArray2);
 }
+
+
+SimpleMemoryFile::SimpleMemoryFile()
+{
+
+	m_position = 0;
+}
+
+SimpleMemoryFile::~SimpleMemoryFile()
+{
+
+}
+
+BOOL SimpleMemoryFile::Open(CString& filePath)
+{
+	BOOL ret = FileUtils::ReadEntireFile(filePath, m_buffer);
+	return TRUE;
+}
+
+int SimpleMemoryFile::ReadString(CStringA &str)
+{
+	char* p = m_buffer.Data(m_position);
+	char* plast = p + m_buffer.Count() - m_position;
+
+	int len = -1;
+	char* pStrBegin = p;
+	char* pStrEnd = 0;
+	while (p < plast)
+	{
+		char c = *p;
+		if (c == '\r')
+		{
+			pStrEnd = p;
+			char* pnext = p + 1;
+			if ((pnext < plast) && (*pnext == '\n'))
+			{
+				pStrEnd = p++;
+			}
+			break;
+		}
+		else if (c == '\n')
+		{
+			pStrEnd = p++;
+			break;
+		}
+		else
+			p++;
+	}
+	m_position += p - pStrBegin;
+	char* pnext = m_buffer.Data(m_position);
+
+	int slen = pStrEnd - pStrBegin;
+
+	str.Empty();
+	str.Append(pStrBegin, slen);
+
+	return slen;
+}
+
+int SimpleMemoryFile::ReadString(CString& str)
+{
+	return 0;
+}
+

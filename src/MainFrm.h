@@ -445,6 +445,7 @@ public:
 	afx_msg void OnDevelopmentoptionsSelectlanguage();
 	afx_msg void OnLanguagetoolsCreateresourcefile();
 	afx_msg void OnLanguagetoolsCreatetranslationfile();
+	afx_msg void OnLanguagetoolsResorttranslationfile();
 };
 
 /////////////////////////////////////////////////////////////////////////////

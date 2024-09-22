@@ -83,6 +83,9 @@ BOOL SelectLanguageDlg::OnInitDialog()
 
 	LoadLanguages();
 
+	int lastIndex = m_listBox.FindStringExact(0, m_lastFolderName);
+	int retIndex = m_listBox.SetCurSel(lastIndex);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }

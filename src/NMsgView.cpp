@@ -1019,6 +1019,19 @@ void NMsgView::OnClose()
 	CWnd::OnClose();
 }
 
+UINT ToggleMenuCheckState(CMenu *menu, UINT commandID)
+{
+	UINT state = menu->GetMenuState(commandID, MF_BYCOMMAND);
+	ASSERT(state != 0xFFFFFFFF);
+
+	UINT retState;
+	if (state & MF_CHECKED)
+		retState = menu->CheckMenuItem(commandID, MF_UNCHECKED | MF_BYCOMMAND);
+	else
+		retState = menu->CheckMenuItem(commandID, MF_CHECKED | MF_BYCOMMAND);
+	return retState;
+}
+
 
 void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 {
@@ -1120,11 +1133,15 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		{
 			pListView->m_bApplyColorStyle = !pListView->m_bApplyColorStyle;
 
+#if 0
 			UINT nCheck = MF_CHECKED;
 			if (pListView->m_bApplyColorStyle)
 				nCheck = MF_UNCHECKED;;
 
 			UINT retval = m_menu.CheckMenuItem(M_ENABLE_DISABLE_COLOR_Id, nCheck);
+#endif
+
+			UINT bCheck = ToggleMenuCheckState(&m_menu, command);
 
 			int iItem = pListView->m_lastSel;
 			if (m_hdrWindowLen)
@@ -1142,9 +1159,11 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	else if ((command == M_SHOW_MAIL_HEADER_Id))
 	{
 		int iItem = pListView->m_lastSel;
+		UINT bCheck = ToggleMenuCheckState(&m_menu, command);
+
 		if (m_hdrWindowLen == 100)
 		{
-			UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_UNCHECKED);
+			//UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_UNCHECKED);
 
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
@@ -1152,7 +1171,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		}
 		else
 		{
-			UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_CHECKED);
+			//UINT retval = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_CHECKED);
 			this->ShowMailHeader(iItem);
 		}
 		int deb = 1;

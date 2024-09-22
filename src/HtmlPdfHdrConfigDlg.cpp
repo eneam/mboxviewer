@@ -136,6 +136,16 @@ BOOL HtmlPdfHdrConfigDlg::OnInitDialog()
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
 
+	// TODO: Re-check or fix UpdateListBoxItemsInfo ??
+	int i;
+	for (i = 0; i < m_fldListBox.GetCount(); i++)
+	{
+		if (m_HdrFldConfig.m_HdrFldList.IsFldSet(i))
+			m_fldListBox.SetCheck(i, BST_CHECKED);
+		else
+			m_fldListBox.SetCheck(i, BST_UNCHECKED);
+	}
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }

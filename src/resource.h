@@ -11,6 +11,12 @@
 #define IDS_PAGE_CODE_LIST_CODEPAGE_ID  105
 #define IDS_PAGE_CODE_LIST_CODEPAGE_NAME 106
 #define IDS_PAGE_CODE_LIST_MAX_CHAR_SIZE 107
+#define IDS_STRING_FROM                 108
+#define IDS_STRING_TO                   109
+#define IDS_STRING_SUBJECT              110
+#define IDS_STRING_SIZE                 111
+#define IDS_STRING_DATE_LOCAL           112
+#define IDS_STRING_DATE_GMT             113
 #define IDR_MAINFRAME                   128
 #define IDR_mboxviewTYPE                129
 #define IDS_SELECT_FOLDER               129
@@ -553,6 +559,7 @@
 #define ID_DEVELOPMENTOPTIONS_LANGUAGETOOLS 32927
 #define ID_LANGUAGETOOLS_CREATERESOURCEFILE 32928
 #define ID_LANGUAGETOOLS_CREATETRANSLATIONFILE 32929
+#define ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE 32930
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -562,7 +569,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        244
-#define _APS_NEXT_COMMAND_VALUE         32930
+#define _APS_NEXT_COMMAND_VALUE         32931
 #define _APS_NEXT_CONTROL_VALUE         1411
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

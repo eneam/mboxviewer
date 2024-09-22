@@ -288,6 +288,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//ON_UPDATE_COMMAND_UI(ID_FILE_PRINTCONFIG, &CMainFrame::OnUpdateFilePrintconfig)
 	ON_COMMAND(ID_LANGUAGETOOLS_CREATERESOURCEFILE, &CMainFrame::OnLanguagetoolsCreateresourcefile)
 	ON_COMMAND(ID_LANGUAGETOOLS_CREATETRANSLATIONFILE, &CMainFrame::OnLanguagetoolsCreatetranslationfile)
+	ON_COMMAND(ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsResorttranslationfile)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5952,8 +5953,23 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 {
 	// TODO: Add your command handler code here
 
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString lastFolderName;
+	CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
+	if (!lastLanguageFolderPath.IsEmpty())
+	{
+		lastFolderName = lastLanguageFolderPath;
+		lastFolderName.TrimRight(L"\\");
+
+		CString folderName;
+		FileUtils::CPathStripPath((LPCWSTR)lastFolderName, lastFolderName);
+	}
+
+	// TODO: make dlg memeber of CMainFrame
 	CString languageFolder;
 	SelectLanguageDlg dlg;
+	dlg.m_lastFolderName = lastFolderName;
 
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK) {
@@ -5971,8 +5987,6 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	CString processFolderPath;
 	ResHelper::GetProcessFolderPath(processFolderPath);
 	
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
 	CString languageFolderPath = processFolderPath + L"Languages" + L"\\" + languageFolder;
 	if (languageFolder.CompareNoCase(L"english") == 0)
 		languageFolderPath.Empty();
@@ -6007,4 +6021,13 @@ void CMainFrame::OnLanguagetoolsCreatetranslationfile()
 	int deb = 1;
 	TRACE(L"END Create Language Translation File\n");
 #endif
+}
+
+
+void CMainFrame::OnLanguagetoolsResorttranslationfile()
+{
+	// TODO: Add your command handler code here
+
+	ResHelper::ResortLanguageFile();
+	int deb = 1;
 }

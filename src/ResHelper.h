@@ -28,8 +28,22 @@
 
 #include "stdafx.h"
 #include "IHashTable.h"
+#include "SimpleString.h"
 
 #pragma once
+
+class SimpleMemoryFile
+{
+public:
+	SimpleMemoryFile();
+	~SimpleMemoryFile();
+	BOOL Open(CString& filePath);
+	int ReadString(CStringA &str);
+	int ReadString(CString &str);
+
+	SimpleString m_buffer;
+	int  m_position;  // _int64 ??
+};
 
 class ResourceInfo
 {
@@ -116,6 +130,7 @@ public:
 
 	// Create language file by merigin info from .rc file and manually discovered info
 	static int CreateLanguageFile();
+	static int ResortLanguageFile();
 	static void LoadResInfoFromFile(CString& resFile, ResInfoArrayType& resArray);
 
 	static ResInfoArrayType resArray1;
