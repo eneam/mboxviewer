@@ -63,6 +63,7 @@ BEGIN_MESSAGE_MAP(GeneralOptionsDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RELAX_MBOX_FILE_VALIDATION, &GeneralOptionsDlg::OnBnClickedRelaxMboxFileValidation)
 	ON_BN_CLICKED(IDC_RELATIVE_ATTACHMENT_FILE_PATH, &GeneralOptionsDlg::OnBnClickedRelativeAttachmentFilePath)
 	ON_BN_CLICKED(IDOK, &GeneralOptionsDlg::OnBnClickedOk)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &GeneralOptionsDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -89,6 +90,7 @@ BOOL GeneralOptionsDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -101,3 +103,17 @@ void GeneralOptionsDlg::OnBnClickedOk()
 
 	CDialogEx::OnOK();
 }
+
+
+BOOL GeneralOptionsDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
+}
+

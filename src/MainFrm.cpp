@@ -3782,7 +3782,8 @@ INT_PTR CMainFrame::SelectFolder(CString &folder, CString *path)
 	wchar_t *fileNameBuffer = (LPWSTR)MboxMail::m_outbuf->Data();
 	fileNameBuffer[0] = 0;
 
-	CString  sFilters = "Mail Files (*.txt)|*.txt||";
+	//CString  sFilters = "Mail Files (*.txt)|*.txt||";
+	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
 
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	MySelectFolder dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
@@ -5987,14 +5988,14 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	CString processFolderPath;
 	ResHelper::GetProcessFolderPath(processFolderPath);
 	
-	CString languageFolderPath = processFolderPath + L"Languages" + L"\\" + languageFolder;
+	CString languageFolderPath = processFolderPath + L"Language" + L"\\" + languageFolder;
 	if (languageFolder.CompareNoCase(L"english") == 0)
 		languageFolderPath.Empty();
 
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath", languageFolderPath);
 	CString translationFileName = languageFolder + L".txt";
 
-	CString languageTranslationFilePath = processFolderPath + L"Languages\\" + languageFolder + L"\\" + translationFileName;
+	CString languageTranslationFilePath = processFolderPath + L"Language\\" + languageFolder + L"\\" + translationFileName;
 	//ResHelper::LoadLanguageMap(languageTranslationFilePath);
 	int deb = 1;
 }

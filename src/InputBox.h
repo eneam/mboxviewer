@@ -46,6 +46,8 @@ public:
 
 	CString m_input;
 	CString m_parentFolder;
+	//
+	CToolTipCtrl m_toolTip;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -54,4 +56,5 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

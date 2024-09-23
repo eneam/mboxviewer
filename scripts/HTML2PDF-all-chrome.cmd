@@ -49,8 +49,8 @@ Set HTMLFileNameBase=%%~nA
 REM echo HTMLFileName=!HTMLFileName!
 REM echo HTMLFileNameBase=!HTMLFileNameBase!
 
-echo "%CmdPath%"  --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
-call "%CmdPath%"  --headless --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
+echo "%CmdPath%"  --headless=old --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
+call "%CmdPath%"  --headless=old --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer --print-to-pdf="%PDFdir%\!HTMLFileNameBase!.pdf" "%CURRENT_DIR%\!HTMLFileName!"
 
 echo.
 

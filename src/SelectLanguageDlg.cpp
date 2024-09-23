@@ -98,7 +98,7 @@ void SelectLanguageDlg::LoadLanguages()
 	CString folderPath;
 	ResHelper::GetProcessFolderPath(folderPath);
 
-	CString languagesPath = folderPath + L"Languages";
+	CString languagesPath = folderPath + L"Language";
 
 	CString strWildcard(languagesPath);
 	strWildcard += L"\\*.*";

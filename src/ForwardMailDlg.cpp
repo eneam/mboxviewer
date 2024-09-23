@@ -67,6 +67,7 @@ BEGIN_MESSAGE_MAP(ForwardMailDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &ForwardMailDlg::OnBnClickedOk)
 	ON_WM_CREATE()
 	ON_BN_CLICKED(IDC_FORWARD_CLEAR, &ForwardMailDlg::OnBnClickedForwardClear)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &ForwardMailDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -105,6 +106,7 @@ BOOL ForwardMailDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;
 }
@@ -192,4 +194,17 @@ void ForwardMailDlg::OnBnClickedForwardClear()
 	m_EditText.SetWindowText(L"");
 
 	UpdateData(FALSE);
+}
+
+
+BOOL ForwardMailDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

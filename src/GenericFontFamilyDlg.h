@@ -50,6 +50,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 	void LoadData();
+	//
+	CToolTipCtrl m_toolTip;
 
 public:
 	CListBox m_listBox;
@@ -57,4 +59,5 @@ public:
 
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

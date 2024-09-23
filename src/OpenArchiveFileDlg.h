@@ -55,7 +55,10 @@ public:
 	CString m_sourceFolder;
 	CString m_targetFolder;
 	CString m_archiveFileName;
+	//
+	CToolTipCtrl m_toolTip;
 
 	//afx_msg void OnBnClickedYes();
 	afx_msg void OnBnClickedOk();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

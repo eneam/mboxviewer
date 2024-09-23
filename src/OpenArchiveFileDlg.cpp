@@ -59,6 +59,7 @@ void OpenArchiveFileDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(OpenArchiveFileDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &OpenArchiveFileDlg::OnBnClickedOk)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &OpenArchiveFileDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -116,6 +117,7 @@ BOOL OpenArchiveFileDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -161,4 +163,16 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 	}
 
 	CDialogEx::OnOK();
+}
+
+BOOL OpenArchiveFileDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

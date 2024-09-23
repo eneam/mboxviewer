@@ -71,6 +71,8 @@ public:
 	CEdit m_EditText;
 	MyCustomEdit m_Subject;
 	//MyCustomEdit m_From;
+		//
+	CToolTipCtrl m_toolTip;
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -86,4 +88,5 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnBnClickedForwardClear();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

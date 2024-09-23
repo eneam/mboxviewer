@@ -88,6 +88,7 @@ BEGIN_MESSAGE_MAP(MergeRootFolderAndSubfolders, CDialogEx)
 	ON_BN_CLICKED(IDOK, &MergeRootFolderAndSubfolders::OnBnClickedOk)
 	ON_BN_CLICKED(IDC_MERGE_ROOT_FOLDER, &MergeRootFolderAndSubfolders::OnBnClickedConfigFolderStyle1)
 	ON_BN_CLICKED(IDC_MERGE_ROOT_FOLDER_AND_SUBFOLDERS, &MergeRootFolderAndSubfolders::OnBnClickedMergeRootFolderAndSubfolders)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &MergeRootFolderAndSubfolders::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -120,6 +121,7 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -208,3 +210,16 @@ void MergeRootFolderAndSubfolders::OnBnClickedMergeRootFolderAndSubfolders()
 		p->EnableWindow(TRUE);
 	}
 }
+
+BOOL MergeRootFolderAndSubfolders::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
+}
+

@@ -58,6 +58,7 @@ void InputBox::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(InputBox, CDialogEx)
 	ON_BN_CLICKED(IDOK, &InputBox::OnBnClickedOk)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &InputBox::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -81,6 +82,8 @@ BOOL InputBox::OnInitDialog()
 		}
 	}
 
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -99,4 +102,17 @@ void InputBox::OnBnClickedOk()
 	}
 
 	CDialogEx::OnOK();
+}
+
+
+BOOL InputBox::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }
