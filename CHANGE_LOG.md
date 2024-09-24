@@ -8,7 +8,7 @@ v 1.0.3.45
  - Resolved Print to PDF failure due to change to command line arguments in Edge and Chrome browsers.;
  - Added experimental partial support for multiple languages.;
  - Updated User Manual to describe new and updated features.;
-	- 
+
 v 1.0.3.44
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
