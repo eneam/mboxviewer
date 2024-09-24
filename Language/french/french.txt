@@ -1,0 +1,1572 @@
+["  Message Header Character Set IDs (0-65001)"]
+" ID du jeu de caractères de l'en-tête du message (0-65001) "
+
+[" CRLF"]
+" CRLF "
+
+["%DATE_TIME%   %FROM_NAME%   %FROM_ADDR%   %TO_NAME%   %TO_ADDR%   %SUBJECT%  %UNIQUE_ID%"]
+"%DATE_TIME% %FROM_NAME% %FROM_ADDR% %TO_NAME% %TO_ADDR% %SUBJECT% %UNIQUE_ID% "
+
+["%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT%"]
+"%DATE_TIME% %UNIQUE_ID% %FROM_NAME% %TO_NAME% %SUBJECT% "
+
+["%Y-%m-%d %H:%M:%S  will  expand to for example  2020-1-31  16:59:59"]
+"%Y-%m-%d %H:%M:%S s'étendra par exemple à 2020-1-31 16:59:59"
+
+["%Y-%m-%d"]
+"%Y-%m-%d"
+
+["&About mboxview..."]
+"&À propos de mboxview..."
+
+["&Add to Custom Colors"]
+"&Ajouter aux couleurs personnalisées"
+
+["&Basic colors:"]
+"&De base couleurs : "
+
+["&Case sensitive"]
+"&Sensible à la casse"
+
+["&Copy	Ctrl+C"]
+"&Copier Ctrl+C"
+
+["&Copy\tCtrl+C"]
+"&Copier\tCtrl+C"
+
+["&Custom colors:"]
+"&Couleurs personnalisées : "
+
+["&Define Custom Colors >>"]
+"&Définir des couleurs personnalisées"
+
+["&Edit"]
+"&Modifier"
+
+["&File"]
+"&Fichier"
+
+["&Find what:"]
+"&Rechercher : "
+
+["&Green:"]
+"&Vert : "
+
+["&Help"]
+"&Aide"
+
+["&Lum:"]
+"&Lum : "
+
+["&o"]
+"&o"
+
+["&Paste	Ctrl+V"]
+"&Coller Ctrl+V"
+
+["&Paste\tCtrl+V"]
+"&Coller\tCtrl+V"
+
+["&Red:"]
+"&Rouge : "
+
+["&Sat:"]
+"&Sam : "
+
+["&Status Bar"]
+"&État Barre"
+
+["&Undo	Ctrl+Z"]
+"&Annuler Ctrl+Z"
+
+["&Undo\tCtrl+Z"]
+"&Annuler\tCtrl+Z"
+
+["&View"]
+"&Afficher"
+
+["&Whole word"]
+"&Mot entier"
+
+["((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"((De -> (À ou CC ou BCC)) et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+["((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"((De <--> À) et CC et BCC et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+["((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"((De <--> À) et pas de CC et pas de BCC et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+["(From -> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"(De -> À) et CC et BCC et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+["(From -> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"(De -> À) et pas de CC et pas de BCC et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+["(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name"]
+"(De ou À ou CC ou BCC) et Objet et (Texte du message ou Texte de la pièce jointe) et Nom de la pièce jointe"
+
+[".mbox*,.eml,no-extensions"]
+".mbox*,.eml,no-extensions"
+
+["0"]
+"0"
+
+["1"]
+"1"
+
+["1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails"]
+"1. (John <--> Tod) correspondra aux e-mails (Jon --> Tod) et (Tod --> John)"
+
+["1252"]
+"1252"
+
+["128"]
+"128"
+
+["148"]
+"148"
+
+["180"]
+"180"
+
+["2"]
+"2"
+
+["2.  (John --> Tod) will match Jon --> Tod mails"]
+"2. (John --> Tod) correspondra aux e-mails de Jon --> Tod"
+
+["20"]
+"20"
+
+["2010/12/31"]
+"2010/12/31"
+
+["2011/10/27"]
+"2011/10/27"
+
+["2011/12/08"]
+"2011/12/08"
+
+["2018/02/19"]
+"2018/02/19"
+
+["2019/12/21"]
+"2019/12/21"
+
+["240"]
+"240"
+
+["25"]
+"25"
+
+["255"]
+"255"
+
+["25590"]
+"25590"
+
+["260"]
+"260"
+
+["3"]
+"3"
+
+["3.  and no CC and no BCC will match mails without CC and BCC fields"]
+"3. et aucun CC et aucun BCC ne correspondront aux e-mails sans champs CC et BCC"
+
+["32500"]
+"32500"
+
+["4"]
+"4"
+
+["4.  If field is not selected in the parent dialog, it is removed from the rule"]
+"4. Si le champ n'est pas sélectionné dans la boîte de dialogue parent, il est supprimé de la règle"
+
+["40"]
+"40"
+
+["5"]
+"5"
+
+["5.  If field is selected in the parent dialog and value set to *, it will match all mails with non empty field"]
+"5. Si le champ est sélectionné dans la boîte de dialogue parent et que la valeur est définie sur *, il correspondra à tous les e-mails avec un champ non vide"
+
+["587"]
+"587"
+
+["6"]
+"6"
+
+["65001"]
+"65001"
+
+["7"]
+"7"
+
+["8"]
+"8"
+
+["<< PREV"]
+"<< PREV"
+
+["<empty>"]
+"<vide>"
+
+["a"]
+"a"
+
+["About mboxview"]
+"A propos de mboxview"
+
+["About System"]
+"A propos du système"
+
+["Account"]
+"Compte"
+
+["Activate Task List"]
+"Activer la liste des tâches"
+
+["Adjusted Max File Name Length"]
+"Longueur maximale ajustée du nom de fichier"
+
+["all files"]
+"tous les fichiers"
+
+["All Mails"]
+"Tous les e-mails"
+
+["Allocated Memory"]
+"Mémoire allouée"
+
+["alphanumeric"]
+"alphanumérique"
+
+["Append Picture Attachmenst to Mail Print"]
+"Ajouter une image en pièce jointe au courrier Imprimer"
+
+["Append Picture Attachments to Mail View"]
+"Ajouter des images en pièces jointes à la vue du courrier"
+
+["Apply to All Panes"]
+"Appliquer à tous les volets"
+
+["Apply to Selected"]
+"Appliquer à la sélection"
+
+["Assign a label per each MBOX file"]
+"Attribuer une étiquette à chaque fichier MBOX"
+
+["Assign no Labels"]
+"Aucune étiquette"
+
+["Assign same label to all MBOX files per containing folder"]
+"Attribuer la même étiquette à tous les fichiers MBOX par dossier contenant"
+
+["Attachment Name"]
+"Nom de la pièce jointe"
+
+["Attachment Names"]
+"Noms des pièces jointes"
+
+["Attachment Text"]
+"Texte de la pièce jointe"
+
+["Attachment Window"]
+"Fenêtre de pièce jointe"
+
+["Attachments Config"]
+"Configuration des pièces jointes"
+
+["Attachments Config..."]
+"Configuration des pièces jointes..."
+
+["ATTACHMENTS"]
+"ATTACHMENTS"
+
+["Auto"]
+"Auto"
+
+["b"]
+"b"
+
+["Background Color Styles"]
+"Couleur d'arrière-plan Styles"
+
+["BCC"]
+"Cci"
+
+["BCC:"]
+"Cci :"
+
+["Bl&ue:"]
+"Bleu :"
+
+["Body:"]
+"Corps :"
+
+["Bold Field Name"]
+"Nom du champ en gras"
+
+["Bottom"]
+"Bas"
+
+["By default attachments other than those embeded into mail message are shown in the attachment window"]
+"Par défaut, les pièces jointes autres que celles intégrées au message électronique sont affichées dans la fenêtre des pièces jointes"
+
+["By default the attachment indicator is set when the mail has at least one attachment marked as Attachment Type"]
+"Par défaut, l'indicateur de pièce jointe est défini lorsque le courrier électronique contient au moins une pièce jointe marquée comme type de pièce jointe"
+
+["c"]
+"c"
+
+["C"]
+"C"
+
+["C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"]
+"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+
+["Cancel"]
+"Annuler"
+
+["CANCEL"]
+"ANNULER"
+
+["CAP"]
+"MAJUSCULES"
+
+["CC"]
+"CC"
+
+["CC:"]
+"CC :"
+
+["Change Log"]
+"Journal des modifications"
+
+["Change the window position"]
+"Modifier la position de la fenêtre"
+
+["Change the window size"]
+"Modifier la taille de la fenêtre"
+
+["Chrome Browser"]
+"Navigateur Chrome"
+
+["Clear Find Text"]
+"Effacer la recherche de texte"
+
+["Clear"]
+"Effacer"
+
+["Close the active window and prompts to save the documents"]
+"Fermer la fenêtre active et invite à enregistrer les documents"
+
+["Close"]
+"Fermer"
+
+["Code Page Id"]
+"ID de la page de code"
+
+["Code Page Installed"]
+"Page de code installée"
+
+["Code Page Name"]
+"Nom de la page de code"
+
+["Color Style Config..."]
+"Configuration du style de couleur..."
+
+["Color Style Configuration"]
+"Configuration du style de couleur"
+
+["Color"]
+"Couleur"
+
+["Compose Custom Template"]
+"Composer un modèle personnalisé"
+
+["Compose File Name Template From"]
+"Composer un modèle de nom de fichier à partir de"
+
+["Config"]
+"Configuration"
+
+["Configure Filter Rule"]
+"Configurer la règle de filtrage"
+
+["Conversation"]
+"Conversation"
+
+["Copy All into User Selected Mails"]
+"Copier tout dans les e-mails sélectionnés par l'utilisateur"
+
+["Copy Selected into User Selected Mails"]
+"Copier la sélection dans les e-mails sélectionnés par l'utilisateur"
+
+["Copy the selection and put it on the Clipboard\nCopy"]
+"Copiez la sélection et placez-la dans le presse-papiers\nCopier"
+
+["Create Language File"]
+"Créer un fichier de langue"
+
+["Create Mail Archive File"]
+"Créer un fichier d'archive de courrier"
+
+["Create..."]
+"Créer..."
+
+["Created Archive File can't be viewed from ArchiveCache folder"]
+"Le fichier d'archive créé ne peut pas être affiché à partir du dossier ArchiveCache"
+
+["Created Archive File will be moved from the Default Folder"]
+"Le fichier d'archive créé sera déplacé du dossier par défaut"
+
+["Created Archive Name"]
+"Nom de l'archive créée"
+
+["Created file "]
+"Fichier créé"
+
+["Created Mbox Mail Archive file "]
+"Fichier d'archive de messagerie Mbox créé"
+
+["CSV..."]
+"CSV..."
+
+["Cu&t	Ctrl+X"]
+"Cu&t Ctrl+X"
+
+["Cu&t\tCtrl+X"]
+"Cu&t\tCtrl+X"
+
+["Current Data Folder"]
+"Dossier de données actuel"
+
+["cursive"]
+"cursive"
+
+["Custom Color Style"]
+"Style de couleur personnalisé"
+
+["Custom Hdr Field Font"]
+"Police de champ Hdr personnalisée"
+
+["CUSTOM TEMPLATE"]
+"MODÈLE PERSONNALISÉ"
+
+["Custom"]
+"Personnalisé"
+
+["Cut the selection and put it on the Clipboard\nCut"]
+"Couper la sélection et la placer dans le Presse-papiers\nCouper"
+
+["d"]
+"d"
+
+["Data Folder Config..."]
+"Configuration du dossier de données..."
+
+["Data Folder Configuration"]
+"Configuration du dossier de données"
+
+["date (GMT)"]
+"date (GMT)"
+
+["date (Locale)"]
+"date (Locale)"
+
+["Date and Time Format follows format accepted by the  standard "]
+"Le format de date et d'heure suit le format accepté par la norme"
+
+["Date and Time Format"]
+"Format de date et d'heure"
+
+["Date Format:  "]
+"Format de date : "
+
+["Date Format:  year/month/day"]
+"Format de date : année/mois/jour"
+
+["Date format: "]
+"Format de date : "
+
+["Date format: year/month/day"]
+"Format de date : année/mois/jour"
+
+["Date format:"]
+"Format de date :"
+
+["DATE"]
+"DATE"
+
+["Date"]
+"Date"
+
+["Date:"]
+"Date :"
+
+["day/month/year"]
+"jour/mois/année"
+
+["dd/mm/yyyy"]
+"jj/mm/aaaa"
+
+["Default"]
+"Par défaut"
+
+["Delete..."]
+"Supprimer..."
+
+["Developer Mode"]
+"Mode développeur"
+
+["Development Options"]
+"Options de développement"
+
+["Dialog"]
+"Dialogue"
+
+["Display program information, version number and copyright\nAbout"]
+"Afficher les informations du programme, le numéro de version et le copyright\nÀ propos"
+
+["DO NOT PROMPT"]
+"NE PAS DEMANDER"
+
+["Domain Name"]
+"Nom de domaine"
+
+["Donate"]
+"Faire un don"
+
+["donate@wikimedia.org"]
+"donate@wikimedia.org"
+
+["e"]
+"e"
+
+["E&xit"]
+"Quitter"
+
+["EEmlCache_subset.mbox"]
+"EEmlCache_subset.mbox"
+
+["Enable or Disable User Selected Mail List/Toggle the list"]
+"Activer ou désactiver la liste de courrier sélectionnée par l'utilisateur/Basculer la liste"
+
+["Encoding:"]
+"Encodage :"
+
+["end date:"]
+"date de fin :"
+
+["Enhanced Select Mail Folder Dialog"]
+"Boîte de dialogue de sélection de dossier de courrier améliorée"
+
+["Enlarge the window to full size"]
+"Agrandir la fenêtre à la taille réelle"
+
+["Enter New Folder Name:"]
+"Entrer un nouveau nom de dossier :"
+
+["Erase everything\nErase All"]
+"Effacer tout\nEffacer tout"
+
+["Erase the selection\nErase"]
+"Effacer la sélection\nEffacer"
+
+["Expand tree containing folders\nExpand/Collapse mail folders"]
+"Développer l'arborescence contenant les dossiers\nDévelopper/Réduire les dossiers de courrier"
+
+["Expanded"]
+"Étendu"
+
+["Export All Mail Attachments"]
+"Exporter toutes les pièces jointes de courrier"
+
+["Export All Mails as Eml"]
+"Exporter tous les courriers sous Eml"
+
+["Export EML:"]
+"Exporter EML :"
+
+["Export Selected Mail"]
+"Exporter le courrier sélectionné"
+
+["Export Selected Mails"]
+"Exporter les courriers sélectionnés"
+
+["EXT"]
+"EXT"
+
+["f"]
+"f"
+
+["F"]
+"F"
+
+["fantasy"]
+"fantasy"
+
+["Fields:"]
+"Champs :"
+
+["File Location"]
+"Emplacement du fichier"
+
+["File Name Configuration"]
+"Configuration du nom de fichier"
+
+["filename-utf8_subset.eml"]
+"filename-utf8_subset.eml"
+
+["Filter dates (if not set all mails on the list are searched):"]
+"Filtrer les dates (si elles ne sont pas définies, tous les courriers de la liste sont recherchés) :"
+
+["filter dates (if not set all mails on the list are searched):"]
+"dates de filtrage (si non définies, tous les e-mails de la liste sont recherchés) :"
+
+["Find Advanced"]
+"Rechercher avancé"
+
+["Find Advanced..."]
+"Rechercher avancé..."
+
+["Find again	F3"]
+"Rechercher à nouveau F3"
+
+["Find again\tF3"]
+"Rechercher again\tF3"
+
+["Find All in Message"]
+"Rechercher tout dans le message"
+
+["Find all mails that don't match"]
+"Rechercher tous les e-mails qui ne correspondent pas"
+
+["Find all mails that match"]
+"Rechercher tous les e-mails qui correspondent"
+
+["Find Text"]
+"Rechercher le texte"
+
+["Find text\nFind"]
+"Rechercher du texte\nRechercher"
+
+["Find what"]
+"Rechercher quoi"
+
+["Find"]
+"Rechercher"
+
+["Find...	Ctrl+F"]
+"Rechercher... Ctrl+F"
+
+["Find...\tCtrl+F"]
+"Rechercher...\tCtrl+F"
+
+["Font Configuration"]
+"Configuration de la police"
+
+["Font Size"]
+"Taille de la police"
+
+["Forward Mail"]
+"Transférer le courrier"
+
+["Forward Related Mails"]
+"Transférer les courriers associés"
+
+["Forward Selected Mails"]
+"Transférer les courriers sélectionnés"
+
+["Found Mails"]
+"Courriers trouvés"
+
+["Free pictures from commons.wikimedia.org"]
+"Images gratuites de commons.wikimedia.org"
+
+["from                        to                           subject"]
+"de                            à                           sujette"
+
+["From Address:"]
+"Adresse de l'expéditeur :"
+
+["From"]
+"De"
+
+["from"]
+"de"
+
+["FROM"]
+"DE"
+
+["From:"]
+"De :"
+
+["function. For example:"]
+"fonction. Par exemple :"
+
+["g"]
+"g"
+
+["General Config"]
+"Configuration générale"
+
+["General Options Config..."]
+"Configuration des options générales..."
+
+["Generic Font Family Picker"]
+"Sélecteur de famille de polices génériques"
+
+["Gmail Labels"]
+"Libellés Gmail"
+
+["Gmail"]
+"Gmail"
+
+["GMT"]
+"GMT"
+
+["h"]
+"h"
+
+["Header and Footer"]
+"En-tête et pied de page"
+
+["HEADER:"]
+"EN-TÊTE :"
+
+["Help"]
+"Aide"
+
+["Hide/Restore Mail Archive Tree\nHide/Restore mail tree"]
+"Masquer/Restaurer l'arborescence des archives de messagerie\nMasquer/Restaurer l'arborescence de messagerie"
+
+["Highlight all occurences in Message"]
+"Mettre en surbrillance toutes les occurrences dans le message"
+
+["How to open attchement link:"]
+"Comment ouvrir une pièce jointe lien : "
+
+["html if no plain text"]
+"html s'il n'y a pas de texte brut"
+
+["html"]
+"html"
+
+["HTML"]
+"HTML"
+
+["HTML.."]
+"HTML.."
+
+["HTML..."]
+"HTML..."
+
+["HTML/PDF Mail Header Configuration"]
+"Configuration de l'en-tête de messagerie HTML/PDF"
+
+["Hu&e:"]
+"Humour : "
+
+["If you like this program please consider making a donation"]
+"Si vous aimez ce programme, pensez à faire un don"
+
+["IMPORTANT: Data Folder path should be as short as possible to avoid truncation of names of files generated by MBox Viewer. Note that the file path is limited to 255 characters."]
+"IMPORTANT : le chemin du dossier de données doit être aussi court que possible pour éviter la troncature des noms de fichiers générés par MBox Viewer. Notez que le chemin du fichier est limité à 255 caractères."
+
+["Insert Clipboard contents\nPaste"]
+"Insérer le contenu du presse-papiers\nColler"
+
+["Keywords can be specified in any order. Any text can be specified between keywords."]
+"Les mots-clés peuvent être spécifiés dans n'importe quel ordre. N'importe quel texte peut être spécifié entre les mots-clés."
+
+["Leading Mail Count"]
+"Nombre de messages principaux"
+
+["Left"]
+"Gauche"
+
+["License"]
+"Licence"
+
+["Limit Message to N Characters"]
+"Limiter le message à N caractères"
+
+["Limit Message to N Lines"]
+"Limiter le message à N lignes"
+
+["Local"]
+"Local"
+
+["Mail Archive Tree"]
+"Arborescence des archives de courrier"
+
+["Mail Attachment Indicator"]
+"Indicateur de pièce jointe"
+
+["Mail Attachments"]
+"Pièces jointes du courrier"
+
+["Mail Body Background Color"]
+"Arrière-plan du corps du courrierCouleur"
+
+["Mail Conversation1"]
+"Conversation par courrier1"
+
+["Mail Conversation2"]
+"Conversation par courrier2"
+
+["Mail Hdr Background Color"]
+"Couleur d'arrière-plan du Hdr du courrier"
+
+["Mail Message Header Fields"]
+"Champs d'en-tête du message électronique"
+
+["Mail Message"]
+"Message électronique"
+
+["Mail No of Total Mails        "]
+"Nombre total de courriers"
+
+["Mail Retrieval In Progress ... "]
+"Récupération du courrier en cours..."
+
+["Mail Service"]
+"Service de messagerie"
+
+["Mail Summary Column Titles"]
+"Titres des colonnes du résumé du courrier"
+
+["Mail Summary"]
+"Résumé du courrier"
+
+["Match case"]
+"Respecter la casse"
+
+["Match TO field only if single recipient on the list"]
+"Faire correspondre le champ À uniquement si un seul destinataire est sur la liste"
+
+["Match word"]
+"Respecter le mot"
+
+["Max Character Size"]
+"Max Taille des caractères"
+
+["Max file path length supported by Windows is 260 characters"]
+"La longueur maximale du chemin d'accès au fichier prise en charge par Windows est de 260 caractères"
+
+["Max Mail Size in KB"]
+"Taille maximale du courrier en Ko"
+
+["Max Size in % of Message Window"]
+"Taille maximale en % de la fenêtre de message"
+
+["mboxview 1.0.3.44 Unicode"]
+"mboxview 1.0.3.44 Unicode"
+
+["Mboxview Help"]
+"Aide Mboxview"
+
+["mboxview"]
+"mboxview"
+
+["Merge Mail Archive Files"]
+"Fusionner les fichiers d'archive de courrier"
+
+["Merge Root Folder and Sub-folders Configuration"]
+"Configuration de la fusion du dossier racine et des sous-dossiers"
+
+["Merge Root Folder and Subfolders"]
+"Fusionner le dossier racine et les sous-dossiers"
+
+["Merge Root Folder"]
+"Fusionner le dossier racine"
+
+["Merge"]
+"Fusionner"
+
+["Message Header Pane Layout"]
+"Disposition du volet d'en-tête du message"
+
+["Message Window"]
+"Fenêtre de message"
+
+["Message"]
+"Message"
+
+["mm/dd/yyyy"]
+"mm/jj/aaaa"
+
+["monospace"]
+"monospace"
+
+["month/day/year"]
+"mois/jour/année"
+
+["most recent folders"]
+"dossiers les plus récents"
+
+["MSEdge Browser"]
+"Navigateur MSEdge"
+
+["Multiple Selected Mails"]
+"Plusieurs courriers sélectionnés"
+
+["Name"]
+"Nom"
+
+["New Folder"]
+"Nouveau dossier"
+
+["newbie subversion questions"]
+"questions subversion pour débutants"
+
+["NEXT >>"]
+"SUIVANT >>"
+
+["next"]
+"suivant"
+
+["no"]
+"non"
+
+["none"]
+"aucun"
+
+["None"]
+"Aucun"
+
+["NOTE that ""Show All Attachments"" will affect output from Print To, View in Browser and Export All Mail Attachmensts options"]
+"REMARQUE que ""Afficher tout Les pièces jointes "" affecteront la sortie des options Imprimer vers, Afficher dans le navigateur et Exporter toutes les pièces jointes du courrier électronique"
+
+["NOTE that "Show All Attachments" will affect output from Print To, View in Browser and Export All Mail Attachmensts options"]
+"NOTE que "Afficher toutes les pièces jointes" affectera la sortie des options Imprimer vers, Afficher dans le navigateur et Exporter toutes les pièces jointes du courrier électronique"
+
+["NOTE:"]
+"REMARQUE :"
+
+["NUM"]
+"NUMÉRO"
+
+["OK"]
+"OK"
+
+["Open ""View"" menu to view All  Code Page Ids"]
+"Ouvrir le menu ""Affichage"" pour afficher tous les identifiants de page de code"
+
+["Open "View" menu to view All  Code Page Ids"]
+"Ouvrir le menu ""Affichage"" pour afficher tous les identifiants de page de code"
+
+["Open Created Mail Archive File "]
+"Ouvrir le fichier d'archive de courrier électronique créé"
+
+["Open Database Folder Location"]
+"Ouvrir l'emplacement du dossier de base de données"
+
+["Open File Location Dialog"]
+"Ouvrir la boîte de dialogue d'emplacement du fichier"
+
+["Open File Location"]
+"Ouvrir l'emplacement du fichier"
+
+["Open File"]
+"Ouvrir Fichier"
+
+["Open Folder Location"]
+"Ouvrir l'emplacement du dossier"
+
+["Open in Browser"]
+"Ouvrir dans le navigateur"
+
+["Open in current Tab"]
+"Ouvrir dans l'onglet actuel"
+
+["Open in new Tab"]
+"Ouvrir dans un nouvel onglet"
+
+["Open Mail List Location"]
+"Ouvrir l'emplacement de la liste de diffusion"
+
+["Open Mbox Mail Archive Location"]
+"Ouvrir l'emplacement de l'archive de messagerie Mbox"
+
+["Open Related Files Location"]
+"Ouvrir l'emplacement des fichiers associés"
+
+["Open Selected Mails in Browser"]
+"Ouvrir les e-mails sélectionnés dans le navigateur"
+
+["Open"]
+"Ouvrir"
+
+["Options"]
+"Options"
+
+["Options..."]
+"Options..."
+
+["Outlook"]
+"Outlook"
+
+["OVR"]
+"OVR"
+
+["Page Break After Each Conversation Thread"]
+"Saut de page après chaque fil de conversation"
+
+["Page Break After Each Mail"]
+"Saut de page après chaque e-mail"
+
+["Page Code List"]
+"Liste des codes de page"
+
+["Page Setup"]
+"Mise en page"
+
+["Pane Color"]
+"Couleur du volet"
+
+["Pane:"]
+"Volet :"
+
+["Password"]
+"Mot de passe"
+
+["Path to Chrome/MSEdge Browser executable"]
+"Chemin vers l'exécutable du navigateur Chrome/MSEdge"
+
+["Path To User Defined Script"]
+"Chemin vers le script défini par l'utilisateur"
+
+["PDF document options"]
+"Options du document PDF"
+
+["PDF"]
+"PDF"
+
+["PDF.."]
+"PDF.."
+
+["PDF..."]
+"PDF..."
+
+["Pick Color"]
+"Choisir la couleur"
+
+["Pick Font"]
+"Choisir la police"
+
+["Pick Generic Font Family"]
+"Choisir la famille de polices génériques"
+
+["Picture Viewer"]
+"Visionneuse d'images"
+
+["plain"]
+"plain"
+
+["Please read the overview first -->"]
+"Veuillez d'abord lire l'aperçu -->"
+
+["Port"]
+"Port"
+
+["Preconfigured"]
+"Préconfiguré"
+
+["previous"]
+"précédent"
+
+["Print Config..."]
+"Configuration d'impression..."
+
+["Print Configuration"]
+"Configuration d'impression"
+
+["PRINT PREVIEW"]
+"IMPRIMER APERÇU"
+
+["PRINT PROMPT"]
+"IMPRIMER L'INVITE"
+
+["Print Resourcces"]
+"Ressources d'impression"
+
+["Print selected mails to separate files"]
+"Imprimer les e-mails sélectionnés dans des fichiers séparés"
+
+["Print Selected Mails To"]
+"Imprimer les e-mails sélectionnés vers"
+
+["Print to .. PDF Menu Option Setup"]
+"Imprimer vers .. Configuration de l'option de menu PDF"
+
+["Print to .. Printer Menu Option Setup"]
+"Imprimante vers .. Configuration de l'option de menu Imprimante"
+
+["Print To"]
+"Imprimer vers"
+
+["Print"]
+"Imprimer"
+
+["Printer..."]
+"Imprimante..."
+
+["Properties"]
+"Propriétés"
+
+["Proposed Archive File Name. Rename as needed"]
+"Nom de fichier d'archive proposé. Renommer selon les besoins"
+
+["Quit the application; prompts to save documents\nExit"]
+"Quitter l'application ; invite à enregistrer les documents\nQuitter"
+
+["Readme"]
+"Readme"
+
+["Ready"]
+"Ready"
+
+["REC"]
+"REC"
+
+["Redo the previously undone action\nRedo"]
+"Rétablir l'action précédemment annulée\nRefaire"
+
+["Reduce the window to an icon"]
+"Réduire la fenêtre à une icône"
+
+["Refresh folder containing mails\nRefresh mail folders"]
+"Actualiser le dossier contenant les e-mails\nActualiser les dossiers de courrier"
+
+["Refresh Folder"]
+"Actualiser le dossier"
+
+["Refresh Index File"]
+"Actualiser le fichier d'index"
+
+["Refresh..."]
+"Actualiser..."
+
+["Relative Inline Attachments File Path"]
+"Chemin d'accès relatif au fichier de pièces jointes en ligne"
+
+["Relaxed Mbox File Validation"]
+"Validation de fichier Mbox assouplie"
+
+["Reload from Mail List file"]
+"Recharger à partir du fichier de liste de courrier"
+
+["Remove All Mails"]
+"Supprimer tous les courriers"
+
+["Remove Duplicate Mails"]
+"Supprimer Mails en double"
+
+["Remove File"]
+"Supprimer le fichier"
+
+["Remove Folder"]
+"Supprimer le dossier"
+
+["Remove Selected Mail"]
+"Supprimer le courrier sélectionné"
+
+["Repeat last search\nFind again"]
+"Répéter la dernière recherche\nRechercher à nouveau"
+
+["Repeat the last action\nRepeat"]
+"Répéter la dernière action\nRépéter"
+
+["Replace specific text with different text\nReplace"]
+"Remplacer un texte spécifique par un texte différent\nRemplacer"
+
+["Replace white spaces with underscore"]
+"Remplacer les espaces blancs par un trait de soulignement"
+
+["Reset all filter fields"]
+"Réinitialiser tous les champs de filtre"
+
+["Reset Max Mail Size to Default"]
+"Réinitialiser la taille maximale du courrier par défaut"
+
+["Restore Hint Messages"]
+"Restaurer les messages d'aide"
+
+["Restore Removed Files"]
+"Restaurer les fichiers supprimés"
+
+["Restore the window to normal size"]
+"Restaurer la fenêtre à sa taille normale"
+
+["Restore User Selected Mails from saved Mail List file"]
+"Restaurer les courriers sélectionnés par l'utilisateur à partir du fichier de liste de courrier enregistré"
+
+["Right"]
+"Droite"
+
+["ROTATE >>"]
+"ROTATE >>"
+
+["Rule 1 is selected !!!"]
+"La règle 1 est sélectionnée !!!"
+
+["sans-serif"]
+"sans-serif"
+
+["Save All as Mail List file"]
+"Tout enregistrer en tant que fichier de liste de diffusion"
+
+["Save All as Mbox Mail Archive file"]
+"Tout enregistrer en tant que fichier d'archive de messagerie Mbox"
+
+["Save"]
+"Enregistrer"
+
+["SCRL"]
+"SCRL"
+
+["Search Direction"]
+"Sens de la recherche"
+
+["Search progress bar startup delay in seconds"]
+"Délai de démarrage de la barre de progression de la recherche en secondes"
+
+["Search scope"]
+"Étendue de la recherche"
+
+["Select "Assign no Labels" option when merging Gmail mail files."]
+"Sélectionnez l'option "Affecter aucune étiquette" lors de la fusion des fichiers de messagerie Gmail."
+
+["Select "Assign no Labels" or "Assign same label to all MBOX files per containing folder" option when merging thousands of mail files."]
+"Sélectionnez l'option "Aucune étiquette » ou "Affecter la même étiquette à tous les fichiers MBOX par dossier contenant » lors de la fusion de milliers de fichiers de courrier. » "Sélectionnez &folder... F2"
+
+["Select &folder...	F2"]
+"Sélectionnez &folder...\tF2"
+
+["Select &folder...\tF2"]
+"Sélectionnez &folder...\tF2"
+
+["Select Fields to Export To CSV File"]
+"Sélectionnez les champs à exporter vers un fichier CSV"
+
+["Select filter fields"]
+"Sélectionnez les champs de filtre"
+
+["Select Filter Rule"]
+"Sélectionnez la règle de filtrage"
+
+["Select folder as root folder..."]
+"Sélectionnez le dossier comme dossier racine..."
+
+["Select folder containing mails\nSelect folder"]
+"Sélectionnez le dossier contenant les e-mails\nSélectionnez le dossier"
+
+["Select folder"]
+"Sélectionnez le dossier"
+
+["Select Font Family"]
+"Sélectionnez la famille de polices"
+
+["Select Language"]
+"Sélectionnez la langue"
+
+["Select mail text block for search"]
+"Sélectionnez le bloc de texte de l'e-mail pour la recherche"
+
+["Select New Data Folder"]
+"Sélectionnez un nouveau dossier de données"
+
+["Select Predefined Filter Rule"]
+"Sélectionnez une règle de filtrage prédéfinie"
+
+["Select root folder for merging ..."]
+"Sélectionnez le dossier racine pour la fusion..."
+
+["Select the entire document\nSelect All"]
+"Sélectionnez l'intégralité document\nSélectionner tout"
+
+["Selected Mail Subject"]
+"Objet du courrier sélectionné"
+
+["Send"]
+"Envoyer"
+
+["Separator"]
+"Séparateur"
+
+["serif"]
+"serif"
+
+["Service:"]
+"Service :"
+
+["Set all"]
+"Définir tout"
+
+["Set when any attachment present"]
+"Définir lorsqu'une pièce jointe est présente"
+
+["Shortcuts"]
+"Raccourcis"
+
+["Show All Attachments"]
+"Afficher toutes les pièces jointes"
+
+["Show Charsets:"]
+"Afficher les jeux de caractères :"
+
+["Show Folder Path"]
+"Afficher le chemin du dossier"
+
+["Show or hide the status bar\nToggle StatusBar"]
+"Afficher ou masquer la barre d'état\nBasculer la barre d'état"
+
+["Show or hide the toolbar\nToggle ToolBar"]
+"Afficher ou masquer la barre d'outils\nBasculer la barre d'outils"
+
+["Simple MBox Viewer"]
+"Visionneuse MBox simple"
+
+["Single Mail"]
+"Courrier unique"
+
+["Size"]
+"Taille"
+
+["size(KB)"]
+"taille(Ko)"
+
+["SMTP Mail Server Config..."]
+"Configuration du serveur de messagerie SMTP..."
+
+["SMTP Mail Server Configuration"]
+"Configuration du serveur de messagerie SMTP"
+
+["SMTP Server Addres"]
+"Adresse du serveur SMTP"
+
+["SMTP Server Connection Encryption Type"]
+"Type de cryptage de la connexion au serveur SMTP"
+
+["SMTP User"]
+"Utilisateur SMTP"
+
+["smtp.gmail.com"]
+"smtp.gmail.com"
+
+["Sort By Id"]
+"Trier par ID"
+
+["Sort By"]
+"Trier Par"
+
+["Source Mail Archive"]
+"Archive de courrier source"
+
+["Split the active window into panes\nSplit"]
+"Diviser la fenêtre active en volets\nDiviser"
+
+["srcftime"]
+"srcftime"
+
+["SslOnConnect"]
+"SslOnConnect"
+
+["Standard"]
+"Standard"
+
+["start date:"]
+"date de début :"
+
+["StartTls"]
+"StartTls"
+
+["StartTlsWhenAvailable"]
+"StartTlsWhenAvailable"
+
+["Static"]
+"Statique"
+
+["Subject Sort Type"]
+"Type de tri du sujet"
+
+["Subject"]
+"Sujet"
+
+["subject"]
+"sujette"
+
+["SUBJECT"]
+"OBJET"
+
+["Subject:"]
+"Sujet :"
+
+["Switch back to the previous window pane\nPrevious Pane"]
+"Revenir au volet de fenêtre précédent\nVolet précédent"
+
+["Switch to the next document window"]
+"Passer à la fenêtre de document suivante"
+
+["Switch to the next window pane\nNext Pane"]
+"Passer au volet de fenêtre suivant\nSuivant Panneau"
+
+["Switch to the previous document window"]
+"Passer à la fenêtre de document précédente"
+
+["Template Configuration"]
+"Configuration du modèle"
+
+["Template Format"]
+"Format du modèle"
+
+["Text"]
+"Texte"
+
+["Text.."]
+"Texte.."
+
+["Thank you from the Wikimedia Foundation"]
+"Merci de la Wikimedia Foundation"
+
+["The executable, associated source code files and User Guide  can be downloaded from  Github and Sourceforge sites."]
+"L'exécutable, les fichiers de code source associés et le guide de l'utilisateur peuvent être téléchargés à partir des sites Github et Sourceforge."
+
+["This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\n\nSelect "Assign no Labels" option when merging Gmail mail files.\nSelect "Assign no Labels" or "Assign same label to all MBOX files per containing folder" option when merging thousands of mail files.\n\n"]
+"Cette boîte de dialogue permet aux utilisateurs de configurer le dossier de messagerie racine et les sous-dossiers pour fusionner les fichiers mbox exportés à partir du même compte de messagerie.\n\nSélectionnez l'option "Aucune étiquette » lors de la fusion de fichiers de messagerie Gmail.\nSélectionnez l'option "Aucune étiquette » ou "Affecter la même étiquette à tous les fichiers MBOX par dossier contenant » lors de la fusion de milliers de fichiers de messagerie.\n\n"
+
+["This dialog enables users to configure the root data folder. MBox Viewer will create a UMBoxViewer folder under the configured root data folder for all files generated by MBox Viewer such as mails exported in PDF format.\n\nIMPORTANT: Data Folder path should be as short as possible to avoid truncation of names of files generated by MBox Viewer. Note that the file path is limited to 255 characters."]
+"Cette boîte de dialogue permet aux utilisateurs de configurer le dossier de données racine. MBox Viewer créera un dossier UMBoxViewer sous le dossier de données racine configuré pour tous les fichiers générés par MBox Viewer tels que les e-mails exportés au format PDF.\n\nIMPORTANT : le chemin du dossier de données doit être aussi court que possible pour éviter la troncature des noms de fichiers générés par MBox Viewer. Notez que le chemin du fichier est limité à 255 caractères."
+
+["This dialog is not used. I create here all controls that are created dinamically so\nvstudio defines id automatically in resource.h"]
+"Cette boîte de dialogue n'est pas utilisée. Je crée ici tous les contrôles qui sont créés de manière dynamique, donc\nvstudio définit automatiquement l'ID dans resource.h"
+
+["This program is free to use under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE version 3."]
+"Ce programme est libre d'utilisation selon les termes de la GNU AFFERO GENERAL PUBLIC LICENSE version 3."
+
+["time ordered threads"]
+"fils de discussion classés par ordre chronologique"
+
+["Time"]
+"Heure"
+
+["Time:"]
+"Heure :"
+
+["To Address:"]
+"À l'adresse :"
+
+["To File"]
+"Vers le fichier"
+
+["To Separate Files"]
+"Vers des fichiers séparés"
+
+["To set new dates, open calendar by selecting down arrow, or Left click on month, day or year field and type new value"]
+"Pour définir de nouvelles dates, ouvrez le calendrier en sélectionnant la flèche vers le bas ou cliquez avec le bouton gauche sur le champ mois, jour ou année et saisissez une nouvelle valeur"
+
+["To Single File"]
+"Vers un seul fichier"
+
+["To the Target Folder"]
+"Vers le dossier cible"
+
+["TO"]
+"À"
+
+["to"]
+"à"
+
+["To"]
+"À"
+
+["To:"]
+"À :"
+
+["Trailing Mail Count"]
+"Nombre de courriers de fin"
+
+["Under Parent Folder:"]
+"Sous le dossier parent :"
+
+["Undo the last action\nUndo"]
+"Annuler la dernière action\nAnnuler"
+
+["Unique Id"]
+"Identifiant unique"
+
+["User Account Name  @"]
+"Nom du compte utilisateur @"
+
+["User Defined Code Page Id:"]
+"ID de page de code défini par l'utilisateur :"
+
+["User Defined Script"]
+"Script défini par l'utilisateur"
+
+["User Guide"]
+"Guide de l'utilisateur"
+
+["User Selected Mails"]
+"Courriers sélectionnés par l'utilisateur"
+
+["User Text:"]
+"Texte utilisateur :"
+
+["UTF8"]
+"UTF8"
+
+["V"]
+"V"
+
+["Valid template format keywords that will be replaced by values from mail. UNIQUE_ID is generated by the mbox viewer to eliminate name clashes."]
+"Mots-clés de format de modèle valides qui seront remplacés par des valeurs provenant du courrier. UNIQUE_ID est généré par le visualiseur mbox pour éliminer les conflits de noms."
+
+["Validate files as mbox files"]
+"Valider les fichiers en tant que fichiers mbox"
+
+["View Code Page Ids"]
+"Afficher les identifiants de page de code"
+
+["View EML"]
+"Afficher l'EML"
+
+["View Raw Message Header"]
+"Afficher l'en-tête du message brut"
+
+["View Raw Message Headers"]
+"Afficher les en-têtes des messages bruts"
+
+["Wanted Max File Name Length"]
+"Longueur maximale du nom de fichier souhaité"
+
+["X"]
+"X"
+
+["Yahoo"]
+"Yahoo"
+
+["year/month/day"]
+"année/mois/jour"
+
+["yes"]
+"oui"
+
+["yyyy/mm/dd"]
+"aaaa/mm/jj"
+
+["Z"]
+"Z"
+
+["ZOOM"]
+"ZOOM"
+
+["|S&olid"]
+"|S&olid"
+

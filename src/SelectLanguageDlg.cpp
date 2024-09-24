@@ -124,7 +124,10 @@ void SelectLanguageDlg::LoadLanguages()
 			FileUtils::CPathStripPath((LPCWSTR)str, FolderName);
 			TRACE(L"%s\n", (LPCWSTR)str);
 
-			m_listBox.AddString(FolderName);
+			if (FolderName.CompareNoCase(L"english") != 0)
+			{
+				m_listBox.AddString(FolderName);
+			}
 		}
 	}
 	finder.Close();

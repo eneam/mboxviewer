@@ -1,10 +1,10 @@
 
 Three versions of mboxview executable and associated pdb file are included into the release package:
 
-	mbox-viewer.exe-v1.0.3.44/mboxview.exe
-	mbox-viewer.exe-v1.0.3.44/mboxview64.exe
-	mbox-viewer.exe-v1.0.3.44/ReleasePlusStackTrace/mboxview.exe
-	mbox-viewer.exe-v1.0.3.44/ReleasePlusStackTrace/mboxview.pdb
+	mbox-viewer.exe-v1.0.3.45/mboxview.exe
+	mbox-viewer.exe-v1.0.3.45/mboxview64.exe
+	mbox-viewer.exe-v1.0.3.45/ReleasePlusStackTrace/mboxview.exe
+	mbox-viewer.exe-v1.0.3.45/ReleasePlusStackTrace/mboxview.pdb
 
 Performance of both versions of the mboxview is basicaly identical. 
 

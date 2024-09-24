@@ -5997,6 +5997,14 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 
 	CString languageTranslationFilePath = processFolderPath + L"Language\\" + languageFolder + L"\\" + translationFileName;
 	//ResHelper::LoadLanguageMap(languageTranslationFilePath);
+
+	if (languageFolder.Compare(lastFolderName) != 0)
+	{
+		CString text;
+		text.Format(L"Please restart MBox Viewer for new language \"%s\" to take effect\n", languageFolder);
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+	}
 	int deb = 1;
 }
 
@@ -6004,6 +6012,7 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 void CMainFrame::OnLanguagetoolsCreateresourcefile()
 {
 	// TODO: Add your command handler code here
+	int deb1 = 1;
 	
 #ifdef _DEBUG
 	ResHelper::PrintResInfo();
