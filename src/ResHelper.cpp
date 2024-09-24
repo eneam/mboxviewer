@@ -1348,6 +1348,7 @@ void ResHelper::ReleaseResources()
 	ReleaseResInfoArray(resArray2);
 }
 
+// SimpleMemoryFile for relatively small files since entire file data is loaded into memory
 
 SimpleMemoryFile::SimpleMemoryFile()
 {
@@ -1395,6 +1396,9 @@ int SimpleMemoryFile::ReadString(CStringA &str)
 		else
 			p++;
 	}
+	if (pStrEnd == 0)
+		pStrEnd = p;
+
 	m_position += (int)(p - pStrBegin);
 	char* pnext = m_buffer.Data(m_position);
 
