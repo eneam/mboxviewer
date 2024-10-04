@@ -2986,6 +2986,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 			strW.Empty();
 			if (TextUtilsEx::Str2WStr(FieldText, charsetId, strW, error))
 			{
+				strW.Replace(L"&", L"&&");
 				rect.InflateRect(-4, -1);
 				int r = ::DrawTextExW(hDC, (LPWSTR)((LPCWSTR)strW), strW.GetLength(), &rect, DT_END_ELLIPSIS | DT_SINGLELINE, NULL);
 			}

@@ -224,6 +224,8 @@ BOOL PageCodeListDlg::OnInitDialog()
 	m_list.SetFocus();
 	
 	m_list.Invalidate();
+	//m_list.RedrawWindow();
+	m_list.SetRedraw();
 
 	UINT_PTR m_nIDEvent = 1;
 	UINT m_nElapse = 20;

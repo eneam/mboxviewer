@@ -908,6 +908,59 @@ int ResHelper::CreateLanguageFile()
 
 	CString languageFilePath = resourceFilePath + L"lang-german.txt";
 
+	CString fileUTF8 = resourceFilePath + L"sorted_resource-UTF8.txt";
+
+	BOOL isUTF8 = IsFileUTF8(fileUTF8);
+
+	fileUTF8 = resourceFilePath + L"german-UTF8.txt";
+
+	BOOL isUTF8_2 = IsFileUTF8(fileUTF8);
+
+	int bom = GetFileBOM(resFile1);
+	if (bom == BOM_NONE)
+		int deb = 1;
+	else if (bom == BOM_UTF_8)
+		int deb = 1;
+	else if (bom == BOM_UTF_16LE)
+		int deb = 1;
+	else if (bom == BOM_UTF_16BE)
+		int deb = 1;
+	else
+		_ASSERTE(bom >= 0 && bom <= BOM_UTF_16BE);
+
+	int bom2 = GetFileBOM(resFile2);
+	if (bom2 == BOM_NONE)
+		int deb = 1;
+	else if (bom2 == BOM_UTF_8)
+		int deb = 1;
+	else if (bom2 == BOM_UTF_16LE)
+		int deb = 1;
+	else if (bom2 == BOM_UTF_16BE)
+		int deb = 1;
+	else
+		_ASSERTE(bom2 >= 0 && bom2 <= BOM_UTF_16BE);
+
+	// Should I first convert files to UNICODE in memory first ?? to simplify
+	// and work with SimpleMemoryFile
+	int ret = -1;
+	if ((bom == BOM_NONE) && (bom2 == BOM_NONE))
+	{
+		ret = ResHelper::CreateLanguageFileFromANSIEncodedFiles(resFile1, resFile2, languageFilePath);
+	}
+	else if ((bom == BOM_UTF_8) && (bom2 == BOM_UTF_8))
+	{
+		ret = ResHelper::CreateLanguageFileFromUTF8EncodedFiles(resFile1, resFile2, languageFilePath);
+	}
+	else if ((bom == BOM_UTF_16LE) && (bom2 == BOM_UTF_16LE))
+	{
+		ret = ResHelper::CreateLanguageFileFromUTF16LEEncodedFiles(resFile1, resFile2, languageFilePath);
+	}
+	return ret;
+
+}
+
+int ResHelper::CreateLanguageFileFromANSIEncodedFiles(CString &resFile1, CString &resFile2, CString & languageFilePath)
+{
 	resArray1.RemoveAll();
 	resArray2.RemoveAll();
 	ResHelper::LoadResInfoFromFile(resFile1, resArray1);
@@ -972,6 +1025,77 @@ int ResHelper::CreateLanguageFile()
 	FileUtils::FileClose(hResourceFile);
 	return 1;
 }
+
+int ResHelper::CreateLanguageFileFromUTF8EncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath)
+{
+	return -1;
+}
+
+
+int ResHelper::CreateLanguageFileFromUTF16LEEncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath)
+{
+	resArray1.RemoveAll();
+	resArray2.RemoveAll();
+
+	ResHelper::LoadResInfoFromFile(resFile1, resArray1);
+	ResHelper::LoadResInfoFromFile(resFile2, resArray2);
+
+	int cnt = (INT)resArray1.GetCount();
+	_ASSERTE(resArray1.GetCount() == resArray2.GetCount());
+
+	CString resInfoText1;
+	CString resInfoText2;
+
+	CStringA resInfoText1A;
+	CStringA resInfoText2A;
+
+	DWORD nNumberOfBytesToWrite = 0;
+	DWORD nNumberOfBytesWritten = 0;
+
+	int retval;
+	CString errorText;
+
+	hResourceFile = FileUtils::FileOpen(languageFilePath, errorText, TRUE);
+	if (hResourceFile == INVALID_HANDLE_VALUE)
+	{
+		return -1;
+	}
+
+	BYTE BOMF16LE[2] = { 0xFF, 0xFE };
+
+	nNumberOfBytesToWrite = 2;
+	nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(hResourceFile, BOMF16LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	int i;
+	for (i = 0; i < cnt; i++)
+	{
+		BOOL unicodeFile = FALSE;
+		if (unicodeFile == FALSE)
+		{
+			ResourceInfo* rinfo1 = resArray1[i];
+			ResourceInfo* rinfo2 = resArray2[i];
+
+			resInfoText1.Format(L"[%s]\n", rinfo1->m_label);
+			resInfoText2.Format(L"%s\n\n", rinfo2->m_label);
+
+			if (hResourceFile != INVALID_HANDLE_VALUE)
+			{
+				nNumberOfBytesToWrite = resInfoText1.GetLength()*2;
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCWSTR)resInfoText1, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+				nNumberOfBytesToWrite = resInfoText2.GetLength()*2;
+				nNumberOfBytesWritten = 0;
+				retval = FileUtils::Write2File(hResourceFile, (LPCWSTR)resInfoText2, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+				int deb = 1;
+			}
+		}
+	}
+	FileUtils::FileClose(hResourceFile);
+	return 1;
+}
+
 
 int ResHelper::ResortLanguageFile()
 {
@@ -1075,9 +1199,26 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 	CString str;
 
 	CStdioFile file;
+
+	UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareDenyNone;
+	int bom = GetFileBOM(resFile);
+	if (bom == BOM_NONE)
+		int deb = 1;
+	else if (bom == BOM_UTF_8)
+		int deb = 1;
+	else if (bom == BOM_UTF_16LE)
+		int deb = 1;
+	else if (bom == BOM_UTF_16BE)
+		int deb = 1;
+	else
+		_ASSERTE(bom >= 0 && bom <= BOM_UTF_16BE);
+
+	if (bom == BOM_UTF_16LE)
+		nOpenFlags |= CFile::typeUnicode;
+
+
 	CFileException exList;
-	//if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
-	if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone, &exList))
+	if (!file.Open(resFile, nOpenFlags, &exList))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
@@ -1099,7 +1240,6 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 	{
 		str = strLine.TrimRight(L"\r\n");
 
-		//ResourceInfo* rinfo = new ResourceInfo(strLine, controlName);
 		ResourceInfo* rinfo = new ResourceInfo(str, controlName);
 		resArray.Add(rinfo);
 
@@ -1119,6 +1259,24 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 	CString strW;
 
 	CString languageFile = languageTranslationFilePath;
+
+	int bom = GetFileBOM(languageFile);
+	if (bom == BOM_NONE)
+		int deb = 1;
+	else if (bom == BOM_UTF_8)
+		int deb = 1;
+	else if (bom == BOM_UTF_16LE)
+		int deb = 1;
+	else if (bom == BOM_UTF_16BE)
+		int deb = 1;
+	else
+		_ASSERTE(bom >= 0 && bom <= BOM_UTF_16BE);
+
+	if (bom == BOM_UTF_16LE)
+	{
+		LoadLanguageMapFromFileF16LE(languageFile);
+		return;
+	}
 
 	SimpleMemoryFile memFile;
 	BOOL retOpen = memFile.Open(languageFile);
@@ -1188,6 +1346,85 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 				int slen = strLine.GetLength();
 				controlName = strLine.Mid(1, slen - 2);
 				//controlName = strLine.Trim(L"[]\"\r\n");
+				ResourceInfo* rinfo = new ResourceInfo(key, controlName);
+				g_LanguageMap.insert(hsum, rinfo);
+			}
+			else
+				int deb = 1;
+		}
+	}
+	int deb = 1;
+}
+
+
+void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath)
+{
+	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
+	if (g_UpdateMenuItemsInfo == FALSE)  // Do I need separate control var ?
+		return;
+
+	CString controlName;
+	CString strLine;
+	CString str;
+	CString strW;
+
+	CString languageFile = languageTranslationFilePath;
+
+	UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareDenyNone;
+	int bom = GetFileBOM(languageFile);
+	if (bom == BOM_NONE)
+		int deb = 1;
+	else if (bom == BOM_UTF_8)
+		int deb = 1;
+	else if (bom == BOM_UTF_16LE)
+		int deb = 1;
+	else if (bom == BOM_UTF_16BE)
+		int deb = 1;
+	else
+		_ASSERTE(bom >= 0 && bom <= BOM_UTF_16BE);
+
+	if (bom == BOM_UTF_16LE)
+		nOpenFlags |= CFile::typeUnicode;
+
+	CStdioFile file;
+	CFileException exList;
+	//if (!file.Open(languageFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
+	if (!file.Open(languageFile, nOpenFlags, &exList))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = L"Could not open list file \"" + languageFile;
+		txt += L"\" file.\n";
+		txt += exErrorStr;
+
+		TRACE(L"ResHelper: %s\n", txt);
+		//errorText = txt;
+
+		CFileStatus rStatus;
+		BOOL ret = file.GetStatus(rStatus);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return;
+	}
+	while (file.ReadString(strLine))
+	{
+		if (strLine[0] == L'[')
+		{
+			int slen = strLine.GetLength();
+			CString key = strLine.Mid(2, slen - 4);
+
+			hashsum_t hsum = g_LanguageMap.hash(&key);
+
+			ResourceInfo* rinfo = g_LanguageMap.find(&key, hsum);
+			if (rinfo == 0)
+			{
+				if (!file.ReadString(strLine))
+					break;
+
+				int slen = strLine.GetLength();
+				controlName = strLine.Mid(1, slen - 2);
+
 				ResourceInfo* rinfo = new ResourceInfo(key, controlName);
 				g_LanguageMap.insert(hsum, rinfo);
 			}
@@ -1348,6 +1585,77 @@ void ResHelper::ReleaseResources()
 	ReleaseResInfoArray(resArray2);
 }
 
+int ResHelper::GetFileBOM(LPCWSTR lpszFileName)
+{
+	CStdioFile File;
+	if (!File.Open(lpszFileName, CFile::modeRead | CFile::typeBinary))
+		return -1;
+
+	BYTE bom[3] = { 0, 0 , 0};
+	if (2 == File.Read(&bom, 2))
+	{
+		if ((bom[0] == 0xFF) && (bom[1] == 0xFE))
+		{
+			File.Close();
+			return BOM_UTF_16LE;
+		}
+		else if ((bom[0] == 0xFE) && (bom[1] == 0xFF))
+		{
+			File.Close();
+			return BOM_UTF_16BE;
+		}
+	}
+	else
+		return BOM_NONE;
+
+	File.Seek(CFile::begin, 0);
+	if (3 == File.Read(&bom, 3))
+	{
+		if ((bom[0] == 0xEF) && (bom[1] == 0xBB) && (bom[2] == 0xBF))
+		{
+			File.Close();
+			return BOM_UTF_8;
+		}
+	}
+
+	File.Close();
+	return BOM_NONE;
+}
+
+
+int ResHelper::GetCodePageFromFile(LPCWSTR filePath)
+{
+	CStdioFile file;
+	CFileException exList;
+	UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareDenyNone;
+	if (!file.Open(filePath, nOpenFlags, &exList))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = L"Could not open list file \"" + *filePath;
+		txt += L"\" file.\n";
+		txt += exErrorStr;
+
+		TRACE(L"ResHelper: %s\n", txt);
+		//errorText = txt;
+
+		CFileStatus rStatus;
+		BOOL ret = file.GetStatus(rStatus);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return FALSE;
+	}
+		return -1;
+
+
+	file.Close();
+	return BOM_NONE;
+}
+
+
+
+
 // SimpleMemoryFile for relatively small files since entire file data is loaded into memory
 
 SimpleMemoryFile::SimpleMemoryFile()
@@ -1413,5 +1721,168 @@ int SimpleMemoryFile::ReadString(CStringA &str)
 int SimpleMemoryFile::ReadString(CString& str)
 {
 	return 0;
+}
+
+#include <stdint.h>
+
+// copy from https://github.com/vstinner/unicode_book
+// Updated by MBox Viewer team
+// TODO investigate reliability of algorithm
+BOOL ResHelper::IsTextUTF8(const char *data, size_t size, BOOL &isASCII)
+{
+    const unsigned char *str = (unsigned char*)data;
+    unsigned int code_length, i;
+    uint32_t ch;
+    const unsigned char *end = str + size;
+
+	isASCII = TRUE;
+	while (str != end)
+	{
+		if (*str <= 0x7F) {
+			/* 1 byte character (ASCII): U+0000..U+007F */
+			str += 1;
+			continue;
+		}
+		else
+		{
+			isASCII = FALSE;
+			break;
+		}
+
+	}
+	if (str == end)
+	{
+		_ASSERT(isASCII == TRUE);
+		return TRUE;
+	}
+
+	while (str != end)
+	{
+		if (*str <= 0x7F) {
+			/* 1 byte character (ASCII): U+0000..U+007F */
+			str += 1;
+			continue;
+		}
+
+        if (0xC2 <= *str && *str <= 0xDF)
+            code_length = 2;
+        else if (0xE0 <= *str && *str <= 0xEF)
+            code_length = 3;
+        else if (0xF0 <= *str && *str <= 0xF4)
+            code_length = 4;
+        else {
+            /* invalid first byte of a multibyte character */
+            return 0;
+        }
+
+        if (str + (code_length -1) >= end) {
+            /* truncated string or invalid byte sequence */
+            return 0;
+        }
+
+        /* Check continuation bytes: bit 7 should be set, bit 6 should unset */
+        for (i=1; i < code_length; i++) {
+            if ((str[i] & 0xc0) != 0x80)
+                return 0;
+        }
+
+        if (code_length == 2) {
+            ch = ((str[0] & 0x1f) << 6) + (str[1] & 0x3f);
+            /* 2 bytes sequence: U+0080..U+07FF */
+            if ((ch < 0x0080) || (0x07FF < ch))
+                return 0;
+        } else if (code_length == 3) {
+            ch = ((str[0] & 0x0f) << 12) + ((str[1] & 0x3f) << 6) +
+                  (str[2] & 0x3f);
+            /* 3 bytes sequence: U+0800..U+FFFF */
+            if ((ch < 0x0800) || (0xFFFF < ch))
+                return 0;
+            /* 3 bytes sequence: U+0800..U+FFFF... excluding U+D800..U+DFFF:
+             * surrogates are invalid in UTF-8 */
+            if ((0xD800 <= ch) && (ch <= 0xDFFF))
+                return 0;
+        } else if (code_length == 4) {
+            ch = ((str[0] & 0x7) << 18) + ((str[1] & 0x3f) << 12) +
+                 ((str[2] & 0x3f) << 6) + (str[3] & 0x3f);
+            /* 4 bytes sequence: U+10000..U+10FFFF */
+            if ((ch < 0x10000) || (0x10FFFF < ch))
+                return 0;
+        }
+        str += code_length;
+    }
+	return 1;
+}
+
+
+BOOL ResHelper::IsFileUTF8(LPCWSTR filePath)
+{
+	CStdioFile file;
+	CFileException exList;
+	//if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
+	if (!file.Open(filePath, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary, &exList))
+	{
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+
+		CString txt = L"Could not open list file \"" + *filePath;
+		txt += L"\" file.\n";
+		txt += exErrorStr;
+
+		TRACE(L"ResHelper: %s\n", txt);
+		//errorText = txt;
+
+		CFileStatus rStatus;
+		BOOL ret = file.GetStatus(rStatus);
+
+		HWND h = NULL; // we don't have any window yet
+		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return FALSE;
+	}
+	char buff[100000];
+	char* pbuff = &buff[0];
+	int retlen = 0;
+	BOOL isASCII = TRUE;
+	BOOL isAsciiText = TRUE;
+	// Read all into memory
+	ULONGLONG dwLength = file.GetLength();
+	// TODO: enhnace to process  less than full file size
+	while ((retlen = file.Read(buff, (UINT)dwLength)) > 0)
+	{
+		if (IsTextUTF8(buff, retlen, isAsciiText))
+		{
+			isASCII = isAsciiText;
+			return TRUE;
+		}
+
+		int deb = 1;
+	}
+	return FALSE;
+}
+
+// codeproject Simple Character Encoding Detection
+// // https://www.codeproject.com/tips/672470/simple-character-encoding-detection
+// requires to add null characters, that is unusual
+// #define NT "\0\0\0" 
+// char* exampleString = "This is UTF-8" NT;
+// Output:
+// 0 = UTF - 8
+// 1 = UTF - 16BE
+// 2 = UTF - 16LE
+// 3 = UTF - 32BE
+// 4 = UTF - 32LE
+
+int ResHelper::String_GetEncoding(char* string, int slen)
+{
+	unsigned c, i = 0, flags = 0;
+	while (string[i] | string[i + 1] | string[i + 2] | string[i + 3])
+		flags = (c = string[i++]) ? flags | ((!(flags % 4) &&
+			c > 0x7F) << 3) : flags | 1 | (!(i & 1) << 1)
+		| ((string[i] == 0) << 2);
+	return (flags & 1) + ((flags & 2) != 0) +
+		((flags & 4) != 0) + ((flags & 8) != 0);
+}
+
+int ResHelper::FindCodePageFromFile(LPCWSTR lpszFileName)
+{
+	return 1;
 }
 

@@ -293,8 +293,8 @@ void TextUtilsEx::EncodeAsHtmlText(const char *in, int inLength, SimpleString *o
 
 BOOL TextUtilsEx::WStr2Ansi(CString &strW, CStringA &strA, DWORD &error)
 {
-	//UINT outCodePage = CP_ACP;
-	UINT outCodePage = 1252;
+	//UINT outCodePage = 1252;
+	UINT outCodePage = CP_ACP;
 	BOOL ret = WStr2CodePage((wchar_t*)((LPCWSTR)strW), strW.GetLength(), outCodePage, &strA, error);
 	return ret;
 }
@@ -1197,8 +1197,8 @@ BOOL TextUtilsEx::Id2LongInfo(UINT codePage, CString& codePageInfo)
 
 	DWORD error = 0;
 	DWORD dwFlags = 0;
-	UINT tableCodePage = 1252; // ANSI Latin 1; Western European (Windows)
-	//UINT tableCodePage = 20127; // US_ASCII
+	//UINT tableCodePage = 1252; // ANSI Latin 1; Western European (Windows)
+	UINT tableCodePage = 20127; // US_ASCII
 	BOOL retA2W = TextUtilsEx::CodePage2WStr(&codePageInfoA, tableCodePage, &codePageInfo, error, dwFlags);
 
 	return retA2W;

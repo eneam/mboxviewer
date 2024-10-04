@@ -101,6 +101,14 @@ using ResInfoArrayType = CArray<ResourceInfo*, ResourceInfo*>;
 class ResHelper
 {
 public:
+
+#define BOM_NONE 0
+#define BOM_UTF_8 1
+#define BOM_UTF_16LE 2    // Windows ltlle-endian
+#define BOM_UTF_16BE 3    // Unix big-endian
+#define BOM_UTF_32LE 4
+#define BOM_UTF_32BE 5
+
 	static BOOL g_LoadMenuItemsInfo;
 	static BOOL g_UpdateMenuItemsInfo;
 
@@ -112,6 +120,15 @@ public:
 	static wchar_t className[CLASS_NAME_LENGTH+1];
 	//
 	static CString wndText;
+
+	static int GetFileBOM(LPCWSTR lpszFileName);  // byte order mark
+	static int GetCodePageFromFile(LPCWSTR lpszFileName);  // find PAGE_CODE NNN  in the file until line with first [ character
+
+	// Guessing functions
+	static BOOL IsTextUTF8(const char* data, size_t size, BOOL &isASCII);
+	static BOOL IsFileUTF8(LPCWSTR lpszFileName);
+	int String_GetEncoding(char* string, int slen);
+	int FindCodePageFromFile(LPCWSTR lpszFileName);
 
 	static void ReleaseResources();
 	static void ReleaseResInfoArray(ResInfoArrayType& resInfoArray);
@@ -130,6 +147,11 @@ public:
 
 	// Create language file by merigin info from .rc file and manually discovered info
 	static int CreateLanguageFile();
+
+	static int CreateLanguageFileFromANSIEncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
+	static int CreateLanguageFileFromUTF8EncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
+	static int CreateLanguageFileFromUTF16LEEncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
+
 	static int ResortLanguageFile();
 	static void LoadResInfoFromFile(CString& resFile, ResInfoArrayType& resArray);
 
@@ -165,6 +187,8 @@ public:
 	static void UpdateToolBarItemsInfo(CToolBar* tbar);
 
 	static void LoadLanguageMap(CString & languageFolder);
+	static void LoadLanguageMapFromFileF16LE(CString& languageFolder);
+	
 	static void DisableLanguageLoading();
 	static void EnableLanguageLoading();
 

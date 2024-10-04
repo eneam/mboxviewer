@@ -5707,6 +5707,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	UINT codePage = GetACP();
 	CString codePageInfo;
+	CString codePageOEMInfo;
 
 	DWORD dwFlags = 0;
 	CPINFOEXA CPInfoEx;
@@ -5715,14 +5716,37 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	BOOL ret = TextUtilsEx::Id2LongInfo(codePage, codePageInfo);
 
-	info.Format(L"Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
+	UINT codePageOEM = GetOEMCP();
+
+	retval = GetCPInfoExA(codePageOEM, dwFlags, &CPInfoEx);
+
+	ret = TextUtilsEx::Id2LongInfo(codePageOEM, codePageOEMInfo);
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+
+
+	info.Format(L"Windows Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
+	aboutSystem.Append(info);
+
+	info.Format(L"\nOEM Code Page:\n%d \"%s\"\n", codePageOEM, codePageOEMInfo);
 	aboutSystem.Append(info);
 
 	info.Format(L"\nmboxview Process  Path:\n\"%s\"\n", m_processPath);
 	aboutSystem.Append(info);
 
+	info.Format(L"\nmboxview Data Folder:\n\"%s\"\n", dataFolder);
+	aboutSystem.Append(info);
+
 	info.Format(L"\nmboxview Startup  Directory:\n\"%s\"\n", m_startupPath);
 	aboutSystem.Append(info);
+
+	codePage = 20949;
+	retval = GetCPInfoExA(codePage, dwFlags, &CPInfoEx);
+
+	codePage = 1147;
+	retval = GetCPInfoExA(codePage, dwFlags, &CPInfoEx);
 
 	DWORD BUFSIZE = 1024;
 	wchar_t Buffer[1024];

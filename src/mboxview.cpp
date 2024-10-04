@@ -385,6 +385,36 @@ void CreateAnsiToUTF8TableStr(CString& tbl, int firstPos, int lastPos)
 		tbl.Append(L"\n");
 	}
 }
+void CreateCodePageToUTF16TableStr(UINT inCodePage, CString& tbl, int firstPos, int lastPos)
+{
+	CStringA astr;
+	CStringA afmt;
+	int i;
+
+	for (i = firstPos; i <= lastPos; i++)
+	{
+		afmt.Format("%c", i);
+		astr.Append(afmt);
+	}
+
+	CString wstr;
+	CString wfmt;
+	DWORD error;
+	DWORD dwFlags = 0;
+
+	CString a2wstr;
+	CString out;
+
+	BOOL ret = TextUtilsEx::CodePage2WStr(&astr, inCodePage, &wstr, error, dwFlags);
+	for (i = firstPos; i <= lastPos; i++)
+	{
+		a2wstr = CString(astr[i-firstPos]);
+		wfmt.Format(L"%c %02x  %lc %04x\n", i, i, wstr[i - firstPos], wstr[i-firstPos]);
+		tbl.Append(wfmt);
+	}
+	tbl.Append(wstr);
+	int deb = 1;
+}
 
 class ReqFromToInfo
 {
@@ -425,6 +455,19 @@ CmboxviewApp::CmboxviewApp()
 	// Place all significant initialization in InitInstance
 
 #if _DEBUG
+
+#if 0
+	UINT acpCodePage = GetACP();
+	UINT inCodePage = 1252;
+	//inCodePage = 850;
+	//inCodePage = 1253;
+	CString tbl;
+	int firstPos = 31;
+	int lastPos = 255;
+	CreateCodePageToUTF16TableStr(inCodePage, tbl, firstPos, lastPos);
+	TRACE(L"%s\n", tbl);
+	int deb = 1;
+#endif
 
 #if 0
 	// Doesn't work for my case
