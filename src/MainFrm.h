@@ -44,7 +44,10 @@
 #include "ColorStyleConfigDlg.h"
 #include "HtmlPdfHdrConfigDlg.h"
 #include "SMTPMailServerConfigDlg.h"
+#include "MyCDialogBar.h"
+#include "MyCToolBar.h"
 
+class ConfigTree;
 
 class MBoxViewerDB
 {
@@ -301,9 +304,9 @@ public:
 
 protected:  // control bar embedded members
 	CStatusBar	m_wndStatusBar;
-	CToolBar	m_wndToolBar;
+	MyCToolBar	m_wndToolBar;
 	CReBar      m_wndReBar;
-	CDialogBar    m_wndDlgBar;
+	MyCDialogBar    m_wndDlgBar;
 	CChildView    m_wndView;
 	//CComboBox m_wndSearchCombo;
 	BOOL m_bSelectMailFileDone;
@@ -329,6 +332,8 @@ protected:  // control bar embedded members
 	HICON m_UnHideIcon;
 
 public:
+	static ConfigTree* m_configTree;
+
 	// From MergeFolderAndSubfolders
 	int m_mergeRootFolderStyle;
 	int m_labelAssignmentStyle;  // 0 == no labels; 1 == mbox file names as labels; 2 == folder names as labels
@@ -446,6 +451,7 @@ public:
 	afx_msg void OnLanguagetoolsCreateresourcefile();
 	afx_msg void OnLanguagetoolsCreatetranslationfile();
 	afx_msg void OnLanguagetoolsResorttranslationfile();
+	afx_msg void OnLanguagetoolsResourcefileproperty();
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -31,6 +31,10 @@
 #include "stdafx.h"
 #include "Profile.h"
 #include "FileUtils.h"
+#include "SimpleTree.h"
+#include "MainFrm.h"
+#include "mboxview.h"
+
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -38,6 +42,103 @@
 #define new DEBUG_NEW
 #endif
 
+
+BOOL CProfile::m_registry = TRUE;
+CString CProfile::m_configFilePath;
+
+
+BOOL CProfile::DetermineConfigurationType()
+{
+	CString configFilePath;
+
+	CString configFileName = L"MBoxViewer.config";
+
+	CString processNamePath;
+	CmboxviewApp::GetProcessPath(processNamePath);
+
+	CString processFolderPath;
+	FileUtils::GetFolderPath(processNamePath, processFolderPath);
+
+	CString configFolderPath = processFolderPath + L"Config\\";
+	if (FileUtils::PathDirExists(configFolderPath))
+	{
+		configFilePath = configFolderPath + configFileName;
+		if (!FileUtils::PathFileExist(configFilePath))
+			configFilePath.Empty();
+		int deb = 1;
+	}
+	if (configFilePath.IsEmpty())
+	{
+		CString localAppFolder = FileUtils::GetMboxviewLocalAppPath();
+		configFolderPath = localAppFolder + L"UMBoxViewer\\Config";
+		if (FileUtils::PathDirExists(configFolderPath))
+		{
+			configFilePath = configFolderPath + configFileName;
+			if (!FileUtils::PathFileExist(configFilePath))
+				configFilePath.Empty();
+			int deb = 1;
+		}
+	}
+	if (configFilePath.IsEmpty())
+	{
+		CProfile::m_registry = TRUE;
+		CProfile::m_configFilePath.Empty();
+		return FALSE;
+	}
+	else
+	{
+		CProfile::m_registry = FALSE;
+		CProfile::m_configFilePath = configFilePath;
+		return TRUE;
+	}
+}
+
+
+ConfigTree* CProfile::GetConfigTree()
+{
+	if (CMainFrame::m_configTree == 0)
+		CMainFrame::m_configTree = new ConfigTree(CString(L"ROOT"));
+
+	_ASSERTE(CMainFrame::m_configTree != 0);
+
+	return CMainFrame::m_configTree;
+}
+
+BOOL CProfile::GetFileConfigSection(LPCWSTR registrySection, CString& fileSection)
+{
+	fileSection.Empty();
+	CString registrySectionStr = registrySection;
+	int pos = registrySectionStr.Find(L"UMBoxViewer");
+
+	if (pos >= 0)
+	{
+		fileSection = registrySectionStr.Mid(pos);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+BOOL CProfile::IsRegistryConfig()
+{
+	if (m_registry)
+		return TRUE;
+	else
+	{
+		return FALSE;
+	}
+}
+
+// TODO: Define dedicated functions for non UMBoxViewer configurations. Only few needed
+BOOL CProfile::IsRegistryConfig(LPCWSTR registrySection, CString& fileSection)
+{
+	CString configSection;
+	BOOL isTreeSection = GetFileConfigSection(registrySection, fileSection);
+	if (m_registry || !isTreeSection)
+		return TRUE;
+	else
+		return FALSE;
+}
 
 // Fix return from function to avoid multiple RegCloseKey(myKey);  // FIXMEFIXME
 
@@ -47,7 +148,24 @@
 
 // Ambigious. May return empty string due non-existent key or empty key value
 // Use BOOL CProfile::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str) instead
+
 CString CProfile::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
+{
+	CString ret;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileString_registry(hKey, section, key);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileString(hKey, section, key);
+	}
+	return ret;
+}
+
+CString CProfile::_GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
 	DWORD	size = 4096;
 	BYTE	data[4096];
@@ -84,6 +202,22 @@ CString CProfile::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
 
 int CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
+	int ret;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileInt_registry(hKey, section, key);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileInt(hKey, section, key);
+	}
+	return ret;
+}
+
+int CProfile::_GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key)
+{
 	DWORD	size = sizeof(DWORD);
 	HKEY	myKey;
 	DWORD	result = 0;
@@ -110,6 +244,22 @@ int CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key)
 }
 
 BOOL CProfile::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileString_registry(hKey, section, key, str);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileString(hKey, section, key, str);
+	}
+	return ret;
+}
+
+BOOL CProfile::_GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str)
 {
 	DWORD	size = 4096;
 	BYTE	data[4096];
@@ -152,6 +302,22 @@ BOOL CProfile::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CStrin
 
 BOOL CProfile::_GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData)
 {
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileBinary_registry(hKey, section, key, lpData, cbData);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileBinary(hKey, section, key, lpData, cbData);
+	}
+	return ret;
+}
+
+BOOL CProfile::_GetProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData)
+{
 	HKEY	myKey;
 
 	LSTATUS res;
@@ -182,6 +348,22 @@ BOOL CProfile::_GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* 
 }
 
 BOOL CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval)
+{
+	BOOL ret =  TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileInt_registry(hKey, section, key, intval);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileInt(hKey, section, key, intval);
+	}
+	return ret;
+}
+
+BOOL CProfile::_GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval)
 {
 	DWORD	size = sizeof(DWORD);
 	HKEY	myKey;
@@ -223,18 +405,52 @@ BOOL CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& in
 	return FALSE;
 }
 
+
 BOOL CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileInt_registry(hKey, section, key, intval);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileInt(hKey, section, key, intval);
+	}
+	return ret;
+}
+
+BOOL CProfile::_GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval)
 {
 	DWORD dwVal = 0;
 	if (key == 0)
 		return FALSE;
-	BOOL ret = _GetProfileInt(hKey, section, key, dwVal);
+	BOOL ret = CProfile::_GetProfileInt(hKey, section, key, dwVal);
 	if (ret)
 		intval = dwVal;
 	return ret;
 }
 
 BOOL CProfile::_DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_DeleteProfileString_registry(hKey, section, key);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_DeleteProfileString(hKey, section, key);
+	}
+
+	return ret;
+}
+
+BOOL CProfile::_DeleteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
 	HKEY	myKey;
 	LSTATUS res;
@@ -263,6 +479,22 @@ BOOL CProfile::_DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
 }
 
 BOOL CProfile::_WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_WriteProfileString_registry(hKey, section, key, value);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_WriteProfileString(hKey, section, key, value);
+	}
+	return ret;
+}
+
+BOOL CProfile::_WriteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value)
 {
 	DWORD	dwDisposition;
 	HKEY	myKey;
@@ -301,6 +533,22 @@ BOOL CProfile::_WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CStr
 
 BOOL CProfile::_WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData)
 {
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_WriteProfileBinary_registry(hKey, section, key, lpData, cbData);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_WriteProfileBinary(hKey, section, key, lpData, cbData);
+	}
+	return ret;
+}
+
+BOOL CProfile::_WriteProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData)
+{
 	DWORD	dwDisposition;
 	HKEY	myKey;
 
@@ -336,6 +584,22 @@ BOOL CProfile::_WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, cons
 }
 
 BOOL CProfile::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_WriteProfileInt_registry(hKey, section, key, value);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_WriteProfileInt(hKey, section, key, value);
+	}
+	return ret;
+}
+
+BOOL CProfile::_WriteProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value)
 {
 	DWORD	dwDisposition;
 	HKEY	myKey;
@@ -374,7 +638,23 @@ BOOL CProfile::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD v
 // To delete a key and all its subkeys, you need to enumerate the subkeys and delete them individually.
 // To delete keys recursively, use the RegDeleteTree or SHDeleteKey function.
 // 
+
 BOOL CProfile::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_DeleteValue_registry(hKey, section, key);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_DeleteValue(hKey, section, key);
+	}
+	return ret;
+}
+BOOL CProfile::_DeleteValue_registry(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
 	HKEY	myKey;
 	if (!key)
@@ -406,6 +686,22 @@ BOOL CProfile::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 }
 
 BOOL CProfile::_DeleteKey(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_DeleteKey_registry(hKey, section, key, recursive);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_DeleteKey(hKey, section, key, recursive);
+	}
+	return ret;
+}
+
+BOOL CProfile::_DeleteKey_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive)
 {
 	HKEY	myKey;
 	if (!key)
@@ -539,7 +835,7 @@ LSTATUS CProfile::EnumerateAllSubKeys(HKEY hKey, LPCWSTR section)
 	return retCode;
 }
 
-// Enumerate the key data values. Not recursive
+// Enumerate the key data values in Registry. Not recursive
 LSTATUS CProfile::EnumerateAllSubKeyValues(HKEY hKey, LPCWSTR section)
 {
 	wchar_t  achValue[MAX_KEY_VALUE_LENGTH];
@@ -819,6 +1115,8 @@ LSTATUS CProfile::CopyKeyValueList(HKEY hKey, LPCWSTR fromSection, LPCWSTR toSec
 	return 0;
 }
 
+// Check if Key exists in Registry
+
 BOOL CProfile::CheckIfKeyExists(HKEY hKey, LPCWSTR section)
 {
 	HKEY	myKey = 0;
@@ -836,3 +1134,4 @@ BOOL CProfile::CheckIfKeyExists(HKEY hKey, LPCWSTR section)
 		return FALSE;
 	}
 }
+

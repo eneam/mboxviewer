@@ -42,6 +42,7 @@
 #include "MimeParser.h"
 #include "TextUtilities.h"
 #include "ResHelper.h"
+#include "SimpleTree.h"
 
 
 #ifdef _DEBUG
@@ -960,6 +961,33 @@ void NTreeView::LoadFolders()
 
 BOOL NTreeView::ImportLegacyRegistryData()
 {
+	if (CProfile::IsRegistryConfig())
+	{
+		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
+		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+		if (retLegacyExists == TRUE)
+		{
+			NTreeView::ImportLegacyMboxviewRegistryData();
+			int deb = 1;
+		}
+	}
+	else
+	{
+		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\UMBoxViewer";
+		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+		if (retLegacyExists == TRUE)
+		{
+			NTreeView::ImportLegacyUMBoxViewerRegistryData();
+			int deb = 1;
+		}
+	}
+
+	return TRUE;
+}
+
+
+BOOL NTreeView::ImportLegacyMboxviewRegistryData()
+{
 	LSTATUS retCode;
 	HKEY hKey = HKEY_CURRENT_USER;
 
@@ -980,7 +1008,7 @@ BOOL NTreeView::ImportLegacyRegistryData()
 	TRACE(L"ImportLegacyRegistryData: MailService SubKeys\n");
 	LSTATUS retCode2 = CProfile::CopySubKeys(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
 
-	fromSection = CString(sz_Software_mboxview_Legacy) + L"\\Window Placement";
+	fromSection = CString(sz_Software_mboxview_Legacy) + L"\\WindowPlacement";
 	toSection = CString(sz_Software_mboxview) + L"\\WindowPlacement";
 
 	TRACE(L"ImportLegacyRegistryData: Window Placement\n");
@@ -1163,6 +1191,49 @@ BOOL NTreeView::ImportLegacyRegistryData()
 	LSTATUS retCode21 = CProfile::EnumerateAllSubKeyValues(hKey, (LPCWSTR)section);
 
 	int deb = 1;
+	return TRUE;
+}
+
+BOOL NTreeView::CopyKeyAndSubkey(const wchar_t* keyPath, wchar_t* keyName)
+{
+	HKEY hKey = HKEY_CURRENT_USER;
+
+	CString fromSection = CString(keyPath) + L"\\" + keyName;
+	CString toSection = fromSection;
+
+	TRACE(L"ImportLegacyRegistryData: %s\n", keyName);
+	LSTATUS retCode1 = CProfile::CopyKey(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	TRACE(L"ImportLegacyRegistryData: %s SubKeys\n", keyName);
+	LSTATUS retCode2 = CProfile::CopySubKeys(hKey, (LPCWSTR)fromSection, (LPCWSTR)toSection);
+
+	return TRUE;
+}
+
+
+BOOL NTreeView::ImportLegacyUMBoxViewerRegistryData()
+{
+	// TODO: connsider to implement recursive registry walk
+	const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\UMBoxViewer";
+	BOOL ret = TRUE;
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\Attachments");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\General");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\LastSelection");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\MailFolders");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\MailService");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\mboxview");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\Options");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PaneColors");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PrintConfig");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PrintConfig\\HeaderFields");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacement");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementDirect");
+
+	ConfigTree* confTree = CProfile::GetConfigTree();
+
+	CString currentPath = L"F:\\Documents\\GIT1.0.3.42\\mboxviewer\\x64\\Debug\\MBoxViewer.conf";
+	//confTree->Dump2File(currentPath);
+
 	return TRUE;
 }
 
@@ -4617,6 +4688,50 @@ BOOL CRegArray::LoadFromRegistry()
 }
 
 BOOL CRegArray::LoadFromRegistry(CSArray& ar)  // FIXMEFIXME
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (CProfile::IsRegistryConfig())
+	{
+		ret = CRegArray::LoadFromRegistry_registry(ar);
+	}
+	else
+	{
+		ret = CRegArray::LoadFromConfigFile(ar);
+	}
+	return ret;
+}
+
+
+BOOL CRegArray::LoadFromConfigFile(CSArray& ar)  // FIXMEFIXME
+{
+	CString configSection;
+	CString registrySection = m_section;
+	ConfigTree::GetSection(registrySection, configSection);
+	if (configSection.IsEmpty())  // not UMBoxView
+		return FALSE;
+
+	ConfigTree* config = CProfile::GetConfigTree();
+
+	ConfigNode * node = config->ConfigTree::FindNode(configSection);
+	if ((node == 0) || !node->m_isSectionNode)
+	{
+		return 0;
+	}
+
+	int ii = 0;
+	ConfigNode * childNode;
+	INT_PTR indx;
+	for (childNode = node->m_configList.first(); childNode != 0; childNode = node->m_configList.next(childNode))
+	{
+		indx = _ttoi(childNode->m_name);
+		ar.SetAtGrow(indx, childNode->m_value);
+	}
+	return TRUE;
+}
+
+
+BOOL CRegArray::LoadFromRegistry_registry(CSArray& ar)  // FIXMEFIXME
 {
 	const int datasize = 8196;
 	DWORD	size = datasize / 2;

@@ -208,6 +208,12 @@
     <ClCompile Include="src\SelectLanguageDlg.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\MyCDialogBar.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MyCToolBar.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -427,6 +433,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\SelectLanguageDlg.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyCDialogBar.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyCToolBar.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

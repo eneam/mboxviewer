@@ -5597,6 +5597,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	AttachmentMgr attachmentDB;
 	attachmentDB.Clear();
 
+
+	bool extraHtmlHdr = false;
 	if (outbuflarge->Count() != 0)
 	{
 		// FIXME drop or enhance
@@ -5774,7 +5776,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS - 1);
 		}
 
-		if (printAttachments)
+		if (printAttachments || NListView::m_appendAttachmentPictures)
 		{
 			//AttachmentMgr attachmentDB;
 			//attachmentDB.Clear();
@@ -5828,8 +5830,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		// --> Done with general Body Setup
 
-		// Setup if no html and body tags
-		bool extraHtmlHdr = false;
+		// Setup if no html and body tags; moved up, global
+		//bool extraHtmlHdr = false;
 		int htmlTagPos = outbuflarge->FindNoCase(0, "<html", 5);
 		if (htmlTagPos  < 0) // didn't find if true
 		{
@@ -5898,6 +5900,8 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		else
 			fp.Write(outbuflarge->Data(), outbuflarge->Count());
 
+#if 0
+
 		if (extraHtmlHdr) {
 			bdy = "\r\n</body></html>";
 			fp.Write(bdy, bdy.GetLength());
@@ -5905,6 +5909,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
+#endif
 	}
 	else
 	{
@@ -5993,7 +5998,7 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 			printAttachments = pFrame->m_HdrFldConfig.m_HdrFldList.IsFldSet(HdrFldList::HDR_FLD_ATTACHMENTS - 1);
 		}
 
-		if (printAttachments)
+		if (printAttachments || NListView::m_appendAttachmentPictures)
 		{
 			//AttachmentMgr attachmentDB;
 			//attachmentDB.Clear();
@@ -6063,12 +6068,14 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 			fp.Write(workbuf->Data(), workbuf->Count());
 		}
-
+		extraHtmlHdr = TRUE;
+#if 0
 		bdy = "</body></html>";
 		fp.Write(bdy, bdy.GetLength());
 
 		bdy = "\r\n</div>";
 		fp.Write(bdy, bdy.GetLength());
+#endif
 	}
 
 #if 0
@@ -6096,6 +6103,17 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	}
 
 	CStringA bdy;
+
+	if (extraHtmlHdr == true)
+	{
+		bdy = "</body></html>";
+		fp.Write(bdy, bdy.GetLength());
+	}
+
+	bdy = "\r\n</div>";
+	fp.Write(bdy, bdy.GetLength());
+
+
 #if 0
 	bdy = "\r\n<footer style=\"position:fixed; bottom:-8mm; left : 0;\"><p>";
 	bdy.Append(fpm.GetFileName());

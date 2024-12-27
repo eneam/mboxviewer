@@ -91,6 +91,7 @@ BEGIN
                 MENUITEM "Create Resource File",        ID_LANGUAGETOOLS_CREATERESOURCEFILE
                 MENUITEM "Create Translation File",     ID_LANGUAGETOOLS_CREATETRANSLATIONFILE
                 MENUITEM "Resort Translation File",     ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE
+                MENUITEM "Resource File Property",      ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY
             END
             MENUITEM "Select Language",             ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE
         END
@@ -855,6 +856,15 @@ BEGIN
     GROUPBOX        "Select Language",IDC_STATIC_SELECT_LANG_1,7,9,187,86
 END
 
+IDD_MyCDialogBar DIALOG 0, 0, 320, 200
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,209,179,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,263,179,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1129,6 +1139,14 @@ BEGIN
         RIGHTMARGIN, 194
         TOPMARGIN, 2
         BOTTOMMARGIN, 113
+    END
+
+    IDD_MyCDialogBar, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 313
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
     END
 END
 #endif    // APSTUDIO_INVOKED

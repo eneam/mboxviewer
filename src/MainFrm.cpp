@@ -51,6 +51,7 @@
 #include "GeneralOptionsDlg.h"
 #include "ResHelper.h"
 #include "SelectLanguageDlg.h"
+#include "SimpleTree.h"
 
 #include "NTreeView.h"
 
@@ -59,6 +60,8 @@
 #define THIS_FILE __FILE__
 #define new DEBUG_NEW
 #endif
+
+ConfigTree* CMainFrame::m_configTree = 0;
 
 CString CMainFrame::m_processPath = L"";
 CString CMainFrame::m_startupPath = L"";
@@ -289,6 +292,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_CREATERESOURCEFILE, &CMainFrame::OnLanguagetoolsCreateresourcefile)
 	ON_COMMAND(ID_LANGUAGETOOLS_CREATETRANSLATIONFILE, &CMainFrame::OnLanguagetoolsCreatetranslationfile)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsResorttranslationfile)
+	ON_COMMAND(ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY, &CMainFrame::OnLanguagetoolsResourcefileproperty)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -345,6 +349,8 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_pListView = 0;
 	m_pTreeView = 0;
 	m_pMsgView = 0;
+
+	m_configTree = CProfile::GetConfigTree();
 }
 
 CMainFrame::~CMainFrame()
@@ -4083,9 +4089,16 @@ void CMainFrame::OnClose()
 	CString ActiveMailService = m_mailDB.SMTPConfig.MailServiceName;;
 	m_mailDB.Write2Registry(ActiveMailService);
 
+	ConfigTree* confTree = CProfile::GetConfigTree();
+	CString label = L"CMainFrame::OnClose";
+	confTree->DumpTree(label);
+	//confTree->DeleteAllNodes();
+
 	MboxMail::ReleaseResources();
 
 	ResHelper::ReleaseResources();
+
+	//delete confTree;
 
 	CFrameWnd::OnClose();
 }
@@ -6063,5 +6076,65 @@ void CMainFrame::OnLanguagetoolsResorttranslationfile()
 	// TODO: Add your command handler code here
 
 	ResHelper::ResortLanguageFile();
+	int deb = 1;
+}
+
+
+void CMainFrame::OnLanguagetoolsResourcefileproperty()
+{
+	// TODO: Add your command handler code here
+
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString lastFolderName;
+	CString folderName;
+	CString fileName;
+	CString filePath;
+	CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
+	if (!lastLanguageFolderPath.IsEmpty())
+	{
+		lastFolderName = lastLanguageFolderPath;
+		lastFolderName.TrimRight(L"\\");
+
+
+		FileUtils::CPathStripPath((LPCWSTR)lastFolderName, lastFolderName);
+		filePath = lastLanguageFolderPath + L"\\" + lastFolderName + L".txt";
+	}
+
+	int  isFile_UTF8 = ResHelper::IsFileUTF8(filePath);
+
+	SimpleMemoryFile memFile;
+	BOOL retOpen = memFile.Open(filePath);
+
+	BOOL isASCII = TRUE;
+	BOOL isText_UTF8 = ResHelper::IsTextUTF8((const char*)memFile.m_buffer.Data(), memFile.m_buffer.Count(), isASCII);
+
+	int slen = memFile.m_buffer.Count();
+	ResHelper::TextEncoding BOM;
+	memFile.m_buffer.Append('\0');
+	memFile.m_buffer.Append('\0');
+	memFile.m_buffer.Append('\0');
+	memFile.m_buffer.Append('\0');
+	memFile.m_buffer.Append('\0');
+	ResHelper::TextEncoding nEncoding = ResHelper::GetTextEncoding(memFile.m_buffer.Data(), slen, BOM);
+	if (nEncoding == ResHelper::TextEncoding::ASCII)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::ANSI)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::UTF8)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::UTF16LE)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::UTF16BE)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::UTF32LE)
+		int deb = 1;
+	else 	if (nEncoding == ResHelper::TextEncoding::UTF32BE)
+		int deb = 1;
+
+	int nCP = ResHelper::FindCodePageFromFile(filePath);
+
+
 	int deb = 1;
 }

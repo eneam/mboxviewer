@@ -18069,11 +18069,13 @@ void NListView::AppendPictureAttachments(MboxMail *m, AttachmentMgr& attachmentD
 		{
 			base = "<base href=\"\"/>";  // TODOE define empty base ??
 		}
-		hdr = "\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">" + base + "</head><body>\r\n";
+		//hdr = "\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">" + base + "</head><body>\r\n";
+		hdr = "\r\n<div>";
 
 		pics.Append((LPCSTR)hdr, hdr.GetLength());
 
-		pics.Append("<span><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br></span>");
+		//pics.Append("<span><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br></span>");
+		pics.Append("<div></div><span><br>--------&nbsp;Picture Attachments&nbsp;--------</span><div></div><br>");
 
 		for (i = 0; i < arr.GetCount(); i++)
 		{
@@ -18148,7 +18150,8 @@ void NListView::AppendPictureAttachments(MboxMail *m, AttachmentMgr& attachmentD
 #endif
 
 		}
-		pics.Append("\r\n</body></html>\r\n");
+		//pics.Append("\r\n</body></html>\r\n");
+		pics.Append("\r\n</div>\r\n");
 
 		fpm->Write(pics.Data(), pics.Count());
 

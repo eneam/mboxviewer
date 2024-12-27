@@ -132,7 +132,9 @@ public:
 	int GetCount();
 	BOOL SaveToRegistry();
 	BOOL LoadFromRegistry();
-	BOOL LoadFromRegistry(CSArray &ar);
+	BOOL LoadFromRegistry(CSArray& ar);
+	BOOL LoadFromRegistry_registry(CSArray &ar);
+	BOOL LoadFromConfigFile(CSArray& ar);
 	BOOL CreateKey(CString &section, HKEY &hKey);
 	LSTATUS DeleteSectionKey();
 	void Optimize();
@@ -632,6 +634,9 @@ public:
 	void LoadFolders();
 
 	static BOOL ImportLegacyRegistryData();
+	static BOOL ImportLegacyMboxviewRegistryData();
+	static BOOL ImportLegacyUMBoxViewerRegistryData();
+	static BOOL CopyKeyAndSubkey(const wchar_t* keyPath, wchar_t* keyName);
 
 	void DeleteMBoxAllWorkFolders(CString &mboxFileName);
 	HTREEITEM HasFolder(CString &path);

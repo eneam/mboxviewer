@@ -259,6 +259,87 @@ void Com_Initialize()
 	int deb = 1;
 }
 
+
+MyCRecentFileList::MyCRecentFileList(UINT nStart, LPCTSTR lpszSection,
+	LPCTSTR lpszEntryFormat, int nSize, int nMaxDispLen)
+	: CRecentFileList(nStart, lpszSection, lpszEntryFormat, nSize, nMaxDispLen)
+{
+	int deb = 1;
+
+}
+
+void MyCRecentFileList::DumpMRUsArray(CString &prefix)
+{
+	CString val;
+	for (int iMRU = 0; iMRU < m_nSize; iMRU++)
+	{
+		val = m_arrNames[iMRU];
+		TRACE(L"ReadList: %d%s \"%s\"\n", (iMRU+1), prefix, val);
+	}
+}
+
+void MyCRecentFileList::ReadList()
+{
+#if 0
+	this->CRecentFileList::ReadList();
+#else
+	ASSERT(m_arrNames != NULL);
+	ASSERT(!m_strSectionName.IsEmpty());
+	ASSERT(!m_strEntryFormat.IsEmpty());
+
+	CString section = L"SOFTWARE\\UMBoxViewer\\mboxview\\" + m_strSectionName;
+	int nLen = m_strEntryFormat.GetLength() + 10;
+	LPTSTR pszEntry = new TCHAR[nLen];
+
+	CString val;
+	
+	TRACE(L"ReadList:\n");
+	for (int iMRU = 0; iMRU < m_nSize; iMRU++)
+	{
+		_stprintf_s(pszEntry, nLen, m_strEntryFormat, iMRU + 1);
+		val = CProfile::_GetProfileString(HKEY_CURRENT_USER, section, pszEntry);
+		m_arrNames[iMRU] = val;
+	}
+	CString prefix;
+	DumpMRUsArray(prefix);
+	delete[] pszEntry;
+#endif
+}
+
+void MyCRecentFileList::WriteList()
+{
+	//
+	// this->CRecentFileList::WriteList();
+	ASSERT(m_arrNames != NULL);
+	ASSERT(!m_strSectionName.IsEmpty());
+	ASSERT(!m_strEntryFormat.IsEmpty());
+
+	CString parent_section = L"SOFTWARE\\UMBoxViewer\\mboxview";
+	CString section = parent_section + L"\\" + m_strSectionName;
+
+	int nLen = m_strEntryFormat.GetLength() + 10;
+	LPTSTR pszEntry = new TCHAR[nLen];
+	CWinApp* pApp = AfxGetApp();
+
+	CString val;
+
+	CProfile::_DeleteKey(HKEY_CURRENT_USER, parent_section, m_strSectionName, TRUE);
+
+	TRACE(L"WriteList:\n");
+	for (int iMRU = 0; iMRU < m_nSize; iMRU++)
+	{
+		_stprintf_s(pszEntry, nLen, m_strEntryFormat, iMRU + 1);
+		val = m_arrNames[iMRU];
+		if (!val.IsEmpty())
+		{
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section, pszEntry, val);
+		}
+	}
+	CString prefix;
+	DumpMRUsArray(prefix);
+	delete[] pszEntry;
+}
+
 void CmboxviewApp::AddToRecentFileList(LPCWSTR lpszPathName)
 {
 	ASSERT_VALID(this);
@@ -275,11 +356,13 @@ void CmboxviewApp::AddToRecentFileList(LPCWSTR lpszPathName)
 	{
 		filePathName = m_pRecentFileList->m_arrNames[i];
 		filePathName.TrimRight(L"\\");
+		TRACE(L"AddToRecentFileList: \"%s\" \"%s\"\n", lpszPathName, filePathName);
 		if (filePathName.Compare(pathName) == 0)
 		{
 			m_pRecentFileList->Remove(i);
 			int newCount = m_pRecentFileList->GetSize();
 			removed = TRUE;
+			break;
 		}
 	}
 	this->CWinApp::AddToRecentFileList(lpszPathName);
@@ -306,6 +389,14 @@ void CmboxviewApp::MyMRUFileHandler(UINT i)
 	if (!FileUtils::PathDirExists(folderPath)) {
 		m_pRecentFileList->Remove(nIndex);
 		return;
+	}
+	// thias will move to top selected file
+	else
+	{
+		m_pRecentFileList->Remove(nIndex);
+
+		this->CWinApp::AddToRecentFileList(folderPath);
+		m_pRecentFileList->WriteList();
 	}
 
 	((CMainFrame*)AfxGetMainWnd())->DoOpen(folderPath);
@@ -448,6 +539,24 @@ HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* f
 	return hr;
 }
 #endif
+
+CmboxviewApp::~CmboxviewApp()
+{
+	if (!CProfile::IsRegistryConfig())
+	{
+		ConfigTree* confTree = CProfile::GetConfigTree();
+
+		confTree->DumpTree();
+
+		confTree->Dump2File();
+
+		confTree->DeleteAllNodes();
+
+		delete confTree;
+	}
+
+	int deb = 1;
+}
 
 CmboxviewApp::CmboxviewApp()
 {
@@ -1395,8 +1504,22 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 		return FALSE;
 }
 
+
 BOOL CmboxviewApp::InitInstance()
 {
+	CProfile::DetermineConfigurationType();
+
+	ConfigTree* config = 0;
+	if (!CProfile::IsRegistryConfig())
+	{
+		ConfigTree* config = 0;
+		config = CProfile::GetConfigTree();
+		config->LoadConfigFromFile();
+	}
+
+
+	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);  // FIXMEFIXME
+
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	BOOL retExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview));
 
@@ -1568,9 +1691,11 @@ BOOL CmboxviewApp::InitInstance()
 	// such as the name of your company or organization.
 	SetRegistryKey(L"UMBoxViewer");  // FIXMEFIXME
 
-	m_pRecentFileList = new
-		CRecentFileList(0, L"MRUs",
-			L"Path %d", 16);
+	if (CProfile::IsRegistryConfig())
+		m_pRecentFileList = new CRecentFileList(0, L"MRUs", L"Path %d", 16);
+	else
+		m_pRecentFileList = new MyCRecentFileList(0, L"MRUs", L"Path %d", 16);
+
 	m_pRecentFileList->ReadList();
 	// Initialize all Managers for usage. They are automatically constructed
 	// if not yet present

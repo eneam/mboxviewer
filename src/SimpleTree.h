@@ -1,119 +1,168 @@
+//
+//////////////////////////////////////////////////////////////////
+//
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives.
+//
+// Source code and executable can be downloaded from
+//  https://sourceforge.net/projects/mbox-viewer/  and
+//  https://github.com/eneam/mboxviewer
+//
+//  Copyright(C) 2019  Enea Mansutti, Zbigniew Minciel
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the version 3 of GNU Affero General Public License
+//  as published by the Free Software Foundation; 
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU
+//  Library General Public License for more details.
+//
+//  You should have received a copy of the GNU Library General Public
+//  License along with this program; if not, write to the
+//  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+//  Boston, MA  02110 - 1301, USA.
+//
+//////////////////////////////////////////////////////////////////
+//
+
+
 #pragma once
 
 
 #include <minwindef.h>
 #include <afxstr.h>
 #include <algorithm>
-#include <list>
+#include "dllist.h"
+#include "IHashTable.h"
 
 
 class CFile;
 
 using namespace std;
 
-// MBoxFolderTree is the helper class to support "File->Select root folder" feature
-// Easy to use incorrectly so be  careful
-class SimpleTreeNode
+enum ConfigNodeType
 {
-public:
-	SimpleTreeNode() { m_parent = 0; m_valid = TRUE; }
-	CString m_folderName;
-	SimpleTreeNode*m_parent;
-	list<SimpleTreeNode> m_nodeList;
-	BOOL m_valid;
-};
-
-class SimpleTree
-{
-public:
-	SimpleTree(CString &name) { m_name = name; }
-	CString m_name;
-	list<SimpleTreeNode> m_rootList;
-
-
-	BOOL IsEmpty() { return m_rootList.size() == 0;}
-	void EraseRoot() { ; }  // assume m_root->m_nodeList.Empty() == true
-	SimpleTreeNode*GetRootNode() { return 0; }
-
-	//BOOL PopulateFolderTree(CString &rootFolder, MBoxFolderTree &tree, MBoxFolderNode *rnode, CString &errorText, int maxDepth);
-
-	SimpleTreeNode*CreateNode(SimpleTreeNode*node);
-
-	void Print(CString &filepath);
-	void PrintNode(CFile *fp, SimpleTreeNode*node);
-
-	int Count();
-	int NodeCount(SimpleTreeNode*node);
-
-	void PruneNonMBoxFolderNode(SimpleTreeNode*node);
-	void PruneNonMBoxFolders();
-	static void GetRelativeFolderPath(SimpleTreeNode*rnode, CString &folderPath);
+	STRING_NODE = 1,
+	INT_NODE = 2,
+	BINARY_NODE = 3
 };
 
 
-template <typename T>
-class SimpleTreeNodeEx
+class ConfigNode
 {
 public:
-	SimpleTreeNodeEx() { m_parent = 0; m_data = 0;  m_valid = TRUE; }
-	SimpleTreeNodeEx<T>* m_parent;
-	list<SimpleTreeNodeEx<T>*> m_nodeList;
-	T* m_data;
-
-	BOOL m_valid;
-};
-
-
-
-template <typename T>
-class SimpleTreeEx
-{
-public:
-	SimpleTreeEx(CString& name) { m_name = name; }
-
-	CString m_name;
-	list<SimpleTreeNodeEx<T> *> m_nodeList;
-
-
-	BOOL IsEmpty() { return m_rootNodeList.size() == 0; }
-	size_t NodeCount(SimpleTreeNodeEx<T>* node) { return node ? node->m_nodeList.size(): m_nodeList.size(); }
 	
-	SimpleTreeNodeEx<T>* InsertNode(SimpleTreeNodeEx<T>* parentNode, CString& name)
-#if 1
+	ConfigNode();
+	~ConfigNode();
+
+	BOOL m_isSectionNode;
+	int m_type;
+	CString m_name;
+	CString m_value;
+	ConfigNode* m_parent;
+
+	dlink_node<ConfigNode> m_listLink;
+	dlink_node<ConfigNode> m_hashMapLink;  // optional: use to speed access to ConfigNodes via hash table
+	//
+
+	using ConfigNodeList = dllist<ConfigNode, &ConfigNode::m_listLink>;
+	ConfigNodeList *m_pConfigList;
+	ConfigNodeList m_configList;
+
+	void SetDflt();
+
+friend class ConfigTree;
+};
+
+struct ConfigNodeHelper
+{
+	hashsum_t operator()(const CString* key) const
 	{
-		SimpleTreeNodeEx<T>* newNode = new SimpleTreeNodeEx<T>;
-
-		list<SimpleTreeNodeEx<T>*>* nodeList;
-
-		if (parentNode == 0)
-			nodeList = &m_nodeList;
-		else
-			nodeList = &parentNode->m_nodeList;
-
-		newNode->m_parent = parentNode;
-		nodeList->push_back(newNode);
-		return nodeList->back();
+		hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength() * 2);
+		return hashsum;
 	}
-#endif
-	//int NodeCount(SimpleTreeNodeEx* node, BOOL recursive);
-#if 0
+	bool operator()(CString* key1, CString* key2) const
+	{
+		if (*key1 == *key2)
+			return true;
+		else
+			return false;
+	}
+	bool operator()(CString* key1, ConfigNode* key2) const
+	{
+		if (*key1 == key2->m_value)
+			return true;
+		else
+			return false;
+	}
+};
 
+using ConfigNodeList = dllist<ConfigNode, &ConfigNode::m_listLink>;
+using ConfifgNodeHashTable = IHashMap<CString, ConfigNode, ConfigNodeHelper, ConfigNodeHelper, &ConfigNode::m_hashMapLink>;
 
-	//void EraseRoot() { ; }  // assume m_root->m_nodeList.Empty() == true
-	N* GetRootNode() { return 0; }
+class ConfigTree
+{
+public:
+	ConfigTree(CString& name);
+	ConfigTree();
+	~ConfigTree();
 
-	//BOOL PopulateFolderTree(CString &rootFolder, MBoxFolderTree &tree, MBoxFolderNode *rnode, CString &errorText, int maxDepth);
+	CString m_name;
 
-	SimpleTreeNodeEx* CreateNode(N* node);
+	ConfigNode m_rootNode;
+	ConfifgNodeHashTable m_configNodeTable;
 
-	void Print(CString& filepath);
-	//void PrintNode(CFile* fp, SimpleTreeNodeEx* node);
+	void GetConfigNodePath(ConfigNode* node, CString& path);
+	static void GetSection(CString& regSection, CString& section);
+	ConfigNode* FindNode(CString &configSection);
+	ConfigNode* FindNode(ConfigNode* node, CString *name);
+	ConfigNode* InsertNode(ConfigNode* parent, ConfigNode* node);
 
-	int Count();
-	int NodeCount(SimpleTreeNodeEx* node);
+	BOOL _DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	BOOL _WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value);
+	BOOL _WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value);
+	BOOL _WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData);
+	//
+	int _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	CString _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval);
+	BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval);
+	BOOL _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str);
+	BOOL _GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData);
 
-	//void PruneNonMBoxFolderNode(SimpleTreeNodeEx* node);
-	//void PruneNonMBoxFolders();
-	//static void GetRelativeFolderPath(N* rnode, CString& folderPath);
-#endif
+	BOOL _DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	BOOL _DeleteKey(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive);
+
+	BOOL IsEmpty() { return ChildCount(&m_rootNode) == 0; }
+	int ChildCount(ConfigNode *node) { return node->m_configList.count(); }
+	int Count() { return ChildCount(&m_rootNode); }
+	void DeleteAllNodes();
+	void DeleteNode(ConfigNode* node);
+
+	ConfigNode* GetRootNode() { return &m_rootNode; }
+
+	void SortTree();
+	void SortNode(ConfigNode *node);
+	void TraceConfigNodeList(ConfigNodeList& configList);
+
+	void DumpTree(CString &title);
+	void DumpNode(ConfigNode *node, int level);
+
+	void DumpTree();
+	void DumpNode(ConfigNode* node, CString &out);
+
+	int Dump2File();
+	int Dump2File(CString& filepath);
+
+	int LoadConfigFromFile();
+	int LoadConfigFromRegistry();
+	int LoadConfigFromFile(CString& filepath);
+	void LoadLConfigFromFileUTF16LE(CString& configFileNamePath);
+
+	int LoadConfigFromUMBoxViewerRegistry();
+
+	static BOOL Hex2Binary(CString& hex, BYTE* lpData, DWORD& cbData);
+	static BOOL Binary2Hex(BYTE* lpData, DWORD& cbData, CString& hex);
+	static int HexChar2Int(wchar_t c);
 };

@@ -800,7 +800,9 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="src\MyCButton.cpp" />
+    <ClCompile Include="src\MyCDialogBar.cpp" />
     <ClCompile Include="src\MyCTime.cpp" />
+    <ClCompile Include="src\MyCToolBar.cpp" />
     <ClCompile Include="src\MyTcpClient.cpp" />
     <ClCompile Include="src\NListView.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1013,7 +1015,9 @@
     <ClInclude Include="src\MimeHelper.h" />
     <ClInclude Include="src\MimeParser.h" />
     <ClInclude Include="src\MyCButton.h" />
+    <ClInclude Include="src\MyCDialogBar.h" />
     <ClInclude Include="src\MyCTime.h" />
+    <ClInclude Include="src\MyCToolBar.h" />
     <ClInclude Include="src\MyTcpClient.h" />
     <ClInclude Include="src\NListView.h" />
     <ClInclude Include="src\NMsgView.h" />

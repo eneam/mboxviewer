@@ -66,7 +66,7 @@ for %%A in ("*.htm") do (
 Set HTMLFileName=%%A
 Set HTMLFileNameBase=%%~nA
 
-set cmd=call !ExePath!  --headless --disable-gpu --no-pdf-header-footer --print-to-pdf-no-header --print-to-pdf="!CURRENT_DIR!\!HTMLFileNameBase!.pdf" "!CURRENT_DIR!\!HTMLFileName!"
+set cmd=call !ExePath!  --headless=old --disable-gpu --no-pdf-header-footer --print-to-pdf-no-header --print-to-pdf="!CURRENT_DIR!\!HTMLFileNameBase!.pdf" "!CURRENT_DIR!\!HTMLFileName!"
 echo !cmd!
 !cmd!
 

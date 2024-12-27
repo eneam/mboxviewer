@@ -270,12 +270,15 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			w = (int)(wratio * iw);
 		}
 
-		// Keep original dimensions if possible
+		// Keep original dimensions if possible; 12/4/2024 why ?
+		// commented out, user should decide or add config option
+#if 0
 		if ((iw <= ww) && (ih <= hh))
 		{
 			w = iw;
 			h = ih;
 		}
+#endif
 
 		if (m_Zoom == 1)
 		{

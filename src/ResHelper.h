@@ -102,15 +102,20 @@ class ResHelper
 {
 public:
 
-#define BOM_NONE 0
-#define BOM_UTF_8 1
-#define BOM_UTF_16LE 2    // Windows ltlle-endian
-#define BOM_UTF_16BE 3    // Unix big-endian
-#define BOM_UTF_32LE 4
-#define BOM_UTF_32BE 5
+	enum TextEncoding
+	{
+		NONE,
+		ASCII,
+		ANSI,
+		UTF8,
+		UTF16LE,
+		UTF16BE,
+		UTF32LE,
+		UTF32BE
+	};
 
-	static BOOL g_LoadMenuItemsInfo;
-	static BOOL g_UpdateMenuItemsInfo;
+	static BOOL g_LoadMenuItemsInfo;  // Traverse dialog & menu controles and create resource filke. i.e. collect text from all items/sub-controls
+	static BOOL g_UpdateMenuItemsInfo;  // Update all text using selected translation file
 
 	static CString resourceFile;
 	static HANDLE hResourceFile;
@@ -121,14 +126,16 @@ public:
 	//
 	static CString wndText;
 
-	static int GetFileBOM(LPCWSTR lpszFileName);  // byte order mark
+	static ResHelper::TextEncoding GetFileBOM(LPCWSTR lpszFileName);  // byte order mark
+	static ResHelper::TextEncoding ResHelper::GetBOM(unsigned char* string, int slen);
 	static int GetCodePageFromFile(LPCWSTR lpszFileName);  // find PAGE_CODE NNN  in the file until line with first [ character
 
 	// Guessing functions
+	static BOOL IsTextUTF8Done(BOOL retcode);
 	static BOOL IsTextUTF8(const char* data, size_t size, BOOL &isASCII);
-	static BOOL IsFileUTF8(LPCWSTR lpszFileName);
-	int String_GetEncoding(char* string, int slen);
-	int FindCodePageFromFile(LPCWSTR lpszFileName);
+	static int IsFileUTF8(LPCWSTR lpszFileName);
+	static TextEncoding GetTextEncoding(char* string, int slen, TextEncoding &BOM /* byteOrderMark*/);
+	static int FindCodePageFromFile(LPCWSTR lpszFileName);
 
 	static void ReleaseResources();
 	static void ReleaseResInfoArray(ResInfoArrayType& resInfoArray);

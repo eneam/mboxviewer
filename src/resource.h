@@ -17,6 +17,7 @@
 #define IDS_STRING_SIZE                 111
 #define IDS_STRING_DATE_LOCAL           112
 #define IDS_STRING_DATE_GMT             113
+#define IDD_MyCDialogBar                115
 #define IDR_MAINFRAME                   128
 #define IDR_mboxviewTYPE                129
 #define IDS_SELECT_FOLDER               129
@@ -560,6 +561,7 @@
 #define ID_LANGUAGETOOLS_CREATERESOURCEFILE 32928
 #define ID_LANGUAGETOOLS_CREATETRANSLATIONFILE 32929
 #define ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE 32930
+#define ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY 32931
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -569,8 +571,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        244
-#define _APS_NEXT_COMMAND_VALUE         32931
+#define _APS_NEXT_COMMAND_VALUE         32932
 #define _APS_NEXT_CONTROL_VALUE         1411
-#define _APS_NEXT_SYMED_VALUE           110
+#define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

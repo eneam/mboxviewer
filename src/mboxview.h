@@ -64,10 +64,25 @@ extern const wchar_t *sz_Software_mboxview;
 
 #define MAPPING_SIZE 268435456
 
+
+class MyCRecentFileList :public CRecentFileList
+{
+public:
+	MyCRecentFileList(UINT nStart, LPCTSTR lpszSection,
+		LPCTSTR lpszEntryFormat, int nSize,
+		int nMaxDispLen = AFX_ABBREV_FILENAME_LEN);
+
+	virtual void ReadList();
+	virtual void WriteList();
+
+	void DumpMRUsArray(CString& prefix);
+};
+
 class CmboxviewApp : public CWinApp
 {
 public:
 	CmboxviewApp();
+	~CmboxviewApp();
 
 // Overrides
 	// ClassWizard generated virtual function overrides

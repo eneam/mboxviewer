@@ -236,7 +236,7 @@
 "tutti i file"
 
 ["All Mails"]
-"All Mails"
+"Tutte le mail"
 
 ["Allocated Memory"]
 "Located Memoria"
@@ -1569,4 +1569,21 @@
 
 ["|S&olid"]
 "|S&olid"
+
+["Hide/Restore mail tree"]
+"Nascondi/Ripristina albero posta"
+
+["Refresh folder containing mails"]
+"Aggiorna cartella contenente e-mail"
+
+["Select folder containing mails"]
+"Seleziona la cartella contenente le e-mail"
+
+["Display program information, version number and copyright"]
+"Visualizza informazioni sul programma, numero di versione e copyright"
+
+["Expand/Collapse mail folders"]
+"Espandi/Comprimi cartelle di posta"
+
+
 

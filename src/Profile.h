@@ -34,6 +34,8 @@
 #define MAX_KEY_NAME_LENGTH 255
 #define MAX_KEY_VALUE_LENGTH 16383
 
+class ConfigTree;
+
 class RegKeyFromToInfo
 {
 public:
@@ -83,6 +85,11 @@ public:
 	static BOOL _WriteProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key, CString &value );
 	static BOOL _WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE *lpData, DWORD cbData);
 
+	static BOOL _DeleteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static BOOL _WriteProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value);
+	static BOOL _WriteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value);
+	static BOOL _WriteProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData);
+
 /*	static BOOL _WriteProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key, int value ) {
 		CString w;
 		w.Format("%d", value);
@@ -94,9 +101,20 @@ public:
 	static BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int &intval);
 	static BOOL _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString &str);
 	static BOOL _GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE *lpData, DWORD &cbData);
+
+	static int _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static CString _GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static BOOL _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval);
+	static BOOL _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval);
+	static BOOL _GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str);
+	static BOOL _GetProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData);
+
 	//
 	static BOOL _DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key);
+	static BOOL _DeleteValue_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
+
 	static BOOL _DeleteKey(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive);
+	static BOOL _DeleteKey_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive);
 	//
 	static LSTATUS CopyKey(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
 	static LSTATUS CopySubKeys(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
@@ -106,6 +124,15 @@ public:
 	static LSTATUS InitRegQueryInfoKeyParams(HKEY hKey, RegQueryInfoKeyParams& params);
 	static LSTATUS EnumerateAllSubKeys(HKEY hKey, LPCWSTR section);
 	static LSTATUS EnumerateAllSubKeyValues(HKEY hKey, LPCWSTR section);
+
+	static BOOL m_registry;
+	static CString m_configFilePath;
+
+	static ConfigTree *GetConfigTree();
+	static BOOL GetFileConfigSection(LPCWSTR registrySection, CString& fileSection);
+	static BOOL IsRegistryConfig(LPCWSTR registrySection, CString& fileSection);
+	static BOOL IsRegistryConfig();
+	static BOOL DetermineConfigurationType();
 
 private:
 //	CString	m_regAppKey;
