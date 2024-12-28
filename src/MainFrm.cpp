@@ -3897,9 +3897,9 @@ void CMainFrame::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
 
-	NTreeView * pTreeView = GetTreeView();
-	NListView * pListView = GetListView();
-	NMsgView * pMsgView = GetMsgView();
+	NTreeView* pTreeView = GetTreeView();
+	NListView* pListView = GetListView();
+	NMsgView* pMsgView = GetMsgView();
 
 	CString lastMailFilePath;
 	CString lastLabelFilePath;
@@ -3946,7 +3946,7 @@ void CMainFrame::OnClose()
 	//if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode && !m_commandLineParms.m_bEmlPreviewFolderExisted)
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 	{
-		NTreeView *pTreeView = GetTreeView();
+		NTreeView* pTreeView = GetTreeView();
 		if (pTreeView)
 		{
 			CString mboxFolderPath;
@@ -3991,7 +3991,7 @@ void CMainFrame::OnClose()
 	GetWindowPlacement(&wp);
 
 	if (wp.showCmd == SW_MAXIMIZE)
-		wp.showCmd = SW_SHOWMAXIMIZED; 
+		wp.showCmd = SW_SHOWMAXIMIZED;
 	if ((wp.showCmd != SW_SHOWMAXIMIZED) && (wp.showCmd != SW_SHOW))
 		wp.showCmd = SW_SHOW;
 
@@ -3999,7 +3999,7 @@ void CMainFrame::OnClose()
 	CRect rectListView;
 	CRect rectTreeView;
 	CRect rectFrameView;
-	
+
 
 	NMsgView* msgView = GetMsgView();
 	NListView* listView = GetListView();
@@ -4089,16 +4089,16 @@ void CMainFrame::OnClose()
 	CString ActiveMailService = m_mailDB.SMTPConfig.MailServiceName;;
 	m_mailDB.Write2Registry(ActiveMailService);
 
-	ConfigTree* confTree = CProfile::GetConfigTree();
-	CString label = L"CMainFrame::OnClose";
-	confTree->DumpTree(label);
-	//confTree->DeleteAllNodes();
+	if (CProfile::IsRegistryConfig())
+	{
+		ConfigTree* confTree = CProfile::GetConfigTree();
+		CString label = L"CMainFrame::OnClose";
+		confTree->DumpTree(label);
+	}
 
 	MboxMail::ReleaseResources();
 
 	ResHelper::ReleaseResources();
-
-	//delete confTree;
 
 	CFrameWnd::OnClose();
 }

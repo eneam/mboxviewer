@@ -77,7 +77,7 @@ ConfigTree::~ConfigTree()
 void ConfigTree::DumpTree(CString &title)
 {
 	// Reenable for testing
-#if 0
+#if 1
 	TRACE(L"%s %s", title, L"TREE DUMP\n");
 	//SortTree();
 
@@ -189,6 +189,8 @@ void ConfigTree::DeleteAllNodes()
 void ConfigTree::DeleteNode(ConfigNode* node)
 {
 	TRACE(L"DeleteNode: %s\n", node->m_name);
+	_ASSERTE(node);
+
 	ConfigNode* childNode;
 	ConfigNode* next_childNode;
 	for (childNode = node->m_configList.first(); childNode != 0; )
@@ -314,7 +316,7 @@ BOOL ConfigTree::_DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
 	CString configPath = configSection + L"\\" + key;
 
 	ConfigNode* node = ConfigTree::FindNode(configPath);
-	if (node->m_parent)
+	if (node && node->m_parent)
 	{
 		node->m_parent->m_pConfigList->remove(node);
 		delete node;
@@ -678,7 +680,7 @@ BOOL ConfigTree::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 	CString configPath = configSection + L"\\" + key;
 
 	ConfigNode* node = ConfigTree::FindNode(configPath);
-	if (node->m_parent)
+	if (node && node->m_parent)
 	{
 		node->m_parent->m_pConfigList->remove(node);
 		delete node;
@@ -833,7 +835,7 @@ int  ConfigTree::Dump2File(CString& filepath)
 		L"# MBox Viewer supports its configuration in Windows Registry or in the configuration file MBoxViewer.config.\n"
 		L"# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in the MBox Viewer software installation folder\n"
 		L"# under the Config folder or under the Config folder in the per user folder created by Windows system\n"
-		L"# example : C:\\Users\\UserName\\AppData\Local\\UMBoxViewer\\Config\n"
+		L"# example : C:\\Users\\UserName\\AppData\\Local\\UMBoxViewer\\Config\n"
 		L"#\n"
 		L"# The config file format is simiar to the format of \".reg\" registry file\n"
 		L"# [UMBoxViewer\\LastSelection]\n"

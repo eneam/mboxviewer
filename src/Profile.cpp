@@ -46,7 +46,6 @@
 BOOL CProfile::m_registry = TRUE;
 CString CProfile::m_configFilePath;
 
-
 BOOL CProfile::DetermineConfigurationType()
 {
 	CString configFilePath;
@@ -70,7 +69,7 @@ BOOL CProfile::DetermineConfigurationType()
 	if (configFilePath.IsEmpty())
 	{
 		CString localAppFolder = FileUtils::GetMboxviewLocalAppPath();
-		configFolderPath = localAppFolder + L"UMBoxViewer\\Config";
+		configFolderPath = localAppFolder + L"UMBoxViewer\\Config\\";
 		if (FileUtils::PathDirExists(configFolderPath))
 		{
 			configFilePath = configFolderPath + configFileName;
@@ -96,6 +95,8 @@ BOOL CProfile::DetermineConfigurationType()
 
 ConfigTree* CProfile::GetConfigTree()
 {
+	if (m_registry)
+		return 0;
 	if (CMainFrame::m_configTree == 0)
 		CMainFrame::m_configTree = new ConfigTree(CString(L"ROOT"));
 

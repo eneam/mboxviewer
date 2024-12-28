@@ -968,19 +968,39 @@ BOOL NTreeView::ImportLegacyRegistryData()
 		if (retLegacyExists == TRUE)
 		{
 			NTreeView::ImportLegacyMboxviewRegistryData();
+
+			CString section = L"SOFTWARE\\UMBoxViewer\\General";
+			BOOL ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section, L"dataFolder");
 			int deb = 1;
 		}
 	}
 	else
 	{
-		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\UMBoxViewer";
+		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\UMBoxViewer\\General";
 		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
 		if (retLegacyExists == TRUE)
 		{
 			NTreeView::ImportLegacyUMBoxViewerRegistryData();
 			int deb = 1;
 		}
+		else
+		{
+			const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
+			BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+			if (retLegacyExists == TRUE)
+			{
+				NTreeView::ImportLegacyMboxviewRegistryData();
+
+				CString section = L"SOFTWARE\\UMBoxViewer\\General";
+				BOOL ret = CProfile::_DeleteValue(HKEY_CURRENT_USER, section, L"dataFolder");
+				int deb = 1;
+			}
+		}
 	}
+
+	ConfigTree* confTree = CProfile::GetConfigTree();
+	CString label = L"NTreeView::ImportLegacyRegistryData";
+	confTree->DumpTree(label);
 
 	return TRUE;
 }
@@ -1230,8 +1250,7 @@ BOOL NTreeView::ImportLegacyUMBoxViewerRegistryData()
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementDirect");
 
 	ConfigTree* confTree = CProfile::GetConfigTree();
-
-	CString currentPath = L"F:\\Documents\\GIT1.0.3.42\\mboxviewer\\x64\\Debug\\MBoxViewer.conf";
+	_ASSERTE(confTree);
 	//confTree->Dump2File(currentPath);
 
 	return TRUE;
@@ -8421,6 +8440,7 @@ void MBoxFolderTree::PruneNonMBoxFolderNode(MBoxFolderNode* node)
 
 void MBoxFolderTree::GetRelativeFolderPath(MBoxFolderNode* rnode, CString& folderPath)
 {
+	_ASSERTE(rnode);
 	MBoxFolderNode* parent = rnode->m_parent;
 	MBoxFolderNode* rootParent = parent;
 

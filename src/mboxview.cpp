@@ -545,6 +545,7 @@ CmboxviewApp::~CmboxviewApp()
 	if (!CProfile::IsRegistryConfig())
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
+		_ASSERTE(confTree);
 
 		confTree->DumpTree();
 
@@ -562,6 +563,8 @@ CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+	int deb10 = 1;
 
 #if _DEBUG
 
@@ -1509,29 +1512,58 @@ BOOL CmboxviewApp::InitInstance()
 {
 	CProfile::DetermineConfigurationType();
 
-	ConfigTree* config = 0;
-	if (!CProfile::IsRegistryConfig())
-	{
-		ConfigTree* config = 0;
-		config = CProfile::GetConfigTree();
-		config->LoadConfigFromFile();
-	}
-
-
-	BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);  // FIXMEFIXME
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-	BOOL retExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview));
 
-	if (retExists == FALSE)
+	BOOL retExists = TRUE;
+
+	//ConfigTree* config = 0;
+	if (!CProfile::IsRegistryConfig())
 	{
-		// Check if MBox Viewer can write to registry
-		BOOL ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, sz_Software_mboxview, NULL, 0);  // FIXMEFIXME
-		if (ret == FALSE)
+		DWORD attr = GetFileAttributes(CProfile::m_configFilePath);
+
+		if (attr & FILE_ATTRIBUTE_READONLY)
+		{
+			HWND h = NULL; // we don't have any window yet 
+			CString txt = L"Could not write to MBox Viewer configuration file:\n\n"
+				+ CProfile::m_configFilePath +
+				L"\n\nlikely  due to lack of permission to write.\n"
+				"Please resolve the issue and run the MBox Viewer again\n\n"
+				L"Or configure MBox Viewer to use Windows Registry.\n";
+			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+			// To stop memory leaks reports by debugger
+			MboxMail::ReleaseResources(FALSE);
+			return FALSE;
+		}
+
+		ConfigTree* confTree = CProfile::GetConfigTree();
+		_ASSERTE(confTree);
+
+		confTree->LoadConfigFromFile();
+	}
+	else
+	{
+		// Check if user can read/write Windows Registry
+
+		CString key = L"MagicNumber";
+		int rnumber = rand();
+
+		HKEY hk = HKEY_CURRENT_USER;
+		//hk = HKEY_LOCAL_MACHINE;  // enable for testing
+		BOOL retwrite = CProfile::_WriteProfileInt(hk, section_general, key, rnumber);
+
+		int number = 0;
+		BOOL retget = CProfile::_GetProfileInt(hk, section_general, key, number);
+
+		BOOL ret = CProfile::_DeleteValue(hk, section_general, key);
+
+		if ((retwrite == FALSE) || (retget == FALSE) || (rnumber != number))
 		{
 			HWND h = NULL; // we don't have any window yet 
 			CString txt = L"Could not write to Windows registry likely  due to lack of permission. "
-				"Please resolve the issue and run the MBox Viewer again\n";
+				"Please resolve the issue and run the MBox Viewer again.\n\n"
+			L"Or configure MBox Viewer to use configuration file.\n";
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
@@ -1539,6 +1571,8 @@ BOOL CmboxviewApp::InitInstance()
 			return FALSE;
 		}
 	}
+
+	MboxMail::m_HintConfig.LoadHintBitmap();
 
 	CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
 	if (!languageFolderPath.IsEmpty())
@@ -1560,16 +1594,12 @@ BOOL CmboxviewApp::InitInstance()
 		ResHelper::DisableLanguageLoading();
 	}
 
-	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");  // FIXME Redundant check ??
-	if ((retExists == FALSE) || dataFolder.IsEmpty())
+	CString dataFolder;
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", dataFolder);
+	if ((ret == FALSE) || dataFolder.IsEmpty())
 	{
-		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
-		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
-		if (retLegacyExists == TRUE)
-		{
-			NTreeView::ImportLegacyRegistryData();
-			int deb = 1;
-		}
+		NTreeView::ImportLegacyRegistryData();
+		int deb = 1;
 	}
 
 	HANDLE procHandle = GetCurrentProcess();

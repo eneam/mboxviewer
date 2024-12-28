@@ -10946,20 +10946,7 @@ void ShowMemStatus()
 
 HintConfig::HintConfig()
 {
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
 	m_nHintBitmap = 0;
-	BOOL retval;
-	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"hintBitmap", m_nHintBitmap))
-	{
-		; // all done
-	}
-	else
-	{
-		m_nHintBitmap = 0xFFFFFFFF;
-
-		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"hintBitmap", m_nHintBitmap);
-	}
 }
 
 HintConfig::~HintConfig()
