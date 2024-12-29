@@ -70,6 +70,21 @@ struct RegQueryInfoKeyParams
 	}
 };
 
+class DebugCString:public CString  // used for testing object life cycle
+{
+public:
+	DebugCString();
+	~DebugCString();
+
+	DebugCString& operator=(CString& strSrc)
+	{
+		Empty();
+		Append(strSrc);
+
+		return(*this);
+	}
+};
+
 class CProfile {
 public:
 /*	CProfile();
@@ -125,14 +140,12 @@ public:
 	static LSTATUS EnumerateAllSubKeys(HKEY hKey, LPCWSTR section);
 	static LSTATUS EnumerateAllSubKeyValues(HKEY hKey, LPCWSTR section);
 
-	static BOOL m_registry;
-	static CString m_configFilePath;
-
 	static ConfigTree *GetConfigTree();
 	static BOOL GetFileConfigSection(LPCWSTR registrySection, CString& fileSection);
 	static BOOL IsRegistryConfig(LPCWSTR registrySection, CString& fileSection);
 	static BOOL IsRegistryConfig();
 	static BOOL DetermineConfigurationType();
+	static CString &GetConfigFilePath();
 
 private:
 //	CString	m_regAppKey;

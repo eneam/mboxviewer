@@ -51,7 +51,7 @@
 #include "GeneralOptionsDlg.h"
 #include "ResHelper.h"
 #include "SelectLanguageDlg.h"
-#include "SimpleTree.h"
+#include "FileConfigurationDB.h"
 
 #include "NTreeView.h"
 
@@ -313,6 +313,8 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	// TODO: add member initialization code here
 
 	Com_Initialize();  // FIXME
+
+	m_ColorStylesDB.LoadFromRegistry();
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
@@ -4089,7 +4091,7 @@ void CMainFrame::OnClose()
 	CString ActiveMailService = m_mailDB.SMTPConfig.MailServiceName;;
 	m_mailDB.Write2Registry(ActiveMailService);
 
-	if (CProfile::IsRegistryConfig())
+	if (!CProfile::IsRegistryConfig())
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
 		CString label = L"CMainFrame::OnClose";

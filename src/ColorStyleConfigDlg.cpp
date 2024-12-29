@@ -682,6 +682,36 @@ ColorStylesDB::ColorStylesDB()
 	m_colorStyles.SetDefaults();
 }
 
+void ColorStylesDB::LoadFromRegistry()
+{
+	BOOL retval;
+	DWORD bColorStyle;
+	CString customStyleColorList;
+
+	CString section_pane_color = CString(sz_Software_mboxview) + L"\\PaneColors";
+
+	m_selectedColorStyle = ColorStylesDB::ColorDefault;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_pane_color, L"colorStyle", bColorStyle))
+	{
+		m_selectedColorStyle = bColorStyle;
+	}
+
+	if (m_selectedColorStyle >= ColorStylesDB::MaxColorStyles)
+	{
+		m_selectedColorStyle = ColorStylesDB::ColorDefault;
+	}
+
+	if (retval = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_pane_color, L"customStyleColorList", customStyleColorList))
+	{
+		m_customColorStyles.String2ColorArray(customStyleColorList);
+		m_colorStyles.String2ColorArray(customStyleColorList);
+	}
+
+	this->m_colorStyles.SetColorStyle(m_selectedColorStyle);
+
+	int deb = 1;
+}
+
 void ColorStyleConfigDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here

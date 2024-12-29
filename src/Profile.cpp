@@ -31,7 +31,7 @@
 #include "stdafx.h"
 #include "Profile.h"
 #include "FileUtils.h"
-#include "SimpleTree.h"
+#include "FileConfigurationDB.h"
 #include "MainFrm.h"
 #include "mboxview.h"
 
@@ -43,8 +43,21 @@
 #endif
 
 
-BOOL CProfile::m_registry = TRUE;
-CString CProfile::m_configFilePath;
+DebugCString::DebugCString()
+	: CString()
+{
+	int deb = 1;
+}
+
+DebugCString::~DebugCString()
+{
+	int deb = 1;
+}
+
+CString & CProfile::GetConfigFilePath()
+{
+	return CmboxviewApp::m_configFilePath;
+}
 
 BOOL CProfile::DetermineConfigurationType()
 {
@@ -80,14 +93,14 @@ BOOL CProfile::DetermineConfigurationType()
 	}
 	if (configFilePath.IsEmpty())
 	{
-		CProfile::m_registry = TRUE;
-		CProfile::m_configFilePath.Empty();
+		CmboxviewApp::m_registry = TRUE;
+		CmboxviewApp::m_configFilePath.Empty();
 		return FALSE;
 	}
 	else
 	{
-		CProfile::m_registry = FALSE;
-		CProfile::m_configFilePath = configFilePath;
+		CmboxviewApp::m_registry = FALSE;
+		CmboxviewApp::m_configFilePath = configFilePath;
 		return TRUE;
 	}
 }
@@ -95,7 +108,7 @@ BOOL CProfile::DetermineConfigurationType()
 
 ConfigTree* CProfile::GetConfigTree()
 {
-	if (m_registry)
+	if (CmboxviewApp::m_registry)
 		return 0;
 	if (CMainFrame::m_configTree == 0)
 		CMainFrame::m_configTree = new ConfigTree(CString(L"ROOT"));
@@ -122,7 +135,7 @@ BOOL CProfile::GetFileConfigSection(LPCWSTR registrySection, CString& fileSectio
 
 BOOL CProfile::IsRegistryConfig()
 {
-	if (m_registry)
+	if (CmboxviewApp::m_registry)
 		return TRUE;
 	else
 	{
@@ -135,7 +148,7 @@ BOOL CProfile::IsRegistryConfig(LPCWSTR registrySection, CString& fileSection)
 {
 	CString configSection;
 	BOOL isTreeSection = GetFileConfigSection(registrySection, fileSection);
-	if (m_registry || !isTreeSection)
+	if (CmboxviewApp::m_registry || !isTreeSection)
 		return TRUE;
 	else
 		return FALSE;

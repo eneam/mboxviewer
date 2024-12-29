@@ -104,6 +104,10 @@ public:
 
 	ColorStyleConfig m_colorStyles;        // array of current predefined or custom colors for all Panes
 	ColorStyleConfig m_customColorStyles;  // array of custom colors/user selected colors for all Panes
+
+	int m_selectedColorStyle;
+
+	void LoadFromRegistry();
 };
 
 class ColorStyleConfigDlg : public CDialogEx

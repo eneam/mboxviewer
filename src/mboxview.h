@@ -104,6 +104,13 @@ public:
 	static CString m_startupPath;
 	static CString m_currentPath;
 
+	// Moved from CProfile otherwise m_registry & m_configFilePath are destroyed
+	// in CmboxviewApp::ExitInstance and cause crash
+	// static varsd and objects are desttred after CmboxviewApp is destroyed
+	static BOOL m_registry;
+	static CString m_configFilePath;
+	//static DebugCString m_configFilePath;  // for testing object life cycle
+
 	static BOOL GetProcessPath(CString &processpath);
 
 	static CWnd* wndFocus;

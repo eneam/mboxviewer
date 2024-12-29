@@ -47,7 +47,7 @@
 #include "ExceptionUtil.h"
 
 #include "winnls.h"
-#include "SimpleTree.h"
+#include "FileConfigurationDB.h"
 
 #include "MimeHelper.h"
 #include "SimpleString.h"
@@ -80,6 +80,10 @@ CString CmboxviewApp::m_savedVer = L"";
 CString CmboxviewApp::m_processPath = L"";
 CString CmboxviewApp::m_startupPath = L"";
 CString CmboxviewApp::m_currentPath = L"";
+
+BOOL CmboxviewApp::m_registry = TRUE;
+CString CmboxviewApp::m_configFilePath;
+//DebugCString CmboxviewApp::m_configFilePath;
 
 CWnd* CmboxviewApp::wndFocus = 0;
 
@@ -542,6 +546,7 @@ HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* f
 
 CmboxviewApp::~CmboxviewApp()
 {
+#if 1
 	if (!CProfile::IsRegistryConfig())
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
@@ -555,6 +560,7 @@ CmboxviewApp::~CmboxviewApp()
 
 		delete confTree;
 	}
+#endif
 
 	int deb = 1;
 }
@@ -563,7 +569,6 @@ CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
-
 	int deb10 = 1;
 
 #if _DEBUG
@@ -1520,13 +1525,13 @@ BOOL CmboxviewApp::InitInstance()
 	//ConfigTree* config = 0;
 	if (!CProfile::IsRegistryConfig())
 	{
-		DWORD attr = GetFileAttributes(CProfile::m_configFilePath);
+		DWORD attr = GetFileAttributes(CmboxviewApp::m_configFilePath);
 
 		if (attr & FILE_ATTRIBUTE_READONLY)
 		{
 			HWND h = NULL; // we don't have any window yet 
 			CString txt = L"Could not write to MBox Viewer configuration file:\n\n"
-				+ CProfile::m_configFilePath +
+				+ CmboxviewApp::m_configFilePath +
 				L"\n\nlikely  due to lack of permission to write.\n"
 				"Please resolve the issue and run the MBox Viewer again\n\n"
 				L"Or configure MBox Viewer to use Windows Registry.\n";

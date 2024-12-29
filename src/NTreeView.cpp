@@ -42,7 +42,7 @@
 #include "MimeParser.h"
 #include "TextUtilities.h"
 #include "ResHelper.h"
-#include "SimpleTree.h"
+#include "FileConfigurationDB.h"
 
 
 #ifdef _DEBUG
@@ -1000,7 +1000,8 @@ BOOL NTreeView::ImportLegacyRegistryData()
 
 	ConfigTree* confTree = CProfile::GetConfigTree();
 	CString label = L"NTreeView::ImportLegacyRegistryData";
-	confTree->DumpTree(label);
+	if (confTree)
+		confTree->DumpTree(label);
 
 	return TRUE;
 }

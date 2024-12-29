@@ -30,7 +30,7 @@
 #pragma once
 
 #include "stdafx.h"
-#include "SimpleTree.h"
+#include "FileConfigurationDB.h"
 #include "TextUtilsEx.h"
 #include "SimpleString.h"
 #include "FileUtils.h"
@@ -800,7 +800,7 @@ int  ConfigTree::Dump2File()
 
 #endif
 	CString configFileName = L"MBoxViewer.config";
-	CString configFilePath = CProfile::m_configFilePath;
+	CString configFilePath = CmboxviewApp::m_configFilePath;
 
 
 	SortTree();
@@ -993,15 +993,15 @@ int ConfigTree::LoadConfigFromUMBoxViewerRegistry()
 
 int ConfigTree::LoadConfigFromFile()
 {
-	_ASSERTE(!CProfile::m_configFilePath.IsEmpty());
-	if (CProfile::m_configFilePath.IsEmpty())
+	_ASSERTE(!CmboxviewApp::m_configFilePath.IsEmpty());
+	if (CmboxviewApp::m_configFilePath.IsEmpty())
 	{
 		return -1;
 	}
 
 
 	CString configFileName = L"MBoxViewer.config";
-	CString configFileNamePath = CProfile::m_configFilePath;
+	CString configFileNamePath = CmboxviewApp::m_configFilePath;
 
 #if 0
 	CString processNamePath;

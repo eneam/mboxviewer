@@ -685,6 +685,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\FileConfigurationDB.cpp" />
     <ClCompile Include="src\FileUtils.cpp" />
     <ClCompile Include="src\FindAdvancedDlg.cpp" />
     <ClCompile Include="src\FindDlg.cpp">
@@ -891,7 +892,6 @@
     <ClCompile Include="src\SelectLanguageDlg.cpp" />
     <ClCompile Include="src\SerializationHelper.cpp" />
     <ClCompile Include="src\SimpleString.cpp" />
-    <ClCompile Include="src\SimpleTree.cpp" />
     <ClCompile Include="src\SMTPMailServerConfigDlg.cpp" />
     <ClCompile Include="src\StackWalker.cpp" />
     <ClCompile Include="src\StdAfx.cpp">
@@ -989,6 +989,7 @@
     <ClInclude Include="src\dllist.h" />
     <ClInclude Include="src\ExceptionUtil.h" />
     <ClInclude Include="src\ExportToCSVDlg.h" />
+    <ClInclude Include="src\FileConfigurationDB.h" />
     <ClInclude Include="src\FileUtils.h" />
     <ClInclude Include="src\FindAdvancedDlg.h" />
     <ClInclude Include="src\FindDlg.h" />
@@ -1035,7 +1036,6 @@
     <ClInclude Include="src\SelectLanguageDlg.h" />
     <ClInclude Include="src\SerializationHelper.h" />
     <ClInclude Include="src\SimpleString.h" />
-    <ClInclude Include="src\SimpleTree.h" />
     <ClInclude Include="src\SMTPMailServerConfigDlg.h" />
     <ClInclude Include="src\StackWalker.h" />
     <ClInclude Include="src\StdAfx.h" />
