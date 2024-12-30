@@ -546,7 +546,6 @@ HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* f
 
 CmboxviewApp::~CmboxviewApp()
 {
-#if 1
 	if (!CProfile::IsRegistryConfig())
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
@@ -560,7 +559,6 @@ CmboxviewApp::~CmboxviewApp()
 
 		delete confTree;
 	}
-#endif
 
 	int deb = 1;
 }
@@ -1515,7 +1513,18 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 
 BOOL CmboxviewApp::InitInstance()
 {
-	CProfile::DetermineConfigurationType();
+	CString errorText;
+
+	BOOL retcheck = CProfile::DetermineConfigurationType(errorText);
+	if (retcheck == FALSE)
+	{
+		HWND h = NULL; // we don't have any window yet 
+		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		// To stop memory leaks reports by debugger
+		MboxMail::ReleaseResources(FALSE);
+		return FALSE;
+	}
 
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
@@ -1546,6 +1555,10 @@ BOOL CmboxviewApp::InitInstance()
 		_ASSERTE(confTree);
 
 		confTree->LoadConfigFromFile();
+
+
+		CString configFilePath = CmboxviewApp::m_configFilePath + L"-test";
+		confTree->Dump2File(configFilePath);
 	}
 	else
 	{

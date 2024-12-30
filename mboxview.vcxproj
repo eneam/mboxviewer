@@ -86,6 +86,7 @@
     <UseOfMfc>Static</UseOfMfc>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>

@@ -964,7 +964,7 @@ BOOL NTreeView::ImportLegacyRegistryData()
 	if (CProfile::IsRegistryConfig())
 	{
 		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
-		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+		BOOL retLegacyExists = CProfile::CheckIfRegistryKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
 		if (retLegacyExists == TRUE)
 		{
 			NTreeView::ImportLegacyMboxviewRegistryData();
@@ -977,7 +977,7 @@ BOOL NTreeView::ImportLegacyRegistryData()
 	else
 	{
 		const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\UMBoxViewer\\General";
-		BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+		BOOL retLegacyExists = CProfile::CheckIfRegistryKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
 		if (retLegacyExists == TRUE)
 		{
 			NTreeView::ImportLegacyUMBoxViewerRegistryData();
@@ -986,7 +986,7 @@ BOOL NTreeView::ImportLegacyRegistryData()
 		else
 		{
 			const wchar_t* sz_Software_mboxview_Legacy = L"SOFTWARE\\mboxview";
-			BOOL retLegacyExists = CProfile::CheckIfKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
+			BOOL retLegacyExists = CProfile::CheckIfRegistryKeyExists(HKEY_CURRENT_USER, CString(sz_Software_mboxview_Legacy));
 			if (retLegacyExists == TRUE)
 			{
 				NTreeView::ImportLegacyMboxviewRegistryData();

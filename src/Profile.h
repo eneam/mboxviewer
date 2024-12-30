@@ -134,7 +134,7 @@ public:
 	static LSTATUS CopyKey(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
 	static LSTATUS CopySubKeys(HKEY hKey, LPCWSTR section, LPCWSTR toSection);
 	static LSTATUS CopyKeyValueList(HKEY hKey, LPCWSTR section, LPCWSTR toSection, KeyFromToTable& arr);
-	static BOOL CheckIfKeyExists(HKEY hKey, LPCWSTR section);
+	static BOOL CheckIfRegistryKeyExists(HKEY hKey, LPCWSTR section);
 	//
 	static LSTATUS InitRegQueryInfoKeyParams(HKEY hKey, RegQueryInfoKeyParams& params);
 	static LSTATUS EnumerateAllSubKeys(HKEY hKey, LPCWSTR section);
@@ -144,7 +144,7 @@ public:
 	static BOOL GetFileConfigSection(LPCWSTR registrySection, CString& fileSection);
 	static BOOL IsRegistryConfig(LPCWSTR registrySection, CString& fileSection);
 	static BOOL IsRegistryConfig();
-	static BOOL DetermineConfigurationType();
+	static BOOL DetermineConfigurationType(CString& errorText);
 	static CString &GetConfigFilePath();
 
 private:

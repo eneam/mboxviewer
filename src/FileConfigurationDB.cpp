@@ -830,21 +830,33 @@ int  ConfigTree::Dump2File(CString& filepath)
 	CString out;
 	out.Preallocate(10000);
 
-	out =
-		L"\n"
-		L"# MBox Viewer supports its configuration in Windows Registry or in the configuration file MBoxViewer.config.\n"
-		L"# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in the MBox Viewer software installation folder\n"
-		L"# under the Config folder or under the Config folder in the per user folder created by Windows system\n"
-		L"# example : C:\\Users\\UserName\\AppData\\Local\\UMBoxViewer\\Config\n"
-		L"#\n"
-		L"# The config file format is simiar to the format of \".reg\" registry file\n"
-		L"# [UMBoxViewer\\LastSelection]\n"
-		L"# \"parameter\"=\"value\"\n"
-		L"# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other types when needed.\n"
-		L"#\n"
-		L"# MBoxViewer.config file must be encoded as UTF16LE BOM file\n"
-		L"\n\n\n"
-		;
+	out = LR"(
+#
+# MBox Viewer supports Windows Registry based configuration and the file based the configuration.
+# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in :
+#
+#   1) the Config subfolder under the MBox Viewer software installation folder  or
+#   2) in the UMBoxViewer\Config subfolder under the  user specific folder created by Windows system 
+#        example : C:\Users\UserName\AppData\Local\UMBoxViewer\Config
+#
+# The config file format is similar to the format of ".reg" registry file
+# [UMBoxViewer\LastSelection]
+# "parameter"="value"
+#
+# White spaces are not allowed in the front of each line and around "=" character.
+# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
+#
+# MBoxViewer.config file must be encoded as UTF16LE BOM file
+#
+# MBoxViewer.config.sample file is included in the software package under the Config folder.
+# In order to enable MBox Viewer to use the file based configuration, 
+# user needs to rename this file to MBoxViewer.config file or copy the sample file
+# to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
+#
+
+)";
+
+
 
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
@@ -1100,7 +1112,6 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 
 	CStdioFile file;
 	CFileException exList;
-	//if (!file.Open(languageFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
 	if (!file.Open(configFileNamePath, nOpenFlags, &exList))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
@@ -1131,11 +1142,12 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 
 			LPCWSTR key = 0;
 			CString value;
-			CString section = strLine.Mid(1, pos-1);
+			CString section = strLine.Mid(1, pos - 1);
 
+			// Create section in a file if not already present
 			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section, key, value);
 
-
+			// Process all parameters in the section
 			while (file.ReadString(strLine))
 			{
 				if (TextUtilsEx::isWhiteLine(strLine))
@@ -1147,7 +1159,22 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 
 				CString param = strLine.Mid(1, pos - 2);
 				int slen = strLine.GetLength();
-				value = strLine.Mid(pos+2, slen-pos-3);
+				if (strLine.GetAt(slen-1) == L'\"')
+				{
+					value = strLine.Mid(pos + 2, slen - pos - 3);
+				}
+				else
+				{
+					value = strLine.Mid(pos + 2, slen - pos - 2);
+					pos = value.ReverseFind(L'\"');
+					if (pos >= 0)
+					{
+						value = value.Left(pos);
+						int deb = 1;
+					}
+					else
+						int deb = 1; // TODO: ignore error ???
+				}
 
 				CProfile::_WriteProfileString(HKEY_CURRENT_USER, section, param, value);
 

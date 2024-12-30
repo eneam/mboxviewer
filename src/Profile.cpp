@@ -34,6 +34,7 @@
 #include "FileConfigurationDB.h"
 #include "MainFrm.h"
 #include "mboxview.h"
+#include "ResHelper.h"
 
 
 #ifdef _DEBUG
@@ -54,12 +55,12 @@ DebugCString::~DebugCString()
 	int deb = 1;
 }
 
-CString & CProfile::GetConfigFilePath()
+CString& CProfile::GetConfigFilePath()
 {
 	return CmboxviewApp::m_configFilePath;
 }
 
-BOOL CProfile::DetermineConfigurationType()
+BOOL CProfile::DetermineConfigurationType(CString &errorText)
 {
 	CString configFilePath;
 
@@ -95,16 +96,35 @@ BOOL CProfile::DetermineConfigurationType()
 	{
 		CmboxviewApp::m_registry = TRUE;
 		CmboxviewApp::m_configFilePath.Empty();
-		return FALSE;
+		return TRUE;
 	}
 	else
 	{
+		ResHelper::TextEncoding bom = ResHelper::TextEncoding::NONE;
+		if (bom == ResHelper::TextEncoding::NONE)
+			bom = ResHelper::GetFileBOM(configFilePath);
+		if (bom == ResHelper::TextEncoding::NONE)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF8)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF16LE)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF16BE)
+			int deb = 1;
+		else
+			_ASSERTE(bom >= 0 && bom <= ResHelper::TextEncoding::UTF16BE);
+
+		if (bom != ResHelper::TextEncoding::UTF16LE)
+		{
+			errorText.Format(L"Configuration File\n\"%s\"\nis not encoded as UTF16BE BOM file\nBOM marker is missing\n", configFilePath);
+			return FALSE;
+		}
+
 		CmboxviewApp::m_registry = FALSE;
 		CmboxviewApp::m_configFilePath = configFilePath;
 		return TRUE;
 	}
 }
-
 
 ConfigTree* CProfile::GetConfigTree()
 {
@@ -1131,7 +1151,7 @@ LSTATUS CProfile::CopyKeyValueList(HKEY hKey, LPCWSTR fromSection, LPCWSTR toSec
 
 // Check if Key exists in Registry
 
-BOOL CProfile::CheckIfKeyExists(HKEY hKey, LPCWSTR section)
+BOOL CProfile::CheckIfRegistryKeyExists(HKEY hKey, LPCWSTR section)
 {
 	HKEY	myKey = 0;
 	LSTATUS retCode = RegOpenKeyEx(hKey, section, NULL, KEY_READ | KEY_QUERY_VALUE, &myKey);
