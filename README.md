@@ -38,6 +38,8 @@ Features
 * forward mails directly from MBox Viewer;
 * support for Gmail Labels;
 * support for Thunderbird exported mail files;
+* experimental partial support for multiple languages;
+* support for file based data configuration in addition to the default Registry based;
 
 License
 -------

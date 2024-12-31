@@ -833,6 +833,7 @@ int  ConfigTree::Dump2File(CString& filepath)
 	out = LR"(
 #
 # MBox Viewer supports Windows Registry based configuration and the file based configuration.
+# By default, Windows Registry is used to store configuration data.
 # During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and writeable in:
 #
 #   1) the Config subfolder under the MBox Viewer software installation folder  or
