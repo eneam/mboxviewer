@@ -106,9 +106,11 @@ public:
 
 	// Moved from CProfile otherwise m_registry & m_configFilePath are destroyed
 	// in CmboxviewApp::ExitInstance and cause crash
-	// static varsd and objects are desttred after CmboxviewApp is destroyed
+	// static vars and objects are desttred after CmboxviewApp is destroyed
+	static ConfigTree* m_configTree;
 	static BOOL m_registry;
 	static CString m_configFilePath;
+	static BOOL m_configFileLoaded;
 	//static DebugCString m_configFilePath;  // for testing object life cycle
 
 	static BOOL GetProcessPath(CString &processpath);

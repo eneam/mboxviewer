@@ -485,6 +485,7 @@
 #define IDC_LIST_CHECK_LIST_BOX         1408
 #define IDC_STATIC_SELECT_LANG_1        1409
 #define IDC_LIST_SELECT_LANG            1410
+#define IDC_SELECT_OK_TO_SELECT_DFLT_DATA_FOLDER 1411
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -572,7 +573,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        244
 #define _APS_NEXT_COMMAND_VALUE         32932
-#define _APS_NEXT_CONTROL_VALUE         1411
+#define _APS_NEXT_CONTROL_VALUE         1412
 #define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

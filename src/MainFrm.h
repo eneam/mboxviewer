@@ -332,8 +332,6 @@ protected:  // control bar embedded members
 	HICON m_UnHideIcon;
 
 public:
-	static ConfigTree* m_configTree;
-
 	// From MergeFolderAndSubfolders
 	int m_mergeRootFolderStyle;
 	int m_labelAssignmentStyle;  // 0 == no labels; 1 == mbox file names as labels; 2 == folder names as labels

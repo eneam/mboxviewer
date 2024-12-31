@@ -61,8 +61,6 @@
 #define new DEBUG_NEW
 #endif
 
-ConfigTree* CMainFrame::m_configTree = 0;
-
 CString CMainFrame::m_processPath = L"";
 CString CMainFrame::m_startupPath = L"";
 CString CMainFrame::m_currentPath = L"";
@@ -351,8 +349,6 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_pListView = 0;
 	m_pTreeView = 0;
 	m_pMsgView = 0;
-
-	m_configTree = CProfile::GetConfigTree();
 }
 
 CMainFrame::~CMainFrame()
@@ -5749,6 +5745,16 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	aboutSystem.Append(info);
 
 	info.Format(L"\nmboxview Process  Path:\n\"%s\"\n", m_processPath);
+	aboutSystem.Append(info);
+
+	if (CProfile::IsRegistryConfig())
+	{
+		info.Format(L"\nmboxview Configuration Store: Windows Registry\n", dataFolder);
+	}
+	else
+	{
+		info.Format(L"\nmboxview Configuration Store: Configuration File:\n\"%s\"\n", CmboxviewApp::m_configFilePath);
+	}
 	aboutSystem.Append(info);
 
 	info.Format(L"\nmboxview Data Folder:\n\"%s\"\n", dataFolder);

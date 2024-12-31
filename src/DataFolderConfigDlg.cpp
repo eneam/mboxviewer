@@ -36,6 +36,7 @@
 #include "DataFolderConfigDlg.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "mboxview.h"
 
 
 // DataFolderCponfigDlg dialog
@@ -125,6 +126,21 @@ BOOL DataFolderConfigDlg::OnInitDialog()
 	}
 
 	m_currentDataFolder.SetFont(&m_BoldFont);
+	if (m_strCurrentDataFolder.IsEmpty())
+	{
+		m_strUserConfiguredDataFolder = CmboxviewApp::m_startupPath;
+		if (GetSafeHwnd())
+		{
+			CWnd* p = GetDlgItem(IDC_USER_SELECTED_FOLDER_PATH);
+			if (p)
+			{
+				m_userConfiguredDataFolder.SetFont(&m_BoldFont);
+				m_userConfiguredDataFolder.SetWindowText(m_strUserConfiguredDataFolder);
+				p->EnableWindow(FALSE);
+			}
+		}
+	}
+
 	m_currentDataFolder.SetWindowText(m_strCurrentDataFolder);
 
 	ResHelper::LoadDialogItemsInfo(this);

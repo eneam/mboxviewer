@@ -1556,7 +1556,7 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 		// This is big hack. Need to investigate and find better solution
 		// // Add tipText to language translation files
 		//
-		int nID = pTTT->hdr.idFrom;
+		QWORD nID = pTTT->hdr.idFrom;
 
 		CString tipText;
 		if (ID_TREE_HIDE == nID)

@@ -81,8 +81,11 @@ CString CmboxviewApp::m_processPath = L"";
 CString CmboxviewApp::m_startupPath = L"";
 CString CmboxviewApp::m_currentPath = L"";
 
+
+ConfigTree* CmboxviewApp::m_configTree = 0;
 BOOL CmboxviewApp::m_registry = TRUE;
 CString CmboxviewApp::m_configFilePath;
+BOOL CmboxviewApp::m_configFileLoaded = FALSE;
 //DebugCString CmboxviewApp::m_configFilePath;
 
 CWnd* CmboxviewApp::wndFocus = 0;
@@ -550,14 +553,17 @@ CmboxviewApp::~CmboxviewApp()
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
 		_ASSERTE(confTree);
+		if (confTree)
+		{
+			confTree->DumpTree();
 
-		confTree->DumpTree();
+			if (CmboxviewApp::m_configFileLoaded)
+				confTree->Dump2File();
 
-		confTree->Dump2File();
+			confTree->DeleteAllNodes();
 
-		confTree->DeleteAllNodes();
-
-		delete confTree;
+			delete confTree;
+		}
 	}
 
 	int deb = 1;
@@ -1128,15 +1134,18 @@ void SetBrowserEmulation()
 		procName = L"mboxview.exe";
 	}
 
+	CString procName64 = L"mboxview64.exe";
+
 	CString ieSvcVer = CProfile::_GetProfileString(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", L"svcVersion");
 	CString ieVer = CProfile::_GetProfileString(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", L"Version");
 	int p = ieVer.Find(L'.');
 	int maj = _tstoi(ieVer);
 	int min = _tstoi(ieVer.Mid(p + 1));
+	DWORD dwEmulation64 = CProfile::_GetProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName64);
 	DWORD dwEmulation = CProfile::_GetProfileInt(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", procName);
 	if (maj == 9 && min >= 10) {
 		DWORD dwem = min * 1000 + 1;
-		//if (dwEmulation != dwem)
+		//if (dwEmulation != dwem)  // TODO: check if that was just for testing ???
 		{
 			BOOL ret1 = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", L"mboxview.exe", dwem);
 			BOOL ret2 = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, L"Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION", L"mboxview64.exe", dwem);
@@ -1554,7 +1563,10 @@ BOOL CmboxviewApp::InitInstance()
 		ConfigTree* confTree = CProfile::GetConfigTree();
 		_ASSERTE(confTree);
 
-		confTree->LoadConfigFromFile();
+		int retload = confTree->LoadConfigFromFile();
+
+		if (retload >= 0)
+			CmboxviewApp::m_configFileLoaded = TRUE;
 
 
 		CString configFilePath = CmboxviewApp::m_configFilePath + L"-test";
@@ -1782,14 +1794,20 @@ BOOL CmboxviewApp::InitInstance()
 	DWORD BUFSIZE = 1024;
 	wchar_t Buffer[1024];
 
-	DWORD dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
+
+	DWORD dwRet;
+#if 0
+	dwRet = ::GetCurrentDirectory(BUFSIZE, Buffer);
 	if (dwRet > 0)
 	{
 		m_startupPath = CString(Buffer);
 	}
+#endif
 
 	CString folderPath;
 	FileUtils::GetFolderPath(m_processPath, folderPath);
+
+	m_startupPath = folderPath;
 
 	if (!::SetCurrentDirectory((LPCWSTR)folderPath))
 	{

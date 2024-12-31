@@ -130,12 +130,12 @@ ConfigTree* CProfile::GetConfigTree()
 {
 	if (CmboxviewApp::m_registry)
 		return 0;
-	if (CMainFrame::m_configTree == 0)
-		CMainFrame::m_configTree = new ConfigTree(CString(L"ROOT"));
+	if (CmboxviewApp::m_configTree == 0)
+		CmboxviewApp::m_configTree = new ConfigTree(CString(L"ROOT"));
 
-	_ASSERTE(CMainFrame::m_configTree != 0);
+	_ASSERTE(CmboxviewApp::m_configTree != 0);
 
-	return CMainFrame::m_configTree;
+	return CmboxviewApp::m_configTree;
 }
 
 BOOL CProfile::GetFileConfigSection(LPCWSTR registrySection, CString& fileSection)
