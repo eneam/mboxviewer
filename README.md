@@ -86,10 +86,10 @@ During startup, the MBox Viewer will check whether the MBoxViewer.config file ex
 
 The config file format is similar to the format of ".reg" registry file
 
----
+```
 [UMBoxViewer\LastSelection]
-"parameter"="value"
----
+"parameter"="value
+```
 
 White spaces are not allowed in the front of each line and around "=" character.
 All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
