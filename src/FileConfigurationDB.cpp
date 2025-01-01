@@ -872,7 +872,7 @@ int  ConfigTree::Dump2File(CString& filepath)
 # [UMBoxViewer\LastSelection]
 # "parameter"="value"
 #
-# White spaces are not allowed in the front of each line and around "=" character.
+# White spaces are not allowed in the front of each line and around the "=" character.
 # All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
 #
 # MBoxViewer.config file must be encoded as UTF16LE BOM file
