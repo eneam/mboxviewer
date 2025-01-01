@@ -78,7 +78,7 @@ Configuration
 MBox Viewer supports Windows Registry based and the file based configuration.
 
 By default, Windows Registry is used to store configuration data.
-During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and writeable in:
+During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and is writeable in:
 
 1. the Config subfolder under the MBox Viewer software installation folder  or
 2. in the UMBoxViewer\Config subfolder under the  user specific folder created by Windows system 
@@ -88,7 +88,7 @@ The config file format is similar to the format of ".reg" registry file
 
 ```
 [UMBoxViewer\LastSelection]
-"parameter"="value
+"parameter"="value"
 ```
 
 White spaces are not allowed in the front of each line and around "=" character.
