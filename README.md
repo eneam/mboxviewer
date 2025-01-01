@@ -72,6 +72,33 @@ MBox Viewer executable is released as mbox-viewer.exe-v1.0.3.XX.zip file. Please
 This wil create mbox-viewer.exe-v1.0.3.XX subfolder under the selected folder. 
 The mbox-viewer.exe-v1.0.3.XX subfolder will contain two executable files mboxview.exe or mboxview64.exe.
 
+Configuration
+-------------
+
+MBox Viewer supports Windows Registry based and the file based configuration.
+
+By default, Windows Registry is used to store configuration data.
+During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and writeable in:
+
+1. the Config subfolder under the MBox Viewer software installation folder  or
+2. in the UMBoxViewer\Config subfolder under the  user specific folder created by Windows system 
+        example : C:\Users\UserName\AppData\Local\UMBoxViewer\Config
+
+The config file format is similar to the format of ".reg" registry file
+[UMBoxViewer\LastSelection]
+"parameter"="value"
+
+White spaces are not allowed in the front of each line and around "=" character.
+All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
+
+MBoxViewer.config file must be encoded as UTF16LE BOM file
+
+MBoxViewer.config.sample file is included in the software package under the Config folder.
+In order to enable MBox Viewer to use the file based configuration, 
+user needs to rename this file to MBoxViewer.config file or copy the sample file
+to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
+
+
 Running
 --------
 
