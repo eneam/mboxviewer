@@ -999,9 +999,11 @@ BOOL NTreeView::ImportLegacyRegistryData()
 	}
 
 	ConfigTree* confTree = CProfile::GetConfigTree();
+#ifdef _DEBUG
 	CString label = L"NTreeView::ImportLegacyRegistryData";
 	if (confTree)
 		confTree->DumpTree(label);
+#endif
 
 	return TRUE;
 }
@@ -2528,7 +2530,7 @@ void NTreeView::OpenLastSelection(MailSelectionInfo* mailSelection)
 	TRACE(L"PrintFolderNames NEW\n");
 	PrintFolderNames(0, TRUE);
 
-#if  _DEBUG
+#ifdef  _DEBUG
 	CString pathTest = "F:\\Thunderbird\\Project.sbd\\Sub-project-1.sbd";
 	//pathTest = "F:\\Thunderbird\\";
 	//pathTest = "fake";
@@ -7337,7 +7339,7 @@ BOOL NTreeView::AssertTreeCtrl_Internal(HTREEITEM hItem)
 BOOL NTreeView::AssertNTreeView()
 {
 	BOOL retval = TRUE;
-#if _DEBUG
+#ifdef _DEBUG
 	CString lastPath = MboxMail::GetLastPath();
 	retval = NTreeView::AssertNTreeView_Internal();
 	MboxMail::SetLastPath(lastPath);
@@ -9272,7 +9274,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		int deb = 1;
 	}
 
-#if _DEBUG
+#ifdef _DEBUG
 	BOOL recursive = TRUE;
 	int depth = 0;
 	TRACE(L"Tree Control:\n");

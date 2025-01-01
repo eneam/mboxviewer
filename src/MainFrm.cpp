@@ -4090,8 +4090,10 @@ void CMainFrame::OnClose()
 	if (!CProfile::IsRegistryConfig())
 	{
 		ConfigTree* confTree = CProfile::GetConfigTree();
+#ifdef _DEBUG
 		CString label = L"CMainFrame::OnClose";
 		confTree->DumpTree(label);
+#endif
 	}
 
 	MboxMail::ReleaseResources();
@@ -4593,7 +4595,7 @@ void CMainFrame::OnFordevelopersMemory()
 	const int deb2 = 1;
 
 #if 1
-#if _DEBUG
+#ifdef _DEBUG
 	MboxMail::m_textEncodingStats.Clear();
 	MboxMail::CollectTextEncodingStats(MboxMail::m_textEncodingStats);
 
@@ -5865,7 +5867,7 @@ CWnd * CMainFrame::SetWindowFocus(CWnd* wnd)
 	CWnd* wnd1 = wnd->SetActiveWindow();
 	CWnd *wnd2 = wnd->SetFocus();
 
-#if _DEBUG
+#ifdef _DEBUG
 	if (wnd2 == 0)
 	{
 		CString errorText = FileUtils::GetLastErrorAsString();

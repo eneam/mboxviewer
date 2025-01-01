@@ -575,7 +575,7 @@ CmboxviewApp::CmboxviewApp()
 	// Place all significant initialization in InitInstance
 	int deb10 = 1;
 
-#if _DEBUG
+#ifdef _DEBUG
 
 #if 0
 	UINT acpCodePage = GetACP();
@@ -1506,7 +1506,7 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 		txt.Format(L"\nGetModuleFileName=\"%s\"\n_get_wpgmptr     =\"%s\"\n", processFilePath, procressPath);
 		TRACE(L"%s", txt);
 
-#if _DEBUG
+#ifdef _DEBUG
 #if 0
 		HWND h = 0;
 		int answer = MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_OK);
@@ -1568,9 +1568,10 @@ BOOL CmboxviewApp::InitInstance()
 		if (retload >= 0)
 			CmboxviewApp::m_configFileLoaded = TRUE;
 
-
+#if 0
 		CString configFilePath = CmboxviewApp::m_configFilePath + L"-test";
 		confTree->Dump2File(configFilePath);
+#endif
 	}
 	else
 	{

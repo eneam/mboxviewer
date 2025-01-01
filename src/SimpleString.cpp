@@ -94,7 +94,7 @@ int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char cons
 	int findSrcPos = FindNoCase(offset, Src, Size, ncount);
 	if (findSrcPos >= 0)
 	{
-#if _DEBUG
+#ifdef _DEBUG
 		// Make local
 		SimpleString tmp;
 		{
@@ -150,7 +150,7 @@ int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char cons
 		SetCount(needSize);
 
 		ret = findSrcPos;
-#if _DEBUG
+#ifdef _DEBUG
 		// Make local
 		{
 			_ASSERTE(tmp.Count() == this->Count());

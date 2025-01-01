@@ -123,7 +123,7 @@ void ConfigTree::DumpNode(ConfigNode* node, int level)
 
 void ConfigTree::DumpTree()
 {
-
+#ifdef _DEBUG
 	CString out;
 	out.Preallocate(10000);
 
@@ -131,6 +131,7 @@ void ConfigTree::DumpTree()
 
 	TRACE(L"%s\n", L"TREE DUMP CONFIG TREE");
 	TRACE(L"%s\n", out);
+#endif
 }
 
 void ConfigTree::DumpNode(ConfigNode* node, CString &out)
@@ -304,8 +305,10 @@ ConfigNode* ConfigTree::InsertNode(ConfigNode* parent, ConfigNode* node)
 
 BOOL ConfigTree::_DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
+#ifdef _DEBUG
 	CString label = L"_DeleteProfileString";
 	//DumpTree(label);
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -333,8 +336,10 @@ BOOL ConfigTree::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD
 	if (configSection.IsEmpty())  // not UMBoxView
 		return FALSE;
 
+#ifdef _DEBUG
 	CString label = L"ENTER _WriteProfileString" + CString(L" ") + section + CString(L" ") + key;
 	DumpTree(label);
+#endif
 
 	CStringArray ar;
 	CString delim = L"\\";
@@ -383,9 +388,10 @@ BOOL ConfigTree::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD
 		}
 	}
 
+#ifdef _DEBUG
 	label = L"EXIT _WriteProfileString";
-
 	DumpTree(label);
+#endif
 
 	return TRUE;
 }
@@ -399,8 +405,10 @@ BOOL ConfigTree::_WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CS
 	if (configSection.IsEmpty())  // not UMBoxView
 		return FALSE;
 
+#ifdef _DEBUG
 	CString label = L"ENTER _WriteProfileString" + CString(L" ") + section + CString(L" ") + key;
 	DumpTree(label);
+#endif
 
 	CStringArray ar;
 	CString delim = L"\\";
@@ -448,9 +456,10 @@ BOOL ConfigTree::_WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CS
 		}
 	}
 
+#ifdef _DEBUG
 	label = L"EXIT _WriteProfileString";
-
 	DumpTree(label);
+#endif
 
 	return TRUE;
 }
@@ -464,8 +473,10 @@ BOOL ConfigTree::_WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, co
 	if (configSection.IsEmpty())  // not UMBoxView
 		return FALSE;
 
+#ifdef _DEBUG
 	CString label = L"ENTER _WriteProfileString" + CString(L" ") + section + CString(L" ") + key;
 	DumpTree(label);
+#endif
 
 	CStringArray ar;
 	CString delim = L"\\";
@@ -511,17 +522,20 @@ BOOL ConfigTree::_WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, co
 		}
 	}
 
+#ifdef _DEBUG
 	label = L"EXIT _WriteProfileString";
-
 	DumpTree(label);
+#endif
 
 	return TRUE;
 }
 //
 int ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
+#ifdef _DEBUG
 	CString label = L"_GetProfileInt";
 	//DumpTree(label);
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -545,8 +559,10 @@ int ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key)
 
 CString ConfigTree::ConfigTree::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
+#ifdef _DEBUG
 	CString label = L"_GetProfileString";
 	//DumpTree(label);
+#endif
 
 	CString strval;
 
@@ -567,7 +583,9 @@ CString ConfigTree::ConfigTree::_GetProfileString(HKEY hKey, LPCWSTR section, LP
 
 BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval)
 {
+#ifdef _DEBUG
 	//DumpTree(CString(L"_GetProfileInt"));
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -593,7 +611,9 @@ BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& 
 
 BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval)
 {
+#ifdef _DEBUG
 	//DumpTree(CString(L"_GetProfileInt"));
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -617,8 +637,10 @@ BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& in
 
 BOOL ConfigTree::_GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str)
 {
+#ifdef _DEBUG
 	CString label = L"_GetProfileString";
 	//DumpTree(label);
+#endif
 
 	CString strval;
 
@@ -645,8 +667,10 @@ BOOL ConfigTree::_GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE
 	static BYTE* bdata = 0;
 	static int bdatalen = 0;
 
+#ifdef _DEBUG
 	CString label = L"_GetProfileBinary";
 	//DumpTree(label);
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -668,8 +692,10 @@ BOOL ConfigTree::_GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE
 
 BOOL ConfigTree::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
+#ifdef _DEBUG
 	CString label = L"_DeleteValue";
 	//DumpTree(label);
+#endif
 
 	CString configSection;
 	CString registrySection = section;
@@ -690,7 +716,9 @@ BOOL ConfigTree::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 
 BOOL ConfigTree::_DeleteKey(HKEY hKey, LPCWSTR section, LPCWSTR key, BOOL recursive)
 {
+#ifdef _DEBUG
 	//DumpTree(CString(L"BEGIN: _DeleteKey"));
+#endif
 
 	CString configSection;
 	CString registrySection = section;

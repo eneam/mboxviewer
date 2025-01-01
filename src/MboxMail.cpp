@@ -1322,7 +1322,7 @@ int MboxMail::NormalizeText(MboxMail* m)
 	if ((m->m_subj_charsetId != CP_UTF8) && m->m_subj.GetLength())
 	{
 		retStr2UTF8 = TextUtilsEx::Str2UTF8((LPCSTR)m->m_subj, m->m_subj.GetLength(), m->m_subj_charsetId, textUTF8, error);
-#if _DEBUG
+#ifdef _DEBUG
 		retStr2WStr = TextUtilsEx::Str2WStr(m->m_subj, m->m_subj_charsetId, text1W, error);
 		retUTF82WStr = TextUtilsEx::UTF82WStr(&textUTF8, &text2W, error);
 
@@ -1337,7 +1337,7 @@ int MboxMail::NormalizeText(MboxMail* m)
 	if ((m->m_from_charsetId != CP_UTF8) && m->m_from.GetLength())
 	{
 		retStr2UTF8 = TextUtilsEx::Str2UTF8((LPCSTR)m->m_from, m->m_from.GetLength(), m->m_from_charsetId, textUTF8, error);
-#if _DEBUG
+#ifdef _DEBUG
 		retStr2WStr = TextUtilsEx::Str2WStr(m->m_from, m->m_from_charsetId, text1W, error);
 		retUTF82WStr = TextUtilsEx::UTF82WStr(&textUTF8, &text2W, error);
 
@@ -1352,7 +1352,7 @@ int MboxMail::NormalizeText(MboxMail* m)
 	if ((m->m_to_charsetId != CP_UTF8) && m->m_to.GetLength())
 	{
 		retStr2UTF8 = TextUtilsEx::Str2UTF8((LPCSTR)m->m_to, m->m_to.GetLength(), m->m_to_charsetId, textUTF8, error);
-#if _DEBUG
+#ifdef _DEBUG
 		retStr2WStr = TextUtilsEx::Str2WStr(m->m_to, m->m_to_charsetId, text1W, error);
 		retUTF82WStr = TextUtilsEx::UTF82WStr(&textUTF8, &text2W, error);
 
@@ -1367,7 +1367,7 @@ int MboxMail::NormalizeText(MboxMail* m)
 	if ((m->m_cc_charsetId != CP_UTF8) && m->m_cc.GetLength())
 	{
 		retStr2UTF8 = TextUtilsEx::Str2UTF8((LPCSTR)m->m_cc, m->m_cc.GetLength(), m->m_cc_charsetId, textUTF8, error);
-#if _DEBUG
+#ifdef _DEBUG
 		retStr2WStr = TextUtilsEx::Str2WStr(m->m_cc, m->m_cc_charsetId, text1W, error);
 		retUTF82WStr = TextUtilsEx::UTF82WStr(&textUTF8, &text2W, error);
 
@@ -1382,7 +1382,7 @@ int MboxMail::NormalizeText(MboxMail* m)
 	if ((m->m_bcc_charsetId != CP_UTF8) && m->m_bcc.GetLength())
 	{
 		retStr2UTF8 = TextUtilsEx::Str2UTF8((LPCSTR)m->m_bcc, m->m_bcc.GetLength(), m->m_bcc_charsetId, textUTF8, error);
-#if _DEBUG
+#ifdef _DEBUG
 		retStr2WStr = TextUtilsEx::Str2WStr(m->m_bcc, m->m_bcc_charsetId, text1W, error);
 		retUTF82WStr = TextUtilsEx::UTF82WStr(&textUTF8, &text2W, error);
 

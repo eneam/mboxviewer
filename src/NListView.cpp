@@ -6449,7 +6449,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 				if (i == 1)
 				{
 					_ASSERTE(isTextHtml);
-#if _DEBUG
+#ifdef _DEBUG
 					ULONGLONG tc_start = GetTickCount64();
 #endif
 					SimpleString* inbufPtr;
@@ -6478,7 +6478,7 @@ BOOL NListView::FindInMailContent(int mailPosition, BOOL bContent, BOOL bAttachm
 					pData = retbuf->Data();
 					datalen = retbuf->Count();
 
-#if _DEBUG
+#ifdef _DEBUG
 					ULONGLONG tc_end = GetTickCount64();
 					DWORD delta = (DWORD)(tc_end - tc_start);
 
@@ -6783,7 +6783,7 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 				if (i == 1)
 				{
 					_ASSERTE(isTextHtml);
-#if _DEBUG
+#ifdef _DEBUG
 					ULONGLONG tc_start = GetTickCount64();
 #endif
 					SimpleString *inbufPtr;
@@ -6812,7 +6812,7 @@ BOOL NListView::AdvancedFindInMailContent(int mailPosition, BOOL bContent, BOOL 
 					pData = retbuf->Data();
 					datalen = retbuf->Count();
 
-#if _DEBUG
+#ifdef _DEBUG
 					ULONGLONG tc_end = GetTickCount64();
 					DWORD delta = (DWORD)(tc_end - tc_start);
 
@@ -16102,7 +16102,7 @@ void AttachmentMgr::Sort()
 
 void AttachmentMgr::PrintMap(CString &title)
 {
-#if _DEBUG
+#ifdef _DEBUG
 	TRACE(L"%s", title);
 
 	AttachmentDB::CPair* pCurVal = m_attachmentMap.PGetFirstAssoc();
@@ -16120,7 +16120,7 @@ void AttachmentMgr::PrintMap(CString &title)
 
 void AttachmentMgr::PrintArray(CString& title)
 {
-#if _DEBUG
+#ifdef _DEBUG
 	TRACE(L"%s", title);
 	int i;
 	for (i = 0; i < m_attachmentArray.GetCount(); i++)
