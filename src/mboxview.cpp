@@ -1324,7 +1324,9 @@ BOOL CAboutDlg::OnInitDialog()
 	CString version;
 	BOOL retGetVersion = CmboxviewApp::GetMboxviewLongVersion(version);
 	if (retGetVersion)
+	{
 		GetDlgItem(IDC_STATIC1)->SetWindowText(version);
+	}
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);

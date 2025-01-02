@@ -596,7 +596,28 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CString version;
 	BOOL retGetVersion = CmboxviewApp::GetMboxviewLongVersion(version);
 	if (retGetVersion)
+	{
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+		CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+
+		if (language.IsEmpty())
+		{
+			CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
+			FileUtils::CPathStripPath((LPCWSTR)languageFolderPath, language);
+		}
+
+		if (language.IsEmpty())
+			language = L"english";
+
+		CString languageName = language.GetAt(0);
+		languageName.MakeUpper();
+		languageName.Append(language.Right(language.GetLength() - 1));
+
+		version += L" " + languageName;
+
 		SetWindowText(version);
+	}
 
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
@@ -6006,13 +6027,10 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	
 	CString languageFolderPath = processFolderPath + L"Language" + L"\\" + languageFolder;
 	if (languageFolder.CompareNoCase(L"english") == 0)
+	{
 		languageFolderPath.Empty();
+	}
 
-	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath", languageFolderPath);
-	CString translationFileName = languageFolder + L".txt";
-
-	CString languageTranslationFilePath = processFolderPath + L"Language\\" + languageFolder + L"\\" + translationFileName;
-	//ResHelper::LoadLanguageMap(languageTranslationFilePath);
 
 	if (languageFolder.Compare(lastFolderName) != 0)
 	{
@@ -6021,7 +6039,22 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 
+		if (languageFolderPath.IsEmpty())
+			languageFolder.Empty();
+
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"language", languageFolder);
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath", languageFolderPath);
+
+		CString translationFileName = languageFolder + L".txt";
+
+		CString languageTranslationFilePath = processFolderPath + L"Language\\" + languageFolder + L"\\" + translationFileName;
+		//ResHelper::LoadLanguageMap(languageTranslationFilePath);
+
 		AfxGetMainWnd()->PostMessage(WM_CLOSE);
+	}
+	else
+	{
+		int deb = 1;
 	}
 	int deb = 1;
 }

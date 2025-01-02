@@ -1975,7 +1975,7 @@ int ResHelper::IsFileUTF8(LPCWSTR filePath)
 	// TODO: enhnace to process  less than full file size
 	if (dwLength > bufflen)
 	{
-		pbuff = new char[dwLength];
+		pbuff = new char[(UINT)dwLength];
 	}
 	int retcode = -1;
 	if (pbuff)
