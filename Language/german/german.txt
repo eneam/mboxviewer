@@ -1586,6 +1586,6 @@
 "E-Mail-Ordner erweitern/reduzieren"
 
 ["Or select OK to select default Data Folder"]
-"Oder wählen Sie „OK“, um den Standarddatenordner auszuwählen."
+"Oder wählen Sie OK, um den Standarddatenordner auszuwählen."
 
 

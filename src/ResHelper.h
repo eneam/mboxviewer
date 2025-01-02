@@ -194,7 +194,8 @@ public:
 	static void UpdateToolBarItemsInfo(CToolBar* tbar);
 
 	static void LoadLanguageMap(CString & languageFolder);
-	static void LoadLanguageMapFromFileF16LE(CString& languageFolder);
+	static void LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath);
+	static void LoadLanguageMapFromFileAnsi(CString& languageTranslationFilePath);
 	
 	static void DisableLanguageLoading();
 	static void EnableLanguageLoading();

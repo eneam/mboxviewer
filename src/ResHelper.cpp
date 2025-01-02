@@ -672,7 +672,7 @@ void ResHelper::UpdateToolBarItemsInfo(CToolBar* tbar)
 		label2 = tbar->GetButtonText(i);
 		CString newLabel;
 		BOOL retFind = DetermineString(label, newLabel);
-		newLabel = L"Hello";
+		//newLabel = L"Hello";
 		BOOL ret = FALSE;
 		if (newLabel.GetLength())
 		{
@@ -1291,11 +1291,29 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 
 	ResHelper::TextEncoding bom1 = bom;
 
+	// TODO: Convert to ResHelper::TextEncoding::UTF16LE first if necessary
+
 	if (bom == ResHelper::TextEncoding::UTF16LE)
 	{
 		LoadLanguageMapFromFileF16LE(languageFile);
-		return;
+		int deb = 1;
 	}
+	else  // TODO: Ansi ???
+	{
+		LoadLanguageMapFromFileAnsi(languageFile);
+		int deb = 1;
+	}
+	return;
+}
+
+void ResHelper::LoadLanguageMapFromFileAnsi(CString& languageTranslationFilePath)
+{
+	CString controlName;
+	CString strLine;
+	CString str;
+	CString strW;
+
+	CString languageFile = languageTranslationFilePath;
 
 	SimpleMemoryFile memFile;
 	BOOL retOpen = memFile.Open(languageFile);
