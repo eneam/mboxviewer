@@ -1529,7 +1529,7 @@
 "Gültige Schlüsselwörter im Vorlagenformat, die durch Werte aus der E-Mail ersetzt werden. UNIQUE_ID wird vom Mbox-Viewer generiert, um Namenskonflikte zu vermeiden."
 
 ["Validate files as mbox files"]
-"EFPUSHBUTTONLA"Dateien als Mbox-Dateien validieren"
+"Dateien als Mbox-Dateien validieren"
 
 ["View Code Page Ids"]
 "Codepage-IDs anzeigen"
