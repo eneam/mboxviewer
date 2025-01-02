@@ -450,6 +450,7 @@ public:
 	afx_msg void OnLanguagetoolsCreatetranslationfile();
 	afx_msg void OnLanguagetoolsResorttranslationfile();
 	afx_msg void OnLanguagetoolsResourcefileproperty();
+	afx_msg void OnHelpFilebasedconfig();
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -1585,5 +1585,10 @@
 ["Expand/Collapse mail folders"]
 "Espandi/Comprimi cartelle di posta"
 
+["Or select OK to select default Data Folder"]
+"Oppure seleziona OK per selezionare la cartella dati predefinita"
+
+
+
 
 

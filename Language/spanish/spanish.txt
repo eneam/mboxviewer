@@ -1571,17 +1571,19 @@
 "|S&ólido"
 
 ["Expand/Colapse tree containing folders"]
-"Expand/Colapse tree containing folders"
+"Expandir/contraer árbol que contiene carpetas"
 
 ["Refresh folder containing mails"]
-"Refresh folder containing mails"
+"Actualizar carpeta que contiene correos"
 
 ["Select folder containing mails"]
-"Select folder containing mails"
+"Seleccionar carpeta que contiene correos"
 
 ["Display program information, version number and copyright"]
-"Display program information, version number and copyright"
+"Mostrar información del programa, número de versión y copyright"
 
 ["Expand/Collapse mail folders"]
-"Expand/Collapse mail folders"
+"Expandir/contraer carpetas de correo"
 
+["Or select OK to select default Data Folder"]
+"O seleccione Aceptar para seleccionar la carpeta de datos predeterminada"

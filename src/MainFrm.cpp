@@ -291,6 +291,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_CREATETRANSLATIONFILE, &CMainFrame::OnLanguagetoolsCreatetranslationfile)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsResorttranslationfile)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY, &CMainFrame::OnLanguagetoolsResourcefileproperty)
+	ON_COMMAND(ID_HELP_FILEBASEDCONFIG, &CMainFrame::OnHelpFilebasedconfig)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5060,7 +5061,7 @@ void CMainFrame::OnHelpUserguide()
 	else
 	{
 		CString txt;
-		txt.Format(L"User Guide file \"%s\" doesn't exist", filePath);
+		txt.Format(L"UserGuide file\n\n\"%s\"\n\ndoesn't exist", filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5086,7 +5087,7 @@ void CMainFrame::OnHelpReadme()
 	else
 	{
 		CString txt;
-		txt.Format(L"README file \"%s\" doesn't exist", filePath);
+		txt.Format(L"README file\n\n\"%s\"\n\ndoesn't exist", filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5112,7 +5113,7 @@ void CMainFrame::OnHelpLicense()
 	else
 	{
 		CString txt;
-		txt.Format(L"License file \"%s\" doesn't exist", filePath);
+		txt.Format(L"LICENSE file\n\n\"%s\"\n\ndoesn't exist", filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5135,7 +5136,7 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
 	else
 	{
 		CString txt;
-		txt.Format(L"Help file \n\n\"%s\" doesn't exist", filePath);
+		txt.Format(L"Help file \n\n\"%s\"\n\ndoesn't exist", filePath);
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 	int deb = 1;
@@ -5943,25 +5944,9 @@ void CMainFrame::OnHelpShortcuts()
 {
 	// TODO: Add your command handler code here
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + ".\\HelpFiles\\ShortcutsSummary.pdf";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		CString txt;
-		txt.Format(L"ShortcutsSummary file \"%s\" doesn't exist", filePath);
-		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"ShortcutsSummary.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 }
 
 
@@ -5969,25 +5954,9 @@ void CMainFrame::OnHelpChangeLog()
 {
 	// TODO: Add your command handler code here
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\CHANGE_LOG.md.txt";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		CString txt;
-		txt.Format(L"CHANGE_LOG file \"%s\" doesn't exist", filePath);
-		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"CHANGE_LOG.md.txt";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 }
 
 void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
@@ -6048,9 +6017,11 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	if (languageFolder.Compare(lastFolderName) != 0)
 	{
 		CString text;
-		text.Format(L"Please restart MBox Viewer for new language \"%s\" to take effect\n", languageFolder);
+		text.Format(L"MBox Viewer will exit. Please restart MBox Viewer for new language \"%s\" to take effect\n", languageFolder);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+
+		AfxGetMainWnd()->PostMessage(WM_CLOSE);
 	}
 	int deb = 1;
 }
@@ -6147,4 +6118,14 @@ void CMainFrame::OnLanguagetoolsResourcefileproperty()
 
 
 	int deb = 1;
+}
+
+
+void CMainFrame::OnHelpFilebasedconfig()
+{
+	// TODO: Add your command handler code here
+
+	CString helpFileName = L"FileConfigurationHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 }

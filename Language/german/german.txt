@@ -1571,18 +1571,21 @@
 "|S&olid"
 
 ["Expand/Colapse tree containing folders"]
-"Expand/Colapse tree containing folders"
+"Baumstruktur mit Ordnern erweitern/reduzieren"
 
 ["Refresh folder containing mails"]
-"Refresh folder containing mails"
+"Ordner mit E-Mails aktualisieren"
 
 ["Select folder containing mails"]
-"Select folder containing mails"
+"Ordner mit E-Mails auswählen"
 
 ["Display program information, version number and copyright"]
-"Display program information, version number and copyright"
+"Programminformationen, Versionsnummer und Copyright anzeigen"
 
 ["Expand/Collapse mail folders"]
-"Expand/Collapse mail folders"
+"E-Mail-Ordner erweitern/reduzieren"
+
+["Or select OK to select default Data Folder"]
+"Oder wählen Sie „OK“, um den Standarddatenordner auszuwählen."
 
 

@@ -144,6 +144,7 @@ BEGIN
         MENUITEM "Shortcuts",                   ID_HELP_SHORTCUTS
         MENUITEM "License",                     ID_HELP_LICENSE
         MENUITEM "Donate",                      ID_HELP_DONATE
+        MENUITEM "File Based Configuration",    ID_HELP_FILEBASEDCONFIG
     END
 END
 
