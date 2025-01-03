@@ -1570,7 +1570,7 @@
 ["|S&olid"]
 "|S&olid"
 
-["Expand/Colapse tree containing folders"]
+["Hide/Restore mail tree"]
 "Baumstruktur mit Ordnern erweitern/reduzieren"
 
 ["Refresh folder containing mails"]
