@@ -118,6 +118,14 @@ NMsgView::NMsgView()
 	m_strTitleBody.LoadString(IDS_TITLE_BODY);
 	m_strMailHeader.LoadString(IDS_TITLE_MAIL_HEADER);
 
+	ResHelper::TranslateString(m_strTitleSubject);
+	ResHelper::TranslateString(m_strTitleFrom);
+	ResHelper::TranslateString(m_strTitleDate);
+	ResHelper::TranslateString(m_strTitleTo);
+	ResHelper::TranslateString(m_strTitleCC);
+	ResHelper::TranslateString(m_strTitleBCC);
+	ResHelper::TranslateString(m_strTitleBody);
+
 	// set by SelectItem in NListView
 	m_subj_charsetId = 0;
 	m_from_charsetId = 0;

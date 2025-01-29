@@ -246,6 +246,8 @@ public:
 // Implementation
 public:
 
+	CToolTipCtrl m_toolTip;  // doesn't work likely because of CustomDraw; need to investigate 
+
 	// Global Vars -- FIXME
 	// avoid changes to multiple interfaces -- find better solution
 	// set/reset  in NListView::OnRClickSingleSelect: case S_PRINTER_Id and  case S_PRINTER_GROUP_Id:
@@ -701,6 +703,7 @@ public:
 	afx_msg void OnTvnGetInfoTip(NMHDR* pNMHDR, LRESULT* pResult);
 
 	afx_msg BOOL OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 
 	virtual void PreSubclassWindow();
 

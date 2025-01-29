@@ -900,6 +900,7 @@ void ColorStyleConfigDlg::OnBnClickedColorStyle(UINT nID)
 			if (colorStyles.m_ColorTbl[i] != customColorStyles.m_ColorTbl[i])
 			{
 				CString txt = L"Custom Color Style was changed but not saved! Discard changes?";
+				ResHelper::TranslateString(txt);
 				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 				if (answer == IDNO)
 				{
@@ -1077,7 +1078,8 @@ void ColorStyleConfigDlg::OnBnClickedApplyToAllPanes()
 
 	if ((m_selectedPane == ColorStyleConfig::MailConversion1) || (m_selectedPane == ColorStyleConfig::MailConversion1))
 	{
-		CString txt = L"\"Apply to All Panes\" can't be used when MailConversion1 or MailConversion2 is selected\n";
+		CString txt = L"\"Apply to All Panes\" can't be used when MailConversion1 or MailConversion2 is selected";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_ICONHAND|MB_OK);
 		return;
 	}

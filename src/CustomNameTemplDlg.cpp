@@ -84,19 +84,25 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	BOOL ret = MboxMail::ParseTemplateFormat(m_nameTemplateCnf.m_TemplateFormat, labelArray);
 	if (labelArray.GetCount() == 0)
 	{
-		AfxMessageBox(L"Template format can't be empty!", MB_OK | MB_ICONHAND);
+		CString txt = L"Template format can't be empty!";
+		ResHelper::TranslateString(txt);
+		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bFromUsername == FALSE) && (m_nameTemplateCnf.m_bFromDomain == FALSE))
 	{
-		AfxMessageBox(L"Either From User Account Name or From Domain must be checked!", MB_OK | MB_ICONHAND);
+		CString txt = L"Either From User Account Name or From Domain must be checked!";
+		ResHelper::TranslateString(txt);
+		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
 	if ((m_nameTemplateCnf.m_bToUsername == FALSE) && (m_nameTemplateCnf.m_bToDomain == FALSE))
 	{
-		AfxMessageBox(L"Either To User Account Name or To Domain must be checked!", MB_OK | MB_ICONHAND);
+		CString txt = L"Either To User Account Name or To Domain must be checked!";
+		ResHelper::TranslateString(txt);
+		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

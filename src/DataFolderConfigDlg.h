@@ -48,7 +48,10 @@ public:
 
 	int m_returnCode;
 	BOOL m_restartRequired;
-	CEdit m_introText;
+	//CEdit m_introText;
+	CStatic m_introText;
+	//
+	CStatic m_defaultDataFolderText;
 	//
 	CString m_strCurrentDataFolder;
 	CEdit m_currentDataFolder;

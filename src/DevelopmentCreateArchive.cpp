@@ -109,7 +109,10 @@ void DevelopmentCreateArchive::OnBnClickedOk()
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
 		CString txt;
-		txt.Format(L"File \"%s\" already exist. Do you want to override?", mboxFilePath);
+		CString fmt = L"File \"%s\" already exist. Do you want to override?";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 			return;

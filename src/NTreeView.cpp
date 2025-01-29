@@ -906,7 +906,10 @@ void NTreeView::LoadFolders()
 
 			if (IsFolderARootFolder(path))
 			{
-				sText.Format(L"Opening root folder %s ...", str);
+				CString fmt = L"Opening root folder %s ...";
+				ResHelper::TranslateString(fmt);
+
+				sText.Format(fmt, str);
 
 				if (pFrame)
 					pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
@@ -939,6 +942,7 @@ void NTreeView::LoadFolders()
 			}
 
 			sText.Format(L"Ready");
+			ResHelper::TranslateString(sText);
 			if (pFrame)
 				pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 		}
@@ -1512,6 +1516,14 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 		fp.Read(buff, 2);
 		while (fp.ReadString(line))
 		{
+			// TODO: Implement RemoveBOM()
+			const unsigned char* p = (unsigned char*)((LPCWSTR)line);
+			if ((*p == 0xFF) && (*(p + 1) == 0xFE))  // UTF16LE
+			{
+				CString str = line.Right(line.GetLength() - 1);
+				line = str;
+			}
+
 			line.TrimRight(L"\r\n"); // FIXMEFIXME not critical to remove 
 
 			int w = line.Find(L'\t', 0);
@@ -1636,11 +1648,23 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 				_int64 realFSize = FileUtils::FileSize(mboxFilePath, &errText);
 				if (!errText.IsEmpty())
 				{
+					CString txt;
+#if 0
 					CString txt = errText;
 					txt.Append(L"\n\"");
 					txt.Append(mboxFilePath);
+#endif
 					if (mboxFilePath.GetLength() > _MAX_PATH)
 					{
+						CString l;
+						l.Format(L"%d", mboxFilePath.GetLength());
+
+						CString fmt = L"%s\n\"%s\"\n\nThe file path length (%s) is greater than maximum length (260) allowed by Windows API.";
+						fmt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
+						fmt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+						ResHelper::TranslateString(fmt);
+						txt.Format(fmt, errText, mboxFilePath, l);
+#if 0
 						CString l;
 						l.Format(L"%d", mboxFilePath.GetLength());
 						txt.Append(L"\"\n\nThe file path length (");
@@ -1648,14 +1672,26 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 						txt.Append(L") is greater than maximum length (260) allowed by Windows API.");
 						txt += L" Please rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
 						txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+#endif
 					}
 					else
 					{
 						_ASSERTE(FALSE);
 						// We should not be here
+#if 0
+						CString txt = errText;
+						txt.Append(L"\n\"");
+						txt.Append(mboxFilePath);
+
 						txt.Append(L"\"\n\nUnexpected error detected while trying to determine the size of file.\n\n");
 						txt += L"You may need to rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
 						txt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+#endif
+						CString fmt = L"%s\n\"%s\"\n\nUnexpected error detected while trying to determine the size of file.\n\n";
+						fmt += L"You may need to rename the file manually or moved to different folder before the next restart of MBox Viewer.\n\n";
+						fmt += L"Note that MBox Viewer is always in discovery mode upon startup and this message will be shown until issue is resolved.\n\n";
+						ResHelper::TranslateString(fmt);
+						txt.Format(fmt, errText, mboxFilePath);
 					}
 
 					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
@@ -2089,7 +2125,10 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		int paneId = 0;
 		CString sText;
-		sText.Format(L"Opening Label %s ...", linfoNew->m_label);
+		CString fmt = L"Opening Label %s ...";
+		ResHelper::TranslateString(fmt);
+
+		sText.Format(fmt, linfoNew->m_label);
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 		CString driveName;
@@ -2181,6 +2220,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		MboxMail::m_findMails.b_mails_which_sorted = 1;
 
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
 		pNamePP = &pFrame->m_NamePatternParams;
@@ -2295,7 +2335,9 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	int paneId = 0;
 	CString sText;
-	sText.Format(L"Opening %s ...", str);
+	CString fmt = L"Opening %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, str);
 	pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	pListView->FillCtrl();
@@ -2308,7 +2350,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	pFrame->UpdateFilePrintconfig();
 
-	sText.Format(L"Ready");
+	sText = L"Ready";
+	ResHelper::TranslateString(sText);
 	pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
 	MboxMail::ShowHint(HintConfig::MsgWindowPlacementHint, GetSafeHwnd());
@@ -2601,15 +2644,27 @@ void NTreeView::SelectMailFile(CString* fileNm)
 	{
 		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		{
+#if 0
 			txt = L"Nonexistent Mail File \"" + mailFile;
 			txt += L"\".\nTerminating";
+#endif
+
+			CString fmt = L"Nonexistent Mail File \"%s\".\nTerminating";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, mailFile);
+
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		}
 		else
 		{
+#if 0
 			txt = L"Nonexistent Mail File \"" + mailFile;
 			txt += L"\".\nDo you want to continue?";
+#endif
+			CString fmt = L"Nonexistent Mail File \"%s\".\nDo you want to continue?";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, mailFile);
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				AfxGetMainWnd()->PostMessage(WM_CLOSE);
@@ -3033,6 +3088,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if ((hParent == 0) && (hItem != hTreeItem))
 	{
 		CString errorText = L"Right Click is supported on selected items only.\nUse left click to select mail folder first.";
+		ResHelper::TranslateString(errorText);
 		HWND h = wnd->GetSafeHwnd();
 		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
@@ -3041,6 +3097,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if ((hParent != 0) && (hItem != hTreeItem))
 	{
 		CString errorText = L"Right Click is supported on selected items only.\nUse left click to select mail file first.";
+		ResHelper::TranslateString(errorText);
 		HWND h = wnd->GetSafeHwnd();
 		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
@@ -3538,22 +3595,22 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (pListView)
 			pListView->SortByColumn(1);
 	}
-						  break;
+	break;
 	case S_SORT_BY_FROM_Id: {
 		if (pListView)
 			pListView->SortByColumn(2);
 	}
-						  break;
+	break;
 	case S_SORT_BY_TO_Id: {
 		if (pListView)
 			pListView->SortByColumn(3);
 	}
-						break;
+	break;
 	case S_SORT_BY_SUBJ_Id: {
 		if (pListView)
 			pListView->SortByColumn(4);
 	}
-						  break;
+	break;
 	case S_SORT_BY_DATE_AND_SUBJ_Id:
 	{
 		if (pListView)
@@ -3564,22 +3621,24 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (pListView)
 			pListView->SortByColumn(5);
 	}
-						  break;
+	break;
 	case S_SORT_BY_CONVERSATION_Id: {
 		if (pListView)
 			pListView->SortByColumn(0);
 	}
-								  break;
+	break;
 								  // Sort by position in the archive file. Enabled for debugging only
 	case S_SORT_BY_POSITION_Id: {
 		if (pListView)
 			pListView->SortByColumn(1, TRUE);
 	}
-							  break;
+	break;
 
 	case M_Reload_Id:
 	{
 		CString txt = L"Do you want to refresh index file?";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
@@ -3591,8 +3650,10 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	case M_AttachmentCache_Id:
 	{
-		CString txt = L"Do you want to create cache with all attachements?";
-		txt.Append(L"\n\nNote that \"File->Attachments Config\" controls whether image attachments embedded into messages will also be exported");
+		CString txt = L"Do you want to create cache with all attachments?"
+			L"\n\nNote that \"File->Attachments Config\" controls whether image attachments embedded into messages will also be exported";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
@@ -3612,6 +3673,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case M_EmlCache_Id:
 	{
 		CString txt = L"Do you want to create cache with all Eml files?";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
@@ -3718,6 +3781,7 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 			CString txt = L"User Selected Mails list is not empty.\n"
 				L"Content will be lost if you switch to new mail archive.\n"
 				L"Do you want to continue?";
+			ResHelper::TranslateString(txt);
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 			{
@@ -4904,6 +4968,7 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap& fileSizes, BOOL isS
 {
 	CCheckListBoxDlg dlg;
 	dlg.m_title = L"Select Files to Restore";
+	ResHelper::TranslateString(dlg.m_title);
 
 	FileSizeMap::CPair* pCurVal;
 
@@ -6032,6 +6097,7 @@ int NTreeView::LoadLabels()
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 	if (pFrame) {
 		sText.Format(L"Loading labels ...");
+		ResHelper::TranslateString(sText);
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 	HTREEITEM hRoot = m_tree.GetRootItem();
@@ -6095,6 +6161,7 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 
 	if (pFrame) {
 		sText.Format(L"Loading labels ...");
+		ResHelper::TranslateString(sText);
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
@@ -6171,7 +6238,9 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 			int ret = ShowGmailLabels(hChild, labelsCachePath, linfo->m_filePath);
 			if (ret < 0) {
 				MboxMail::assert_unexpected();
-				sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+				sText.Format(L"Ready"); 
+				ResHelper::TranslateString(sText);
+				if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 				return -1;  // goto instead ?
 			}
 			CString inbox(L"Inbox");
@@ -6188,7 +6257,9 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 
 		hChild = m_tree.GetNextSiblingItem(hChild);
 	}
-	sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
+	if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	return 1;
 }
 
@@ -6292,13 +6363,17 @@ int NTreeView::CreateLabelsForSingleMailFile(HTREEITEM hItem)
 	CString sText;
 	CString mailFile = m_tree.GetItemText(hItem);
 
-	sText.Format(L"Creating Gmail Labels for %s ...", mailFile);
+	CString fmt = L"Creating Gmail Labels for %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, mailFile);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 	RecreateGmailLabels(hItem);
 
 	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
@@ -6413,10 +6488,18 @@ BOOL NTreeView::DeleteFolderIfEmpty(CString& path)
 		if (cnt == 0)
 		{
 			pTreeView->DeleteFolder(hFolder);
-
-			CString txt = L"No valid mail archive files found in \n\n\"";
+#if 0
+			CString txt = L"No valid mail archive files found in\n\n\"";
 			txt.Append(path);
 			txt.Append(L"\"\n\nfolder. Ignoring.\n");
+#endif
+
+			CString fmt = L"No valid mail archive files found in\n\n\"%s\"\n\nfolder. Ignoring.";
+			ResHelper::TranslateString(fmt);
+			CString txt;
+			txt.Format(fmt, path);
+
+
 			HWND h = GetSafeHwnd();
 			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			int deb = 1;
@@ -6516,6 +6599,9 @@ HTREEITEM NTreeView::OpenFolder(HTREEITEM hFolder, CString& path, BOOL selectFol
 	{
 		CString txt = L"The mbox files must be installed under a named folder\n."
 			L"Please create folder, move the mbox files to that folder and try again.";
+
+		ResHelper::TranslateString(txt);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return 0;
 	}
@@ -6531,7 +6617,10 @@ HTREEITEM NTreeView::OpenFolder(HTREEITEM hFolder, CString& path, BOOL selectFol
 	CString sText;
 	CString fname;
 	FileUtils::CPathStripPath(path, fname);
-	sText.Format(L"Opening new mail folder %s ...", fname);
+	CString fmt = L"Opening new mail folder %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, fname);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -6543,6 +6632,7 @@ HTREEITEM NTreeView::OpenFolder(HTREEITEM hFolder, CString& path, BOOL selectFol
 		MboxMail::assert_unexpected();
 
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 		return hItem;
@@ -6562,6 +6652,7 @@ HTREEITEM NTreeView::OpenFolder(HTREEITEM hFolder, CString& path, BOOL selectFol
 		ExpandItem(hItem, TVE_EXPAND);
 
 	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
@@ -6615,7 +6706,12 @@ void NTreeView::OpenRootFolderAndSubfolders(HTREEITEM hParent, CString& path, BO
 
 	if (treeFolderCount == 0)
 	{
-		errorText.Format(L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s", path);
+		//errorText.Format(L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s", path);
+
+		CString fmt = L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s";
+		ResHelper::TranslateString(fmt);
+		errorText.Format(fmt, path);
+
 		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
@@ -6817,7 +6913,7 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
 	if (directory.GetLength() <= 1)
 	{
-		CString txt = L"The mbox files must be installed under a named folder\n."
+		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return 0;
@@ -6834,7 +6930,9 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	CString sText;
 	CString fname;
 	FileUtils::CPathStripPath(path, fname);
-	sText.Format(L"Opening new mail folder %s ...", fname);
+	CString fmt = L"Opening new mail folder %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, fname);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -6845,6 +6943,7 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	{
 		MboxMail::assert_unexpected();
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 		return hItem;
@@ -6864,6 +6963,7 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	//ExpandItem(hItem, TVE_EXPAND);
 
 	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 
@@ -7554,19 +7654,36 @@ void NTreeView::DoOpenFolder(CString& folderPath, BOOL selectFolder, BOOL uncond
 		CString txt;
 		if (existingFolderPath.Compare(existingRootFolderPath) == 0)
 		{
+#if 0
 			txt.Format(L"Can't open folder \n\n\"%s\"\n"
 				L"\n\nFolder already open as %s \n\n \"%s\"\n\n"
 				L"You must manually remove the root folder first\n"
 				L"Select root folder, right-click and select Remove Folder option\n",
 				path, existingFolderType, existingRootFolderPath);
+#endif
+			CString fmt = L"Can't open folder \n\n\"%s\"\n"
+				L"\n\nFolder already open as %s \n\n \"%s\"\n\n"
+				L"You must manually remove the root folder first\n"
+				L"Select root folder, right-click and select Remove Folder option\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, path, existingFolderType, existingRootFolderPath);
 		}
 		else
 		{
+#if 0
 			txt.Format(L"Can't open folder \n\n\"%s\"\n"
 				L"\n\nFolder already open as %s of the root folder \n\n\"%s\"\n\n"
 				L"You must manually remove the root folder first\n"
 				L"Select root folder, right-click and select Remove Folder option\n",
 				path, existingFolderType, existingRootFolderPath);
+#endif
+
+			CString fmt = L"Can't open folder \n\n\"%s\"\n"
+				L"\n\nFolder already open as %s of the root folder \n\n\"%s\"\n\n"
+				L"You must manually remove the root folder first\n"
+				L"Select root folder, right-click and select Remove Folder option\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, path, existingFolderType, existingRootFolderPath);
 		}
 
 		HWND h = GetSafeHwnd();
@@ -7664,9 +7781,16 @@ restart:
 				strFilePath = dlgFile.GetNextPathName(pos);
 				if (!FileUtils::PathFileExist(strFilePath))
 				{
-					CString txt = L"File path invalid.\n";
+#if 0
+					CString txt = L"File path invalid.\n\n";
 					txt.Append(strFilePath);
-					txt.Append(L"\nRetry or Cancel?");
+					txt.Append(L"\n\nRetry or Cancel?");
+#endif
+
+					CString fmt = L"File path invalid.\n\n%s\n\nRetry or Cancel?";
+					ResHelper::TranslateString(fmt);
+					CString txt;
+					txt.Format(fmt, strFilePath);
 
 					int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 					if (answer == IDRETRY)
@@ -7723,13 +7847,13 @@ restart:
 					return -1;
 
 				//CString txt = L"Created Mbox Mail Archive file \n\n" + filePath;
-				CString txt;
-				CString fmt = L"Created Mbox Mail Archive file \n\n%s";
-				txt.Format(fmt, filePath);
+				CString txt = L"Created Mbox Mail Archive file";
+				ResHelper::TranslateString(txt);
+
 				BOOL supressOpenFileOption = FALSE;
 				//if (filePath.Compare(datapath) == 0)  // TODO: 
 					//supressOpenFileOption = TRUE;
-				OpenContainingFolderDlg dlg(txt, supressOpenFileOption);
+				OpenContainingFolderDlg dlg(txt, filePath, supressOpenFileOption);
 				INT_PTR nResponse = dlg.DoModal();
 				////////////
 				if (nResponse == IDOK)
@@ -7772,10 +7896,16 @@ restart:
 							{
 								CString errorText = FileUtils::GetLastErrorAsString();
 								TRACE(L"SaveAsMboxArchiveFile_v2: MoveFileEx failed \"%s\"\n", errorText);
-
+#if 0
 								CString txt = L"Failed to move file \"" + strFilePath;
 								txt += L"\" file.\n\n";
 								txt.Append(errorText);
+#endif
+
+								CString fmt = L"Failed to move file \"%s\" file.\n\n%s";
+								ResHelper::TranslateString(fmt);
+								CString txt;
+								txt.Format(fmt, strFilePath, errorText);
 
 								HWND h = NULL; // we don't have any window yet
 								int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -8903,6 +9033,7 @@ BOOL MySaveFileDialog::OnFileNameOK()
 	if (initialFolderPath.Compare(folderPath))
 	{
 		CString txt = L"Folder path can't be changed.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 		UpdateOFNFromShellDialog();
@@ -8955,7 +9086,12 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 	CString sText;
 	CString fname;
 	FileUtils::CPathStripPath(path, fname);
-	sText.Format(L"Merging folder \"%s\" and all sub-folders ...", fname);
+	//sText.Format(L"Merging folder \"%s\" and all sub-folders ...", fname);
+
+	CString fmt = L"Merging folder \"%s\" and all sub-folders ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, fname);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -8987,7 +9123,12 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 
 	if (treeFolderCount == 0)
 	{
-		errorText.Format(L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s", path);
+		//errorText.Format(L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s", path);
+
+		CString fmt = L"No folders with mbox files found under the root folder and all sub-folders:\n\n%s";
+		ResHelper::TranslateString(fmt);
+		errorText.Format(fmt, path);
+
 		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
@@ -9020,6 +9161,7 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 	m_globalFolderInfoDB.Print();
 
 	sText.Format(L"Ready", fname);
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 }
@@ -9103,10 +9245,16 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	if (!m_rootMboxCfile.Open(m_rootMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
-
+#if 0
 		CString txt = L"Could not create Merge To File \"" + m_rootMboxFilePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+
+		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, m_rootMboxFilePath, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 
@@ -9145,7 +9293,10 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	FileUtils::CPathStripPath(m_rootMboxFilePath, fname);
 	int retval;
 
-	sText.Format(L"Parsing intermediate merge raw mbox file ...", fname);
+	CString fmt = L"Parsing intermediate merge raw mbox file \"%s\" ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, fname);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9157,10 +9308,11 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		int cnt = MboxMail::LinkDuplicateMails(MboxMail::s_mails);  // put all equal mails on seprate collision lists of hash table
 	}
 
-	CString txt = L"All mail files are merged.\n\n";
-	txt.Append(L"Next, You will be asked to enter the target folder for the merged file.\n");
-	txt.Append(L"Be aware that MBox Viewer will open the merged file automatically.\n");
-	txt.Append(L"Make sure you select proper target folder.\n");
+	CString txt = L"All mail files are merged.\n\n"
+		L"Next, You will be asked to enter the target folder for the merged file.\n"
+		L"Be aware that MBox Viewer will open the merged file automatically.\n"
+		L"Make sure you select proper target folder.\n";
+	ResHelper::TranslateString(txt);
 
 	int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
@@ -9203,9 +9355,16 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
+#if 0
 		CString txt = L"Could not create Merge To File \"" + filePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+
+		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, filePath, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 
@@ -9219,7 +9378,10 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	}
 
 	FileUtils::CPathStripPath(filePath, fname);
-	sText.Format(L"Removing duplicate mails in the final file %s ...", fname);
+	fmt = "Removing duplicate mails in the final file %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, fname);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9324,8 +9486,9 @@ int NTreeView::MergeRootSubFolder_NoLabels(CString& relativeFolderPath, CString&
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
 	if (directory.GetLength() <= 1)
 	{
-		CString txt = L"The mbox files must be installed under a named folder\n."
+		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
@@ -9337,7 +9500,10 @@ int NTreeView::MergeRootSubFolder_NoLabels(CString& relativeFolderPath, CString&
 	CString folderName;
 	FileUtils::CPathStripPath(path, folderName);
 
-	sText.Format(L"Merging mbox files in folder %s ...", (LPCWSTR)folderName);
+	CString fmt = L"Merging mbox files in folder %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, (LPCWSTR)folderName);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9385,7 +9551,10 @@ int NTreeView::MergeRootSubFolder_NoLabels(CString& relativeFolderPath, CString&
 
 		_int64 fileSize = FileUtils::FileSize(fPath);
 
-		sText.Format(L"Merging %s (%lld bytes) ...", (LPCWSTR)fName, fileSize);
+		CString fmt = L"Merging %s (%lld bytes) ...";
+		ResHelper::TranslateString(fmt);
+		sText.Format(fmt, (LPCWSTR)fName, fileSize);
+
 		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
@@ -9429,8 +9598,9 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 	FileUtils::SplitFilePath(path, driveName, directory, fileNameBase, fileNameExtention);
 	if (directory.GetLength() <= 1)
 	{
-		CString txt = L"The mbox files must be installed under a named folder\n."
+		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
@@ -9442,7 +9612,10 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 	CString folderName;
 	FileUtils::CPathStripPath(path, folderName);
 
-	sText.Format(L"Merging mbox files in folder %s ...", (LPCWSTR)folderName);
+	CString fmt = L"Merging mbox files in folder %s ...";
+	ResHelper::TranslateString(fmt);
+	sText.Format(fmt, (LPCWSTR)folderName);
+
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9501,7 +9674,10 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 
 				if ((jj % 1000) == 0)
 				{
-					sText.Format(L"Discovered mbox file %s ...", (LPCWSTR)fName);
+					CString fmt = L"Discovered mbox file %s ...";
+					ResHelper::TranslateString(fmt);
+					sText.Format(fmt, (LPCWSTR)fName);
+
 					if (pFrame)
 						pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 				}
@@ -9518,6 +9694,7 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 	MessageBeep(MB_OK);
 
 	sText.Format(L"Discovery of mbox files completed ...");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9573,6 +9750,7 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 
 	MessageBeep(MB_OK);
 	sText.Format(L"Detection of name collisions is completed ...");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9584,6 +9762,7 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 
 	MessageBeep(MB_OK);
 	sText.Format(L"Merging mbox files ...");
+	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
@@ -9955,10 +10134,16 @@ int NTreeView::ArchiveMailsRemoveDuplicates(CFile& fp, CString& filePath)
 		{
 			CString errorText = FileUtils::GetLastErrorAsString();
 			TRACE(L"ArchiveMailsRemoveDuplicates: MoveFileEx failed \"%s\"\n", errorText);
-
+#if 0
 			CString txt = L"Failed to move file \"" + m_rootMboxFilePath;
 			txt += L"\" file.\n\n";
 			txt.Append(errorText);
+#endif
+
+			CString fmt = L"Failed to move file \"%s\" file.\n\n%s";
+			ResHelper::TranslateString(fmt);
+			CString txt;
+			txt.Format(fmt, m_rootMboxFilePath, errorText);
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -10043,8 +10228,9 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 			FileUtils::SplitFilePath(outFolderPath, driveName, directory, fileNameBase, fileNameExtention);
 			if (directory.GetLength() <= 1)
 			{
-				CString txt = L"The mbox files must be installed under a named folder\n\n."
+				CString txt = L"The mbox files must be installed under a named folder.\n\n"
 					L"Please select different folder or create new folder while in Save File Dialog and try again.";
+				ResHelper::TranslateString(txt);
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
@@ -10053,14 +10239,15 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 			{
 				CString txt = L"The \"UMBoxViewer\" name is reserved and it can't appear in the file path.\n"
 					L"Please create different name and try again.";
+				ResHelper::TranslateString(txt);
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 
 			if (outFolderPath.Compare(lastPath) == 0)
 			{
-				CString txt = L"Selecting target folder to source root folder for merged file is not recommended or allowed.\n\n";
-				txt.Append(L"Please try again.");
+				CString txt = L"Selecting target folder to source root folder for merged file is not recommended or allowed.\n\nPlease try again.";
+				ResHelper::TranslateString(txt);
 				HWND h = GetSafeHwnd(); // we don't have any window yet
 				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
@@ -10072,8 +10259,8 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 				BOOL ret = IsFolderOpenAsRootFolder(outFolderPath);
 				if (ret)
 				{
-					CString txt = L"Selected target folder is already open as the root folder.\n\n";
-					txt.Append(L"Please try again.");
+					CString txt = L"Selected target folder is already open as the root folder.\n\nPlease try again.";
+					ResHelper::TranslateString(txt);
 					HWND h = GetSafeHwnd(); // we don't have any window yet
 					int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 					continue;

@@ -65,6 +65,8 @@ BEGIN_MESSAGE_MAP(CWheelListCtrl, CListCtrl)
 	ON_WM_SETFOCUS()
 	//ON_WM_MOUSEACTIVATE()
 	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &CWheelListCtrl::OnCmdParam_OnSwitchWindow)
+	ON_WM_CREATE()
+	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CWheelListCtrl::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -263,3 +265,118 @@ LRESULT CWheelListCtrl::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
+
+
+int CWheelListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CListCtrl::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	// TODO:  Add your specialized creation code here
+
+	// Doesn't work. Likely due to Custom Draw
+	// Need to investigate when time permits
+	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
+	//EnableToolTips();
+
+	return 0;
+}
+
+// Doesn't work. Likely due to Custom Draw
+// Need to investigate when time permits
+BOOL CWheelListCtrl::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	NListView* list = (NListView*)m_list;
+	BOOL bRet = list->OnToolNeedText(id, pNMHDR, pResult);
+	//BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
+}
+
+BOOL CWheelListCtrl::OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	CPoint pt(GetMessagePos());
+	ScreenToClient(&pt);
+
+	int nRow = -1, nCol = -1;
+	//CellHitTest(pt, nRow, nCol);
+
+	CString tooltip = GetToolTipText(nRow, nCol);
+	if (tooltip.IsEmpty())
+		return FALSE;
+
+	// Non-unicode applications can receive requests for tooltip-text in unicode
+	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
+	TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
+#ifndef _UNICODE
+	if (pNMHDR->code == TTN_NEEDTEXTA)
+		lstrcpyn(pTTTA->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTA->szText));
+	else
+		mbstowcs(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
+#else
+	if (pNMHDR->code == TTN_NEEDTEXTA)
+		_wcstombsz(pTTTA->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTA->szText));
+	else
+		lstrcpyn(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
+#endif
+	// If wanting to display a tooltip which is longer than 80 characters,
+	// then one must allocate the needed text-buffer instead of using szText,
+	// and point the TOOLTIPTEXT::lpszText to this text-buffer.
+	// When doing this, then one is required to release this text-buffer again
+	return TRUE;
+}
+
+bool CWheelListCtrl::ShowToolTip(const CPoint& pt) const
+{
+	// Lookup up the cell
+	int nRow = -1, nCol = -1;
+	//CellHitTest(pt, nRow, nCol);
+
+	if (nRow != -1 && nCol != -1)
+		return true;
+	else
+		return false;
+}
+
+CString CWheelListCtrl::GetToolTipText(int nRow, int nCol)
+{
+	if (nRow != -1 && nCol != -1)
+		return CString("");
+		//return m_list->m_list.GetItemText(nRow, nCol);	// Cell-ToolTip
+	else
+		return CString("");
+}
+#if 0
+void CWheelListCtrl::OnTvnGetInfoTip(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMTVGETINFOTIP pGetInfoTip = (LPNMTVGETINFOTIP)pNMHDR;
+
+	HTREEITEM hItem = pGetInfoTip->hItem;
+	if (hItem)
+	{
+#if 0
+		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
+		LabelInfo* linfo = m_labelInfoStore.Find(nId);
+		if (linfo && ((linfo->m_nodeType == LabelInfo::MailFolder) || (linfo->m_nodeType == LabelInfo::MailSubFolder)))
+		{
+			CString csItemTxt = m_tree.GetItemText(hItem);
+			CString folderPath = linfo->m_mailFolderPath;
+			int len = folderPath.GetLength();
+			if (len > (pGetInfoTip->cchTextMax - 2))
+				len = pGetInfoTip->cchTextMax - 2;
+
+			_tcsncpy(pGetInfoTip->pszText, folderPath, len);
+			pGetInfoTip->pszText[len] = 0;
+		}
+#endif
+		int deb = 1;
+	}
+	*pResult = 0;
+}
+#endif
+

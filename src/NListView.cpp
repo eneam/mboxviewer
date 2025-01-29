@@ -517,6 +517,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_MESSAGE(WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE, &NListView::OnCmdParam_AttachmentHint)
 	//ON_NOTIFY(LVN_GETINFOTIP, IDC_LIST, OnTvnGetInfoTip)
 	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NListView::OnCmdParam_OnSwitchWindow)
+	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &NListView::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 int g_pointSize = 85;
@@ -595,6 +596,9 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 				"UnCheck \"View -> View Message Headers\"\n"
 				"and Right click on Mail Header Pane at the top of the Message Window and\n"
 				"UnCheck \"View Message Header\"\n";
+
+			ResHelper::TranslateString(InfoTxt);
+
 			int answer = MessageBox(InfoTxt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			return;
 		}
@@ -1257,6 +1261,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_REMOVE_ALL_Id:
 	{
 		CString txt = L"Do you want to remove all mails?";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES) {
@@ -1825,6 +1831,8 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	case S_REMOVE_ALL_Id:
 	{
 		CString txt = L"Do you want to remove all mails?";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd();
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES) {
@@ -2041,7 +2049,10 @@ void NListView::SortByColumn(int colNumber, BOOL sortByPosition) // use sortByPo
 		{
 			colStr = L"Id";
 		}
-		sText.Format(L"Sorting by %s ...", colStr);
+		CString fmt = L"Sorting by %s ...";
+		ResHelper::TranslateString(fmt);
+
+		sText.Format(fmt, colStr);
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
@@ -2144,6 +2155,7 @@ void NListView::SortByColumn(int colNumber, BOOL sortByPosition) // use sortByPo
 		int paneId = 0;
 		CString sText;
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 }
@@ -2186,7 +2198,10 @@ void NListView::RefreshSortByColumn()
 		else if (colNumber == 5)
 			colStr = L"Size";
 
-		sText.Format(L"Sorting by %s ...", colStr);
+		CString fmt = L"Sorting by %s ...";
+		ResHelper::TranslateString(fmt);
+
+		sText.Format(fmt, colStr);
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
@@ -2248,6 +2263,7 @@ void NListView::RefreshSortByColumn()
 		int paneId = 0;
 		CString sText;
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 }
@@ -2423,7 +2439,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
-	if ((pFrame == 0) || (pFrame->GetMessageWindowPosition() == 1))
+	if ((pFrame == 0) || (pFrame->GetMessageWindowPosition() == 1)) // m_msgViewPosition:: 1 = bottom 2 = right  3 = left
 	{
 		m_list.InsertColumn(0, L"!", LVCFMT_LEFT, 22, 0);
 		m_list.InsertColumn(1, L"date", LVCFMT_LEFT, 100, 0);
@@ -2490,7 +2506,8 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	BOOL ret = TrackMouseEvent(&tr);
 #endif
-
+	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);  // doesn't work due to CustomDraw ? investigate when 
+	//EnableToolTips();
 	return 0;
 }
 
@@ -2562,7 +2579,7 @@ void NListView::ResizeColumns()
 	int max_to_len = 400;
 	int min_subj_len = 200;
 	int dflt_subj_len = 400;
-	int size_len = 60;
+	int size_len = 80;
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -2574,7 +2591,7 @@ void NListView::ResizeColumns()
 		max_to_len = 400;
 		min_subj_len = 150;
 		dflt_subj_len = 400;
-		size_len = 60;
+		size_len = 80;
 	}
 
 	int from_len = min_from_len;
@@ -3091,7 +3108,9 @@ BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating index file ...", 0);
+			CString txt = L"Creating index file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -3212,7 +3231,9 @@ BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 			if (needToUpdateStatusBar)
 			{
 				int nItem = i + 1;
-				itemNumberStr.Format(L"Creating index file ... %d of %d", nItem, ni);
+				CString fmt = L"Creating index file ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				itemNumberStr.Format(fmt, nItem, ni);
 				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -3367,12 +3388,25 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 		CString cacheName;
 		FileUtils::CPathStripPath(sz.GetFileName(), cacheName);
 
+#if 0
 		errorText = L"Index file\n\"" + cacheName;
 		CString strVersion;
 		strVersion.Format(L"%d", version);
 		errorText += L"\".\nhas incompatible version\"" + strVersion + L"\". Expected version \"";
 		strVersion.Format(L"%d", CACHE_VERSION);
 		errorText += strVersion + L"\".\nWill remove\n\"" + cacheName + L"\"\nand recreate from the mail archive file.";
+#endif
+
+		CString strVersion;
+		strVersion.Format(L"%d", version);
+		CString strCacheVersion;
+		strCacheVersion.Format(L"%d", CACHE_VERSION);
+		CString fmt = L"Index file\n\"%s\".\nhas incompatible version\"%s\". Expected version \"%s\".\n"
+			"Will remove\n\"%s\"\nand recreate from the mail archive file."
+			;
+		ResHelper::TranslateString(fmt);
+		errorText.Format(fmt, cacheName, strVersion, strCacheVersion, cacheName);
+
 		HWND h = GetSafeHwnd();
 		TRACE(L"%s\n", errorText);
 		//int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -3672,7 +3706,6 @@ int NListView::FillCtrl_ParseMbox(CString &mboxPath)
 		//  ALongRightProcessProc will set MboxMail::s_path = m_path;
 		MboxMail::runningWorkerThreadType = 1;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc_LabelView, (LPVOID)(PARSE_ARGS*)&args);
-
 		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 		INT_PTR nResult = Dlg.DoModal();
@@ -3830,8 +3863,16 @@ void NListView::FillCtrl()
 		{
 			if (ni != -2)
 			{
+#if 0
 				CString txt = L"Index file\n\n\"" + cache;
 				txt += L"\n\nappears to be corrupted. The index file will be recreated.";
+#endif
+				CString txt;
+				CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
+
+				ResHelper::TranslateString(fmt);
+				errorText.Format(fmt, cache);
+
 				HWND h = GetSafeHwnd();
 				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			}
@@ -3854,7 +3895,6 @@ void NListView::FillCtrl()
 		//  ALongRightProcessProc will set MboxMail::s_path = m_path;
 		MboxMail::runningWorkerThreadType = 1;
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
-
 		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 		INT_PTR nResult = Dlg.DoModal();
@@ -3891,7 +3931,8 @@ void NListView::FillCtrl()
 			CString txt = L"Parsing of mail archive file was cancelled by user.\n\n"
 				L"Only partial index file was created. You can view all mails in the partial index file as long as you stay within the selected mail file\n\n"
 				L"\nWhile viewing the selected mail file, in order to view all mails you need to refresh the index file. In order to refresh index file, right-click on the mail file and select \"Refresh Index File\".\n\n"
-				L"Or, Select parent folder or any folder or different mail file under Tree View and select again the same mail file.\n\n";
+				L"Or, Select parent folder or any folder or different mail file under Tree View and select again the same mail file.\n";
+			ResHelper::TranslateString(txt);
 			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			int deb = 1;
 		}
@@ -3937,8 +3978,9 @@ void NListView::FillCtrl()
 			FileUtils::DelFile(cache);
 
 			CUPDialog	WDlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcWriteIndexFile, (LPVOID)(PARSE_ARGS*)&wargs);
-			nResult = WDlg.DoModal();
+			Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
+			nResult = WDlg.DoModal();
 			if (!nResult)  // should never be true ?
 			{
 				MboxMail::assert_unexpected();
@@ -3995,6 +4037,7 @@ void NListView::FillCtrl()
 				CString txt = L"Inline image files can be pre-created now or created on the fly later. "
 					"Image cache improves performance when printing large number of mails to PDF or viewing in Browser.\n"
 					"\nCreate cache of inline images (may take several minutes depending on the mail count and content) ?";
+				ResHelper::TranslateString(txt);
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDYES)
 				{
@@ -4114,8 +4157,16 @@ int NListView::MailFileFillCtrl(CString &errorText)
 		{
 			if (ni != -2)
 			{
+#if 0
 				CString txt = L"Index file\n\n\"" + cache;
 				txt += L"\n\nappears to be corrupted. The index file will be recreated.";
+#endif
+
+				CString txt;
+				CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
+				ResHelper::TranslateString(fmt);
+				errorText.Format(fmt, cache);
+
 				HWND h = GetSafeHwnd();
 				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			}
@@ -4278,6 +4329,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	// Already set for ID_INDICATOR_MAIL
 	if (pFrame) {
 		CString sText = L"Mail Retrieval In Progress ...";
+		ResHelper::TranslateString(sText);
 		int paneId = 1;
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
@@ -4308,9 +4360,10 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
-		CString txt = L"Could not open \"" + MboxMail::s_path;
-		txt += L"\" mail file.\n";
-		txt += exErrorStr;
+		CString txt;
+		CString fmt = L"Could not open \"%s\" mail file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, MboxMail::s_path, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 		//errorText = txt;
@@ -5072,7 +5125,6 @@ void NListView::OnEditFind()
 			if ((w == -2) || (maxSearchDuration == 0)) 
 			{
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
-
 				Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 				ULONGLONG tc_start = GetTickCount64();
@@ -5505,7 +5557,10 @@ int NListView::DoFastFindLegacy(int which, BOOL mainThreadContext, int maxSearch
 					if (needToUpdateStatusBar)
 					{
 						CString progressText;
-						progressText.Format(L"%s    %d of %d", searchText, workRangePos, mailCnt);
+						CString fmt = L"%s    %llu of %d";
+						ResHelper::TranslateString(fmt);
+						progressText.Format(fmt, searchText, workRangePos, mailCnt);
+
 						if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(progressText, (UINT_PTR)(dwProgressbarPos));
 						int debug = 1;
 					}
@@ -5583,7 +5638,10 @@ int NListView::DoFastFindLegacy(int which, BOOL mainThreadContext, int maxSearch
 					if (needToUpdateStatusBar)
 					{
 						CString progressText;
-						progressText.Format(L"%s    %d of %d", searchText, workRangePos, mailCnt);
+						CString fmt = L"%s    %llu of %d";
+						ResHelper::TranslateString(fmt);
+						progressText.Format(fmt, searchText, workRangePos, mailCnt);
+
 						if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(progressText, (UINT_PTR)(dwProgressbarPos));
 						int debug = 1;
 					}
@@ -5742,7 +5800,9 @@ int NListView::DoFastFindAdvanced(int which, BOOL mainThreadContext, int maxSear
 				if (needToUpdateStatusBar)
 				{
 					CString progressText;
-					progressText.Format(L"%s    %d of %d", searchText, workRangePos, mailCnt);
+					CString fmt = L"%s    %llu of %d";
+					ResHelper::TranslateString(fmt);
+					progressText.Format(fmt, searchText, workRangePos, mailCnt);
 
 					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(progressText, (UINT_PTR)(dwProgressbarPos));
 					int debug = 1;
@@ -5872,7 +5932,6 @@ void NListView::OnEditFindAgain()
 		_ASSERTE(m_lastFindPos >= 0);
 
 		CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
-
 		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 		ULONGLONG tc_start = GetTickCount64();
@@ -6185,10 +6244,18 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 	else
 	{
 		DWORD err = GetLastError();
+#if 0
 		CString errTxt;
 		errTxt.Format(L"MapViewOfFileEx failed err=%ld fsize=%lld offset=%lld align_offset=%lld bufSize=%ld mapBegin=%lld mapEnd=%lld\n",
 			err, m_MailFileSize, offset, aligned_offset, bufSize, m_pViewBegin, m_pViewEnd);
+#endif
+		CString errTxt;
+		CString fmt = L"MapViewOfFileEx failed err=%ld fsize=%lld offset=%lld align_offset=%lld bufSize=%ld mapBegin=%lld mapEnd=%lld\n";
+		ResHelper::TranslateString(fmt);
+		errTxt.Format(fmt, err, m_MailFileSize, offset, aligned_offset, bufSize, m_pViewBegin, m_pViewEnd);
+
 		TRACE(L"(SetFileMapView)MapViewOfFileEx failed: error= %ld\n", err);
+
 		HWND h = NULL; // we don't have any window yet  
 		int answer = ::MessageBox(h, errTxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		CloseMailFile();
@@ -6904,6 +6971,8 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 			{
 
 				CString txt = L"Please sort all mails by conversation threads or subject threads first.\n";
+				ResHelper::TranslateString(txt);
+
 				//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
 				HWND h = GetSafeHwnd(); // we don't have any window yet
 				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -6930,13 +6999,16 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 			L" No feedback is provided to users until user is asked to select folder and PDF document name to save\n\n"
 			L"Run \"Print to -> Printer\" option if other print options didn't create well formatted PDF.\n\n"
 			L"Do you want to continue?";
-			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
-			if (answer == IDNO)
-			{
-				return;
-			}
-			else if (answer == IDYES)
-				int deb = 1;
+
+		ResHelper::TranslateString(txt);
+
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDNO)
+		{
+			return;
+		}
+		else if (answer == IDYES)
+			int deb = 1;
 	}
 
 	TEXTFILE_CONFIG textConfig;
@@ -6958,9 +7030,8 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 			if (FileUtils::PathDirExists(datapath))
 			{ // likely :) 
 				//CString text = L"Created file \n\n" + textFileName;
-				CString text;
-				CString fmt = L"Created file \n\n%s";
-				text.Format(fmt, textFileName);
+				CString text = L"Created file";
+				ResHelper::TranslateString(text);
 				if (createFileOnly) {
 					int deb = 1;
 				}
@@ -6992,7 +7063,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 				}
 				else if (forceOpen == FALSE) 
 				{
-					OpenContainingFolderDlg dlg(text);
+					OpenContainingFolderDlg dlg(text, textFileName);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -7235,6 +7306,7 @@ int NListView::CopySelectedMails()
 int NListView::CopyAllMails()
 {
 	CString txt = L"Do you want to copy all mails to Users Selected Mails?";
+	ResHelper::TranslateString(txt);
 	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
 	{
@@ -8037,7 +8109,6 @@ void NListView::EditFindAdvanced(MboxMail *m)
 	
 			{
 				CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcFastSearch, (LPVOID)(FIND_ARGS*)&args);
-
 				Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 				ULONGLONG tc_start = GetTickCount64();
@@ -8552,8 +8623,15 @@ int NListView::OpenArchiveFileLocation()
 
 	if (!FileUtils::PathFileExist(mboxFilePath))
 	{
+#if 0
 		CString txt = L"File\n\n\"" + mboxFilePath;
 		txt += L"\"\n\ndoesn't exist. Can't open location.";
+#endif
+		CString txt;
+		CString fmt = L"File\n\n\"%s\"\n\ndoesn't exist. Can't open location.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		//return -1;  // Go ahead and open folder without highlighting merge file
 	}
@@ -8609,8 +8687,15 @@ int NListView::OpenMailListFileLocation()
 
 	if (!FileUtils::PathFileExist(mboxFilePath))
 	{
+#if 0
 		CString txt = L"File \"" + mboxFilePath;
 		txt += L"\" doesn't exist. Can't open location.";
+#endif
+		CString txt;
+		CString fmt = L"File\n\n\"%s\"\n\ndoesn't exist. Can't open location.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
@@ -8828,6 +8913,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparatePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -8870,10 +8956,10 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 			if (mergePDFs == FALSE)
 			{
 				//CString txt = L"Created separate PDF files in \n\n" + printCachePath + L" \n\ndirectory.";
-				CString txt;
-				CString fmt = L"Created separate PDF files in \n\n%s \n\ndirectory.";
-				txt.Format(fmt, printCachePath);
-				OpenContainingFolderDlg dlg(txt, TRUE);
+				CString txt = L"Created separate PDF files in the following directory";
+				ResHelper::TranslateString(txt); // RESTODO
+
+				OpenContainingFolderDlg dlg(txt, printCachePath, TRUE);
 				INT_PTR nResponse = dlg.DoModal();
 				if (nResponse == IDOK)
 				{
@@ -8895,10 +8981,18 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 				HWND h = GetSafeHwnd();
 				if (mergeErrorFileSize > 0)
 				{
+#if 0
 					CString text = L"Merge File was created.\n"
 						L"However, one or more mails didn't finish printing to PDF in 5 minutes and were not merged\n"
 						L"Select OK to open the file with the list of failed mails\n";
-					int answer = ::MessageBox(h, text, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+#endif
+
+					CString txt = L"Merge File was created.\n"
+						L"However, one or more mails didn't finish printing to PDF in 5 minutes and were not merged\n"
+						L"Select OK to open the file with the list of failed mails\n";
+					ResHelper::TranslateString(txt);
+
+					int answer = ::MessageBox(h, txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 
 					HINSTANCE result = ShellExecute(h, L"open", mergeErrorFilepath, NULL, NULL, SW_SHOWNORMAL);
 					CMainFrame::CheckShellExecuteResult(result, h, &mergeErrorFilepath);
@@ -8907,10 +9001,9 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 				CString pdfFileName = args.mergedPDFPath;
 
 				//CString txt = L"Created PDF file \n\n" + pdfFileName;
-				CString txt;
-				CString fmt = L"Created PDF file \n\n%s";
-				txt.Format(fmt, pdfFileName);
-				OpenContainingFolderDlg dlg(txt, FALSE);
+				CString txt = L"Created PDF file";
+				ResHelper::TranslateString(txt);  // RESTODO
+				OpenContainingFolderDlg dlg(txt, pdfFileName, FALSE);
 				INT_PTR nResponse = dlg.DoModal();
 				////////////
 				if (nResponse == IDOK)
@@ -9019,6 +9112,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSinglePDF, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -9069,10 +9163,10 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 				int ret = MboxMail::MakeFileNameFromMailHeader(selectedMailsIndexList->GetAt(0), fileType, pdfFileName, targetPrintSubFolderName, fileExists, errorText);
 
 			//CString txt = L"Created PDF file \n\n" + pdfFileName;
-			CString txt;
-			CString fmt = L"Created PDF file \n\n%s";
-			txt.Format(fmt, pdfFileName);
-			OpenContainingFolderDlg dlg(txt, FALSE);
+			CString txt = L"Created PDF file";
+			ResHelper::TranslateString(txt);
+
+			OpenContainingFolderDlg dlg(txt, pdfFileName, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
 			if (nResponse == IDOK)
@@ -9194,11 +9288,12 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 
 		if (pdfboxJarFileName.IsEmpty())
 		{
-			errorText.Format(L"Did not find  \"pdfbox-app-3.*.jar\" file in \"%s\" directory.", processFolderPath);
-			errorText.Append(L"\n\nPlease review the help information by selecting \"Print to->PDF->Help\" option.");
+			CString fmt = L"Did not find  \"pdfbox-app-3.*.jar\" file in\n\n\"%s\"\n\ndirectory.";
+			fmt.Append(L"\n\nPlease review the help information by selecting \"Print to->PDF->Help\" option.");
+			ResHelper::TranslateString(fmt);
+			errorText.Format(fmt, processFolderPath);
 
 			TRACE(L"%s\n", errorText);
-
 			return -1;
 		}
 
@@ -9261,7 +9356,9 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
-		MboxMail::pCUPDUPData->SetProgress(L"Printing mails to PDF files ...", 1);
+		CString txt = L"Printing mails to PDF files ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 1);
 	}
 
 	UINT curstep = 1;
@@ -9287,7 +9384,11 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			ULONGLONG workRangePos = j;
 
 			nFileNum = j + 1;
-			fileNum.Format(L"Printing mails to PDF files ... %d of %d", nFileNum, cnt);
+
+			CString fmt = L"Printing mails to PDF files ... %d of %d";
+			ResHelper::TranslateString(fmt);
+			fileNum.Format(fmt, nFileNum, cnt);
+
 			//if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));  // FIXME
 			if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(fileNum);
 
@@ -9322,7 +9423,11 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			if (needToUpdateStatusBar)
 			{
 				nFileNum = j + 1;
-				fileNum.Format(L"Printing mails to PDF files ... %d of %d", nFileNum, cnt);
+
+				CString fmt = L"Printing mails to PDF files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				fileNum.Format(fmt, nFileNum, cnt);
+
 				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -9331,7 +9436,12 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 	}
 	nFileNum = cnt;
 	UINT newstep = 100;
-	fileNum.Format(L"Printing mails to PDF files ... %d of %d", nFileNum, cnt);
+
+	CString fmt = L"Printing mails to PDF files ... %d of %d";
+	ResHelper::TranslateString(fmt);
+	fileNum.Format(fmt, nFileNum, cnt);
+
+
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 
 	// Printing all mails to separate PDF file done.
@@ -9726,7 +9836,10 @@ int NListView::PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selected
 	CString progressText;
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
-		progressText.Format(L"Printing %d mails to single PDF file ...", (int)cnt);
+		CString fmt = L"Printing %d mails to single PDF file ...";
+		ResHelper::TranslateString(fmt);
+		progressText.Format(fmt, (int)cnt);
+
 		MboxMail::pCUPDUPData->SetProgress(progressText, 1);
 	}
 
@@ -9939,7 +10052,9 @@ int NListView::DeleteAllHtmAndPDFFiles(CString &targetPath)
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
-		MboxMail::pCUPDUPData->SetProgress(L"Deleting HTM and PDF files in target print location ...", 0);
+		CString txt = L"Deleting HTM and PDF files in target print location ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 0);
 	}
 
 	CString fw = targetPath + L"\\*.htm";
@@ -10122,24 +10237,25 @@ BOOL  NListView::CanGoAheadWithExport()
 			if (FileUtils::PathDirExists(exportCachePath))
 			{
 				CString errorText;
+				CString fmt;
 				if (firstTry)
 				{
-					errorText.Format(L"Directory\n\n\"%s\"\n\nexists already. Only single export per mail archive file is supported.\n\n"
-						"Select Yes to override the existting export directory\n"
+					fmt = L"Directory\n\n\"%s\"\n\nexists already. Only single export per mail archive file is supported.\n\n"
+						"Select Yes to override the existing export directory\n"
 						"Select No to copy directory to another location\n"
-						"Select Cancel\n"
-						,
-						exportCachePath);
+						"Select Cancel\n";
 				}
 				else
 				{
-					errorText.Format(L"Directory\n\n\"%s\"\n\nstill exists, was not able to delete the directory.\n\n"
-						"Select Yes to try override again the existting export directory\n"
+					fmt = L"Directory\n\n\"%s\"\n\nstill exists, was not able to delete the directory.\n\n"
+						"Select Yes to try override again the existing export directory\n"
 						"Select No to copy directory to another location\n"
-						"Select Cancel\n"
-						,
-						exportCachePath);
+						"Select Cancel\n";
 				}
+
+				ResHelper::TranslateString(fmt);
+				errorText.Format(fmt, exportCachePath);
+
 				HWND h = GetSafeHwnd();
 				int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNOCANCEL);
 				if (answer == IDYES)
@@ -10150,14 +10266,20 @@ BOOL  NListView::CanGoAheadWithExport()
 					BOOL delstatus = FileUtils::RemoveDir(exportCachePath, recursive, removeFolders, &errorText);
 					if (!errorText.IsEmpty())
 					{
-						CString txt;
-						txt.Format(L"Failed to remove and recreate folder for Export:\n\n\"%s\"\n\n", exportCachePath);
-						txt.Append(errorText);
-						txt.Append(L"\n\nFolder or subfolders or files in the folder are likely used by other programs.\n\n");
-						txt.Append(L"\nNOTE: This issue will happen if the folder or folder's items are open in Command Prompt.\n\n");
-						txt.Append(L"\nNOTE: This issue will NOT happen if the folder or folder's items are open in File Explorer or Windows Terminal or Windows PowerShell.\n\n");
-						txt.Append(L"\nNOTE: Other than above programs may cause this issue as well. You can use Handle.exe or Process Explorer.exe programs to discover programs creating the issue. ");
-						txt.Append(L"Handle.exe and Process Explorer.exe programs are part of Microsoft Sysinternal package. They can also be downloaded as individual programs\n\n");
+						CString txt1;
+						CString fmt = L"Failed to remove and recreate folder for Export:\n\n\"%s\"\n\n%s";
+						ResHelper::TranslateString(fmt);
+						txt1.Format(fmt, exportCachePath, errorText);
+
+						CString txt2 = L"\n\nFolder or subfolders or files in the folder are likely used by other programs.\n\n"
+							L"\nNOTE: This issue will happen if the folder or folder's items are open in Command Prompt.\n\n"
+							L"\nNOTE: This issue will NOT happen if the folder or folder's items are open in File Explorer or Windows Terminal or Windows PowerShell.\n\n"
+							L"\nNOTE: Other than above programs may cause this issue as well. You can use Handle.exe or Process Explorer.exe programs to discover programs creating the issue. "
+							L"Handle.exe and Process Explorer.exe programs are part of Microsoft Sysinternal package. They can also be downloaded as individual programs\n\n"
+							;
+						ResHelper::TranslateString(txt2);
+						CString txt = txt1 + txt2;
+
 
 						HWND h = GetSafeHwnd();
 						int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -10254,6 +10376,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSeparateHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -10296,10 +10419,10 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 			if (!NListView::m_exportMailsMode)
 			{
 				//CString txt = L"Created separate HTML files in \n\n" + printCachePath + L" \n\ndirectory.";
-				CString txt;
-				CString fmt = L"Created separate HTML files in \n\n%s \n\ndirectory.";
-				txt.Format(fmt, printCachePath);
-				OpenContainingFolderDlg dlg(txt, TRUE);
+				CString txt = L"Created separate HTML files in the following directory";
+				ResHelper::TranslateString(txt);
+
+				OpenContainingFolderDlg dlg(txt, printCachePath, TRUE);
 				INT_PTR nResponse = dlg.DoModal();
 				if (nResponse == IDOK)
 				{
@@ -10334,8 +10457,10 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 
 				int exret = ExportMails_CopyExportMails2PDF();
 
-				CString txt = L"Created separate mails files as HTML files and index.html file \n\n";  // + fileName;
-				OpenContainingFolderDlg dlg(txt, FALSE);
+				CString txt = L"Created separate mails files as HTML files and index.html file in the following directory";
+				ResHelper::TranslateString(txt);
+
+				OpenContainingFolderDlg dlg(txt, exportCachePath, FALSE);
 				INT_PTR nResponse = dlg.DoModal();
 				////////////
 				if (nResponse == IDOK)
@@ -10431,6 +10556,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSingleHTML, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -10484,10 +10610,10 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 				int exret = ExportMails_CopyExportMails2PDF();
 
 			//CString txt = L"Created HTML file \n\n" + fileName;
-			CString txt;
-			CString fmt = L"Created HTML file \n\n%s";
-			txt.Format(fmt, fileName);
-			OpenContainingFolderDlg dlg(txt, FALSE);
+			CString txt = L"Created HTML file";
+			ResHelper::TranslateString(txt);
+
+			OpenContainingFolderDlg dlg(txt, fileName, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
 			if (nResponse == IDOK)
@@ -10547,7 +10673,9 @@ int NListView::PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selec
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
-		MboxMail::pCUPDUPData->SetProgress(L"Printing mails to HTML files ...", 1);
+		CString txt = L"Printing mails to HTML files ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 1);
 	}
 
 	UINT curstep = 1;
@@ -10587,7 +10715,11 @@ int NListView::PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selec
 			if (needToUpdateStatusBar)
 			{
 				nFileNum = j + 1;
-				fileNum.Format(L"Printing mails to HTML files ... %d of %d", nFileNum, cnt);
+
+				CString fmt = L"Printing mails to HTML files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				fileNum.Format(fmt, nFileNum, cnt);
+
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -10599,7 +10731,11 @@ int NListView::PrintMailSelectedToSeparateHTML_WorkerThread(MailIndexList *selec
 	{
 		UINT newstep = 100;
 		nFileNum = cnt;
-		fileNum.Format(L"Printing mails to HTML files ... %d of %d", nFileNum, cnt);
+
+		CString fmt = L"Printing mails to HTML files ... %d of %d";
+		ResHelper::TranslateString(fmt);
+		fileNum.Format(fmt, nFileNum, cnt);
+
 		if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 	}
 
@@ -10634,6 +10770,8 @@ int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 		//if (abs(MboxMail::b_mails_which_sorted) != 99)
 		{
 			CString txt = L"Please sort all mails by conversation threads or subject threads first.\n";
+			ResHelper::TranslateString(txt);
+
 			//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
 			HWND h = GetSafeHwnd(); // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -10944,6 +11082,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		if (isDirty)
 		{
 			CString txt = L"User Selected Mails List is not empty. Overwrite?";
+			ResHelper::TranslateString(txt);
 			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
@@ -10958,6 +11097,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -11000,24 +11140,48 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 
 	if (!FileUtils::PathFileExist(mailFile))
 	{
+#if 0
 		CString txt = L"Mail Archive File \"" + mailFile;
 		txt += L"\" doesn't exist.\nCan't reload.";
+#endif
+
+		CString txt;
+		CString fmt = L"Mail Archive File \"%s\" doesn't exist.\nCan't reload.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mailFile);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!FileUtils::PathFileExist(mboxListFile))
 	{
+#if 0
 		CString txt = L"Mail List File \"" + mboxListFile;
 		txt += L"\" doesn't exist.\nCan't reload.";
+#endif
+
+		CString txt;
+		CString fmt = L"Mail List File \"%s\" doesn't exist.\nCan't reload.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	SerializerHelper sz(mboxListFile);
-	if (!sz.open(FALSE)) {
+	if (!sz.open(FALSE))
+	{
+#if 0
 		CString txt = L"Could not open \"" + mboxListFile;
 		txt += L"\" file.\nMake sure file is not open on other applications.";
+#endif
+		CString txt;
+		CString fmt = L"Could not open \"%s\" file.\nMake sure file is not open on other applications.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -11026,9 +11190,14 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	_int64 mailFileSize;
 	_int64 mboxFileSize;
 	int mailListCnt;
-
+#if 0
 	CString txt = L"Mail list file\n\"" + mboxListFile;
 	txt += L"\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease remove the file.";
+#endif
+	CString txt;
+	CString fmt = L"Mail list file\n\"%s\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease remove the file.";
+	ResHelper::TranslateString(fmt);
+	txt.Format(fmt, mboxListFile);
 
 	__int64 pos = 0;
 	retval = sz.GetReadPointer(pos);
@@ -11044,15 +11213,26 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	if (version != MAIL_LIST_VERSION)
 	{
 		sz.close();
-
+#if 0
 		CString text = L"Mail list file\n\"" + mboxListFile;
 		CString strVersion;
 		strVersion.Format(L"%d", (version - MAIL_LIST_VERSION_BASE));
 		text += L"\".\nhas incompatible version\"" + strVersion + L"\". Expected version \"";
 		strVersion.Format(L"%d", (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
 		text += strVersion + L"\".\nCan't reload.\nPlease remove the file.";
+#endif
 
-		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		CString txt;
+		CString strVersion;
+		strVersion.Format(L"%d", (version - MAIL_LIST_VERSION_BASE));
+		CString strCachedVersion;
+		strCachedVersion.Format(L"%d", (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
+
+		CString fmt = L"Mail list file\n\"%s\".\nhas incompatible version\"%s\". Expected version \"%s\".\nCan't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile, strVersion, strCachedVersion);
+
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11122,8 +11302,15 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	else
 	{
 		sz.close();
+#if 0
 		CString txt = L"Mail list file\n\"" + mboxListFile;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+#endif
+		CString txt;
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		return -1; // do nothing
@@ -11134,9 +11321,15 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	if (ret < 0)
 	{
 		MboxMail::s_mails_edit.SetSizeKeepData(0);
-
+#if 0
 		CString txt = L"Mail list file\n\"" + mboxListFile;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+#endif
+		CString txt;
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 	else
@@ -11184,6 +11377,7 @@ int NListView::SaveAsMboxListFile_v2()
 
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
@@ -11241,8 +11435,16 @@ int NListView::SaveAsMboxListFile_v2()
 	SerializerHelper sz(mboxListFile);
 	if (!sz.open(TRUE)) 
 	{
+#if 0
 		CString txt = L"Could not create \"" + mboxListFile;
 		txt += L"\" file.\nMake sure file is not open on other applications.";
+#endif
+
+		CString txt;
+		CString fmt = L"Could not create \"%s\" file.\nMake sure file is not open on other applications.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -11294,6 +11496,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
@@ -11331,8 +11534,11 @@ int NListView::SaveAsMboxArchiveFile_v2()
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
-		CString txt = L"File \"" + mboxFilePath;
-		txt += L"\" exists.\nOverwrite?";
+		CString txt;
+		CString fmt = L"File\n\n\"%s\"\n\nexists.\nOverwrite?";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
@@ -11342,10 +11548,15 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	if (!fp.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 		CString txt = L"Could not create \"" + mboxFilePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not create \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath, exErrorStr);
 
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
@@ -11368,13 +11579,13 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	MboxMail::m_editMails.m_bIsDirty = FALSE;
 
 	//CString txt = L"Created Mbox Mail Archive file \n\n" + mboxFilePath;
-	CString txt;
-	CString fmt = L"Created Mbox Mail Archive file \n\n%s";
-	txt.Format(fmt, mboxFilePath);
+	CString txt = L"Created Mbox Mail Archive file";
+	ResHelper::TranslateString(txt);
+
 	BOOL supressOpenFileOption = FALSE;
 	if (path.Compare(datapath) == 0)
 		supressOpenFileOption = TRUE;
-	OpenContainingFolderDlg dlg(txt, supressOpenFileOption);
+	OpenContainingFolderDlg dlg(txt, mboxFilePath, supressOpenFileOption);
 	INT_PTR nResponse = dlg.DoModal();
 	////////////
 	if (nResponse == IDOK)
@@ -11885,6 +12096,7 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcWriteAttachmentFile, (LPVOID)(WRITE_IMAGE_FILE_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -11943,8 +12155,10 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 			MboxMail::assert_unexpected();
 	}
 
-	CString txt = L"Do you want to open folder with all attachements?";
-	OpenContainingFolderDlg dlg(txt, TRUE);
+	CString txt = L"Do you want to open folder with all attachments?";
+	ResHelper::TranslateString(txt);
+
+	OpenContainingFolderDlg dlg(txt, attachmentCachePath, TRUE);
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
 	{
@@ -11999,7 +12213,9 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	//
 	if (FileUtils::PathDirExists(attachmentCachePath))
 	{
-		MboxMail::pCUPDUPData->SetProgress(L"Deleting all attachment files in the Attachment Cache directory ...", 0);
+		CString txt = L"Deleting all attachment files in the Attachment Cache directory ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		FileUtils::RemoveDir(attachmentCachePath, false);
 	}
 	//
@@ -12021,7 +12237,9 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating attachment files ...", 0);
+			CString txt = L"Creating attachment files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -12034,7 +12252,9 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating attachment files ...", 0);
+			CString txt = L"Creating attachment files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -12069,9 +12289,13 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 			if (needToUpdateStatusBar)
 			{
 				int nItem = i + 1;
-				itemNumberStr.Format(L"Creating attachment files ... %d of %d", nItem, ni);
-				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(dwProgressbarPos));
+				//itemNumberStr.Format(L"Creating attachment files ... %d of %d", nItem, ni);
 
+				CString fmt = L"Creating attachment files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				itemNumberStr.Format(fmt, nItem, ni);
+
+				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(dwProgressbarPos));
 				int debug = 1;
 			}
 		}
@@ -12115,6 +12339,7 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcWriteEmlFile, (LPVOID)(WRITE_IMAGE_FILE_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -12174,7 +12399,9 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	}
 
 	CString txt = L"Do you want to open folder with all Eml files?";
-	OpenContainingFolderDlg dlg(txt, TRUE);
+	ResHelper::TranslateString(txt);
+
+	OpenContainingFolderDlg dlg(txt, emlCachePath, TRUE);
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
 	{
@@ -12268,7 +12495,11 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 	//
 	if (FileUtils::PathDirExists(emlCachePath))
 	{
-		MboxMail::pCUPDUPData->SetProgress(L"Deleting all Eml files in the Eml Cache directory ...", 0);
+		CString txt = L"Deleting all Eml files in the Eml Cache directory ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 0);
+
+
 		FileUtils::RemoveDir(emlCachePath, false);
 	}
 	//
@@ -12293,7 +12524,9 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating Eml files ...", 0);
+			CString txt = L"Creating Eml files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -12308,7 +12541,9 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating Eml files ...", 0);
+			CString txt = L"Creating Eml files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -12342,7 +12577,11 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 			if (needToUpdateStatusBar)
 			{
 				int nItem = i + 1;
-				itemNumberStr.Format(L"Creating Eml files ... %d of %d", nItem, ni);
+
+				CString fmt = L"Creating Eml files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				itemNumberStr.Format(fmt, nItem, ni);
+
 				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -12394,6 +12633,7 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcWriteInlineImageFile, (LPVOID)(WRITE_IMAGE_FILE_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -12518,7 +12758,9 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Creating inline image files ...", 0);
+			CString txt = L"Creating inline image files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 	int ni = MboxMail::s_mails.GetSize();
@@ -12532,7 +12774,9 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 	{
 		if (MboxMail::pCUPDUPData)
 		{
-			MboxMail::pCUPDUPData->SetProgress(L"Index file created. Creating inline image files ...", 0);
+			CString txt = L"Index file created. Creating inline image files ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
 		}
 	}
 
@@ -12562,7 +12806,11 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 			if (needToUpdateStatusBar)
 			{
 				int nItem = i + 1;
-				itemNumberStr.Format(L"Creating inline image files ... %d of %d", nItem, ni);
+
+				CString fmt = L"Creating inline image files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				itemNumberStr.Format(fmt, nItem, ni);
+
 				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(itemNumberStr, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -12615,6 +12863,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcPrintMailGroupToSingleTEXT, (LPVOID)(PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -12668,10 +12917,10 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 				ret = MboxMail::MakeFileNameFromMailHeader(selectedMailsIndexList->GetAt(0), textType, fileName, targetPrintSubFolder, fileExists, errorText);
 
 			//CString txt = L"Created TEXT file \n\n" + fileName;
-			CString txt;
-			CString fmt = L"Created TEXT file \n\n%s";
-			txt.Format(fmt, fileName);
-			OpenContainingFolderDlg dlg(txt, FALSE);
+			CString txt = L"Created TEXT file";
+			ResHelper::TranslateString(txt);
+
+			OpenContainingFolderDlg dlg(txt, fileName, FALSE);
 			INT_PTR nResponse = dlg.DoModal();
 			////////////
 			if (nResponse == IDOK)
@@ -13146,10 +13395,15 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 		CString txt = L"Could not create \"" + fileName;
 		txt += L"\" eml file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not create \"%s\" eml file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, fileName, exErrorStr);
 
 		// PrintAsEmlFile is the static function. Must use global MessageBox
 		// Not ideal because program is not blocked. TODO: invetsigate and change 
@@ -13675,8 +13929,16 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 	SerializerHelper sz(mboxListFile);
 	if (!sz.open(TRUE))
 	{
+#if 0
 		CString txt = L"Could not create \"" + mboxListFile;
 		txt += L"\" file.\nMake sure file is not open on other applications.";
+#endif
+
+		CString txt;
+		CString fmt = L"Could not create \"%s\" file.\nMake sure file is not open on other applications.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFile);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -13847,10 +14109,15 @@ int NListView::ScanAllMailsInMbox_NewParser()
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 		CString txt = L"Could not open mail archive \"" + MboxMail::s_path;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not open mail archive \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, MboxMail::s_path, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 
@@ -14093,6 +14360,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	if (MboxMail::IsFolderMailsSelected())
 	{
 		CString txt = L"Folder Selected Mails List not empty. Overwrite?";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
@@ -14102,6 +14370,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 
 	if (mboxFileNamePath.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -14127,16 +14396,31 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 
 	if (!FileUtils::PathFileExist(folderNameCompletePath))
 	{
+#if 0
 		CString txt = L"Mail List File \"" + folderNameCompletePath;
 		txt += L"\" doesn't exist.\nCan't reload.";
+#endif
+		CString txt;
+		CString fmt = L"Mail List File \"%s\" doesn't exist.\nCan't reload.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, folderNameCompletePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	SerializerHelper sz(folderNameCompletePath);
-	if (!sz.open(FALSE)) {
+	if (!sz.open(FALSE))
+	{
+#if 0
 		CString txt = L"Could not open \"" + folderNameCompletePath;
 		txt += L"\" file.\nMake sure file is not open on other applications.";
+#endif
+		CString txt;
+		CString fmt = L"Could not open \"%s\" file.\nMake sure file is not open on other applications.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, folderNameCompletePath);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -14158,14 +14442,25 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	{
 		sz.close();
 
+#if 0
 		CString text = L"Mail list file\n\"" + folderNameCompletePath;
 		CString strVersion;
 		strVersion.Format(L"%d", (version - MAIL_LIST_VERSION_BASE));
 		text += L"\".\nhas incompatible version\"" + strVersion + L"\". Expected version \"";
 		strVersion.Format(L"%d", (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
 		text += strVersion + L"\".\nCan't reload.\nPlease remove the file.";
+#endif
+		CString txt;
+		CString strVersion;
+		strVersion.Format(L"%d", (version - MAIL_LIST_VERSION_BASE));
+		CString strCachedVersion;
+		strCachedVersion.Format(L"%d", (MAIL_LIST_VERSION - MAIL_LIST_VERSION_BASE));
 
-		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		CString fmt = L"Mail list file\n\"%s\".\nhas incompatible version\"%s\". Expected version \"%s\".\nCan't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, folderNameCompletePath, strVersion, strCachedVersion);
+
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -14220,8 +14515,16 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	else
 	{
 		sz.close();
+#if 0
 		CString txt = L"Mail list file\n\"" + folderNameCompletePath;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+#endif
+
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, folderNameCompletePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		return -1; // do nothing
@@ -14232,9 +14535,16 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	if (ret < 0)
 	{
 		MboxMail::s_mails_folder.SetSizeKeepData(0);
-
+#if 0
 		CString txt = L"Mail list file\n\"" + folderNameCompletePath;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+#endif
+
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease remove the file.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, folderNameCompletePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 	else
@@ -16218,8 +16528,16 @@ int NListView::ForwardMailDialog(int iItem)
 
 	if (pFrame->m_mailDB.SMTPConfig.UserAccount.IsEmpty() || pFrame->m_mailDB.SMTPConfig.UserPassword.IsEmpty())
 	{
+#if 0
 		CString txt = L"User name and/or password are not provided.\n";
 		txt += L"Select \"File\"->\"SMTP Mail Server Config\" and provide user name and password.\n";
+#endif
+
+		CString txt = L"User name and/or password are not provided.\n"
+			"Select \"File\"->\"SMTP Mail Server Config\" and provide user name and password.";
+
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -16285,6 +16603,9 @@ int NListView::ForwardMailRange(int iSelectedItem)
 
 			CString txt = L"Please sort all mails by conversation threads or subject threads first.\n";
 			//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
+			ResHelper::TranslateString(txt);
+
+
 			HWND h = GetSafeHwnd(); // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			//return -1;
@@ -16303,6 +16624,9 @@ int NListView::ForwardMailRange(int iSelectedItem)
 			L"Number of mails you selected to forward is greater than 100\n"
 			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n\n"
 			L"Do you want to forward selected mails anyway?\n";
+
+		ResHelper::TranslateString(txt);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 		{
@@ -16337,10 +16661,15 @@ int NListView::ForwardMailRange(int iSelectedItem)
 
 		if (largeMailsCnt)
 		{
-			CString txt;
-			txt.Format(L"Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
+			CString fmt = L"Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
 				L"Size of each mail is shown in the size column in the Summary Pane.\n\n"
-				L"Do you want to send anyway?\n", largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+				L"Do you want to send anyway?\n";
+			
+			ResHelper::TranslateString(fmt);
+			CString txt;
+			txt.Format(fmt, largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+
+
 			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer != IDYES)
 			{
@@ -16380,6 +16709,9 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n"
 			L"You make take manual action to unblock the accout without delay\n\n"
 			L"Do you want to forward selected emails anyway?\n";
+
+		ResHelper::TranslateString(txt);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 		{
@@ -16405,10 +16737,14 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 
 		if (largeMailsCnt)
 		{
-			CString txt;
-			txt.Format(L"Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
+			CString fmt = L"Found %d mails in the selected list that are larger than the max mail size of %d KB imposed by the active service %s. Sending will fail.\n"
 				L"Size of each mail is shown in the size column in the Summary Pane.\n\n"
-				L"Do you want to send anyway?\n", largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+				L"Do you want to send anyway?\n";
+
+			ResHelper::TranslateString(fmt);
+			CString txt;
+			txt.Format(fmt, largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
+
 			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer != IDYES)
 			{
@@ -16507,6 +16843,7 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 
 	int ret = 1;
 	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcForwardMails, (LPVOID)(FORWARD_MAILS_ARGS*)&args);
+	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
 
@@ -16695,7 +17032,11 @@ int NListView::ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexLis
 			if (needToUpdateStatusBar)
 			{
 				nFileNum = j + 1;
-				fileNum.Format(L"Forwarding mails to %s  ... %d of %d", mailData.m_MailService, nFileNum, cnt);
+
+				CString fmt = L"Forwarding mails to %s  ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				fileNum.Format(fmt, mailData.m_MailService, nFileNum, cnt);
+
 				if (MboxMail::pCUPDUPData)  MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 				int debug = 1;
 			}
@@ -16706,7 +17047,11 @@ int NListView::ForwardMails_WorkerThread(ForwardMailData &mailData, MailIndexLis
 	}
 	nFileNum = cnt;
 	UINT newstep = 100;
-	fileNum.Format(L"Forwarding mails to %s ... %d of %d", mailData.m_MailService, nFileNum, cnt);
+
+	CString fmt = L"Forwarding mails to %s  ... %d of %d";
+	ResHelper::TranslateString(fmt);
+	fileNum.Format(fmt, mailData.m_MailService, nFileNum, cnt);
+
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 	int deb = 1;
 	return 1;
@@ -16920,7 +17265,9 @@ INT64 NListView::ExecCommand_WorkerThread(int tcpPort, CString instanceId, CStri
 						if (progressText.IsEmpty())
 							MboxMail::pCUPDUPData->SetProgress(step);
 						else {
-							secondsBar.Format(L"%s     %d seconds", progressText, nSeconds);
+							CString fmt = L"%s     %d seconds";
+							ResHelper::TranslateString(fmt);
+							secondsBar.Format(fmt, progressText, nSeconds);
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -17036,7 +17383,9 @@ INT64 NListView::ExecCommand_KillProcess(CString processName, CString &errorText
 						if (progressText.IsEmpty())
 							MboxMail::pCUPDUPData->SetProgress(step);
 						else {
-							secondsBar.Format(L"%s     %d seconds", progressText, nSeconds);
+							CString fmt = L"%s     %d seconds";
+							ResHelper::TranslateString(fmt);
+							secondsBar.Format(fmt, progressText, nSeconds);
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -17106,8 +17455,17 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 	if (!sz.open(TRUE))
 	{
 		CString lastError = FileUtils::GetLastErrorAsString();
+#if 0
 		CString txt = L"Could not create \"" + filePath + L"\"\n";
 		txt += L"Error: " + lastError + L"\n";
+#endif
+
+		CString fmt = L"Could not create \"%s\"\nError: %s\n";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, filePath, lastError);
+
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17145,8 +17503,16 @@ int NListView::WriteMboxLabelListFile(MailArray* mailsArray, CStringA &gLabel, D
 	if (!sz.open(TRUE))
 	{
 		CString lastError = FileUtils::GetLastErrorAsString();
+#if 0
 		CString txt = L"Could not create \"" + filePath + L"\"\n";
 		txt += L"Error: " + lastError + L"\n";
+#endif
+
+		CString fmt = L"Could not create \"%s\"\nError: %s\n";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, filePath, lastError);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17195,6 +17561,7 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &
 
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17297,6 +17664,8 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 
 	if (mboxFileNamePath.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -17313,8 +17682,16 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 
 	if (!FileUtils::PathFileExist(listFilePath))
 	{
+#if 0
 		CString txt = L"Mail Label List File \"" + listFilePath;
 		txt += L"\" doesn't exist.\nCan't reload.";
+#endif
+
+		CString fmt = L"Mail Label List File \"%s\" doesn't exist.\nCan't reload.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17322,9 +17699,18 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 
 	SerializerHelper sz(listFilePath);
 	if (!sz.open(FALSE)) {
+
 		CString lastError = FileUtils::GetLastErrorAsString();
+#if 0
 		CString txt = L"Could not open \"" + listFilePath + L"\"\n";
 		txt += L"Error: " + lastError + L"\n";
+#endif
+
+		CString fmt = L"Could not open \"%s\"\nError: %s\n";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath, lastError);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17334,9 +17720,16 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	_int64 mailFileSize;
 	_int64 mboxFileSize;
 	int mailListCnt;
-
+#if 0
 	CString txt = L"Mail label list file\n\"" + listFilePath;
 	txt += L"\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.";
+#endif
+#if 0
+	CString fmt = L"Mail label list file\n\"%s\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.";
+	ResHelper::TranslateString(fmt);
+	CString txt;
+	txt.Format(fmt, listFilePath);
+#endif
 
 	if (!sz.readInt(&version)) {
 		sz.close();
@@ -17351,7 +17744,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	if (version != mailLabelListVersion)
 	{
 		sz.close();
-
+#if 0
 		CString text = L"Mail label list file\n\n\"" + listFilePath;
 		CString strVersion;
 
@@ -17360,11 +17753,29 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		strVersion.Format(L"%d", expectedVersion);
 		text += strVersion + L"\".\nCan't reload.\nPlease select Refresh Gmail Labels";
 		text += L" for mbox mail file\n\n" + mboxFilePath;
+#endif
+		CString text;
+		CString strVersion;
+		strVersion.Format(L"%d", listFileVersion);
+		CString strExpectedVersion;
+		strExpectedVersion.Format(L"%d", expectedVersion);
+
+		CString fmt = L"Mail label list file\n\n\"%s\".\n\nhas incompatible version\"%s\". Expected version \"%s\".\nCan't reload.\nPlease select Refresh Gmail Labels"
+			L" for mbox mail file\n\n%s"
+			;
+
+		ResHelper::TranslateString(fmt);
+		text.Format(fmt, listFilePath, strVersion, strExpectedVersion, mboxFilePath);
 
 		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
+
+	CString fmt = L"Mail label list file\n\"%s\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.";
+	ResHelper::TranslateString(fmt);
+	CString txt;
+	txt.Format(fmt, listFilePath);
 
 	if (!sz.readInt64(&mailFileSize)) {
 		sz.close();
@@ -17440,8 +17851,15 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	else
 	{
 		sz.close();
+#if 0
 		CString txt = L"Mail list file\n\"" + listFilePath;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.";
+#endif
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1; // do nothing
@@ -17452,9 +17870,15 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	if (ret < 0)
 	{
 		MboxMail::s_mails_folder.SetSizeKeepData(0);
-
+#if 0
 		CString txt = L"Mail list file\n\"" + listFilePath;
 		txt += L"\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.";
+#endif
+		CString fmt = L"Mail list file\n\"%s\"\n is invalid or corrupted. Can't reload.\nPlease refresh Gmail Labels.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 	}
@@ -17519,6 +17943,8 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (mboxFileNamePath.IsEmpty())
 	{
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
@@ -17535,8 +17961,16 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 
 	if (!FileUtils::PathFileExist(listFilePath))
 	{
+#if 0
 		CString txt = L"Mail Label List File \"" + listFilePath;
 		txt += L"\" doesn't exist.\nCan't reload.";
+#endif
+
+		CString fmt = L"Mail Label List File \"%s\" doesn't exist.\nCan't reload.";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17545,9 +17979,18 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	SerializerHelper sz(listFilePath);
 	if (!sz.open(FALSE))
 	{
+
 		CString lastError = FileUtils::GetLastErrorAsString();
+#if 0
 		CString txt = L"Could not open \"" + listFilePath + L"\"\n";
 		txt += L"Error: " + lastError + L"\n";
+#endif
+
+		CString fmt = L"Could not open \"%s\"\nError: %s\n";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, listFilePath, lastError);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
@@ -17557,10 +18000,18 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	_int64 mailFileSize;
 	_int64 mboxFileSize;
 	int mailListCnt;
-
+#if 0
 	CString txt = L"Mail label list file\n\"" + listFilePath;
 	txt += L"\"\nhas incompatible version or file is corrupted.\nCan't reload.\nPlease select Refresh Gmail Labels.";
 	txt += L"\nfor mbox mail file\n\n" + mboxFilePath;
+#endif
+#if 0
+	CString fmt = L"Mail label list file\n\"%s\"\nhas incompatible version or file is corrupted.\n"
+		"Can't reload.\nPlease select Refresh Gmail Labels.\nfor mbox mail file\n\n%s";
+	ResHelper::TranslateString(fmt);
+	CString txt;
+	txt.Format(fmt, listFilePath, mboxFilePath);
+#endif
 
 	if (!sz.readInt(&version))
 	{
@@ -17576,7 +18027,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (version != mailLabelListVersion)
 	{
 		sz.close();
-
+#if 0
 		CString text = L"Mail label list file\n\n\"" + listFilePath;
 		CString strVersion;
 
@@ -17585,11 +18036,31 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		strVersion.Format(L"%d", expectedVersion);
 		text += strVersion + L"\".\nCan't reload.\nPlease select Refresh Gmail Labels";
 		text += L" for mbox mail file\n\n" + mboxFilePath;
+#endif
+
+		CString text;
+		CString strVersion;
+		strVersion.Format(L"%d", listFileVersion);
+		CString strExpectedVersion;
+		strExpectedVersion.Format(L"%d", expectedVersion);
+
+		CString fmt = L"Mail label list file\n\n\"%s\".\n\nhas incompatible version\"%s\". Expected version \"%s\".\nCan't reload.\nPlease select Refresh Gmail Labels"
+			L" for mbox mail file\n\n%s"
+			;
+
+		ResHelper::TranslateString(fmt);
+		text.Format(fmt, listFilePath, strVersion, strExpectedVersion, mboxFilePath);
 
 		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
+
+	CString fmt = L"Mail label list file\n\"%s\"\nhas incompatible version or file is corrupted.\n"
+		"Can't reload.\nPlease select Refresh Gmail Labels.\nfor mbox mail file\n\n%s";
+	ResHelper::TranslateString(fmt);
+	CString txt;
+	txt.Format(fmt, listFilePath, mboxFilePath);
 
 	if (!sz.readInt64(&mailFileSize))
 	{
@@ -17856,6 +18327,7 @@ int NListView::ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 }
 
 /// ToolTips
+// Doesn't work. Likely du to Custom Draw. Neeed to investigate when timepermits
 // move below to CWheelListCtrl
 //
 void NListView::CellHitTest(const CPoint& pt, int& nRow, int& nCol) const
@@ -19135,6 +19607,8 @@ BOOL NListView::ConfigureExportOfMails()
 		L"Open Help option for additional details\n\n"
 		);
 
+	ResHelper::TranslateString(helpText);
+
 	HWND h = GetSafeHwnd();
 	int answer = ::MessageBox(h, helpText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNOCANCEL);
 	BOOL bHdrAttachmentLinkOpenMode = -1;
@@ -19166,4 +19640,16 @@ LRESULT NListView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
 	CWnd *wnd = CMainFrame::SetWindowFocus(&m_list);
 	
 	return 0;
+}
+
+BOOL NListView::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }

@@ -128,7 +128,9 @@ void CFindDlg::OnOK()
 	m_params.m_string.TrimRight();  // FIXMEFIXME do we need to enforce this
 	if (m_params.m_string.IsEmpty())
 	{
-		AfxMessageBox(L"Cannot search for an empty string!", MB_OK | MB_ICONHAND);
+		CString txt = L"Cannot search for an empty string!";
+		ResHelper::TranslateString(txt);
+		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

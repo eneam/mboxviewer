@@ -547,6 +547,15 @@ HRESULT CheckIsDefaultApp(const wchar_t* prog, const wchar_t *extension, BOOL* f
 }
 #endif
 
+HWND CmboxviewApp::GetActiveWndGetSafeHwnd()
+{
+	HWND h = NULL; // we don't have any window yet
+	CWnd* wnd = CWnd::GetActiveWindow();
+	if (wnd)
+		h = wnd->GetSafeHwnd();
+	return h;
+}
+
 CmboxviewApp::~CmboxviewApp()
 {
 	if (!CProfile::IsRegistryConfig())
@@ -1377,9 +1386,19 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			exportEML.MakeLower();
 			if (!((exportEML.Compare(L"y") == 0) || (exportEML.Compare(L"n") == 0)))
 			{
+#if 0
 				CString txt = L"Invalid Command Line Option Value \"";
 				CString opt = lpszParam;
 				txt += opt + L"\". Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?";
+#endif
+				CString txt;
+				CString opt = lpszParam;
+				CString fmt = L"Invalid Command Line Option Value \"%s\". "
+					"Valid are \"y|n\". Note that once defined valid EXPORT_EML persists in the registry.\nDo you want to continue?";
+
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, lpszParam);
+
 				HWND h = NULL; // we don't have any window yet  
 				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
@@ -1400,9 +1419,18 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 			// Validate
 			if (!TextUtilsEx::isNumeric(barDelay))
 			{
+#if 0
 				CString txt = L"Invalid Command Line Option Value \"";
 				CString opt = lpszParam;
 				txt += opt + L"\".\nDo you want to continue?";
+#endif
+
+				CString txt;
+				CString opt = lpszParam;
+				CString fmt = L"Invalid Command Line Option Value \"%s\".\nDo you want to continue?";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, lpszParam);
+
 				HWND h = NULL; // we don't have any window yet  
 				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
@@ -1440,20 +1468,22 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		{
 			// Unknown argument
 			CMainFrame::m_commandLineParms.m_hasOptions = FALSE;
-			CString txt = L"Invalid Command Line Option \"";
 			CString opt = lpszParam;
-			txt += opt
-				+ L"\""
-				+ L"\n\nValid options:\n"
-				+ L"  -FOLDER=Folder Path\n"
-				+ L"  -MAIL_FILE=Mbox File Path or Name to open\n"
-				+ L"  -EXPORT_EML=y or n\n"
-				+ L"  -PROGRESS_BAR_DELAY=Seconds\n"
-				+ L"  -EML_PREVIEW_MODE\n"
-				+ L"  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n"
-				+ L"  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n"
-				+ L"\nDo you want to continue?"
+			CString txt;
+			CString fmt = L"Invalid Command Line Option \"%s\""
+				L"\n\nValid options:\n"
+				L"  -FOLDER=Folder Path\n"
+				L"  -MAIL_FILE=Mbox File Path or Name to open\n"
+				L"  -EXPORT_EML=y or n\n"
+				L"  -PROGRESS_BAR_DELAY=Seconds\n"
+				L"  -EML_PREVIEW_MODE\n"
+				L"  -MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n"
+				L"  -MBOX_MERGE_TO_FILE=Path to File to save merge results\n"
+				L"\nDo you want to continue?"
 				;
+
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, lpszParam);
 
 			CMainFrame::m_commandLineParms.Clear();
 			HWND h = NULL; // we don't have any window yet
@@ -1526,6 +1556,8 @@ BOOL CmboxviewApp::InitInstance()
 {
 	CString errorText;
 
+	ResHelper::MyTrace(L"CmboxviewApp::InitInstance\n");
+
 	BOOL retcheck = CProfile::DetermineConfigurationType(errorText);
 	if (retcheck == FALSE)
 	{
@@ -1550,11 +1582,23 @@ BOOL CmboxviewApp::InitInstance()
 		if (attr & FILE_ATTRIBUTE_READONLY)
 		{
 			HWND h = NULL; // we don't have any window yet 
+#if 0
 			CString txt = L"Could not write to MBox Viewer configuration file:\n\n"
 				+ CmboxviewApp::m_configFilePath +
 				L"\n\nlikely  due to lack of permission to write.\n"
 				"Please resolve the issue and run the MBox Viewer again\n\n"
 				L"Or configure MBox Viewer to use Windows Registry.\n";
+#endif
+			CString txt;
+			CString fmt = L"Could not write to MBox Viewer configuration file:\n\n%s"
+				L"\n\nlikely  due to lack of permission to write.\n"
+				L"Please resolve the issue and run the MBox Viewer again\n\n"
+				L"Or configure MBox Viewer to use Windows Registry.\n"
+				;
+
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, CmboxviewApp::m_configFilePath);
+
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
@@ -1595,8 +1639,12 @@ BOOL CmboxviewApp::InitInstance()
 		{
 			HWND h = NULL; // we don't have any window yet 
 			CString txt = L"Could not write to Windows registry likely  due to lack of permission. "
-				"Please resolve the issue and run the MBox Viewer again.\n\n"
-			L"Or configure MBox Viewer to use configuration file.\n";
+				L"Please resolve the issue and run the MBox Viewer again.\n\n"
+				L"Or configure MBox Viewer to use configuration file.\n"
+				;
+
+			ResHelper::TranslateString(txt);
+
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
@@ -1610,6 +1658,8 @@ BOOL CmboxviewApp::InitInstance()
 	CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
 	if (!languageFolderPath.IsEmpty())
 	{
+		ResHelper::MyTrace(L"CmboxviewApp::InitInstance: %s\n", languageFolderPath);
+
 		CString FolderPath = languageFolderPath;
 		FolderPath.TrimRight(L"\\");
 
@@ -1624,7 +1674,10 @@ BOOL CmboxviewApp::InitInstance()
 	}
 	else
 	{
+#ifndef _DEBUG
 		ResHelper::DisableLanguageLoading();
+#endif
+int deb = 1;
 	}
 
 	CString dataFolder;

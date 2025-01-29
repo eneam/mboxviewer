@@ -114,6 +114,7 @@ public:
 	//static DebugCString m_configFilePath;  // for testing object life cycle
 
 	static BOOL GetProcessPath(CString &processpath);
+	static HWND GetActiveWndGetSafeHwnd();
 
 	static CWnd* wndFocus;
 

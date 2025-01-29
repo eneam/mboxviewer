@@ -66,6 +66,7 @@ public:
 	// Generated message map functions
 protected:
 	const NListView *m_list;
+	CToolTipCtrl m_toolTip;  // doesn't work likely because of CustomDraw; need to investigate 
 	//{{AFX_MSG(CWheelListCtrl)
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	//}}AFX_MSG
@@ -80,6 +81,14 @@ public:
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	//afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg LRESULT OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam);
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	//
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg BOOL OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+
+	void CellHitTest(const CPoint& pt, int& nRow, int& nCol) const;
+	bool ShowToolTip(const CPoint& pt) const;
+	CString GetToolTipText(int nRow, int nCol);
 };
 
 /////////////////////////////////////////////////////////////////////////////

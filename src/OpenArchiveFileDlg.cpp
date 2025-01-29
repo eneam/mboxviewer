@@ -155,8 +155,12 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{
-		CString txt = L"File \"" + mboxFilePath;
-		txt += L"\" exists.\nOverwrite?";
+		CString fmt = L"File\n\n\"%s\"\n\nexists.\nOverwrite?";
+		ResHelper::TranslateString(fmt);
+
+		CString txt;
+		txt.Format(fmt, mboxFilePath);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;

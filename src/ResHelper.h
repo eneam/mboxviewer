@@ -48,13 +48,14 @@ public:
 class ResourceInfo
 {
 public:
-	ResourceInfo(CString& label, CString &controlName) { m_label = label; m_controlName = controlName;  }
-	ResourceInfo(CStringA& labelA, CString& controlName) { m_labelA = labelA; m_controlName = controlName; }
+	ResourceInfo(CString& label, CString& controlName, int contributorID = 0) { m_label = label; m_controlName = controlName; m_contributorID = contributorID;  }
+	//ResourceInfo(CStringA& labelA, CString& controlName) { m_labelA = labelA; m_controlName = controlName; m_contributorID = 0; }
 
 	dlink_node<ResourceInfo> m_hashMapLink;
 	CString m_label;
-	CStringA m_labelA;
+	//CString m_labelA;
 	CString m_controlName;
+	int  m_contributorID;
 };
 
 struct ResourceInfoHelper
@@ -102,6 +103,16 @@ class ResHelper
 {
 public:
 
+	enum
+	{
+		CONTRIB_NONE,
+		CONTRIB_LAST_SOURCE,
+		CONTRIB_RC,
+		CONTRIB_EXTRA,
+		CONTRIB_CONTROLS,
+		CONTRIB_HINTS
+	};
+
 	enum TextEncoding
 	{
 		NONE,
@@ -117,6 +128,15 @@ public:
 	static BOOL g_LoadMenuItemsInfo;  // Traverse dialog & menu controles and create resource filke. i.e. collect text from all items/sub-controls
 	static BOOL g_UpdateMenuItemsInfo;  // Update all text using selected translation file
 
+
+	static CString resourceRootPath;
+	static CString rcFileName;
+	static CString sourceFileName;
+	static CString last_sourceFileName;
+	static CString translated_sourceFileName;
+	static CString extraFileName;
+	static CString msgsFileName;
+	//
 	static CString resourceFile;
 	static HANDLE hResourceFile;
 	static int maxWindowTextLength;
@@ -130,6 +150,8 @@ public:
 	static ResHelper::TextEncoding ResHelper::GetBOM(unsigned char* string, int slen);
 	static int GetCodePageFromFile(LPCWSTR lpszFileName);  // find PAGE_CODE NNN  in the file until line with first [ character
 
+	static BOOL IsFileUTF16LE_BOM(LPCWSTR lpszFileName);
+
 	// Guessing functions
 	static BOOL IsTextUTF8Done(BOOL retcode);
 	static BOOL IsTextUTF8(const char* data, size_t size, BOOL &isASCII);
@@ -138,10 +160,10 @@ public:
 	static int FindCodePageFromFile(LPCWSTR lpszFileName);
 
 	static void ReleaseResources();
-	static void ReleaseResInfoArray(ResInfoArrayType& resInfoArray);
-	static int ReleaseResInfoMap(ResInfoMapType& resInfoMap);
+	static void ReleaseResInfoArray(ResInfoArrayType& resInfoArray, BOOL deleteItems);
+	static int ReleaseResInfoMap(ResInfoMapType& resInfoMap, BOOL deleteItems);
 
-	static ResourceInfo* AddItemInfo(CString & label, CString &controlName);
+	static ResourceInfo* AddItemInfo(CString& label, CString& controlName, int contributorID = 0);
 	static ResourceInfo* AddItemInfo(CString& label);
 
 	static int PrintResInfo();
@@ -149,14 +171,16 @@ public:
 	static int PrintResInfoArray(ResInfoArrayType& resInfoArray, BOOL mustSort, BOOL printAsUnicode);
 	static int SortResInfoArray(ResInfoArrayType& resInfoArray);
 
+
+	static ResourceInfo* MergeAddItemInfo(CString& label, CString& controlName, int contributorID = 0);
 	static void MergeAllResInfo();
-	static void MergeResInfoFile(CString& resFile);
+	static void MergeControlsResInfo();
+	static void MergeResInfoFile(CString& resFile, int contributorID = 0);
+	static int GetText(CStdioFile &resFile, CString& strLine, BOOL translatedText, int &textId);
+	static int CStdioFileReadLine(CStdioFile& resFile, CString& strLine);
 
 	// Create language file by merigin info from .rc file and manually discovered info
 	static int CreateLanguageFile();
-
-	static int CreateLanguageFileFromANSIEncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
-	static int CreateLanguageFileFromUTF8EncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
 	static int CreateLanguageFileFromUTF16LEEncodedFiles(CString& resFile1, CString& resFile2, CString& languageFilePath);
 
 	static int ResortLanguageFile();
@@ -167,8 +191,14 @@ public:
 
 	static ResInfoMapType g_LanguageMap;
 
-	static ResInfoArrayType g_resInfoArray;
-	static ResInfoMapType g_resInfoMap;
+	static ResInfoArrayType g_resInfoArray;  // populated when user  selects control objects
+	static ResInfoMapType g_resInfoMap;      // populated when user  selects control objects
+	//
+	// populated by info from g_resInfoArray and files: rc.txt, last_source.txt, extra.txt and msgbox.txt
+	// used to create source.txt file
+	
+	static ResInfoArrayType g_mergedResInfoArray;  
+	static ResInfoMapType g_mergedResInfoMap;
 
 	static int PopulateResStringList() { return 0; }
 	//
@@ -195,7 +225,11 @@ public:
 
 	static void LoadLanguageMap(CString & languageFolder);
 	static void LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath);
-	static void LoadLanguageMapFromFileAnsi(CString& languageTranslationFilePath);
+	static void RenumberLanguageFile();
+	static int RenumberLanguageFileF16LE(CString& languageTranslationFilePath);
+
+	static void SplitTranslationFile();
+	static int SplitTranslationFile(CString& languageTranslationFilePath);
 	
 	static void DisableLanguageLoading();
 	static void EnableLanguageLoading();
@@ -203,6 +237,7 @@ public:
 	static void EnableResInfoCollecting();
 
 	static BOOL DetermineString(CString& str, CString& newString);
+	static BOOL TranslateString(CString& str); // or should employ va_list to simplify
 
 	static BOOL OnTtnNeedText(CWnd* parentWindow, NMHDR* pNMHDR, CString &toolTipText);
 	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl);
@@ -210,6 +245,14 @@ public:
 	static BOOL GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags);
 
 	static void GetProcessFolderPath(CString& folderPath);
+
+	static void MyTrace(CString& txt1, CString& txt2);
+	static void MyTrace(CString& txt);
+	static void MyTrace(const wchar_t *txt1, const wchar_t* txt2);
+	static void MyTrace(const wchar_t* txt);
+	static void MyVaTrace(const wchar_t* format, ...);
+	static void UnescapeString(const CString& input, CString& output);
+
 protected:
 };
 

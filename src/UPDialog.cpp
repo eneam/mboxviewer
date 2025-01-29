@@ -273,7 +273,9 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 			{
 				LPPROGRESSTHREADDATA pThreadData = (LPPROGRESSTHREADDATA)(LPVOID)(&pProgressDialog->m_ThreadData);
 				pThreadData->bTerminate = true;
+
 				SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Initiated.."));
+
 				SendMessage(hDlg,PROGRESSTHREADDATA::WM_DISABLECONTROLS,wParam,lParam);
 				if(pThreadData->bAlive)
 					Sleep(pProgressDialog->m_dwTerminateDelay);

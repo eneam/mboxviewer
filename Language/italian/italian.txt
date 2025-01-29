@@ -1177,6 +1177,9 @@
 ["Remove Selected Mail"]
 "Rimuovi mail selezionata"
 
+["Remove Selected Mails"]
+"Rimuovi mail selezionata"
+
 ["Repeat last search\nFind again"]
 "Ripeti ultima ricerca\nTrova di nuovo"
 

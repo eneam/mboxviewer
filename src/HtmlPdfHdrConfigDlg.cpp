@@ -381,15 +381,27 @@ void HtmlPdfHdrConfigDlg::OnBnClickedPickConcreteFont()
 			CString errorTxt;
 			if (m_HdrFldConfig.m_bHdrFldCustomNameFont == 0)
 			{
+#if 0
 				txt.Format(L"Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", pFont->m_nFontSize);
 				errorTxt.Append(txt);
 				errorTxt.Append(L"Setting Font Size to 16\n");
+#endif
+
+				CString fmt = L"Field Name Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\nSetting Font Size to 16\n";
+				ResHelper::TranslateString(fmt);
+				errorTxt.Format(fmt, pFont->m_nFontSize);
 			}
 			else
 			{
+#if 0
 				txt.Format(L"Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\n", pFont->m_nFontSize);
 				errorTxt.Append(txt);
 				errorTxt.Append(L"Setting Font Size to 16\n");
+#endif
+
+				CString fmt = L"Field Text Font Size:  Invalid Font Size of %d! Valid Size is >0 and <=72\nSetting Font Size to 16\n";
+				ResHelper::TranslateString(fmt);
+				errorTxt.Format(fmt, pFont->m_nFontSize);
 			}
 			int answer = MessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			pFont->m_nFontSize = 16;

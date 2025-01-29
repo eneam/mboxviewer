@@ -39,6 +39,7 @@
 #include "MimeParser.h"
 #include "SerializationHelper.h"
 #include "MimeHelper.h"
+#include "ResHelper.h"
 
 #ifdef USE_STACK_WALKER
 #include "StackWalker.h"
@@ -1651,9 +1652,17 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 							{
 								CString mailNum;
 								if (statusText.IsEmpty())
-									mailNum.Format(L"Parsing archive file to create index file ... %d", s_mails.GetCount());
+								{
+									CString fmt = L"Parsing archive file to create index file ... %d";
+									ResHelper::TranslateString(fmt);
+									mailNum.Format(fmt, s_mails.GetCount());
+								}
 								else
-									mailNum.Format(L"%s ... %d", statusText, s_mails.GetCount());
+								{
+									CString fmt = L"%s ... %d";
+									ResHelper::TranslateString(fmt);
+									mailNum.Format(fmt, statusText, s_mails.GetCount());
+								}
 
 								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(dwProgressbarPos));
 
@@ -2119,8 +2128,13 @@ void MboxMail::Parse(LPCWSTR path)
 	CString imageCachePath;
 	errorText.Empty();
 	bool ret2 = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, imageCachePath, errorText, &cpath);
-	if (errorText.IsEmpty() && FileUtils::PathDirExists(imageCachePath)) {
-		pCUPDUPData->SetProgress(L"Deleting all related files in the ImageCache directory ...", 0);
+	if (errorText.IsEmpty() && FileUtils::PathDirExists(imageCachePath))
+	{
+		CString txt = L"Deleting all related files in the ImageCache directory ...";
+		ResHelper::TranslateString(txt);
+		pCUPDUPData->SetProgress(txt, 0);
+
+
 		FileUtils::RemoveDir(imageCachePath, true);
 	}
 
@@ -2178,7 +2192,10 @@ void MboxMail::Parse(LPCWSTR path)
 	CString parsingFileText = L"Parsing \"" + mailFile + L"\" ...";
 
 	//pCUPDUPData->SetProgress(parsingFileText, 0);  // works but doesn't always fit into progress bar
-	pCUPDUPData->SetProgress(L"Parsing archive file to create index file ...", 0);
+
+	CString txt = L"Parsing archive file to create index file ...";
+	ResHelper::TranslateString(txt);
+	pCUPDUPData->SetProgress(txt, 0);
 	// TODO: due to breaking the file into multiple chunks, it looks some emails can be lost : Fixed
 	bool firstView = true;;
 	bool lastView = false;
@@ -2207,6 +2224,8 @@ void MboxMail::Parse(LPCWSTR path)
 		{
 			DWORD err = GetLastError();
 			CString txt = L"Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.";
+			ResHelper::TranslateString(txt);
+
 			HWND h = NULL; // we don't have any window yet ??
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			int deb = 1;
@@ -2254,9 +2273,9 @@ void MboxMail::Parse(LPCWSTR path)
 	tc = (GetTickCount64() - tc);
 	CString out;
 	out.Format(L"Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
-	OutputDebugString(out);
+	ResHelper::MyTrace(out);
 	out.Format(L"Found %d mails\n", MboxMail::s_mails.GetSize());
-	OutputDebugString(out);
+	ResHelper::MyTrace(out);
 //	TRACE(L"Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
 //	TRACE(L"Found %d mails\n", MboxMail::s_mails.GetSize());
 #endif
@@ -2365,7 +2384,14 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 	FileUtils::SplitFilePath(mailFilePath, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString mailFile = fileNameBase + fileNameExtention;
+#if 0
 	CString parsingFileText = L"Parsing \"" + mailFile + L"\"";
+#endif
+
+	CString fmt = L"Parsing \"%s\"";
+	ResHelper::TranslateString(fmt);
+	CString parsingFileText;
+	parsingFileText.Format(fmt, mailFile);
 
 	if (pCUPDUPData)
 		pCUPDUPData->SetProgress(parsingFileText, 0);  // works but doesn't always fit into progress bar
@@ -2399,6 +2425,8 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 		{
 			DWORD err = GetLastError();
 			CString txt = L"Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.";
+			ResHelper::TranslateString(txt);
+
 			HWND h = NULL; // we don't have any window yet ??
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			int deb = 1;
@@ -2447,9 +2475,9 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 	tc = (GetTickCount64() - tc);
 	CString out;
 	out.Format(L"Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
-	OutputDebugString(out);
+	ResHelper::MyTrace(out);
 	out.Format(L"Found %d mails\n", MboxMail::s_mails.GetSize());
-	OutputDebugString(out);
+	ResHelper::MyTrace(out);
 	//	TRACE(L"Parse Took %d:%d %d\n", tc / 60000, (tc / 1000) % 60, tc);
 	//	TRACE(L"Found %d mails\n", MboxMail::s_mails.GetSize());
 #endif
@@ -4207,6 +4235,8 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 	if (s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -4216,6 +4246,8 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 	CString path = MboxMail::GetLastPath();
 	if (path.IsEmpty()) {
 		CString txt = L"No path to archive file folder.";
+		ResHelper::TranslateString(txt);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;  // Hopefully s_path wil fail first
@@ -4265,10 +4297,15 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 			CString txt = L"Could not create \"" + csvFile;
 			txt += L"\" file.\n";
 			txt += exErrorStr;
+#endif
+			CString txt;
+			CString fmt = L"Could not create \"%s\" file.\n%s";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, csvFile, exErrorStr);
 
 			//TRACE(L"%s\n", txt);
 
@@ -4289,10 +4326,15 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 			{
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 				CString txt = L"Could not open \"" + MboxMail::s_path;
 				txt += L"\" mail file.\n";
 				txt += exErrorStr;
+#endif
+				CString txt;
+				CString fmt = L"Could not open \"%s\" mail file.\n%s";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, MboxMail::s_path, exErrorStr);
 
 				//TRACE(L"%s\n", txt);
 				//errorText = txt;
@@ -4349,6 +4391,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		MboxMail::m_Html2TextCount = 0;
 
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcPrintMailArchiveToCSV, (LPVOID)(PRINT_MAIL_ARCHIVE_TO_CSV_ARGS*)&args);
+		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 		INT_PTR nResult = Dlg.DoModal();
 
@@ -6635,10 +6678,16 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 			CString txt = L"Could not create \"" + textFile;
 			txt += L"\" file.\n";
 			txt += exErrorStr;
+#endif
+
+			CString txt;
+			CString fmt = L"Could not create \"%s\" file.\n%s";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, textFile, exErrorStr);
 
 			//TRACE(L"%s\n", txt);
 
@@ -6657,10 +6706,15 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
-
+#if 0
 			CString txt = L"Could not open \"" + MboxMail::s_path;
 			txt += L"\" mail file.\n";
 			txt += exErrorStr;
+#endif
+			CString txt;
+			CString fmt = L"Could not open \"%s\" mail file.\n%s";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, MboxMail::s_path, exErrorStr);
 
 			//TRACE(L"%s\n", txt);
 			//errorText = txt;
@@ -6750,6 +6804,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		MboxMail::m_Html2TextCount = 0;
 
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcPrintMailArchive, (LPVOID)(PRINT_MAIL_ARCHIVE_ARGS*)&args);
+		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 		INT_PTR nResult = Dlg.DoModal();
 
@@ -6854,9 +6909,17 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
 		if (textType == 0)
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to TEXT file ...", 0);
+		{
+			CString txt = L"Printing mails to TEXT file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 		else
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to HTML file ...", 0);
+		{
+			CString txt = L"Printing mails to HTML file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 	}
 
 	UINT curstep = 1;
@@ -6908,9 +6971,17 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 			{
 				int nFileNum = i - firstMail + 1;
 				if (textType == 0)
-					fileNum.Format(L"Printing mails to single TEXT file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single TEXT file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
 				else
-					fileNum.Format(L"Printing mails to single HTML file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single HTML file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
 
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
@@ -6986,7 +7057,9 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to CSV file ...", 0);
+		CString txt = L"Printing mails to CSV file ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 0);
 	}
 
 	UINT curstep = 1;
@@ -7031,7 +7104,12 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 				if (needToUpdateStatusBar)
 				{
 					int nFileNum = i - firstMail + 1;
-					fileNum.Format(L"Printing mails to CSV file ... %d of %d", nFileNum, cnt);
+					//fileNum.Format(L"Printing mails to CSV file ... %d of %d", nFileNum, cnt);
+
+					CString fmt = L"Printing mails to CSV file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+
 					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
 					int debug = 1;
@@ -7067,7 +7145,12 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 				if (needToUpdateStatusBar)
 				{
 					int nFileNum = j + 1;
-					fileNum.Format(L"Printing mails to CSV file ... %d of %d", nFileNum, cnt);
+					//fileNum.Format(L"Printing mails to CSV file ... %d of %d", nFileNum, cnt);
+
+					CString fmt = L"Printing mails to CSV file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+
 					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
 					int debug = 1;
@@ -8750,6 +8833,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 
 	if (s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -8774,10 +8858,14 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 		CString txt = L"Could not create \"" + statsFile;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not create \"%s\" file.\n%s";
+		txt.Format(fmt, statsFile, exErrorStr);
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
@@ -10451,9 +10539,17 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
 		if (textType == 0)
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to TEXT file ...", 0);
+		{
+			CString txt = L"Printing mails to TEXT file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 		else
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to HTML file ...", 0);
+		{
+			CString txt = L"Printing mails to HTML file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 	}
 
 	UINT curstep = 1;
@@ -10511,9 +10607,17 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 			{
 				int nFileNum = i + 1;
 				if (textType == 0)
-					fileNum.Format(L"Printing mails to single TEXT file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single TEXT file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
 				else
-					fileNum.Format(L"Printing mails to single HTML file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single HTML file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
 
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
@@ -10599,9 +10703,17 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
 		if (textType == 0)
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to TEXT file ...", 0);
+		{
+			CString txt = L"Printing mails to TEXT file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 		else
-			MboxMail::pCUPDUPData->SetProgress(L"Printing mails to HTML file ...", 0);
+		{
+			CString txt = L"Printing mails to HTML file ...";
+			ResHelper::TranslateString(txt);
+			MboxMail::pCUPDUPData->SetProgress(txt, 0);
+		}
 	}
 
 	if (textType == 0) {
@@ -10661,9 +10773,18 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 			{
 				int nFileNum = j + 1;
 				if (textType == 0)
-					fileNum.Format(L"Printing mails to single TEXT file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single TEXT file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
 				else
-					fileNum.Format(L"Printing mails to single HTML file ... %d of %d", nFileNum, cnt);
+				{
+					CString fmt = L"Printing mails to single HTML file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+				}
+
 				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
 				int debug = 1;
@@ -10676,10 +10797,20 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	
 	UINT newstep = 100;
 	int nFileNum = cnt;
+
 	if (textType == 0)
-		fileNum.Format(L"Printing mails to single TEXT file ... %d of %d", nFileNum, cnt);
+	{
+		CString fmt = L"Printing mails to single TEXT file ... %d of %d";
+		ResHelper::TranslateString(fmt);
+		fileNum.Format(fmt, nFileNum, cnt);
+	}
 	else
-		fileNum.Format(L"Printing mails to single HTML file ... %d of %d", nFileNum, cnt);
+	{
+		CString fmt = L"Printing mails to single HTML file ... %d of %d";
+		ResHelper::TranslateString(fmt);
+		fileNum.Format(fmt, nFileNum, cnt);
+	}
+
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 
 	int deb = 1;
@@ -11074,192 +11205,220 @@ BOOL MboxMail::ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime)
 		return FALSE;
 }
 
+void MboxMail::LoadHintTextResource()
+{
+#ifdef _DEBUG
+	if (ResHelper::g_LoadMenuItemsInfo == FALSE)
+		return;
+
+	CString strClassName;
+	int hintNumber;
+	CString hintText;
+	for (hintNumber = 1; hintNumber < HintConfig::MaxHintNumber; hintNumber++)
+	{
+		hintText.Empty();
+		CreateHintText(hintNumber, hintText);
+		const wchar_t* p = (LPCWSTR)hintText;
+		int contributorID = ResHelper::CONTRIB_HINTS;
+		ResHelper::MergeAddItemInfo(hintText, strClassName);
+	}
+#endif
+}
+
 void MboxMail::ShowHint(int hintNumber, HWND h)
 {
-	// Or should I create table with all Hints to support potentially large number of hints ?
-	CStringA hintText;
+	CString hintText;
+	//CStringA hintText;
 	BOOL isHintSet = MboxMail::m_HintConfig.IsHintSet(hintNumber);
 	if (isHintSet)
 	{
-		if (hintNumber == HintConfig::GeneralUsageHint)
-		{
-			hintText.Append(
-				"To get started, please place one or more mbox files in\n"
-				"the local folder and then select \"File->Select Folder...\"\n"
-				"menu option to open that folder.\n"
-				"\n"
-				"Left-click on one of the loaded mbox files to view all associated mails.\n"
-				"\n"
-				"Please review the User Guide provided with the package\n"
-				"and/or single and double right-click/left-click on any item\n"
-				"within the Mbox Viewer window and try all presented options."
-			);
-		}
-		else if (hintNumber == HintConfig::MsgWindowPlacementHint)
-		{
-			hintText.Append(
-				"You can place  Message Window at Bottom (default), Left or Right.\n"
-				"\n"
-				"Select \"View->Message Window...\" to configure."
-			);
-		}
-		else if (hintNumber == HintConfig::PrintToPDFHint)
-		{
-			hintText.Append(
-				"Microsoft Edge Browser is used by default to print to PDF file.\n"
-				"If Edge Browser is not installed on your computer\n"
-				"Chrome Browser can be installed to print to PDF file."
-				"\n\n"
-				"You can configure Edge and Chrome browsers to optionally print default page header and footer"
-				"\n\n"
-				"You can also select \"File->Print Config->User Defined Script\" to "
-				"use free wkhtmltopdf tool to print custom header and footer"
-				" and evalute whether wkhtmltopdf works for you."
-			);
-		}
-		else if (hintNumber == HintConfig::PrintToPrinterHint)
-		{
-			hintText.Append(
-				"Select \"File->Print Config->Page Setup\" to configure\n"
-				"page header, footer, etc via Windows standard setup.\n"
-			);
-		}
-		else if (hintNumber == HintConfig::MailSelectionHint)
-		{
-			hintText.Append(
-				"You can select multiple mails using standard Windows methods: "
-				"\"Shift+Left-Click\", \"Ctrl+Left-Click\" and \"Ctrl+A\".\n\n"
-				"Right-click on a single or multiple selected mails to see all available options.\n\n"
-				"Right-click on a mail attachment to see all available options.\n\n"
-				"Double Left-click on a mail to open folder with all associated files for that mail.\n\n"
-				"Right-click on the Header Pane at the top of the Message Window to see additional context menu options.\n\n"
-				"You can expand list of fields in the message header pane by setting \"View -> Message Header Pane Layout\" to Expanded.\n\n"
-			);
-		}
-		else if (hintNumber == HintConfig::FindDialogHint)
-		{
-			hintText.Append(
-				"You can specify single ‘*’ character as the search string to FIND dialog to find subset of mails:\n"
-				"\n"
-				"1. Find mails that have CC header field by checking out CC check box only.\n\n"
-				"2. Find mails that have BCC header field by checking out BCC check box only.\n\n"
-				"3. Find mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
-				"4. Match all mails by checking out any of others check boxes only.\n\n"
-			);
-		}
-		else if (hintNumber == HintConfig::AdvancedFindDialogHint)
-		{
-			hintText.Append(
-				"You can specify single ‘*’ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
-				"\n"
-				"1. Find all mails that have CC header field by checking out CC check box only.\n\n"
-				"2. Find all mails that have BCC header field by checking out BCC check box only.\n\n"
-				"3. Find all mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
-				"4. Match all mails by checking out any of others check boxes only.\n\n"
-			);
-		}
-		else if (hintNumber == HintConfig::PrintToPDFScriptHint)
-		{
-			hintText.Append(
-				"If you need to remove the background color when printing to\n"
-				"PDF file directly you need to configure wkhtmltopdf for\n"
-				"printing. Both MS Edge and Chrome browsers don't support\n"
-				"removing the background color via the command line option\n\n"
-				"Select \"File->Print Config->Page Setup\" to configure\n"
-				"HTML2PDF-single-wkhtmltopdf.cmd script.\n\n"
-				"Note that the background color can be removed via\n"
-				"Page Setup when printing to PDF file\n"
-				"via Print to Printer option and/or by opening the mail\n"
-				"within a browser for printing.\n\n"
-				"Another approach is to open the selected mail in web browser and configure to remove the background color in the Print Dialog\n\n"
-			);
-		}
-		else if (hintNumber == HintConfig::AttachmentConfigHint)
-		{
-			hintText.Append(
-				"By default attachments other than those embeded into mail\n"
-				"are shown in the attachment window.\n\n"
-				"You can configure to shown all attachments, both inline and\n"
-				"non-inline, by selecting\n"
-				"\"File->Attachments Config->Attachment Window\" dialog\n\n"
-				"Attachment Config dialog enables users to append image attachments to mails when viewing and/or ptinting\n"
-			);
-		}
-		else if (hintNumber == HintConfig::MessageHeaderConfigHint)
-		{
-			hintText.Append(
-				"By default the mail text is shown in Message Window.\n"
-				"Enable global \"View -> View Message Headers\" option to show the message header instead of the text.\n\n"
-				"To switch between text and headers of the selected mail\n"
-				"right-click on the header pane in Message Window and check/uncheck the \"View Message Header\" option.\n"
-				"\n"
-			);
-		}
-		else if (hintNumber == HintConfig::MessageRemoveFolderHint)
-		{
-			hintText.Append(
-				"The selected folder will be removed from the current view.\n"
-				"The physical folder and content on the disk will not be deleted.\n"
-				"\n"
-			);
-		}
-		else if (hintNumber == HintConfig::MessageRemoveFileHint)
-		{
-			hintText.Append(
-				"The selected file will be removed from the current view.\n"
-				"The physical file and content on the disk will not be deleted.\n"
-				"\n"
-			);
-		}
-		else if (hintNumber == HintConfig::MergeFilesHint)
-		{
-			hintText.Append(
-				"Mbox and eml mail files can also be merged via two command line options:\n\n"
-				"-MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n\n"
-				"-MBOX_MERGE_TO_FILE=Path to File to save merge results\n\n"
-				"List of files to merge supports widcard file names\n\n\n"
-				"Use \"Select root folder for merging..\" folder option to merge root folder and subfolders\n"
-				"\n"
-			);
-		}
-		else if (hintNumber == HintConfig::LabelsHint)
-		{
-			hintText.Append(
-				"Gmail Labels are supported by performing a separate step on a active mail folder.\n\n"
-				"Right-click on the folder and select \"File->Gmail Labels->Create\" option.\n\n"
-				"\n"
-			);
-		}
-		else if (hintNumber == HintConfig::SubjectSortingHint)
-		{
-			hintText.Append(
-				"Sorting by subject creates subject threads. Emails within each subject thread are sorted by time.\n\n"
-				"By default subject threads are sorted alphanumerically. "
-				"Subject threads can be sorted by time by selecting  \"File->Options->time ordered threads\" option.\n"
-				"\n"
-			);
-		}
+		CreateHintText(hintNumber, hintText);
+	}
 
-		if (!hintText.IsEmpty())
-		{
-			CString hintTextW = hintText;
-			::MessageBox(h, hintTextW, L"Did you know?", MB_OK | MB_ICONEXCLAMATION);
+	if (!hintText.IsEmpty())
+	{
+		ResHelper::TranslateString(hintText);
+		CString title = L"Did you know?";
+		ResHelper::TranslateString(title);
+		::MessageBox(h, hintText, title, MB_OK | MB_ICONEXCLAMATION);
 #if 0
-			// Right now wil not use this
-			MSGBOXPARAMSA mbp;
-			mbp.cbSize = 0;
-			mbp.hwndOwner = h;
-			mbp.hInstance = 0;
-			mbp.lpszText =  hintText;
-			mbp.lpszCaption = L"Did you know?";
-			mbp.dwStyle = 0;
-			mbp.lpszIcon = "";
-			mbp.dwContextHelpId = 0;
-			mbp.dwLanguageId = 0;
-			int ret = MessageBoxIndirect(&mbp);
+		// Right now wil not use this
+		MSGBOXPARAMSA mbp;
+		mbp.cbSize = 0;
+		mbp.hwndOwner = h;
+		mbp.hInstance = 0;
+		mbp.lpszText = hintText;
+		mbp.lpszCaption = L"Did you know?";
+		mbp.dwStyle = 0;
+		mbp.lpszIcon = "";
+		mbp.dwContextHelpId = 0;
+		mbp.dwLanguageId = 0;
+		int ret = MessageBoxIndirect(&mbp);
 #endif
-		}
-		MboxMail::m_HintConfig.ClearHint(hintNumber);
+	}
+	MboxMail::m_HintConfig.ClearHint(hintNumber);
+}
+
+void MboxMail::CreateHintText(int hintNumber, CString& hintText)
+{
+	// Or should I create table with all Hints to support potentially large number of hints ?
+	if (hintNumber == HintConfig::GeneralUsageHint)
+	{
+		hintText.Append(
+			L"To get started, please place one or more mbox files in\n"
+			"the local folder and then select \"File->Select Folder...\"\n"
+			"menu option to open that folder.\n"
+			"\n"
+			"Left-click on one of the loaded mbox files to view all associated mails.\n"
+			"\n"
+			"Please review the User Guide provided with the package\n"
+			"and/or single and double right-click/left-click on any item\n"
+			"within the Mbox Viewer window and try all presented options."
+		);
+	}
+	else if (hintNumber == HintConfig::MsgWindowPlacementHint)
+	{
+		hintText.Append(
+			L"You can place  Message Window at Bottom (default), Left or Right.\n"
+			"\n"
+			"Select \"View->Message Window...\" to configure."
+		);
+	}
+	else if (hintNumber == HintConfig::PrintToPDFHint)
+	{
+		hintText.Append(
+			L"Microsoft Edge Browser is used by default to print to PDF file.\n"
+			"If Edge Browser is not installed on your computer\n"
+			"Chrome Browser can be installed to print to PDF file."
+			"\n\n"
+			"You can configure Edge and Chrome browsers to optionally print default page header and footer"
+			"\n\n"
+			"You can also select \"File->Print Config->User Defined Script\" to "
+			"use free wkhtmltopdf tool to print custom header and footer"
+			" and evalute whether wkhtmltopdf works for you."
+		);
+	}
+	else if (hintNumber == HintConfig::PrintToPrinterHint)
+	{
+		hintText.Append(
+			L"Select \"File->Print Config->Page Setup\" to configure\n"
+			"page header, footer, etc via Windows standard setup.\n"
+		);
+	}
+	else if (hintNumber == HintConfig::MailSelectionHint)
+	{
+		hintText.Append(
+			L"You can select multiple mails using standard Windows methods: "
+			"\"Shift+Left-Click\", \"Ctrl+Left-Click\" and \"Ctrl+A\".\n\n"
+			"Right-click on a single or multiple selected mails to see all available options.\n\n"
+			"Right-click on a mail attachment to see all available options.\n\n"
+			"Double Left-click on a mail to open folder with all associated files for that mail.\n\n"
+			"Right-click on the Header Pane at the top of the Message Window to see additional context menu options.\n\n"
+			"You can expand list of fields in the message header pane by setting \"View -> Message Header Pane Layout\" to Expanded.\n\n"
+		);
+	}
+	else if (hintNumber == HintConfig::FindDialogHint)
+	{
+		hintText.Append(
+			L"You can specify single ‘*’ character as the search string to FIND dialog to find subset of mails:\n"
+			"\n"
+			"1. Find mails that have CC header field by checking out CC check box only.\n\n"
+			"2. Find mails that have BCC header field by checking out BCC check box only.\n\n"
+			"3. Find mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
+			"4. Match all mails by checking out any of others check boxes only.\n\n"
+		);
+	}
+	else if (hintNumber == HintConfig::AdvancedFindDialogHint)
+	{
+		hintText.Append(
+			L"You can specify single ‘*’ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
+			"\n"
+			"1. Find all mails that have CC header field by checking out CC check box only.\n\n"
+			"2. Find all mails that have BCC header field by checking out BCC check box only.\n\n"
+			"3. Find all mails that have at least one attachment by checking out Attachment Name check box only.\n\n"
+			"4. Match all mails by checking out any of others check boxes only.\n\n"
+		);
+	}
+	else if (hintNumber == HintConfig::PrintToPDFScriptHint)
+	{
+		hintText.Append(
+			L"If you need to remove the background color when printing to\n"
+			"PDF file directly you need to configure wkhtmltopdf for\n"
+			"printing. Both MS Edge and Chrome browsers don't support\n"
+			"removing the background color via the command line option\n\n"
+			"Select \"File->Print Config->Page Setup\" to configure\n"
+			"HTML2PDF-single-wkhtmltopdf.cmd script.\n\n"
+			"Note that the background color can be removed via\n"
+			"Page Setup when printing to PDF file\n"
+			"via Print to Printer option and/or by opening the mail\n"
+			"within a browser for printing.\n\n"
+			"Another approach is to open the selected mail in web browser and configure to remove the background color in the Print Dialog\n\n"
+		);
+	}
+	else if (hintNumber == HintConfig::AttachmentConfigHint)
+	{
+		hintText.Append(
+			L"By default attachments other than those embeded into mail\n"
+			"are shown in the attachment window.\n\n"
+			"You can configure to shown all attachments, both inline and\n"
+			"non-inline, by selecting\n"
+			"\"File->Attachments Config->Attachment Window\" dialog\n\n"
+			"Attachment Config dialog enables users to append image attachments to mails when viewing and/or ptinting\n"
+		);
+	}
+	else if (hintNumber == HintConfig::MessageHeaderConfigHint)
+	{
+		hintText.Append(
+			L"By default the mail text is shown in Message Window.\n"
+			"Enable global \"View -> View Message Headers\" option to show the message header instead of the text.\n\n"
+			"To switch between text and headers of the selected mail\n"
+			"right-click on the header pane in Message Window and check/uncheck the \"View Message Header\" option.\n"
+			"\n"
+		);
+	}
+	else if (hintNumber == HintConfig::MessageRemoveFolderHint)
+	{
+		hintText.Append(
+			L"The selected folder will be removed from the current view.\n"
+			"The physical folder and content on the disk will not be deleted.\n"
+			"\n"
+		);
+	}
+	else if (hintNumber == HintConfig::MessageRemoveFileHint)
+	{
+		hintText.Append(
+			L"The selected file will be removed from the current view.\n"
+			"The physical file and content on the disk will not be deleted.\n"
+			"\n"
+		);
+	}
+	else if (hintNumber == HintConfig::MergeFilesHint)
+	{
+		hintText.Append(
+			L"Mbox and eml mail files can also be merged via two command line options:\n\n"
+			"-MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n\n"
+			"-MBOX_MERGE_TO_FILE=Path to File to save merge results\n\n"
+			"List of files to merge supports widcard file names\n\n\n"
+			"Use \"Select root folder for merging..\" folder option to merge root folder and subfolders\n"
+			"\n"
+		);
+	}
+	else if (hintNumber == HintConfig::LabelsHint)
+	{
+		hintText.Append(
+			L"Gmail Labels are supported by performing a separate step on a active mail folder.\n\n"
+			"Right-click on the folder and select \"File->Gmail Labels->Create\" option.\n\n"
+			"\n"
+		);
+	}
+	else if (hintNumber == HintConfig::SubjectSortingHint)
+	{
+		hintText.Append(
+			L"Sorting by subject creates subject threads. Emails within each subject thread are sorted by time.\n\n"
+			"By default subject threads are sorted alphanumerically. "
+			"Subject threads can be sorted by time by selecting  \"File->Options->time ordered threads\" option.\n"
+			"\n"
+		);
 	}
 }
 
@@ -11449,7 +11608,7 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 
 	wchar_t *se_mailDumpFileName = L"UnhandledExeption_MailDump.txt";
 	BOOL retW = DumpMailData(se_mailDumpFileName, szCause, seNumb, mailPosition, data, datalen);
-
+#if 0
 	CString errorTxt;
 	CString szCauseW(szCause);
 	errorTxt.Format(L"Unhandled_Exception: Code=%8.8x Description=%s\n\n"
@@ -11457,6 +11616,17 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 		"Please provide the files to the development team.\n\n"
 		"%s file contains mail data so please review the content before forwarding to the development.",
 		seNumb, szCauseW, se_mailDumpFileName, progDir, se_mailDumpFileName);
+#endif
+
+	CString errorTxt;
+	CString szCauseW(szCause);
+	CString fmt = L"Unhandled_Exception: Code=%8.8x Description=%s\n\n"
+		L"To help to diagnose the problem, created files\n\n%s\n\nin\n\n%s directory.\n\n"
+		L"Please provide the files to the development team.\n\n"
+		L"%s file contains mail data so please review the content before forwarding to the development."
+		;
+	ResHelper::TranslateString(fmt);
+	errorTxt.Format(fmt, seNumb, szCauseW, se_mailDumpFileName, progDir, se_mailDumpFileName);
 
 	AfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
 #endif

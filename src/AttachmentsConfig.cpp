@@ -179,6 +179,7 @@ void AttachmentsConfig::OnBnClickedOk()
 	{
 		CString txt;
 			txt.Format(L"Invalid max size for Attachment Window. Valid size is 0-100 !");
+			ResHelper::TranslateString(txt);
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}

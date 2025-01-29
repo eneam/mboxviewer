@@ -162,7 +162,8 @@ public:
 		MessageRemoveFileHint = 12,
 		MergeFilesHint = 13,
 		LabelsHint = 14,
-		SubjectSortingHint = 15
+		SubjectSortingHint = 15,
+		MaxHintNumber = 16
 	};
 };
 
@@ -777,6 +778,9 @@ public:
 
 	static HintConfig m_HintConfig;
 	static void ShowHint(int hintNumber, HWND h = NULL);
+	static void CreateHintText(int hintNumber, CString &hintText);
+	static void LoadHintTextResource();
+
 	static void LoadHintBitmap();
 
 	static BOOL ParseDateInFromField(char *p, char *end, SYSTEMTIME *sysTime);

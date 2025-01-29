@@ -77,7 +77,7 @@ ConfigTree::~ConfigTree()
 void ConfigTree::DumpTree(CString &title)
 {
 	// Reenable for testing
-#if 1
+#if 0
 	TRACE(L"%s %s", title, L"TREE DUMP\n");
 	//SortTree();
 
@@ -124,6 +124,7 @@ void ConfigTree::DumpNode(ConfigNode* node, int level)
 void ConfigTree::DumpTree()
 {
 #ifdef _DEBUG
+#if 0
 	CString out;
 	out.Preallocate(10000);
 
@@ -131,6 +132,7 @@ void ConfigTree::DumpTree()
 
 	TRACE(L"%s\n", L"TREE DUMP CONFIG TREE");
 	TRACE(L"%s\n", out);
+#endif
 #endif
 }
 
@@ -1142,10 +1144,16 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 	if (!file.Open(configFileNamePath, nOpenFlags, &exList))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-
+#if 0
 		CString txt = L"Could not open list file \"" + configFileNamePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+
+		CString fmt = L"Could not open list file \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		CString txt;
+		txt.Format(fmt, configFileNamePath, exErrorStr);
 
 		TRACE(L"ResHelper: %s\n", txt);
 		//errorText = txt;
@@ -1153,12 +1161,26 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 		CFileStatus rStatus;
 		BOOL ret = file.GetStatus(rStatus);
 
-		HWND h = NULL; // we don't have any window yet
+		//HWND h = NULL; // we don't have any window yet
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
 	}
+	// CStdioFile is not BOM aware !!!! 
+	// wchar_t BOM[1];
+	// file.Read(&BOM[0], sizeof(wchar_t));  // or see below while look
+
 	while (file.ReadString(strLine))
 	{
+		// TODO: Implement RemoveBOM()
+		const unsigned char* p = (unsigned char*)((LPCWSTR)strLine);
+		if ((*p == 0xFF) && (*(p + 1) == 0xFE))  // UTF16LE
+		{
+			CString str = strLine.Right(strLine.GetLength() - 1);
+			strLine = str;
+		}
+
 		if (strLine[0] == L'[')
 		{
 			int slen = strLine.GetLength();

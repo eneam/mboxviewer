@@ -77,7 +77,7 @@ MergeRootFolderAndSubfolders::~MergeRootFolderAndSubfolders()
 void MergeRootFolderAndSubfolders::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_EDIT_INTRO, m_introText);
+	DDX_Control(pDX, IDC_MERGE_FOLDERS_INTRO_1, m_introText);
 	DDX_Radio(pDX, IDC_MERGE_ROOT_FOLDER, m_mergeRootFolderStyle);
 	DDX_Radio(pDX, IDC_LABEL_NONE, m_labelAssignmentStyle);
 }
@@ -109,10 +109,9 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 		L" This would create thousands of labels under the Mail Tree and make mail viewing unmanageable.\r\n")
 	;
 #else
-	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
-		L"Select \"Assign no Labels\" option when merging Gmail mail files.\r\n"
-		L"Select \"Assign no Labels\" or \"Assign same label to all MBOX files per containing folder\" option when merging thousands of mail files.\r\n"
-		L"\r\n")
+	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\n\n"
+		L"Select \"Assign no Labels\" option when merging Gmail mail files.\n\n"
+		L"Select \"Assign no Labels\" or \"Assign same label to all MBOX files per containing folder\" option when merging thousands of mail files.")
 		;
 #endif
 

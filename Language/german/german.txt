@@ -1177,6 +1177,9 @@
 ["Remove Selected Mail"]
 "Ausgewählte Mails entfernen"
 
+["Remove Selected Mails"]
+"Ausgewählte Mails entfernen"
+
 ["Repeat last search\nFind again"]
 "Letzte Suche wiederholen\nErneut suchen"
 
@@ -1571,7 +1574,7 @@
 "|S&olid"
 
 ["Hide/Restore mail tree"]
-"Baumstruktur mit Ordnern erweitern/reduzieren"
+"Mail-Struktur ausblenden/wiederherstellen"
 
 ["Refresh folder containing mails"]
 "Ordner mit E-Mails aktualisieren"

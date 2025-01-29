@@ -177,7 +177,9 @@ void SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp()
 	{
 		HWND h = GetSafeHwnd();
 		CString txt;
-		txt.Format(L"Help file \"%s\" doesn't exist", filePath);
+		CString fmt = L"Help file \"%s\" doesn't exist";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, filePath);
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 

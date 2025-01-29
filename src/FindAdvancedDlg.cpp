@@ -46,7 +46,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
-const wchar_t* FindFields[] = { L"From", L"To", L"Subject", L"CC", L"BCC", L"Message", L"Attachments", L"Attachment Name" };
+const wchar_t* FindFields[] = { L"From", L"To", L"Subject", L"CC", L"BCC", L"Message", L"Attachment Text", L"Attachment Name" };
 
 const wchar_t  *ruleText[] = {
 	L"((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",
@@ -170,6 +170,7 @@ void CFindAdvancedDlg::OnOK()
 	{
 		CString txt;
 		txt.Format(L"No text type plain and/or html are checked!");
+		ResHelper::TranslateString(txt);
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -200,6 +201,7 @@ void CFindAdvancedDlg::OnOK()
 	{
 		CString txt;
 		txt.Format(L"Date filter is not set and no filter fields are checked!");
+		ResHelper::TranslateString(txt);
 		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
@@ -209,9 +211,15 @@ void CFindAdvancedDlg::OnOK()
 	{
 		m_params.m_string[i].TrimRight();
 
-		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty()) {
+		if ((m_params.m_bEditChecked[i] == TRUE) && m_params.m_string[i].IsEmpty())
+		{
 			CString txt;
-			txt.Format(L"%s field is checked but search string is empty!", FindFields[i]);
+			CString fmt = L"%s field is checked but search string is empty!";
+			ResHelper::TranslateString(fmt);
+			CString fieldStr = FindFields[i];
+			ResHelper::TranslateString(fieldStr);
+			txt.Format(fmt, fieldStr);
+
 			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
 			return;
 		}

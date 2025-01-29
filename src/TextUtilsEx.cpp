@@ -33,6 +33,7 @@
 #include <algorithm>
 #include "FileUtils.h"
 #include "MimeCode.h"
+#include "ResHelper.h"
 
 void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 {
@@ -1137,10 +1138,15 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	{
 		wchar_t szCause[2048];
 		ExError.GetErrorMessage(szCause, 2048);
-
+#if 0
 		CString txt = L"Could not create \"" + fullPath;
 		txt += L"\" file.\n";
 		txt += szCause;
+#endif
+		CString txt;
+		CString fmt = L"Could not create \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, fullPath, szCause);
 
 		HWND h = NULL; // we don't have any window yet ??
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);

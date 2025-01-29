@@ -1177,6 +1177,9 @@
 ["Remove Selected Mail"]
 "Eliminar correo seleccionado"
 
+["Remove Selected Mails"]
+"Eliminar correo seleccionado"
+
 ["Repeat last search\nFind again"]
 "Repetir última búsqueda\nBuscar de nuevo"
 
@@ -1571,7 +1574,7 @@
 "|S&ólido"
 
 ["Hide/Restore mail tree"]
-"Expandir/contraer árbol que contiene carpetas"
+"Ocultar/Restaurar el árbol de correo"
 
 ["Refresh folder containing mails"]
 "Actualizar carpeta que contiene correos"

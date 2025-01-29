@@ -252,8 +252,13 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
 		{
 			CString errorText;
-			ShellExecuteError2Text((UINT_PTR)result, errorText);
-			errorText += L".\nOk to try to open this file ?";
+			CString errText;
+			ShellExecuteError2Text((UINT_PTR)result, errText);
+			CString fmt = L"\"%s\"\n\nOk to try to open this file ?";
+			ResHelper::TranslateString(fmt);
+			errorText.Format(fmt, errText);
+
+
 			HWND h = GetSafeHwnd();
 			int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 			if (answer == IDYES)

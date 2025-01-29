@@ -175,18 +175,30 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 	{
 		CString errText;
 		CStringW errorTextW;
-		ShellExecuteError2Text((UINT_PTR)result, errorTextW);
+		ShellExecuteError2Text((UINT_PTR)result, errText);
 		//CStringW errorTextW;
 		if (filename) 
 		{
 			if (FileUtils::PathFileExist(*filename))
 			{
+#if 0
 				errorTextW += L"\n\nFile exists. Open the file location and check file properties.\n";
 				errorTextW += L"Make sure the default application is configured to open the file.\n";
+#endif
+
+				CString fmt = L"%s\n\nFile exists. Open the file location and check file properties.\nMake sure the default application is configured to open the file.\n";
+				ResHelper::TranslateString(fmt);
+				errorTextW.Format(fmt, errText);
+
+
 			}
 			else
 			{
-				errorTextW += L"\n\nFile doesn't exist.\n";
+				//errorTextW += L"\n\nFile doesn't exist.\n";
+
+				CString fmt = L"%s\n\nFile doesn't exist.\n";
+				ResHelper::TranslateString(fmt);
+				errorTextW.Format(fmt, errText);
 			}
 		}
 		int answer = ::MessageBoxW(h, errorTextW, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -292,6 +304,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsResorttranslationfile)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY, &CMainFrame::OnLanguagetoolsResourcefileproperty)
 	ON_COMMAND(ID_HELP_FILEBASEDCONFIG, &CMainFrame::OnHelpFilebasedconfig)
+	ON_COMMAND(ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsSplittranslationfile)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -884,7 +897,10 @@ void CMainFrame::OnFileOpen()
 	if (!FileUtils::PathDirExists(path))
 	{
 		CString txt;
-		txt.Format(L"Trying to open folder \"%s\" that doesn't exist.\n\n\n",path);
+		CString fmt = L"Trying to open folder \"%s\" that doesn't exist.\n\n\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, path);
+
 		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
@@ -1101,13 +1117,20 @@ void CMainFrame::OnTreeHide()
 BOOL CMainFrame::DoOpen(CString& path) 
 {
 	//if (path.Find(MboxMail::s_folderContext.m_rootDataFolderPathConfig) == 0)
-	if (path.Find(L"UMBoxViewer") >= 0)  // chnaged to look for UMBoxViewer subfolder created under root data folder
+	if (path.Find(L"UMBoxViewer") >= 0)  // changed to look for UMBoxViewer subfolder created under root data folder
 	{
 		CString fpath = MboxMail::s_folderContext.m_rootDataFolderPathConfig + L"\\UMBoxViewer";
 		CString txt;
+#if 0
 		txt.Format(L"Can't open folder \n\n\"%s\"\n\nFolder must not be located under \"UMBoxViewer\" subfolder created under the configured root data folder \n\n\"%s\"\n\n"
 			L"Please manually move the respective mbox files to valid folder. ",
 				path, fpath);
+#endif
+
+		CString fmt = L"Can't open folder \n\n\"%s\"\n\nFolder must not be located under \"UMBoxViewer\" subfolder created under the configured root data folder \n\n\"%s\"\n\n"
+			L"Please manually move the respective mbox files to valid folder.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, path, fpath);
 
 		int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 		return FALSE;
@@ -1137,8 +1160,10 @@ BOOL CMainFrame::DoOpen(CString& path)
 				mailFolderCount = pTreeView->GetChildrenCount(hItem, recursive);
 				if (mailFolderCount == 0)
 				{
-					CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n";
-					txt.Append(L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n");
+					CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n"
+						L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n";
+					ResHelper::TranslateString(txt);
+
 					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 
 					if (answer == IDYES)
@@ -1162,8 +1187,10 @@ BOOL CMainFrame::DoOpen(CString& path)
 			}
 			else
 			{
-				CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n";
-				txt.Append(L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n");
+				CString txt = L"No mail archive files were discovered using strong mail file validation rules\n\n"
+					L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n";
+				ResHelper::TranslateString(txt);
+
 				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 
 				if (answer == IDYES)
@@ -1190,10 +1217,12 @@ BOOL CMainFrame::DoOpen(CString& path)
 			{
 				if (mailFolderCount == 0)
 				{
-					CString txt = L"No mail archive files were discovered using relaxed mail file validation rules\n\n";
-					txt.Append(L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n");
-					txt.Append(L"The relaxed mail file validation rules can be later enabled/disabled ");
-					txt.Append(L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n");
+					CString txt = L"No mail archive files were discovered using relaxed mail file validation rules\n\n"
+						L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n"
+						L"The relaxed mail file validation rules can be later enabled/disabled "
+						L"by selecting \"File->Development->Relaxed Mail File Validation\" option\n\n";
+					ResHelper::TranslateString(txt);
+
 					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 					if (answer == IDNO)
 					{
@@ -1203,10 +1232,12 @@ BOOL CMainFrame::DoOpen(CString& path)
 				}
 				else
 				{
-					CString txt = L"Several mail archive files were discovered using relaxed mail file validation rules\n\n";
-					txt.Append(L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n");
-					txt.Append(L"The relaxed mail file validation rules can be later enabled/disabled ");
-					txt.Append(L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n");
+					CString txt = L"Several mail archive files were discovered using relaxed mail file validation rules\n\n"
+						L"Do you wish to keep relaxed mail file validation rules for the future discovery ?\n\n"
+						L"The relaxed mail file validation rules can be later enabled/disabled "
+						L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n";
+					ResHelper::TranslateString(txt);
+
 					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 					if (answer == IDNO)
 					{
@@ -1370,8 +1401,10 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 					//CString text = L"Created file \n\n" + csvFileName;
 					CString text;
 					CString fmt = L"Created file \n\n%s";
+					ResHelper::TranslateString(fmt);
 					text.Format(fmt, csvFileName);
-					OpenContainingFolderDlg dlg(text);
+
+					OpenContainingFolderDlg dlg(text, csvFileName);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -1423,6 +1456,7 @@ void CMainFrame::OnPrinttoCsv()
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
@@ -1443,6 +1477,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 	if (MboxMail::s_mails.GetSize() == 0) 
 	{
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); 
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
@@ -1492,10 +1527,10 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
 					//CString text = L"Created file \n\n" + textFileName;
-					CString text;
-					CString fmt = L"Created file \n\n%s";
-					text.Format(fmt, textFileName);
-					OpenContainingFolderDlg dlg(text);
+					CString text = L"Created file";
+					ResHelper::TranslateString(text);   // RESTODO
+
+					OpenContainingFolderDlg dlg(text, textFileName);
 					INT_PTR nResponse = dlg.DoModal();
 					if (nResponse == IDOK)
 					{
@@ -1534,6 +1569,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); 
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
@@ -1583,9 +1619,8 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 				if (FileUtils::PathDirExists(datapath))
 				{ // likely :) 
 					//CString text = L"Created file \n\n" + textFileName;
-					CString text;
-					CString fmt = L"Created file \n\n%s";
-					text.Format(fmt, textFileName);
+					CString text = L"Created file";
+					ResHelper::TranslateString(text);
 					if (createFileOnly) {
 						int deb = 1;
 					}
@@ -1647,7 +1682,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 					}
 					else if (forceOpen == FALSE)
 					{
-						OpenContainingFolderDlg dlg(text);
+						OpenContainingFolderDlg dlg(text, textFileName);
 						INT_PTR nResponse = dlg.DoModal();
 						if (nResponse == IDOK)
 						{
@@ -1944,9 +1979,14 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 		m_bMailDownloadComplete = FALSE;
 
 	if (m_bMailDownloadComplete)
-		strPage.Format(L"%s", L"Mail Retrieval Complete");
+	{
+		strPage = L"Mail Retrieval Complete";
+	}
 	else
-		strPage.Format(L"%s", L"Mail Retrieval In Progress ...");
+	{
+		strPage = L"Mail Retrieval In Progress ...";
+	}
+	ResHelper::TranslateString(strPage);
 #if 0
 	// Doesn't always work
 	pCmdUI->SetText(strPage);
@@ -2413,8 +2453,16 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	if (msgViewPosition == curMsgViewPosition) {
-		CString txt = L"New and current Message Window position are the same: " + newPos + L" and " + curPos + L".\nNo action will be taken.";
+	if (msgViewPosition == curMsgViewPosition)
+	{
+		//CString txt = L"New and current Message Window position are the same: " + newPos + L" and " + curPos + L".\nNo action will be taken.";
+
+
+		CString txt;
+		CString fmt = L"New and current Message Window position are the same: %s and %s.\nNo action will be taken.";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, newPos, curPos);
+
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 		m_newMsgViewPosition = msgViewPosition;
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
@@ -2429,8 +2477,15 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 		return;
 	}
 
+#if 0
 	CString txt = L"Do you want to configure Message Window position from " + curPos + " to " + newPos 
 		+ " ?\nIf you say Yes, please exit and restart mbox viewer for new position to take effect.";
+#endif
+
+	CString txt;
+	CString fmt = L"Do you want to configure Message Window position from %s to %s ?\nIf you say Yes, please exit and restart mbox viewer for new position to take effect.";
+	ResHelper::TranslateString(fmt);
+	txt.Format(fmt, curPos, newPos);
 
 	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
@@ -2596,9 +2651,15 @@ restart:
 			strFilePath = dlgFile.GetNextPathName(pos);
 			if (!FileUtils::PathFileExist(strFilePath))
 			{
+#if 0
 				CString txt = L"File path invalid.\n";
 				txt.Append(strFilePath);
 				txt.Append(L"\nRetry or Cancel?");
+#endif
+				CString txt;
+				CString fmt = L"File path invalid.\n%s\nRetry or Cancel?";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, strFilePath);
 
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 				if (answer == IDRETRY)
@@ -2651,10 +2712,15 @@ restart:
 			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 			{
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 				CString txt = L"Could not create \"" + filePath;
 				txt += L"\" file.\n";
 				txt += exErrorStr;
+#endif
+				CString txt;
+				CString fmt = L"Could not create \"%s\" file.\n%s";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, filePath, exErrorStr);
 
 				//TRACE(L"%s\n", txt);
 
@@ -2677,9 +2743,15 @@ restart:
 					if (!fp_input.Open(strFilePath, CFile::modeRead, &ExError))
 					{
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
-
+#if 0
 						CString txt = L"Could not open \"" + strFilePath;
 						txt += L"\" file.\nMake sure file is not open on other applications.";
+#endif
+						CString txt;
+						CString fmt = L"Could not open \"%s\" file.\nMake sure file is not open on other applications.\n%s";
+						ResHelper::TranslateString(fmt);
+						txt.Format(fmt, filePath, exErrorStr);
+
 						HWND h = NULL; // we don't have any window yet
 						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
@@ -2775,10 +2847,15 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 	if (!fpMergeTo.Open(mergedMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
-
+#if 0
 		CString txt = L"Could not create Merge To File \"" + mergedMboxFilePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mergedMboxFilePath, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 
@@ -2807,7 +2884,11 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 
 		_int64 fileSize = FileUtils::FileSize(fullPath);
 		FileUtils::GetFileName(fullPath, fileName);
-		sText.Format(L"Merging %s (%lld bytes) ...", fileName, fileSize);
+
+		CString fmt = L"Merging %s (%lld bytes) ...";
+		ResHelper::TranslateString(fmt);
+
+		sText.Format(fmt, fileName, fileSize);
 		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
@@ -2877,10 +2958,15 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::shareDenyNone, &exList))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-
+#if 0
 		CString txt = L"Could not open list file \"" + mboxListFilePath;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not open list file \"%s\" file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxListFilePath, exErrorStr);
 
 		TRACE(L"MergeMboxArchiveFiles: %s\n", txt);
 		//errorText = txt;
@@ -2912,10 +2998,15 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::typeUnicode | CFile::shareDenyNone, &exList))
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-
+#if 0
 			CString txt = L"Could not open list file \"" + mboxListFilePath;
 			txt += L"\" file.\n";
 			txt += exErrorStr;
+#endif
+			CString txt;
+			CString fmt = L"Could not open list file \"%s\" file.\n%s";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, mboxListFilePath, exErrorStr);
 
 			TRACE(L"MergeMboxArchiveFiles: %s\n", txt);
 			//errorText = txt;
@@ -2948,11 +3039,17 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 		if (filePath.CompareNoCase(mergedMboxFilePath) == 0)
 		{
+#if 0
 			CString txt = L"Invalid File Path:\n\n";
 			txt.Append(filePath);
 			txt.Append(L"\n\nin List File:\n\n");
 			txt.Append(mboxListFilePath);
 			txt.Append(L"\n\nMbox File Path and Merge To File Path can't be the same\nCan't continue merging files\n");
+#endif
+			CString txt;
+			CString fmt = L"Invalid File Path:\n\n%s\n\nin List File:\n\n%s\n\nMbox File Path and Merge To File Path can't be the same\nCan't continue merging files\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, filePath, mboxListFilePath);
 
 			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
@@ -2972,8 +3069,16 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 			if (!FileUtils::PathDirExists(folderPath))  // should never fail =:)  ???
 			{
+#if 0
 				CString txt;
 				txt.Format(L"Invalied Folder path \"%s\".\n\nCan't continue merging files\n", filePath);
+#endif
+
+
+				CString txt;
+				CString fmt = L"Invalied Folder path \"%s\".\n\nCan't continue merging files\n";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, filePath);
 
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
@@ -3016,11 +3121,17 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 			TRACE(L"FilePath=%s\n", filePath);
 			if (!FileUtils::PathFileExist(filePath))
 			{
+#if 0
 				CString txt = L"Invalid File Path:\n\n";
 				txt.Append(filePath);
 				txt.Append(L"\n\nin List File:\n\n");
 				txt.Append(mboxListFilePath);
 				txt.Append(L"\n\nCan't continue merging files\n");
+#endif
+				CString txt;
+				CString fmt = L"Invalid File Path:\n\n%s\n\nin List File:\n\n%s\n\nCan't continue merging files\n";
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, filePath, mboxListFilePath);
 
 				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
@@ -3104,10 +3215,15 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		if (!fp_input.Open(mboxFilePath, CFile::modeRead, &ExError))
 		{
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 0
 			CString txt = L"Could not open \"" + mboxFilePath;
 			txt += L"\" mail file.\n";
 			txt += exErrorStr;
+#endif
+			CString txt;
+			CString fmt = L"Could not open \"%s\" mail file.\n%s";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, mboxFilePath, exErrorStr);
 
 			//TRACE(L"%s\n", txt);
 			//errorText = txt;
@@ -3242,8 +3358,9 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 
 			if (outFolderPath.Compare(mergeCachePath))
 			{
-				CString txt = L"Changing target folder for merged file is not allowed.\n\n";
-				txt.Append(L"Please try again.");
+				CString txt = L"Changing target folder for merged file is not allowed.\n\nPlease try again.";
+				ResHelper::TranslateString(txt);
+
 				HWND h = GetSafeHwnd(); // we don't have any window yet
 				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
@@ -3264,6 +3381,8 @@ void CMainFrame::OnPrinttoPdf()
 	// TODO: Add your command handler code here
 	if (MboxMail::s_mails.GetSize() == 0) {
 		CString txt = L"Please open mail file first.";
+		ResHelper::TranslateString(txt);
+
 		HWND h = GetSafeHwnd(); // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
@@ -3546,7 +3665,14 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 						}
 						else
 						{
+#if 0
 							secondsBar.Format(L"%s  %d seconds", progressText, nSeconds);
+#endif
+
+							CString fmt = L"%s  %d seconds";
+							ResHelper::TranslateString(fmt);
+							secondsBar.Format(fmt, progressText, nSeconds);
+
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -3696,8 +3822,16 @@ int CMainFrame::ExecCommand_WorkerThread(CString &directory, CString &cmd, CStri
 						nSeconds++;
 						if (progressText.IsEmpty())
 							MboxMail::pCUPDUPData->SetProgress(step);
-						else {
+						else
+						{
+#if 0
 							secondsBar.Format(L"%s  %d seconds", progressText, nSeconds);
+#endif
+
+							CString fmt = L"%s  %d seconds";
+							ResHelper::TranslateString(fmt);
+							secondsBar.Format(fmt, progressText, nSeconds);
+
 							MboxMail::pCUPDUPData->SetProgress(secondsBar, step);
 						}
 						step += 10;
@@ -3954,6 +4088,7 @@ void CMainFrame::OnClose()
 		if (isDirty)
 		{
 			CString txt = L"User Selected Mails List not empty. Terminate program?";
+			ResHelper::TranslateString(txt);
 			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 			if (answer == IDNO)
 				return;
@@ -4428,9 +4563,9 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 	if (dataFolder.IsEmpty())
 	{
-		CString txt;
-		txt.Format(L"Data Folder is not configured. Exiting.\n\n");
-		txt.Append(L"Please restart MBox Viewer and configure Data Folder by selecting \"File -> Data Folder Config\" option.");
+		CString txt = L"Data Folder is not configured. Exiting.\n\n"
+			L"Please restart MBox Viewer and configure Data Folder by selecting \"File -> Data Folder Config\" option.";
+		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -4476,7 +4611,10 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		CString sText;
 		int paneId = 0;
 
-		sText.Format(L"Merging files listed in %s file ...", listFilePath);
+		CString fmt = L"Merging files listed in %s file ...";
+		ResHelper::TranslateString(fmt);
+
+		sText.Format(fmt, listFilePath);
 		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
@@ -4486,6 +4624,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 			int deb = 1;
 
 		sText.Format(L"Ready");
+		ResHelper::TranslateString(sText);
 		TRACE(L"%s\n", sText);
 		if (pFrame)
 			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
@@ -4768,11 +4907,19 @@ int CommandLineParms::VerifyParameters()
 		if (!FileUtils::PathFileExist(m_mboxFileNameOrPath))
 		{
 #if 1  // FIXMEFIXME was commented  out why ??
+#if 0
 			CString txt;
 			txt.Format(L"Invalid -MAIL_FILE=\"%s\" option.\n"
 				"No such File or Directory\n\n\"%s\"\n\n",
 				m_mboxFileNameOrPath, m_mboxFileNameOrPath);
 			txt += L"Do you want to continue?";
+#endif
+
+			CString txt;
+			CString fmt = L"Invalid -MAIL_FILE=\"%s\" option.\nNo such File or Directory\n\n\"%s\"\n\nDo you want to continue ?";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mboxFileNameOrPath, m_mboxFileNameOrPath);
+
 			HWND h = NULL; // we don't have any window yet  
 			const int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
@@ -4809,11 +4956,21 @@ int CommandLineParms::VerifyParameters()
 		FileUtils::SplitFilePath(folderPath, driveName, directory, fileNameBase, fileNameExtention);
 		if (directory.GetLength() <= 1)
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder.\n"
 				"Please create folder, move the mbox files to that folder and try again.",
 				m_mboxFileNameOrPath, mboxFilePath);
+#endif
+			CString txt;
+			CString fmt = L"Invalid -MAIL_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
+				L"The mbox files must be installed under a named folder.\n"
+				L"Please create folder, move the mbox files to that folder and try again.";
+
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mboxFileNameOrPath, mboxFilePath);
+
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
@@ -4847,11 +5004,18 @@ int CommandLineParms::VerifyParameters()
 		{
 			CString txt;
 			folderPath.TrimRight(L"\\");
-
+#if 0
 			txt.Format(L"Invalid -FOLDER=\"%s\" option.\n\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder\n."
 				"Please create folder, move the mbox files to that folder and try again.",
 				folderPath, folderPath);
+#endif
+			CString fmt = L"Invalid -FOLDER=\"%s\" option.\n\nInvalid folder \"%s\" .\n"
+				L"The mbox files must be installed under a named folder\n."
+				L"Please create folder, move the mbox files to that folder and try again.";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, folderPath, folderPath);
+
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
@@ -4860,10 +5024,18 @@ int CommandLineParms::VerifyParameters()
 		BOOL ret = FileUtils::PathDirExists(folderPath);
 		if (ret == FALSE)
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Invalid -FOLDER=\"%s\" option.\n\n"
 				"No such Folder \"%s\" .\n",
 				folderPath, folderPath);
+#endif
+
+			CString txt;
+			CString fmt = L"Invalid -FOLDER=\"%s\" option.\n\nNo such Folder \"%s\" .\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, folderPath, folderPath);
+
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
@@ -4884,10 +5056,18 @@ int CommandLineParms::VerifyParameters()
 	{
 		if (!FileUtils::PathFileExist(m_mboxListFilePath))
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Invalid -MBOX_MERGE_LIST_FILE=\"%s\" option.\n"
 				"No such File:  \"%s\"\n\n",
 				m_mboxListFilePath, m_mboxListFilePath);
+#endif
+
+			CString txt;
+			CString fmt = L"Invalid -MBOX_MERGE_LIST_FILE=\"%s\" option.\nNo such File:  \"%s\"\n\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mboxListFilePath, m_mboxListFilePath);
+
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
@@ -4912,22 +5092,42 @@ int CommandLineParms::VerifyParameters()
 		FileUtils::SplitFilePath(m_mergeToFilePath, driveName, directory, fileNameBase, fileNameExtention);
 		if (fileNameExtention.CompareNoCase(L".mbox"))
 		{
+#if 0
 			CString txt;
-				txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
-					"File extension must be set to .mbox.\n",
-					m_mergeToFilePath, fileNameExtention);
-				HWND h = NULL; // we don't have any window yet  
-				int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
-				return -1;
+			txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
+				"File extension must be set to .mbox.\n",
+				m_mergeToFilePath, fileNameExtention);
+#endif
+
+			CString txt;
+			CString fmt = L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid file extension \"%s\" .\n"
+				"File extension must be set to .mbox.\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mergeToFilePath, fileNameExtention);
+
+
+			HWND h = NULL; // we don't have any window yet  
+			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			return -1;
 		}
 
 		if (directory.GetLength() <= 1)
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
 				"The mbox files must be installed under a named folder.\n"
 				"Please create folder, move the mbox files to that folder and try again.",
 				m_mergeToFilePath, mboxFolderPath);
+#endif
+
+			CString txt;
+			CString fmt = L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\nInvalid folder \"%s\" .\n"
+				"The mbox files must be installed under a named folder.\n"
+				"Please create folder, move the mbox files to that folder and try again.";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mergeToFilePath, mboxFolderPath);
+
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
@@ -4948,8 +5148,10 @@ int CommandLineParms::VerifyParameters()
 		if (ret == FALSE)
 		{
 			CString txt;
-			txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nNo such folder: \"%s\".\n\nCommand line:\n\n\"%s\"\n\n",
-				m_mergeToFilePath, mboxFolderPath, m_allCommanLineOptions);
+			CString fmt = L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nNo such folder: \"%s\".\n\nCommand line:\n\n\"%s\"\n\n";
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mergeToFilePath, mboxFolderPath, m_allCommanLineOptions);
+
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
@@ -4964,6 +5166,7 @@ int CommandLineParms::VerifyParameters()
 
 		if (FileUtils::PathFileExist(m_mergeToFilePath))
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
 				"File Exists\"%s\"\n\n"
@@ -4971,6 +5174,18 @@ int CommandLineParms::VerifyParameters()
 			"It is always good idea to have backup of original mbox mail files\n\n",
 				m_mergeToFilePath, m_mergeToFilePath);
 			txt += L"Override and continue?";
+#endif
+
+			CString txt;
+			CString fmt = L"Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
+				L"File Exists\"%s\"\n\n"
+				L"!!!  Make sure you are not overwritting original mbox file from mail service such as Gmail !!!\n\n"
+				L"It is always good idea to have backup of original mbox mail files\n\n"
+				L"Override and continue?";
+
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, m_mergeToFilePath, m_mergeToFilePath);
+
 			HWND h = NULL; // we don't have any window yet  
 			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
@@ -4985,8 +5200,10 @@ int CommandLineParms::VerifyParameters()
 	else if (!m_mboxListFilePath.IsEmpty() && m_mergeToFilePath.IsEmpty())
 	{
 		CString txt;
-		txt.Format(L"Missing or Invalid -MBOX_MERGE_TO_FILE option.\nCommand line:\n\n\"%s\"\n\n",
-			m_allCommanLineOptions);
+		CString fmt = L"Missing or Invalid -MBOX_MERGE_TO_FILE option.\nCommand line:\n\n\"%s\"\n\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, m_allCommanLineOptions);
+
 		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
@@ -5001,8 +5218,10 @@ int CommandLineParms::VerifyParameters()
 	else if (m_mboxListFilePath.IsEmpty() && !m_mergeToFilePath.IsEmpty())
 	{
 		CString txt;
-		txt.Format(L"Missing or Invalid -MBOX_MERGE_LIST_FILE option.\nCommand line:\n\n\"%s\"\n\n",
-			m_allCommanLineOptions);
+		CString fmt = L"Missing or Invalid -MBOX_MERGE_LIST_FILE option.\nCommand line:\n\n\"%s\"\n\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, m_allCommanLineOptions);
+
 		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
@@ -5024,10 +5243,18 @@ BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 	// Imposed more restrictions to simplify
 	if ((destinationFolder.Find(L"\\UMBoxViewer\\") >= 0) || (destinationFolder.Find(L"\\UMBoxViewer") >= 0))
 	{
+#if 0
 		CString txt;
 		txt.Format(L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n",
 			destinationFolder, destinationFolder);
 		txt.Append(L"\nDestination folder can't contain \"UMBoxViewer\" folder  in the path \n\n");
+#endif
+		CString txt;
+		CString fmt = L"Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\nInvalid folder \"%s\" .\n"
+			L"\nDestination folder can't contain \"UMBoxViewer\" folder  in the path \n\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, destinationFolder, destinationFolder);
+
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return FALSE;
@@ -5082,7 +5309,9 @@ void CMainFrame::OnHelpUserguide()
 	else
 	{
 		CString txt;
-		txt.Format(L"UserGuide file\n\n\"%s\"\n\ndoesn't exist", filePath);
+		CString fmt = L"UserGuide file\n\n\"%s\"\n\ndoesn't exist";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5108,7 +5337,9 @@ void CMainFrame::OnHelpReadme()
 	else
 	{
 		CString txt;
-		txt.Format(L"README file\n\n\"%s\"\n\ndoesn't exist", filePath);
+		CString fmt = L"README file\n\n\"%s\"\n\ndoesn't exist";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, filePath);
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5134,7 +5365,10 @@ void CMainFrame::OnHelpLicense()
 	else
 	{
 		CString txt;
-		txt.Format(L"LICENSE file\n\n\"%s\"\n\ndoesn't exist", filePath);
+		CString fmt = L"LICENSE file\n\n\"%s\"\n\ndoesn't exist";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, filePath);
+
 		HWND h = GetSafeHwnd();
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
@@ -5157,7 +5391,10 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
 	else
 	{
 		CString txt;
-		txt.Format(L"Help file \n\n\"%s\"\n\ndoesn't exist", filePath);
+		CString fmt = L"Help file \n\n\"%s\"\n\ndoesn't exist";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, filePath);
+
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 	int deb = 1;
@@ -5317,11 +5554,15 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 	if (!FileUtils::PathDirExists(path))
 	{
 		CString errorText = FileUtils::GetLastErrorAsString();
-
+#if 0
 		CString txt;
-		
 		txt.Format(L"Selected Folder\n\n%s\n\ndoesn't exist. Error: \n\n%s\n\n" ,
 			path, errorText);
+#endif
+		CString txt;
+		CString fmt = L"Selected Folder\n\n%s\n\ndoesn't exist. Error: \n\n%s\n\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, path, errorText);
 
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
@@ -5344,6 +5585,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 			int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
 			if (fileCnt > 1000)
 			{
+#if 0
 				CString txt;
 				txt.Format(L"Found [%d] files under the root folder and sub-folders.\n\n"
 					"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
@@ -5351,6 +5593,18 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 					" this will create very large number of labels under Mail Tree which could make viewing of mails very challenging.\n\n"
 					"Do you want to continue, cancel or retry Merge Configuration?"
 				, fileCnt);
+#endif
+
+				CString txt;
+				CString fmt = L"Found [%d] files under the root folder and sub-folders.\n\n"
+					L"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
+					L"In case all/most of files found are of the mbox type,"
+					L" this will create very large number of labels under Mail Tree which could make viewing of mails very challenging.\n\n"
+					L"Do you want to continue, cancel or retry Merge Configuration?"
+					;
+
+				ResHelper::TranslateString(fmt);
+				txt.Format(fmt, fileCnt);
 
 				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 				if (answer == IDCANCEL)
@@ -5371,6 +5625,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
 		if (fileCnt > 1000)
 		{
+#if 0
 			CString txt;
 			txt.Format(L"Found [%d] files under the root folder and sub-folders.\n\n"
 				"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
@@ -5378,6 +5633,17 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 				" this will create very large number of folders under Mail Tree which could make viewing of mails challenging.\n\n"
 				"Do you want to continue, cancel or retry Select root folder dialog?"
 			, fileCnt);
+#endif
+
+			CString txt;
+			CString fmt = L"Found [%d] files under the root folder and sub-folders.\n\n"
+				"Content of files was not pre-examined to determine if all files are of the mbox type.\n\n"
+				"In case all/most of files found are of the mbox type,"
+				" this will create very large number of folders under Mail Tree which could make viewing of mails challenging.\n\n"
+				"Do you want to continue, cancel or retry Select root folder dialog?";
+				;
+			ResHelper::TranslateString(fmt);
+			txt.Format(fmt, fileCnt);
 
 			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 			if (answer == IDCANCEL)
@@ -5395,6 +5661,8 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 	{
 		CString txt = L"The mbox files must be installed under a named folder\n."
 			"Please create folder, move the mbox files to that folder and try again.";
+		ResHelper::TranslateString(txt);
+
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
@@ -5542,6 +5810,8 @@ void CMainFrame::OnFileSelectasrootfolder()
 		FileSelectrootfolder(1);
 	}
 #else
+
+	BOOL ret = ResHelper::TranslateString(txt);
 	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
@@ -5584,6 +5854,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	if ((selMailIndex < 0) || (selMailIndex > maxIndex))
 	{
 		CString txt = L"Please select mail archive and one of mails.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
@@ -5594,6 +5865,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	if ((lastMailIndex < 0) || (lastMailIndex > maxRefIndex))
 	{
 		CString txt = L"Internal Error. Please re-select mail archive and one of mails.";
+		ResHelper::TranslateString(txt);
 		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
@@ -5652,10 +5924,15 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	{
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(rExError);
-
+#if 0
 		CString txt = L"Could not open \"" + lastMailFilePath;
 		txt += L"\" mbox mail archive file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not open \"%s\" mbox mail archive file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, lastMailFilePath, exErrorStr);
 
 		TRACE(L"%s\n", txt);
 		//errorText = txt;
@@ -5671,10 +5948,15 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	if (!fpw.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &wExError))
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(wExError);
-
+#if 0
 		CString txt = L"Could not create \"" + mboxFilePath;
 		txt += L"\" mail archive file.\n";
 		txt += exErrorStr;
+#endif
+		CString txt;
+		CString fmt = L"Could not create \"%s\" mail archive file.\n%s";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, mboxFilePath, exErrorStr);
 
 		//TRACE(L"%s\n", txt);
 
@@ -5884,6 +6166,9 @@ CString CMainFrame::CreateTempFileName(const wchar_t *ext)
 
 CWnd * CMainFrame::SetWindowFocus(CWnd* wnd)
 {
+	_ASSERTE(wnd);
+	if (wnd == 0)
+		return 0;
 	//CWnd* wnd1 = wnd->SetActiveWindow();
 	BOOL ret = wnd->SetForegroundWindow();
 	CWnd* wnd1 = wnd->SetActiveWindow();
@@ -6034,10 +6319,17 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 
 	if (languageFolder.Compare(lastFolderName) != 0)
 	{
-		CString text;
-		text.Format(L"MBox Viewer will exit. Please restart MBox Viewer for new language \"%s\" to take effect\n", languageFolder);
+#if 0
+		CString txt;
+		txt.Format(L"MBox Viewer will exit. Please restart MBox Viewer for new language \"%s\" to take effect\n", languageFolder);
+#endif
+		CString txt;
+		CString fmt = L"MBox Viewer will exit. Please restart MBox Viewer for new language \"%s\" to take effect\n";
+		ResHelper::TranslateString(fmt);
+		txt.Format(fmt, languageFolder);
+
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 
 		if (languageFolderPath.IsEmpty())
 			languageFolder.Empty();
@@ -6089,7 +6381,8 @@ void CMainFrame::OnLanguagetoolsResorttranslationfile()
 {
 	// TODO: Add your command handler code here
 
-	ResHelper::ResortLanguageFile();
+	//ResHelper::ResortLanguageFile();
+	ResHelper::RenumberLanguageFile();
 	int deb = 1;
 }
 
@@ -6161,4 +6454,11 @@ void CMainFrame::OnHelpFilebasedconfig()
 	CString helpFileName = L"FileConfigurationHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
+}
+
+
+void CMainFrame::OnLanguagetoolsSplittranslationfile()
+{
+	// TODO: Add your command handler code here
+	ResHelper::SplitTranslationFile();
 }
