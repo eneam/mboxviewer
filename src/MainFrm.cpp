@@ -305,6 +305,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY, &CMainFrame::OnLanguagetoolsResourcefileproperty)
 	ON_COMMAND(ID_HELP_FILEBASEDCONFIG, &CMainFrame::OnHelpFilebasedconfig)
 	ON_COMMAND(ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsSplittranslationfile)
+	ON_COMMAND(ID_LANGUAGE, &CMainFrame::OnLanguage)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -6282,12 +6283,18 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
 	if (!lastLanguageFolderPath.IsEmpty())
 	{
+#if 0
 		lastFolderName = lastLanguageFolderPath;
 		lastFolderName.TrimRight(L"\\");
 
-		CString folderName;
 		FileUtils::CPathStripPath((LPCWSTR)lastFolderName, lastFolderName);
+#else
+		lastLanguageFolderPath.TrimRight(L"\\");
+		FileUtils::CPathStripPath((LPCWSTR)lastLanguageFolderPath, lastFolderName);
+#endif
 	}
+	else
+		lastFolderName = L"english";
 
 	// TODO: make dlg memeber of CMainFrame
 	CString languageFolder;
@@ -6315,7 +6322,6 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	{
 		languageFolderPath.Empty();
 	}
-
 
 	if (languageFolder.Compare(lastFolderName) != 0)
 	{
@@ -6461,4 +6467,11 @@ void CMainFrame::OnLanguagetoolsSplittranslationfile()
 {
 	// TODO: Add your command handler code here
 	ResHelper::SplitTranslationFile();
+}
+
+
+void CMainFrame::OnLanguage()
+{
+	// TODO: Add your command handler code here
+	CMainFrame::OnDevelopmentoptionsSelectlanguage();
 }

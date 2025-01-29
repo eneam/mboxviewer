@@ -147,6 +147,7 @@ BEGIN
         MENUITEM "Donate",                      ID_HELP_DONATE
         MENUITEM "File Based Configuration",    ID_HELP_FILEBASEDCONFIG
     END
+    MENUITEM "Language",                    ID_LANGUAGE
 END
 
 
@@ -455,8 +456,8 @@ FONT 8, "MS Sans Serif", 400, 0, 0x0
 BEGIN
     CONTROL         "All Mails",IDC_ARCHIVE_LIST,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,5,0,77,13
     CONTROL         "Found Mails",IDC_FIND_LIST,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,88,0,73,13
-    CONTROL         "User Selected Mails",IDC_EDIT_LIST,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,169,0,133,13
-    PUSHBUTTON      "Help",IDC_BUTTON2,315,0,50,14,BS_NOTIFY
+    CONTROL         "User Selected Mails",IDC_EDIT_LIST,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,169,0,142,13
+    PUSHBUTTON      "Help",IDC_BUTTON2,318,0,50,14,BS_NOTIFY
 END
 
 IDD_PRINT_DLG DIALOGEX 0, 0, 243, 372
@@ -707,7 +708,6 @@ BEGIN
     LTEXT           "To the Target Folder",IDC_STATIC_OPEN_ARCHIVE_3,16,64,336,8,NOT WS_GROUP
     EDITTEXT        IDC_EDIT_DFLT_FOLDER,16,41,338,14,ES_AUTOHSCROLL
     LTEXT           "Created Archive File can't be viewed from ArchiveCache folder",IDC_STATIC_OPEN_ARCHIVE_1,15,13,351,8,SS_NOTIFY
-    CONTROL         "",IDC_MONTHCALENDAR1,"SysMonthCal32",MCS_NOTODAY | WS_TABSTOP,119,0,140,100
 END
 
 IDD_SMTP_DLG DIALOGEX 0, 0, 189, 288
@@ -1304,7 +1304,6 @@ BEGIN
     0, 0, 100, 0,
     0, 0, 100, 0,
     0, 0, 100, 0,
-    0, 0, 0, 0,
     0, 0, 0, 0
 END
 

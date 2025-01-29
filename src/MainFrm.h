@@ -452,6 +452,7 @@ public:
 	afx_msg void OnLanguagetoolsResourcefileproperty();
 	afx_msg void OnHelpFilebasedconfig();
 	afx_msg void OnLanguagetoolsSplittranslationfile();
+	afx_msg void OnLanguage();
 };
 
 /////////////////////////////////////////////////////////////////////////////

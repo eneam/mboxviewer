@@ -859,6 +859,9 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_FORWARD_RELATED_MAILS_Id = 28;
 	MyAppendMenu(&menu, M_FORWARD_RELATED_MAILS_Id, L"Forward Related Mails");
 
+	const UINT M_EXPORT_MAIL_AS_EML_Id = 47;
+	MyAppendMenu(&menu, M_EXPORT_MAIL_AS_EML_Id, L"Export Selected Mail to EML file");
+
 	const UINT M_EXPORT_SELECTED_MAILS_TO_SINGLE_FILE_Id = 48;
 	MyAppendMenu(&exportMailsToSubMenu, M_EXPORT_SELECTED_MAILS_TO_SINGLE_FILE_Id, L"To File");
 
@@ -868,7 +871,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_EXPORT_SELECTED_MAILS_HELP_Id = 50;
 	MyAppendMenu(&exportMailsToSubMenu, M_EXPORT_SELECTED_MAILS_HELP_Id, L"Help");
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mail");
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mail in HTML format (see Help)");
 	menu.AppendMenu(MF_SEPARATOR);
 
 	int index = 1;
@@ -1591,6 +1594,9 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		MyAppendMenu(&menu, S_RESTORE_LIST_Id, L"Restore User Selected Mails from saved Mail List file");
 	}
 
+	const UINT S_EXPORT_SELECTED_MAILS_TO_EML_Id = 51;   // !!!!
+	MyAppendMenu(&menu, S_EXPORT_SELECTED_MAILS_TO_EML_Id, L"Export Selected Mails to separate EML files");
+
 	const UINT S_EXPORT_SELECTED_MAILS_TO_SEPARATE_FILES_Id = 47;
 	MyAppendMenu(&exportMailsToSubMenu, S_EXPORT_SELECTED_MAILS_TO_SEPARATE_FILES_Id, L"To Separate Files");
 
@@ -1603,7 +1609,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT S_EXPORT_SELECTED_MAILS_HELP_Id = 50;
 	MyAppendMenu(&exportMailsToSubMenu, S_EXPORT_SELECTED_MAILS_HELP_Id, L"Help");
 
-	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mails");
+	menu.AppendMenu(MF_POPUP | MF_STRING, (UINT_PTR)exportMailsToSubMenu.GetSafeHmenu(), L"Export Selected Mails in HTML format (see Help)");
 	menu.AppendMenu(MF_SEPARATOR);
 	
 	//////////////

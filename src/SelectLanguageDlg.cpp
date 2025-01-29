@@ -84,7 +84,12 @@ BOOL SelectLanguageDlg::OnInitDialog()
 	LoadLanguages();
 
 	int lastIndex = m_listBox.FindStringExact(0, m_lastFolderName);
+	if (lastIndex < 0)
+		lastIndex = 0;
 	int retIndex = m_listBox.SetCurSel(lastIndex);
+
+	//ResHelper::LoadDialogItemsInfo(this);  // keep list of languages in English ??
+	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
