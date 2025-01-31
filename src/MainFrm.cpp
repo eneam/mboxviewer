@@ -305,7 +305,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY, &CMainFrame::OnLanguagetoolsResourcefileproperty)
 	ON_COMMAND(ID_HELP_FILEBASEDCONFIG, &CMainFrame::OnHelpFilebasedconfig)
 	ON_COMMAND(ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsSplittranslationfile)
-	ON_COMMAND(ID_LANGUAGE, &CMainFrame::OnLanguage)
+	ON_COMMAND(ID_LANGUAGE_SELECTLANGUANGE, &CMainFrame::OnLanguageSelectlanguange)
+	ON_COMMAND(ID_LANGUAGE_HELP, &CMainFrame::OnLanguageHelp)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -6469,9 +6470,14 @@ void CMainFrame::OnLanguagetoolsSplittranslationfile()
 	ResHelper::SplitTranslationFile();
 }
 
-
-void CMainFrame::OnLanguage()
+void CMainFrame::OnLanguageSelectlanguange()
 {
 	// TODO: Add your command handler code here
 	CMainFrame::OnDevelopmentoptionsSelectlanguage();
+}
+
+
+void CMainFrame::OnLanguageHelp()
+{
+	// TODO: Add your command handler code here
 }

@@ -104,11 +104,12 @@ to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
 Multiple Languages
 ------------------
 
-MBox Viewer supports the following languages:
+MBox Viewer supports the multiple languages:
 
 English, Italian, Spanish, German, French, Portuguese, Portuguese-brazil and Polish
 
-GUI strings and documentation were translated from English to target languages using Google Translation service and were not reviewed by humans yet.
+GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
+Free Google Translations are not domain specific and most likely they will need to be updated by humans.
 
 By default English language is enabled. User can select different language during runtime by selecting 'Language->Select Language' option on the main menu.
 

@@ -147,7 +147,11 @@ BEGIN
         MENUITEM "Donate",                      ID_HELP_DONATE
         MENUITEM "File Based Configuration",    ID_HELP_FILEBASEDCONFIG
     END
-    MENUITEM "Language",                    ID_LANGUAGE
+    POPUP "Language"
+    BEGIN
+        MENUITEM "Select Languange",            ID_LANGUAGE_SELECTLANGUANGE
+        MENUITEM "Help",                        ID_LANGUAGE_HELP
+    END
 END
 
 
