@@ -924,7 +924,7 @@ int ResHelper::SortResInfoArray(ResInfoArrayType& resInfoArray)
 void ResHelper::MergeControlsResInfo()
 {
 	ResourceInfo* info;
-	int cnt = g_resInfoArray.GetCount();
+	int cnt = (int)g_resInfoArray.GetCount();
 	int i;
 	for (i = 0; i < cnt; i++)
 	{
@@ -1007,9 +1007,9 @@ int ResHelper::GetText(CStdioFile &resFile, CString &strLine, BOOL translated, i
 	static wchar_t* prefix1Translation = L"[TB:";
 	static wchar_t* prefix2 = L"][\"";
 	static wchar_t* suffix = L"\"][]";
-	static int prefix1Len = wcslen(prefix1Source);
-	static int prefix2Len = wcslen(prefix2);
-	static int suffixLen = wcslen(suffix);
+	static int prefix1Len = (int)wcslen(prefix1Source);
+	static int prefix2Len = (int)wcslen(prefix2);
+	static int suffixLen = (int)wcslen(suffix);
 	static int prefixLen = prefix1Len + idlen + prefix2Len;
 	static int overhead = prefixLen + suffixLen;
 
@@ -1469,6 +1469,9 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 		if (retval == 0)
 			break;
 
+		if (nTextId == 394)
+			int deb = 1;
+
 		if (nLastTextId >= 0)
 		{
 			if (nTextId != (nLastTextId + 1))
@@ -1911,7 +1914,7 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 	CString resInfoText1;
 	CString resInfoText2;
 	int i;
-	cnt = resInfoArray.GetCount();
+	cnt = (int)resInfoArray.GetCount();
 	for (i = 0; i < cnt; i++)
 	{
 		BOOL unicodeFile = TRUE;

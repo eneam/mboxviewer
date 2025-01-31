@@ -62,6 +62,7 @@ BEGIN_MESSAGE_MAP(SelectLanguageDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_STATIC_SELECT_LANG_1, &SelectLanguageDlg::OnBnClickedStaticSelectLang1)
 	ON_BN_CLICKED(IDOK, &SelectLanguageDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &SelectLanguageDlg::OnBnClickedCancel)
+	//ON_WM_PAINT()
 END_MESSAGE_MAP()
 
 
@@ -73,7 +74,6 @@ void SelectLanguageDlg::OnBnClickedStaticSelectLang1()
 	// TODO: Add your control notification handler code here
 	int deb = 1;
 }
-
 
 BOOL SelectLanguageDlg::OnInitDialog()
 {
@@ -87,6 +87,8 @@ BOOL SelectLanguageDlg::OnInitDialog()
 	if (lastIndex < 0)
 		lastIndex = 0;
 	int retIndex = m_listBox.SetCurSel(lastIndex);
+
+	//this->SetBackgroundColor(::GetSysColor(COLOR_3DFACE));
 
 	//ResHelper::LoadDialogItemsInfo(this);  // keep list of languages in English ??
 	ResHelper::UpdateDialogItemsInfo(this);
@@ -138,7 +140,6 @@ void SelectLanguageDlg::LoadLanguages()
 	finder.Close();
 }
 
-
 void SelectLanguageDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
@@ -162,3 +163,49 @@ void SelectLanguageDlg::OnBnClickedCancel()
 	// TODO: Add your control notification handler code here
 	CDialogEx::OnCancel();
 }
+
+
+void SelectLanguageDlg::OnPaint()
+{
+	int  deb = 1;
+}
+
+BEGIN_MESSAGE_MAP(DerivedCListBox, CListBox)
+	//ON_WM_PAINT()
+END_MESSAGE_MAP()
+
+void DerivedCListBox::OnPaint()
+{
+#if 1
+	CListBox::OnPaint();
+#else
+	CPaintDC dc(this); // device context for painting
+
+	RECT rect;
+	GetClientRect(&rect);
+
+	COLORREF color = ::GetSysColor(COLOR_3DFACE);
+
+	dc.SetBkMode(TRANSPARENT);
+	dc.FillRect(&rect, &CBrush(color));
+
+	dc.SetDCBrushColor(::GetSysColor(COLOR_3DFACE));
+#endif
+}
+
+
+BOOL DerivedCListBox::PreCreateWindow(CREATESTRUCT& cs)
+{
+	// TODO: Add your specialized code here and/or call the base class
+
+	return CListBox::PreCreateWindow(cs);
+}
+
+
+BOOL DerivedCListBox::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+{
+	// TODO: Add your specialized code here and/or call the base class
+
+	return CListBox::Create(dwStyle, rect, pParentWnd, nID);
+}
+

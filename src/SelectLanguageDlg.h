@@ -33,6 +33,19 @@
 
 // SelectLanguageDlg dialog
 
+class DerivedCListBox : public CListBox
+{
+public:
+	DerivedCListBox() { ; }
+	~DerivedCListBox() {; }
+
+	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnPaint();
+	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	virtual BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
+};
+
 class SelectLanguageDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(SelectLanguageDlg)
@@ -42,7 +55,8 @@ public:
 	virtual ~SelectLanguageDlg();
 
 	CString m_lastFolderName;
-	CListBox m_listBox;
+	DerivedCListBox m_listBox;
+	//CListBox m_listBox;
 	CString m_LanguagetName;  // font family such as 
 
 // Dialog Data
@@ -61,4 +75,5 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
+	afx_msg void OnPaint();
 };

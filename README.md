@@ -38,7 +38,7 @@ Features
 * forward mails directly from MBox Viewer;
 * support for Gmail Labels;
 * support for Thunderbird exported mail files;
-* experimental partial support for multiple languages;
+* support for multiple languages;
 * support for file based data configuration in addition to the default Registry based;
 
 License
@@ -100,6 +100,17 @@ MBoxViewer.config.sample file is included in the software package under the Conf
 In order to enable MBox Viewer to use the file based configuration, 
 user needs to rename this file to MBoxViewer.config file or copy the sample file
 to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
+
+Multiple Languages
+------------------
+
+MBox Viewer supports the following languages:
+
+English, Italian, Spanish, German, French, Portuguese, Portuguese-brazil and Polish
+
+GUI strings and documentation were translated from English to target languages using Google Translation service and were not reviewed by humans yet.
+
+By default English language is enabled. User can select different language during runtime by selecting 'Language->Select Language' option on the main menu.
 
 
 Running

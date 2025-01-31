@@ -3507,13 +3507,13 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L"--headless=old --disable-gpu";
+			args = L"--headless=new --disable-gpu";
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=old --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
+			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 #if 0
 		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
@@ -3545,13 +3545,13 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L" --headless=old --disable-gpu";  // header & footer is printer by default
+			args = L" --headless=new --disable-gpu";  // header & footer is printer by default
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer"; //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=old --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
+			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 
 #if 0
