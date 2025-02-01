@@ -53,12 +53,12 @@ CString ResHelper::msgsFileName = L"msgs.txt";
 BOOL ResHelper::g_LoadMenuItemsInfo = FALSE; // Traverse dialog & menu controles and create resource L"resource.txt" file. i.e. collect text from all items/sub-controls
 BOOL ResHelper::g_UpdateMenuItemsInfo = FALSE; // Update text of al controls using selected translation file
 
-ResInfoMapType ResHelper::g_LanguageMap(3000);
+ResInfoMapType ResHelper::g_LanguageMap(2000);
 
-ResInfoMapType ResHelper::g_mergedResInfoMap(3000);
+ResInfoMapType ResHelper::g_mergedResInfoMap(2000);
 ResInfoArrayType ResHelper::g_mergedResInfoArray;
 
-ResInfoMapType ResHelper::g_resInfoMap(3000);
+ResInfoMapType ResHelper::g_resInfoMap(2000);
 ResInfoArrayType ResHelper::g_resInfoArray;
 
 ResInfoArrayType ResHelper::resArray1;

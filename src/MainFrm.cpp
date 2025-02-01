@@ -5381,10 +5381,14 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
 	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+
+	if (language.IsEmpty())
+		language = L"english"; // gets more and more complicated handling english language
 
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\HelpFiles\\" + helpFileName;
+	CString filePath = processDir + "\\HelpFiles\\" + language + L"\\" + helpFileName;
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -6480,4 +6484,7 @@ void CMainFrame::OnLanguageSelectlanguange()
 void CMainFrame::OnLanguageHelp()
 {
 	// TODO: Add your command handler code here
+	CString helpFileName = L"LanguagesHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 }

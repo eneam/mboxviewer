@@ -161,27 +161,10 @@ void SMTPMailServerConfigDlg::OnBnClickedBbuttonSave()
 void SMTPMailServerConfigDlg::OnBnClickedSmtpServerHelp()
 {
 	// TODO: Add your control notification handler code here
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + L"\\HelpFiles\\ForwardMails.pdf";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		HWND h = GetSafeHwnd();
-		CString txt;
-		CString fmt = L"Help file \"%s\" doesn't exist";
-		ResHelper::TranslateString(fmt);
-		txt.Format(fmt, filePath);
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"ForwardMails.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 
 	int deb = 1;
 }
