@@ -1277,7 +1277,7 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 
 int HtmlUtils::CreateTranslationHtml(CString &inputFile, CString &outputHtmlFile)
 {
-	CString htmlDox = LR"----(
+	CString htmlDoc = LR"----(
 <!DOCTYPE html>
 <html lang="en-US">
 <head>

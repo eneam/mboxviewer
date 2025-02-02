@@ -292,7 +292,7 @@ public:
 	static CommandLineParms m_commandLineParms;
 	static AttachmentConfigParams *GetAttachmentConfigParams();
 
-	static void OpenHelpFile(CString &filePath, HWND h = NULL);
+	static void OpenHelpFile(CString& filePath, HWND h, BOOL ignoreLanguage = FALSE);
 
 	static BOOL m_relaxedMboxFileValidation;
 	static BOOL m_relativeInlineImageFilePath;

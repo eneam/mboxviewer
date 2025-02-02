@@ -75,6 +75,22 @@ HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
 // Iterates all child windows in the window defined by hwndParent window
 
+BOOL ResHelper::IsEnglishConfigured()
+{
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString lastFolderName;
+	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"langauge");
+	if (language.IsEmpty())  // Special case;Nasty complication
+	{
+		CString lastFolderName;
+		CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
+		_ASSERTE(lastFolderName.IsEmpty());
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
 
 BOOL ResHelper::GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags)
 {

@@ -5300,27 +5300,11 @@ void CMainFrame::OnHelpUserguide()
 {
 	// TODO: Add your command handler code here
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\UserGuide.pdf";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		CString txt;
-		CString fmt = L"UserGuide file\n\n\"%s\"\n\ndoesn't exist";
-		ResHelper::TranslateString(fmt);
-		txt.Format(fmt, filePath);
-		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"UserGuide.pdf";
+	HWND h = GetSafeHwnd();
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
 
@@ -5328,27 +5312,10 @@ void CMainFrame::OnHelpReadme()
 {
 	// TODO: Add your command handler code here
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\README.md.txt";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		CString txt;
-		CString fmt = L"README file\n\n\"%s\"\n\ndoesn't exist";
-		ResHelper::TranslateString(fmt);
-		txt.Format(fmt, filePath);
-		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"README.md.txt";
+	HWND h = GetSafeHwnd();
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
 
@@ -5356,43 +5323,34 @@ void CMainFrame::OnHelpLicense()
 {
 	// TODO: Add your command handler code here
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-	CString processDir;
-	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\LICENSE.txt";
-
-	if (FileUtils::PathFileExist(filePath))
-	{
-		ShellExecute(NULL, L"open", filePath, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else
-	{
-		CString txt;
-		CString fmt = L"LICENSE file\n\n\"%s\"\n\ndoesn't exist";
-		ResHelper::TranslateString(fmt);
-		txt.Format(fmt, filePath);
-
-		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
-	}
+	CString helpFileName = L"LICENSE.txt";
+	HWND h = GetSafeHwnd();
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
-void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h)
+void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h, BOOL ignoreLanguage)
 {
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
 	CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
 	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
 
-	if (language.IsEmpty())
-		language = L"english"; // gets more and more complicated handling english language
-
 	CString processDir;
 	FileUtils::CPathGetPath(processPath, processDir);
-	CString filePath = processDir + "\\HelpFiles\\" + language + L"\\" + helpFileName;
+
+	CString filePath;
+	if (ignoreLanguage)
+	{
+		filePath = processDir + L"\\" + helpFileName;
+	}
+	else
+	{
+		if (language.IsEmpty())
+			language = L"english"; //  handling of english language too complicated
+
+		filePath = processDir + "\\HelpFiles\\" + language + L"\\" + helpFileName;
+	}
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -6272,7 +6230,8 @@ void CMainFrame::OnHelpChangeLog()
 
 	CString helpFileName = L"CHANGE_LOG.md.txt";
 	HWND h = GetSafeHwnd();
-	CMainFrame::OpenHelpFile(helpFileName, h);
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	CMainFrame::OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
 void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
