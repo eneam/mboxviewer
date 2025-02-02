@@ -624,6 +624,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		if (language.IsEmpty())
 			language = L"english";
+		else if (language.CompareNoCase(L"portuguese-brazil") == 0)
+		{
+			language = L"Portuguese-Brazil";
+		}
 
 		CString languageName = language.GetAt(0);
 		languageName.MakeUpper();

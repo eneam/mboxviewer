@@ -106,7 +106,7 @@ Multiple Languages
 
 MBox Viewer supports the multiple languages:
 
-English, Italian, Spanish, German, French, Portuguese, Portuguese-brazil and Polish
+English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil and Polish
 
 GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
 Free Google Translations are not domain specific and most likely they will need to be updated by humans.

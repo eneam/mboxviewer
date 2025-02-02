@@ -1,4 +1,4 @@
-//
+﻿//
 //////////////////////////////////////////////////////////////////
 //
 //  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives..
@@ -1273,6 +1273,91 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 	}
 
 	return 1;
+}
+
+int HtmlUtils::CreateTranslationHtml(CString &inputFile, CString &outputHtmlFile)
+{
+	CString htmlDox = LR"----(
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<script type="text/javascript">
+
+function setCookie(key, value, expiry) {
+  var expires = new Date();
+  expires.setTime(expires.getTime() + (expiry * 24 * 60 * 60 * 1000));
+  document.cookie = key + '=' + value + ';expires=' + expires.toUTCString();
+}
+
+function googleTranslateElementInit()
+{
+   new google.translate.TranslateElement({ pageLanguage: 'en'},
+   'google_translate_element');
+}
+
+      function setT()
+	  {
+        // Set the default language to Spanish
+        var selectElement = document.querySelector('#google_translate_element select');
+        selectElement.value = 'pl';
+        selectElement.dispatchEvent(new Event('change'));
+      };
+
+</script>
+
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script type="text/javascript" src="https://translate.google.com/#en/pl/Hello"></script>
+</head>
+
+<style>
+//$.cookie('googtrans', '/en/pl');
+
+body > .skiptranslate {
+    //display: none;
+}
+
+.goog-te-banner-frame.skiptranslate {
+    display: none !important;
+    } 
+body {
+    top: 10px !important; 
+    }
+@media print {
+  #google_translate_element {display: none;}
+}
+</style>
+
+<body onload="setTimeout(setT, 1000)" >
+<div id="google_translate_element"></div>
+
+<p>
+<pre>
+I have one more question for tonight. Do you have any idea whyGmail would tell me that it is archiving 170,000+ threads, butthen the resulting archive file contains only 32,000 emails? Thereis a minimum of one email per thread... 
+
+[SB:0684]["Could not open \"%s\" mail file.\n%s"][]
+
+</pre>
+</p>
+
+<div class="notranslate">
+
+<p>
+I have one more question for tonight. Do you have any idea whyGmail would tell me that it is archiving 170,000+ threads, butthen the resulting archive file contains only 32,000 emails? Thereis a minimum of one email per thread... 
+</p>
+</div>
+
+<script>
+
+	  
+	  //setTimeout(setT, 100);
+
+</script>
+
+</body>
+</html>
+
+)----";
+return 1;
 }
 
 #if 0
