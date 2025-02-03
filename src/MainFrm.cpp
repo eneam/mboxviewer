@@ -5303,7 +5303,8 @@ void CMainFrame::OnHelpUserguide()
 
 	CString helpFileName = L"UserGuide.pdf";
 	HWND h = GetSafeHwnd();
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	CString languageName;
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
 	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
@@ -5314,7 +5315,8 @@ void CMainFrame::OnHelpReadme()
 
 	CString helpFileName = L"README.md.txt";
 	HWND h = GetSafeHwnd();
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	CString languageName;
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
 	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
@@ -5325,7 +5327,8 @@ void CMainFrame::OnHelpLicense()
 
 	CString helpFileName = L"LICENSE.txt";
 	HWND h = GetSafeHwnd();
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	CString languageName;
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
 	OpenHelpFile(helpFileName, h, ignoreLanguage);
 }
 
@@ -6230,8 +6233,38 @@ void CMainFrame::OnHelpChangeLog()
 
 	CString helpFileName = L"CHANGE_LOG.md.txt";
 	HWND h = GetSafeHwnd();
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured();
+	CString languageName;
+	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
 	CMainFrame::OpenHelpFile(helpFileName, h, ignoreLanguage);
+
+	if (!ignoreLanguage)
+	{
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+		CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+		CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+
+		CString processDir;
+		FileUtils::CPathGetPath(processPath, processDir);
+
+
+		CString inputFile = processDir + L"\\" + helpFileName;
+
+
+		CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
+
+		BOOL createDirOk = TRUE;
+		if (!FileUtils::PathDirExists(HelpPath))
+			createDirOk = FileUtils::CreateDir(HelpPath);
+
+		CString outputHtmlFile = HelpPath + L"\\" + helpFileName + L".html";
+
+		CString targetLanguageCode = ResHelper::GetLanguageCode(languageName);
+
+		int retval = HtmlUtils::CreateTranslationHtml(inputFile, targetLanguageCode, outputHtmlFile);
+
+		ShellExecute(NULL, L"open", outputHtmlFile, NULL, NULL, SW_SHOWNORMAL);
+	}
 }
 
 void CMainFrame::OnDevelopmentoptionsCodepageinstalled()

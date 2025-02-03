@@ -75,21 +75,47 @@ HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
 // Iterates all child windows in the window defined by hwndParent window
 
-BOOL ResHelper::IsEnglishConfigured()
+BOOL ResHelper::IsEnglishConfigured(CString &languageName)
 {
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
 	CString lastFolderName;
-	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"langauge");
+	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+	
 	if (language.IsEmpty())  // Special case;Nasty complication
 	{
 		CString lastFolderName;
 		CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
 		_ASSERTE(lastFolderName.IsEmpty());
+		languageName = L"english";
 		return TRUE;
 	}
 	else
+	{
+		languageName = language;
 		return FALSE;
+	}
+}
+
+CString ResHelper::GetLanguageCode(CString& languageName)
+{
+	CString langaugeCode;
+	if (languageName.CompareNoCase(L"English") == 0)
+		return L"en";
+	else if (languageName.CompareNoCase(L"italian") == 0)
+		return L"it";
+	else if (languageName.CompareNoCase(L"spanish") == 0)
+		return L"es";
+	else  if (languageName.CompareNoCase(L"portuguese") == 0)
+		return L"pt-PT";
+	if (languageName.CompareNoCase(L"portuguese-brazil") == 0)
+		return L"pt";
+	else if (languageName.CompareNoCase(L"polish") == 0)
+		return L"pl";
+	else if (languageName.CompareNoCase(L"german") == 0)
+		return L"de";
+	else
+		return langaugeCode;
 }
 
 BOOL ResHelper::GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags)

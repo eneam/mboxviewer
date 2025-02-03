@@ -60,5 +60,5 @@ public:
 	static int ReplaceAllHtmlTags(char *inData, int datalen, SimpleString *outbuf);
 	static char* EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; };
 	static char* SkipEmptyLine(char* p, char* e);
-	static int CreateTranslationHtml(CString& inputFile, CString& outputHtmlFile);
+	static int CreateTranslationHtml(CString& inputFile, CString &targetLanguage, CString& outputHtmlFile);
 };

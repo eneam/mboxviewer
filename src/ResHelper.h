@@ -245,7 +245,8 @@ public:
 	static BOOL GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags);
 
 	static void GetProcessFolderPath(CString& folderPath);
-	static BOOL IsEnglishConfigured();
+	static BOOL IsEnglishConfigured(CString &languageName);
+	static CString GetLanguageCode(CString& languageName);
 
 	static void MyTrace(CString& txt1, CString& txt2);
 	static void MyTrace(CString& txt);

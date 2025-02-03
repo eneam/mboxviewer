@@ -30,6 +30,7 @@
 #include "StdAfx.h"
 #include "SimpleString.h"
 #include "TextUtilsEx.h"
+#include "FileUtils.h"
 #include "Browser.h"
 #include "HtmlUtils.h"
 
@@ -1275,89 +1276,155 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 	return 1;
 }
 
-int HtmlUtils::CreateTranslationHtml(CString &inputFile, CString &outputHtmlFile)
+// Needs more investigation. More error checking, etc
+int HtmlUtils::CreateTranslationHtml(CString& inputFile, CString& targetLanguageCode, CString& outputHtmlFile)
 {
-	CString htmlDoc = LR"----(
+	CStringA languageCode = targetLanguageCode;
+	SimpleString txt;
+	BOOL retval = FileUtils::ReadEntireFile(inputFile, txt);
+
+	char* inData = txt.Data();
+	int inDataLen = txt.Count();
+	SimpleString encbuff;
+
+	TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, &encbuff);
+
+
+CStringA htmlDocHdrPlusStyle = LR"----(
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
 <script type="text/javascript">
 
-function setCookie(key, value, expiry) {
-  var expires = new Date();
-  expires.setTime(expires.getTime() + (expiry * 24 * 60 * 60 * 1000));
-  document.cookie = key + '=' + value + ';expires=' + expires.toUTCString();
-}
-
 function googleTranslateElementInit()
 {
-   new google.translate.TranslateElement({ pageLanguage: 'en'},
-   'google_translate_element');
+    new google.translate.TranslateElement({ pageLanguage: 'en', 
+    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl'},
+    'google_translate_element');
 }
 
-      function setT()
-	  {
-        // Set the default language to Spanish
-        var selectElement = document.querySelector('#google_translate_element select');
-        selectElement.value = 'pl';
-        selectElement.dispatchEvent(new Event('change'));
-      };
+function myTranslate(lang)
+{
+    var selectElement = document.querySelector('#google_translate_element select');
+    selectElement.value = lang;
+    selectElement.dispatchEvent(new Event('change'));
+ };
 
 </script>
 
 <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-<script type="text/javascript" src="https://translate.google.com/#en/pl/Hello"></script>
+<script type="text/javascript" src="https://translate.google.com/#en/en/Hello"></script>
 </head>
 
 <style>
-//$.cookie('googtrans', '/en/pl');
+
+.goog-te-gadget {
+        font-size: 19px !important;
+}  
 
 body > .skiptranslate {
     //display: none;
 }
-
 .goog-te-banner-frame.skiptranslate {
     display: none !important;
-    } 
+} 
+
 body {
-    top: 10px !important; 
-    }
+    top: 16px !important; 
+	font-size: 18px !important;
+}
+
 @media print {
   #google_translate_element {display: none;}
 }
 </style>
 
-<body onload="setTimeout(setT, 1000)" >
+)----";
+
+CStringA htmlBodyDivTranslate = LR"----(
+
+<!-- Text that WILL be translated -->
 <div id="google_translate_element"></div>
 
-<p>
-<pre>
-I have one more question for tonight. Do you have any idea whyGmail would tell me that it is archiving 170,000+ threads, butthen the resulting archive file contains only 32,000 emails? Thereis a minimum of one email per thread... 
+)----";
 
-[SB:0684]["Could not open \"%s\" mail file.\n%s"][]
+CStringA htmlBodyAllsDone = LR"----(
+</body>
+</html>
+)----";
 
-</pre>
-</p>
 
+CString htmlBodyDicNoTranslate = LR"----(
+
+<!-- Text that will NOT be translated -->
 <div class="notranslate">
 
 <p>
-I have one more question for tonight. Do you have any idea whyGmail would tell me that it is archiving 170,000+ threads, butthen the resulting archive file contains only 32,000 emails? Thereis a minimum of one email per thread... 
+This text in English and should not be translated.
 </p>
+
 </div>
 
-<script>
-
-	  
-	  //setTimeout(setT, 100);
-
-</script>
-
-</body>
-</html>
-
 )----";
-return 1;
+
+	CString errorText;
+	BOOL truncate = TRUE;
+	HANDLE hOutFile = FileUtils::FileOpen(outputHtmlFile, errorText, truncate);
+	if (hOutFile == INVALID_HANDLE_VALUE)
+		return -1;
+
+	DWORD nNumberOfBytesToWrite = htmlDocHdrPlusStyle.GetLength();;
+	DWORD nNumberOfBytesWritten = 0;
+	int retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)htmlDocHdrPlusStyle, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+		// TODO or GOTO
+	}
+
+	CStringA bodyTranslate;
+	bodyTranslate.Format(R"----(<body onload = "setTimeout(myTranslate, 1000, '%s')" >)----", languageCode);
+
+	nNumberOfBytesToWrite = bodyTranslate.GetLength();
+	nNumberOfBytesWritten = 0;
+	retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)bodyTranslate, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+	}
+
+	nNumberOfBytesToWrite = htmlBodyDivTranslate.GetLength();
+	nNumberOfBytesWritten = 0;
+	retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)htmlBodyDivTranslate, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+	}
+
+	nNumberOfBytesToWrite = encbuff.Count();;
+	nNumberOfBytesWritten = 0;
+	retcnt = FileUtils::Write2File(hOutFile, encbuff.Data(), nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+	}
+
+	
+	nNumberOfBytesToWrite = htmlBodyAllsDone.GetLength();
+	nNumberOfBytesWritten = 0;
+	retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)htmlBodyAllsDone, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+	}
+
+	FileUtils::FileClose(hOutFile);
+	return 1;
 }
 
 #if 0
