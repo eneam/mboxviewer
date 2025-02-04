@@ -1726,8 +1726,6 @@ int deb = 1;
 	//AfxEnableMemoryTracking(TRUE);
 	//afxMemDF = allocMemDF | delayFreeMemDF | checkAlwaysMemDF;
 
-
-
 	CCmdLine cmdInfo;
 	CString mailFile;
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"mailFile", mailFile);

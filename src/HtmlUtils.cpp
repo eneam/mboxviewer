@@ -1330,7 +1330,7 @@ body > .skiptranslate {
 } 
 
 body {
-    top: 16px !important; 
+    top: 48px !important; 
 	font-size: 18px !important;
 }
 

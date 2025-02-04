@@ -603,7 +603,7 @@ public:
 	int CreateAttachmentCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
 	//
 	int CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
-	int CreateEmlCache_WorkerThread(int firstMail, int lastMail, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText);
+	BOOL CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexList, LPCWSTR cache, BOOL mainThread, CString& errorText);
 
 	// Export Files
 	int CreateIndexFileForExportedMails_Thread(MailIndexList* selectedMailsIndexList, CString& targetPrintSubFolderName,
@@ -778,6 +778,21 @@ struct WRITE_IMAGE_FILE_ARGS
 	CString errorText;
 	BOOL exitted;
 	int ret;
+};
+
+struct EXPORT_TO_EML_ARGS
+{
+	CString cache;
+	CString errorText;
+	CString targetPrintFolderPath;
+	CString targetPrintSubFolderName;
+	int firstMail;
+	int lastMail;
+	MailIndexList* selectedMailIndexList;
+	int nItem;
+	BOOL exitted;
+	int ret;
+	NListView* lview;
 };
 
 

@@ -5316,8 +5316,10 @@ void CMainFrame::OnHelpReadme()
 	CString helpFileName = L"README.md.txt";
 	HWND h = GetSafeHwnd();
 	CString languageName;
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
+	BOOL ignoreLanguage = TRUE;
 	OpenHelpFile(helpFileName, h, ignoreLanguage);
+
+	OpenTranslatedHelpFile(helpFileName, h);
 }
 
 
@@ -5328,8 +5330,10 @@ void CMainFrame::OnHelpLicense()
 	CString helpFileName = L"LICENSE.txt";
 	HWND h = GetSafeHwnd();
 	CString languageName;
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
+	BOOL ignoreLanguage = TRUE;
 	OpenHelpFile(helpFileName, h, ignoreLanguage);
+
+	OpenTranslatedHelpFile(helpFileName, h);
 }
 
 void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h, BOOL ignoreLanguage)
@@ -5369,6 +5373,37 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h, BOOL ignoreLanguage
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 	int deb = 1;
+}
+
+void CMainFrame::OpenTranslatedHelpFile(CString& helpFileName, HWND h)
+{
+	CString languageName;
+	if (!ResHelper::IsEnglishConfigured(languageName))
+	{
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+		CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+		CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+
+		CString processDir;
+		FileUtils::CPathGetPath(processPath, processDir);
+
+		CString inputFile = processDir + L"\\" + helpFileName;
+		CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
+
+		BOOL createDirOk = TRUE;
+		if (!FileUtils::PathDirExists(HelpPath))
+			createDirOk = FileUtils::CreateDir(HelpPath);
+		if (!createDirOk)
+			return;  // Handle errors
+
+		CString outputHtmlFile = HelpPath + L"\\" + helpFileName + L".html";
+		CString targetLanguageCode = ResHelper::GetLanguageCode(languageName);
+
+		int retval = HtmlUtils::CreateTranslationHtml(inputFile, targetLanguageCode, outputHtmlFile);
+		if (retval >= 0)
+			ShellExecute(NULL, L"open", outputHtmlFile, NULL, NULL, SW_SHOWNORMAL);
+	}
 }
 
 
@@ -6233,38 +6268,11 @@ void CMainFrame::OnHelpChangeLog()
 
 	CString helpFileName = L"CHANGE_LOG.md.txt";
 	HWND h = GetSafeHwnd();
-	CString languageName;
-	BOOL ignoreLanguage = ResHelper::IsEnglishConfigured(languageName);
+
+	BOOL ignoreLanguage = TRUE;
 	CMainFrame::OpenHelpFile(helpFileName, h, ignoreLanguage);
 
-	if (!ignoreLanguage)
-	{
-		CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-		CString processPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-		CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
-
-		CString processDir;
-		FileUtils::CPathGetPath(processPath, processDir);
-
-
-		CString inputFile = processDir + L"\\" + helpFileName;
-
-
-		CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
-
-		BOOL createDirOk = TRUE;
-		if (!FileUtils::PathDirExists(HelpPath))
-			createDirOk = FileUtils::CreateDir(HelpPath);
-
-		CString outputHtmlFile = HelpPath + L"\\" + helpFileName + L".html";
-
-		CString targetLanguageCode = ResHelper::GetLanguageCode(languageName);
-
-		int retval = HtmlUtils::CreateTranslationHtml(inputFile, targetLanguageCode, outputHtmlFile);
-
-		ShellExecute(NULL, L"open", outputHtmlFile, NULL, NULL, SW_SHOWNORMAL);
-	}
+	OpenTranslatedHelpFile(helpFileName, h);
 }
 
 void CMainFrame::OnDevelopmentoptionsCodepageinstalled()

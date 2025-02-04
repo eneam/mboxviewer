@@ -73,7 +73,6 @@ inline void BreakNlistView() {}
 
 BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorText);
 BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorText);
-BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorText);
 
 BOOL NListView::m_fullImgFilePath = TRUE;
 BOOL NListView::m_fullImgFilePath_Config = TRUE;
@@ -155,7 +154,7 @@ bool ALongRightProcessProcWriteAttachmentFile(const CUPDUPDATA* pCUPDUPData)
 
 bool ALongRightProcessProcWriteEmlFile(const CUPDUPDATA* pCUPDUPData)
 {
-	WRITE_IMAGE_FILE_ARGS *args = (WRITE_IMAGE_FILE_ARGS*)pCUPDUPData->GetAppData();
+	EXPORT_TO_EML_ARGS*args = (EXPORT_TO_EML_ARGS*)pCUPDUPData->GetAppData();
 	MboxMail::pCUPDUPData = pCUPDUPData;
 
 	HANDLE h = GetCurrentThread();
@@ -169,7 +168,7 @@ bool ALongRightProcessProcWriteEmlFile(const CUPDUPDATA* pCUPDUPData)
 	// TODO: CUPDUPDATA* pCUPDUPData is global set as  MboxMail::pCUPDUPData = pCUPDUPData; Should conider to pass as param to printMailArchiveToTextFile
 
 	BOOL mainThread = FALSE;
-	args->ret = CreateEmlCache_WorkerThread(args->cache, mainThread, args->errorText);
+	args->ret = args->lview->CreateEmlCache_WorkerThread(args->selectedMailIndexList, args->cache, mainThread, args->errorText);
 
 	args->exitted = TRUE;
 	return true;
@@ -859,8 +858,8 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	const UINT M_FORWARD_RELATED_MAILS_Id = 28;
 	MyAppendMenu(&menu, M_FORWARD_RELATED_MAILS_Id, L"Forward Related Mails");
 
-	const UINT M_EXPORT_MAIL_AS_EML_Id = 47;
-	MyAppendMenu(&menu, M_EXPORT_MAIL_AS_EML_Id, L"Export Selected Mail to EML file");
+	const UINT M_EXPORT_SELECTED_MAIL_TO_EML_Id = 47;
+	MyAppendMenu(&menu, M_EXPORT_SELECTED_MAIL_TO_EML_Id, L"Export Selected Mail to EML file");
 
 	const UINT M_EXPORT_SELECTED_MAILS_TO_SINGLE_FILE_Id = 48;
 	MyAppendMenu(&exportMailsToSubMenu, M_EXPORT_SELECTED_MAILS_TO_SINGLE_FILE_Id, L"To File");
@@ -1398,6 +1397,23 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		BOOL sts = ConfigureExportOfMails();
 	}
 	break;
+	case M_EXPORT_SELECTED_MAIL_TO_EML_Id:
+	{
+		CString txt = L"All files in the EML cache will be deleted first\n\nDo you want to export selected mail as Eml file?";
+		ResHelper::TranslateString(txt);
+
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+		{
+			int firstMail = -1;
+			int lastMail = -1;
+
+			CString targetPrintSubFolderName = L"";
+			int retval = this->CreateEmlCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
+		}
+	}
+	break;
 	case M_EXPORT_SELECTED_MAILS_HELP_Id:
 	{
 		CString helpFileName = L"MailExportHelp.pdf";
@@ -1796,7 +1812,8 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	break;
 
-	case S_REMOVE_SELECTED_Id: {
+	case S_REMOVE_SELECTED_Id:
+	{
 		int firstItemRemoved = RemoveSelectedMails();
 		if ((firstItemRemoved > 0) && MboxMail::s_mails.GetCount())
 			SelectItemFound(firstItemRemoved - 1);
@@ -1970,6 +1987,24 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		CString helpFileName = L"MailExportHelp.pdf";
 		HWND h = GetSafeHwnd();
 		CMainFrame::OpenHelpFile(helpFileName, h);
+	}
+	break;
+
+	case S_EXPORT_SELECTED_MAILS_TO_EML_Id:
+	{
+		CString txt = L"All files in the EML cache will be deleted first\n\nDo you want to export selected mails as Eml files?";
+		ResHelper::TranslateString(txt);
+
+		HWND h = GetSafeHwnd();
+		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		if (answer == IDYES)
+		{
+			int firstMail = -1;
+			int lastMail = -1;
+
+			CString targetPrintSubFolderName = L"";
+			int retval = this->CreateEmlCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
+		}
 	}
 	break;
 	default:
@@ -12319,7 +12354,7 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 //
 int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName)
 {
-	WRITE_IMAGE_FILE_ARGS args;
+	EXPORT_TO_EML_ARGS args;
 
 	CString rootPrintSubFolder = L"EmlCache";
 	CString emlCachePath;
@@ -12342,9 +12377,23 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	/*OUT*/
 	args.exitted = FALSE;
 	args.ret = 1;
-
+	args.lview = this;
+	args.firstMail = firstMail;
+	args.lastMail = lastMail;
+	args.selectedMailIndexList = 0;
+	if (firstMail < 0)  // TODO: make use of selectedMailsIndexList explicit instead
+	{
+		MailIndexList* selectedMailsIndexList = this->PopulateSelectedMailsList();
+		if (selectedMailsIndexList->GetCount() > 0)
+		{
+			args.firstMail = 0;
+			args.lastMail = 0;
+			args.selectedMailIndexList = selectedMailsIndexList;
+		}
+	}
+	
 	int ret = 1;
-	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcWriteEmlFile, (LPVOID)(WRITE_IMAGE_FILE_ARGS*)&args);
+	CUPDialog	Dlg(GetSafeHwnd(), ALongRightProcessProcWriteEmlFile, (LPVOID)(EXPORT_TO_EML_ARGS*)&args);
 	Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 	INT_PTR nResult = Dlg.DoModal();
@@ -12431,7 +12480,7 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 }
 
 //
-BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorText)
+BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexList, LPCWSTR cache, BOOL mainThread, CString &errorText)
 {
 	CFile fpm;
 	CFileException ExError;
@@ -12490,6 +12539,8 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 #endif
 
 	int ni = MboxMail::s_mails.GetSize();
+	if (selectedMailsIndexList && selectedMailsIndexList->GetCount())
+		ni = selectedMailsIndexList->GetCount();
 
 	//CString errorText;
 	CString emlCachePath;
@@ -12540,7 +12591,7 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 
 	BOOL terminated = FALSE;
 	CString itemNumberStr;
-	std::vector <MailBodyContent*>::iterator it;
+	//std::vector <MailBodyContent*>::iterator it;
 
 
 	if (!mainThread)
@@ -12561,12 +12612,19 @@ BOOL CreateEmlCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString &errorT
 
 	MboxMail *m;
 	CString emlFile;
+	int j = 0;
 	for (int i = 0; i < ni; i++)
 	{
 		emlFile.Empty();
-		m = MboxMail::s_mails[i];
+		j = i;
+		if (selectedMailsIndexList)
+		{
+			j = selectedMailsIndexList->GetAt(i);
+		}
 
-		int mailPosition = i;
+		m = MboxMail::s_mails[j];
+
+		int mailPosition = j;
 		NamePatternParams *pNamePP = &pFrame->m_NamePatternParams;
 		NListView::PrintAsEmlFile(&fpm, mailPosition, emlFile);
 
