@@ -3137,7 +3137,7 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 
 BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 {
-	int ni = MboxMail::s_mails.GetSize();
+	int ni = (int)MboxMail::s_mails.GetSize();
 	SerializerHelper sz(cache);
 	//if (!sz.open(TRUE, 64))
 	if (!sz.open(TRUE)) 
@@ -12540,7 +12540,7 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 
 	int ni = MboxMail::s_mails.GetSize();
 	if (selectedMailsIndexList && selectedMailsIndexList->GetCount())
-		ni = selectedMailsIndexList->GetCount();
+		ni = (int)selectedMailsIndexList->GetCount();
 
 	//CString errorText;
 	CString emlCachePath;

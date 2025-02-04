@@ -1349,6 +1349,7 @@ CStringA htmlBodyDivTranslate = LR"----(
 )----";
 
 CStringA htmlBodyAllsDone = LR"----(
+<br>
 </body>
 </html>
 )----";
@@ -1398,6 +1399,28 @@ This text in English and should not be translated.
 	nNumberOfBytesToWrite = htmlBodyDivTranslate.GetLength();
 	nNumberOfBytesWritten = 0;
 	retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)htmlBodyDivTranslate, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+	if (retcnt < 0)
+	{
+		FileUtils::FileClose(hOutFile);
+		return -1;
+	}
+
+	CString inputFileName;
+
+	FileUtils::GetFileName(inputFile, inputFileName);
+
+	CStringA inputFileNameA;
+	DWORD error;
+	BOOL retw2utf8 = TextUtilsEx::WStr2UTF8(&inputFileName, &inputFileNameA, error);
+
+	CStringA titleFile;
+	titleFile.Format(R"---(<br><pre>---  %s  ---</pre><br>)---", inputFileNameA);
+
+	BOOL WStr2UTF8(CString * strW, CStringA * resultA, DWORD & error);
+
+	nNumberOfBytesToWrite = titleFile.GetLength();
+	nNumberOfBytesWritten = 0;
+	retcnt = FileUtils::Write2File(hOutFile, (LPCSTR)titleFile, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
 	if (retcnt < 0)
 	{
 		FileUtils::FileClose(hOutFile);
