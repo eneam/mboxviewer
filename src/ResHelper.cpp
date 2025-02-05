@@ -73,7 +73,90 @@ CString ResHelper::wndText;
 CString ResHelper::resourceFile = L"rc.txt";
 HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
-// Iterates all child windows in the window defined by hwndParent window
+
+void ResHelper::FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList)
+{
+	const wchar_t* p = (LPCWSTR)str;
+	wchar_t c;
+	const wchar_t* pbegin;
+	const wchar_t* pend;
+	CString spec;
+	conversionSpecifiersList.Empty();
+	while ((c = *p) != 0)
+	{
+		if (c != L'%')
+		{
+			p++;
+			continue;
+		}
+		pbegin = p++;
+		// find s or d charcater
+		while ((c = *p) != 0)
+		{
+			if ((c == L'0') || (c == L'l'))
+			{
+				p++;
+				continue;
+			}
+			else if ((c != L's') && (c != L'd'))
+			{
+				p++;
+				break;
+			}
+			pend = p;
+			if (!conversionSpecifiersList.IsEmpty())
+				conversionSpecifiersList.AppendChar(L' ');
+			conversionSpecifiersList.Append(pbegin, pend - pbegin + 1);
+			break;
+		}
+	}
+}
+
+void ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray)
+{
+	const wchar_t* p = (LPCWSTR)str;
+	wchar_t c;
+	const wchar_t *pbegin;
+	const wchar_t* pend;
+	CString spec;
+	while ((c = *p) != 0)
+	{
+		if (c != L'%')
+		{
+			p++;
+			continue;
+		}
+		pbegin = p++;
+		// find s or d charcater
+		while ((c = *p) != 0)
+		{
+			if ((c != L's') && (c != L'd'))
+			{
+				p++;
+				continue;
+			}
+			pend = p;
+			spec.Empty();
+			spec.Append(pbegin, pend - pbegin + 1);
+			conversionSpecifiersArray.Add(spec);
+			break;
+		}
+	}
+}
+
+BOOL ResHelper::CompareCStringArrays(CStringArray &ar1, CStringArray& ar2)
+{
+	if (ar1.GetCount() != ar2.GetCount())
+		return FALSE;
+	int cnt = ar1.GetCount();
+	int i;
+	for (i = 0; i < cnt; i++)
+	{
+		if (ar1[i].Compare(ar2[i]))
+			return FALSE ;
+	}
+	return TRUE;
+}
 
 BOOL ResHelper::IsEnglishConfigured(CString &languageName)
 {
@@ -220,6 +303,7 @@ void ResHelper::LoadDialogItemsInfo(CWnd *wnd)
 #endif
 }
 
+// Iterates all child windows in the window defined by hwndParent window
 void ResHelper::LoadDialogItemsInfo(CWnd *wnd, HWND hwndParent, int maxcnt, int iter)
 {
 #ifdef _DEBUG
@@ -1731,10 +1815,8 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 
 		ResHelper::UnescapeString(etranslatedText, translatedText);
 
-		if (nTranslatedTextId == 407)
+		if (nTranslatedTextId == 590)
 		{
-			CString newString;
-			BOOL  ret = ResHelper::DetermineString(sourceText, newString);
 			int deb = 1;
 		}
 
@@ -1742,6 +1824,17 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 		ResourceInfo* rinfo = g_LanguageMap.find(&sourceText, hsum);
 		if (rinfo == 0)
 		{
+			CString specSourceList;
+			CString specTraslatedList;
+
+			ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
+			ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
+			if (specSourceList.GetLength() > 0)
+				int deb = 1;
+			if (specSourceList.Compare(specTraslatedList))
+				int deb = 1;
+				//_ASSERTE(0);
+
 			ResourceInfo* rinfo = new ResourceInfo(sourceText, translatedText);
 			g_LanguageMap.insert(hsum, rinfo);
 		}
@@ -1917,6 +2010,16 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 		ResourceInfo* rinfo = resInfoMap.find(&esourceText, hsum);
 		if (rinfo == 0)
 		{
+			CString specSourceList;
+			CString specTraslatedList;
+
+			ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
+			ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
+			if (specSourceList.GetLength() > 0)
+				int deb = 1;
+			if (specSourceList.Compare(specTraslatedList))
+				_ASSERTE(0);
+
 			ResourceInfo* rinfo = new ResourceInfo(esourceText, etranslatedText);
 			resInfoMap.insert(hsum, rinfo);
 			resInfoArray.Add(rinfo);

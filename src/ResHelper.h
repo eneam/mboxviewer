@@ -247,6 +247,9 @@ public:
 	static void GetProcessFolderPath(CString& folderPath);
 	static BOOL IsEnglishConfigured(CString &languageName);
 	static CString GetLanguageCode(CString& languageName);
+	static void FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray);
+	static void FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList);
+	static BOOL ResHelper::CompareCStringArrays(CStringArray& ar1, CStringArray& ar2);
 
 	static void MyTrace(CString& txt1, CString& txt2);
 	static void MyTrace(CString& txt);
