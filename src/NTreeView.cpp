@@ -1255,6 +1255,7 @@ BOOL NTreeView::ImportLegacyUMBoxViewerRegistryData()
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PrintConfig\\HeaderFields");
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacement");
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementDirect");
+	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementPreview");
 
 	ConfigTree* confTree = CProfile::GetConfigTree();
 	_ASSERTE(confTree);

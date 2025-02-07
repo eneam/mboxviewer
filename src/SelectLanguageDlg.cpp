@@ -62,7 +62,6 @@ BEGIN_MESSAGE_MAP(SelectLanguageDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_STATIC_SELECT_LANG_1, &SelectLanguageDlg::OnBnClickedStaticSelectLang1)
 	ON_BN_CLICKED(IDOK, &SelectLanguageDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &SelectLanguageDlg::OnBnClickedCancel)
-	//ON_WM_PAINT()
 END_MESSAGE_MAP()
 
 
@@ -164,48 +163,45 @@ void SelectLanguageDlg::OnBnClickedCancel()
 	CDialogEx::OnCancel();
 }
 
-
-void SelectLanguageDlg::OnPaint()
-{
-	int  deb = 1;
-}
+#define BLACK      RGB(0,0,0)
+#define YELLOW     RGB(255, 255, 0)
+#define RED        RGB(127,0,0)
 
 BEGIN_MESSAGE_MAP(DerivedCListBox, CListBox)
-	//ON_WM_PAINT()
+	ON_WM_CTLCOLOR_REFLECT()
 END_MESSAGE_MAP()
 
-void DerivedCListBox::OnPaint()
+DerivedCListBox::DerivedCListBox()
 {
-#if 1
-	CListBox::OnPaint();
-#else
-	CPaintDC dc(this); // device context for painting
 
-	RECT rect;
-	GetClientRect(&rect);
-
-	COLORREF color = ::GetSysColor(COLOR_3DFACE);
-
-	dc.SetBkMode(TRANSPARENT);
-	dc.FillRect(&rect, &CBrush(color));
-
-	dc.SetDCBrushColor(::GetSysColor(COLOR_3DFACE));
-#endif
+	m_crBkColor = ::GetSysColor(COLOR_3DFACE); // Initializing background color to the system face color.
+	//m_crBkColor = YELLOW;
+	m_crTextColor = BLACK; // Initializing text color to black; not abl to change anyway
+	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
 
 
-BOOL DerivedCListBox::PreCreateWindow(CREATESTRUCT& cs)
+void DerivedCListBox::SetTextColor(COLORREF crColor)
 {
-	// TODO: Add your specialized code here and/or call the base class
-
-	return CListBox::PreCreateWindow(cs);
+	m_crTextColor = crColor; // Passing the value passed by the dialog to the member varaible for Text Color
+	RedrawWindow();
 }
 
-
-BOOL DerivedCListBox::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+void DerivedCListBox::SetBkColor(COLORREF crColor)
 {
-	// TODO: Add your specialized code here and/or call the base class
-
-	return CListBox::Create(dwStyle, rect, pParentWnd, nID);
+	m_crBkColor = crColor; // Passing the value passed by the dialog to the member varaible for Backgound Color
+	m_brBkgnd.DeleteObject(); // Deleting any Previous Brush Colors if any existed.
+	m_brBkgnd.CreateSolidBrush(crColor); // Creating the Brush Color For the Edit Box Background
+	RedrawWindow();
 }
 
+HBRUSH DerivedCListBox::CtlColor(CDC* pDC, UINT nCtlColor)
+{
+	HBRUSH hbr;
+
+	hbr = (HBRUSH)m_brBkgnd; // Passing a Handle to the Brush
+	pDC->SetBkColor(m_crBkColor); // Setting the Color of the Text Background to the one passed by the Dialog
+	pDC->SetTextColor(m_crTextColor); // TODO: doesn't work ; Setting the Text Color to the one Passed by the Dialog
+
+	return hbr;
+}

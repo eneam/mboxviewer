@@ -90,6 +90,8 @@ BOOL CmboxviewApp::m_configFileLoaded = FALSE;
 
 CWnd* CmboxviewApp::wndFocus = 0;
 
+//#pragma warning(3 : 4840 4477)  // useless -:(((
+
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
 	// Do something, for example generate error report
@@ -461,11 +463,11 @@ void CreateAnsiToUTF8TableStr(CString& tbl, int firstPos, int lastPos)
 		cStr4 = inStr;
 		int len4 = cStr4.GetLength();
 		if (cStr4.IsEmpty())
-			cStr4 = " ";
+			cStr4 = L" ";
 		cStr3.Format(L"%s", CString(inStr));
 		int len3 = cStr3.GetLength();
 		if (cStr3.IsEmpty())
-			cStr3 = " ";
+			cStr3 = L" ";
 
 		strA.Empty();
 		TextUtilsEx::Str2UTF8((LPCSTR)inStr, inStr.GetLength(), inCodePage, strA, error);
@@ -585,6 +587,46 @@ CmboxviewApp::CmboxviewApp()
 	int deb10 = 1;
 
 #ifdef _DEBUG
+
+#if 0
+//
+#pragma warning(1 :  4473 4474 4475 4476 4477 4478 4774 4775 4776 4778 4840 6603)  // useless -:(((
+//#pragma warning( push , 1 )  // useless -:(((
+	// Check if compiler complains
+
+#if 0
+	wchar_t const* str = L" ";// Some string to parse
+
+	char buf[10];
+
+	wchar_t wbf;
+
+	static const wchar_t* fmt = L"%10c %1C";
+
+	swscanf_s(str, fmt, buf, sizeof(buf), &wbf);  // useless ; fmt has to be string literal
+
+#endif
+	CString s1;
+	int int1 = 0;
+	int int2 = 0;
+	INT_PTR intptr1 = 0;
+	double dble = 0;
+	CString fmt = L"string %s integer %d integer2 %00d";
+	CString eval;
+
+	// doesn't seem to crash or generate  exceptions
+	eval.Format(L"string %s integer %d integer2 %00d", dble, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
+	eval.Format((LPCWSTR)fmt, int1, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
+	eval.Format((LPCWSTR)fmt, int1);   // no complains !!!
+
+	wprintf(L"string %s integer %d integer2 %00d", (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
+	wprintf((LPCWSTR)fmt, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
+	wprintf((LPCWSTR)fmt, int1, int2, (LPCWSTR)s1);  // no compiler complains !!!
+	wprintf((LPCWSTR)fmt, int1);   // no complains !!!
+
+//#pragma warning( pop)
+#endif
+
 
 #if 0
 	UINT acpCodePage = GetACP();

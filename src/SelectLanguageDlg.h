@@ -36,14 +36,19 @@
 class DerivedCListBox : public CListBox
 {
 public:
-	DerivedCListBox() { ; }
+	DerivedCListBox();
 	~DerivedCListBox() {; }
 
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg void OnPaint();
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	virtual BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
+	void SetBkColor(COLORREF crColor); // This Function is to set the BackGround Color for the Text and the Edit Box.
+	void SetTextColor(COLORREF crColor); // This Function is to set the Color for the Text. TODO: doesn't work
+
+	CBrush m_brBkgnd; // Holds Brush Color for the Edit Box
+	COLORREF m_crBkColor; // Holds the Background Color for the Text
+	COLORREF m_crTextColor; // Holds the Color for the Text
+
+	afx_msg HBRUSH CtlColor(CDC* pDC, UINT nCtlColor); // This Function Gets Called Every Time Your Window Gets Redrawn.
 };
 
 class SelectLanguageDlg : public CDialogEx
@@ -75,5 +80,4 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
-	afx_msg void OnPaint();
 };

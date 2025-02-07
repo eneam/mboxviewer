@@ -130,10 +130,15 @@ void ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionS
 		// find s or d charcater
 		while ((c = *p) != 0)
 		{
-			if ((c != L's') && (c != L'd'))
+			if ((c == L'0') || (c == L'l'))
 			{
 				p++;
 				continue;
+			}
+			else if ((c != L's') && (c != L'd'))
+			{
+				p++;
+				break;
 			}
 			pend = p;
 			spec.Empty();
