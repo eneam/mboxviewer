@@ -376,6 +376,8 @@ int NTreeView::ImboxviewFile(CString& fName)
 	CFileException ExError;
 	if (!fp.Open(fileName, CFile::modeRead, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 		return 0;
 	}
@@ -1597,6 +1599,8 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + viewFile;
@@ -2928,6 +2932,8 @@ void NTreeView::SaveData(HTREEITEM hItem)
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + viewFile;
@@ -6786,6 +6792,8 @@ BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 	CString rootFolderFile = datapath + L".urootfolder";
 	if (!fp.Open(rootFolderFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + rootFolderFile;
@@ -7116,6 +7124,8 @@ void NTreeView::PruneNonMBoxFolders(MBoxFolderNode* node)
 			CString viewFile = datapath + "\\.folderview";
 			if (!fp.Open(viewFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 			{
+				DWORD lastErr = ::GetLastError();
+
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 				CString txt = L"Could not create \"" + viewFile;
@@ -8453,6 +8463,8 @@ void MBoxFolderTree::Print(CString& filePath)
 	// TODO: don't write to file to now
 	if (!fp.Open(viewFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + viewFile;
@@ -9245,12 +9257,9 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	CFileException exMergeTo;
 	if (!m_rootMboxCfile.Open(m_rootMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
-#if 0
-		CString txt = L"Could not create Merge To File \"" + m_rootMboxFilePath;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
 
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -9354,13 +9363,9 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	//
 	if (!m_rootMboxCfile.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
+		DWORD lastErr = ::GetLastError();
 
-#if 0
-		CString txt = L"Could not create Merge To File \"" + filePath;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);

@@ -1688,6 +1688,8 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 	CFileException ExError;
 	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -1831,6 +1833,8 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 	CFileException ExError;
 	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;

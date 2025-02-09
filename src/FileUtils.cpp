@@ -31,6 +31,7 @@
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
 #include "SimpleString.h"
+#include "ResHelper.h"
 
 bool FileUtils::PathDirExists(CString &dir)
 {
@@ -1083,6 +1084,21 @@ CString FileUtils::MoveDirectory(const wchar_t *cFromPath, const wchar_t *cToPat
 	return errorText;
 }
 
+CString FileUtils::GetErrorAsString(CFileException& ExError, DWORD errorCode)
+{
+	CString  errorStr;
+	if ((ExError.m_cause != 0) || (ExError.m_lOsError != -1))
+	{
+		errorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+	}
+	if (errorStr.IsEmpty() // exError.GetErrorMessage() seems fails on loadString(ID) when app not fully initialize ??
+		&& (errorCode != ERROR_SUCCESS))  // ERROR_SUCCESS = 0
+	{
+		errorStr = FileUtils::GetLastErrorAsString(errorCode);
+	}
+	return errorStr;
+}
+
 CString FileUtils::GetLastErrorAsString(DWORD errorCode)
 {
 	//Get the error message, if any.
@@ -1111,13 +1127,21 @@ CString FileUtils::GetLastErrorAsString(DWORD errorCode)
 	return errorMessage;
 }
 
-CString FileUtils::GetFileExceptionErrorAsString(CFileException &exError)
+CString FileUtils::GetFileExceptionErrorAsString(CFileException &exError, DWORD errorCode)
 {
 	CString exErrorStr;
-	wchar_t szCause[2048];
-	exError.GetErrorMessage(szCause, 2048);
+	if ((exError.m_cause != 0) || (exError.m_lOsError != -1))
+	{
+		wchar_t szCause[2048];
+		exError.GetErrorMessage(szCause, 2048);
+		exErrorStr.Append(szCause);
+	}
+	if (exErrorStr.IsEmpty()  // exError.GetErrorMessage() seems fails on loadString(ID) when app not fully initialize ??
+		&& (errorCode != ERROR_SUCCESS))  // ERROR_SUCCESS = 0
+	{
+		exErrorStr = FileUtils::GetLastErrorAsString(errorCode);
+	}
 
-	exErrorStr.Append(szCause);
 	return exErrorStr;
 }
 
@@ -1383,6 +1407,120 @@ CString FileUtils::SizeToString(_int64 size)
 	txt.Format(L"File size: (%s)", sizeStr_inBytes);
 
 	return txt;
+}
+
+//#include <windows.h>
+#include <RestartManager.h>
+#include <stdio.h>
+#include <psapi.h>
+
+// CString filePath = L"F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt"
+
+void FileUtils::GetProcessListLockingFile(CString& filePath, CString &infoText)
+{
+	DWORD dwSession;
+	WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
+	infoText.Empty();
+
+	DWORD dwError = RmStartSession(&dwSession, 0, szSessionKey);
+
+	TRACE(L"RmStartSession returned %d\n", dwError);
+
+	if (dwError != ERROR_SUCCESS)
+	{
+		return;
+	}
+
+	PCWSTR pszFile = filePath;
+
+	dwError = RmRegisterResources(dwSession, 1, &pszFile, 0, NULL, 0, NULL);
+	TRACE(L"RmRegisterResources(%ls) returned %d\n", pszFile, dwError);
+	if (dwError != ERROR_SUCCESS)
+	{
+		RmEndSession(dwSession);
+		return;
+	}
+	DWORD dwReason;
+	UINT nProcInfoNeeded;
+	UINT nProcInfo = 5;
+	RM_PROCESS_INFO rgpi[10];
+	CString processId;
+
+	dwError = RmGetList(dwSession, &nProcInfoNeeded, &nProcInfo, rgpi, &dwReason);
+	TRACE(L"RmGetList returned %d\n", dwError);
+	if (dwError != ERROR_SUCCESS)
+	{
+		RmEndSession(dwSession);
+		return;
+	}
+	TRACE(L"RmGetList returned %d infos (%d needed)\n", nProcInfo, nProcInfoNeeded);
+
+	CString fmt = L"File\n\n%s\n\n is locked by the following processes:\n\n";
+	ResHelper::TranslateString(fmt);
+	CString appFriendlyName = L"Application Friendly Name";
+	ResHelper::TranslateString(appFriendlyName);
+	CString appPath = L"Application Path";
+	ResHelper::TranslateString(appPath);
+	CString appProcessId = L"Application Process Id";
+	ResHelper::TranslateString(appProcessId);
+
+	UINT i;
+	for (i = 0; i < nProcInfo; i++)
+	{
+		RM_PROCESS_INFO& procInfo = rgpi[i];
+		TRACE(L"%d.ApplicationType = %d\n", i, procInfo.ApplicationType);
+		TRACE(L"%d.strAppName = %ls\n", i, procInfo.strAppName);
+		TRACE(L"%d.Process.dwProcessId = %d\n", i, procInfo.Process.dwProcessId);
+
+
+		processId.Format(L"%d", procInfo.Process.dwProcessId);
+
+
+		CString processPath = L"unknown";
+		ResHelper::TranslateString(processPath);
+
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, procInfo.Process.dwProcessId);
+		if (hProcess)
+		{
+			FILETIME ftCreate, ftExit, ftKernel, ftUser;
+			BOOL retGetProcessTimes = GetProcessTimes(hProcess, &ftCreate, &ftExit, &ftKernel, &ftUser);
+			LONG retCompareFileTime = CompareFileTime(&procInfo.Process.ProcessStartTime, &ftCreate);
+			if (retGetProcessTimes && (retCompareFileTime == 0))
+			{
+				WCHAR sz[MAX_PATH + 1] = { 0 };
+				DWORD cch = MAX_PATH;
+				if (QueryFullProcessImageName(hProcess, 0, sz, &cch) && cch <= MAX_PATH)
+				{
+					TRACE(L"  = %ls\n", sz);
+					processPath.Empty();
+					processPath.Append(sz);
+				}
+			}
+			CloseHandle(hProcess);
+		}
+
+		fmt.Append(L"%s: % s\n"
+			L"%s: % s\n"
+			L"%s: %s\n\n"
+		);
+		infoText.Format(fmt, filePath, appFriendlyName, procInfo.strAppName, appPath, processPath, appProcessId, processId);
+	}
+	RmEndSession(dwSession);
+}
+
+int FileUtils::CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h)
+{
+	int answer = IDOK;
+	CString infoText;
+	FileUtils::GetProcessListLockingFile(filePath, infoText);
+	if (!infoText.IsEmpty())
+	{
+		if (h != 0)
+			answer = MessageBox(h, infoText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		else
+			answer = AfxMessageBox(infoText, MB_APPLMODAL | MB_ICONERROR | MB_OK);
+	}
+	return answer;
 }
 
 // TODO: update test to test chnages to RemoveDirA, new CopyDirectory and MoveDirectory

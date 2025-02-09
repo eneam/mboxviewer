@@ -1143,12 +1143,9 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 	CFileException exList;
 	if (!file.Open(configFileNamePath, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \"" + configFileNamePath;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
 
 		CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -1165,6 +1162,9 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+		int answer2 = FileUtils::CheckIfFileLocked(configFileNamePath, lastErr, h);
+
 		return;
 	}
 	// CStdioFile is not BOM aware !!!! 

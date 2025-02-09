@@ -111,7 +111,9 @@ public:
 	//
 	static CString GetLastErrorAsString(DWORD errorCode = 0xFFFF);
 
-	static CString GetFileExceptionErrorAsString(CFileException &ExError);
+	static CString GetErrorAsString(CFileException& ExError, DWORD errorCode);
+
+	static CString GetFileExceptionErrorAsString(CFileException &ExError, DWORD errorCode = 0);
 	static CString GetOpenForReadFileExceptionErrorAsString(CString &fileName, CFileException &exError);
 
 	static BOOL GetFolderList(CString &rootFolder, CList<CString, CString &> &folderList, CString &errorText, int maxDepth);
@@ -119,6 +121,9 @@ public:
 	static BOOL VerifyName(CString &name);
 
 	static CString SizeToString(_int64 size);
+
+	static void GetProcessListLockingFile(CString& filePath, CString &infoText);
+	static int CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h);
 
 	void UnitTest();
 };

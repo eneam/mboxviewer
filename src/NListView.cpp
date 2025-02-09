@@ -4399,6 +4399,8 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	CFileException ExError2;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt;
@@ -4892,6 +4894,8 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 		;
 	}
@@ -6088,6 +6092,8 @@ void NListView::OnEditVieweml()
 			}
 			else
 			{
+				DWORD lastErr = ::GetLastError();
+
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 				;
 			}
@@ -7097,6 +7103,8 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					}
 					else
 					{
+						DWORD lastErr = ::GetLastError();
+
 						// MessageBox ??
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  //TODO
 						int deb = 1;
@@ -9344,6 +9352,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 			&ExMergeError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
 
 			errorText = L"Could not create \"" + mergeErrorFilePath;
@@ -9365,6 +9375,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 			&ExError)) 
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
@@ -9384,6 +9396,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (!fpm.Open(mergeAllCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 			&ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeAllCmdFilePath;
@@ -9524,6 +9538,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 			&ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
@@ -9701,6 +9717,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate | CFile::shareDenyNone,
 		&ExMergeError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
 
 		errorText = L"Could not create \"" + mergeErrorFilePath;
@@ -9719,6 +9737,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 		&ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		errorText = L"Could not create \"" + mergeCmdFilePath;
@@ -9785,6 +9805,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 			if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
 				&ExError))
 			{
+				DWORD lastErr = ::GetLastError();
+
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 				errorText = L"Could not create \"" + mergeCmdFilePath;
@@ -11588,6 +11610,8 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	CFileException ExError;
 	if (!fp.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 #if 0
 		CString txt = L"Could not create \"" + mboxFilePath;
@@ -12228,6 +12252,8 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	CFileException ExError;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -12486,6 +12512,8 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 	CFileException ExError;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -12576,6 +12604,35 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 	{
 		return TRUE;
 	}
+
+#if 0
+	if (!mainThread)
+	{
+		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";
+		HWND hw = 0;
+		hw = GetSafeHwnd();
+
+		CString badFilePath = L"C:\\Users\\UserA";
+		//badFilePath = filePath + L".txt";;
+
+		CStdioFile file;
+		CFileException exList;
+		UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareExclusive;
+		if (!file.Open(badFilePath, nOpenFlags, &exList))
+		{
+			DWORD lastErr = ::GetLastError();
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
+			int answer = FileUtils::CheckIfFileLocked(filePath, lastErr, hw);
+
+			CString errorStr = FileUtils::GetErrorAsString(exList, lastErr);
+			int deb = 1;
+		}
+		else
+			file.Close();
+
+		int deb = 1;
+	}
+#endif
 
 	if (!mainThread)
 	{
@@ -12764,6 +12821,8 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 	CFileException ExError;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -13265,6 +13324,8 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -13413,6 +13474,8 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -13458,12 +13521,10 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	CFileException ExError;
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-		CString txt = L"Could not create \"" + fileName;
-		txt += L"\" eml file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not create \"%s\" eml file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -13529,6 +13590,8 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -13562,6 +13625,8 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	CFileException ExError;
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + fileName;
@@ -13993,11 +14058,6 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 	SerializerHelper sz(mboxListFile);
 	if (!sz.open(TRUE))
 	{
-#if 0
-		CString txt = L"Could not create \"" + mboxListFile;
-		txt += L"\" file.\nMake sure file is not open on other applications.";
-#endif
-
 		CString txt;
 		CString fmt = L"Could not create \"%s\" file.\nMake sure file is not open on other applications.";
 		ResHelper::TranslateString(fmt);
@@ -14172,12 +14232,10 @@ int NListView::ScanAllMailsInMbox_NewParser()
 	CFileException ExError;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-		CString txt = L"Could not open mail archive \"" + MboxMail::s_path;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not open mail archive \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -16311,6 +16369,8 @@ int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + emlFile;
@@ -16518,6 +16578,8 @@ int NListView::ForwardSingleMail(int iItem, BOOL progressBar, CString &progressT
 	CFileException ExError;
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -18218,6 +18280,8 @@ int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *select
 		CFileException ExError;
 		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not create \"" + textFile;
@@ -18240,6 +18304,8 @@ int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *select
 		CFileException ExError2;
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -18810,6 +18876,8 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 		CFileException ExError;
 		if (!fpmbox.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -19196,6 +19264,8 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 						BOOL retryOpen = FALSE;
 						if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 						{
+							DWORD lastErr = ::GetLastError();
+
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 
 							CString errorText;
@@ -19222,6 +19292,8 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 
 						if (retryOpen && !fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 						{
+							DWORD lastErr = ::GetLastError();
+
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 
 							CFileStatus rStatus;
@@ -19346,6 +19418,8 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = GetLastError();
+
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 

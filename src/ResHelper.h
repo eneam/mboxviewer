@@ -238,6 +238,8 @@ public:
 
 	static BOOL DetermineString(CString& str, CString& newString);
 	static BOOL TranslateString(CString& str); // or should employ va_list to simplify
+	static CString TranslateMsg(CString* fmt, ...);
+	static CString TranslateMsg(const wchar_t* fmt, ...);
 
 	static BOOL OnTtnNeedText(CWnd* parentWindow, NMHDR* pNMHDR, CString &toolTipText);
 	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl);

@@ -589,10 +589,50 @@ CmboxviewApp::CmboxviewApp()
 #ifdef _DEBUG
 
 #if 0
+	// Language file is not loaded yet
+	{
+		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";
+		HWND hw = 0;
+		//hw = GetSafeHwnd();
+
+		CString badFilePath = L"C:\\Users\\UserA";
+		//badFilePath = filePath + L".txt";;
+
+		CStdioFile file;
+		CFileException exList;
+		UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareExclusive;
+		if (!file.Open(badFilePath, nOpenFlags, &exList))
+		{
+			DWORD lastErr = ::GetLastError();
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
+			int answer = FileUtils::CheckIfFileLocked(filePath, lastErr, hw);
+
+			CString errorStr = FileUtils::GetErrorAsString(exList, lastErr);
+			int deb = 1;
+		}
+		else
+			file.Close();
+
+		int deb = 1;
+	}
+
+	int deb = 1;
+#endif
+
+#if 0
+
+	CString fmt = L"arg1=%1 arg2=%2 arg3= %1";
+
+	CString mesg = ResHelper::TranslateMsg(&fmt, L"arg1", L"arg2");
+
+	int deb = 1;
+#endif
+
+#if 0
 //
 #pragma warning(1 :  4473 4474 4475 4476 4477 4478 4774 4775 4776 4778 4840 6603)  // useless -:(((
 //#pragma warning( push , 1 )  // useless -:(((
-	// Check if compiler complains
+// Check whther compiler complains
 
 #if 0
 	wchar_t const* str = L" ";// Some string to parse
@@ -607,22 +647,22 @@ CmboxviewApp::CmboxviewApp()
 
 #endif
 	CString s1;
-	int int1 = 0;
-	int int2 = 0;
+	int int1 = 7;
+	int int2 = 077;
 	INT_PTR intptr1 = 0;
 	double dble = 0;
 	CString fmt = L"string %s integer %d integer2 %00d";
 	CString eval;
 
-	// doesn't seem to crash or generate  exceptions
-	eval.Format(L"string %s integer %d integer2 %00d", dble, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
-	eval.Format((LPCWSTR)fmt, int1, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
-	eval.Format((LPCWSTR)fmt, int1);   // no complains !!!
+	// will crash and  generate  exceptions
+	eval.Format(L"string %s integer %d integer2 %00d", dble, (LPCWSTR)s1, int1, int2);  
+	eval.Format((LPCWSTR)fmt, int1, (LPCWSTR)s1, int1, int2); 
+	eval.Format((LPCWSTR)fmt, int1); 
 
-	wprintf(L"string %s integer %d integer2 %00d", (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
-	wprintf((LPCWSTR)fmt, (LPCWSTR)s1, int1, int2);  // no compiler complains !!!
-	wprintf((LPCWSTR)fmt, int1, int2, (LPCWSTR)s1);  // no compiler complains !!!
-	wprintf((LPCWSTR)fmt, int1);   // no complains !!!
+	wprintf(L"string %s integer %d integer2 %00d", (LPCWSTR)s1, int1, int2);  
+	wprintf((LPCWSTR)fmt, (LPCWSTR)s1, int1, int2);  /
+	wprintf((LPCWSTR)fmt, int1, int2, (LPCWSTR)s1);  
+	wprintf((LPCWSTR)fmt, int1);  
 
 //#pragma warning( pop)
 #endif
@@ -1721,6 +1761,37 @@ BOOL CmboxviewApp::InitInstance()
 #endif
 int deb = 1;
 	}
+
+#if 0
+
+	{
+		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";
+		HWND hw = 0;
+		//hw = GetSafeHwnd();
+
+		CString badFilePath = L"C:\\Users\\UserA";
+		//badFilePath = filePath + L".txt";;
+
+		CStdioFile file;
+		CFileException exList;
+		UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareExclusive;
+		if (!file.Open(badFilePath, nOpenFlags, &exList))
+		{
+			DWORD lastErr = ::GetLastError();
+			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
+			int answer = FileUtils::CheckIfFileLocked(filePath, lastErr, hw);
+
+			CString errorStr = FileUtils::GetErrorAsString(exList, lastErr);
+			int deb = 1;
+		}
+		else
+			file.Close();
+
+		int deb = 1;
+	}
+
+	int deb = 1;
+#endif
 
 	CString dataFolder;
 	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", dataFolder);

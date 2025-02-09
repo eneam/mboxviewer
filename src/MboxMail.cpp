@@ -729,6 +729,8 @@ BOOL MboxMail::GetBody(CStringA &res)
 	{
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
+		DWORD lastErr = ::GetLastError();
+
 		CString txt = L"Could not open \"" + MboxMail::s_path;
 		txt += L"\" mail file.\n";
 		txt += exErrorStr;
@@ -821,6 +823,8 @@ BOOL MboxMail::GetBodySS(SimpleString *res, int maxLength)
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -4296,12 +4300,10 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		CFileException ExError;
 		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-			CString txt = L"Could not create \"" + csvFile;
-			txt += L"\" file.\n";
-			txt += exErrorStr;
-#endif
+
 			CString txt;
 			CString fmt = L"Could not create \"%s\" file.\n%s";
 			ResHelper::TranslateString(fmt);
@@ -4325,12 +4327,10 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			CFileException ExError;
 			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 			{
+				DWORD lastErr = ::GetLastError();
+
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-				CString txt = L"Could not open \"" + MboxMail::s_path;
-				txt += L"\" mail file.\n";
-				txt += exErrorStr;
-#endif
+
 				CString txt;
 				CString fmt = L"Could not open \"%s\" mail file.\n%s";
 				ResHelper::TranslateString(fmt);
@@ -5031,6 +5031,8 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -5247,6 +5249,8 @@ int MboxMail::printAttachmentNamesAsText(CFile *fpm, int mailPosition, SimpleStr
 		CFileException ExError;
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -6677,12 +6681,9 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		CFileException ExError;
 		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-			CString txt = L"Could not create \"" + textFile;
-			txt += L"\" file.\n";
-			txt += exErrorStr;
-#endif
 
 			CString txt;
 			CString fmt = L"Could not create \"%s\" file.\n%s";
@@ -6705,12 +6706,10 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		CFileException ExError2;
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
-#if 0
-			CString txt = L"Could not open \"" + MboxMail::s_path;
-			txt += L"\" mail file.\n";
-			txt += exErrorStr;
-#endif
+
 			CString txt;
 			CString fmt = L"Could not open \"%s\" mail file.\n%s";
 			ResHelper::TranslateString(fmt);
@@ -6867,6 +6866,8 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	CFile fp;
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + textFile;
@@ -6886,6 +6887,8 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -7019,6 +7022,8 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	CFile fp;
 	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + csvFile;
@@ -7041,6 +7046,8 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		CFileException ExError;
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -7901,6 +7908,8 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		}
 		else
 		{
+			DWORD lastErr = ::GetLastError();
+
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not create \"" + body->m_attachmentName;
@@ -8045,6 +8054,8 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)  // FIXMEF
 	CFileException ExError;
 	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + csvFile;
@@ -8060,6 +8071,8 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)  // FIXMEF
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -8736,6 +8749,8 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 	CFileException ExError;
 	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + statsFile;
@@ -8751,6 +8766,8 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -8857,12 +8874,10 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	CFileException ExError;
 	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-		CString txt = L"Could not create \"" + statsFile;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not create \"%s\" file.\n%s";
 		txt.Format(fmt, statsFile, exErrorStr);
@@ -8876,6 +8891,8 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10417,6 +10434,8 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + textFile;
@@ -10432,6 +10451,8 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10507,6 +10528,8 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	CFileException ExError;
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create file \"" + textFile;
@@ -10523,6 +10546,8 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10672,6 +10697,8 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	CFileException ExError;
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + textFile;
@@ -10686,6 +10713,8 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	CFileException ExError2;
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -11559,6 +11588,8 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	}
 	else
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;

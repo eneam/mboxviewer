@@ -106,7 +106,7 @@ void ResHelper::FindConversionSpecifiers(CString& str, CString& conversionSpecif
 			pend = p;
 			if (!conversionSpecifiersList.IsEmpty())
 				conversionSpecifiersList.AppendChar(L' ');
-			conversionSpecifiersList.Append(pbegin, pend - pbegin + 1);
+			conversionSpecifiersList.Append(pbegin, (int)(pend - pbegin + 1));
 			break;
 		}
 	}
@@ -142,7 +142,7 @@ void ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionS
 			}
 			pend = p;
 			spec.Empty();
-			spec.Append(pbegin, pend - pbegin + 1);
+			spec.Append(pbegin, (int)(pend - pbegin + 1));
 			conversionSpecifiersArray.Add(spec);
 			break;
 		}
@@ -153,7 +153,7 @@ BOOL ResHelper::CompareCStringArrays(CStringArray &ar1, CStringArray& ar2)
 {
 	if (ar1.GetCount() != ar2.GetCount())
 		return FALSE;
-	int cnt = ar1.GetCount();
+	int cnt = (int)ar1.GetCount();
 	int i;
 	for (i = 0; i < cnt; i++)
 	{
@@ -755,6 +755,9 @@ BOOL  ResHelper::DetermineString(CString &str, CString &newString)
 	return FALSE;
 }
 
+// May need to leverage  ::FormatMessage to allow any order of format specs in the format string independed 
+// from the order of  args passed to formatting function
+// May need to implement in addition to standard CString Format function
 BOOL ResHelper::TranslateString(CString& str)
 {
 	if (ResHelper::g_UpdateMenuItemsInfo)
@@ -770,6 +773,81 @@ BOOL ResHelper::TranslateString(CString& str)
 			return FALSE;
 	}
 	return TRUE;
+}
+
+// Format example fmt = L"arg1=%1 arg2=%2 arg3= %1"
+// TranslateMsg(fmt, L"arg1", L"arg2");
+// output "arg1=arg1 arg2=arg2 arg3=arg1
+// FormatMessage is tricky if you try use spec modifiers suchas width, etc
+
+CString ResHelper::TranslateMsg(const wchar_t* fmt, ...)
+{
+	CString mesg;
+	CString tfmt(fmt);
+	TranslateString(tfmt);
+
+	const wchar_t* strfmt = (LPCWSTR)tfmt;
+
+	// create va_list to pass ::FormatMessage
+	va_list argList;
+	va_start(argList, fmt);
+
+	wchar_t* lpBuffer;  // pointer to buffer with generated message allocated by FormatMessage
+	const DWORD dwMessageId = 0;
+	const DWORD dwLanguageId = 0;
+	DWORD nSize = 0; //  FormatMessage allocates message buffer
+
+	DWORD retcnt = ::FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		fmt, dwMessageId, dwLanguageId, (LPWSTR)&lpBuffer, nSize, &argList);
+
+	if (retcnt != 0)
+	{
+		_ASSERTE(lpBuffer != 0);
+		mesg.Append(lpBuffer, retcnt);
+	}
+
+	LocalFree(lpBuffer);  // should we allocate buffer for message
+	va_end(argList);
+
+	return mesg;
+}
+
+CString ResHelper::TranslateMsg(CString* fmt, ...)
+{
+	CString mesg;
+	CString tfmt(*fmt);
+	TranslateString(tfmt);
+	TranslateString(*fmt);
+
+	const wchar_t* strfmt = (LPCWSTR)tfmt;
+
+	// create va_list to pass ::FormatMessage
+	va_list argList;
+	va_start(argList, fmt);
+
+	//wchar_t* arg1 = va_arg(argList, wchar_t*);
+	//wchar_t* arg2 = va_arg(argList, wchar_t*);
+
+	//for (int i = 0;  )
+
+	wchar_t* lpBuffer = 0;  // pointer to buffer with generated message allocated by FormatMessage
+	const DWORD dwMessageId = 0;
+	const DWORD dwLanguageId = 0;
+	DWORD nSize = 0; //  FormatMessage allocates message buffer
+
+	DWORD retcnt = ::FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		(LPCWSTR)(*fmt), dwMessageId, dwLanguageId, (LPWSTR)&lpBuffer, nSize, &argList);
+
+	if ((retcnt != 0) && lpBuffer)
+	{
+		_ASSERTE(lpBuffer != 0);
+		mesg.Append(lpBuffer, retcnt);
+	}
+
+	LocalFree(lpBuffer);  // should we allocate buffer for message
+	va_end(argList);
+
+	return mesg;
 }
 
 
@@ -1558,12 +1636,9 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 	CFileException exList;
 	if (!file.Open(resFile, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \"" + resFile;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -1715,12 +1790,10 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 	CFileException exList;
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \"" + languageFile;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -1906,12 +1979,10 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 	CFileException exList;
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \"" + languageFile;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -2146,13 +2217,10 @@ int ResHelper::SplitTranslationFile(CString& languageTranslationFilePath)
 	CFileException exList;
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
-#if 0
-		CString txt = L"Could not open list file \"" + languageFile;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
 		CString txt;
 		CString fmt = L"Could not open list file \n\"%s\"\n\n%s";
 		ResHelper::TranslateString(fmt);
@@ -2590,12 +2658,9 @@ int ResHelper::GetCodePageFromFile(LPCWSTR filePath)
 	UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareDenyNone;
 	if (!file.Open(filePath, nOpenFlags, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \"" + *filePath;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
 
 		CString txt;
 		CString fmt = L"Could not open list file \n\"%s\"\n\n%s";
@@ -2810,12 +2875,10 @@ int ResHelper::IsFileUTF8(LPCWSTR filePath)
 	//if (!file.Open(resFile, CFile::modeRead | CFile::shareDenyNone | CFile::typeUnicode, &exList))
 	if (!file.Open(filePath, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary, &exList))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
-#if 0
-		CString txt = L"Could not open list file \n\"" + CString(filePath);
-		txt += L"\"\n file.\n";
-		txt += exErrorStr;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not open list file \n\"%s\"\n\n%s";
 		ResHelper::TranslateString(fmt);

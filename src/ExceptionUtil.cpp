@@ -288,6 +288,8 @@ BOOL DumpMailData(wchar_t *fileName, const CHAR *seText, UINT seNumb, int mailPo
 	CFileException ExError;
 	if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + filePath;
