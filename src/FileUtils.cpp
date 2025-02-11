@@ -1137,10 +1137,17 @@ CString FileUtils::GetFileExceptionErrorAsString(CFileException &exError, DWORD 
 		exError.GetErrorMessage(szCause, 2048);
 		exErrorStr.Append(szCause);
 	}
+	//CString errorStr = FileUtils::GetLastErrorAsString(errorCode);
 	if (exErrorStr.IsEmpty()  // exError.GetErrorMessage() seems fails on loadString(ID) when app not fully initialize ??
 		&& (errorCode != ERROR_SUCCESS))  // ERROR_SUCCESS = 0
 	{
 		exErrorStr = FileUtils::GetLastErrorAsString(errorCode);
+	}
+	else if (!exErrorStr.IsEmpty() && (exError.m_lOsError != -1))
+	{
+		CString errorStr = FileUtils::GetLastErrorAsString(errorCode);
+		exErrorStr.Append(L"\n\n");
+		exErrorStr.Append(errorStr);
 	}
 
 	return exErrorStr;
