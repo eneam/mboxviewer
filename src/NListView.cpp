@@ -4895,9 +4895,13 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, m_curFile, ExError, lastErr, h); 
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
-		;
+#endif
 	}
 
 	// Display mail in internal IE
@@ -6093,9 +6097,13 @@ void NListView::OnEditVieweml()
 			else
 			{
 				DWORD lastErr = ::GetLastError();
-
+#if 1
+				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+				CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
-				;
+#endif
 			}
 		}
 	}
@@ -9372,11 +9380,15 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		// Merging will continue until there is no more files to merge, see NListView::MergePDfFileList
 		//
 		mergeCmdFilePath = targetPrintFolderPath + L"\\MergePDFs.cmd";
-		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-			&ExError)) 
+		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError)) 
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
@@ -9384,6 +9396,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			errorText += exErrorStr;
 
 			TRACE(L"%s\n", errorText);
+#endif
 			return -1;
 		}
 		fp.Close();
@@ -9393,11 +9406,15 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		// The MergeAllPDFs.cmd is not excuted by MBox Viewer. User can execute manually if needed.
 		//
 		mergeAllCmdFilePath = targetPrintFolderPath + L"\\MergeAllPDFs.cmd";
-		if (!fpm.Open(mergeAllCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-			&ExError))
+		if (!fpm.Open(mergeAllCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+			errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeAllCmdFilePath;
@@ -9405,6 +9422,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			errorText += exErrorStr;
 
 			TRACE(L"%s\n", errorText);
+#endif
 			return -1;
 		}
 	}  // end of if (mergePDFs)
@@ -9539,7 +9557,12 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			&ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
@@ -9547,6 +9570,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			errorText += exErrorStr;
 
 			TRACE(L"%s\n", errorText);
+#endif
 			fpm.Close();
 			return -1;
 		}
@@ -9718,7 +9742,11 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		&ExMergeError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
 
 		errorText = L"Could not create \"" + mergeErrorFilePath;
@@ -9726,6 +9754,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		errorText += exErrorStr;
 
 		TRACE(L"%s\n", errorText);
+#endif
 		return -1;
 	}
 
@@ -9734,11 +9763,14 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	CFile fp;
 	CFileException ExError;
 	CString mergeCmdFilePath = targetPrintFolderPath + L"\\MergePDFs.cmd";
-	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-		&ExError))
+	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		errorText = L"Could not create \"" + mergeCmdFilePath;
@@ -9746,6 +9778,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		errorText += exErrorStr;
 
 		TRACE(L"%s\n", errorText);
+#endif
 
 		fpMergeError.Close();
 
@@ -9802,11 +9835,14 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 			int retexec = CMainFrame::ExecCommand_WorkerThread(targetPrintFolderPath, mergeCmdFilePath, args, errorText, progressBar, progressText, forced_timeout);
 
 			CFileException ExError;
-			if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-				&ExError))
+			if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 			{
 				DWORD lastErr = ::GetLastError();
-
+#if 1
+				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 				errorText = L"Could not create \"" + mergeCmdFilePath;
@@ -9814,7 +9850,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 				errorText += exErrorStr;
 
 				TRACE(L"%s\n", errorText);
-
+#endif
+				// TODO: is this working? Verify
 				CStringA errorTextA = errorText;
 
 				fpMergeError.Write(errorTextA, errorTextA.GetLength());
@@ -11611,19 +11648,21 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	if (!fp.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-#if 0
-		CString txt = L"Could not create \"" + mboxFilePath;
-		txt += L"\" file.\n";
-		txt += exErrorStr;
-#endif
 		CString txt;
 		CString fmt = L"Could not create \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath, exErrorStr);
 
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -12605,35 +12644,6 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 		return TRUE;
 	}
 
-#if 0
-	if (!mainThread)
-	{
-		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";
-		HWND hw = 0;
-		hw = GetSafeHwnd();
-
-		CString badFilePath = L"C:\\Users\\UserA";
-		//badFilePath = filePath + L".txt";;
-
-		CStdioFile file;
-		CFileException exList;
-		UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareExclusive;
-		if (!file.Open(badFilePath, nOpenFlags, &exList))
-		{
-			DWORD lastErr = ::GetLastError();
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
-			int answer = FileUtils::CheckIfFileLocked(filePath, lastErr, hw);
-
-			CString errorStr = FileUtils::GetErrorAsString(exList, lastErr);
-			int deb = 1;
-		}
-		else
-			file.Close();
-
-		int deb = 1;
-	}
-#endif
-
 	if (!mainThread)
 	{
 		if (MboxMail::pCUPDUPData)
@@ -13522,7 +13532,11 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create eml file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt;
@@ -13535,6 +13549,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		HWND h = NULL;
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		// continue for now ??
+#endif
 		return -1;
 	}
 
@@ -13626,7 +13641,11 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + fileName;
@@ -13644,6 +13663,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 
 		HWND h = NULL;
 		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 #endif
 		// continue for now.
 		return -1;
@@ -16370,7 +16390,11 @@ int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + emlFile;
@@ -16378,6 +16402,7 @@ int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 	}
 	return  1;
 }
@@ -19293,7 +19318,11 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 						if (retryOpen && !fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 						{
 							DWORD lastErr = ::GetLastError();
-
+#if 1
+							HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+							CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+							CString errorText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h); 
+#else
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 
 							CFileStatus rStatus;
@@ -19304,6 +19333,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 							HWND h = NULL;
 							// Ignore for now
 							//int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+#endif
 						}
 						else
 						{

@@ -248,6 +248,7 @@ public:
 	// DecodeBodyData() doesn't merge multiple blocks of the same type
 	// MboxMail::GetMailBody_mboxview() will merge multiple blocks
 	bool DecodeBodyData(char* viewMapBegin, int msgLength, SimpleString* outbuf);
+	BOOL AttachmentName2WChar(CString& attachmentName);
 };
 
 struct MboxHash;

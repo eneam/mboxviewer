@@ -307,6 +307,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE, &CMainFrame::OnLanguagetoolsSplittranslationfile)
 	ON_COMMAND(ID_LANGUAGE_SELECTLANGUANGE, &CMainFrame::OnLanguageSelectlanguange)
 	ON_COMMAND(ID_LANGUAGE_HELP, &CMainFrame::OnLanguageHelp)
+	ON_COMMAND(ID_TEST_CFILEOPENFAILURE, &CMainFrame::OnTestCfileopenfailure)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1675,20 +1676,29 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 						}
 						else
 						{
+#if 1
 							DWORD lastErr = ::GetLastError();
+							HWND h = GetSafeHwnd();
 
-							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+							//CString fmt = L"Could not open \"%s\" mail file.\n%s";
+							CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";
+							CString errorText = FileUtils::ProcessCFileFailure(fmt, textFileName, ExError, lastErr, h);
+#else
 
-							CString txt = L"Could not open \"" + textFileName;
-							txt += L"\" mail file.\n";
-							txt += exErrorStr;
+							DWORD lastErr = ::GetLastError();
+							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError, lastErr);
+
+							CString fmt = L"Could not open \"%s\" mail file.\n%s";
+							ResHelper::TranslateString(fmt);
+							CString txt;
+							txt.Format(fmt, textFileName, exErrorStr);
 
 							TRACE(L"%s\n", txt);
-							// MessageBox ??
 
 							HWND h = GetSafeHwnd();
-							int answer = FileUtils::CheckIfFileLocked(textFileName, lastErr, h);
-
+							int answer1 = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+							int answer2 = FileUtils::CheckIfFileLocked(textFileName, lastErr, h);
+#endif
 							int deb = 1;
 						}
 					}
@@ -2724,23 +2734,27 @@ restart:
 			if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 			{
 				DWORD lastErr = ::GetLastError();
+#if 1
+				HWND h = GetSafeHwnd();
+				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";
+				CString errorText = FileUtils::ProcessCFileFailure(fmt, filePath, ExError, lastErr, h);
 
-				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
+#else
+				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError, lastErr);
 
 				CString txt;
 				CString fmt = L"Could not create \"%s\" file.\n%s";
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, filePath, exErrorStr);
 
-				//TRACE(L"%s\n", txt);
+				TRACE(L"%s\n", txt);
 
-				//HWND h = NULL; // we don't have any window yet
 				int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-
-				MboxMail::m_outbuf->Clear();
-
 				HWND h = GetSafeHwnd();
 				int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
+#endif
+
+				MboxMail::m_outbuf->Clear();
 
 				return -1;
 			}
@@ -2757,21 +2771,20 @@ restart:
 					if (!fp_input.Open(strFilePath, CFile::modeRead, &ExError))
 					{
 						DWORD lastErr = ::GetLastError();
+						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError, lastErr);  // TODO
 
-						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+						fp.Close();
+						MboxMail::m_outbuf->Clear();
 
 						CString txt;
 						CString fmt = L"Could not open \"%s\" file.\nMake sure file is not open on other applications.\n%s";
 						ResHelper::TranslateString(fmt);
 						txt.Format(fmt, filePath, exErrorStr);
 
+						TRACE(L"%s\n", txt);
+
 						//HWND h = NULL; // we don't have any window yet
 						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-
-						fp.Close();
-
-						MboxMail::m_outbuf->Clear();
-
 						HWND h = GetSafeHwnd();
 						int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
 
@@ -2864,25 +2877,30 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 	if (!fpMergeTo.Open(mergedMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = GetSafeHwnd();
+		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";  // old format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, mergedMboxFilePath, exMergeTo, lastErr, h);
 
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
+#else
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo, lastErr);
 
 		CString txt;
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mergedMboxFilePath, exErrorStr);
 
-		//TRACE(L"%s\n", txt);
+		TRACE(L"%s\n", txt);
 
 		CFileStatus rStatus;
-		BOOL ret = fpMergeTo.GetStatus(rStatus);;
+		BOOL ret = fpMergeTo.GetStatus(rStatus);
 
 		//HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-
-
 		HWND h = GetSafeHwnd();
-		int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
+		int answer2 = FileUtils::CheckIfFileLocked(mergedMboxFilePath, lastErr, h);
+#endif
 
 		return -1;
 	}
@@ -5422,14 +5440,19 @@ BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);
 
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#else
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError)
 		CString txt = L"Could not create \"" + fileName;
 		txt += L"\" file.\n";
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 
 		return FALSE;
 	}
@@ -5961,6 +5984,11 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	if (!fpw.Open(mboxFilePath, CFile::modeWrite | CFile::modeCreate, &wExError))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create mail archive file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, wExError, lastErr, h);
+#else
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(wExError);
 
@@ -5973,6 +6001,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 
 		fpr.Close();
 		return;
@@ -6496,4 +6525,48 @@ void CMainFrame::OnLanguageHelp()
 	CString helpFileName = L"LanguagesHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
+}
+
+
+void CMainFrame::OnTestCfileopenfailure()
+{
+	// TODO: Add your command handler code here
+
+	CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
+
+	BOOL createDirOk = TRUE;
+	if (!FileUtils::PathDirExists(HelpPath))
+		createDirOk = FileUtils::CreateDir(HelpPath);
+
+	CStdioFile file1;
+	CFileException exList1;
+	CString noShareFilePath = HelpPath + L"noShareTestFile";
+
+	UINT nOpenFlags1 = CFile::modeCreate | CFile::modeRead | CFile::typeText | CFile::shareExclusive | CFile::typeUnicode;
+	if (!file1.Open(noShareFilePath, nOpenFlags1, &exList1))
+	{
+		int deb = 1;
+	}
+
+	CStdioFile file2;
+	CFileException exList2;
+	//CString noShareFilePath = createDirOk + L"\\noShareTestFile";
+
+	UINT nOpenFlags2 = CFile::modeCreate | CFile::modeRead | CFile::typeText | CFile::shareExclusive | CFile::typeUnicode;
+	if (!file2.Open(noShareFilePath, nOpenFlags2, &exList2))
+	{
+		DWORD lastErr = ::GetLastError();
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, noShareFilePath, exList2, lastErr, h);
+
+		file1.Close();
+		FileUtils::DelFile(noShareFilePath);
+
+		int deb = 1;
+		return;
+	}
+	file2.Close();
+	file1.Close();
+	int deb = 1;
 }

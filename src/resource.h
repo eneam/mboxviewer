@@ -578,6 +578,8 @@
 #define ID_LANGUAGE                     32934
 #define ID_LANGUAGE_SELECTLANGUANGE     32935
 #define ID_LANGUAGE_HELP                32936
+#define ID_DEVELOPMENTOPTIONS_TEST      32937
+#define ID_TEST_CFILEOPENFAILURE        32938
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -587,7 +589,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        244
-#define _APS_NEXT_COMMAND_VALUE         32937
+#define _APS_NEXT_COMMAND_VALUE         32939
 #define _APS_NEXT_CONTROL_VALUE         1422
 #define _APS_NEXT_SYMED_VALUE           118
 #endif

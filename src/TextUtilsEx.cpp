@@ -1136,13 +1136,16 @@ int TextUtilsEx::showCodePageTable(CString &path)
 	CFileException ExError;
 	if (!fp.Open(fullPath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
+		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = 0;
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, fullPath, ExError, lastErr, h); 
+#else
 		wchar_t szCause[2048];
 		ExError.GetErrorMessage(szCause, 2048);
-#if 0
-		CString txt = L"Could not create \"" + fullPath;
-		txt += L"\" file.\n";
-		txt += szCause;
-#endif
+
 		CString txt;
 		CString fmt = L"Could not create \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -1150,6 +1153,7 @@ int TextUtilsEx::showCodePageTable(CString &path)
 
 		HWND h = NULL; // we don't have any window yet ??
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 

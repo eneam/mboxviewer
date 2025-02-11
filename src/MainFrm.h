@@ -455,6 +455,7 @@ public:
 	afx_msg void OnLanguagetoolsSplittranslationfile();
 	afx_msg void OnLanguageSelectlanguange();
 	afx_msg void OnLanguageHelp();
+	afx_msg void OnTestCfileopenfailure();
 };
 
 /////////////////////////////////////////////////////////////////////////////

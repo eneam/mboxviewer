@@ -1762,37 +1762,6 @@ BOOL CmboxviewApp::InitInstance()
 int deb = 1;
 	}
 
-#if 0
-
-	{
-		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";
-		HWND hw = 0;
-		//hw = GetSafeHwnd();
-
-		CString badFilePath = L"C:\\Users\\UserA";
-		//badFilePath = filePath + L".txt";;
-
-		CStdioFile file;
-		CFileException exList;
-		UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareExclusive;
-		if (!file.Open(badFilePath, nOpenFlags, &exList))
-		{
-			DWORD lastErr = ::GetLastError();
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
-			int answer = FileUtils::CheckIfFileLocked(filePath, lastErr, hw);
-
-			CString errorStr = FileUtils::GetErrorAsString(exList, lastErr);
-			int deb = 1;
-		}
-		else
-			file.Close();
-
-		int deb = 1;
-	}
-
-	int deb = 1;
-#endif
-
 	CString dataFolder;
 	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", dataFolder);
 	if ((ret == FALSE) || dataFolder.IsEmpty())

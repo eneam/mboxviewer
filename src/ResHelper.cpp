@@ -202,6 +202,8 @@ CString ResHelper::GetLanguageCode(CString& languageName)
 		return L"pl";
 	else if (languageName.CompareNoCase(L"german") == 0)
 		return L"de";
+	else if (languageName.CompareNoCase(L"romanian") == 0)
+		return L"ro";
 	else
 		return langaugeCode;
 }

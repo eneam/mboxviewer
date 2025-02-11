@@ -124,6 +124,7 @@ public:
 
 	static void GetProcessListLockingFile(CString& filePath, CString &infoText);
 	static int CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h);
+	static CString ProcessCFileFailure(CString &fmt, CString &filePath, CFileException &exError, DWORD lastErr, HWND h);
 
 	void UnitTest();
 };

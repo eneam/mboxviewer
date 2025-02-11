@@ -2933,7 +2933,11 @@ void NTreeView::SaveData(HTREEITEM hItem)
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + viewFile;
@@ -2941,6 +2945,7 @@ void NTreeView::SaveData(HTREEITEM hItem)
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 	}
 #ifdef _DEBUG
 	// Test
@@ -6793,7 +6798,11 @@ BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 	if (!fp.Open(rootFolderFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, rootFolderFile, ExError, lastErr, h); 
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + rootFolderFile;
@@ -6801,6 +6810,7 @@ BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 		MboxMail::assert_unexpected();
 		return FALSE;
 	}
@@ -9258,7 +9268,11 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	if (!m_rootMboxCfile.Open(m_rootMboxFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, m_rootMboxFilePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
@@ -9273,6 +9287,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 
 		return -1;
 	}
@@ -9364,7 +9379,12 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	if (!m_rootMboxCfile.Open(filePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &exMergeTo))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s"; // old format
+		errorText = FileUtils::ProcessCFileFailure(fmt, filePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s";
@@ -9379,6 +9399,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 
 		return -1;
 	}

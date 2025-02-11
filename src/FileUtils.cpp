@@ -1112,12 +1112,13 @@ CString FileUtils::GetLastErrorAsString(DWORD errorCode)
 		return emptyMsg; //No error message has been recorded
 
 	LPWSTR messageBuffer = nullptr;
+	DWORD languageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
 	DWORD size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
+		NULL, errorMessageID, languageId, (LPWSTR)&messageBuffer, 0, NULL);
 
-	CStringW message(messageBuffer, size);
+	CString message(messageBuffer, size);
 
-	CStringW errorMessage;
+	CString errorMessage;
 	message.TrimRight(L" \t\r\n");
 	errorMessage.Format(L"Error Code %u \"%s\"\n", errorMessageID, message);
 
@@ -1455,7 +1456,7 @@ void FileUtils::GetProcessListLockingFile(CString& filePath, CString &infoText)
 	}
 	TRACE(L"RmGetList returned %d infos (%d needed)\n", nProcInfo, nProcInfoNeeded);
 
-	CString fmt = L"File\n\n%s\n\n is locked by the following processes:\n\n";
+	CString fmt = L"File\n\n\"%s\"\n\n is locked by the following processes:\n\n";
 	ResHelper::TranslateString(fmt);
 	CString appFriendlyName = L"Application Friendly Name";
 	ResHelper::TranslateString(appFriendlyName);
@@ -1499,8 +1500,8 @@ void FileUtils::GetProcessListLockingFile(CString& filePath, CString &infoText)
 			CloseHandle(hProcess);
 		}
 
-		fmt.Append(L"%s: % s\n"
-			L"%s: % s\n"
+		fmt.Append(L"%s: \"%s\"\n"
+			L"%s: \"%s\"\n"
 			L"%s: %s\n\n"
 		);
 		infoText.Format(fmt, filePath, appFriendlyName, procInfo.strAppName, appPath, processPath, appProcessId, processId);
@@ -1521,6 +1522,23 @@ int FileUtils::CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h)
 			answer = AfxMessageBox(infoText, MB_APPLMODAL | MB_ICONERROR | MB_OK);
 	}
 	return answer;
+}
+
+CString FileUtils::ProcessCFileFailure(CString& fmt, CString& filePath, CFileException& exError, DWORD lastErr, HWND h)
+{
+	CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exError, lastErr);
+
+	ResHelper::TranslateString(fmt);
+	CString txt;
+	txt.Format(fmt, filePath, exErrorStr);
+
+	TRACE(L"%s\n", txt);
+
+	int answer1 = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+	int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
+
+	int deb = 1;
+	return txt;
 }
 
 // TODO: update test to test chnages to RemoveDirA, new CopyDirectory and MoveDirectory

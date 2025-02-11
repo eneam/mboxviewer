@@ -1113,7 +1113,6 @@ int ConfigTree::LoadConfigFromFile(CString& configFileNamePath)
 
 void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 {
-
 	CString controlName;
 	CString strLine;
 	CString str;
@@ -1144,8 +1143,13 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 	if (!file.Open(configFileNamePath, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		//CString fmt = L"Could not open list file \"%s\" file.\n%s";
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, configFileNamePath, exList, lastErr, h);
+#else
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList, lastErr);
 
 		CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		ResHelper::TranslateString(fmt);
@@ -1162,8 +1166,8 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-
 		int answer2 = FileUtils::CheckIfFileLocked(configFileNamePath, lastErr, h);
+#endif
 
 		return;
 	}

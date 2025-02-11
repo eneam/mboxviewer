@@ -95,6 +95,10 @@ BEGIN
                 MENUITEM "Split Translation File",      ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE
             END
             MENUITEM "Select Language",             ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE
+            POPUP "Test"
+            BEGIN
+                MENUITEM "CFile Open Failure",          ID_TEST_CFILEOPENFAILURE
+            END
         END
         MENUITEM SEPARATOR
         MENUITEM "most recent folders",         ID_FILE_MRU_FILE1
@@ -857,15 +861,15 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,42,271,10
 END
 
-IDD_LANG_LIST_DLG DIALOGEX 0, 0, 201, 120
+IDD_LANG_LIST_DLG DIALOGEX 0, 0, 201, 170
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Language List"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,84,99,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,138,99,50,14
-    LISTBOX         IDC_LIST_SELECT_LANG,16,22,173,67,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Select Language",IDC_STATIC_SELECT_LANG_1,7,9,187,86
+    DEFPUSHBUTTON   "OK",IDOK,84,149,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,138,149,50,14
+    LISTBOX         IDC_LIST_SELECT_LANG,16,22,173,117,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Select Language",IDC_STATIC_SELECT_LANG_1,7,9,187,135
 END
 
 IDD_MyCDialogBar DIALOG 0, 0, 320, 200
@@ -884,7 +888,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,47
+ FILEVERSION 1,0,3,48
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -901,7 +905,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.47"
+            VALUE "FileVersion", "1.0.3.48"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -1150,7 +1154,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 194
         TOPMARGIN, 2
-        BOTTOMMARGIN, 113
+        BOTTOMMARGIN, 163
     END
 
     IDD_MyCDialogBar, DIALOG

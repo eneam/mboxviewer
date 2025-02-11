@@ -160,6 +160,23 @@ MailEncodingStats MboxMail::m_textEncodingStats;
 UINT getCodePageFromHtmlBody(SimpleString *buffer, std::string &charset);
 
 
+BOOL MailBodyContent::AttachmentName2WChar(CString& attachmentName)
+{
+	attachmentName.Empty();
+	UINT nameCharsetId = m_attachmentNamePageCode;
+	if (m_attachmentNamePageCode == 0)
+		nameCharsetId = CP_UTF8;
+
+	DWORD dwFlags = 0;
+	DWORD error = 0;
+	if (TextUtilsEx::Str2WStr(m_attachmentName, nameCharsetId, attachmentName, error, dwFlags))
+	{
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
 #if 0
 bool MailBodyContent::IsAttachment()
 {
@@ -4301,6 +4318,11 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);
+#else
 
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -4318,6 +4340,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 			return -1;
 		}
 
@@ -6682,7 +6705,11 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt;
@@ -6699,6 +6726,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 			return -1;
 		}
 
@@ -6867,6 +6895,11 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -6879,7 +6912,9 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 		CFileStatus rStatus;
 		BOOL ret = fp.GetStatus(rStatus);
 
+
 		errorText = txt;
+#endif
 		return -1;
 	}
 
@@ -7023,7 +7058,11 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	if (!fp.Open(csvFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + csvFile;
@@ -7036,6 +7075,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		BOOL ret = fp.GetStatus(rStatus);
 
 		errorText = txt;
+#endif
 		return -1;
 	}
 
@@ -7909,7 +7949,13 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		else
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			CString attachmentName;
+			body->AttachmentName2WChar(attachmentName);
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, attachmentName, ExError, lastErr, h);
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not create \"" + body->m_attachmentName;
@@ -7917,6 +7963,7 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 			txt += exErrorStr;
 
 			TRACE(L"%s\n", txt);
+#endif
 		}
 	}
 
@@ -8875,7 +8922,11 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	if (!fp.Open(statsFile, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, statsFile, ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt;
@@ -8884,6 +8935,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -10435,7 +10487,11 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	//if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + textFile;
@@ -10443,6 +10499,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 		txt += exErrorStr;
 
 		errorText = txt;
+#endif
 		// TODO:
 		//return -1;
 	}
@@ -10529,7 +10586,11 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create file \"" + textFile;
@@ -10539,6 +10600,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 		return -1;
 	}
 
@@ -10698,7 +10760,11 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	if (!fp.Open(textFile, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + textFile;
@@ -10706,6 +10772,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 		txt += exErrorStr;
 
 		errorText = txt;
+#endif
 		return -1;
 	}
 
