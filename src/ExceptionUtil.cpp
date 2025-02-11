@@ -289,7 +289,11 @@ BOOL DumpMailData(wchar_t *fileName, const CHAR *seText, UINT seNumb, int mailPo
 	if (!fp.Open(filePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = 0;
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, filePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not create \"" + filePath;
@@ -297,6 +301,7 @@ BOOL DumpMailData(wchar_t *fileName, const CHAR *seText, UINT seNumb, int mailPo
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 		ret = FALSE;
 	}
 	else

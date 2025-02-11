@@ -1689,7 +1689,12 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h); 
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -1698,7 +1703,7 @@ int NMsgView::ShowMailHtmlBlockAsText(int mailPosition)
 
 		TRACE(L"%s\n", txt);
 		//errorText = txt;
-
+#endif
 		ret = FALSE;
 
 		return 0;
@@ -1834,7 +1839,12 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 	if (fp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError) == FALSE)
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -1843,7 +1853,7 @@ int NMsgView::ShowMailTextBlock(int mailPosition, int textType)
 
 		TRACE(L"%s\n", txt);
 		//errorText = txt;
-
+#endif
 		ret = FALSE;
 		return 0;
 	}

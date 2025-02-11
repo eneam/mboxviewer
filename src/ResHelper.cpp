@@ -1639,6 +1639,12 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 	if (!file.Open(resFile, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, resFile, exList, lastErr, h);  
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -1654,6 +1660,7 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return;
 	}
 
@@ -1793,7 +1800,12 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, languageFile, exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -1809,6 +1821,7 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return;
 	}
 
@@ -1982,7 +1995,12 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, languageFile, exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -1998,6 +2016,7 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -2220,7 +2239,12 @@ int ResHelper::SplitTranslationFile(CString& languageTranslationFilePath)
 	if (!file.Open(languageFile, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, languageFile, exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -2236,6 +2260,7 @@ int ResHelper::SplitTranslationFile(CString& languageTranslationFilePath)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -2661,7 +2686,12 @@ int ResHelper::GetCodePageFromFile(LPCWSTR filePath)
 	if (!file.Open(filePath, nOpenFlags, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, CString(filePath), exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -2677,6 +2707,7 @@ int ResHelper::GetCodePageFromFile(LPCWSTR filePath)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return FALSE;
 	}
 
@@ -2878,7 +2909,12 @@ int ResHelper::IsFileUTF8(LPCWSTR filePath)
 	if (!file.Open(filePath, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary, &exList))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, CString(filePath), exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -2897,6 +2933,7 @@ int ResHelper::IsFileUTF8(LPCWSTR filePath)
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return FALSE;
 	}
 	const int bufflen = 100000 - 1;

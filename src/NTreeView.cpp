@@ -377,8 +377,14 @@ int NTreeView::ImboxviewFile(CString& fName)
 	if (!fp.Open(fileName, CFile::modeRead, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		//HWND h = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, CString(fileName), ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
+#endif
 		return 0;
 	}
 
@@ -1600,7 +1606,12 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + viewFile;
@@ -1608,6 +1619,7 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 
 		// TODO: verify implications
 		fileSizes.RemoveAll();
@@ -2936,7 +2948,7 @@ void NTreeView::SaveData(HTREEITEM hItem)
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h); 
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 

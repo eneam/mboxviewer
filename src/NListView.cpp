@@ -4400,7 +4400,11 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt;
@@ -4413,6 +4417,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		//fp.Close();
 		return -1;
 	}
@@ -7112,9 +7117,15 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					else
 					{
 						DWORD lastErr = ::GetLastError();
-
+#if 1
+						HWND hw = GetSafeHwnd();
+						HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+						CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+						CString errorText = FileUtils::ProcessCFileFailure(fmt, textFileName, ExError, lastErr, h);
+#else
 						// MessageBox ??
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  //TODO
+#endif
 						int deb = 1;
 					}
 				}
@@ -9357,11 +9368,14 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		// Create empty MergePDFsError.log file for appending. Close after creation.
 		CFileException ExMergeError;
 		CString mergeErrorFilePath = targetPrintFolderPath + L"\\MergePDFsError.log";
-		if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-			&ExMergeError))
+		if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExMergeError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = GetSafeHwnd();
+			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+			errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
 
 			errorText = L"Could not create \"" + mergeErrorFilePath;
@@ -9369,6 +9383,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 			errorText += exErrorStr;
 
 			TRACE(L"%s\n", errorText);
+#endif
 			return -1;
 		}
 		fpMergeError.Close();  // Write Append in 
@@ -9553,8 +9568,7 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		CString selectedMailsList = targetPrintFolderPath + L"\\SelectedMailsList.txt";
 		BOOL selectedMailsListFileOpen = FALSE;
 		CFileException ExError;
-		if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone,
-			&ExError))
+		if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
@@ -9738,8 +9752,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	CFile fpMergeError;
 	CFileException ExMergeError;
 	CString mergeErrorFilePath = targetPrintFolderPath + L"\\MergePDFsError.log";
-	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate | CFile::shareDenyNone,
-		&ExMergeError))
+	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate | CFile::shareDenyNone, &ExMergeError))
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
@@ -12292,7 +12305,11 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -12303,6 +12320,7 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 
 		return FALSE;
 	}
@@ -12552,7 +12570,11 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -12563,6 +12585,7 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 		return FALSE;
 	}
 
@@ -12832,7 +12855,11 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -12843,6 +12870,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 		return FALSE;
 	}
 
@@ -13335,7 +13363,11 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -13344,6 +13376,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 			txt += exErrorStr;
 
 			TRACE(L"%s\n", txt);
+#endif
 
 			return FALSE;
 		}
@@ -13485,7 +13518,11 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -13494,6 +13531,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 			txt += exErrorStr;
 
 			TRACE(L"%s\n", txt);
+#endif
 			return FALSE;
 		}
 		fpm = &mboxFp;
@@ -13606,7 +13644,11 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -13616,6 +13658,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 			TRACE(L"%s\n", txt);
 
 			errorText = txt;
+#endif
 			return -1;
 		}
 		fpm = &mboxFp;
@@ -14253,7 +14296,11 @@ int NListView::ScanAllMailsInMbox_NewParser()
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail archive file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt;
@@ -14265,6 +14312,7 @@ int NListView::ScanAllMailsInMbox_NewParser()
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -16604,7 +16652,11 @@ int NListView::ForwardSingleMail(int iItem, BOOL progressBar, CString &progressT
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -16614,6 +16666,7 @@ int NListView::ForwardSingleMail(int iItem, BOOL progressBar, CString &progressT
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 		return -1;
 	}
 
@@ -18902,7 +18955,11 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 		if (!fpmbox.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -18912,7 +18969,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 			TRACE(L"%s\n", txt);
 
 			//errorText = txt;
-
+#endif
 			return -1;
 		}
 		fpm = &fpmbox;
@@ -19290,8 +19347,13 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 						if (!fp.Open(imageFilePath, CFile::modeWrite | CFile::modeCreate, &ExError))
 						{
 							DWORD lastErr = ::GetLastError();
-
+#if 1
+							HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+							CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+							CString errText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+#else
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
+#endif
 
 							CString errorText;
 							CString imageCachePath;
@@ -19449,7 +19511,11 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -19458,7 +19524,7 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 			txt += exErrorStr;
 
 			TRACE(L"%s\n", txt);
-
+#endif
 			return FALSE;
 		}
 		fpm = &mboxFp;

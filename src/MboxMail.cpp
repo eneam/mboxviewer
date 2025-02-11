@@ -744,9 +744,13 @@ BOOL MboxMail::GetBody(CStringA &res)
 	}
 	else
 	{
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
 		DWORD lastErr = ::GetLastError();
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h); 
+#else
+		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
 		txt += L"\" mail file.\n";
@@ -754,6 +758,7 @@ BOOL MboxMail::GetBody(CStringA &res)
 
 		TRACE(L"%s\n", txt);
 		//errorText = txt;
+#endif
 
 		ret = FALSE;
 	}
@@ -841,7 +846,11 @@ BOOL MboxMail::GetBodySS(SimpleString *res, int maxLength)
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -850,6 +859,7 @@ BOOL MboxMail::GetBodySS(SimpleString *res, int maxLength)
 
 		TRACE(L"%s\n", txt);
 		//errorText = txt;
+#endif
 
 		ret = FALSE;
 	}
@@ -4351,7 +4361,11 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 			{
 				DWORD lastErr = ::GetLastError();
-
+#if 1
+				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+				CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 				CString txt;
@@ -4364,6 +4378,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 				HWND h = NULL; // we don't have any window yet
 				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 
 				fp.Close();
 				return -1;
@@ -5055,7 +5070,11 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 		if (!mboxFp.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -5065,6 +5084,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 
 			TRACE(L"%s\n", txt);
 			//errorText = txt;
+#endif
 
 			return FALSE;
 		}
@@ -6735,7 +6755,11 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 			CString txt;
@@ -6748,6 +6772,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 			fp.Close();
 			return -1;
 		}
@@ -6923,7 +6948,11 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -6931,8 +6960,8 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
-
 		errorText = txt;
+#endif
 		fp.Close();
 		return -1;
 	}
@@ -7087,7 +7116,11 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -7097,6 +7130,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 			TRACE(L"%s\n", txt);
 
 			errorText = txt;
+#endif
 			fp.Close();
 			return -1;
 		}
@@ -8944,7 +8978,11 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h); 
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -8952,6 +8990,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 
 		return -1;
 	}
@@ -10509,7 +10548,11 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10519,6 +10562,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 
 		fp.Close();
 		return -1;
@@ -10609,7 +10653,11 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10619,6 +10667,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 		fp.Close();
 		return -1;
 	}
@@ -10781,7 +10830,11 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	if (!fpm.Open(s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
 
 		CString txt = L"Could not open \"" + MboxMail::s_path;
@@ -10791,6 +10844,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 		TRACE(L"%s\n", txt);
 
 		errorText = txt;
+#endif
 
 		fp.Close();
 		return -1;
@@ -11658,12 +11712,17 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 		DWORD lastErr = ::GetLastError();
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
+#if 1
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
+#else
 		CString txt = L"Could not open \"" + MboxMail::s_path;
 		txt += L"\" mail file.\n";
 		txt += exErrorStr;
 
 		TRACE(L"%s\n", txt);
+#endif
 		return;
 	}
 

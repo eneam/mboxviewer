@@ -2771,6 +2771,14 @@ restart:
 					if (!fp_input.Open(strFilePath, CFile::modeRead, &ExError))
 					{
 						DWORD lastErr = ::GetLastError();
+#if 1
+						fp.Close();
+						MboxMail::m_outbuf->Clear();
+
+						HWND h = GetSafeHwnd();
+						CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+						CString errorText = FileUtils::ProcessCFileFailure(fmt, strFilePath, ExError, lastErr, h); 
+#else
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError, lastErr);  // TODO
 
 						fp.Close();
@@ -2787,6 +2795,7 @@ restart:
 						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						HWND h = GetSafeHwnd();
 						int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
+#endif
 
 						return -1;
 					}
@@ -2995,7 +3004,11 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 	if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::shareDenyNone, &exList))
 	{
 		DWORD lastErr =:: GetLastError();
-
+#if 1
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxListFilePath, exList, lastErr, h);
+#else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 		CString txt;
@@ -3011,6 +3024,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 		return -1;
 	}
 
@@ -3033,7 +3047,12 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		if (!fpList.Open(mboxListFilePath, CFile::modeRead | CFile::typeUnicode | CFile::shareDenyNone, &exList))
 		{
 			DWORD lastErr = ::GetLastError();
-
+#if 1
+			HWND hw = GetSafeHwnd();
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxListFilePath, exList, lastErr, h); 
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exList);
 
 			CString txt;
@@ -3049,6 +3068,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 			return -1;
 		}
 		UINT retlen = fpList.Read(BOM, 2);
@@ -3248,7 +3268,11 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		if (!fp_input.Open(mboxFilePath, CFile::modeRead, &ExError))
 		{
 			DWORD lastErr =::GetLastError();
-
+#if 1
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, ExError, lastErr, h); 
+#else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
 			CString txt;
@@ -3261,6 +3285,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 
 			HWND h = NULL; // we don't have any window yet
 			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 			return -1;
 		}
 
@@ -5961,7 +5986,12 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	if (!fpr.Open(lastMailFilePath, CFile::modeRead | CFile::shareDenyWrite, &rExError))
 	{
 		DWORD lastErr = ::GetLastError();
-
+#if 1
+		HWND hw = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail archive file:\n\n\"%s\"\n\n%s";  // new format
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, lastMailFilePath, rExError, lastErr, h); 
+#else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(rExError);
 
@@ -5975,6 +6005,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+#endif
 
 		return;
 	}
@@ -6557,7 +6588,7 @@ void CMainFrame::OnTestCfileopenfailure()
 	{
 		DWORD lastErr = ::GetLastError();
 		HWND h = GetSafeHwnd();
-		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, noShareFilePath, exList2, lastErr, h);
 
 		file1.Close();
