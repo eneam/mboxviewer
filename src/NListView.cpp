@@ -10384,6 +10384,9 @@ BOOL  NListView::CanGoAheadWithExport()
 						ResHelper::TranslateString(fmt);
 						txt1.Format(fmt, exportCachePath, errorText);
 
+						CString errText;
+						CString filePath = FileUtils::FindProblemFile(exportCachePath, recursive, errText);
+
 						CString txt2 = L"\n\nFolder or subfolders or files in the folder are likely used by other programs.\n\n"
 							L"\nNOTE: This issue will happen if the folder or folder's items are open in Command Prompt.\n\n"
 							L"\nNOTE: This issue will NOT happen if the folder or folder's items are open in File Explorer or Windows Terminal or Windows PowerShell.\n\n"
@@ -10391,8 +10394,12 @@ BOOL  NListView::CanGoAheadWithExport()
 							L"Handle.exe and Process Explorer.exe programs are part of Microsoft Sysinternal package. They can also be downloaded as individual programs\n\n"
 							;
 						ResHelper::TranslateString(txt2);
-						CString txt = txt1 + txt2;
 
+						CString txt = txt1;
+						if (!errText.IsEmpty())
+							txt += errText;
+						else
+							txt += txt2;
 
 						HWND h = GetSafeHwnd();
 						int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);

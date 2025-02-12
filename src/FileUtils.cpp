@@ -221,11 +221,11 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	BOOL	bFinished = FALSE;
 
 	// Start searching for all files in the current directory.
-	CStringW dir = directory;
+	CString dir = directory;
 	dir.TrimRight(L"\\");
 	dir.Append(L"\\");
 
-	CStringW searchPath = dir + L"*.*";
+	CString searchPath = dir + L"*.*";
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
 		TRACE(L"RemoveDir: No files found in \"%s\".\n", dir);
@@ -235,7 +235,7 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	{
 		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0)) 
 		{
-			CStringW	fileFound = dir + CStringW(FileData.cFileName);
+			CString	fileFound = dir + CString(FileData.cFileName);
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 				FileUtils::DelFile(fileFound, TRUE);
 			else if (recursive)
@@ -262,6 +262,74 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	}
 	return TRUE;
 }
+
+
+CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &errorText)
+{
+	CString errText;
+	CString filePath;
+
+	if (!FileUtils::VerifyName(directory))
+	{
+		TRACE(L"RemoveDir: Failed to delete, VerifyName failed \"%s\"\n", directory);
+		_ASSERTE(FALSE);
+		return filePath;
+	}
+
+	WIN32_FIND_DATAW FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+
+	// Start searching for all files in the current directory.
+	CString dir = directory;
+	dir.TrimRight(L"\\");
+	dir.Append(L"\\");
+
+	CString searchPath = dir + L"*.*";
+	hSearch = FindFirstFileW(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE) {
+		TRACE(L"RemoveDir: No files found in \"%s\".\n", dir);
+		return filePath;
+	}
+	while (!bFinished)
+	{
+		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
+		{
+			CString	fileFound = dir + CString(FileData.cFileName);
+			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+			{
+				//FileUtils::DelFile(fileFound, TRUE);
+				//CString infoText;
+				FileUtils::GetProcessListLockingFile(fileFound, errText);
+				if (!errText.IsEmpty())
+				{
+					errorText = errText;
+					return fileFound;
+				}
+			}
+			else if (recursive)
+			{
+				CString eText;
+				FileUtils::FindProblemFile(fileFound, recursive, eText);
+				if (!eText.IsEmpty())
+					int deb = 1;
+			}
+		}
+		if (!FindNextFileW(hSearch, &FileData))
+			bFinished = TRUE;
+	}
+	FindClose(hSearch);
+
+	FileUtils::GetProcessListLockingFile(directory, errText);
+	if (!errText.IsEmpty())
+	{
+		errorText = errText;
+		return directory;
+	}
+
+	return filePath;
+}
+
 
 CString FileUtils::CreateTempFileName(const wchar_t *folderName, CString ext)
 {
