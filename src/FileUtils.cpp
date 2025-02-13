@@ -264,17 +264,19 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 }
 
 
-CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &errorText)
+CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &errorText, int& totalFolderCnt, int& totalFileCnt)
 {
 	CString errText;
 	CString filePath;
-
+#if 0
 	if (!FileUtils::VerifyName(directory))
 	{
 		TRACE(L"RemoveDir: Failed to delete, VerifyName failed \"%s\"\n", directory);
 		_ASSERTE(FALSE);
+		totalFileCnt++;
 		return filePath;
 	}
+#endif
 
 	WIN32_FIND_DATAW FileData;
 	HANDLE hSearch;
@@ -289,6 +291,7 @@ CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &
 	hSearch = FindFirstFileW(searchPath, &FileData);
 	if (hSearch == INVALID_HANDLE_VALUE) {
 		TRACE(L"RemoveDir: No files found in \"%s\".\n", dir);
+		totalFileCnt++;
 		return filePath;
 	}
 	while (!bFinished)
@@ -306,11 +309,12 @@ CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &
 					errorText = errText;
 					return fileFound;
 				}
+				totalFileCnt++;
 			}
 			else if (recursive)
 			{
 				CString eText;
-				FileUtils::FindProblemFile(fileFound, recursive, eText);
+				FileUtils::FindProblemFile(fileFound, recursive, eText, totalFolderCnt, totalFileCnt);
 				if (!eText.IsEmpty())
 					int deb = 1;
 			}
@@ -320,6 +324,7 @@ CString FileUtils::FindProblemFile(CString& directory, bool recursive, CString &
 	}
 	FindClose(hSearch);
 
+	totalFolderCnt++;
 	FileUtils::GetProcessListLockingFile(directory, errText);
 	if (!errText.IsEmpty())
 	{

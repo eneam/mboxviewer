@@ -1640,6 +1640,25 @@ BOOL CmboxviewApp::InitInstance()
 
 	ResHelper::MyTrace(L"CmboxviewApp::InitInstance\n");
 
+	CCmdLine vcmdInfo;
+	CString cmdLineStr(CWinApp::m_lpCmdLine);
+	//CMainFrame::m_commandLineParms.m_allCommanLineOptions = CWinApp::m_lpCmdLine;
+	ParseCommandLine(vcmdInfo);
+	if (vcmdInfo.m_bError)
+	{
+		MboxMail::ReleaseResources();
+		return FALSE;
+	}
+	else if (!CMainFrame::m_commandLineParms.m_hasOptions && !cmdLineStr.IsEmpty())
+	//else if (!CMainFrame::m_commandLineParms.m_hasOptions && !CMainFrame::m_commandLineParms.m_allCommanLineOptions.IsEmpty())
+	{
+		//CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
+		CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L"\"");
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight(L"\\");
+	}
+
 	BOOL retcheck = CProfile::DetermineConfigurationType(errorText);
 	if (retcheck == FALSE)
 	{

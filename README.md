@@ -1,13 +1,14 @@
 Simple mbox viewer
 =======
 
-A simple viewer to view mbox files such as Thunderbird Archives, Google mail archives or simple Eml files.
+A simple but powerfull viewer to view mbox files such as Thunderbird Archives, Google mail archives or simple Eml files.
 [![Download Windows MBox Viewer](https://img.shields.io/sourceforge/dm/mbox-viewer.svg)](https://sourceforge.net/projects/mbox-viewer/files/latest/download)
 
 Supported OS
 ------------
 
-MBox Viewer is supported on Windows XP platform or later.
+MBox Viewer is built on Windows WIN7 platform.
+Version 1.0.3.47 is the last release built on Windows XP platform.
 
 Features
 --------
@@ -106,7 +107,7 @@ Multiple Languages
 
 MBox Viewer supports the multiple languages:
 
-English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil and Polish
+English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian and Polish
 
 GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
 Free Google Translations are not domain specific and most likely they will need to be updated by humans.

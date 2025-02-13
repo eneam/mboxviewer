@@ -10341,7 +10341,7 @@ BOOL  NListView::CanGoAheadWithExport()
 		if (retval == FALSE) {
 			HWND h = NULL; // we don't have any window yet  
 			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-			return -1;
+			return FALSE;
 		}
 
 		BOOL firstTry = TRUE;
@@ -10385,7 +10385,13 @@ BOOL  NListView::CanGoAheadWithExport()
 						txt1.Format(fmt, exportCachePath, errorText);
 
 						CString errText;
-						CString filePath = FileUtils::FindProblemFile(exportCachePath, recursive, errText);
+						int totalFolderCnt = 0;
+						int totalFileCnt = 0;
+						CString filePath = FileUtils::FindProblemFile(exportCachePath, recursive, errText, totalFolderCnt, totalFileCnt);
+						if (errText.IsEmpty())
+						{
+							_ASSERTE(totalFileCnt == 0);  // was not able to delete main directory and or subdirectory
+						}
 
 						CString txt2 = L"\n\nFolder or subfolders or files in the folder are likely used by other programs.\n\n"
 							L"\nNOTE: This issue will happen if the folder or folder's items are open in Command Prompt.\n\n"
@@ -10401,8 +10407,17 @@ BOOL  NListView::CanGoAheadWithExport()
 						else
 							txt += txt2;
 
-						HWND h = GetSafeHwnd();
-						int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						if (errText.IsEmpty() && (totalFileCnt == 0))
+						{
+							// directory and possibly subdirectories were not removed but all files were removed
+							// assume it is acceptable. txt2 is likely to confuse majority of users
+							return TRUE;
+						}
+						else
+						{
+							HWND h = GetSafeHwnd();
+							int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						}
 						int deb = 1;
 					}
 					int deb = 1;

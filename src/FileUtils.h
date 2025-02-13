@@ -54,7 +54,7 @@ public:
 	//
 	static BOOL OSRemoveDirectory(CString &dir, CString &errorText);
 	static BOOL RemoveDir(CString & dir, bool recursive = false, bool removeFolders = false, CString *errorText = 0);
-	static CString FindProblemFile(CString& directory, bool recursive, CString& errorText);
+	static CString FindProblemFile(CString& directory, bool recursive, CString& errorText, int& totalFolderCnt, int &totalFileCnt);
 	//
 	static CString CreateTempFileName(const wchar_t *folderName, CString ext = L"htm");
 	//
