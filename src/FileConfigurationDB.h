@@ -162,6 +162,8 @@ public:
 
 	int LoadConfigFromUMBoxViewerRegistry();
 
+	static BOOL CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& errorText);
+
 	static BOOL Hex2Binary(CString& hex, BYTE* lpData, DWORD& cbData);
 	static BOOL Binary2Hex(BYTE* lpData, DWORD& cbData, CString& hex);
 	static int HexChar2Int(wchar_t c);

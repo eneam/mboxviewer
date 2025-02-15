@@ -56,6 +56,7 @@ void ConfigNode::SetDflt()
 
 ConfigNode::~ConfigNode()
 {
+	int deb = 1;
 }
 
 ConfigTree::ConfigTree()
@@ -72,6 +73,7 @@ ConfigTree::ConfigTree(CString& name)
 
 ConfigTree::~ConfigTree()
 {
+	int deb = 1;
 }
 
 void ConfigTree::DumpTree(CString &title)
@@ -839,6 +841,64 @@ int  ConfigTree::Dump2File()
 	return ret;
 }
 
+BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& errorText)
+{
+	int retval;
+
+	h = FileUtils::FileOpen(filepath, errorText, TRUE);
+	if (h == INVALID_HANDLE_VALUE)
+	{
+		return FALSE;
+	}
+
+	BYTE BOMF16LE[2] = { 0xFF, 0xFE };
+
+	DWORD nNumberOfBytesToWrite = 2;
+	DWORD nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(h, BOMF16LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	CString out;
+	out.Preallocate(1000);
+
+	out = LR"(
+#
+# MBox Viewer supports Windows Registry based configuration and the file based configuration
+# when runing MBox Viewer in the default mode.
+#
+# The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
+# MBox Viewer will run in the preview mode when it is started with:
+# 1) the following comamnd line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
+# 2) when user double-click on a the mail file assuming the MBox Viewer is configured as the default application to 
+# open .mbox, .eml type files
+#
+# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in:
+#        C:\Users\UserName\AppData\Local\UMBoxViewer\MailPreview
+#
+# If the file doesn't exists, MBox Viewer will create one.
+# Note that C:\Users\UserName\AppData\Local folder is the standard per user folder created by Windows system
+#
+# The config file format is similar to the format of ".reg" registry file
+# [UMBoxViewer\LastSelection]
+# "parameter"="value"
+#
+# White spaces are not allowed in the front of each line and around the "=" character.
+# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
+#
+# MBoxViewer.config file must be encoded as UTF16LE BOM file
+#
+#
+
+)";
+
+	nNumberOfBytesToWrite = out.GetLength() * 2;
+	nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(h, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	FileUtils::FileClose(h);
+
+	return TRUE;
+}
+
 int  ConfigTree::Dump2File(CString& filepath)
 {
 	int retval;
@@ -887,12 +947,9 @@ int  ConfigTree::Dump2File(CString& filepath)
 
 )";
 
-
-
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(hConfigFile, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
-
 
 	out.Empty();
 	DumpNode(&m_rootNode, out);
@@ -1144,6 +1201,7 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		//CString fmt = L"Could not open list file \"%s\" file.\n%s";
 		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";

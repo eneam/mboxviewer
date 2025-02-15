@@ -746,6 +746,7 @@ BOOL MboxMail::GetBody(CStringA &res)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h); 
@@ -847,6 +848,7 @@ BOOL MboxMail::GetBodySS(SimpleString *res, int maxLength)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
@@ -4329,6 +4331,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);
@@ -4362,6 +4365,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			{
 				DWORD lastErr = ::GetLastError();
 #if 1
+				//HWND h = GetSafeHwnd();
 				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 				CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
@@ -5071,6 +5075,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
@@ -6726,6 +6731,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);
@@ -6756,6 +6762,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
@@ -6921,6 +6928,7 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -6949,6 +6957,7 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
@@ -7088,6 +7097,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -7117,6 +7127,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
@@ -7984,6 +7995,7 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString attachmentName;
@@ -8957,6 +8969,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, statsFile, ExError, lastErr, h);
@@ -8979,6 +8992,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h); 
@@ -10527,6 +10541,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -10549,6 +10564,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
@@ -10631,6 +10647,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -10654,6 +10671,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
@@ -10810,6 +10828,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -10831,6 +10850,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
@@ -11713,6 +11733,7 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);

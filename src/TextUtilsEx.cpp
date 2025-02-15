@@ -1139,6 +1139,7 @@ int TextUtilsEx::showCodePageTable(CString &path)
 		DWORD lastErr = ::GetLastError();
 #if 1
 		HWND h = 0;
+		//HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, fullPath, ExError, lastErr, h); 
@@ -1912,3 +1913,134 @@ void TextUtilsEx::Int2WstrWithCommas(INT64 numb, CString& cstr)
 	WStr2WstrWithCommas((LPCWSTR)str, str.GetLength(), cstr);
 	const int deb = 1;
 }
+
+// codeprojects
+// Author:  Hans Dietrich
+//          hdietrich@gmail.com
+// Fixed handling of ".." by MBox Viewer team
+
+int TextUtilsEx::XTokenString(LPCTSTR lpszString,
+	LPCTSTR lpszDelimiters,
+	CStringArray& saTokens,
+	int nMaxTokens /*= 0*/,
+	BOOL bTrimToken /*= FALSE*/,
+	BOOL bEnableEscapedChars /*= FALSE*/,
+	BOOL bEnableDoubleQuote /*= FALSE*/,
+	BOOL bReturnEmptyToken /*= FALSE*/)
+{
+	// Note:  normally tokens will be allowed to accumulate;
+	//        If you do not want to accumulate, uncomment
+	//        the following line
+
+	//saTokens.RemoveAll();
+
+	ASSERT(lpszString && (lpszString[0] != _T('\0')));
+	if ((lpszString == NULL) || (lpszString[0] == _T('\0')))
+		return 0;
+
+	ASSERT(lpszDelimiters && (lpszDelimiters[0] != _T('\0')));
+	if ((lpszDelimiters == NULL) || (lpszDelimiters[0] == _T('\0')))
+		return 0;
+
+	BOOL bEndedWithDelim = FALSE;
+	const TCHAR* cp = lpszString;
+
+	if (!bReturnEmptyToken)
+		cp += _tcsspn(cp, lpszDelimiters);			// skip leading delimiters
+
+	// loop to find all tokens
+
+	while (*cp)
+	{
+		const TCHAR* pos = NULL;
+		CString strToken = _T("");
+
+		// skip leading whitespace;  normally this will not cause a problem,
+		// since it is unlikely that you would want to return empty tokens
+		// when whitespace is the delimiter
+		while ((*cp == _T(' ')) || (*cp == _T('\t')))
+			strToken += *cp++;
+
+		BOOL bInQuote = FALSE;
+
+		if (bEnableDoubleQuote && (*cp == _T('"')))
+		{
+			bInQuote = TRUE;
+			++cp;							// skip " char
+		}
+
+		// loop to accumulate token
+		for (pos = cp; *pos; pos++)
+		{
+			// check for end of token - either a quote or a delimiter
+			if (bInQuote)
+			{
+				if (*pos == _T('"'))
+					break;
+			}
+			else
+			{
+				if (_tcsspn(pos, lpszDelimiters) != 0)
+					break;
+			}
+
+			if (bEnableEscapedChars && (*pos == _T('\\')))
+			{
+				pos++;						// skip '\'
+				if (*pos == _T('\0'))
+					break;
+			}
+			if (bEnableDoubleQuote && (*pos == _T('"')))
+			{
+				bInQuote = TRUE;
+				++pos;							// skip " char
+			}
+			strToken += *pos;
+		}
+		cp = pos;
+
+		// check if string ended with delimiter
+		if (_tcsspn(cp, lpszDelimiters))
+			bEndedWithDelim = TRUE;
+		else
+			bEndedWithDelim = FALSE;
+
+		// skip ending delimiter/quote
+		if (*cp)
+			cp++;
+
+		if (bInQuote)
+		{
+			// if quote ended with delimiter, skip it
+			if (_tcsspn(cp, lpszDelimiters))
+				cp++;
+		}
+
+		if (bTrimToken)
+		{
+			strToken.TrimLeft();
+			strToken.TrimRight();
+		}
+
+		if ((!strToken.IsEmpty()) || bReturnEmptyToken)
+		{
+			// either token is not empty OR caller wants empty tokens
+
+			if ((nMaxTokens > 0) && (saTokens.GetSize() >= nMaxTokens))
+			{
+				TRACE(_T("XTokenString:  ERROR - too many tokens (max is %d)\n"), nMaxTokens);
+				break;
+			}
+
+			TRACE(_T("XTokenString:  adding <%s>\n"), strToken);
+			saTokens.Add(strToken);
+		}
+	}
+
+	// add empty token if caller wants it
+	if (bReturnEmptyToken && bEndedWithDelim)
+		saTokens.Add(_T(""));
+
+	return (int)saTokens.GetSize();
+}
+

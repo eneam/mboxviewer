@@ -1490,19 +1490,15 @@ CString FileUtils::SizeToString(_int64 size)
 	return txt;
 }
 
-//#include <windows.h>
 #include <RestartManager.h>
-#include <stdio.h>
 #include <psapi.h>
-
-// CString filePath = L"F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt"
 
 void FileUtils::GetProcessListLockingFile(CString& filePath, CString &infoText)
 {
 	DWORD dwSession;
 	WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
 	infoText.Empty();
-
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
 	DWORD dwError = RmStartSession(&dwSession, 0, szSessionKey);
 
 	TRACE(L"RmStartSession returned %d\n", dwError);
@@ -1587,6 +1583,7 @@ void FileUtils::GetProcessListLockingFile(CString& filePath, CString &infoText)
 		infoText.Format(fmt, filePath, appFriendlyName, procInfo.strAppName, appPath, processPath, appProcessId, processId);
 	}
 	RmEndSession(dwSession);
+#endif
 }
 
 int FileUtils::CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h)

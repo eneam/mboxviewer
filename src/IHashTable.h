@@ -91,7 +91,11 @@ public:
 	};
 
 	~IHashMap() {
+		if (m_ar)
+			clear();
 		delete[] m_ar;
+		m_ar = 0;
+		m_hashMapSize = 0;  // hack to protect from  multiple clear(); investigate release order
 	};
 
 protected:
@@ -211,6 +215,8 @@ public:
 
 	inline void clear()
 	{
+		if (m_count == 0)
+			return;
 		int count = 0;
 		dllist<T, NODE> *list;
 		int index;

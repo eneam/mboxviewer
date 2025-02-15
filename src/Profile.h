@@ -145,6 +145,7 @@ public:
 	static BOOL IsRegistryConfig(LPCWSTR registrySection, CString& fileSection);
 	static BOOL IsRegistryConfig();
 	static BOOL DetermineConfigurationType(CString& errorText);
+	static BOOL SetupPreviewConfigurationFile(CString& errorText);
 	static CString &GetConfigFilePath();
 
 private:

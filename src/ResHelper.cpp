@@ -2571,7 +2571,7 @@ int ResHelper::ReleaseResInfoMap(ResInfoMapType& resInfoMap, BOOL deleteItems)
 	{
 		resInfoMap.clear();
 	}
-	else
+	else if (resInfoMap.count())
 	{
 		ResInfoMapType::IHashMapIter iter = resInfoMap.first();
 		for (; !resInfoMap.last(iter); )
@@ -2610,14 +2610,15 @@ void ResHelper::ReleaseResInfoArray(ResInfoArrayType &resInfoArray, BOOL deleteI
 
 void ResHelper::ReleaseResources()
 {
-	ReleaseResInfoArray(g_resInfoArray, TRUE);
-	ReleaseResInfoArray(resArray1, TRUE);
-	ReleaseResInfoArray(resArray2, TRUE);
-	ReleaseResInfoArray(g_mergedResInfoArray, TRUE);
 
 	ReleaseResInfoMap(g_resInfoMap, FALSE);
 	ReleaseResInfoMap(g_mergedResInfoMap, FALSE);
 	ReleaseResInfoMap(g_LanguageMap, TRUE);
+
+	ReleaseResInfoArray(g_resInfoArray, TRUE);
+	ReleaseResInfoArray(resArray1, TRUE);
+	ReleaseResInfoArray(resArray2, TRUE);
+	ReleaseResInfoArray(g_mergedResInfoArray, TRUE);
 }
 
 ResHelper::TextEncoding ResHelper::GetFileBOM(LPCWSTR lpszFileName)

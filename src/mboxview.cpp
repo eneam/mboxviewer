@@ -562,7 +562,7 @@ CmboxviewApp::~CmboxviewApp()
 {
 	if (!CProfile::IsRegistryConfig())
 	{
-		ConfigTree* confTree = CProfile::GetConfigTree();
+		ConfigTree* confTree = m_configTree;
 		_ASSERTE(confTree);
 		if (confTree)
 		{
@@ -574,6 +574,7 @@ CmboxviewApp::~CmboxviewApp()
 			confTree->DeleteAllNodes();
 
 			delete confTree;
+			m_configTree = 0;
 		}
 	}
 
@@ -1336,6 +1337,10 @@ BOOL CmboxviewApp::GetFileVersionInfo(HMODULE hModule, DWORD& ms, DWORD& ls)
 
 int CmboxviewApp::ExitInstance()
 {
+
+	MboxMail::ReleaseResources();
+	ResHelper::ReleaseResources();
+
 	return CWinApp::ExitInstance();
 }
 
@@ -1429,15 +1434,59 @@ BOOL CAboutDlg::OnInitDialog()
 class CCmdLine : public CCommandLineInfo
 {
 public:
+	CString m_commandLineOptions;
+	BOOL m_hasOptions;
+	BOOL m_bOnlyVerifyHasOptions;
 	BOOL m_bError;
 	BOOL m_bLastPathSet;
-	CCmdLine::CCmdLine() {
-		m_bError = FALSE; m_bLastPathSet = FALSE;
+	CString m_lastParam;
+
+	CCmdLine::CCmdLine(BOOL bOnlyVerifyHasOptions = FALSE) {
+		m_bError = FALSE; m_bLastPathSet = FALSE; m_hasOptions = FALSE;
+		m_bOnlyVerifyHasOptions = bOnlyVerifyHasOptions;
+	}
+	CCmdLine::CCmdLine(CString & commandLineOptions, BOOL bOnlyVerifyHasOptions = FALSE)
+	{
+		m_commandLineOptions = commandLineOptions;
+		m_bError = FALSE; m_bLastPathSet = FALSE; m_hasOptions = FALSE;
+		m_bOnlyVerifyHasOptions = bOnlyVerifyHasOptions;
 	}
 	void ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast);
+	void ParseCommandLine();
 };
 
-void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
+void CCmdLine::ParseCommandLine()
+{
+	CStringArray ar;
+	CString delims = L" \t";
+	//TextUtilsEx::SplitStringW(m_commandLineOptions, delims, ar);
+
+	//extUtilsEx::TokenizeW(m_commandLineOptions, ar, L' ');
+
+	int nMaxTokens = 100;
+	BOOL bTrimToken = TRUE;
+	BOOL bEnableEscapedChars = FALSE;
+	BOOL bEnableDoubleQuote = TRUE;
+	BOOL bReturnEmptyToken = FALSE;
+	int cnt = TextUtilsEx::XTokenString(m_commandLineOptions, delims, ar, nMaxTokens, bTrimToken, bEnableEscapedChars, bEnableDoubleQuote, bReturnEmptyToken);
+
+	int argc = (int)ar.GetCount();
+	for (int i = 0; i < argc; i++)
+	{
+		LPCTSTR pszParam = ar[i];
+		BOOL bFlag = FALSE;
+		BOOL bLast = ((i + 1) == argc);
+		if (pszParam[0] == '-' || pszParam[0] == '/')
+		{
+			// remove flag specifier
+			bFlag = TRUE;
+			++pszParam;
+		}
+		this->ParseParam(pszParam, bFlag, bLast);
+	}
+};
+
+void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 {
 	HWND h = NULL; // we don't have any window yet  
 	//CString ptxt = CString(L"ParseParam() must delete this line:  ") + lpszParam;
@@ -1450,7 +1499,19 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL) // bLast )
 		return;
 	if (bFlag)
 	{
+		m_hasOptions = TRUE;
 		CMainFrame::m_commandLineParms.m_hasOptions = TRUE;
+	}
+	if (m_bOnlyVerifyHasOptions)
+		return;
+
+	if (bLast)
+	{
+		m_lastParam = lpszParam;
+	}
+	else if (bFlag)
+	{
+		CMainFrame::m_commandLineParms.m_hasOptions = TRUE;  // avoid this; redo
 		if (_tcsncmp(lpszParam, L"FOLDER=", 7) == 0)
 		{
 			CString openFolder = lpszParam + 7;
@@ -1640,34 +1701,39 @@ BOOL CmboxviewApp::InitInstance()
 
 	ResHelper::MyTrace(L"CmboxviewApp::InitInstance\n");
 
-	CCmdLine vcmdInfo;
-	CString cmdLineStr(CWinApp::m_lpCmdLine);
-	//CMainFrame::m_commandLineParms.m_allCommanLineOptions = CWinApp::m_lpCmdLine;
+
+	CString allCommanLineOptions(CWinApp::m_lpCmdLine);
+	BOOL bOnlyVerifyHasOptions = TRUE;
+	CCmdLine vcmdInfo(bOnlyVerifyHasOptions);
+
 	ParseCommandLine(vcmdInfo);
 	if (vcmdInfo.m_bError)
 	{
 		MboxMail::ReleaseResources();
 		return FALSE;
 	}
-	else if (!CMainFrame::m_commandLineParms.m_hasOptions && !cmdLineStr.IsEmpty())
-	//else if (!CMainFrame::m_commandLineParms.m_hasOptions && !CMainFrame::m_commandLineParms.m_allCommanLineOptions.IsEmpty())
+	else if (!vcmdInfo.m_hasOptions && !allCommanLineOptions.IsEmpty())
 	{
-		//CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
-		CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
-		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
-		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L"\"");
-		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight(L"\\");
+		BOOL retSetup = CProfile::SetupPreviewConfigurationFile(errorText);
+		if (retSetup == FALSE)
+		{
+			MboxMail::ReleaseResources();
+			return FALSE;
+		}
 	}
-
-	BOOL retcheck = CProfile::DetermineConfigurationType(errorText);
-	if (retcheck == FALSE)
+	else
 	{
-		HWND h = NULL; // we don't have any window yet 
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
-		// To stop memory leaks reports by debugger
-		MboxMail::ReleaseResources(FALSE);
-		return FALSE;
+		BOOL retcheck = CProfile::DetermineConfigurationType(errorText);
+		if (retcheck == FALSE)
+		{
+			HWND h = NULL; // we don't have any window yet 
+			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+			// To stop memory leaks reports by debugger
+			MboxMail::ReleaseResources(FALSE);
+			return FALSE;
+		}
 	}
 
 
@@ -1682,14 +1748,9 @@ BOOL CmboxviewApp::InitInstance()
 
 		if (attr & FILE_ATTRIBUTE_READONLY)
 		{
-			HWND h = NULL; // we don't have any window yet 
-#if 0
-			CString txt = L"Could not write to MBox Viewer configuration file:\n\n"
-				+ CmboxviewApp::m_configFilePath +
-				L"\n\nlikely  due to lack of permission to write.\n"
-				"Please resolve the issue and run the MBox Viewer again\n\n"
-				L"Or configure MBox Viewer to use Windows Registry.\n";
-#endif
+			//HWND h = NULL; // we don't have any window yet 
+			//HWND h = GetSafeHwnd();
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString txt;
 			CString fmt = L"Could not write to MBox Viewer configuration file:\n\n%s"
 				L"\n\nlikely  due to lack of permission to write.\n"
@@ -1827,11 +1888,12 @@ int deb = 1;
 	//AfxEnableMemoryTracking(TRUE);
 	//afxMemDF = allocMemDF | delayFreeMemDF | checkAlwaysMemDF;
 
-	CCmdLine cmdInfo;
+
 	CString mailFile;
 	CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"mailFile", mailFile);
 
-	CMainFrame::m_commandLineParms.m_allCommanLineOptions = CWinApp::m_lpCmdLine;
+	CCmdLine cmdInfo(allCommanLineOptions);
+	CMainFrame::m_commandLineParms.m_allCommanLineOptions = allCommanLineOptions;
 	ParseCommandLine(cmdInfo);
 	if (cmdInfo.m_bError)
 	{
@@ -1840,11 +1902,14 @@ int deb = 1;
 	}
 	else if (!CMainFrame::m_commandLineParms.m_hasOptions && !CMainFrame::m_commandLineParms.m_allCommanLineOptions.IsEmpty())
 	{
-		//CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
-		CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
+		CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;  // m_bDirectFileOpenMode handling is now the same as m_bEmlPreviewMode
+		//CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L"\"");
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight(L"\\");
+
+		CString mailFile = CMainFrame::m_commandLineParms.m_mboxFileNameOrPath;
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"mailFile", mailFile);
 	}
 	else
 	{

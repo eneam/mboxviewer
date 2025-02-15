@@ -366,12 +366,29 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_pListView = 0;
 	m_pTreeView = 0;
 	m_pMsgView = 0;
+
+#if 0
+	SimpleString* pStaticSS = 0;;
+	pStaticSS = MboxMail::m_outbuf;
+	pStaticSS = MboxMail::m_inbuf;
+	pStaticSS = MboxMail::m_outdata;
+	pStaticSS = MboxMail::m_indata;
+	pStaticSS = MboxMail::m_workbuf;
+	pStaticSS = MboxMail::m_tmpbuf;
+	pStaticSS = MboxMail::m_largebuf; // = new SimpleString(1 * 1024 * 1024);
+	//
+	pStaticSS = MboxMail::m_largelocal1;
+	pStaticSS = MboxMail::m_largelocal2;
+	pStaticSS = MboxMail::m_largelocal3; // = new SimpleString(10 * 1024 * 1024);
+	pStaticSS = MboxMail::m_smalllocal1; // = new SimpleString(1 * 1024 * 1024);
+	pStaticSS = MboxMail::m_smalllocal2; // = new SimpleString(1 * 1024 * 1024);
+#endif
 }
 
 CMainFrame::~CMainFrame()
 {
 	// To stop memory leaks reports by debugger
-	MboxMail::ReleaseResources();
+	//MboxMail::ReleaseResources();
 	if (m_colorStyleDlg)
 		delete m_colorStyleDlg;
 	int deb = 1;
@@ -3048,8 +3065,8 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
-			HWND hw = GetSafeHwnd();
-			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			HWND h = GetSafeHwnd();
+			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxListFilePath, exList, lastErr, h); 
 #else
@@ -3269,6 +3286,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 		{
 			DWORD lastErr =::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, ExError, lastErr, h); 
@@ -4309,9 +4327,8 @@ void CMainFrame::OnClose()
 #endif
 	}
 
-	MboxMail::ReleaseResources();
-
-	ResHelper::ReleaseResources();
+	//MboxMail::ReleaseResources();
+	//ResHelper::ReleaseResources();
 
 	CFrameWnd::OnClose();
 }
@@ -5987,8 +6004,8 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
-		HWND hw = GetSafeHwnd();
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail archive file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, lastMailFilePath, rExError, lastErr, h); 
 #else

@@ -126,6 +126,65 @@ BOOL CProfile::DetermineConfigurationType(CString &errorText)
 	}
 }
 
+BOOL CProfile::SetupPreviewConfigurationFile(CString& errorText)
+{
+	//CString configFilePath;
+
+	CString configFileName = L"MBoxViewer.config";
+
+	CString configFolderPath = FileUtils::GetMboxviewLocalAppDataPath(L"UMBoxViewer", L"MailPreview");
+	if (!FileUtils::PathDirExists(configFolderPath))
+	{
+		int deb = 1;
+	}
+
+	CString configFilePath = configFolderPath + configFileName;
+
+	if (!FileUtils::PathDirExists(configFilePath))
+	{
+		HANDLE hFile = INVALID_HANDLE_VALUE;
+		BOOL retCreate = ConfigTree::CreateEmptyConfigFile(configFilePath, hFile, errorText);
+		if (retCreate == FALSE)
+		{
+			_ASSERTE(hFile == INVALID_HANDLE_VALUE);
+			return FALSE;
+		}
+	}
+
+	if (configFilePath.IsEmpty())
+	{
+		CmboxviewApp::m_registry = TRUE;
+		CmboxviewApp::m_configFilePath.Empty();
+		return FALSE;
+	}
+	else
+	{
+		ResHelper::TextEncoding bom = ResHelper::TextEncoding::NONE;
+		if (bom == ResHelper::TextEncoding::NONE)
+			bom = ResHelper::GetFileBOM(configFilePath);
+		if (bom == ResHelper::TextEncoding::NONE)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF8)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF16LE)
+			int deb = 1;
+		else if (bom == ResHelper::TextEncoding::UTF16BE)
+			int deb = 1;
+		else
+			_ASSERTE(bom >= 0 && bom <= ResHelper::TextEncoding::UTF16BE);
+
+		if (bom != ResHelper::TextEncoding::UTF16LE)
+		{
+			errorText.Format(L"Configuration File\n\"%s\"\nis not encoded as UTF16BE BOM file\nBOM marker is missing\n", configFilePath);
+			return FALSE;
+		}
+
+		CmboxviewApp::m_registry = FALSE;
+		CmboxviewApp::m_configFilePath = configFilePath;
+		return TRUE;
+	}
+}
+
 ConfigTree* CProfile::GetConfigTree()
 {
 	if (CmboxviewApp::m_registry)

@@ -173,6 +173,15 @@ public:
 	static void SplitStringW(const CString& strIn, const CString& delim, CStringArray& a);
 	static int TokenizeW(CString &str, CStringArray& a, wchar_t del);
 	static void TraceStringArrayW(CStringArray& a);
+
+	static int XTokenString(LPCTSTR lpszString,
+		LPCTSTR lpszDelimiters,
+		CStringArray& saTokens,
+		int nMaxTokens = 0,
+		BOOL bTrimToken = FALSE,
+		BOOL bEnableEscapedChars = FALSE,
+		BOOL bEnableDoubleQuote = FALSE,
+		BOOL bReturnEmptyToken = FALSE);
 };
 
 

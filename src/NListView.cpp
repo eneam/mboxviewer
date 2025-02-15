@@ -4901,7 +4901,8 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, m_curFile, ExError, lastErr, h); 
 #else
@@ -6103,7 +6104,8 @@ void NListView::OnEditVieweml()
 			{
 				DWORD lastErr = ::GetLastError();
 #if 1
-				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				HWND h = GetSafeHwnd();
+				//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 				CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 #else
@@ -7118,8 +7120,8 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 					{
 						DWORD lastErr = ::GetLastError();
 #if 1
-						HWND hw = GetSafeHwnd();
-						HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+						HWND h = GetSafeHwnd();
+						//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 						CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
 						CString errorText = FileUtils::ProcessCFileFailure(fmt, textFileName, ExError, lastErr, h);
 #else
@@ -9399,7 +9401,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
-			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			HWND h = GetSafeHwnd();
+			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
 			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -9425,7 +9428,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
-			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			HWND h = GetSafeHwnd();
+			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
 			errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -9572,7 +9576,8 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
-			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			HWND h = GetSafeHwnd();
+			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
 			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -9756,7 +9761,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 #else
@@ -9780,7 +9786,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 #else
@@ -9852,7 +9859,8 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 			{
 				DWORD lastErr = ::GetLastError();
 #if 1
-				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				HWND h = GetSafeHwnd();
+				//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 #else
@@ -12328,6 +12336,7 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -12878,6 +12887,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -13386,6 +13396,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -13541,6 +13552,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -13593,6 +13605,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create eml file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -13667,6 +13680,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -13707,6 +13721,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
+		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -14319,7 +14334,8 @@ int NListView::ScanAllMailsInMbox_NewParser()
 	{
 		DWORD lastErr = ::GetLastError();
 #if 1
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail archive file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  
 #else
@@ -18978,6 +18994,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 		{
 			DWORD lastErr = ::GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
@@ -19370,6 +19387,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 						{
 							DWORD lastErr = ::GetLastError();
 #if 1
+							//HWND h = GetSafeHwnd();
 							HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 							CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 							CString errText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
@@ -19403,6 +19421,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 						{
 							DWORD lastErr = ::GetLastError();
 #if 1
+							//HWND h = GetSafeHwnd();
 							HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 							CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 							CString errorText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h); 
@@ -19534,6 +19553,7 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 		{
 			DWORD lastErr = GetLastError();
 #if 1
+			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);
