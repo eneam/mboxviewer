@@ -10620,7 +10620,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 	return 1;
 }
 
-int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString errorText)
+int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString& errorText)
 {
 	BOOL progressBar = TRUE;
 	CFile fp;
@@ -10792,7 +10792,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 	return 1;
 }
 
-int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailsIndexList, int textType, CString errorText)
+int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailsIndexList, int textType, CString &errorText, CString& targetPrintSubFolder)
 {
 	BOOL progressBar = TRUE;
 	CFile fp;
@@ -10800,7 +10800,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 	bool fileExists = false;
 	int ret = 1;
 
-	CString targetPrintSubFolder;
+	//CString targetPrintSubFolder;
 
 	if (selectedMailsIndexList->GetCount() <= 0)
 		return 1;
@@ -10919,12 +10919,12 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 
 		if (textType == 0)
 		{
-			printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
+			MboxMail::printSingleMailToTextFile(fp, i, fpm, textConfig, singleMail, addPageBreak);
 		}
 		else 
 		{
 			BOOL fullImgFilePath = FALSE;
-			int pos = printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak, fullImgFilePath);
+			int pos = MboxMail::printSingleMailToHtmlFile(fp, i, fpm, textConfig, singleMail, addPageBreak, fullImgFilePath);
 			if (pos < 0)
 				continue;
 		}

@@ -723,9 +723,9 @@ public:
 	static int printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFile, int firstMail, int lastMail, MailIndexList *selectedMailIndexList, BOOL progressBar, CString &errorText);
 	//
 	static int PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &targetPrintSubFolderName, CString &errorText);
-	static int PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString errorText);
+	static int PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, int firstMail, int lastMail, int textType, CString &errorText);
 	//
-	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textConfig, CString &textFileName, MailIndexList *selectedMailIndexList, int textType, CString errorText);
+	static int PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG& textConfig, CString& textFileName, MailIndexList* selectedMailIndexList, int textType, CString &errorText, CString& targetPrintSubFolder);
 	//
 	// textMinorType = 0 if text/plain, 1 if text/html;  plainTextMode = 0 for old mode no image info, 1 for plain text, 2 for html text
 	static int GetMailBody_mboxview(CFile &fpm, int mailPosition, SimpleString *outbuf, UINT &pageCode, int textMinorType, int plainTextMode);  

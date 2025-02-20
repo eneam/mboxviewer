@@ -525,10 +525,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	PostMessage(WM_CMD_PARAM_LOAD_FOLDERS_MESSAGE, 0, 0);
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	WINDOWPLACEMENT wpr;
 	DWORD cb = sizeof(wpr);
@@ -1829,7 +1831,7 @@ int  CMainFrame::PrintSingleMailtoPDF(int iItem, CString& targetPrintSubFolderNa
 	// CString progressText;  // FIXME
 	TRACE(L"Printing %s to PDF\n", htmFileName);
 
-	const int timeout = 700; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
+	const int timeout = 1200; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
 	// I am aware of cases it takes 10 or minutes to finish 
 	// or print will never finish sometimes. Had to pick something
 	const int headlessTimout = -1;  // Don't configure --timeout >= 0 option to Edge/Chrome, doesn't work as documented
@@ -2507,10 +2509,12 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
 
 		CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 		else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", m_newMsgViewPosition);
 		return;
@@ -2533,10 +2537,12 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
 
 		CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 		else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 			section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", m_newMsgViewPosition);
 	}
@@ -3580,13 +3586,17 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L"--headless=new --disable-gpu";
+			args = L"--headless=new --disable-gpu"
+				L" --user-agent=\"chrome/132.0.0.0\""
+				;
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
+			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer"
+				L" --user-agent=\"chrome/132.0.0.0\""
+				;
 		}
 #if 0
 		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
@@ -3618,13 +3628,17 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L" --headless=new --disable-gpu";  // header & footer is printer by default
+			args = L" --headless=new --disable-gpu"  // header & footer is printer by default
+				L" --user-agent=\"chrome/132.0.0.0\""
+				;
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer"; //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
+			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer"
+				L" --user-agent=\"chrome/132.0.0.0\""
+				;
 		}
 
 #if 0
@@ -4211,10 +4225,12 @@ void CMainFrame::OnClose()
 	}
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	WINDOWPLACEMENT wp;
 	GetWindowPlacement(&wp);

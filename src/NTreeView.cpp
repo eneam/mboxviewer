@@ -83,10 +83,12 @@ NTreeView::NTreeView() :
 	m_frameCy = 200;
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameWidth", m_frameCx);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"TreeFrameHeight", m_frameCy);
@@ -1262,8 +1264,8 @@ BOOL NTreeView::ImportLegacyUMBoxViewerRegistryData()
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PrintConfig");
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\PrintConfig\\HeaderFields");
 	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacement");
-	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementDirect");
-	ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementPreview");
+	//ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementDirect");
+	//ret = CopyKeyAndSubkey(sz_Software_mboxview_Legacy, L"\\WindowPlacementPreview");
 
 	ConfigTree* confTree = CProfile::GetConfigTree();
 	_ASSERTE(confTree);

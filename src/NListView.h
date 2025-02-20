@@ -538,10 +538,17 @@ public:
 	// Range to Single PDF
 	int PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CString &targetPrintSubFolderName);
 	//
+	//  Selected to Separate PDF and Merge
+	BOOL FindPDFBox(CString& pdfboxJarFileName, CString& errorText);
+	int PrintMailSelectedToSinglePDF_Merge_Thread(MailIndexList* selectedMailsIndexList);
+	int PrintMailSelectedToSinglePDF_Merge_WorkerThread(MailIndexList* selectedMailIndexList, CString& targetPrintSubFolderName, CString& targetPrintFolderPath, CString& errorText,
+		BOOL mergeFiles, CString& mergedFileName);
+	//
 	// Selected to Separate PDF
 	int PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs);
-	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText, 
-		BOOL mergeFiles, CString &mergedFileName);
+	int PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList* selectedMailIndexList, CString& targetPrintSubFolderName, CString& targetPrintFolderPath, CString& errorText);
+	int PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* selectedMailIndexList, CString& targetPrintSubFolderName, CString& targetPrintFolderPath, CString& errorText,
+		BOOL mergeFiles, CString& mergedFileName);
 	//
 	// Selected to Single PDF
 	int PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath);

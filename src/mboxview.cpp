@@ -1720,6 +1720,7 @@ BOOL CmboxviewApp::InitInstance()
 			MboxMail::ReleaseResources();
 			return FALSE;
 		}
+		CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
 	}
 	else
 	{
@@ -1846,7 +1847,8 @@ int deb = 1;
 	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", dataFolder);
 	if ((ret == FALSE) || dataFolder.IsEmpty())
 	{
-		NTreeView::ImportLegacyRegistryData();
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode == FALSE)
+			NTreeView::ImportLegacyRegistryData();
 		int deb = 1;
 	}
 
@@ -1993,10 +1995,12 @@ int deb = 1;
 	}
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"messageWindowPosition", msgViewPosition);
 	if (retval == TRUE) {

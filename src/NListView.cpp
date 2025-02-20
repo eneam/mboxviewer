@@ -214,14 +214,17 @@ bool ALongRightProcessProcPrintMailGroupToSeparatePDF(const CUPDUPDATA* pCUPDUPD
 	// FIXME Cosider converting Range type functions to Select type function to reduce source code and maintenace cost
 	// Select type expects array of mail indexes. Range type function could populate array from the range defined by indexes
 	// Array can be large but users can select all mails anyway and create large array for Select type function 
-	if (args->selectedMailIndexList)
+	_ASSERTE(args->selectedMailIndexList);
+	if (!args->mergePDFs)
 	{
-		args->ret = args->lview->PrintMailSelectedToSeparatePDF_WorkerThread(args->selectedMailIndexList, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText, 
-			args->mergePDFs, args->mergedPDFPath);
+		args->ret = args->lview->PrintMailSelectedToSeparatePDF_WorkerThread(args->selectedMailIndexList, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText);
+			//args->mergePDFs, args->mergedPDFPath);
 	}
 	else
 	{
-		_ASSERTE(FALSE);
+		args->ret = args->lview->PrintMailSelectedToSeparatePDF_Merge_WorkerThread(args->selectedMailIndexList, args->targetPrintSubFolderName, args->targetPrintFolderPath, args->errorText,
+			args->mergePDFs, args->mergedPDFPath);
+		//_ASSERTE(FALSE);
 	}
 
 	args->exitted = TRUE;
@@ -449,10 +452,12 @@ NListView::NListView() : m_list(this)
 	m_frameCy_TreeInHide = 200;
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenWidth", m_frameCx_TreeNotInHide);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"ListFrameTreeNotHiddenHeight", m_frameCy_TreeNotInHide);
@@ -1748,9 +1753,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 				NListView::m_appendAttachmentPictures = TRUE;
 		}
 
-		CString targetPrintSubFolderName = L"PDF_GROUP";
-		CString targetPrintFolderPath;
-		int ret = PrintMailSelectedToSeparatePDF_Thread(0, targetPrintSubFolderName, targetPrintFolderPath, TRUE);
+		int ret = PrintMailSelectedToSinglePDF_Merge_Thread(0);
 
 		NListView::m_appendAttachmentPictures = FALSE;
 	}
@@ -8923,6 +8926,76 @@ int NListView::PrintMailRangeToSinglePDF_Thread(int firstMail, int lastMail, CSt
 	return ret;
 }
 
+int NListView::PrintMailSelectedToSinglePDF_Merge_Thread(MailIndexList* selectedMailsIndexList)
+{
+	CString targetPrintSubFolderName = L"PDF_GROUP";
+	CString targetPrintFolderPath;
+
+	CString pdfboxJarFileName;
+	CString errorText;
+	BOOL retFind = NListView::FindPDFBox(pdfboxJarFileName, errorText);
+	if (retFind == FALSE)
+	{
+		MboxMail::assert_unexpected();
+		HWND h = GetSafeHwnd();
+
+		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		return -1;
+	}
+#if 0
+	if (selectedMailsIndexList == 0)
+	{
+		selectedMailsIndexList = PopulateSelectedMailsList();
+	}
+
+	if (selectedMailsIndexList->GetCount() <= 0)
+		return 1;
+
+
+	int cnt = (int)selectedMailsIndexList->GetCount();
+	MailIndexList subsetSelectedMailsIndexList;
+
+	int maxSizeOfList = 102;
+	subsetSelectedMailsIndexList.SetSize(maxSizeOfList);
+
+
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	for (i = 0; i < cnt; i++)
+	{
+		j = (*selectedMailsIndexList)[i];
+		subsetSelectedMailsIndexList.SetAt(k, j);
+		k++;
+		if (k >= maxSizeOfList)
+		{
+			int ret = PrintMailSelectedToSinglePDF_Thread(&subsetSelectedMailsIndexList, targetPrintSubFolderName, targetPrintFolderPath);
+			int count = (int)subsetSelectedMailsIndexList.GetCount();
+			//subsetSelectedMailsIndexList.RemoveAll();
+			//subsetSelectedMailsIndexList.SetSize(maxSizeOfList);
+			k = 0;
+		}
+	}
+	if (i >= cnt)
+	{
+		subsetSelectedMailsIndexList.SetSize(k);
+		int ret = PrintMailSelectedToSinglePDF_Thread(&subsetSelectedMailsIndexList, targetPrintSubFolderName, targetPrintFolderPath);
+		int count = (int)subsetSelectedMailsIndexList.GetCount();
+		int deb = 1;
+	}
+#else
+	int ret = PrintMailSelectedToSeparatePDF_Thread(0, targetPrintSubFolderName, targetPrintFolderPath, TRUE);
+#endif
+	return 1;
+}
+
+int NListView::PrintMailSelectedToSinglePDF_Merge_WorkerThread(MailIndexList* selectedMailIndexList, CString& targetPrintSubFolderName, CString& targetPrintFolderPath, CString& errorText,
+	BOOL mergeFiles, CString& mergedFileName)
+{
+	return 1;
+}
+
 int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMailsIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, BOOL mergePDFs)
 {
 	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS args;
@@ -9283,11 +9356,64 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 	return 1;
 }
 
+BOOL NListView::FindPDFBox(CString& pdfboxJarFileName, CString &errorText)
+{
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+
+	CString processFolderPath;
+	FileUtils::CPathGetPath(processExePath, processFolderPath);
+
+	// build a pdfbox-app tool wildcard string
+	CString strWildcard(processFolderPath);
+	strWildcard += L"\\pdfbox-app-*.jar";
+
+	CString appNamePrefix = L"pdfbox-app-";
+
+	CString fPath;
+	CString fName;
+
+	// Make sure pdfbox-app-*.jar file exists in MBox Viewer process directory
+	CFileFind finder;
+	BOOL bWorking = finder.FindFile(strWildcard);
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+		if (finder.IsDots())
+			continue;
+
+		CString fPath = finder.GetFilePath();
+		CString fName = finder.GetFileName();
+		CString pref = fName.Left(appNamePrefix.GetLength());
+		if (pref.CompareNoCase(appNamePrefix) == 0)
+		{
+			wchar_t v = fName.GetAt(appNamePrefix.GetLength());
+			if ((v == '4') || (v == '3'))
+			{
+				pdfboxJarFileName = fName;
+				break;
+			}
+		}
+	}
+
+	if (pdfboxJarFileName.IsEmpty())
+	{
+		CString fmt = L"Did not find  \"pdfbox-app-3.*.jar\" file in\n\n\"%s\"\n\ndirectory.";
+		fmt.Append(L"\n\nPlease review the help information by selecting \"Print to->PDF->Help\" option.");
+		ResHelper::TranslateString(fmt);
+		errorText.Format(fmt, processFolderPath);
+
+		TRACE(L"%s\n", errorText);
+		return FALSE;
+	}
+	return TRUE;
+}
+
 // Print selected set of emails to a seprate PDF files.
 // Optionally, merge created PDF files into a single PDF file. Merging is controlled by BOOL mergePDFs and  CString mergedFileName
 //
-int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText,
-	BOOL mergePDFs, CString &mergedFileName)
+int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *selectedMailIndexList, CString &targetPrintSubFolderName, CString &targetPrintFolderPath, CString &errorText)
 {
 	BOOL progressBar = TRUE;
 
@@ -9299,152 +9425,6 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 	// TODO: Just delete folder instead ?
 	int retdel = NListView::DeleteAllHtmAndPDFFiles(targetPrintFolderPath);
 
-	// delete files created during last merge
-	CString fpath = targetPrintFolderPath + L"\\MergePDFsError.log";
-	BOOL r = FileUtils::DelFile(fpath);
-	fpath = targetPrintFolderPath + L"\\MergePDFs.log";
-	r = FileUtils::DelFile(fpath);
-	fpath = targetPrintFolderPath + L"\\SelectedMailsList.txt";
-	r = FileUtils::DelFile(fpath);
-	// Delete cmd files MergePDFs.cmd and MergeAllPDFs.cmd ?   // FIXME
-
-	///////////////////////////////////////////////
-	CFile fp; CFile fpm; CFile fptxt; CFile fpMergeError;
-
-	CString pdfboxJarFileName;
-	CString mergeCmdFilePath;
-	CString mergeAllCmdFilePath;
-
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
-	if (mergePDFs)
-	{
-		CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
-
-		CString processFolderPath;
-		FileUtils::CPathGetPath(processExePath, processFolderPath);
-
-		// build a pdfbox-app tool wildcard string
-		CString strWildcard(processFolderPath);
-		strWildcard += L"\\pdfbox-app-*.jar";
-
-		CString appNamePrefix = L"pdfbox-app-";
-
-		CString fPath;
-		CString fName;
-
-		// Make sure pdfbox-app-*.jar file exists in MBox Viewer process directory
-		CFileFind finder;
-		BOOL bWorking = finder.FindFile(strWildcard);
-		while (bWorking)
-		{
-			bWorking = finder.FindNextFile();
-			if (finder.IsDots())
-				continue;
-
-			CString fPath = finder.GetFilePath();
-			CString fName = finder.GetFileName();
-			CString pref = fName.Left(appNamePrefix.GetAllocLength());
-			if (pref.CompareNoCase(appNamePrefix) == 0)
-			{
-				wchar_t v = fName.GetAt(appNamePrefix.GetAllocLength());
-				if ((v =='4') || (v == '3'))
-				{
-					pdfboxJarFileName = fName;
-					break;
-				}
-			}
-		}
-
-		if (pdfboxJarFileName.IsEmpty())
-		{
-			CString fmt = L"Did not find  \"pdfbox-app-3.*.jar\" file in\n\n\"%s\"\n\ndirectory.";
-			fmt.Append(L"\n\nPlease review the help information by selecting \"Print to->PDF->Help\" option.");
-			ResHelper::TranslateString(fmt);
-			errorText.Format(fmt, processFolderPath);
-
-			TRACE(L"%s\n", errorText);
-			return -1;
-		}
-
-		// Create empty MergePDFsError.log file for appending. Close after creation.
-		CFileException ExMergeError;
-		CString mergeErrorFilePath = targetPrintFolderPath + L"\\MergePDFsError.log";
-		if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExMergeError))
-		{
-			DWORD lastErr = ::GetLastError();
-#if 1
-			HWND h = GetSafeHwnd();
-			CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-			errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
-
-			errorText = L"Could not create \"" + mergeErrorFilePath;
-			errorText += L"\" file.\n";
-			errorText += exErrorStr;
-
-			TRACE(L"%s\n", errorText);
-#endif
-			return -1;
-		}
-		fpMergeError.Close();  // Write Append in 
-
-		// Make sure MergePDFs.cmd can be created and then close
-		CFileException ExError;
-		// We can't merge all PDF files in a single step due to limit on the max length of command line arguments
-		// MergePDFs.cmd file will merge subset of PDF files
-		// Merging will continue until there is no more files to merge, see NListView::MergePDfFileList
-		//
-		mergeCmdFilePath = targetPrintFolderPath + L"\\MergePDFs.cmd";
-		if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError)) 
-		{
-			DWORD lastErr = ::GetLastError();
-#if 1
-			HWND h = GetSafeHwnd();
-			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
-			errorText += L"\" file.\n";
-			errorText += exErrorStr;
-
-			TRACE(L"%s\n", errorText);
-#endif
-			return -1;
-		}
-		fp.Close();
-
-		// Make sure MergeAllPDFs.cmd can be created and keep open
-		// The MergeAllPDFs.cmd will contain all steps to create merged PDF file.
-		// The MergeAllPDFs.cmd is not excuted by MBox Viewer. User can execute manually if needed.
-		//
-		mergeAllCmdFilePath = targetPrintFolderPath + L"\\MergeAllPDFs.cmd";
-		if (!fpm.Open(mergeAllCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
-		{
-			DWORD lastErr = ::GetLastError();
-#if 1
-			HWND h = GetSafeHwnd();
-			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-			errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-			errorText = L"Merge PDF files failed. Could not create \"" + mergeAllCmdFilePath;
-			errorText += L"\" file.\n";
-			errorText += exErrorStr;
-
-			TRACE(L"%s\n", errorText);
-#endif
-			return -1;
-		}
-	}  // end of if (mergePDFs)
 
 	if (progressBar && MboxMail::pCUPDUPData)
 	{
@@ -9491,21 +9471,19 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 		if (pFrame)
 		{
 			pFrame->m_NamePatternParams.m_bConvert2Ansi = FALSE;
-			if (mergePDFs)
-				pFrame->m_NamePatternParams.m_bConvert2Ansi = TRUE;
 			// progressText mac length = 43 characters
 			int len = fileNum.GetLength();
 			int lenAvail = 43 - len;  // space available for seconds counter
 			CString progressText = fileNum + L"    ";
+			//######
 			pFrame->PrintSingleMailtoPDF(i, targetPrintSubFolderName, progress_Bar, progressText, errorText);
+
 			pFrame->m_NamePatternParams.m_bConvert2Ansi = FALSE;
 		}
 
 		if (progressBar && MboxMail::pCUPDUPData)
 		{
 			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
-				if (mergePDFs)
-					fpm.Close();
 				return -1;
 			}
 
@@ -9536,208 +9514,497 @@ int NListView::PrintMailSelectedToSeparatePDF_WorkerThread(MailIndexList *select
 
 	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
 
-	// Printing all mails to separate PDF file done.
-	if (mergePDFs)
+	int deb = 1;
+	return 1;
+}
+
+int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* selectedMailsIndexList, CString& targetPrintSubFolderName, CString& targetPrintFolderPath, CString& errorText,
+	BOOL mergePDFs, CString& mergedFileName)
+{
+	mergePDFs = TRUE;
+
+	BOOL progressBar = TRUE;
+
+	if (selectedMailsIndexList->GetCount() <= 0)
+		return 1;
+
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	// TODO: Just delete folder instead ? No, it would delete temporary scripts for testing
+	int retdel = NListView::DeleteAllHtmAndPDFFiles(targetPrintFolderPath);
+
+	// delete files created during last merge
+	CString fpath = targetPrintFolderPath + L"\\MergePDFsError.log";
+	BOOL r = FileUtils::DelFile(fpath);
+	fpath = targetPrintFolderPath + L"\\MergePDFs.log";
+	r = FileUtils::DelFile(fpath);
+	fpath = targetPrintFolderPath + L"\\SelectedMailsList.txt";
+	r = FileUtils::DelFile(fpath);
+	// Delete cmd files MergePDFs.cmd and MergeAllPDFs.cmd ?   // FIXME
+
+	///////////////////////////////////////////////
+	CFile fp; CFile fpm; CFile fptxt; CFile fpMergeError;
+
+	CString pdfboxJarFileName;
+	CString mergeCmdFilePath;
+	CString mergeAllCmdFilePath;
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	BOOL retFind = NListView::FindPDFBox(pdfboxJarFileName, errorText);
+	if (retFind == FALSE)
+		return -1;
+
+	// Create empty MergePDFsError.log file for appending. Close after creation.
+	CFileException ExMergeError;
+	CString mergeErrorFilePath = targetPrintFolderPath + L"\\MergePDFsError.log";
+	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExMergeError))
 	{
-		CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+		DWORD lastErr = ::GetLastError();
+		HWND h = GetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		return -1;
+	}
+	fpMergeError.Close();  // Write Append in 
 
-		CString processFolderPath;
-		FileUtils::CPathGetPath(processExePath, processFolderPath);
+	// Make sure MergePDFs.cmd can be created and then close
+	CFileException ExError;
+	// We can't merge all PDF files in a single step due to limit on the max length of command line arguments
+	// MergePDFs.cmd file will merge subset of PDF files
+	// Merging will continue until there is no more files to merge, see NListView::MergePDfFileList
+	//
+	mergeCmdFilePath = targetPrintFolderPath + L"\\MergePDFs.cmd";
+	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		DWORD lastErr = ::GetLastError();
 
-		CString pdfboxJarFilePath = processFolderPath + L"\\" + pdfboxJarFileName;
-		CString targetPdfboxJarFilePath = targetPrintFolderPath + L"\\" + pdfboxJarFileName;
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		return -1;
+	}
+	fp.Close();
 
-		BOOL bFailIfExists = TRUE;
-		if (!::CopyFileW(pdfboxJarFilePath, targetPdfboxJarFilePath, bFailIfExists))
+	// Make sure MergeAllPDFs.cmd can be created and keep open
+	// The MergeAllPDFs.cmd will contain all steps to create merged PDF file.
+	// The MergeAllPDFs.cmd is not excuted by MBox Viewer. User can execute manually if needed.
+	//
+	mergeAllCmdFilePath = targetPrintFolderPath + L"\\MergeAllPDFs.cmd";
+	if (!fpm.Open(mergeAllCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+	{
+		DWORD lastErr = ::GetLastError();
+
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		return -1;
+	}
+
+
+	if (progressBar && MboxMail::pCUPDUPData)
+	{
+		CString txt = L"Printing mails to PDF files ...";
+		ResHelper::TranslateString(txt);
+		MboxMail::pCUPDUPData->SetProgress(txt, 1);
+	}
+
+	UINT curstep = 1;
+	CString fileNum;
+	int nFileNum;
+
+	if (progressBar && MboxMail::pCUPDUPData)
+		MboxMail::pCUPDUPData->SetProgress((UINT_PTR)curstep);
+
+	int i;
+	int cnt = (int)selectedMailsIndexList->GetCount();
+
+	//CFile fp;
+	CString textFile;
+	bool fileExists = false;
+	int ret = 1;
+
+	int textType = 1;
+	//CString targetPrintSubFolder;
+	int firstMail = 0;
+	ret = MboxMail::MakeFileNameFromMailHeader(firstMail, textType, textFile, targetPrintSubFolderName, fileExists, errorText);
+	ret = MboxMail::MakeFileNameFromMailArchiveName(textType, textFile, targetPrintSubFolderName, fileExists, errorText);
+
+	if (ret < 0)
+		return -1;
+
+	CString textFileName = textFile;
+	// Useful durimg debug
+	int textFileLength = textFile.GetLength();
+	int maxPath = _MAX_PATH;
+
+
+	CFile fpMailFile;
+	CFileException ExError1;
+	if (!fpMailFile.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError1))
+	{
+		DWORD lastErr = ::GetLastError();
+
+		//HWND h = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError1, lastErr, h);
+
+		//fp.Close();
+		return -1;
+	}
+	int htmlMailCnt = 0;
+
+	CFileException ExError2;
+	CFile fpHtmlFile;
+	CString htmlFileName = L"m";
+	CString htmlFilePath;
+	htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlMailCnt);
+	if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError2))
+	{
+		DWORD lastErr = ::GetLastError();
+		//HWND h = GetSafeHwnd();
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+		errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError2, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+
+		fpMailFile.Close();
+		return -1;
+	}
+
+	TEXTFILE_CONFIG textConfig;
+	textConfig.m_dateFormat = m_format;
+	textConfig.m_bGMTTime = m_gmtTime;
+	textConfig.m_nCodePageId = CP_UTF8;
+
+	int cntAllMails = (int)selectedMailsIndexList->GetCount();
+
+	ULONGLONG workRangeFirstPos = 0;
+	ULONGLONG workRangeLastPos = cnt - 1;
+	ProgressTimer progressTimer(workRangeFirstPos, workRangeLastPos);
+
+	BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+	int maxMailsToMerge = 2;
+
+	int htmlCnt = 0;
+	CStringArray htmlFilesArr;
+	i = 0;
+	for (int j = 0; j < cntAllMails; j++)
+	{
+		if (htmlCnt >= maxMailsToMerge)
 		{
-			CString errText = FileUtils::GetLastErrorAsString();
-			TRACE(L"CopyFile: %s\n%s", pdfboxJarFilePath, errText);
-		}
-		//
-		CString pdfboxConfigFilePath = processFolderPath + L"\\scripts\\pdfbox-config.txt";
-		CString targetPdfboxConfigFilePath = targetPrintFolderPath + L"\\pdfbox-config.txt";
-
-		if (!::CopyFileW(pdfboxConfigFilePath, targetPdfboxConfigFilePath, bFailIfExists))
-		{
-			CString errText = FileUtils::GetLastErrorAsString();
-			TRACE(L"CopyFile: %s\n%s", pdfboxConfigFilePath, errText);
-		}
-		//
-		CString mergePDFsLogFilePath = targetPrintFolderPath + L"\\MergePDFs.log";
-		CString pdfboxLogFilePath = targetPrintFolderPath + L"\\pdfbox.log";
-
-		FileUtils::DelFile(mergePDFsLogFilePath);
-		FileUtils::DelFile(pdfboxLogFilePath);
-
-		CString selectedMailsList = targetPrintFolderPath + L"\\SelectedMailsList.txt";
-		BOOL selectedMailsListFileOpen = FALSE;
-		CFileException ExError;
-		if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
-		{
-			DWORD lastErr = ::GetLastError();
-#if 1
-			HWND h = GetSafeHwnd();
-			//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-			//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-			CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-			errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-			errorText = L"Merge PDF files failed. Could not create \"" + mergeCmdFilePath;
-			errorText += L"\" file.\n";
-			errorText += exErrorStr;
-
-			TRACE(L"%s\n", errorText);
-#endif
-			fpm.Close();
-			return -1;
-		}
-		selectedMailsListFileOpen = TRUE;
-
-		DWORD error;
-		CString filePath;
-		CString fileName;
-		CStringA fileNameA;
-		CString fPath;
-		CString textFile;
-		bool fileExists = false;
-		CString newSuffix = L".pdf";
-		CStringArray in_array;
-
-		CString line;
-		CStringA lineA;
-
-		int textType = 1;     // FIXMEFIXME
-		int indx = 0;
-		for (int j = 0; j < cnt; j++)
-		{
-			i = (*selectedMailIndexList)[j];
-
-			fileExists = false;
-			int ret = 1;
-
-			// MakeFileNameFromMailHeader must create the same PDF file name as PrintSingleMailtoPDF
-			// FIXME: consider enhancing PrintSingleMailtoPDF to return name of created PDF file to avoid
-			// potential inconsistency
-
-			pFrame->m_NamePatternParams.m_bConvert2Ansi = TRUE;
-			ret = MboxMail::MakeFileNameFromMailHeader(i, textType, textFile, targetPrintSubFolderName, fileExists, errorText);
-			pFrame->m_NamePatternParams.m_bConvert2Ansi = FALSE;
-			if (fileExists)
-				int deb = 1;
-
-			fPath = textFile;
-			FileUtils::UpdateFileExtension(fPath, newSuffix);
-			FileUtils::GetFolderPathAndFileName(fPath, filePath, fileName);
-
-			in_array.Add(fileName);
-
-			TextUtilsEx::WStr2Ascii(fileName, fileNameA, error);
-
-			lineA.Format("%s\n", fileNameA);
-			fptxt.Write(lineA, lineA.GetLength());   // FIXMEFIXME  SelectedMailsList.txt just info
-		}
-
-		if (selectedMailsListFileOpen)
-			fptxt.Close();
-
-		// write to MergeAllPDFs.cmd, i.e to fpm
-		CStringA mergeAllCmdScriptA = "@echo on\n\n";
-		fpm.Write(mergeAllCmdScriptA, mergeAllCmdScriptA.GetLength());
-
-		CString mergedFilePrefix = L"m";
-		CStringArray out_array;
-		// convert to while ()
-		errorText.Empty();
-		int j;
-		for (j = 0; j < 100; j++)
-		{
-			// MergePDfFileList creates batch cmd files to keep merging subsets of PDF files
-			// Drawback is that cmd files don't seem to support UNICODE so PDF files must be encoded as Ansi/Ascii
-			// which means that original files names are mapped to strange looking names sometimes
-			// ShellExecuteEx could be used directly (was verified) to keep UNICODE names but stderr and stout can't redirected 
-			// when running application (i.e. java and pdfbox jar file) directly by ShellExecuteEx
-			//
-			int ret = NListView::MergePDfFileList(fpm, in_array, out_array, mergedFilePrefix, targetPrintFolderPath, 
-				pdfboxJarFileName, errorText);
-			if (ret >= 0)
+			if (progressBar && MboxMail::pCUPDUPData)
 			{
-				errorText.Empty();
-				if (out_array.GetCount() > 1)
-				{
-					mergedFilePrefix.Append(L"m");
-					in_array.Copy(out_array);
-					out_array.SetSize(0);
-				}
-				else
+				if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
+					int deb = 1;
 					break;
+				}
+
+				UINT_PTR dwProgressbarPos = 0;
+				ULONGLONG workRangePos = j;
+				BOOL needToUpdateStatusBar = progressTimer.UpdateWorkPos(workRangePos, dwProgressbarPos);
+				if (needToUpdateStatusBar)
+				{
+					int nFileNum = j + 1;
+
+					CString fmt = L"Printing mails to single HTML file ... %d of %d";
+					ResHelper::TranslateString(fmt);
+					fileNum.Format(fmt, nFileNum, cnt);
+
+					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
+
+					int debug = 1;
+				}
+
+				htmlCnt = 0;
+
+				CString fPath = fpHtmlFile.GetFilePath();
+				CString fName = fpHtmlFile.GetFileName();
+
+				htmlFilesArr.Add(fPath);
+
+				if (fpHtmlFile.m_hFile != CFile::hFileNull)
+					fpHtmlFile.Close();
+
+				if (j < cntAllMails)
+				{
+					htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlMailCnt);
+					CFileException ExError;
+					if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+					{
+						DWORD lastErr = ::GetLastError();
+						//HWND h = GetSafeHwnd();
+						HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+						CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+						errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+						return -1;
+					}
+				}
 			}
-			else
-			{
-				fpm.Close();
-				return -1;
-			}
-		}
-
-		FolderContext *fc = &MboxMail::s_folderContext;
-
-		CString mailArchiveFileName = MboxMail::s_path;
-
-		if (mailArchiveFileName.IsEmpty())
-		{
-			mergedFileName = L"MergedMails.pdf";
 		}
 		else
 		{
-			CString driveName;
-			CString directory;
-			CString fileNameBase;
-			CString fileNameExtention;
-			FileUtils::SplitFilePath(mailArchiveFileName, driveName, directory, fileNameBase, fileNameExtention);
+			i = (*selectedMailsIndexList)[j];
 
-			mergedFileName = fileNameBase + L".pdf";
+			//BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
+			BOOL addPageBreak = MboxMail::PageBreakNeeded(selectedMailsIndexList, j, singleMail);
+
+			BOOL fullImgFilePath = FALSE;
+			int pos = MboxMail::printSingleMailToHtmlFile(fpHtmlFile, i, fpMailFile, textConfig, singleMail, addPageBreak, fullImgFilePath);
+			if (pos >= 0)
+				htmlCnt++;
 		}
+	}
+	if (fpHtmlFile.m_hFile != CFile::hFileNull)
+	{
+		CString fPath = fpHtmlFile.GetFilePath();
+		CString fName = fpHtmlFile.GetFileName();
 
-		if (out_array.GetCount() == 0)
+		if (htmlCnt > 0)
+			htmlFilesArr.Add(fPath);
+		fpHtmlFile.Close();
+	}
+
+
+	nFileNum = cnt;
+	UINT newstep = 100;
+
+	CString fmt = L"Printing mails to PDF files ... %d of %d";
+	ResHelper::TranslateString(fmt);
+	fileNum.Format(fmt, nFileNum, cnt);
+
+	int fileCnt = (int)htmlFilesArr.GetCount();
+	BOOL progessBar = TRUE;
+	int ii;
+	for (ii = 0; ii < fileCnt; ii++)
+	{
+
+		CString htmlFilePath = htmlFilesArr.GetAt(ii);
+		CString progressText;
+		progressText.Format(L"%d    ", ii);
+
+		const int timeout = 1800; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
+		// I am aware of cases it takes 10 or minutes to finish 
+		// or print will never finish sometimes. Had to pick something
+		const int headlessTimout = -1;  // Don't configure --timeout >= 0 option to Edge/Chrome, doesn't work as documented
+		// reported --timeout issue to Chromium team July 5, 2023
+		// --timeout it is fixed now but it doesn't work as I would like. Page loading can get blocked and timeout never fires. 
+		// Is this indication of single thread architecture ?
+		ret = CMainFrame::ExecCommand_WorkerThread(htmlFilePath, errorText, progressBar, progressText, timeout, headlessTimout);
+		if (ret == -2)
+		{
+#if 0
+			// internal hard timer fired which means print failed, retry
+			// --timeout and --virtual-time-budget options don't seem to work. Will not retry
+			// 
+			// set headlessTimeout and retry
+			errorText.Empty();
+			const int headlessTiemout = 6;
+			ret = ExecCommand_WorkerThread(htmFileName, errorText, progressBar, progressText, timeout, headlessTiemout);
+#endif
+			int deb = 1;
+		}
+	}
+
+
+	if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(newstep));
+
+	// Printing all mails to separate PDF file done.
+
+		// BEGIN: Prepare for mergin 
+	CString processExePath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"processPath");
+
+	CString processFolderPath;
+	FileUtils::CPathGetPath(processExePath, processFolderPath);
+
+	CString pdfboxJarFilePath = processFolderPath + L"\\" + pdfboxJarFileName;
+	CString targetPdfboxJarFilePath = targetPrintFolderPath + L"\\" + pdfboxJarFileName;
+
+	BOOL bFailIfExists = TRUE;
+	if (!::CopyFileW(pdfboxJarFilePath, targetPdfboxJarFilePath, bFailIfExists))
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		TRACE(L"CopyFile: %s\n%s", pdfboxJarFilePath, errText);
+		// TODO: MessageBox
+	}
+	//
+	CString pdfboxConfigFilePath = processFolderPath + L"\\scripts\\pdfbox-config.txt";
+	CString targetPdfboxConfigFilePath = targetPrintFolderPath + L"\\pdfbox-config.txt";
+
+	if (!::CopyFileW(pdfboxConfigFilePath, targetPdfboxConfigFilePath, bFailIfExists))
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		TRACE(L"CopyFile: %s\n%s", pdfboxConfigFilePath, errText);
+	}
+	//
+	CString mergePDFsLogFilePath = targetPrintFolderPath + L"\\MergePDFs.log";
+	CString pdfboxLogFilePath = targetPrintFolderPath + L"\\pdfbox.log";
+
+	FileUtils::DelFile(mergePDFsLogFilePath);
+	FileUtils::DelFile(pdfboxLogFilePath);
+
+	// ENd prepare for mergim
+
+
+	// Create etxt file with list of all *.pdf files to merge
+	//
+	CString selectedMailsList = targetPrintFolderPath + L"\\SelectedMailsList.txt";
+	BOOL selectedMailsListFileOpen = FALSE;
+	CFileException ExError3;
+	if (!fptxt.Open(selectedMailsList, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError3))
+	{
+		DWORD lastErr = ::GetLastError();
+
+		HWND h = GetSafeHwnd();
+		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError3, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+
+		fpm.Close();
+		return -1;
+	}
+	selectedMailsListFileOpen = TRUE;
+
+	DWORD error;
+	CString filePath;
+	CString fileName;
+	CStringA fileNameA;
+	CString fPath;
+	//CString textFile;
+	//bool fileExists = false;
+	CString newSuffix = L".pdf";
+	CStringArray in_array;
+
+	CString line;
+	CStringA lineA;
+
+	int indx = 0;
+
+	fileCnt = (int)htmlFilesArr.GetCount();
+
+	int jj;
+	for (jj = 0; jj < fileCnt; jj++)
+	{
+		CString htmlFilePath = htmlFilesArr.GetAt(jj);
+
+		fPath = htmlFilePath;
+		FileUtils::UpdateFileExtension(fPath, newSuffix);
+		FileUtils::GetFolderPathAndFileName(fPath, filePath, fileName);
+
+		in_array.Add(fileName);
+
+		TextUtilsEx::WStr2Ascii(fileName, fileNameA, error);
+
+		lineA.Format("%s\n", fileNameA);
+		fptxt.Write(lineA, lineA.GetLength());   // FIXMEFIXME  SelectedMailsList.txt just info);
+	}
+
+	int deb2 = 1;
+
+	if (selectedMailsListFileOpen)
+		fptxt.Close();
+	// END of creating lidt file with PDF files to merge
+
+
+	// BEGIN actual merge
+	// write to MergeAllPDFs.cmd, i.e to fpm
+	CStringA mergeAllCmdScriptA = "@echo on\n\n";
+	fpm.Write(mergeAllCmdScriptA, mergeAllCmdScriptA.GetLength());
+
+	CString mergedFilePrefix = L"m";
+	CStringArray out_array;
+	// convert to while ()
+	errorText.Empty();
+	int j;
+	for (j = 0; j < 100; j++)
+	{
+		// MergePDfFileList creates batch cmd files to keep merging subsets of PDF files
+		// Drawback is that cmd files don't seem to support UNICODE so PDF files must be encoded as Ansi/Ascii
+		// which means that original files names are mapped to strange looking names sometimes
+		// ShellExecuteEx could be used directly (was verified) to keep UNICODE names but stderr and stout can't redirected 
+		// when running application (i.e. java and pdfbox jar file) directly by ShellExecuteEx
+		//
+		int ret = NListView::MergePDfFileList(fpm, in_array, out_array, mergedFilePrefix, targetPrintFolderPath, pdfboxJarFileName, errorText);
+		if (ret >= 0)
+		{
+			errorText.Empty();
+			if (out_array.GetCount() > 1)
+			{
+				mergedFilePrefix.Append(L"m");
+				in_array.Copy(out_array);
+				out_array.SetSize(0);
+			}
+			else
+				break;
+		}
+		else
 		{
 			fpm.Close();
 			return -1;
 		}
+	}
 
-		// Finish writing to MergeAllPDFs.cmd, i.e to fpm
-		CString mergeAllCmdScript;
-		mergeAllCmdScript.Format(L"\n\n@echo on\n\ndel /f /q \"%s\"\n\nren \"%s\" \"%s\"\n\npause\n\n", mergedFileName, out_array.GetAt(0), mergedFileName);
+	FolderContext* fc = &MboxMail::s_folderContext;
 
-		BOOL retW2A = TextUtilsEx::WStr2Ansi(mergeAllCmdScript, mergeAllCmdScriptA, error);
+	CString mailArchiveFileName = MboxMail::s_path;
 
-		fpm.Write(mergeAllCmdScriptA, mergeAllCmdScriptA.GetLength());
+	if (mailArchiveFileName.IsEmpty())
+	{
+		mergedFileName = L"MergedMails.pdf";
+	}
+	else
+	{
+		CString driveName;
+		CString directory;
+		CString fileNameBase;
+		CString fileNameExtention;
+		FileUtils::SplitFilePath(mailArchiveFileName, driveName, directory, fileNameBase, fileNameExtention);
 
-		fpm.Close();  // i.e close MergeAllPDFs.cmd file
+		mergedFileName = fileNameBase + L".pdf";
+	}
 
-		CString mergedFilePath = targetPrintFolderPath + L"\\" + mergedFileName;
-		mergedFileName = mergedFilePath;
+	if (out_array.GetCount() == 0)
+	{
+		fpm.Close();
+		return -1;
+	}
 
-		CString oldFilePath = targetPrintFolderPath + L"\\" + out_array.GetAt(0);
+	// Finish writing to MergeAllPDFs.cmd, i.e to fpm
+	CString mergeAllCmdScript;
+	mergeAllCmdScript.Format(L"\n\n@echo on\n\ndel /f /q \"%s\"\n\nren \"%s\" \"%s\"\n\npause\n\n", mergedFileName, out_array.GetAt(0), mergedFileName);
 
-		DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
-		BOOL retMove = MoveFileEx(oldFilePath, mergedFilePath, nFlags);
-		if (retMove == FALSE)
-		{
-			CString errText = FileUtils::GetLastErrorAsString();
-			TRACE(L"PrintMailSelectedToSeparatePDF_WorkerThread: MoveFileEx failed \"%s\"\n", errorText);
+	BOOL retW2A = TextUtilsEx::WStr2Ansi(mergeAllCmdScript, mergeAllCmdScriptA, error);
 
-			CString txt = L"Failed to move \"" + oldFilePath;
-			txt += L"\" file.\n\n";
-			txt.Append(errorText);
+	fpm.Write(mergeAllCmdScriptA, mergeAllCmdScriptA.GetLength());
 
-			TRACE(L"%s\n", txt);
+	fpm.Close();  // i.e close MergeAllPDFs.cmd file
 
-			mergedFileName = oldFilePath;
+	CString mergedFilePath = targetPrintFolderPath + L"\\" + mergedFileName;
+	mergedFileName = mergedFilePath;
 
-			return 1;
-		}
-	}  // end of if (mergePDFs)
+	CString oldFilePath = targetPrintFolderPath + L"\\" + out_array.GetAt(0);
+
+	DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+	BOOL retMove = MoveFileEx(oldFilePath, mergedFilePath, nFlags);
+	if (retMove == FALSE)
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		TRACE(L"PrintMailSelectedToSeparatePDF_WorkerThread: MoveFileEx failed \"%s\"\n", errorText);
+
+		CString txt = L"Failed to move \"" + oldFilePath;
+		txt += L"\" file.\n\n";
+		txt.Append(errorText);
+
+		TRACE(L"%s\n", txt);
+
+		mergedFileName = oldFilePath;
+
+		return 1;
+	}
 
 	int deb = 1;
 	return 1;
@@ -9760,20 +10027,11 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	if (!fpMergeError.Open(mergeErrorFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate | CFile::shareDenyNone, &ExMergeError))
 	{
 		DWORD lastErr = ::GetLastError();
-#if 1
+
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExMergeError);
-
-		errorText = L"Could not create \"" + mergeErrorFilePath;
-		errorText += L"\" file.\n";
-		errorText += exErrorStr;
-
-		TRACE(L"%s\n", errorText);
-#endif
 		return -1;
 	}
 
@@ -9785,20 +10043,11 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 	{
 		DWORD lastErr = ::GetLastError();
-#if 1
+
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
-
-		errorText = L"Could not create \"" + mergeCmdFilePath;
-		errorText += L"\" file.\n";
-		errorText += exErrorStr;
-
-		TRACE(L"%s\n", errorText);
-#endif
 
 		fpMergeError.Close();
 
@@ -9858,20 +10107,12 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 			if (!fp.Open(mergeCmdFilePath, CFile::modeReadWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 			{
 				DWORD lastErr = ::GetLastError();
-#if 1
+
 				HWND h = GetSafeHwnd();
 				//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-#else
-				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
-				errorText = L"Could not create \"" + mergeCmdFilePath;
-				errorText += L"\" file.\n";
-				errorText += exErrorStr;
-
-				TRACE(L"%s\n", errorText);
-#endif
 				// TODO: is this working? Verify
 				CStringA errorTextA = errorText;
 
@@ -9981,7 +10222,7 @@ int NListView::PrintMailSelectedToSinglePDF_WorkerThread(MailIndexList *selected
 	int textType = 1;  // 0=.txt 1=.htm 2=.pdf 3=.csv
 	bool fileExists = false;
 	CString htmFileName;
-	CString targetPrintSubFolder;
+	CString targetPrintSubFolder = targetPrintSubFolderName;
 	int ret;
 
 
@@ -10901,7 +11142,7 @@ int NListView::PrintMailSelectedToSingleHTML_WorkerThread(MailIndexList *selecte
 	textConfig.m_bGMTTime = m_gmtTime;
 	textConfig.m_nCodePageId = CP_UTF8;
 
-	int ret = MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(textConfig, textFileName, selectedMailIndexList, textType, errorText);
+	int ret = MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(textConfig, textFileName, selectedMailIndexList, textType, errorText, targetPrintSubFolderName);
 
 	return 1;
 }
@@ -13176,7 +13417,7 @@ int NListView::PrintMailSelectedToSingleTEXT_WorkerThread(MailIndexList *selecte
 	textConfig.m_bGMTTime = m_gmtTime;
 	textConfig.m_nCodePageId = CP_UTF8;
 
-	int ret = MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(textConfig, textFileName, selectedMailIndexList, textType, errorText);
+	int ret = MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(textConfig, textFileName, selectedMailIndexList, textType, errorText, targetPrintSubFolderName);
 
 	return 1;
 }

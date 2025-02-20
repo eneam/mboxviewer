@@ -177,10 +177,12 @@ NMsgView::NMsgView()
 	m_frameCy_TreeInHide = 200;
 
 	CString section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacement";
+#if 0
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementPreview";
 	else if (CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
 		section_wnd = CString(sz_Software_mboxview) + L"\\WindowPlacementDirect";
+#endif
 
 	BOOL ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenWidth", m_frameCx_TreeNotInHide);
 	ret = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_wnd, L"MsgFrameTreeNotHiddenHeight", m_frameCy_TreeNotInHide);

@@ -126,7 +126,7 @@ void ConfigTree::DumpNode(ConfigNode* node, int level)
 void ConfigTree::DumpTree()
 {
 #ifdef _DEBUG
-#if 0
+#if 1
 	CString out;
 	out.Preallocate(10000);
 
