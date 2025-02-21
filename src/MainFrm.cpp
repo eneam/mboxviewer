@@ -76,6 +76,9 @@ ColorStylesDB CMainFrame::m_ColorStylesDB;
 
 BOOL CMainFrame::m_relaxedMboxFileValidation = FALSE;
 BOOL CMainFrame::m_relativeInlineImageFilePath = TRUE;
+BOOL CMainFrame::m_enableUserAgent = TRUE;
+CString CMainFrame::m_userAgentString = L"--user-agent/132.0.0.0";
+CString CMainFrame::m_numberOfHTML2ToMerge = L"1";
 
 #define MaxShellExecuteErrorCode 32
 
@@ -566,6 +569,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation");
+
+	CString section_merge = CString(sz_Software_mboxview) + L"\\PrintConfig\\Merge";
+	m_enableUserAgent = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_merge, L"enableUserAgent");
+	m_numberOfHTML2ToMerge = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_merge, L"numberOfHTML2Merge");
+	if (m_numberOfHTML2ToMerge.IsEmpty())
+		m_numberOfHTML2ToMerge = L"1";
+
 
 #if 0
 	CMenu* menu = this->GetMenu();
@@ -3580,23 +3590,24 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	CString path;
 	int bScriptType = pFrame->m_NamePatternParams.m_bScriptType;
 
+	CString m_userAgentString;
+	if (CMainFrame::m_enableUserAgent)
+		m_userAgentString = CMainFrame::m_userAgentString;
+
+
 	// Edge and Chrome configuration is basically the same for the latest versions
 	// except for --headless=new  option for Chrome. --headless=new doesn't work in official Chrome, works in Canary version
 	if (bScriptType == 0)   // Chrome
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L"--headless=new --disable-gpu"
-				L" --user-agent=\"chrome/132.0.0.0\""
-				;
+			args = m_userAgentString + L" --headless=new --disable-gpu";
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer";  //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer"
-				L" --user-agent=\"chrome/132.0.0.0\""
-				;
+			args = m_userAgentString + L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 #if 0
 		// Ignore headlessTimout for now. The --timeout and --virtual-time-budget don't seem to work as expected
@@ -3628,17 +3639,13 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		if (pFrame->m_NamePatternParams.m_bHeaderAndFooter)
 		{
-			args = L" --headless=new --disable-gpu"  // header & footer is printer by default
-				L" --user-agent=\"chrome/132.0.0.0\""
-				;
+			args = m_userAgentString + L" --headless=new --disable-gpu";  // header & footer is printer by default
 		}
 		else
 		{
 			//args = L" --headless --disable-gpu --print-to-pdf-no-header";  // --print-to-pdf-no-header was deprecated
 			//args = L" --headless --disable-gpu --no-pdf-header-footer"; //  not sure if both --print-to-pdf-no-header and --no-pdf-header-footer can be set just in case
-			args = L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer"
-				L" --user-agent=\"chrome/132.0.0.0\""
-				;
+			args = m_userAgentString + L" --headless=new --disable-gpu --print-to-pdf-no-header --no-pdf-header-footer";
 		}
 
 #if 0
@@ -6209,18 +6216,27 @@ void CMainFrame::OnFileGeneraloptions()
 
 	dlg.m_relaxedMboxFileValidation = m_relaxedMboxFileValidation;
 	dlg.m_relativeInlineImageFilePath = m_relativeInlineImageFilePath;
+	dlg.m_enableUserAgent = m_enableUserAgent;
+	dlg.m_numberOfHTML2ToMerge = m_numberOfHTML2ToMerge;
 
 	if (dlg.DoModal() == IDOK)
 	{
 		m_relaxedMboxFileValidation = dlg.m_relaxedMboxFileValidation;
 		m_relativeInlineImageFilePath = dlg.m_relativeInlineImageFilePath;
 		NListView::m_fullImgFilePath_Config = !m_relativeInlineImageFilePath;
+		m_enableUserAgent = dlg.m_enableUserAgent;
+		m_numberOfHTML2ToMerge = dlg.m_numberOfHTML2ToMerge;
 
 		CString section_general = CString(sz_Software_mboxview) + L"\\General";
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation", (WORD)m_relaxedMboxFileValidation);
 
 		// FIXME relativeInlineImageFilePath is get in NListWiew and set here -:(((
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", (WORD)m_relativeInlineImageFilePath);
+
+		CString section_merge = CString(sz_Software_mboxview) + L"\\Print\\Merge";
+
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_merge, L"numberOfHTML2Merge", m_numberOfHTML2ToMerge);
+		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_merge, L"enableUserAgent", m_enableUserAgent);
 
 		const int deb = 1;
 	}

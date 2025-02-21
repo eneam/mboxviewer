@@ -9658,12 +9658,13 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		return -1;
 	}
 	int htmlMailCnt = 0;
+	int htmlFileNumber = 0;
 
 	CFileException ExError2;
 	CFile fpHtmlFile;
 	CString htmlFileName = L"m";
 	CString htmlFilePath;
-	htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlMailCnt);
+	htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlFileNumber);
 	if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
@@ -9688,7 +9689,8 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	ProgressTimer progressTimer(workRangeFirstPos, workRangeLastPos);
 
 	BOOL singleMail = (cnt == 1) ? TRUE : FALSE;
-	int maxMailsToMerge = 2;
+
+	int maxMailsToMerge = _wtoi(CMainFrame::m_numberOfHTML2ToMerge);
 
 	int htmlCnt = 0;
 	CStringArray htmlFilesArr;
@@ -9732,7 +9734,8 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 
 				if (j < cntAllMails)
 				{
-					htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlMailCnt);
+					int htmlFileNumber = htmlFilesArr.GetCount();
+					htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlFileNumber);
 					CFileException ExError;
 					if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 					{
@@ -9746,7 +9749,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 				}
 			}
 		}
-		else
+		if (fpHtmlFile.m_hFile != CFile::hFileNull)
 		{
 			i = (*selectedMailsIndexList)[j];
 

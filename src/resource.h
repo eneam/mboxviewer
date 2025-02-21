@@ -496,6 +496,12 @@
 #define IDC_STATIC_OPTIONS_FROM         1418
 #define IDC_STATIC_OPTIONS_TO           1419
 #define IDC_STATIC_OPTIONS_SUBJECT      1420
+#define IDC_STATIC_PDF_MERGE            1422
+#define IDC_MERGE_HTML_CNT              1423
+#define IDC_STATIC_MERGE_INFO_1         1424
+#define IDC_MERGE_USER_AGENT            1425
+#define IDC_MERGE_ENABLE_USER_AGENT     1425
+#define IDC_FIND_IN_MAIL_STRING         1426
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -590,7 +596,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        244
 #define _APS_NEXT_COMMAND_VALUE         32939
-#define _APS_NEXT_CONTROL_VALUE         1422
+#define _APS_NEXT_CONTROL_VALUE         1427
 #define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

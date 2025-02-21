@@ -41,6 +41,12 @@ public:
 	GeneralOptionsDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~GeneralOptionsDlg();
 
+	BOOL m_relaxedMboxFileValidation;
+	BOOL m_relativeInlineImageFilePath;
+	// ODF Merge Config
+	BOOL m_enableUserAgent;
+	CString m_numberOfHTML2ToMerge;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_GENERAL_OPTIONS_DLG };
@@ -55,9 +61,10 @@ protected:
 public:
 	afx_msg void OnBnClickedRelaxMboxFileValidation();
 	afx_msg void OnBnClickedRelativeAttachmentFilePath();
-	BOOL m_relaxedMboxFileValidation;
-	BOOL m_relativeInlineImageFilePath;
+
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedOk();
 	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnEnChangeMergeHtmlCnt();
+	afx_msg void OnBnClickedMergeUserAgent();
 };

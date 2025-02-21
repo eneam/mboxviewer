@@ -297,6 +297,10 @@ public:
 
 	static BOOL m_relaxedMboxFileValidation;
 	static BOOL m_relativeInlineImageFilePath;
+	// PDF Merge Config
+	static BOOL m_enableUserAgent;
+	static CString m_userAgentString;
+	static CString m_numberOfHTML2ToMerge;
 
 #ifdef _DEBUG
 	virtual void AssertValid() const;
