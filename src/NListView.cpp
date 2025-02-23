@@ -9660,22 +9660,10 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	int htmlMailCnt = 0;
 	int htmlFileNumber = 0;
 
-	CFileException ExError2;
+
 	CFile fpHtmlFile;
 	CString htmlFileName = L"m";
 	CString htmlFilePath;
-	htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlFileNumber);
-	if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError2))
-	{
-		DWORD lastErr = ::GetLastError();
-		//HWND h = GetSafeHwnd();
-		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError2, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-
-		fpMailFile.Close();
-		return -1;
-	}
 
 	TEXTFILE_CONFIG textConfig;
 	textConfig.m_dateFormat = m_format;
@@ -9697,58 +9685,47 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	i = 0;
 	for (int j = 0; j < cntAllMails; j++)
 	{
-		if (htmlCnt >= maxMailsToMerge)
+		if ((j % 1) == 0)
 		{
-			if (progressBar && MboxMail::pCUPDUPData)
+			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
+				int deb = 1;
+				break;
+			}
+
+			UINT_PTR dwProgressbarPos = 0;
+			ULONGLONG workRangePos = j;
+			BOOL needToUpdateStatusBar = progressTimer.UpdateWorkPos(workRangePos, dwProgressbarPos);
+			if (needToUpdateStatusBar)
 			{
-				if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate()) {
-					int deb = 1;
-					break;
-				}
+				int nFileNum = j + 1;
 
-				UINT_PTR dwProgressbarPos = 0;
-				ULONGLONG workRangePos = j;
-				BOOL needToUpdateStatusBar = progressTimer.UpdateWorkPos(workRangePos, dwProgressbarPos);
-				if (needToUpdateStatusBar)
-				{
-					int nFileNum = j + 1;
+				CString fmt = L"Printing mails to HTML files ... %d of %d";
+				ResHelper::TranslateString(fmt);
+				fileNum.Format(fmt, nFileNum, cnt);
 
-					CString fmt = L"Printing mails to single HTML file ... %d of %d";
-					ResHelper::TranslateString(fmt);
-					fileNum.Format(fmt, nFileNum, cnt);
+				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
 
-					if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(fileNum, (UINT_PTR)(dwProgressbarPos));
-
-					int debug = 1;
-				}
-
-				htmlCnt = 0;
-
-				CString fPath = fpHtmlFile.GetFilePath();
-				CString fName = fpHtmlFile.GetFileName();
-
-				htmlFilesArr.Add(fPath);
-
-				if (fpHtmlFile.m_hFile != CFile::hFileNull)
-					fpHtmlFile.Close();
-
-				if (j < cntAllMails)
-				{
-					int htmlFileNumber = htmlFilesArr.GetCount();
-					htmlFilePath.Format(L"%s\\%s%03d.htm", targetPrintFolderPath, htmlFileName, htmlFileNumber);
-					CFileException ExError;
-					if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
-					{
-						DWORD lastErr = ::GetLastError();
-						//HWND h = GetSafeHwnd();
-						HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-						CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-						errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
-						return -1;
-					}
-				}
+				int debug = 1;
 			}
 		}
+
+		if (fpHtmlFile.m_hFile == CFile::hFileNull)
+		{
+			int htmlFileNumber = htmlFilesArr.GetCount();
+			int mailNumber = htmlFileNumber + 1;
+			htmlFilePath.Format(L"%s\\%s%d.htm", targetPrintFolderPath, htmlFileName, mailNumber);
+			CFileException ExError;
+			if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
+			{
+				DWORD lastErr = ::GetLastError();
+				//HWND h = GetSafeHwnd();
+				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
+				errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+				return -1;
+			}
+		}
+		_ASSERTE(fpHtmlFile.m_hFile != CFile::hFileNull);
 		if (fpHtmlFile.m_hFile != CFile::hFileNull)
 		{
 			i = (*selectedMailsIndexList)[j];
@@ -9760,6 +9737,22 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 			int pos = MboxMail::printSingleMailToHtmlFile(fpHtmlFile, i, fpMailFile, textConfig, singleMail, addPageBreak, fullImgFilePath);
 			if (pos >= 0)
 				htmlCnt++;
+		}
+		else
+			return -1;
+
+		if (htmlCnt >= maxMailsToMerge)
+		{
+			htmlCnt = 0;
+
+			CString fPath = fpHtmlFile.GetFilePath();
+			CString fName = fpHtmlFile.GetFileName();
+
+			htmlFilesArr.Add(fPath);
+
+			_ASSERTE(fpHtmlFile.m_hFile != CFile::hFileNull);
+			if (fpHtmlFile.m_hFile != CFile::hFileNull)
+				fpHtmlFile.Close();
 		}
 	}
 	if (fpHtmlFile.m_hFile != CFile::hFileNull)
@@ -9773,24 +9766,32 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	}
 
 
-	nFileNum = cnt;
+	nFileNum = 0;
 	UINT newstep = 100;
 
-	CString fmt = L"Printing mails to PDF files ... %d of %d";
-	ResHelper::TranslateString(fmt);
-	fileNum.Format(fmt, nFileNum, cnt);
 
 	int fileCnt = (int)htmlFilesArr.GetCount();
+	CString fmt = L"Printing mails to PDF files ... %d of %d";
+	ResHelper::TranslateString(fmt);
+	fileNum.Format(fmt, nFileNum, fileCnt);
+
+	
 	BOOL progessBar = TRUE;
 	int ii;
 	for (ii = 0; ii < fileCnt; ii++)
 	{
 
 		CString htmlFilePath = htmlFilesArr.GetAt(ii);
+		CString htmlFolerPath;
+		CString htmlFileName;
+		FileUtils::GetFolderPathAndFileName(htmlFilePath, htmlFolerPath, htmlFileName);
 		CString progressText;
-		progressText.Format(L"%d    ", ii);
+		//progressText.Format(L"Printing mails to PDF files ... %s %d", htmlFileName, ii);
 
-		const int timeout = 1800; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
+		nFileNum = ii + 1;
+		progressText.Format(fmt, nFileNum, fileCnt);
+
+		const int timeout = 18000; // seconds FIXME. this is MBox Viewer internal hardcode print to PDF timeout
 		// I am aware of cases it takes 10 or minutes to finish 
 		// or print will never finish sometimes. Had to pick something
 		const int headlessTimout = -1;  // Don't configure --timeout >= 0 option to Edge/Chrome, doesn't work as documented
@@ -10101,7 +10102,9 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 
 			out_array.Add(mergedFileName);
 
-			progressText.Format(L"Merging %d PDFs", mergedFileCnt);
+			CString fmt = L"Merging %d PDF files ...";
+			ResHelper::TranslateString(fmt);
+			progressText.Format(fmt, mergedFileCnt);
 
 			const int forced_timeout = -1;
 			int retexec = CMainFrame::ExecCommand_WorkerThread(targetPrintFolderPath, mergeCmdFilePath, args, errorText, progressBar, progressText, forced_timeout);
@@ -10169,7 +10172,9 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 
 		out_array.Add(mergedFileName);
 
-		progressText.Format(L"Merging %d PDFs", mergedFileCnt);
+		CString fmt = L"Merging %d PDF files ...";
+		ResHelper::TranslateString(fmt);
+		progressText.Format(fmt, mergedFileCnt);
 
 		const int forced_timeout = -1;
 		int retexec = CMainFrame::ExecCommand_WorkerThread(targetPrintFolderPath, mergeCmdFilePath, args, errorText, progressBar, progressText, forced_timeout);

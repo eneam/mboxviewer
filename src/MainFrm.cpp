@@ -571,11 +571,16 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation");
 
 	CString section_merge = CString(sz_Software_mboxview) + L"\\PrintConfig\\Merge";
-	m_enableUserAgent = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_merge, L"enableUserAgent");
-	m_numberOfHTML2ToMerge = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_merge, L"numberOfHTML2Merge");
-	if (m_numberOfHTML2ToMerge.IsEmpty())
-		m_numberOfHTML2ToMerge = L"1";
 
+	m_enableUserAgent = TRUE;
+	int enableUserAgent = TRUE;;
+	if (CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_merge, L"enableUserAgent", enableUserAgent))
+		m_enableUserAgent = enableUserAgent;
+
+	m_numberOfHTML2ToMerge = L"1";
+	CString numberOfHTML2ToMerge;
+	if (CProfile::_GetProfileString(HKEY_CURRENT_USER, section_merge, L"numberOfHTML2Merge", numberOfHTML2ToMerge))
+		m_numberOfHTML2ToMerge = numberOfHTML2ToMerge;
 
 #if 0
 	CMenu* menu = this->GetMenu();
@@ -6233,7 +6238,7 @@ void CMainFrame::OnFileGeneraloptions()
 		// FIXME relativeInlineImageFilePath is get in NListWiew and set here -:(((
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"relativeInlineImageFilePath", (WORD)m_relativeInlineImageFilePath);
 
-		CString section_merge = CString(sz_Software_mboxview) + L"\\Print\\Merge";
+		CString section_merge = CString(sz_Software_mboxview) + L"\\PrintConfig\\Merge";
 
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_merge, L"numberOfHTML2Merge", m_numberOfHTML2ToMerge);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_merge, L"enableUserAgent", m_enableUserAgent);
