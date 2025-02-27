@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "updialog.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -36,6 +37,9 @@
 //   https://www.codeproject.com/articles/7700/universal-progress-dialog
 //
 
+CString terminationInitiated(L"Termination Initiated..");
+CString terminationComplete(L"Termination Complete ..Shutting Down !!");
+CString dlgTitle;
 
 static const unsigned char dlg_145[] = 
 {
@@ -58,6 +62,8 @@ static const unsigned char dlg_145[] =
 #define CUPDIALOG_PROGRESSBAR_ID	(1018)		//ProgressBar Control Id
 #define CUPDIALOG_CANCELBUTTON_ID	(IDCANCEL)	//Cancel Button Control Id
 #define CUPDIALOG_TERMINATE_DELAY	(5000)		//Amount of time to wait after signaling the termination, in MilliSeconds.
+
+
 
 CUPDialog::CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpUserProcParam,LPCWSTR lpszDlgTitle/*=L"Please Wait.."*/,bool bAllowCancel/*=true*/)
 {
@@ -85,7 +91,12 @@ CUPDialog::CUPDialog(HWND hParentWnd,LP_CUPDIALOG_USERPROC lpUserProc,LPVOID lpU
 
 	ZeroMemory(m_szDialogCaption,sizeof(m_szDialogCaption));
 
-	_tcsncpy(m_szDialogCaption,lpszDlgTitle,(sizeof(m_szDialogCaption)/sizeof(m_szDialogCaption[0]))-1);
+	dlgTitle.Empty();
+	dlgTitle.Append(lpszDlgTitle);
+	ResHelper::TranslateString(dlgTitle);
+
+	_tcsncpy(m_szDialogCaption,(LPCWSTR)dlgTitle,(sizeof(m_szDialogCaption)/sizeof(m_szDialogCaption[0]))-1);
+	//_tcsncpy(m_szDialogCaption, lpszDlgTitle, (sizeof(m_szDialogCaption) / sizeof(m_szDialogCaption[0])) - 1);
 }
 
 CUPDialog::~CUPDialog(void)
@@ -151,6 +162,8 @@ TerminateThreadProc:
 
 INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lParam)
 {
+	ResHelper::TranslateString(terminationInitiated);
+
 	BOOL bProcessed = FALSE;
 	CUPDialog *pProgressDialog = NULL;
 
@@ -274,13 +287,19 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 				LPPROGRESSTHREADDATA pThreadData = (LPPROGRESSTHREADDATA)(LPVOID)(&pProgressDialog->m_ThreadData);
 				pThreadData->bTerminate = true;
 
-				SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Initiated.."));
+				ResHelper::TranslateString(terminationInitiated);
+
+				SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId), WM_SETTEXT, 0, (LPARAM)((LPCWSTR)terminationInitiated));
+				//SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Initiated.."));
 
 				SendMessage(hDlg,PROGRESSTHREADDATA::WM_DISABLECONTROLS,wParam,lParam);
 				if(pThreadData->bAlive)
 					Sleep(pProgressDialog->m_dwTerminateDelay);
-				if(pThreadData->bAlive)
-					SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Complete ..Shutting Down !!"));
+				if (pThreadData->bAlive) {
+					ResHelper::TranslateString(terminationComplete);
+					SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId), WM_SETTEXT, 0, (LPARAM)((LPCWSTR)terminationComplete));
+					//SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId), WM_SETTEXT, 0, (LPARAM)(L"Termination Complete ..Shutting Down !!"));
+				}
 				if(pThreadData->bAlive)
 					Sleep(pProgressDialog->m_dwTerminateDelay);
 				EndDialog(hDlg, MAKEWPARAM(IDCANCEL,1));

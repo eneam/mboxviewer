@@ -10061,7 +10061,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	CString filePath;
 
 	BOOL progressBar = TRUE;
-	CString progressText = L"Merging PDFs";
+	CString progressText = L"Merging PDF files";
 	CString args;
 
 	CString pdfboxtoolVMArgs;
