@@ -1608,7 +1608,7 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 	else
 	{
 		DWORD lastErr = ::GetLastError();
-#if 1
+#if 0   // TODO can't enable now; it always triggers Message Box and recovers later
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
@@ -7571,6 +7571,23 @@ void NTreeView::DoOpenFilePreview(CString& path)
 	MboxMail::s_folderContext.m_folderPath.Empty();
 	MboxMail::s_folderContext.m_dataFolderPath.Empty();
 	MboxMail::s_folderContext.m_rootDataFolderPathSubFolderConfig = L"PView\\";
+
+	CString mboxviewTempPath = CMainFrame::GetMboxviewTempPath();
+
+	CString localFolderPath = FileUtils::GetMboxviewLocalAppPath(); // Windows created application folder path such as C:\Users\tata\AppData\Local
+
+	CString folderName = L"UMBoxViewer";
+	CString subfolderName = L"HelpFiles";
+	CString lTempFolderPath = FileUtils::GetMboxviewTempPath(folderName, (PCWSTR)subfolderName);
+	//CString lTempFolderPath = FileUtils::GetMboxviewTempPath();
+	//
+	folderName = L"";
+	CString subfoldderName;
+	CString localAppDataPath1 = FileUtils::GetMboxviewLocalAppDataPath((LPCWSTR)folderName, (LPCWSTR)subfoldderName);
+	wchar_t* name = 0;
+	CString localAppDataPath2 = FileUtils::CreateMboxviewLocalAppDataPath(name);
+
+
 	if (MboxMail::s_folderContext.m_rootDataFolderPathConfig.IsEmpty())
 	{
 		_ASSERTE(1);

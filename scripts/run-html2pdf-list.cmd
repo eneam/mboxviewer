@@ -1,0 +1,65 @@
+@echo off
+setlocal EnableExtensions  enabledelayedexpansion
+
+@REM Merging large number of mails into single PDF is very expensive in terms of processing time
+@REM This scripts allows users to run HTML to PDF conversion on multiple cores if desired.
+@REM Run Print to PDF -> Merge option on large number of selected mails
+@REM Before above, Select File->General Options Config->PDF Merge Config and
+@REM increase number of HTML encoded mails to merge, to 100 typically or more for simple text mails
+@REM to reduce time to convert mails to PDF
+@REM Once Mbox Viewer is done with generting HTML files, you can Cancel the Merge processing
+@REM and run this script on multiple cores. Copy this scripts and html2pdf-list.cmd script
+@REM to directory with generated HTML files
+@REM
+@REM This main script is similar to run-html2pdf-range.cmd script
+@REM This script relies on HTML mail file position instead of HTML mail file names
+@REM 
+@REM https://okular.kde.org/  PDF viewer capable of viewing very large PDF files
+@REM
+
+@echo.
+@echo ########################
+@echo Running %0 script
+
+set NumberOfBrowsers=3
+@REM You must create separate data folder per Browser instance, see UserDataDir below
+@REM NumberOfBrowsers windows  will be created and minimized
+
+SET fileCount=0
+FOR /f "tokens=*" %%G IN ('dir /b *.htm') DO ( set /a fileCount+=1 )
+
+@echo off
+set TotalFiles=%fileCount%
+set /a FilesBlockSize=%TotalFiles%/%NumberOfBrowsers%
+
+@echo.
+@echo TotalFiles=%TotalFiles%
+@echo FilesBlockSize=%FilesBlockSize%
+@echo Number of Browser instances=%NumberOfBrowsers%
+@echo.
+
+set /a MaxIndex=NumberOfBrowsers-1
+
+@REM Begin Loop
+for /L %%i in (0,1,%MaxIndex%) do (
+
+set WindowTitle=chrome-list%%i
+set UserDataDir=G:\UserAgent\%%i
+
+@set /a FirstFile=%%i*%FilesBlockSize% + 1
+@set /a LastFile=%%i*%FilesBlockSize% + %FilesBlockSize%
+if %%i == %MaxIndex% ( set LastFile=%TotalFiles% )
+@echo FirstFile=!FirstFile!  LastFile=!LastFile! UserDataDir=!UserDataDir!
+@echo on
+start "!WindowTitle!" /MIN html2pdf-list.cmd !FirstFile! !LastFile! !UserDataDir! ^>%%i.txt 2>&1
+@echo off
+)
+@REM End Loop
+
+exit /b
+goto :eof
+
+@REM Run the following to get PIDs of windows to kill if needed
+@REM tasklist /v /FO table /FI "WindowTitle eq chrome-list*"
+
+

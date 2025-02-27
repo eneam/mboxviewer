@@ -9629,7 +9629,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	int ret = 1;
 
 	int textType = 1;
-	//CString targetPrintSubFolder;
+
 	int firstMail = 0;
 	ret = MboxMail::MakeFileNameFromMailHeader(firstMail, textType, textFile, targetPrintSubFolderName, fileExists, errorText);
 	ret = MboxMail::MakeFileNameFromMailArchiveName(textType, textFile, targetPrintSubFolderName, fileExists, errorText);
@@ -9713,7 +9713,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		{
 			int htmlFileNumber = htmlFilesArr.GetCount();
 			int mailNumber = htmlFileNumber + 1;
-			htmlFilePath.Format(L"%s\\%s%d.htm", targetPrintFolderPath, htmlFileName, mailNumber);
+			htmlFilePath.Format(L"%s\\%s%06d.htm", targetPrintFolderPath, htmlFileName, mailNumber);
 			CFileException ExError;
 			if (!fpHtmlFile.Open(htmlFilePath, CFile::modeWrite | CFile::modeCreate | CFile::shareDenyNone, &ExError))
 			{
@@ -9765,17 +9765,14 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		fpHtmlFile.Close();
 	}
 
-
 	nFileNum = 0;
 	UINT newstep = 100;
-
 
 	int fileCnt = (int)htmlFilesArr.GetCount();
 	CString fmt = L"Printing mails to PDF files ... %d of %d";
 	ResHelper::TranslateString(fmt);
 	fileNum.Format(fmt, nFileNum, fileCnt);
 
-	
 	BOOL progessBar = TRUE;
 	int ii;
 	for (ii = 0; ii < fileCnt; ii++)

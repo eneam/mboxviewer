@@ -140,7 +140,7 @@ BOOL CProfile::SetupPreviewConfigurationFile(CString& errorText)
 
 	CString configFilePath = configFolderPath + configFileName;
 
-	if (!FileUtils::PathDirExists(configFilePath))
+	if (!FileUtils::PathFileExist(configFilePath))
 	{
 		HANDLE hFile = INVALID_HANDLE_VALUE;
 		BOOL retCreate = ConfigTree::CreateEmptyConfigFile(configFilePath, hFile, errorText);

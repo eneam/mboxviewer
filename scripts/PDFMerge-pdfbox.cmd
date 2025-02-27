@@ -29,7 +29,7 @@ set coptions=
 set /A totalCount=0
 set /A formattedTotalCount=0
 set /A count=0
-set /A maxPDFCount=300
+set /A maxPDFCount=200
 set /A firstIndex=0
 set /A listLength=0
 
@@ -38,8 +38,10 @@ REM Download java from  https://www.oracle.com/technetwork/java/javase/downloads
 REM Update path to PDFBox jar file if needed
 REM Download PDFBox from https://pdfbox.apache.org/
 REM Command tools example https://pdfbox.apache.org/2.0/commandline.html
-set PDFBox=pdfbox-app-3.0.0-alpha3.jar
-set PDFBoxDirectoryPath=F:\Documents\GIT1.0.3.38\mboxviewer\x64\Debug
+
+cd .
+set PDFBox=pdfbox-app-3.0.4.jar
+set PDFBoxDirectoryPath=%cd%
 set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
 
 if NOT exist "%PDFBoxJarFilePath%" (
@@ -50,14 +52,29 @@ echo Please install and/or update the PDFBox path in the batch file and re-run t
 echo.
 
 pause
-exit
+exit /b
 )
 
 set PDF_MERGE_DIR=PDF_MERGE
 
+echo.
+echo ################################################################
+echo Current Directory=%PDFBoxDirectoryPath%
+echo.
+
+set javargs=
+call :TotalPhysicalMemory sizeInGB 2>nul
+if !sizeInGB! GEQ "16"  (
+
+set /a stackSize=!sizeInGB!-8
+@echo javargs=-XX:MaxMetaspaceSize=!stackSize!G -Xmx!stackSize!G -Xms!stackSize!G
+echo.
+set javargs=-XX:MaxMetaspaceSize=!stackSize!G -Xmx!stackSize!G -Xms!stackSize!G
+)
+
 if NOT exist %PDF_MERGE_DIR% mkdir %PDF_MERGE_DIR%
 
-del "%PDF_MERGE_DIR%\*.pdf"
+del "%PDF_MERGE_DIR%\*.pdf" 2>&1 2>nul
 
 for %%A in ("*.pdf") do (
 
@@ -79,13 +96,11 @@ REM Duplicated code, no OR in DOS and using goto seem to break for loop
 REM Max string length seem to be limited to 8191, MAX_FILE_PATH ~ 260
 	set doPDF=n
 	if !listLength! gtr 7700 (
-
-		echo COUNT=!count!
-		echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
 		set coptions=merge !list! %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-		@echo java -jar "%PDFBoxJarFilePath%" !coptions!
-		java -jar  "%PDFBoxJarFilePath%" !coptions!
+		@echo java %javargs% -jar "%PDFBoxJarFilePath%" !coptions!
+
+		java %javargs% -jar  "%PDFBoxJarFilePath%" !coptions!
 
 		set /A count=0
 		set list=
@@ -93,14 +108,12 @@ REM Replace next 3 lines with another HTML to PDF converion tool if desired
 	)
 	if NOT doPDF==y (
 		if !count!==!maxPDFCount! (
-
-			echo COUNT=!count!
-			echo TOTAL_COUNT=!totalCount!
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
 			set coptions=merge !list! -o %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-			@echo java -jar "%PDFBoxJarFilePath%" !coptions!
-			java -jar "%PDFBoxJarFilePath%" !coptions!
+			@echo java  %javargs% -jar "%PDFBoxJarFilePath%" !coptions!
 
+			java %javargs% -jar "%PDFBoxJarFilePath%" !coptions!
+			
 			set /A count=0
 			set list=
 		)
@@ -108,16 +121,15 @@ REM Replace next 3 lines with another HTML to PDF converion tool if desired
 )
 
 if NOT %count%==0 (
-	echo COUNT=!count!
-	echo TOTAL_COUNT=%totalCount%
 REM Replace next 3 lines with another HTML to PDF converion tool if desired
 	set coptions=merge !list! -o %PDF_MERGE_DIR%/all-!formattedTotalCount!.pdf
-	@echo java -jar "%PDFBoxJarFilePath%" !coptions!
-	java -jar "%PDFBoxJarFilePath%" !coptions!
+	@echo java  %javargs% -jar "%PDFBoxJarFilePath%" !coptions!
+	
+	java %javargs% -jar "%PDFBoxJarFilePath%" !coptions!
+	
+	pause
 )
 if %count%==0 (
-	echo COUNT=!count!
-	echo TOTAL_COUNT=%totalCount%
 	echo list !list!
 )
 
@@ -126,3 +138,19 @@ if exist TempFileToDeterineStringLen DEL  TempFileToDeterineStringLen
 echo.
 
 pause
+exit /b
+
+REM create and call myFunctions.bat instead of copy in all script files
+
+@REM in GBytes
+:TotalPhysicalMemory
+@echo off
+SETLOCAL EnableExtensions  enabledelayedexpansion
+for /F "tokens=*" %%A in ('systeminfo /fo list ^| findstr Total ^| findstr Physical ^| findstr Memory') do ( 
+for /F "tokens=4 delims=, " %%i in ("%%A") do (
+set size=%%i
+)
+)
+ENDLOCAL & set %~1=%size%
+goto :eof
+exit /b
