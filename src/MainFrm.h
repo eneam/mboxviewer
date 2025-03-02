@@ -301,6 +301,8 @@ public:
 	static BOOL m_enableUserAgent;
 	static CString m_userAgentString;
 	static CString m_numberOfHTML2ToMerge;
+	//
+	static QWORD m_lastMailDataPreviewDeletTime;
 
 #ifdef _DEBUG
 	virtual void AssertValid() const;

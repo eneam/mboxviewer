@@ -114,9 +114,12 @@ CString FileUtils::GetMboxviewTempPath(const wchar_t *folderName, const wchar_t 
 	CStringW localTempPath = CStringW(&buf[0]);
 	localTempPath.TrimRight(L"\\");
 	localTempPath.Append(L"\\");
-	localTempPath.Append(folderName);
-	localTempPath.Append(L"\\");
-	if (subfolderName)
+	if (folderName && _tcslen(folderName))
+	{
+		localTempPath.Append(folderName);
+		localTempPath.Append(L"\\");
+	}
+	if (subfolderName && _tcslen(subfolderName))
 	{
 		localTempPath.Append(subfolderName);
 		localTempPath.Append(L"\\");
@@ -171,9 +174,12 @@ CString FileUtils::GetMboxviewLocalAppDataPath(const wchar_t* folderName, const 
 	CStringW localTempPath = CStringW(&buf[0]);
 	localTempPath.TrimRight(L"\\");
 	FileUtils::GetFolderPathAndFileName(localTempPath, folderPath, fileName);
-	folderPath.Append(folderName);
-	folderPath.Append(L"\\");
-	if (subfolderName) {
+	if (folderName && _tcslen(folderName))
+	{
+		folderPath.Append(folderName);
+		folderPath.Append(L"\\");
+	}
+	if (subfolderName && _tcslen(subfolderName)) {
 		folderPath.Append(subfolderName);
 		folderPath.Append(L"\\");
 	}

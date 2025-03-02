@@ -121,12 +121,14 @@ public:
 
 	BOOL _DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	BOOL _WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value);
+	BOOL _WriteProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value);
 	BOOL _WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value);
 	BOOL _WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData);
 	//
 	int _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	CString _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval);
+	BOOL _GetProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval);
 	BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval);
 	BOOL _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str);
 	BOOL _GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData);
@@ -153,7 +155,7 @@ public:
 	void DumpNode(ConfigNode* node, CString &out);
 
 	int Dump2File();
-	int Dump2File(CString& filepath);
+	int Dump2File(CString& filepath, BOOL isConfigFileMailPreviewType);
 
 	int LoadConfigFromFile();
 	int LoadConfigFromRegistry();
@@ -163,6 +165,8 @@ public:
 	int LoadConfigFromUMBoxViewerRegistry();
 
 	static BOOL CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& errorText);
+
+	static void GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CString& txt);
 
 	static BOOL Hex2Binary(CString& hex, BYTE* lpData, DWORD& cbData);
 	static BOOL Binary2Hex(BYTE* lpData, DWORD& cbData, CString& hex);

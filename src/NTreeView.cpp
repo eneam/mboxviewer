@@ -7581,7 +7581,7 @@ void NTreeView::DoOpenFilePreview(CString& path)
 	CString lTempFolderPath = FileUtils::GetMboxviewTempPath(folderName, (PCWSTR)subfolderName);
 	//CString lTempFolderPath = FileUtils::GetMboxviewTempPath();
 	//
-	folderName = L"";
+	folderName = L"UMBoxViewer";
 	CString subfoldderName;
 	CString localAppDataPath1 = FileUtils::GetMboxviewLocalAppDataPath((LPCWSTR)folderName, (LPCWSTR)subfoldderName);
 	wchar_t* name = 0;

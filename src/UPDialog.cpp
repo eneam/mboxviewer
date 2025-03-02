@@ -162,8 +162,6 @@ TerminateThreadProc:
 
 INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lParam)
 {
-	ResHelper::TranslateString(terminationInitiated);
-
 	BOOL bProcessed = FALSE;
 	CUPDialog *pProgressDialog = NULL;
 

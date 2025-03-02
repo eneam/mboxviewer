@@ -1717,6 +1717,9 @@ BOOL CmboxviewApp::InitInstance()
 		BOOL retSetup = CProfile::SetupPreviewConfigurationFile(errorText);
 		if (retSetup == FALSE)
 		{
+			HWND h = NULL; // we don't have any window yet 
+			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
 			MboxMail::ReleaseResources();
 			return FALSE;
 		}

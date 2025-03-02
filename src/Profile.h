@@ -97,11 +97,13 @@ public:
 */	
 	static BOOL _DeleteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	static BOOL _WriteProfileInt( HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value );
+	static BOOL _WriteProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value);
 	static BOOL _WriteProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key, CString &value );
 	static BOOL _WriteProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE *lpData, DWORD cbData);
 
 	static BOOL _DeleteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	static BOOL _WriteProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value);
+	static BOOL _WriteProfileInt64_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value);
 	static BOOL _WriteProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value);
 	static BOOL _WriteProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, const BYTE* lpData, DWORD cbData);
 
@@ -113,6 +115,7 @@ public:
 	static int _GetProfileInt( HKEY hKey, LPCWSTR section, LPCWSTR key );
 	static CString _GetProfileString( HKEY hKey, LPCWSTR section, LPCWSTR key );
 	static BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD &intval);
+	static BOOL _GetProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval);
 	static BOOL _GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int &intval);
 	static BOOL _GetProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString &str);
 	static BOOL _GetProfileBinary(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE *lpData, DWORD &cbData);
@@ -120,6 +123,7 @@ public:
 	static int _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	static CString _GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key);
 	static BOOL _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& intval);
+	static BOOL _GetProfileInt64_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval);
 	static BOOL _GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval);
 	static BOOL _GetProfileString_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& str);
 	static BOOL _GetProfileBinary_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, BYTE* lpData, DWORD& cbData);

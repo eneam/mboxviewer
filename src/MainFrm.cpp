@@ -80,6 +80,8 @@ BOOL CMainFrame::m_enableUserAgent = TRUE;
 CString CMainFrame::m_userAgentString = L"--user-agent/132.0.0.0";
 CString CMainFrame::m_numberOfHTML2ToMerge = L"1";
 
+QWORD CMainFrame::m_lastMailDataPreviewDeletTime = 0;
+
 #define MaxShellExecuteErrorCode 32
 
 MBoxViewerDB::MBoxViewerDB()
@@ -4644,20 +4646,40 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 
+
+
 	int actionCode = 0;
 	if (dataFolder.IsEmpty())
 	{
-		DataFolderConfigDlg dlg;
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode == FALSE)
+		{
+			DataFolderConfigDlg dlg;
 
-		INT_PTR retCode = dlg.DoModal();
-		if (retCode == IDOK)
-		{
-			actionCode = dlg.m_returnCode; 
-			int deb = 1;
+			INT_PTR retCode = dlg.DoModal();
+			if (retCode == IDOK)
+			{
+				actionCode = dlg.m_returnCode;
+				int deb = 1;
+			}
+			else if (retCode == IDCANCEL)
+			{
+				int deb = 1;
+			}
 		}
-		else if (retCode == IDCANCEL)
+		else
 		{
-			int deb = 1;
+			wchar_t* folder = L"UMBoxViewer";
+			folder = 0;
+			wchar_t* subfolder = L"MailPreview";
+			subfolder = 0;
+
+			CString configFolderPath = FileUtils::GetMboxviewLocalAppDataPath(folder, subfolder);
+			if (!FileUtils::PathDirExists(configFolderPath))
+			{
+				int deb = 1;
+			}
+
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", configFolderPath);
 		}
 	}
 
@@ -4673,6 +4695,29 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		
 		AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		return 0;
+	}
+
+	// Check if preview data folder needs to be deleted
+	QWORD lastMailDataPreviewDeletTime = 0;
+	BOOL retGet64 = CProfile::_GetProfileInt64(HKEY_CURRENT_USER, section_general, L"mailPreviewDataFolderDeleteTime", lastMailDataPreviewDeletTime);
+	if (m_lastMailDataPreviewDeletTime == 0)
+		m_lastMailDataPreviewDeletTime = lastMailDataPreviewDeletTime;
+
+	QWORD nowTime = _time64(0);
+	if ((m_lastMailDataPreviewDeletTime > lastMailDataPreviewDeletTime) || (nowTime > (m_lastMailDataPreviewDeletTime + (48 * 3600))))
+	{
+		CString previewDataFolder = dataFolder + L"UMBoxViewer\\PView";
+
+		bool recursive = true;
+		bool removeFolders = true;
+		CString errorText;
+		if (FileUtils::PathDirExists(previewDataFolder))
+		{
+			BOOL retRemove = FileUtils::RemoveDir(previewDataFolder, recursive, removeFolders, &errorText);
+		}
+
+		m_lastMailDataPreviewDeletTime = nowTime;
+		BOOL retWrite64 = CProfile::_WriteProfileInt64(HKEY_CURRENT_USER, section_general, L"mailPreviewDataFolderDeleteTime", m_lastMailDataPreviewDeletTime);
 	}
 
 	if (!dataFolder.IsEmpty())
@@ -6171,7 +6216,8 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	if (CProfile::IsRegistryConfig())
 	{
-		info.Format(L"\nmboxview Configuration Store: Windows Registry\n", dataFolder);
+		CString regEntry(L"HKEY_CURRENT_USER\\SOFTWARE\\UMBoxViewer");
+		info.Format(L"\nmboxview Configuration Store: Windows Registry\n", regEntry);
 	}
 	else
 	{
@@ -6179,6 +6225,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	}
 	aboutSystem.Append(info);
 
+	dataFolder.Append(L"UMBoxViewer");
 	info.Format(L"\nmboxview Data Folder:\n\"%s\"\n", dataFolder);
 	aboutSystem.Append(info);
 
@@ -6310,7 +6357,7 @@ CWnd * CMainFrame::SetWindowFocus(CWnd* wnd)
 	return wnd2;
 }
 
-// TODO: there must simpler way to accomplish focus restoartion
+// TODO: there must simpler way to accomplish focus restoration
 CWnd* CMainFrame::RestoreWindowFocus()
 {
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);

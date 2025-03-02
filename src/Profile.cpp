@@ -151,6 +151,7 @@ BOOL CProfile::SetupPreviewConfigurationFile(CString& errorText)
 		}
 	}
 
+	_ASSERTE(!configFilePath.IsEmpty());  // ???? to review
 	if (configFilePath.IsEmpty())
 	{
 		CmboxviewApp::m_registry = TRUE;
@@ -190,7 +191,7 @@ ConfigTree* CProfile::GetConfigTree()
 	if (CmboxviewApp::m_registry)
 		return 0;
 	if (CmboxviewApp::m_configTree == 0)
-		CmboxviewApp::m_configTree = new ConfigTree(CString(L"ROOT"));
+		CmboxviewApp::m_configTree = new ConfigTree(CString(L"ROOT"));  // make sure we are not here during shutdown
 
 	_ASSERTE(CmboxviewApp::m_configTree != 0);
 
@@ -499,6 +500,65 @@ BOOL CProfile::_GetProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, 
 }
 
 
+BOOL CProfile::_GetProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_GetProfileInt64_registry(hKey, section, key, intval);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_GetProfileInt64(hKey, section, key, intval);
+	}
+	return ret;
+}
+
+BOOL CProfile::_GetProfileInt64_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval)
+{
+	DWORD	size = sizeof(QWORD);
+	HKEY	myKey;
+	DWORD	result = 0;
+	LSTATUS res;
+
+	LSTATUS sts = RegOpenKeyEx(hKey, section, NULL, KEY_READ | KEY_QUERY_VALUE, &myKey);
+
+	if (sts == ERROR_SUCCESS)
+	{
+		if (key)
+		{
+			res = RegQueryValueEx(myKey, key, NULL, NULL, (BYTE*)&result, &size);
+
+			if (res == ERROR_SUCCESS) {
+				intval = result;
+				RegCloseKey(myKey);
+				return TRUE;
+			}
+			else
+			{
+				DWORD err = GetLastError();
+				CString errText = FileUtils::GetLastErrorAsString(res);
+				RegCloseKey(myKey);
+				return FALSE;
+			}
+		}
+		else
+		{
+			RegCloseKey(myKey);
+			return TRUE;  // FIXMEFIXME
+		}
+	}
+	else
+	{
+		DWORD err = GetLastError();
+		CString errText = FileUtils::GetLastErrorAsString(sts);
+	}
+	return FALSE;
+}
+
+
 BOOL CProfile::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval)
 {
 	BOOL ret = TRUE;
@@ -692,6 +752,22 @@ BOOL CProfile::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD v
 	return ret;
 }
 
+BOOL CProfile::_WriteProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value)
+{
+	BOOL ret = TRUE;
+	CString fileSection;
+	if (IsRegistryConfig(section, fileSection))
+	{
+		ret = CProfile::_WriteProfileInt64_registry(hKey, section, key, value);
+	}
+	else
+	{
+		ConfigTree* config = CProfile::GetConfigTree();
+		ret = config->_WriteProfileInt64(hKey, section, key, value);
+	}
+	return ret;
+}
+
 BOOL CProfile::_WriteProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD value)
 {
 	DWORD	dwDisposition;
@@ -726,6 +802,44 @@ BOOL CProfile::_WriteProfileInt_registry(HKEY hKey, LPCWSTR section, LPCWSTR key
 	}
 	return FALSE;
 }
+
+
+BOOL CProfile::_WriteProfileInt64_registry(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value)
+{
+	DWORD	dwDisposition;
+	HKEY	myKey;
+
+	LSTATUS sts = RegCreateKeyEx(hKey,
+		section, 0, NULL,
+		REG_OPTION_NON_VOLATILE,
+		KEY_WRITE, NULL, &myKey,
+		&dwDisposition);
+
+	if (sts == ERROR_SUCCESS)
+	{
+		if (key)
+		{
+			LSTATUS stsSet = RegSetValueEx(myKey, key, 0, REG_QWORD, (CONST BYTE*) & value, sizeof(value));
+			if (stsSet != ERROR_SUCCESS)
+			{
+				DWORD err = GetLastError();
+				CString errText = FileUtils::GetLastErrorAsString(stsSet);
+				RegCloseKey(myKey);
+				return FALSE;
+			}
+		}
+		RegCloseKey(myKey);
+		return TRUE;
+	}
+	else
+	{
+		DWORD err = GetLastError();
+		CString errText = FileUtils::GetLastErrorAsString(sts);
+	}
+	return FALSE;
+}
+
+
 // Deletes a subkey and its values from the specified platform-specific view of the registry.
 // The subkey to be deleted must not have subkeys. 
 // To delete a key and all its subkeys, you need to enumerate the subkeys and delete them individually.

@@ -341,7 +341,7 @@ BOOL ConfigTree::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD
 		return FALSE;
 
 #ifdef _DEBUG
-	CString label = L"ENTER _WriteProfileString" + CString(L" ") + section + CString(L" ") + key;
+	CString label = L"ENTER _WriteProfileInt" + CString(L" ") + section + CString(L" ") + key;
 	DumpTree(label);
 #endif
 
@@ -373,7 +373,7 @@ BOOL ConfigTree::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD
 			if (key && (i == keyIndx))
 			{
 				newNode->m_isSectionNode = FALSE;
-				newNode->m_value.Format(L"%d", value);
+				newNode->m_value.Format(L"%d", value); // or newNode->m_value.Format(L"%u", value)
 			}
 
 			node->m_configList.insert_head(newNode);
@@ -387,18 +387,89 @@ BOOL ConfigTree::_WriteProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD
 			{
 				_ASSERTE(node->m_isSectionNode == FALSE);
 				node->m_isSectionNode = FALSE;
-				node->m_value.Format(L"%d", value);
+				node->m_value.Format(L"%d", value);  // or newNode->m_value.Format(L"%u", value)
 			}
 		}
 	}
 
 #ifdef _DEBUG
-	label = L"EXIT _WriteProfileString";
+	label = L"EXIT _WriteProfileInt";
 	DumpTree(label);
 #endif
 
 	return TRUE;
 }
+
+
+BOOL ConfigTree::_WriteProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD value)
+{
+	// should we enforce _ASSERTE(key != 0); 
+	CString configSection;
+	CString registrySection = section;
+	ConfigTree::GetSection(registrySection, configSection);
+	if (configSection.IsEmpty())  // not UMBoxView
+		return FALSE;
+
+#ifdef _DEBUG
+	CString label = L"ENTER _WriteProfileInt64" + CString(L" ") + section + CString(L" ") + key;
+	DumpTree(label);
+#endif
+
+	CStringArray ar;
+	CString delim = L"\\";
+
+	TextUtilsEx::SplitStringW(configSection, delim, ar);
+
+	if (key)
+		ar.SetAtGrow(ar.GetCount(), key);
+
+	ConfigNode* node = &m_rootNode;
+
+	ConfigNode* childNode;
+	CString* name;
+	int i = 0;
+
+	int arCnt = (int)ar.GetCount();
+	int keyIndx = arCnt - 1;
+	for (i = 0; i < arCnt; i++)
+	{
+		name = &ar[i];
+		childNode = FindNode(node, name);
+		if (childNode == 0)
+		{
+			ConfigNode* newNode = new ConfigNode;
+			newNode->m_name = ar[i];
+			newNode->m_parent = node;
+			if (key && (i == keyIndx))
+			{
+				newNode->m_isSectionNode = FALSE;
+				newNode->m_value.Format(L"%llu", value);
+			}
+
+			node->m_configList.insert_head(newNode);
+			node = newNode;
+		}
+		else
+		{
+			node = childNode;
+
+			if (key && (i == keyIndx))
+			{
+				_ASSERTE(node->m_isSectionNode == FALSE);
+				node->m_isSectionNode = FALSE;
+				node->m_value.Format(L"%llu", value);
+			}
+		}
+	}
+
+#ifdef _DEBUG
+	label = L"EXIT _WriteProfileInt64";
+	DumpTree(label);
+#endif
+
+	return TRUE;
+}
+
 
 BOOL ConfigTree::_WriteProfileString(HKEY hKey, LPCWSTR section, LPCWSTR key, CString& value)
 {
@@ -612,6 +683,36 @@ BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& 
 
 		return TRUE;
 }
+
+
+BOOL ConfigTree::_GetProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD& intval)
+{
+#ifdef _DEBUG
+	//DumpTree(CString(L"_GetProfileInt"));
+#endif
+
+	CString configSection;
+	CString registrySection = section;
+	ConfigTree::GetSection(registrySection, configSection);
+	if (configSection.IsEmpty())  // not UMBoxView
+		return 0;
+
+	CString configPath = configSection + L"\\" + key;
+
+	ConfigNode* node = ConfigTree::FindNode(configPath);
+	if (node && !node->m_isSectionNode)
+	{
+		intval = (QWORD)_ttoi64(node->m_value);
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 
 BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, int& intval)
 {
@@ -836,7 +937,10 @@ int  ConfigTree::Dump2File()
 
 
 	SortTree();
-	int ret = ConfigTree::Dump2File(configFilePath);
+	BOOL isConfigFileMailPreviewType = FALSE;
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode)
+		isConfigFileMailPreviewType = TRUE;
+	int ret = ConfigTree::Dump2File(configFilePath, isConfigFileMailPreviewType);
 
 	return ret;
 }
@@ -859,6 +963,9 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 
 	CString out;
 	out.Preallocate(1000);
+
+	BOOL isConfigFileMailPreviewType = TRUE;
+	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
 
 	out = LR"(
 #
@@ -899,7 +1006,7 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 	return TRUE;
 }
 
-int  ConfigTree::Dump2File(CString& filepath)
+int  ConfigTree::Dump2File(CString& filepath, BOOL isConfigFileMailPreviewType)
 {
 	int retval;
 	CString errorText;
@@ -920,6 +1027,10 @@ int  ConfigTree::Dump2File(CString& filepath)
 	CString out;
 	out.Preallocate(10000);
 
+
+	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
+
+#if 0
 	out = LR"(
 #
 # MBox Viewer supports Windows Registry based configuration and the file based configuration.
@@ -946,7 +1057,7 @@ int  ConfigTree::Dump2File(CString& filepath)
 #
 
 )";
-
+#endif
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(hConfigFile, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
@@ -1297,3 +1408,73 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 	int deb = 1;
 }
 #endif
+
+void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CString& txt)
+{
+	if (isConfigFileMailPreviewType)
+	{
+
+		txt.Append(LR"(
+#
+# MBox Viewer supports Windows Registry based configuration and the file based configuration
+# when runing MBox Viewer in the default mode.
+#
+# The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
+# MBox Viewer will run in the preview mode when it is started with:
+# 1) the following comamnd line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
+# 2) when user double-click on a the mail file assuming the MBox Viewer is configured as the default application to 
+# open .mbox, .eml type files
+#
+# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in:
+#        C:\Users\UserName\AppData\Local\UMBoxViewer\MailPreview
+#
+# If the file doesn't exists, MBox Viewer will create one.
+# Note that C:\Users\UserName\AppData\Local folder is the standard per user folder created by Windows system
+#
+# The config file format is similar to the format of ".reg" registry file
+# [UMBoxViewer\LastSelection]
+# "parameter"="value"
+#
+# White spaces are not allowed in the front of each line and around the "=" character.
+# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
+#
+# MBoxViewer.config file must be encoded as UTF16LE BOM file
+#
+#
+
+)");
+	}
+	else
+	{
+
+		txt.Append(LR"(
+#
+# MBox Viewer supports Windows Registry based configuration and the file based configuration.
+# By default, Windows Registry is used to store configuration data.
+# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and is writeable in:
+#
+#   1) the Config subfolder under the MBox Viewer software installation folder  or
+#   2) in the UMBoxViewer\Config subfolder under the  user specific folder created by Windows system 
+#        example : C:\Users\UserName\AppData\Local\UMBoxViewer\Config
+#
+# The config file format is similar to the format of ".reg" registry file
+# [UMBoxViewer\LastSelection]
+# "parameter"="value"
+#
+# White spaces are not allowed in the front of each line and around the "=" character.
+# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
+#
+# MBoxViewer.config file must be encoded as UTF16LE BOM file
+#
+# MBoxViewer.config.sample file is included in the software package under the Config folder.
+# In order to enable MBox Viewer to use the file based configuration, 
+# user needs to rename this file to MBoxViewer.config file or copy the sample file
+# to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
+#
+
+)");
+
+
+	}
+}
+
