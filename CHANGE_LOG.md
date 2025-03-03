@@ -2,6 +2,15 @@
 Changes
 -------
 
+v 1.0.3.48
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added support for Romanian language.;
+ - Updated some of language translations.;
+ - Enhanced scalability of Print to PDF -> Merge option.;
+ - Enhanced Mail Preview to leverage separate data configuration file.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.47
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

@@ -11,8 +11,8 @@ setlocal enabledelayedexpansion
 @REM and run this script on multiple cores. Copy this scripts and html2pdf-list.cmd script
 @REM to directory with generated HTML files
 @REM
-@REM This main script is similar to run-html2pdf-range.cmd script
-@REM This script relies on HTML mail file position instead of HTML mail file names
+@REM This main script is similar to run-html2pdf-list.cmd script
+@REM This script relies on HTML mail file names instead of HTML mail file position
 @REM 
 @REM https://okular.kde.org/  PDF viewer capable of viewing very large PDF files
 @REM
@@ -22,14 +22,22 @@ setlocal enabledelayedexpansion
 @echo Running %0 script
 @echo.
 
-set NumberOfBrowsers=2
+set NumberOfBrowsers=4
 @REM You must create separate data folder per Browser instance, see UserDataDir below
+@REM User Data Folder is not needed if number of browsers is set 1
 @REM NumberOfBrowsers windows  will be created and minimized
 
-set TotalMails=12
+@REM Script will assume G:\UserAgent\0, G:\UserAgent\1, etc are precreated by user
+set RootUserDataDir=G:\UserAgent
+
+@REM ################################ must set TotalMails
+SET fileCount=0
+FOR /f "tokens=*" %%G IN ('dir /b *.htm') DO ( set /a fileCount+=1 )
+@REM set to number of mails/htm files found or set explicitly  to override if needed
+set TotalMails=%fileCount%
+REM set TotalMails=12
 set /a Total=%TotalMails%
 set /a MailBlockSize=%Total%/%NumberOfBrowsers%
-
 
 @echo TotalMails=%TotalMails%
 @echo MailBlockSize=%MailBlockSize%
@@ -41,14 +49,20 @@ set /a MaxIndex=NumberOfBrowsers-1
 @REM Begin Loop
 for /L %%i in (0,1,%MaxIndex%) do (
 
-set WindowTitle=chrome-range%%i
-set UserDataDir=G:\UserAgent\%%i
-
 @set /a FirstMail=%%i*%MailBlockSize% + 1
 @set /a LastMail=%%i*%MailBlockSize% + %MailBlockSize%
 if %%i == %MaxIndex% ( set LastMail=%TotalMails% )
+
+set WindowTitle=chrome-range%%i
+if "%NumberOfBrowsers%" == "1" ( set UserDataDir= ) ELSE ( set UserDataDir=!RootUserDataDir!\%%i )
+if "%UserDataDir%" == "" (
+@echo FirstMail=!FirstMail!  LastMail=!LastMail!
+) ELSE (
 @echo FirstMail=!FirstMail!  LastMail=!LastMail! UserDataDir=!UserDataDir!
+)
+
 @echo on
+@echo start "!WindowTitle!" /MIN html2pdf-range.cmd !FirstMail! !LastMail! !UserDataDir!
 start "!WindowTitle!" /MIN html2pdf-range.cmd !FirstMail! !LastMail! !UserDataDir! ^>%%i.txt 2>&1
 @echo off
 )
@@ -56,7 +70,7 @@ start "!WindowTitle!" /MIN html2pdf-range.cmd !FirstMail! !LastMail! !UserDataDi
 
 goto :eof
 
-@REM Run the following to get PIDs of windows to kill if needed
+@REM Run the following to get PIDs of created windows to kill if needed
 @REM tasklist /v /FO table /FI "WindowTitle eq chrome-range*"
 
 

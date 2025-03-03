@@ -122,6 +122,7 @@ REM create and call myFunctions.bat instead of copy in all script files
 echo.
 echo Usage: %0 firstMailIndex lastMailIndex [UserDataDirectory for Chrome/Edge instance when running multiple browser instances]
 echo.
+goto :eo
 exit /b
 
 :ConvertSecondsToMinutesAndSeconds
@@ -185,6 +186,29 @@ SETLOCAL EnableExtensions enabledelayedexpansion
 set num=000000000000%~1
 set number=!num:~-%~3!
 ENDLOCAL & set %~2=%number%
+goto :eof
+exit /b
+
+@REM in GBytes
+:TotalPhysicalMemory
+@echo off
+SETLOCAL EnableExtensions  enabledelayedexpansion
+for /F "tokens=*" %%A in ('systeminfo /fo list ^| findstr Total ^| findstr Physical ^| findstr Memory') do ( 
+for /F "tokens=4 delims=, " %%i in ("%%A") do (
+set size=%%i
+)
+)
+ENDLOCAL & set %~1=%size%
+goto :eof
+exit /b
+
+:strlen
+@echo off
+set s=%1
+setlocal enabledelayedexpansion
+:strLen_Loop
+  if not "!s:~%len%!"=="" set /A len+=1 & goto :strLen_Loop
+(endlocal & set %2=%len%)
 goto :eof
 exit /b
 

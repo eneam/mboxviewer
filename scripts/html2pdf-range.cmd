@@ -185,3 +185,14 @@ ENDLOCAL & set %~1=%size%
 goto :eof
 exit /b
 
+:strlen
+@echo off
+set s=%1
+setlocal enabledelayedexpansion
+:strLen_Loop
+  if not "!s:~%len%!"=="" set /A len+=1 & goto :strLen_Loop
+(endlocal & set %2=%len%)
+goto :eof
+exit /b
+
+

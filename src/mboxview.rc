@@ -153,7 +153,7 @@ BEGIN
     END
     POPUP "Language"
     BEGIN
-        MENUITEM "Select Languange",            ID_LANGUAGE_SELECTLANGUANGE
+        MENUITEM "Select Language",             ID_LANGUAGE_SELECTLANGUANGE
         MENUITEM "Help",                        ID_LANGUAGE_HELP
     END
 END
@@ -860,8 +860,8 @@ BEGIN
     CONTROL         "Relative Inline Attachments File Path",IDC_RELATIVE_ATTACHMENT_FILE_PATH,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,24,271,10
     GROUPBOX        "PDF Merge Config",IDC_STATIC_PDF_MERGE,7,39,295,57,BS_NOTIFY
-    EDITTEXT        IDC_MERGE_HTML_CNT,14,54,64,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    LTEXT           "Number of HTML mails to merge to increase scalability",IDC_STATIC_MERGE_INFO_1,83,58,212,8,SS_NOTIFY
+    EDITTEXT        IDC_MERGE_HTML_CNT,14,54,52,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    LTEXT           "Number of HTML mails to merge to increase scalability",IDC_STATIC_MERGE_INFO_1,72,58,223,8,SS_NOTIFY
     CONTROL         "Enable default User-Agent string",IDC_MERGE_ENABLE_USER_AGENT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,76,281,10
 END
