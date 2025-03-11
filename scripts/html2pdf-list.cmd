@@ -152,7 +152,7 @@ For /f "tokens=1-4 delims=/:." %%a in ("%TIME%") do (
 )
 
 For /f "tokens=1-3 delims=/" %%a in ("%DATE%") do (
-set day=%%b
+call :RemoveLeadingZeros %%b day
 )
 
 set /a timeInSeconds=!day!*24*3600 + %HH24%*3600 + %MI%*60 + %SS%

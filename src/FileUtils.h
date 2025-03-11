@@ -99,6 +99,7 @@ public:
 	//
 	// Create all subfolders if they don't exist
 	static BOOL CreateDir(const wchar_t *path);
+	static BOOL CreateDir(const wchar_t* path, CString &errorText);
 	//
 	static BOOL DelFile(const wchar_t *path, BOOL verify = TRUE);  // It was FALSE, chnaged to see if that vcan remain TRUE
 	static BOOL DelFile(CString &path, BOOL verify = TRUE);  // It was FALSE, chnaged to see if that vcan remain TRUE

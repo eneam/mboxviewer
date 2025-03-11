@@ -8942,51 +8942,7 @@ int NListView::PrintMailSelectedToSinglePDF_Merge_Thread(MailIndexList* selected
 		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
-#if 0
-	if (selectedMailsIndexList == 0)
-	{
-		selectedMailsIndexList = PopulateSelectedMailsList();
-	}
-
-	if (selectedMailsIndexList->GetCount() <= 0)
-		return 1;
-
-
-	int cnt = (int)selectedMailsIndexList->GetCount();
-	MailIndexList subsetSelectedMailsIndexList;
-
-	int maxSizeOfList = 102;
-	subsetSelectedMailsIndexList.SetSize(maxSizeOfList);
-
-
-	int i = 0;
-	int j = 0;
-	int k = 0;
-
-	for (i = 0; i < cnt; i++)
-	{
-		j = (*selectedMailsIndexList)[i];
-		subsetSelectedMailsIndexList.SetAt(k, j);
-		k++;
-		if (k >= maxSizeOfList)
-		{
-			int ret = PrintMailSelectedToSinglePDF_Thread(&subsetSelectedMailsIndexList, targetPrintSubFolderName, targetPrintFolderPath);
-			int count = (int)subsetSelectedMailsIndexList.GetCount();
-			//subsetSelectedMailsIndexList.RemoveAll();
-			//subsetSelectedMailsIndexList.SetSize(maxSizeOfList);
-			k = 0;
-		}
-	}
-	if (i >= cnt)
-	{
-		subsetSelectedMailsIndexList.SetSize(k);
-		int ret = PrintMailSelectedToSinglePDF_Thread(&subsetSelectedMailsIndexList, targetPrintSubFolderName, targetPrintFolderPath);
-		int count = (int)subsetSelectedMailsIndexList.GetCount();
-		int deb = 1;
-	}
-#else
 	int ret = PrintMailSelectedToSeparatePDF_Thread(0, targetPrintSubFolderName, targetPrintFolderPath, TRUE);
-#endif
 	return 1;
 }
 

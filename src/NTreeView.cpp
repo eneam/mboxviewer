@@ -7572,6 +7572,8 @@ void NTreeView::DoOpenFilePreview(CString& path)
 	MboxMail::s_folderContext.m_dataFolderPath.Empty();
 	MboxMail::s_folderContext.m_rootDataFolderPathSubFolderConfig = L"PView\\";
 
+#if 0
+	// Just a test -:))
 	CString mboxviewTempPath = CMainFrame::GetMboxviewTempPath();
 
 	CString localFolderPath = FileUtils::GetMboxviewLocalAppPath(); // Windows created application folder path such as C:\Users\tata\AppData\Local
@@ -7586,6 +7588,7 @@ void NTreeView::DoOpenFilePreview(CString& path)
 	CString localAppDataPath1 = FileUtils::GetMboxviewLocalAppDataPath((LPCWSTR)folderName, (LPCWSTR)subfoldderName);
 	wchar_t* name = 0;
 	CString localAppDataPath2 = FileUtils::CreateMboxviewLocalAppDataPath(name);
+#endif
 
 
 	if (MboxMail::s_folderContext.m_rootDataFolderPathConfig.IsEmpty())

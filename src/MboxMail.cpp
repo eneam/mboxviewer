@@ -10311,24 +10311,31 @@ BOOL MboxMail::CreateCachePath(CString &rootPrintSubFolder, CString &targetPrint
 		return FALSE;
 
 	BOOL createDirOk = TRUE;
+	CString errText;
 	if (!FileUtils::PathDirExists(prtCachePath)) {
-		createDirOk = FileUtils::CreateDir(prtCachePath);
+		createDirOk = FileUtils::CreateDir(prtCachePath, errText);
 	}
 
 	if (!createDirOk)
 	{
+#if 1
+		CString fmt = L"Could not create \n\n\"%s\"\n\nfolder for print destination.\n\n%s\n\nResolve the problem and try again.";
+		errorText.Format(fmt, prtCachePath, errText);
+		ResHelper::TranslateString(errorText);
+#else
 		errorText = L"Could not create \n\n\"" + prtCachePath;
 		errorText += L"\"\n\n folder for print destination.";
 
 		int prtCachePathLen = prtCachePath.GetLength();
-		if (prtCachePathLen > MAX_PATH)
+		if (prtCachePathLen > (MAX_PATH-12))
 		{
 			CString lstr;
-			lstr.Format(L"\n\nFolder path of %d longer than MAX_PATH (260).", prtCachePathLen);
+			lstr.Format(L"\n\nFolder path of %d longer than MAX_PATH (248).", prtCachePathLen);
 			errorText += lstr;
 		}
 
 		errorText += L"\n\nResolve the problem and try again.";
+#endif
 		return FALSE;
 	}
 

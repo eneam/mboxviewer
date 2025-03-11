@@ -67,6 +67,7 @@ start "!WindowTitle!" /MIN html2pdf-list.cmd !FirstFile! !LastFile! !UserDataDir
 )
 @REM End Loop
 
+pause
 exit /b
 goto :eof
 

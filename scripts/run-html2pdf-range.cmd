@@ -68,6 +68,8 @@ start "!WindowTitle!" /MIN html2pdf-range.cmd !FirstMail! !LastMail! !UserDataDi
 )
 @REM End Loop
 
+pause
+exit /b
 goto :eof
 
 @REM Run the following to get PIDs of created windows to kill if needed

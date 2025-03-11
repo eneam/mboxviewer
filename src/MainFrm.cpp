@@ -6299,7 +6299,7 @@ CString CMainFrame::GetMboxviewTempPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
-		tempFolder = L"UMBoxViewerDirect";
+		tempFolder = L"UMBoxViewerPreview";
 	if (name == 0)
 	{
 		if (m_mboxviewTempPath.IsEmpty())
@@ -6320,7 +6320,7 @@ CString CMainFrame::GetMboxviewLocalAppDataPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
-		tempFolder = L"UMBoxViewerDirect";
+		tempFolder = L"UMBoxViewerPreview";
 
 	CString mboxviewLocalAppDataPath = FileUtils::GetMboxviewLocalAppDataPath(tempFolder, name);
 	return mboxviewLocalAppDataPath;
@@ -6331,7 +6331,7 @@ CString CMainFrame::CreateTempFileName(const wchar_t *ext)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
-		tempFolder = L"UMBoxViewerDirect";
+		tempFolder = L"UMBoxViewerPreview";
 	CString fileName = FileUtils::CreateTempFileName(tempFolder, ext);
 	return fileName;
 }

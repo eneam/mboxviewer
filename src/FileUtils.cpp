@@ -904,7 +904,13 @@ BOOL FileUtils::NormalizeFilePath(CString &filePath)
 
 // create all subfolders if they don't exist
 
-BOOL FileUtils::CreateDir(const wchar_t *path)
+BOOL FileUtils::CreateDir(const wchar_t* path)
+{
+	CString errorText;
+	return FileUtils::CreateDir(path, errorText);
+}
+
+BOOL FileUtils::CreateDir(const wchar_t *path, CString &errorText)
 {
 	CList<CString, CString &> folderList;
 
@@ -947,6 +953,7 @@ BOOL FileUtils::CreateDir(const wchar_t *path)
 		folderPath.Append(L"\\");
 		if (!::CreateDirectory(folderPath, NULL))  // must be global function
 		{
+			errorText = FileUtils::GetLastErrorAsString();
 			return FALSE;
 		}
 		if (!FileUtils::PathDirExists(folderPath))

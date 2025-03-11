@@ -967,6 +967,7 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 	BOOL isConfigFileMailPreviewType = TRUE;
 	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
 
+#if 0
 	out = LR"(
 #
 # MBox Viewer supports Windows Registry based configuration and the file based configuration
@@ -996,7 +997,7 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 #
 
 )";
-
+#endif
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(h, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);

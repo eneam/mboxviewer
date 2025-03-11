@@ -42,7 +42,9 @@ REM Command tools example https://pdfbox.apache.org/2.0/commandline.html
 cd .
 set PDFBox=pdfbox-app-3.0.4.jar
 set PDFBoxDirectoryPath=%cd%
-set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
+@REM Don't use full path, script breaks if path has UNICODE characters
+@REM set PDFBoxJarFilePath=%PDFBoxDirectoryPath%/%PDFBox%
+set PDFBoxJarFilePath=%PDFBox%
 
 if NOT exist "%PDFBoxJarFilePath%" (
 
