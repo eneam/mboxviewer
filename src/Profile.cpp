@@ -520,7 +520,7 @@ BOOL CProfile::_GetProfileInt64_registry(HKEY hKey, LPCWSTR section, LPCWSTR key
 {
 	DWORD	size = sizeof(QWORD);
 	HKEY	myKey;
-	DWORD	result = 0;
+	QWORD	result = 0;
 	LSTATUS res;
 
 	LSTATUS sts = RegOpenKeyEx(hKey, section, NULL, KEY_READ | KEY_QUERY_VALUE, &myKey);

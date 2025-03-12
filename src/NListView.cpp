@@ -9667,7 +9667,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 
 		if (fpHtmlFile.m_hFile == CFile::hFileNull)
 		{
-			int htmlFileNumber = htmlFilesArr.GetCount();
+			int htmlFileNumber = (int)htmlFilesArr.GetCount();
 			int mailNumber = htmlFileNumber + 1;
 			htmlFilePath.Format(L"%s\\%s%06d.htm", targetPrintFolderPath, htmlFileName, mailNumber);
 			CFileException ExError;
