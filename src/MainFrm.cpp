@@ -6037,10 +6037,10 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 
 	CString mboxFilePath = dlg.m_sourceArchiveFolder + dlg.m_createdArchiveName;
 
-	FileUtils::DelFile(mboxFilePath);
+	BOOL delcode = FileUtils::DelFile(mboxFilePath);
 	CString dataPath = MboxMail::GetLastDataPath();
 	CString indexFilePath = dataPath + L"\\" + dlg.m_createdArchiveName + L".mboxview";
-	FileUtils::DelFile(indexFilePath);
+	BOOL retdel = FileUtils::DelFile(indexFilePath);
 
 	int firstIndex = lastMailIndex;
 	if (dlg.m_leadingMailCount < 0)
@@ -6693,7 +6693,7 @@ void CMainFrame::OnTestCfileopenfailure()
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, noShareFilePath, exList2, lastErr, h);
 
 		file1.Close();
-		FileUtils::DelFile(noShareFilePath);
+		BOOL retdel = FileUtils::DelFile(noShareFilePath);
 
 		int deb = 1;
 		return;

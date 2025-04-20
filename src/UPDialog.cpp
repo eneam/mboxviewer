@@ -104,15 +104,25 @@ CUPDialog::~CUPDialog(void)
 	Cleanup();			//It is possible that the Dialog object can be destroyed while Thread is still running..!!
 }
 
-void CUPDialog::Cleanup()
+void CUPDialog::Cleanup(DWORD dwTerminateDelay)
 {
 	m_ThreadData.bTerminate = true;
+	BOOL forceThreadTermination = FALSE;
 
 	if(m_ThreadData.bAlive)		//If associated Thread is still alive Terminate It
 	{
-		if (WaitForSingleObject(m_hThread, m_dwTerminateDelay) != WAIT_OBJECT_0) {
+		if (dwTerminateDelay == 0)
+			dwTerminateDelay = m_dwTerminateDelay;
+		if (WaitForSingleObject(m_hThread, dwTerminateDelay) != WAIT_OBJECT_0)
+		{
 			TRACE(L"(Cleanup)Terminating Thread\n");
-			TerminateThread(m_hThread, IDCANCEL);
+			BOOL terminateStatus = TRUE;
+			//_ASSERTE(0);
+			if (m_hThread)
+			{
+				terminateStatus = TerminateThread(m_hThread, IDCANCEL);
+				forceThreadTermination = TRUE;
+			}
 		}
 	}
 
@@ -122,19 +132,34 @@ void CUPDialog::Cleanup()
 		m_hThread = NULL;
 	}
 
+	BOOL bAlive = m_ThreadData.bAlive;
+
     m_ThreadData.bAlive = false;
 	m_ThreadData.bTerminate = false;
 	m_ThreadData.hThreadWnd = NULL;
+
+	if (bAlive)
+		Sleep(500);  // hope thread is dead by now
+
+	if (forceThreadTermination)
+	{
+		// Force Termination leads or may lead to issues
+		// Termonated thread doesn't  cleanup heap memory, file handles and ??
+		int deb = 1;
+	}
 }
 
 INT_PTR CUPDialog::DoModal()
 {
+	INT_PTR retcode = IDCANCEL;
 	Cleanup();		//If this is not first time, we had better Terminate any previous instance Threads !!
 
 	if(m_lpszTemplateName == NULL)	// if no custom dialog template is supplied to us, lets use the built-in one
-		return DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE) dlg_145, m_hParentWnd, (DLGPROC) ProgressDlgProc, (LPARAM)this); 
+		retcode = DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE) dlg_145, m_hParentWnd, (DLGPROC) ProgressDlgProc, (LPARAM)this); 
 	else
-		return DialogBoxParam(m_hInst,m_lpszTemplateName,m_hParentWnd,ProgressDlgProc,(LPARAM)this);
+		retcode = DialogBoxParam(m_hInst,m_lpszTemplateName,m_hParentWnd,ProgressDlgProc,(LPARAM)this);
+
+	return retcode;
 }
 
 static DWORD WINAPI ThreadProc(LPVOID lpThreadParameter)	//Calls the User Progress Procedure
@@ -291,16 +316,35 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 				//SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId),WM_SETTEXT,0,(LPARAM)(L"Termination Initiated.."));
 
 				SendMessage(hDlg,PROGRESSTHREADDATA::WM_DISABLECONTROLS,wParam,lParam);
-				if(pThreadData->bAlive)
-					Sleep(pProgressDialog->m_dwTerminateDelay);
+				if (pThreadData->bAlive)
+				{
+					//Sleep(pProgressDialog->m_dwTerminateDelay);
+					DWORD sleepTime = 500;
+					for (DWORD tm = 0; tm <= pProgressDialog->m_dwTerminateDelay; tm += 500)
+					{
+						Sleep(sleepTime);
+						if (!pThreadData->bAlive)
+							break;
+					}
+				}
 				if (pThreadData->bAlive) {
 					ResHelper::TranslateString(terminationComplete);
 					SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId), WM_SETTEXT, 0, (LPARAM)((LPCWSTR)terminationComplete));
 					//SendMessage(GetDlgItem(hDlg, pProgressDialog->m_nStaticControlId), WM_SETTEXT, 0, (LPARAM)(L"Termination Complete ..Shutting Down !!"));
 				}
-				if(pThreadData->bAlive)
-					Sleep(pProgressDialog->m_dwTerminateDelay);
+				if (pThreadData->bAlive)
+				{
+					//Sleep(pProgressDialog->m_dwTerminateDelay);
+					DWORD sleepTime = 500;
+					for (DWORD tm = 0; tm <= pProgressDialog->m_dwTerminateDelay; tm += 500)
+					{
+						Sleep(sleepTime);
+						if (!pThreadData->bAlive)
+							break;
+					}
+				}
 				EndDialog(hDlg, MAKEWPARAM(IDCANCEL,1));
+				int deb = 1;
 			}
 			bProcessed = TRUE;
 			break;

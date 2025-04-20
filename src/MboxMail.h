@@ -601,7 +601,7 @@ public:
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCWSTR path);
-	static bool Process(ProgressTimer &progressTimer, char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
+	static bool Process(CString &filePath, ProgressTimer &progressTimer, char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
 	static void FindDateInHeader(char *data, int datelen, CStringA& dateStr);
 	static void MonthToString(int month, CStringA &monthStr);
 	static time_t parseRFC822Date(CStringA &date, CStringA &format);

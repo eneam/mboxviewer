@@ -76,7 +76,7 @@ BOOL SerializerHelper::open(BOOL bWrite, int buffSize)
 
 	if (bWrite) 
 	{
-		m_hFile = CreateFile(m_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		m_hFile = CreateFile(m_path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (m_hFile == INVALID_HANDLE_VALUE)
 		{
 			this->close();
@@ -102,7 +102,7 @@ BOOL SerializerHelper::open(BOOL bWrite, int buffSize)
 
 		m_fileSize = FileUtils::FileSize(m_path);
 
-		m_hFile = CreateFile(m_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		m_hFile = CreateFile(m_path, GENERIC_READ, FILE_SHARE_READ| FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		if (m_hFile == INVALID_HANDLE_VALUE)
 		{
 			DWORD lError = GetLastError();

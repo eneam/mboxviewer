@@ -242,8 +242,9 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0)) 
 		{
 			CString	fileFound = dir + CString(FileData.cFileName);
+			BOOL retdel  = TRUE;
 			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-				FileUtils::DelFile(fileFound, TRUE);
+				retdel = FileUtils::DelFile(fileFound, TRUE);
 			else if (recursive)
 			{
 				CString eText;

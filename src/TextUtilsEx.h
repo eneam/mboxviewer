@@ -182,6 +182,8 @@ public:
 		BOOL bEnableEscapedChars = FALSE,
 		BOOL bEnableDoubleQuote = FALSE,
 		BOOL bReturnEmptyToken = FALSE);
+
+	static int TextUtilsEx::ReplaceChar(char* str, char c_target, char c_replace);
 };
 
 

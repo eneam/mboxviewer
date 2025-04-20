@@ -2044,3 +2044,18 @@ int TextUtilsEx::XTokenString(LPCTSTR lpszString,
 	return (int)saTokens.GetSize();
 }
 
+// Replcae all instanes of specified target character
+int TextUtilsEx::ReplaceChar(char *str, char c_target, char c_replace)
+{
+	int cnt = 0;
+	char* result = str;
+
+	while ((result = strchr(result, c_target)) != NULL)
+	{
+		*result = c_replace;
+		cnt++;
+		++result; // Increment result, otherwise we'll find target at the same location
+	}
+	return cnt;
+}
+

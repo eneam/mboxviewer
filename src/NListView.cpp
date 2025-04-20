@@ -3094,6 +3094,32 @@ bool ALongRightProcessProc(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
+bool ALongRightProcessProcLoadMails(const CUPDUPDATA* pCUPDUPData)
+{
+	LOAD_MAILS_ARGS* args = (LOAD_MAILS_ARGS*)pCUPDUPData->GetAppData();
+
+	CString path = args->mailFilePath;
+	CString cache = args->cacheFilePath;
+	MboxMail::pCUPDUPData = pCUPDUPData;
+
+	HANDLE h = GetCurrentThread();
+	BOOL prio = SetThreadPriority(h, THREAD_PRIORITY_ABOVE_NORMAL);
+	DWORD myThreadId = GetCurrentThreadId();
+	DWORD myThreadPri = GetThreadPriority(h);
+	TRACE(L"threadId=%ld threadPriority=%ld\n", myThreadId, myThreadPri);
+
+	//MboxMail::SetMboxFilePath(m_path);
+	// it populates s_mails from mail index/mboxview file
+	CString errorText;
+	MailArray* marray = 0;
+	args->mailFileInfo.Clear();
+	args->ni = args->lview->LoadMails_WorkerThread(cache, args->mailFileInfo, marray, errorText);
+
+	//NListView::LoadMails(path);
+	args->exitted = TRUE;
+	return true;
+}
+
 bool ALongRightProcessProc_LabelView(const CUPDUPDATA* pCUPDUPData)
 {
 	PARSE_ARGS *args = (PARSE_ARGS*)pCUPDUPData->GetAppData();
@@ -3611,6 +3637,170 @@ int NListView::LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, Mail
 	return ret;
 }
 
+int NListView::LoadMails_WorkerThread(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, MailArray* mails, CString& errorText)
+{
+	//_int64 fileSize = FileUtils::FileSize(MboxMail::s_path);
+
+	CString filePath(cache);
+
+	SerializerHelper sz(cache);
+	//if (!sz.open(FALSE, 64))
+	if (!sz.open(FALSE))
+	{
+		return -1;
+	}
+
+	int ret = NListView::LoadMailsInfo(sz, maileFileInfo, errorText);
+	if (ret < 0)
+	{
+		sz.close();
+
+		HWND h = GetSafeHwnd();
+		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return ret;
+	}
+
+	ret = -1;
+	_int64 lastoff = 0;
+	int i = 0;
+	int ni = maileFileInfo.m_mailCount;
+
+	if (ni >= 0)
+	{
+		if (mails == 0)
+		{
+			MboxMail::s_mails.SetSize(ni);
+			MboxMail::s_mails.SetSizeKeepData(0);
+		}
+		else
+		{
+			mails->SetSize(ni);
+			mails->SetSizeKeepData(0);
+		}
+
+		CString driveName;
+		CString directory;
+		CString fileNameBase;
+		CString fileNameExtention;
+		FileUtils::SplitFilePath(filePath, driveName, directory, fileNameBase, fileNameExtention);
+
+		ULONGLONG workRangeFirstPos = 0;
+		ULONGLONG workRangeLastPos = ni - 1;
+		ProgressTimer progressTimer(workRangeFirstPos, workRangeLastPos);
+
+		ULONGLONG tc_start = GetTickCount64();
+		ULONGLONG tc_end = GetTickCount64();
+		int slowDriveCnt = 0;
+		ULONGLONG slowDriveEventArray[3] = { 0 };
+
+		MboxMail* m;
+		for (i = 0; i < ni; i++)
+		{
+			m = new MboxMail();
+
+			if (LoadSingleMail(m, sz) == 0)
+				break;
+
+			if (i < 1000)
+				tc_end = GetTickCount64();
+
+			if (lastoff < m->m_startOff)
+				lastoff = m->m_startOff;
+
+			if (mails == 0)
+				MboxMail::s_mails.Add(m);
+			else
+				mails->Add(m);
+
+			UINT_PTR dwProgressbarPos = 0;
+			ULONGLONG workRangePos = i;
+			BOOL needToUpdateStatusBar = progressTimer.UpdateWorkPos(workRangePos, dwProgressbarPos);
+
+			BOOL slowDrive = FALSE;
+			if (i > 3 && i < 1000)
+			{
+				ULONGLONG delta_ms = tc_end - tc_start;
+
+				slowDriveEventArray[slowDriveCnt] = delta_ms;
+				ULONGLONG slowDriveEventSum = 0;
+				for (int j = 0; j < 3; j++)
+					slowDriveEventSum += slowDriveEventArray[j];
+				ULONGLONG slowDriveEventAverage = slowDriveEventSum / 3;
+				if (slowDriveEventAverage > 200)
+					slowDrive = TRUE;
+
+				slowDriveCnt++;
+				if (slowDriveCnt >= 3)
+					slowDriveCnt = 0;
+			}
+			if (needToUpdateStatusBar)
+			{
+				CString mailNum;
+				CString fmt = L"Loading index file %d ... %d";
+				ResHelper::TranslateString(fmt);
+				mailNum.Format(fmt, i, ni);
+
+				if (slowDrive)
+				{
+					CString slowDriveWarningText = L"      %s Drive Slow Read/Write !!!";
+					ResHelper::TranslateString(slowDriveWarningText);
+					CString txt;
+					txt.Format(slowDriveWarningText, driveName);
+					mailNum.Append(txt);
+				}
+
+				if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(dwProgressbarPos));
+			}
+
+			if (i < 1000)
+				tc_start = GetTickCount64();
+
+			if (MboxMail::pCUPDUPData && MboxMail::pCUPDUPData->ShouldTerminate())
+			{
+				break;
+			}
+
+			//Sleep(90);  // slow drive test
+
+#if 0
+			if (i % 10000 == 0)
+			{
+				int sz = MboxMail::AllMailsSizeof(MboxMail::s_mails.GetSize());
+				int deb = 1;
+			}
+#endif
+		}
+	}
+	else
+	{
+		int deb = 1;
+	}
+
+	TRACE(L"lastoff=%lld\n", lastoff);
+
+	sz.close();
+
+#if 0
+	if (mails == 0)
+		MboxMail::s_fSize = MboxMail::s_oSize = maileFileInfo.m_fileSize;
+
+
+	if (i < ni)
+	{
+		if (mails == 0)
+			MboxMail::Destroy(&MboxMail::s_mails);
+		else
+			MboxMail::Destroy(mails);
+	}
+	else
+		ret = ni;
+#else
+	ret = ni;
+#endif
+
+	return ret;
+}
+
 int NListView::Cache2Text(LPCWSTR cache, CString format)
 {
 	MboxMail mm;
@@ -3769,23 +3959,19 @@ int NListView::FillCtrl_ParseMbox(CString &mboxPath)
 			// We should be here when user selects Cancel button
 			//_ASSERTE(cancelledbyUser == TRUE);
 
-			DWORD terminationDelay = Dlg.GetTerminationDelay();
-			int loopCnt = (terminationDelay+100)/25;
-
-			ULONGLONG tc_start = GetTickCount64();
-			while ((loopCnt-- > 0) && (args.exitted == FALSE))
-			{
-				Sleep(25);
-			}
-			ULONGLONG tc_end = GetTickCount64();
-			DWORD delta = (DWORD)(tc_end - tc_start);
-			TRACE(L"(FillCtrl_ParseMbox)Waited %ld milliseconds for thread to exist.\n", delta);
+			Dlg.Cleanup();
 
 			CString cache;
 			BOOL ret = MboxMail::GetMboxviewFilePath(m_path, cache);
 
-			FileUtils::DelFile(cache);
+			BOOL retdel = FileUtils::DelFile(cache);
+			int deg = 1;
 		}
+		else
+		{
+			_ASSERTE(args.exitted == TRUE);
+		}
+
 		MboxMail::runningWorkerThreadType = 0;
 
 		MboxMail::pCUPDUPData = NULL;
@@ -3893,44 +4079,142 @@ void NListView::FillCtrl()
 		}
 	}
 #endif
-
-	if( FileUtils::PathFileExist(cache) )
+	BOOL loadMailsCanceledByUser = FALSE;
+	if (FileUtils::PathFileExist(cache) )
 	{
-		//MboxMail::s_path = m_path;
-		MboxMail::SetMboxFilePath(m_path);
-		// it populates s_mails from mail index/mboxview file
-		CString errorText;
-		MailArray* marray = 0;
-		m_maileFileInfo.Clear();
-		ni = LoadMails(cache, m_maileFileInfo, marray, errorText);
-		if ( ni < 0 )
+		BOOL workerThread = TRUE;  //enable/disable worker thread
+		if (workerThread == FALSE)
 		{
-			if (ni != -2)
+			//MboxMail::s_path = m_path;
+			MboxMail::SetMboxFilePath(m_path);
+			// it populates s_mails from mail index/mboxview file
+
+			CString errorText;
+			MailArray* marray = 0;
+			m_maileFileInfo.Clear();
+			ni = LoadMails(cache, m_maileFileInfo, marray, errorText);
+			if (ni < 0)
 			{
-#if 0
-				CString txt = L"Index file\n\n\"" + cache;
-				txt += L"\n\nappears to be corrupted. The index file will be recreated.";
-#endif
-				CString txt;
-				CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
+				if (ni != -2)  // TODO: review this
+				{
+					CString txt;
+					CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
 
-				ResHelper::TranslateString(fmt);
-				errorText.Format(fmt, cache);
+					ResHelper::TranslateString(fmt);
+					errorText.Format(fmt, cache);
 
-				HWND h = GetSafeHwnd();
-				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+					HWND h = GetSafeHwnd();
+					int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				}
+
+				ni = 0;
+				BOOL retdel = FileUtils::DelFile(cache);
+				int deb = 1;
+			}
+			else
+				m_list.SetItemCount(ni);
+
+			int deb = 1;
+		}
+		else
+		{
+			LOAD_MAILS_ARGS args;
+			args.mailFilePath = m_path;
+			args.cacheFilePath = cache;
+			args.lview = this;
+			args.exitted = FALSE;
+
+			m_maileFileInfo.Clear();
+			MboxMail::SetMboxFilePath(m_path);
+
+			// see  MyUnhandledExceptionFilter
+			MboxMail::runningWorkerThreadType = 1;
+
+			CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcLoadMails, (LPVOID)(PARSE_ARGS*)&args);
+			Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
+
+			INT_PTR nResult = Dlg.DoModal();
+
+			if (!nResult)  // should never be true ?
+			{
+				MboxMail::runningWorkerThreadType = 0;
+				MboxMail::assert_unexpected();
+				return;
 			}
 
-			ni = 0;
-			FileUtils::DelFile(cache);
-		} else
-			m_list.SetItemCount(ni);
+			int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
+			int retResult = LOWORD(nResult);
 
-		int deb = 1;
+
+			if (retResult != IDOK)
+			{  // IDOK==1, IDCANCEL==2
+				// We should be here when user selects Cancel button
+				//_ASSERTE(cancelledbyUser == TRUE);
+
+				Dlg.Cleanup();
+
+				loadMailsCanceledByUser = TRUE;
+
+				int ni = MboxMail::s_mails.GetSize();
+
+				if (args.exitted == FALSE)
+				{
+					// worker thread was killed
+					// we may crash anyway but set the last element to 0 if the last element was not fully constructed
+					// we don't care if memory leaks
+					MboxMail::s_mails.SetAt(ni - 1, 0);
+				}
+
+				MboxMail::Destroy(&MboxMail::s_mails);
+
+				ni = 0;
+				m_list.SetItemCount(ni);
+
+				int deb = 1;
+			}
+			else
+			{
+				_ASSERTE(args.exitted == TRUE);
+				ni = args.ni;
+				if (ni < 0)
+				{
+					if (ni != -2) // TODO: review this
+					{
+						CString errorText;
+						CString txt;
+						CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
+
+						ResHelper::TranslateString(fmt);
+						txt.Format(fmt, cache);
+
+						HWND h = GetSafeHwnd();
+						int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+					}
+
+					ni = 0;
+					m_list.SetItemCount(ni);
+					BOOL retdel = FileUtils::DelFile(cache);
+					int deb = 1;
+				}
+				else
+				{
+					m_maileFileInfo.Copy(args.mailFileInfo);
+
+					MboxMail::s_fSize = MboxMail::s_oSize = m_maileFileInfo.m_fileSize;
+					
+					ni = args.ni;
+					_ASSERTE(ni == MboxMail::s_mails.GetSize());
+					m_list.SetItemCount(ni);
+				}
+			}
+		}
 	}
 
+	if (loadMailsCanceledByUser)
+		return;
+
 	BOOL parseCanceledByUser = FALSE;
-	if( !FileUtils::PathFileExist(cache) )
+	if (!FileUtils::PathFileExist(cache))
 	{
 		PARSE_ARGS args;
 		args.path = m_path;
@@ -3938,10 +4222,12 @@ void NListView::FillCtrl()
 
 		//  ALongRightProcessProc will set MboxMail::s_path = m_path;
 		MboxMail::runningWorkerThreadType = 1;
+		INT_PTR nResult = IDOK;
+
 		CUPDialog	Dlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProc, (LPVOID)(PARSE_ARGS*)&args);
 		Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
-		INT_PTR nResult = Dlg.DoModal();
+		nResult = Dlg.DoModal();
 
 		if (!nResult)  // should never be true ?
 		{
@@ -3958,17 +4244,7 @@ void NListView::FillCtrl()
 			// We should be here when user selects Cancel button
 			//_ASSERTE(cancelledbyUser == TRUE);
 
-			DWORD terminationDelay = Dlg.GetTerminationDelay();
-			int loopCnt = (terminationDelay+100)/25;
-
-			ULONGLONG tc_start = GetTickCount64();
-			while ((loopCnt-- > 0) && (args.exitted == FALSE))
-			{
-				Sleep(25);
-			}
-			ULONGLONG tc_end = GetTickCount64();
-			DWORD delta = (DWORD)(tc_end - tc_start);
-			TRACE(L"(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
+			Dlg.Cleanup();
 
 			parseCanceledByUser = TRUE;
 
@@ -3980,6 +4256,11 @@ void NListView::FillCtrl()
 			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			int deb = 1;
 		}
+		else
+		{
+			_ASSERTE(args.exitted == TRUE);
+		}
+
 		MboxMail::runningWorkerThreadType = 0;
 
 		MboxMail::pCUPDUPData = NULL;
@@ -4019,10 +4300,10 @@ void NListView::FillCtrl()
 
 		if (parseCanceledByUser == FALSE)
 		{
-			FileUtils::DelFile(cache);
+			BOOL retdel = FileUtils::DelFile(cache);
 
 			CUPDialog	WDlg(AfxGetMainWnd()->GetSafeHwnd(), ALongRightProcessProcWriteIndexFile, (LPVOID)(PARSE_ARGS*)&wargs);
-			Dlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
+			WDlg.SetDialogTemplate(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDD_PROGRESS_DLG), IDC_STATIC, IDC_PROGRESS_BAR, IDCANCEL);
 
 			nResult = WDlg.DoModal();
 			if (!nResult)  // should never be true ?
@@ -4039,17 +4320,11 @@ void NListView::FillCtrl()
 				// We should be here when user selects Cancel button
 				//_ASSERTE(cancelledbyUser == TRUE);
 
-				DWORD terminationDelay = Dlg.GetTerminationDelay();
-				int loopCnt = (terminationDelay + 100) / 25;
-
-				ULONGLONG tc_start = GetTickCount64();
-				while ((loopCnt-- > 0) && (args.exitted == FALSE))
-				{
-					Sleep(25);
-				}
-				ULONGLONG tc_end = GetTickCount64();
-				DWORD delta = (DWORD)(tc_end - tc_start);
-				TRACE(L"(FillCtrl)Waited %ld milliseconds for thread to exist.\n", delta);
+				WDlg.Cleanup();
+			}
+			else
+			{
+				_ASSERTE(args.exitted == TRUE);
 			}
 
 			if (!wargs.errorText.IsEmpty())
@@ -4201,11 +4476,6 @@ int NListView::MailFileFillCtrl(CString &errorText)
 		{
 			if (ni != -2)
 			{
-#if 0
-				CString txt = L"Index file\n\n\"" + cache;
-				txt += L"\n\nappears to be corrupted. The index file will be recreated.";
-#endif
-
 				CString txt;
 				CString fmt = L"Index file\n\n\"%s\"\n\nappears to be corrupted. The index file will be recreated.";
 				ResHelper::TranslateString(fmt);
@@ -4216,7 +4486,8 @@ int NListView::MailFileFillCtrl(CString &errorText)
 			}
 
 			ni = 0;
-			FileUtils::DelFile(cache);
+			BOOL retdel = FileUtils::DelFile(cache);
+			int deb = 1;
 		}
 		else
 			m_list.SetItemCount(ni);
@@ -5210,18 +5481,13 @@ void NListView::OnEditFind()
 					// We should be here when user selects Cancel button
 					//_ASSERTE(cancelledbyUser == TRUE);
 
-					DWORD terminationDelay = Dlg.GetTerminationDelay();
-					int loopCnt = (terminationDelay+100)/25;
-
-					ULONGLONG tc_start = GetTickCount64();
-					while ((loopCnt-- > 0) && (args.exitted == FALSE))
-					{
-						Sleep(25);
-					}
-					ULONGLONG tc_end = GetTickCount64();
-					DWORD delta = (DWORD)(tc_end - tc_start);
-					TRACE(L"(OnEditFind)Waited %ld milliseconds for thread to exist.\n", delta);
+					Dlg.Cleanup();
 				}
+				else
+				{
+					_ASSERTE(args.exitted == TRUE);
+				}
+
 
 				if (args.exitted == FALSE)
 					MboxMail::s_mails_find.SetCountKeepData(0);
@@ -6017,18 +6283,13 @@ void NListView::OnEditFindAgain()
 			// We should be here when user selects Cancel button
 			//_ASSERTE(cancelledbyUser == TRUE);
 
-			DWORD terminationDelay = Dlg.GetTerminationDelay();
-			int loopCnt = (terminationDelay+100)/25;
-
-			ULONGLONG tc_start = GetTickCount64();
-			while ((loopCnt-- > 0) && (args.exitted == FALSE))
-			{
-				Sleep(25);
-			}
-			ULONGLONG tc_end = GetTickCount64();
-			DWORD delta = (DWORD)(tc_end - tc_start);
-			TRACE(L"(OnEditFindAgain)Waited %ld milliseconds for thread to exist.\n", delta);
+			Dlg.Cleanup();
 		}
+		else
+		{
+			_ASSERTE(args.exitted == TRUE);
+		}
+
 		//if (args.exitted == FALSE) w = -1;
 
 		w = args.retpos;
@@ -8211,18 +8472,13 @@ void NListView::EditFindAdvanced(MboxMail *m)
 					// We should be here when user selects Cancel button
 					//_ASSERTE(cancelledbyUser == TRUE);
 
-					DWORD terminationDelay = Dlg.GetTerminationDelay();
-					int loopCnt = (terminationDelay+100)/25;
-
-					ULONGLONG tc_start = GetTickCount64();
-					while ((loopCnt-- > 0) && (args.exitted == FALSE))
-					{
-						Sleep(25);
-					}
-					ULONGLONG tc_end = GetTickCount64();
-					DWORD delta = (DWORD)(tc_end - tc_start);
-					TRACE(L"(EditFindAdvanced)Waited %ld milliseconds for thread to exist.\n", delta);
+					Dlg.Cleanup();
 				}
+				else
+				{
+					_ASSERTE(args.exitted == TRUE);
+				}
+
 				if (args.exitted == FALSE)
 					MboxMail::s_mails_find.SetCountKeepData(0);
 
@@ -9029,22 +9285,15 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(PrintMailSelectedToSeparatePDF_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -9228,22 +9477,15 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(PrintMailSelectedToSinglePDF_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -9801,8 +10043,8 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	CString mergePDFsLogFilePath = targetPrintFolderPath + L"\\MergePDFs.log";
 	CString pdfboxLogFilePath = targetPrintFolderPath + L"\\pdfbox.log";
 
-	FileUtils::DelFile(mergePDFsLogFilePath);
-	FileUtils::DelFile(pdfboxLogFilePath);
+	BOOL retdel1 = FileUtils::DelFile(mergePDFsLogFilePath);
+	BOOL retdel2 = FileUtils::DelFile(pdfboxLogFilePath);
 
 	// ENd prepare for mergim
 
@@ -10738,22 +10980,15 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(PrintMailSelectedToSeparateHTML_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -10918,22 +11153,15 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(PrintMailSelectedToSingleHTML_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -12463,22 +12691,15 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(CreateAttachmentCache_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -12728,22 +12949,15 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(CreateEmlCache_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -13038,22 +13252,15 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(CreateInlineImageCache_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -13275,22 +13482,15 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(PrintMailSelectedToSingleTEXT_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -17305,22 +17505,15 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 		// We should be here when user selects Cancel button
 		//_ASSERTE(cancelledbyUser == TRUE);
 
-		DWORD terminationDelay = Dlg.GetTerminationDelay();
-		int loopCnt = (terminationDelay+100)/25;
-
-		ULONGLONG tc_start = GetTickCount64();
-		while ((loopCnt-- > 0) && (args.exitted == FALSE))
-		{
-			Sleep(25);
-		}
-		ULONGLONG tc_end = GetTickCount64();
-		DWORD delta = (DWORD)(tc_end - tc_start);
-		TRACE(L"(ForwardSelectedMails_Thread)Waited %ld milliseconds for thread to exist.\n", delta);
+		Dlg.Cleanup();
 
 		ret = -2;
 	}
 	else
+	{
+		_ASSERTE(args.exitted == TRUE);
 		ret = args.ret;
+	}
 
 	MboxMail::pCUPDUPData = NULL;
 
@@ -19134,6 +19327,8 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 	int mhtmlIntroLen = 0;
 	char* srcBegin;
 	char* srcEnd;
+	if (mailPosition == 10465)
+		int deb = 1;
 
 	MboxMail* m = 0;
 	if ((mailPosition < MboxMail::s_mails.GetCount()) && (mailPosition >= 0))

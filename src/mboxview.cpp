@@ -590,6 +590,15 @@ CmboxviewApp::CmboxviewApp()
 #ifdef _DEBUG
 
 #if 0
+
+	UINT driveType = GetDriveType(L"Z:");
+	if (driveType == DRIVE_REMOTE)
+		int deb = 1;
+	int debZ = 1;
+
+#endif
+
+#if 0
 	// Language file is not loaded yet
 	{
 		CString filePath = LR"(F:\Documents\GIT1.0.3.42\mboxviewer\x64\Debug\CHANGE_LOG.md.txt)";

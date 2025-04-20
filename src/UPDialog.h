@@ -113,9 +113,12 @@ class CUPDialog : CInitCommonControls<CUPDIALOG_CONTROL_CLASSES>
 
 	friend INT_PTR CALLBACK ProgressDlgProc(HWND,UINT,WPARAM,LPARAM);	//The Windows Message Procedure for the DialogBox
 
-	void Cleanup();
+	//void Cleanup(DWORD dwTerminateDelay = 0);
 
 public:
+	// 
+	void Cleanup(DWORD dwTerminateDelay = 0);
+
 	// Constructs a CUPDialog object. But does not yet display the DialogBox. (To display the dialog box use DoModal())
 	//		hParentWnd:	Parent window for the dialog box
 	//		lpUserProc:	Lengthy procedure that should be executed

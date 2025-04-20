@@ -1038,15 +1038,73 @@ size_t MboxMail::AllMailsSizeof(int mailCount)
 //char *GetMultiLine(char *p, char *e, CString &line);
 //int GetFieldValue(CString &fieldLine, int startPos, CString &value);
 
-bool IsFromValidDelimiter(char *p, char *e)
+bool IsFromValidDelimiter(char* p, char* e)
 {
+#if 1
+	static const char* cFromMailBegin = "From ";
+	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
+	static const char* cFrom = "from:";
+	static const int cFromLen = istrlen(cFrom);
+	static const char* cTo = "to:";
+	static const int cToLen = istrlen(cTo);
+	static const char* cCC = "cc:";
+	static const int cCCLen = istrlen(cCC);
+	static const char* cBCC = "bcc:";
+	static const int cBCCLen = istrlen(cBCC);
+	static const char* cSubject = "subject:";
+	static const int cSubjectLen = istrlen(cSubject);
+	static const char* cDate = "date:";
+	static const int cDateLen = istrlen(cDate);
+	static const char* cReceived = "received:";
+	static const int cReceivedLen = istrlen(cReceived);
+	static const char* cContentType = "content-type:";  // some mails such as from Apple don't seem to have blank line to separate header from body
+	static const int cContentTypeLen = istrlen(cContentType);
+	static const char* cThreadId = "x-gm-thrid:";
+	static const int cThreadIdLen = istrlen(cThreadId);
+	static const char* cMsgId = "message-id:";
+	static const int cMsgIdLen = istrlen(cMsgId);
+	static const char* cReferenceId = "references:";
+	static const int cReferenceIdLen = istrlen(cReferenceId);
+
+	bool bFrom = true;
+	CStringA line;
+	//CString from;
+
+	// Which header fields  are required to validate email header ???
+	while (p < (e - cFromLen))
+	{
+		if (bFrom && TextUtilsEx::strncmpUpper2Lower(p, e, cFrom, cFromLen) == 0)
+		{
+#if 0
+			bFrom = false;
+			p = MimeParser::GetMultiLine(p, e, line);
+			from = line.Mid(cFromLen);
+			from.Trim();
+#endif
+			return true;
+		}
+		else
+		{
+			bool isEmpty = false;
+			char* psave = p;
+			p = MimeParser::EatNewLine(p, e, isEmpty);
+
+			if (isEmpty)
+			{
+				return false;
+			}
+		}
+	}
+	return false;
+
+#else
 	static int cnt = 0;
 
 	return true;
 
 	// EX_TEST
 #if 0
-	volatile char *badPtr = 0;
+	volatile char* badPtr = 0;
 	if (cnt == 200)
 	{
 		*badPtr = 'a';
@@ -1063,7 +1121,7 @@ bool IsFromValidDelimiter(char *p, char *e)
 	int colonCount = 0;
 	int atCount = 0;
 	char c;
-	while ( (p < e) && ((c = (*p++)) != '\n'))
+	while ((p < e) && ((c = (*p++)) != '\n'))
 	{
 		if (c == ':')
 			colonCount++;
@@ -1083,6 +1141,7 @@ bool IsFromValidDelimiter(char *p, char *e)
 		return true;
 	else
 		return false;
+#endif
 }
 
 BOOL FoundMonth()
@@ -1111,9 +1170,11 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 	char *p = data;
 	char *e = data + headerlen;
 
-	// probbaly should parse and create dictionary of words
+	// probably should parse and create dictionary of words
 	char c;
 	BOOL found = FALSE;
+	p++; // Avoid ZMCRASH
+	//char cc = *(p - 1);
 	while (p < e)
 	{
 		found = FALSE;
@@ -1434,7 +1495,7 @@ char szFrom6[] = "\nFrom ";
 char	*g_szFrom;
 int		g_szFromLen;
 
-bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent)
+bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent)
 {
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
@@ -1528,10 +1589,22 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 	BOOL exceptionThrown = FALSE;
 	BOOL exceptionDone = FALSE;
 
-	char *pat = "From:  XXXX";
+	char *pat = "From time";
 	int patLen = istrlen(pat);
 
 	ULONGLONG tc_start = GetTickCount64();
+	ULONGLONG tc_end = GetTickCount64();
+
+
+	CString driveName;
+	CString directory;
+	CString fileNameBase;
+	CString fileNameExtention;
+	FileUtils::SplitFilePath(filePath, driveName, directory, fileNameBase, fileNameExtention);
+
+	int entryCnt = s_mails.GetCount();
+	int slowDriveCnt = 0;
+	ULONGLONG slowDriveEventArray[3] = { 0 };
 
 	BOOL headerDone = FALSE;
 	while (p < (e - 4))   // TODO: why (e - 4) ?? chaneg 4 -> 5
@@ -1629,6 +1702,7 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 
 						if (!from.IsEmpty() || !to.IsEmpty() ||  !subject.IsEmpty() ||  !date.IsEmpty())
 						{
+							tc_end = GetTickCount64();
 
 							if (subject.Find("Dostosuj Gmaila") >= 0)
 								int deb = 1;
@@ -1672,7 +1746,6 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 							if (m->m_messageId == m->m_replyId)
 								int deb = 1;
 
-
 							int index = s_mails.GetCount() - 1;
 
 							if (s_mails.GetCount() == 1098)
@@ -1681,6 +1754,24 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 							UINT_PTR dwProgressbarPos = 0;
 							ULONGLONG workRangePos = startOffset + (p - orig);
 							BOOL needToUpdateStatusBar = progressTimer.UpdateWorkPos(workRangePos, dwProgressbarPos);
+
+							BOOL slowDrive = FALSE;
+							if ((s_mails.GetCount() + 3) > entryCnt )
+							{
+								ULONGLONG delta_ms = tc_end - tc_start;
+
+								slowDriveEventArray[slowDriveCnt] = delta_ms;
+								ULONGLONG slowDriveEventSum = 0;
+								for (int j = 0; j < 3; j++)
+									slowDriveEventSum += slowDriveEventArray[j];
+								ULONGLONG slowDriveEventAverage = slowDriveEventSum / 3;
+								if (slowDriveEventAverage > 200)
+									slowDrive = TRUE;
+
+								slowDriveCnt++;
+								if (slowDriveCnt >= 3)
+									slowDriveCnt = 0;
+							}
 							if (needToUpdateStatusBar)
 							{
 								CString mailNum;
@@ -1697,12 +1788,23 @@ bool MboxMail::Process(ProgressTimer& progressTimer, register char *p, DWORD buf
 									mailNum.Format(fmt, statusText, s_mails.GetCount());
 								}
 
-								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(dwProgressbarPos));
+								if (slowDrive)
+								{
+									CString slowDriveWarningText = L"      %s Drive Slow Read/Write !!!";
+									ResHelper::TranslateString(slowDriveWarningText);
+									CString txt;
+									txt.Format(slowDriveWarningText, driveName);
+									mailNum.Append(txt);
+								}
 
-								tc_start = GetTickCount64();
+								if (MboxMail::pCUPDUPData) MboxMail::pCUPDUPData->SetProgress(mailNum, (UINT_PTR)(dwProgressbarPos));
 
 								int debug = 1;
 							}
+
+							tc_start = GetTickCount64();
+							
+							//Sleep(45);  // Slow read/write drive test
 
 							if ((s_mails.GetCount() % 100000) == 1024)
 							{
@@ -2240,10 +2342,11 @@ void MboxMail::Parse(LPCWSTR path)
 	ULONGLONG workRangeFirstPos = 0;
 	ULONGLONG workRangeLastPos = fSize - 1;
 	ProgressTimer progressTimer(workRangeFirstPos, workRangeLastPos);
+	CString filePath(path);
 
 	CString statusText;
 	_int64 lastStartOffset = 0;
-	while  ((lastView == false) && !pCUPDUPData->ShouldTerminate()) 
+	while ((lastView == false) && !pCUPDUPData->ShouldTerminate())
 	{
 		s_curmap = lastStartOffset;
 		aligned_offset = (s_curmap / dwAllocationGranularity) * dwAllocationGranularity;
@@ -2281,7 +2384,7 @@ void MboxMail::Parse(LPCWSTR path)
 		try
 		{
 #endif
-			MboxMail::Process(progressTimer, p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, statusText);
+			MboxMail::Process(filePath, progressTimer, p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, statusText);
 #ifdef USE_STACK_WALKER
 		}
 		catch (...)
@@ -2369,7 +2472,8 @@ void MboxMail::Parse(LPCWSTR path)
 // Used during  merging of all mbox files in root and subfolders
 void MboxMail::Parse_LabelView(LPCWSTR path)
 {
-	MboxMail::SetMboxFilePath(CString(path));
+	CString filePath(path);
+	MboxMail::SetMboxFilePath(filePath);
 	CString lastPath = MboxMail::GetLastPath();
 	CString lastDataPath = MboxMail::GetLastDataPath();
 
@@ -2482,7 +2586,7 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 		try
 		{
 #endif
-			MboxMail::Process(progressTimer, p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, parsingFileText, FALSE);
+			MboxMail::Process(filePath, progressTimer, p, viewBufSize, viewOffset, firstView, lastView, lastStartOffset, bEml, msgOffset, parsingFileText, FALSE);
 #ifdef USE_STACK_WALKER
 		}
 		catch (...)
@@ -3067,6 +3171,8 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 // Or enhance delete MboxMail
 void MboxMail::DestroyMboxMail(MboxMail *m)
 {
+	if (m == 0)
+		return;
 	int j;
 	for (j = 0; j < m->m_ContentDetailsArray.size(); j++) {
 		delete m->m_ContentDetailsArray[j];
@@ -4452,18 +4558,11 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			_ASSERTE(cancelledbyUser == TRUE);
-
-			DWORD terminationDelay = Dlg.GetTerminationDelay();
-			int loopCnt = (terminationDelay+100)/25;
-
-			ULONGLONG tc_start = GetTickCount64();
-			while ((loopCnt-- > 0) && (args.exitted == FALSE))
-			{
-				Sleep(25);
-			}
-			ULONGLONG tc_end = GetTickCount64();
-			DWORD delta = (DWORD)(tc_end - tc_start);
-			TRACE(L"(exportToCSVFile)Waited %ld milliseconds for thread to exist.\n", delta);
+			Dlg.Cleanup();
+		}
+		else
+		{
+			_ASSERTE(args.exitted == TRUE);
 		}
 
 		MboxMail::pCUPDUPData = NULL;
@@ -6882,18 +6981,11 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 		{  // IDOK==1, IDCANCEL==2
 			// We should be here when user selects Cancel button
 			_ASSERTE(cancelledbyUser == TRUE);
-
-			DWORD terminationDelay = Dlg.GetTerminationDelay();
-			int loopCnt = (terminationDelay+100)/25;
-
-			ULONGLONG tc_start = GetTickCount64();
-			while ((loopCnt-- > 0) && (args.exitted == FALSE))
-			{
-				Sleep(25);
-			}
-			ULONGLONG tc_end = GetTickCount64();
-			DWORD delta = (DWORD)(tc_end - tc_start);
-			TRACE(L"(exportToTextFile)Waited %ld milliseconds for thread to exist.\n", delta);
+			Dlg.Cleanup();
+		}
+		else
+		{
+			_ASSERTE(args.exitted == TRUE);
 		}
 
 		MboxMail::pCUPDUPData = NULL;
@@ -11908,6 +12000,8 @@ BOOL ProgressTimer::UpdateWorkPos(ULONGLONG workRangePos, UINT_PTR& dwProgressba
 			m_startTime = m_CurrentTime;
 			return TRUE;
 		}
+		else
+			int deb = 1;
 	}
 	return FALSE;
 }

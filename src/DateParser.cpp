@@ -145,6 +145,8 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		str[i] = tolower(str[i]);
 		i++;
 	}
+
+	int cnt = TextUtilsEx::ReplaceChar(str, '-', ' ');
  
 	SKIP_WHITESPACE();
 	CHECK_PREMATURE_END();

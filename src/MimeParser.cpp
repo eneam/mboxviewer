@@ -1042,10 +1042,12 @@ char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 	// mail text is not always formatted well
 	// below will handle multiple CRs in a row and CR but no NL that follows to support mails not well formatted
 	isEmpty = true;
+	//if ((*p != '\n') && (*p != '\r')) isEmpty = false;
 	while (p < e)
 	{
 		while ((p < e) && (*p != '\n') && (*p != '\r'))
 		{
+#if 0
 			if (isEmpty)
 			{
 				if ((*p == ' ') || (*p == '\t') || (*p == '\r') || (*p == '\n'))
@@ -1053,6 +1055,9 @@ char *MimeParser::EatNewLine(char* p, const char* e, bool &isEmpty)
 				else
 					isEmpty = false;
 			}
+#else
+			isEmpty = false;
+#endif
 			p++;
 		}
 		if (p >= e)

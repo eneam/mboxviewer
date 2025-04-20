@@ -214,6 +214,18 @@ struct MailArchiveFileInfo
 		m_reservedInt2 = -1;
 		m_mailCount = 0;
 	};
+	void Copy(MailArchiveFileInfo &mailFileInfo)
+	{
+		m_version = mailFileInfo.m_version;
+		m_fileSize = mailFileInfo.m_fileSize;
+		m_oldestMailTime = mailFileInfo.m_oldestMailTime;
+		m_latestMailTime = mailFileInfo.m_latestMailTime;
+		m_reservedString1 = mailFileInfo.m_reservedString1;
+		m_reservedString2 = mailFileInfo.m_reservedString2;
+		m_reservedInt1 = mailFileInfo.m_reservedInt1;
+		m_reservedInt2 = mailFileInfo.m_reservedInt2;
+		m_mailCount = mailFileInfo.m_mailCount;
+	};
 };
 
 class NListView : public CWnd
@@ -401,6 +413,7 @@ public:
 	//
 	int LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, MailArray *mails, CString& errorText);
 	int LoadMailsInfo(SerializerHelper& sz, MailArchiveFileInfo& maileFileInfo, CString &errorText);
+	int LoadMails_WorkerThread(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, MailArray* mails, CString& errorText);
 
 	int LoadSingleMail(MboxMail* m, SerializerHelper &sz);
 	int Cache2Text(LPCWSTR cache, CString format);
@@ -734,6 +747,17 @@ struct FORWARD_MAILS_ARGS
 	BOOL exitted;
 	int ret;
 	NListView *lview;
+};
+
+struct LOAD_MAILS_ARGS
+{
+	MailArchiveFileInfo mailFileInfo;
+	CString mailFilePath;
+	CString cacheFilePath;
+	int ni;
+	CString errorText;
+	NListView* lview;
+	BOOL exitted;
 };
 
 struct PARSE_ARGS

@@ -1411,7 +1411,7 @@ int NTreeView::RemoveOrphanIndexFilesFromFolderAndFileSizeMap(CString& path, Fil
 					BOOL ret = FileUtils::PathFileExist(mboxPath);
 					if (ret == FALSE)
 					{
-						FileUtils::DelFile(mboxviewPath);
+						BOOL retdel = FileUtils::DelFile(mboxviewPath);
 						count++;
 					}
 				}
@@ -1725,12 +1725,13 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 						CString cache;
 						BOOL retval = MboxMail::GetMboxviewFilePath(mboxFilePath, cache);
 
-						FileUtils::DelFile(cache);
+						BOOL retdel = FileUtils::DelFile(cache);
 						// Delete List Files
 						CString listFileName;
 						int ret = NListView::DetermineListFileName(fn, listFileName);
+
 						if (!listFileName.IsEmpty())
-							FileUtils::DelFile(listFileName);
+							retdel = FileUtils::DelFile(listFileName);
 
 						fileSizes[fn].fSize = realFSize;
 						fileSizes[fn].bNeedsValidation = TRUE;
@@ -2432,7 +2433,7 @@ void NTreeView::ForceParseMailFile(HTREEITEM hItem)
 	CString cache;
 	BOOL retval = MboxMail::GetMboxviewFilePath(pListView->m_path, cache);
 
-	FileUtils::DelFile(cache, FALSE);
+	BOOL retdel = FileUtils::DelFile(cache, FALSE);
 	// TODO: Should delete more, i.e reletaed data from al Caches
 
 	// Labels are not removed from screen immedietally anyway. Commented out
@@ -8365,7 +8366,7 @@ int NTreeView::RemoveMboxAssociatedWorkData(HTREEITEM hItem)
 	fileName = fileNameBase + fileNameExtention;
 
 	CString mboxviewFilePath = datapath + fileName + L".mboxview";
-	FileUtils::DelFile(mboxviewFilePath, FALSE);
+	BOOL retdel = FileUtils::DelFile(mboxviewFilePath, FALSE);
 
 	CString lastPath = MboxMail::GetLastPath();
 
@@ -9456,7 +9457,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	if (m_rootMboxCfile.m_hFile != CFile::hFileNull )
 		m_rootMboxCfile.Close();
 
-	FileUtils::DelFile(m_rootMboxFilePath);
+	BOOL retdel = FileUtils::DelFile(m_rootMboxFilePath);
 
 	MboxMail::SetLastPath(outFolderPath);
 
