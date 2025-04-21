@@ -2,6 +2,15 @@
 Changes
 -------
 
+v 1.0.3.49
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Resolved rare crash due to incorrect processing of non standard Date header field.;
+ - Enhanced to allow user to Cancel loading of index file.;
+ - Included correct exception handling mboxview executable.;
+ - Enhanced handling of non standard Date header fields.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.48
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
