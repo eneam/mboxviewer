@@ -39,6 +39,9 @@ public:
 	CCheckListBoxDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CCheckListBoxDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	CString m_title;
 	CArray<CString> m_InList;
 	CArray<CString> m_OutList;

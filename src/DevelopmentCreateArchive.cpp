@@ -35,6 +35,7 @@
 #include "afxdialogex.h"
 #include "FileUtils.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // DevelopmentCreateArchive dialog
@@ -42,15 +43,26 @@
 IMPLEMENT_DYNAMIC(DevelopmentCreateArchive, CDialogEx)
 
 DevelopmentCreateArchive::DevelopmentCreateArchive(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_DEV_CREATE_ARCHIVE, pParent)
+DIALOG_FROM_TEMPLATE(: CDialogEx(IDD_DEV_CREATE_ARCHIVE, pParent))
 {
 	m_leadingMailCount = 2;
 	m_trailingMailCount = 2;
+	m_pParent = pParent;
 
 }
 
 DevelopmentCreateArchive::~DevelopmentCreateArchive()
 {
+}
+
+INT_PTR DevelopmentCreateArchive::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_DEV_CREATE_ARCHIVE, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 BOOL DevelopmentCreateArchive::OnInitDialog()

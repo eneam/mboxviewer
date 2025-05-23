@@ -105,6 +105,9 @@ public:
 	SMTPMailServerConfigDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~SMTPMailServerConfigDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_SMTP_DLG };

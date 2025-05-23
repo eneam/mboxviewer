@@ -33,6 +33,7 @@
 #include "InputBox.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // InputBox dialog
@@ -40,13 +41,24 @@
 IMPLEMENT_DYNAMIC(InputBox, CDialogEx)
 
 InputBox::InputBox(CString &parentFolder, CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_INPUT_BOX_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_INPUT_BOX_DLG, pParent))
 {
 	m_parentFolder = parentFolder;
+	m_pParent = pParent;
 }
 
 InputBox::~InputBox()
 {
+}
+
+INT_PTR InputBox::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_INPUT_BOX_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void InputBox::DoDataExchange(CDataExchange* pDX)

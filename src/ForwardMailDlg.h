@@ -67,6 +67,9 @@ public:
 	ForwardMailDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~ForwardMailDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	ForwardMailData m_Data;
 	CEdit m_EditText;
 	MyCustomEdit m_Subject;

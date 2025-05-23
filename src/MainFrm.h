@@ -205,6 +205,9 @@ public:
 public:
 	virtual ~CMainFrame();
 
+	void ResetFont();
+	BOOL m_createCompleted;
+
 	NMsgView * GetMsgView();
 	NListView * GetListView();
 	NTreeView * GetTreeView();
@@ -220,6 +223,9 @@ public:
 	static CString m_mboxviewTempPath;
 	static CString GetMboxviewLocalAppDataPath(const wchar_t* name = 0);
 	static CString CreateTempFileName(const wchar_t *ext = L"htm");
+
+	static INT_PTR SetTemplate(CDialog* dlg, UINT Id, CWnd* parent);
+	static INT_PTR SetTemplateEx(CDialogEx* dlg, UINT Id, CWnd* parent);
 
 	void UpdateToolsBar();
 	BOOL IsTreeHidden();
@@ -337,8 +343,19 @@ protected:  // control bar embedded members
 	HICON m_MinusIcon;
 	HICON m_HideIcon;
 	HICON m_UnHideIcon;
+	CFont m_font;
+
 
 public:
+	// Global Font Config
+	static int m_dfltFontSize;
+	static int m_cnfFontSize;
+	static int m_dfltBrowserZoom;
+	static int m_cnfBrowserZoom;
+	// valid Zoom range
+	static int m_minBrowserZoom;
+	static int m_maxBrowserZoom;
+
 	// From MergeFolderAndSubfolders
 	int m_mergeRootFolderStyle;
 	int m_labelAssignmentStyle;  // 0 == no labels; 1 == mbox file names as labels; 2 == folder names as labels

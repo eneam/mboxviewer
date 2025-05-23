@@ -61,4 +61,5 @@ public:
 	static char* EatNLine(char* p, char* e) { while (p < e && *p++ != '\n'); return p; };
 	static char* SkipEmptyLine(char* p, char* e);
 	static int CreateTranslationHtml(CString& inputFile, CString &targetLanguage, CString& outputHtmlFile);
+	static void SetFontSize_Browser(CBrowser& browser, int fontSize);
 };

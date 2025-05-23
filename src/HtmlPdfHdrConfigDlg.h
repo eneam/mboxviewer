@@ -106,6 +106,9 @@ public:
 	HtmlPdfHdrConfigDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~HtmlPdfHdrConfigDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_HTML_PDF_HDR_DLG };

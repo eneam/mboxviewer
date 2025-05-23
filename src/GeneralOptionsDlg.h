@@ -41,6 +41,9 @@ public:
 	GeneralOptionsDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~GeneralOptionsDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	BOOL m_relaxedMboxFileValidation;
 	BOOL m_relativeInlineImageFilePath;
 	// ODF Merge Config

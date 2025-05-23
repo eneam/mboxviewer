@@ -39,6 +39,9 @@ public:
 	DevelopmentCreateArchive(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~DevelopmentCreateArchive();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_DEV_CREATE_ARCHIVE };

@@ -39,6 +39,9 @@ class ColorPickerDlg : public CColorDialog
 public:
 	ColorPickerDlg(COLORREF clrInit = 0, DWORD dwFlags = 0, CWnd* pParentWnd = nullptr);
 	virtual ~ColorPickerDlg();
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 	//
 	CToolTipCtrl m_toolTip;
 

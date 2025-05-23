@@ -46,7 +46,7 @@
 
 
 CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CFindDlg::IDD, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(CFindDlg::IDD, pParent))
 {
 	//{{AFX_DATA_INIT(CFindDlg)
 	m_params.SetDflts();
@@ -57,12 +57,24 @@ CFindDlg::CFindDlg(CWnd* pParent /*=NULL*/)
 
 	m_brBkDate.CreateSolidBrush(m_dflBkColor);
 
+	m_pParent = pParent;
+
 	//}}AFX_DATA_INIT
+}
+
+INT_PTR CFindDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, CFindDlg::IDD, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void CFindDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialogEx::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CFindDlg)
 	DDX_Text(pDX, IDC_STRING, m_params.m_string);
 	DDX_Check(pDX, IDC_WHOLE, m_params.m_bWholeWord);
@@ -91,7 +103,7 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 #endif
 }
 
-BEGIN_MESSAGE_MAP(CFindDlg, CDialog)
+BEGIN_MESSAGE_MAP(CFindDlg, CDialogEx)
 	//{{AFX_MSG_MAP(CFindDlg)
 	//}}AFX_MSG_MAP
 	ON_WM_CTLCOLOR()
@@ -138,7 +150,7 @@ void CFindDlg::OnOK()
 	TextUtilsEx::WStr2UTF8(&m_params.m_string, &m_params.m_stringA, error);  // FIXMEFIXME
 
 	//TRACE(L"Extended: %u %u\n", m_string.GetAt(0), m_string.GetAt(1));	
-	CDialog::OnOK();
+	CDialogEx::OnOK();
 }
 
 BOOL CFindDlg::OnInitDialog()
@@ -146,7 +158,7 @@ BOOL CFindDlg::OnInitDialog()
 	// set bSaveAndValidate to FALSE to transfer from class member variables --> UI controls
 	// set bSaveAndValidate to TRUE to transfer from UI controls --> class member variables. 
 
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	GetDlgItem(IDC_DATETIMEPICKER1)->EnableWindow(m_params.m_filterDates);
 	GetDlgItem(IDC_DATETIMEPICKER2)->EnableWindow(m_params.m_filterDates);
@@ -219,7 +231,7 @@ HBRUSH CFindDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	// The below works. It is called for every object in the dialog. May not be the most efficient.
 	// TODO: Use MyCButton instead ??
-	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	if (pWnd->GetDlgCtrlID() == IDC_FILTERDATES)
 	{

@@ -102,6 +102,9 @@ public:
 	PrintConfigDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~PrintConfigDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_PRINT_DLG };

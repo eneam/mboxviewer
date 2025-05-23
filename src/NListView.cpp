@@ -524,13 +524,18 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &NListView::OnTtnNeedText)
 END_MESSAGE_MAP()
 
-int g_pointSize = 85;
-CString g_fontName = "Tahoma";
+static int g_pointSize = 85;
+static CString g_fontName = "Tahoma";
 
 void NListView::ResetFont()
 {
 	m_boldFont.DeleteObject();
 	m_font.DeleteObject();
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		g_pointSize = CMainFrame::m_cnfFontSize *10;
+	}
+
 	if( ! m_font.CreatePointFont (g_pointSize, g_fontName) )
 		m_font.CreatePointFont (85, L"Arial");
 	LOGFONT	lf;
@@ -2479,7 +2484,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0); // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
-	ResetFont();
+	NListView::ResetFont();
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -2625,6 +2630,28 @@ void NListView::ResizeColumns()
 	int dflt_subj_len = 400;
 	int size_len = 80;
 
+	CPaintDC dc(&m_list);
+	HDC hDC = dc.GetSafeHdc();
+
+	SIZE sizeItem;
+	if (hDC)
+	{
+		CString dateText = L"12/29/2025 59:59";
+		BOOL retA = GetTextExtentPoint32(hDC, dateText, dateText.GetLength(), &sizeItem);
+	}
+	 
+	//  GetTextExtentPoint32 doesn't work; hardcore dat_len
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		date_len = date_len * ((float)CMainFrame::m_cnfFontSize / (float)CMainFrame::m_dfltFontSize);
+		if (CMainFrame::m_cnfFontSize == 16) date_len -= 20;
+		else if (CMainFrame::m_cnfFontSize == 14) date_len -= 10;
+		else if (CMainFrame::m_cnfFontSize == 12) date_len -= 6;
+		else if (CMainFrame::m_cnfFontSize == 10) date_len -= 3;
+	}
+
+	//if (sizeItem.cx > 100) date_len = sizeItem.cx;
+
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
 	if ((pFrame != 0) || (pFrame->GetMessageWindowPosition() != 1))
@@ -2678,6 +2705,12 @@ void NListView::ResizeColumns()
 	m_list.SetColumnWidth(5, size_len);
 
 	// no redraw seem to be needed
+
+	//RedrawMails();
+	//RedrawWindow();
+	// Unfortunatelly painting is not always workin; some columns end up blank and user
+	//is force to refresh
+	m_list.Invalidate();
 }
 
 void NListView::ResetSize()

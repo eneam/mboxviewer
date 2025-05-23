@@ -48,14 +48,24 @@
 IMPLEMENT_DYNAMIC(SMTPMailServerConfigDlg, CDialogEx)
 
 SMTPMailServerConfigDlg::SMTPMailServerConfigDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_SMTP_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_SMTP_DLG, pParent))
 {
-	;
+	m_pParent = pParent;
 }
 
 
 SMTPMailServerConfigDlg::~SMTPMailServerConfigDlg()
 {
+}
+
+INT_PTR SMTPMailServerConfigDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_SMTP_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void SMTPMailServerConfigDlg::DoDataExchange(CDataExchange* pDX)

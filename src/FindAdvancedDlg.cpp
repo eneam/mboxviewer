@@ -46,6 +46,8 @@
 /////////////////////////////////////////////////////////////////////////////
 // CFindAdvancedDlg dialog
 
+IMPLEMENT_DYNAMIC(CFindAdvancedDlg, CDialogEx)
+
 const wchar_t* FindFields[] = { L"From", L"To", L"Subject", L"CC", L"BCC", L"Message", L"Attachment Text", L"Attachment Name" };
 
 const wchar_t  *ruleText[] = {
@@ -58,7 +60,7 @@ const wchar_t  *ruleText[] = {
 };
 
 CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CFindAdvancedDlg::IDD, pParent)
+DIALOG_FROM_TEMPLATE(  : CDialogEx(CFindAdvancedDlg::IDD, pParent))
 
 {
 	//{{AFX_DATA_INIT(CFindAdvancedDlg)
@@ -72,12 +74,25 @@ CFindAdvancedDlg::CFindAdvancedDlg(CWnd* pParent /*=NULL*/)
 	m_brBkMailsDontMatch.CreateSolidBrush(m_dflBkColor);
 	m_brBkDate.CreateSolidBrush(m_dflBkColor);
 
+	m_pParent = pParent;
+
 	//}}AFX_DATA_INIT
+}
+
+INT_PTR CFindAdvancedDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	//INT_PTR ret = CMainFrame::SetTemplate(this, CFindAdvancedDlg::IDD, m_pParent);
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialogEx::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CFindAdvancedDlg)
 	DDX_Check(pDX, IDC_EDIT_FROM_CHECKED, m_params.m_bEditChecked[0]);
 	DDX_Check(pDX, IDC_EDIT_TO_CHECKED, m_params.m_bEditChecked[1]);
@@ -140,7 +155,7 @@ void CFindAdvancedDlg::DoDataExchange(CDataExchange* pDX)
 	}
 }
 
-BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialog)
+BEGIN_MESSAGE_MAP(CFindAdvancedDlg, CDialogEx)
 	//{{AFX_MSG_MAP(CFindAdvancedDlg)
 
 	//}}AFX_MSG_MAP
@@ -226,12 +241,12 @@ void CFindAdvancedDlg::OnOK()
 	}
 
 	//TRACE(L"Extended: %u %u\n", m_string.GetAt(0), m_string.GetAt(1));	
-	CDialog::OnOK();
+	CDialogEx::OnOK();
 }
 
 BOOL CFindAdvancedDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	InitDialogControls();
 
@@ -745,7 +760,7 @@ HBRUSH CFindAdvancedDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 {
 	// The below works. It is called for every object in the dialog. May not be the most efficient.
 	// TODO: Use MyCButton instead ??
-	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	if (pWnd->GetDlgCtrlID() == IDC_CHECK_NEGATE_FIND_CRITERIA)
 	{

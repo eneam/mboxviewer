@@ -101,11 +101,16 @@ struct CFindAdvancedParams
 	void ResetFilterDates();
 };
 
-class CFindAdvancedDlg : public CDialog
+class CFindAdvancedDlg : public CDialogEx
 {
+	DECLARE_DYNAMIC(CFindAdvancedDlg)
+
 // Construction
 public:
 	CFindAdvancedDlg(CWnd* pParent = NULL);   // standard constructor
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 
 // Dialog Data
 	//{{AFX_DATA(CFindAdvancedDlg)

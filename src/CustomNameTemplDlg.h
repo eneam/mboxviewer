@@ -54,6 +54,9 @@ public:
 	CustomNameTemplDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CustomNameTemplDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	struct NameTemplateCnf m_nameTemplateCnf;
 	//
 	CToolTipCtrl m_toolTip;

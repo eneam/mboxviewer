@@ -204,6 +204,8 @@ CString ResHelper::GetLanguageCode(CString& languageName)
 		return L"de";
 	else if (languageName.CompareNoCase(L"romanian") == 0)
 		return L"ro";
+	else if (languageName.CompareNoCase(L"japanese") == 0)
+		return L"ja";
 	else
 		return langaugeCode;
 }
@@ -3164,4 +3166,99 @@ void ResHelper::UnescapeString(const CString& input, CString &output)
 
 	return;
 }
+
+
+/////////  FONT
+
+BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
+{
+#if 1
+	int g_pointSize = 180;
+	CString g_fontName(L"Tahoma");
+	font.DeleteObject();
+	if (!font.CreatePointFont(g_pointSize, g_fontName))
+		font.CreatePointFont(g_pointSize, L"Arial");
+	LOGFONT	lf;
+
+	//.CreateFontIndirect(&lf);
+	wnd->SetFont(&font);
+#else
+	LOGFONT lf;
+	CFont* currentFont = wnd->GetFont();
+	currentFont->GetLogFont(&lf);
+	//lf.lfHeight = -22;
+
+	lf.lfWeight = 0;
+
+	currentFont->DeleteObject();
+	font.CreateFontIndirect(&lf);
+	wnd->SetFont(&font, TRUE);
+#endif
+
+	return TRUE;
+}
+
+#if (_WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
+#include "shellscalingapi.h"
+
+BOOL ResHelper::MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4)
+{
+	MONITORINFOEX mif;
+	mif.cbSize = sizeof(MONITORINFOEX);
+
+	if (::GetMonitorInfo(Arg1, &mif) != 0)
+	{
+		TRACE(L"%s\n", mif.szDevice);
+		TRACE(L"monitor rect:    (%d , %d)-(%d , %d)\n",
+			mif.rcMonitor.left, mif.rcMonitor.top,
+			mif.rcMonitor.right, mif.rcMonitor.bottom);
+
+		TRACE(L"work rect:    (%d , %d)-(%d , %d)\n",
+			mif.rcWork.left, mif.rcWork.top,
+			mif.rcWork.right, mif.rcWork.bottom);
+	}
+
+	UINT xdpi, ydpi;
+	LRESULT success = ::GetDpiForMonitor(Arg1, MDT_EFFECTIVE_DPI, &xdpi, &ydpi);
+	if (success == S_OK)
+	{
+		TRACE(L"DPI (effective):  xdpi=%u , ydpi=%u\n", xdpi, ydpi);
+	}
+
+	success = ::GetDpiForMonitor(Arg1, MDT_ANGULAR_DPI, &xdpi, &ydpi);
+	if (success == S_OK)
+	{
+		TRACE(L"DPI (angular):  xdpi=%u , ydpi=%u\n", xdpi, ydpi);
+	}
+
+	success = ::GetDpiForMonitor(Arg1, MDT_RAW_DPI, &xdpi, &ydpi);
+	if (success == S_OK)
+	{
+		TRACE(L"DPI (raw):  xdpi=%u , ydpi=%u\n", xdpi, ydpi);
+	}
+
+	DEVMODE dm;
+	dm.dmSize = sizeof(DEVMODE);
+	if (::EnumDisplaySettings(mif.szDevice, ENUM_CURRENT_SETTINGS, &dm) != 0)
+	{
+		TRACE(L"BPP:             %d\n", dm.dmBitsPerPel);
+		TRACE(L"resolution:      %d , %d\n", dm.dmPelsWidth, dm.dmPelsHeight);
+		TRACE(L"frequency:       %d\n", dm.dmDisplayFrequency);
+	}
+
+	TRACE(L"\n");
+
+	return TRUE;
+}
+
+int ResHelper::MonitorInfo()
+{
+	::EnumDisplayMonitors(
+		nullptr,
+		nullptr,
+		ResHelper::MyMonitorenumproc,
+		0);
+		return 1;
+}
+#endif
 

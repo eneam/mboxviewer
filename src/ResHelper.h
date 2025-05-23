@@ -251,7 +251,7 @@ public:
 	static CString GetLanguageCode(CString& languageName);
 	static void FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray);
 	static void FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList);
-	static BOOL ResHelper::CompareCStringArrays(CStringArray& ar1, CStringArray& ar2);
+	static BOOL CompareCStringArrays(CStringArray& ar1, CStringArray& ar2);
 
 	static void MyTrace(CString& txt1, CString& txt2);
 	static void MyTrace(CString& txt);
@@ -259,6 +259,11 @@ public:
 	static void MyTrace(const wchar_t* txt);
 	static void MyVaTrace(const wchar_t* format, ...);
 	static void UnescapeString(const CString& input, CString& output);
+#if (_WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
+	static int MonitorInfo();
+	static BOOL MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4);
+#endif
+	static BOOL SetFont(CWnd* wnd, CFont &cfont, int hight);
 
 protected:
 };

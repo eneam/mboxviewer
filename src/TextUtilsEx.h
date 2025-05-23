@@ -101,6 +101,7 @@ public:
 	static int  showCodePageTable(CString &path);
 	//
 	static BOOL  isNumeric(CString &str);
+	static BOOL  isNumericA(CStringA& str);
 	static char *strchar(char *beg, char *end, char c);
 	static char *findOneOf(char *beg, char *end, char *charList);
 	static char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
@@ -133,21 +134,40 @@ public:
 			if ((c != '\r') && (c != '\n'))
 			{
 				line.AppendChar(c);
+				p++;
 			}
-			p++;
+			else
+				break;
 		}
 		if (line.GetLength())
 			line.Append("\r\n");
 		return;
 	}
 
+	static void CopyUpToEndOfLine(char* p, char* e, CStringA& line)
+	{
+		char c;
+		while (p < e)
+		{
+			c = *p;
+			if ((c != '\r') && (c != '\n'))
+			{
+				line.AppendChar(c);
+				p++;
+			}
+			else
+				break;
+		}
+		return;
+	}
+
 	inline static char *SkipNumeric(char *p) {
-		while (_istdigit(*p)) p++;  // TODO: may trigger exception if p become invalid; unlikely -:)
+		while (isdigit(*p)) p++;  // TODO: may trigger exception if p become invalid; unlikely -:)
 		return p;
 	}
 
 	inline static char *SkipNumericReverse(char *p) {
-		while (_istdigit(*p)) p--;  // TODO: may trigger exception if p become invalid; unlikely -:)
+		while (isdigit(*p)) p--;  // TODO: may trigger exception if p become invalid; unlikely -:)
 		return p;
 	}
 
@@ -165,10 +185,22 @@ public:
 		return p;
 	}
 
+	inline static char* SkipNonWhite(char* p) {
+		while ((*p != ' ') && (*p != '\t')) p++;
+		return p;
+	}
+
+	inline static char* SkipEOL(char* p)
+	{
+		while ((*p != '\n') && (*p != '\r')) p++;
+		return p;
+
+	}
+
 	static void SplitStringA(const CStringA &strIn, const CStringA &delim, CStringArray &a);
 	static void SplitStringA2A(const CStringA& strIn, const CStringA& delim, CStringArrayA& a);
 	static int TokenizeA(CStringA& str, CStringArrayA& a, char del);
-	static void TraceStringArrayA(CStringArray &a);
+	static void TraceStringArrayA(CStringArrayA &a);
 	//
 	static void SplitStringW(const CString& strIn, const CString& delim, CStringArray& a);
 	static int TokenizeW(CString &str, CStringArray& a, wchar_t del);

@@ -93,11 +93,14 @@ struct CFindDlgParams
 	void ResetFilterDates();
 };
 
-class CFindDlg : public CDialog
+class CFindDlg : public CDialogEx
 {
 // Construction
 public:
 	CFindDlg(CWnd* pParent = NULL);   // standard constructor
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 
 // Dialog Data
 	//{{AFX_DATA(CFindDlg)

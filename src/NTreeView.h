@@ -549,6 +549,8 @@ public:
 
 	DECLARE_DYNCREATE(NTreeView)
 
+	void ResetFont();
+
 	BOOL ExpandItem(HTREEITEM hItem, UINT nCode);
 
 	CWheelTreeCtrl	m_tree;

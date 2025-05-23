@@ -39,6 +39,9 @@ public:
 	InputBox(CString &parentFolder, CWnd* pParent = nullptr);   // standard constructor
 	virtual ~InputBox();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_INPUT_BOX_DLG };

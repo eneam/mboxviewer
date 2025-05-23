@@ -251,6 +251,25 @@ int CALLBACK MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	return -1;
 }
 
+
+static int g_pointSize = 85;
+static CString g_fontName = "Tahoma";
+
+void NTreeView::ResetFont()
+{
+	m_font.DeleteObject();
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		g_pointSize = CMainFrame::m_cnfFontSize * 10;
+	}
+
+	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
+		m_font.CreatePointFont(g_pointSize, L"Arial");
+	LOGFONT	lf;
+	m_font.GetLogFont(&lf);
+	m_tree.SetFont(&m_font);
+}
+
 int NTreeView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
@@ -260,7 +279,11 @@ int NTreeView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS |
 		TVS_SHOWSELALWAYS | TVS_EDITLABELS, // TVS_EDITLABELS | TVS_DISABLEDRAGDROP,
 		CRect(0, 0, 0, 0), this, IDC_TREE))
+	{
 		return -1;
+	}
+
+	NTreeView::ResetFont();
 
 	m_il.Create(16, 16, ILC_MASK | ILC_COLOR24, 0, 0);
 	CBitmap bmp;

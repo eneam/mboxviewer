@@ -590,6 +590,13 @@ CmboxviewApp::CmboxviewApp()
 #ifdef _DEBUG
 
 #if 0
+	{
+		int cnt = ResHelper::MonitorInfo();
+		int deb = 1;
+	}
+#endif
+
+#if 0
 
 	UINT driveType = GetDriveType(L"Z:");
 	if (driveType == DRIVE_REMOTE)
@@ -2070,6 +2077,8 @@ int deb = 1;
 		WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, NULL,
 		NULL);
 
+	pFrame->ResetFont();
+
 	// The one and only window has been initialized, so show and update it.
 	pFrame->ShowWindow(SW_SHOW);
 	pFrame->UpdateWindow();
@@ -2142,6 +2151,8 @@ int deb = 1;
 	{
 		pFrame->UpdateWindow();
 		pFrame->DrawMenuBar();
+
+		pFrame->m_createCompleted = TRUE;
 	}
 
 	return TRUE;

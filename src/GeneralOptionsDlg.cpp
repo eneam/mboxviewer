@@ -34,22 +34,34 @@
 #include "afxdialogex.h"
 #include "GeneralOptionsDlg.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 // GeneralOptionsDlg dialog
 
 IMPLEMENT_DYNAMIC(GeneralOptionsDlg, CDialogEx)
 
 GeneralOptionsDlg::GeneralOptionsDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_GENERAL_OPTIONS_DLG, pParent)
-	, m_relaxedMboxFileValidation(FALSE)
-	, m_relativeInlineImageFilePath(FALSE)
-	, m_enableUserAgent(TRUE)
-{
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_GENERAL_OPTIONS_DLG, pParent))
 
+{
+	m_relaxedMboxFileValidation = FALSE;
+	m_relativeInlineImageFilePath = FALSE;
+	m_enableUserAgent = TRUE;
+	m_pParent = pParent;
 }
 
 GeneralOptionsDlg::~GeneralOptionsDlg()
 {
+}
+
+INT_PTR GeneralOptionsDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_GENERAL_OPTIONS_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void GeneralOptionsDlg::DoDataExchange(CDataExchange* pDX)

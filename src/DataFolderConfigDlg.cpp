@@ -46,7 +46,7 @@ IMPLEMENT_DYNAMIC(DataFolderConfigDlg, CDialogEx)
 extern const wchar_t *sz_Software_mboxview;
 
 DataFolderConfigDlg::DataFolderConfigDlg(BOOL restartRequired, CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_DATA_FOLDER_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_DATA_FOLDER_DLG, pParent))
 {
 
 	m_restartRequired = restartRequired;
@@ -76,10 +76,22 @@ DataFolderConfigDlg::DataFolderConfigDlg(BOOL restartRequired, CWnd* pParent /*=
 	::ReleaseDC(NULL, hdc);
 
 	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
+
+	m_pParent = pParent;
 }
 
 DataFolderConfigDlg::~DataFolderConfigDlg()
 {
+}
+
+INT_PTR DataFolderConfigDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_DATA_FOLDER_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 BOOL DataFolderConfigDlg::OnInitDialog()
@@ -269,7 +281,7 @@ HBRUSH DataFolderConfigDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 {
 	// The below works. It is called for every object in the dialog. May not be the most efficient.
 
-	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	int nID = pWnd->GetDlgCtrlID();
 	if (nID == IDC_USER_SELECTED_FOLDER_PATH)

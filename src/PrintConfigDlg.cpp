@@ -46,13 +46,24 @@
 IMPLEMENT_DYNAMIC(PrintConfigDlg, CDialogEx)
 
 PrintConfigDlg::PrintConfigDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_PRINT_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_PRINT_DLG, pParent))
 {
 	m_NamePatternParams.SetDflts();
+	m_pParent = pParent;
 }
 
 PrintConfigDlg::~PrintConfigDlg()
 {
+}
+
+INT_PTR PrintConfigDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_PRINT_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void PrintConfigDlg::DoDataExchange(CDataExchange* pDX)
@@ -127,7 +138,7 @@ void PrintConfigDlg::OnBnClickedOk()
 
 BOOL PrintConfigDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	if (GetSafeHwnd()) 
 	{

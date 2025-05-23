@@ -93,6 +93,11 @@ CPictureCtrl::~CPictureCtrl(void)
 	GdiplusShutdown(m_gdiplusToken);
 }
 
+void CPictureCtrl::SetPictureCtrlOwner(void* pPictureCtrlOwner)
+{
+	m_pPictureCtrlOwner = (CCPictureCtrlDemoDlg*)pPictureCtrlOwner;
+}
+
 BOOL CPictureCtrl::LoadFromFile(CStringW &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom)
 {
 	//Set success error state

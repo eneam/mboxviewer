@@ -1299,7 +1299,7 @@ CStringA htmlDocHdrPlusStyle = LR"----(
 function googleTranslateElementInit()
 {
     new google.translate.TranslateElement({ pageLanguage: 'en', 
-    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl,ro'},
+    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja'},
     'google_translate_element');
 }
 
@@ -1449,6 +1449,61 @@ This text in English and should not be translated.
 	FileUtils::FileClose(hOutFile);
 	return 1;
 }
+
+void HtmlUtils::SetFontSize_Browser(CBrowser& browser, int fontSize)
+{
+#if 1
+	long cmdID = OLECMDID_OPTICAL_ZOOM;  // 
+	long cmdexecopt = OLECMDEXECOPT_DONTPROMPTUSER;
+	VARIANT vaIn;
+	VARIANT vaOut;
+	VariantInit(&vaIn);
+	vaIn.vt = VT_I4;
+	vaIn.lVal = fontSize;
+	browser.m_ie.ExecWB(cmdID, cmdexecopt, &vaIn, NULL);
+
+#else
+
+	LPDISPATCH lpDispatch = NULL;
+	LPOLECOMMANDTARGET pCmdTarg = NULL;
+
+	lpDispatch = browser.m_ie.GetDocument();
+	HTML_ASSERT(lpDispatch);
+	if (!lpDispatch)
+		return;
+	lpDispatch->QueryInterface(IID_IOleCommandTarget, (LPVOID*)&pCmdTarg);
+	HTML_ASSERT(pCmdTarg);
+	if (!pCmdTarg)
+	{
+		lpDispatch->Release();
+		return;
+	}
+
+	lpDispatch->Release();
+
+	VARIANT vaZoomFactorOut;
+	VariantInit(&vaZoomFactorOut);
+	VARIANT vaZoomFactor;
+	VariantInit(&vaZoomFactor);
+
+	//V_VT(&vaZoomFactor) = VT_I4;
+	//V_I4(&vaZoomFactor) = fontSize;
+
+	vaZoomFactor.vt = VT_I4;
+	vaZoomFactor.lVal = fontSize;
+
+	HRESULT hr = pCmdTarg->Exec(NULL,
+		OLECMDID_ZOOM,
+		OLECMDEXECOPT_DONTPROMPTUSER,
+		&vaZoomFactor,
+		&vaZoomFactorOut);
+
+	VariantClear(&vaZoomFactor);
+
+	pCmdTarg->Release(); // release document's command target
+#endif
+}
+
 
 #if 0
 // For possible future  as an example

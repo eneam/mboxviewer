@@ -33,6 +33,7 @@
 #include "CheckListBoxDlg.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // CCheckListBoxDlg dialog
@@ -40,27 +41,28 @@
 IMPLEMENT_DYNAMIC(CCheckListBoxDlg, CDialogEx)
 
 CCheckListBoxDlg::CCheckListBoxDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_CHECK_LIST_BOX_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_CHECK_LIST_BOX_DLG, pParent))
 {
 	m_title = L"Select Items";
+	m_pParent = pParent;
 }
 
 CCheckListBoxDlg::~CCheckListBoxDlg()
 {
 }
 
+INT_PTR CCheckListBoxDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_CHECK_LIST_BOX_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
+}
+
 int CCheckListBoxDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-#if 0
-	lpCreateStruct->style &= ~MUST_NOT_STYLE;
-	lpCreateStruct->style |= MUST_STYLE;
-	if (CListCtrl::OnCreate(lpCreateStruct) == -1)
-		return -1;
-
-	// TODO: Add your specialized creation code here
-	SetExtendedStyle(GetExtendedStyle());
-	_ASSERTE(GetHeaderCtrl() != NULL);
-#endif
 	return 0;
 }
 

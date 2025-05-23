@@ -59,6 +59,9 @@ public:
 	SelectLanguageDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~SelectLanguageDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	CString m_lastFolderName;
 	DerivedCListBox m_listBox;
 	//CListBox m_listBox;

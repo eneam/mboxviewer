@@ -35,6 +35,8 @@
 #include "SelectLanguageDlg.h"
 #include "FileUtils.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
+
 
 
 // SelectLanguageDlg dialog
@@ -42,13 +44,23 @@
 IMPLEMENT_DYNAMIC(SelectLanguageDlg, CDialogEx)
 
 SelectLanguageDlg::SelectLanguageDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_LANG_LIST_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_LANG_LIST_DLG, pParent))
 {
-
+	m_pParent = pParent;
 }
 
 SelectLanguageDlg::~SelectLanguageDlg()
 {
+}
+
+INT_PTR SelectLanguageDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_LANG_LIST_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void SelectLanguageDlg::DoDataExchange(CDataExchange* pDX)

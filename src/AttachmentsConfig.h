@@ -59,6 +59,9 @@ public:
 	AttachmentsConfig(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~AttachmentsConfig();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 	//
 	CToolTipCtrl m_toolTip;
 

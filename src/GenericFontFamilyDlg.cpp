@@ -33,6 +33,7 @@
 #include "GenericFontFamilyDlg.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // GenericFontFamilyDlg dialog
@@ -40,14 +41,25 @@
 IMPLEMENT_DYNAMIC(GenericFontFamilyDlg, CDialogEx)
 
 GenericFontFamilyDlg::GenericFontFamilyDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_GENERIC_FONT_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_GENERIC_FONT_DLG, pParent))
 {
 	m_genericFontName = L"serif";
+	m_pParent = pParent;
 
 }
 
 GenericFontFamilyDlg::~GenericFontFamilyDlg()
 {
+}
+
+INT_PTR GenericFontFamilyDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_GENERIC_FONT_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void GenericFontFamilyDlg::DoDataExchange(CDataExchange* pDX)

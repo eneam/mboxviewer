@@ -190,6 +190,17 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 #endif
+
+#if 0
+	// Best if user usees CTL+mouse scroll to control font size
+	static int done = 0;
+	if (!done)
+	{
+		int fontSize = 160;
+		HtmlUtils::SetFontSize_Browser(*this, fontSize);
+		done = 1;
+	}
+#endif
 }
 
 void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,

@@ -118,6 +118,9 @@ public:
 	ColorStyleConfigDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~ColorStyleConfigDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_COLOR_STYLE_DLG };
@@ -130,6 +133,8 @@ protected:
 
 	void LoadData();
 public:
+	BOOL CreateIndirect(UINT Id, CWnd* pParentWnd = NULL);
+
 	CWnd *m_MainFrameWnd;
 	CListBox m_listBox;            // List of Panes
 

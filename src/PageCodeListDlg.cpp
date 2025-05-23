@@ -6,6 +6,7 @@
 #include "TextUtilsEx.h"
 #include "PageCodeListDlg.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // PageCodeListDlg dialog
@@ -17,16 +18,29 @@ PageCodeListDlg* PageCodeListDlg::pPageCodeListDlgInstance = 0;
 IMPLEMENT_DYNAMIC(PageCodeListDlg, CDialogEx)
 
 PageCodeListDlg::PageCodeListDlg(CWnd* pParent /*=nullptr*/)
+//DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_PAGE_CODE_LIST_DLG, pParent))
 	: CDialogEx(IDD_PAGE_CODE_LIST_DLG, pParent)
 {
 	pPageCodeListDlgInstance = this;
 	m_descendingSort = TRUE;
 	m_CodePageSelected = GetACP();
+	m_pParent = pParent;
 }
 
 PageCodeListDlg::~PageCodeListDlg()
 {
 	pPageCodeListDlgInstance = 0;
+}
+
+INT_PTR PageCodeListDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CDialogEx::DoModal();
+	//INT_PTR ret = CMainFrame::SetTemplate(this, IDD_PAGE_CODE_LIST_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void PageCodeListDlg::DoDataExchange(CDataExchange* pDX)
@@ -157,7 +171,9 @@ BOOL PageCodeListDlg::OnInitDialog()
 	dwExStyle |= LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES;
 	m_list.SetExtendedStyle(dwExStyle);
 
-	m_list.SetFont(GetFont());
+	//m_list.SetFont(GetFont());
+
+	PageCodeListDlg::ResetFont();
 
 	CString CodePageId;
 	CodePageId.LoadString(IDS_PAGE_CODE_LIST_CODEPAGE_ID);
@@ -502,4 +518,22 @@ void PageCodeListDlg::OnTimer(UINT_PTR nIDEvent)
 
 	KillTimer(nIDEvent);
 	//CDialogEx::OnTimer(nIDEvent);
+}
+
+static int g_pointSize = 85;
+static CString g_fontName = "Tahoma";
+
+void PageCodeListDlg::ResetFont()
+{
+	m_font.DeleteObject();
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		g_pointSize = CMainFrame::m_cnfFontSize * 10;
+	}
+
+	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
+		m_font.CreatePointFont(g_pointSize, L"Arial");
+	LOGFONT	lf;
+	m_font.GetLogFont(&lf);
+	m_list.SetFont(&m_font);
 }

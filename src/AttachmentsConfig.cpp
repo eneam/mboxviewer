@@ -41,13 +41,25 @@
 IMPLEMENT_DYNAMIC(AttachmentsConfig, CDialogEx)
 
 AttachmentsConfig::AttachmentsConfig(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_ATTACHMENTS_CONFIG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_ATTACHMENTS_CONFIG, pParent))   // don't do this for modeless dialog
 {
-	;
+	m_pParent = pParent;
 }
 
 AttachmentsConfig::~AttachmentsConfig()
 {
+}
+
+INT_PTR AttachmentsConfig::DoModal()
+{
+	// Invalid for modeless dialog
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_ATTACHMENTS_CONFIG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+
+	return ret;
 }
 
 void AttachmentsConfig::DoDataExchange(CDataExchange* pDX)

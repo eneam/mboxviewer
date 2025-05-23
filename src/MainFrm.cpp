@@ -82,6 +82,16 @@ CString CMainFrame::m_numberOfHTML2ToMerge = L"1";
 
 QWORD CMainFrame::m_lastMailDataPreviewDeletTime = 0;
 
+// Global Font Config
+int CMainFrame::m_dfltFontSize = 8;
+int CMainFrame::m_cnfFontSize = 11;
+int CMainFrame::m_dfltBrowserZoom = 0;
+int CMainFrame::m_cnfBrowserZoom = 0;
+// valid Zoom range
+int CMainFrame::m_minBrowserZoom = 0;
+int CMainFrame::m_maxBrowserZoom = 0;
+
+
 #define MaxShellExecuteErrorCode 32
 
 MBoxViewerDB::MBoxViewerDB()
@@ -332,6 +342,8 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
 
+	m_createCompleted = FALSE;
+
 	Com_Initialize();  // FIXME
 
 	m_ColorStylesDB.LoadFromRegistry();
@@ -406,6 +418,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
+
+	ResetFont();
 
 	// create a view to occupy the client area of the frame
 	if (!m_wndView.Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
@@ -4516,7 +4530,8 @@ void CMainFrame::OnFileColorconfig()
 	{
 		ColorStyleConfigDlg *dlg = new ColorStyleConfigDlg(this);
 		//dlg->Create(IDD_COLOR_STYLE_DLG, GetDesktopWindow());
-		if (dlg->Create(IDD_COLOR_STYLE_DLG, this) == FALSE)
+		//if (dlg->Create(IDD_COLOR_STYLE_DLG, this) == FALSE)
+		if (dlg->CreateIndirect(IDD_COLOR_STYLE_DLG, this) == FALSE)
 		{
 			m_colorStyleDlg = 0;
 		}
@@ -6361,6 +6376,12 @@ CWnd * CMainFrame::SetWindowFocus(CWnd* wnd)
 CWnd* CMainFrame::RestoreWindowFocus()
 {
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	if (pFrame && !pFrame->m_createCompleted)
+	{
+		return 0;
+	}
+
 	if (pFrame)
 	{
 		NTreeView* m_pTreeView = pFrame->DetTreeView();
@@ -6701,4 +6722,85 @@ void CMainFrame::OnTestCfileopenfailure()
 	file2.Close();
 	file1.Close();
 	int deb = 1;
+}
+
+INT_PTR CMainFrame::SetTemplate(CDialog* dlg, UINT Id, CWnd* parent)
+{
+
+	CDialogTemplate dlt;
+
+	// load dialog template
+	if (!dlt.Load(MAKEINTRESOURCE(Id)))
+		return 0;  // Or  IDCANCEL ???
+
+	// set your own font, for example "Arial", 10 pts. 
+	//dlt.SetFont(L"Arial", 12);
+
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
+
+	// get pointer to the modified dialog template
+	LPDLGTEMPLATE pData = (LPDLGTEMPLATE)GlobalLock(dlt.m_hTemplate);
+	if (!pData)
+		return 0; // Or  IDCANCEL ???
+
+	// display dialog box
+	BOOL ret = dlg->InitModalIndirect(dlt.m_hTemplate, parent);
+
+	INT_PTR retModal = dlg->CDialog::DoModal();
+
+	// unlock memory object
+	GlobalUnlock(dlt.m_hTemplate);
+
+	return retModal;
+
+}
+
+INT_PTR CMainFrame::SetTemplateEx(CDialogEx* dlg, UINT Id, CWnd* parent)
+{
+	CDialogTemplate dlt;
+
+	// load dialog template
+	if (!dlt.Load(MAKEINTRESOURCE(Id)))
+		return 0; // Or  IDCANCEL ???
+
+	// set your own font, for example "Arial", 10 pts. 
+	//SetFont(L"Arial", 14);
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
+
+	// get pointer to the modified dialog template
+	LPDLGTEMPLATE pData = (LPDLGTEMPLATE)GlobalLock(dlt.m_hTemplate);
+	if (!pData)
+		return 0; // Or  IDCANCEL ???
+
+
+	// display dialog box
+	BOOL ret = dlg->InitModalIndirect(dlt.m_hTemplate, parent);
+
+	INT_PTR retModal = dlg->CDialogEx::DoModal();
+
+	// unlock memory object
+	GlobalUnlock(dlt.m_hTemplate);
+
+	return retModal;
+
+}
+
+static int g_pointSize = 85;
+static CString g_fontName = "Tahoma";
+
+void CMainFrame::ResetFont()
+{
+	m_font.DeleteObject();
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		g_pointSize = CMainFrame::m_cnfFontSize * 10;
+	}
+
+	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
+		m_font.CreatePointFont(g_pointSize, L"Arial");
+	LOGFONT	lf;
+	m_font.GetLogFont(&lf);
+	SetFont(&m_font, TRUE);
 }

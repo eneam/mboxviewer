@@ -33,6 +33,7 @@
 #include "mboxview.h"
 #include "OptionsDlg.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -43,15 +44,24 @@
 
 // finestra di dialogo COptionsDlg
 
-IMPLEMENT_DYNAMIC(COptionsDlg, CDialog)
+IMPLEMENT_DYNAMIC(COptionsDlg, CDialogEx)
 
 COptionsDlg::COptionsDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(COptionsDlg::IDD, pParent)
-	, m_format(0), m_barDelay(0)
-	, m_from_charsetId(0), m_to_charsetId(0), m_subj_charsetId(0), m_show_charsets(0)
-	, m_bImageViewer(1), m_bTimeType(0), m_bEnhancedSelectFolderDlg(0), m_bSubjectSortType(0)
-	, m_filesToValidateAsMboxType(0)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_OPTIONS, pParent))
 {
+	m_format = 0;
+	m_barDelay = 0;
+	m_from_charsetId = 0;
+	m_to_charsetId = 0;
+	m_subj_charsetId = 0;
+	m_show_charsets = 0;
+	m_bImageViewer = 1;
+	m_bTimeType = 0;
+	m_bEnhancedSelectFolderDlg = 0;
+	m_bSubjectSortType = 0;
+	m_filesToValidateAsMboxType = 0;
+	m_pParent = pParent;
+
 	//m_from_charsetId = GetACP();
 	//m_to_charsetId = GetACP();
 	//m_subj_charsetId = GetACP();
@@ -61,9 +71,19 @@ COptionsDlg::~COptionsDlg()
 {
 }
 
+INT_PTR COptionsDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_OPTIONS, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
+}
+
 void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialogEx::DoDataExchange(pDX);
 	DDX_Radio(pDX, IDC_DMY, m_format);
 	DDX_Radio(pDX, IDC_EXPORT_EML, m_exportEML);
 	DDX_Text(pDX, IDC_PROGRESS_BAR_DELAY, m_barDelay);
@@ -79,7 +99,7 @@ void COptionsDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BEGIN_MESSAGE_MAP(COptionsDlg, CDialog)
+BEGIN_MESSAGE_MAP(COptionsDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &COptionsDlg::OnBnClickedOk)
 	//ON_BN_CLICKED(IDC_RADIO2, &COptionsDlg::OnBnClickedRadio2)
 	//ON_BN_CLICKED(IDC_PICTURE_VIEWER, &COptionsDlg::OnBnClickedPictureViewer)
@@ -114,14 +134,14 @@ void COptionsDlg::OnBnClickedOk()
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"subjectSortType", m_bSubjectSortType);
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_options, L"filesToValidateAsMboxType", m_filesToValidateAsMboxType);
 
-		CDialog::OnOK();
+		CDialogEx::OnOK();
 	}
 }
 
 
 BOOL COptionsDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
 

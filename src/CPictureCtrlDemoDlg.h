@@ -53,9 +53,14 @@
 class CCPictureCtrlDemoDlg : public CDialogEx
 {
 // Konstruktion
+	DECLARE_DYNAMIC(CCPictureCtrlDemoDlg)
+
 public:
 	CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pParent = NULL);	// Standardkonstruktor
 	~CCPictureCtrlDemoDlg();
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 
 	void UpdateRotateType(Gdiplus::RotateFlipType rotateType);
 	void FillRect(CBrush &brush);

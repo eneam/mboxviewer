@@ -33,6 +33,7 @@
 #include "FindFilterRuleDlg.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // FindFilterRuleDlg dialog
@@ -40,13 +41,24 @@
 IMPLEMENT_DYNAMIC(FindFilterRuleDlg, CDialogEx)
 
 FindFilterRuleDlg::FindFilterRuleDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_FIND_FILTER_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_FIND_FILTER_DLG, pParent))
 {
 	m_filterNumb = 0;
+	m_pParent = pParent;
 }
 
 FindFilterRuleDlg::~FindFilterRuleDlg()
 {
+}
+
+INT_PTR FindFilterRuleDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_FIND_FILTER_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void FindFilterRuleDlg::DoDataExchange(CDataExchange* pDX)

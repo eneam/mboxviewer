@@ -95,8 +95,8 @@ NMsgView::NMsgView()
 	m_NormFont.CreateFontIndirect(&ncm.lfMessageFont);
 
 	HDC hdc = ::GetWindowDC(NULL);
-	//ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-	ncm.lfMessageFont.lfHeight = -MulDiv(11, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	//ncm.lfMessageFont.lfHeight = -MulDiv(11, GetDeviceCaps(hdc, LOGPIXELSY), 72);
 	::ReleaseDC(NULL, hdc);
 
 	ncm.lfMessageFont.lfWeight = 400;
@@ -291,6 +291,10 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		pFrame->CheckMessagewindowPositionMenuOption(pFrame->GetMessageWindowPosition());
 	}
+
+
+	int fontSize = 200;
+	//HtmlUtils::SetFontSize_Browser(m_browser, fontSize);
 
 	return 0;
 }

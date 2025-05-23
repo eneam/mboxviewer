@@ -34,6 +34,7 @@
 #include "FileUtils.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // OpenArchiveFileDlg dialog
@@ -41,13 +42,23 @@
 IMPLEMENT_DYNAMIC(OpenArchiveFileDlg, CDialogEx)
 
 OpenArchiveFileDlg::OpenArchiveFileDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_OPEN_ARCHIVE_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_OPEN_ARCHIVE_DLG, pParent))
 {
-
+	m_pParent = pParent;
 }
 
 OpenArchiveFileDlg::~OpenArchiveFileDlg()
 {
+}
+
+INT_PTR OpenArchiveFileDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_OPEN_ARCHIVE_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void OpenArchiveFileDlg::DoDataExchange(CDataExchange* pDX)

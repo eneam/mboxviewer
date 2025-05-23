@@ -39,6 +39,9 @@ public:
 	OpenArchiveFileDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~OpenArchiveFileDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_OPEN_ARCHIVE_DLG };

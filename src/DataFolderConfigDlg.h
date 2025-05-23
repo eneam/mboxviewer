@@ -39,6 +39,9 @@ public:
 	DataFolderConfigDlg(BOOL restartRequired = FALSE, CWnd* pParent = nullptr);   // standard constructor
 	virtual ~DataFolderConfigDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_DATA_FOLDER_DLG };

@@ -34,6 +34,7 @@
 #include "TextUtilsEx.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // ForwardMailDlg dialog
@@ -41,13 +42,23 @@
 IMPLEMENT_DYNAMIC(ForwardMailDlg, CDialogEx)
 
 ForwardMailDlg::ForwardMailDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_FORWARD_EMAIL, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_FORWARD_EMAIL, pParent))
 {
-
+	m_pParent = pParent;
 }
 
 ForwardMailDlg::~ForwardMailDlg()
 {
+}
+
+INT_PTR ForwardMailDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_FORWARD_EMAIL, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void ForwardMailDlg::DoDataExchange(CDataExchange* pDX)
@@ -88,7 +99,7 @@ int ForwardMailDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 BOOL ForwardMailDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	m_EditText.SetWindowText(m_Data.m_Text);
 	if (GetSafeHwnd())

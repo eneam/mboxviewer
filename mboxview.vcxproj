@@ -366,7 +366,7 @@
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
       <StackReserveSize>2097152</StackReserveSize>
-      <AdditionalDependencies>Rstrtmgr.lib</AdditionalDependencies>
+      <AdditionalDependencies>Rstrtmgr.lib;Shcore.lib</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -569,7 +569,7 @@
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
       <StackReserveSize>2097152</StackReserveSize>
-      <AdditionalDependencies>Rstrtmgr.lib</AdditionalDependencies>
+      <AdditionalDependencies>Rstrtmgr.lib;Shcore.lib</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>

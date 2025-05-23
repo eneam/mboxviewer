@@ -45,17 +45,28 @@ IMPLEMENT_DYNAMIC(HtmlPdfHdrConfigDlg, CDialogEx)
 extern const wchar_t *sz_Software_mboxview;
 
 HtmlPdfHdrConfigDlg::HtmlPdfHdrConfigDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_HTML_PDF_HDR_DLG, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_HTML_PDF_HDR_DLG, pParent))
 {
 	m_bPickFamilyFont = 0;
 	m_bPickConcreteFont = 0;
 	m_bHdrAttachmentLinkOpenMode = 0;
 
 	m_HdrFldConfig.LoadFromRegistry();
+	m_pParent = pParent;
 }
 
 HtmlPdfHdrConfigDlg::~HtmlPdfHdrConfigDlg()
 {
+}
+
+INT_PTR HtmlPdfHdrConfigDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_HTML_PDF_HDR_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void HtmlPdfHdrConfigDlg::DoDataExchange(CDataExchange* pDX)

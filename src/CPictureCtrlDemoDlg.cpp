@@ -61,9 +61,13 @@
 
 // CCPictureCtrlDemoDlg-Dialogfeld
 
-CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pParent /*=NULL*/)
-	: CDialogEx(CCPictureCtrlDemoDlg::IDD, pParent), m_picCtrl(this)
+IMPLEMENT_DYNAMIC(CCPictureCtrlDemoDlg, CDialogEx)
+
+CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW* attachmentName, CWnd* pParent /*=NULL*/)
+DIALOG_FROM_TEMPLATE(: CDialogEx(IDD_CPICTURECTRLDEMO_DIALOG, pParent)) // ,m_picCtrl(this)
 {
+	m_picCtrl.SetPictureCtrlOwner(this);  // ,m_picCtrl(this)
+
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ImageFileNameArrayPos = 0;
 	CStringW fpath = CMainFrame::GetMboxviewTempPath();
@@ -90,6 +94,8 @@ CCPictureCtrlDemoDlg::CCPictureCtrlDemoDlg(CStringW *attachmentName, CWnd* pPare
 
 	m_hightZoom = 1;
 	m_widthZoom = 1;
+
+	m_pParent = pParent;
 }
 
 CCPictureCtrlDemoDlg::~CCPictureCtrlDemoDlg()
@@ -100,15 +106,25 @@ CCPictureCtrlDemoDlg::~CCPictureCtrlDemoDlg()
 	}
 }
 
+INT_PTR CCPictureCtrlDemoDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_CPICTURECTRLDEMO_DIALOG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
+}
+
 void CCPictureCtrlDemoDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_STATIC_PICTURE, m_picCtrl);
 	DDX_Control(pDX, IDC_SLIDER_ZOOM, m_sliderCtrl);
 	int deb = 1;
 }
 
-BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialog)
+BEGIN_MESSAGE_MAP(CCPictureCtrlDemoDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
@@ -135,7 +151,7 @@ END_MESSAGE_MAP()
 
 BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	CDialogEx::OnInitDialog();
 
 	// Add the menu command "Info ..." to the system menu.
 	// IDM_ABOUTBOX must be in the system commands area.
@@ -172,7 +188,7 @@ BOOL CCPictureCtrlDemoDlg::OnInitDialog()
 
 void CCPictureCtrlDemoDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	CDialog::OnSysCommand(nID, lParam);
+	CDialogEx::OnSysCommand(nID, lParam);
 }
 
 // If you add a Minimize button to the dialog, you will need
@@ -203,7 +219,7 @@ void CCPictureCtrlDemoDlg::OnPaint()
 	}
 	else
 	{
-		CDialog::OnPaint();
+		CDialogEx::OnPaint();
 
 		if (m_picCtrl.GetSafeHwnd()) {
 			LoadImageFromFile();
@@ -432,7 +448,7 @@ void CCPictureCtrlDemoDlg::UpdateRotateType(Gdiplus::RotateFlipType rotateType)
 
 void CCPictureCtrlDemoDlg::FillRect(CBrush &brush)
 {
-	CDialog::OnPaint();
+	CDialogEx::OnPaint();
 	CRect rect;
 	GetClientRect(&rect);
 	this->GetDC()->FillRect(&rect, &brush); // make dialog box black

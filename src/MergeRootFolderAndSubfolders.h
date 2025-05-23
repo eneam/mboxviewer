@@ -40,6 +40,9 @@ public:
 	MergeRootFolderAndSubfolders(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~MergeRootFolderAndSubfolders();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MERGE_FOLDER_AND_SUBFOLDERS };

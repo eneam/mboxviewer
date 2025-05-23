@@ -55,6 +55,7 @@ static void CSCAssert()
 // Using SW_SHOW and SW_HIDE
 
 ColorStyleConfigDlg::ColorStyleConfigDlg(CWnd* pParent /*=nullptr*/)
+// DIALOG_FROM_TEMPLATE (: CDialogEx(IDD_COLOR_STYLE_DLG, pParent))  // invalid for modeless dialog
 	: CDialogEx(IDD_COLOR_STYLE_DLG, pParent)
 {
 	m_MainFrameWnd = pParent;
@@ -68,11 +69,27 @@ ColorStyleConfigDlg::ColorStyleConfigDlg(CWnd* pParent /*=nullptr*/)
 	{
 		m_customColors[i] = RGB(210, 210, 210);
 	}
+	m_pParent = pParent;
 }
 
 ColorStyleConfigDlg::~ColorStyleConfigDlg()
 {
 	int deb = 1;
+}
+
+INT_PTR ColorStyleConfigDlg::DoModal()
+{
+#if 0
+	// invalid for modeless dialog
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_COLOR_STYLE_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void ColorStyleConfigDlg::DoDataExchange(CDataExchange* pDX)
@@ -1149,4 +1166,32 @@ BOOL ColorStyleConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult
 	*pResult = 0;
 
 	return bRet;
+}
+
+BOOL ColorStyleConfigDlg::CreateIndirect(UINT Id, CWnd* pParentWnd)
+{
+	CDialogTemplate dlt;
+
+	// load dialog template
+	if (!dlt.Load(MAKEINTRESOURCE(Id)))
+		return FALSE;
+
+	// set your own font, for example "Arial", 10 pts. 
+	//dlt.SetFont(L"Arial", 12);
+
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
+
+	// get pointer to the modified dialog template
+	LPDLGTEMPLATE pData = (LPDLGTEMPLATE)GlobalLock(dlt.m_hTemplate);
+	if (!pData)
+		return FALSE;
+
+	// display dialog box
+	BOOL ret = CDialog::CreateIndirect(dlt.m_hTemplate, pParentWnd);
+
+	// unlock memory object
+	GlobalUnlock(dlt.m_hTemplate);
+
+	return ret;
 }

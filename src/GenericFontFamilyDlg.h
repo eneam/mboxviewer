@@ -39,6 +39,9 @@ public:
 	GenericFontFamilyDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~GenericFontFamilyDlg();
 
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_GENERIC_FONT_DLG };

@@ -1175,6 +1175,7 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 	BOOL found = FALSE;
 	p++; // Avoid ZMCRASH
 	//char cc = *(p - 1);
+	CStringA monthFound;
 	while (p < e)
 	{
 		found = FALSE;
@@ -1182,112 +1183,145 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 		c = tolower(c);
 		switch (c)
 		{
-		case 'a':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " apr ", 5) == 0)
+			case 'a':
 			{
-				FoundMonth();
-				found = TRUE;
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " apr ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " apr ";
+					found = TRUE;
+				}
+				else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " aug ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " aug ";
+					found = TRUE;
+				}
+				int deb = 1; break;
 			}
-			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " aug ", 5) == 0)
+			case 'd':
 			{
-				FoundMonth();
-				found = TRUE;
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " dec ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " dec ";
+					found = TRUE;
+				}
+				int deb = 1; break;
 			}
-			int deb = 1; break;
+			case 'f':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " feb ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " feb ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			case 'j':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jan ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " jan ";
+					found = TRUE;
+				}
+				else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jun ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " jun ";
+					found = TRUE;
+				}
+				else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jul ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " jul ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			case 'm':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " mar ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " mar ";
+					found = TRUE;
+				}
+				else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " may ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " may ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			case 'n':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " nov ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " nov ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			case 'o':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " oct ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " oct ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			case 's':
+			{
+				if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " sep ", 5) == 0)
+				{
+					FoundMonth();
+					monthFound = " sep ";
+					found = TRUE;
+				}
+				int deb = 1; break;
+			}
+			default:
+			{
+				int deb = 1; break;
+			}
 		}
-		case 'd':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " dec ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 'f':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " feb ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 'j':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jan ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jun ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " jul ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 'm':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " mar ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			else if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " may ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 'n':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " nov ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 'o':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " oct ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		case 's':
-		{
-			if (TextUtilsEx::strncmpUpper2Lower(p - 1, e, " sep ", 5) == 0)
-			{
-				FoundMonth();
-				found = TRUE;
-			}
-			int deb = 1; break;
-		}
-		default:
-		{
-			int deb = 1; break;
-		}
-		}
+		// ZM Need to do much better
+		// Evaluate each item after splitting 
 		if (found == TRUE)
 		{
-			char *d = TextUtilsEx::SkipWhiteReverse(p-1);
-			char *day = TextUtilsEx::SkipNumericReverse(d);
+			char* d = TextUtilsEx::SkipWhiteReverse(p - 1);
+			char* day = TextUtilsEx::SkipNumericReverse(d);
 			day++;
 			if (_istdigit(*d))
 			{
-				TextUtilsEx::CopyLine(day, e, dateStr);
+				TextUtilsEx::CopyUpToEndOfLine(day, e, dateStr);
+				break;
 				int deb = 1;
+			}
+			else
+			{
+				char* p_save = p;
+				TextUtilsEx::CopyUpToEndOfLine(p, e, dateStr);
+				CStringA delim = " \t";
+				CStringArrayA va;
+				TextUtilsEx::SplitStringA2A(dateStr, delim, va);
+				TextUtilsEx::TraceStringArrayA(va);
+
+				BOOL isNumDay = TextUtilsEx::isNumericA(va[1]);
+				BOOL isNumYear = TextUtilsEx::isNumericA(va[3]);
+
+				if ((va.GetCount() == 5) && isNumDay && isNumYear)
+				{
+					dateStr.Format("%s %s %s %s %s", va[1], va[0], va[3], va[2], va[4]);
+					break;
+				}
 			}
 		}
 		p++;
@@ -1295,7 +1329,7 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 	int deb = 1;
 }
 
-time_t MboxMail::parseRFC822Date(CStringA &date, CStringA &format)
+time_t MboxMail::parseRFC822Date(CStringA& date, CStringA& format)
 {
 	time_t tdate = -1;
 	SYSTEMTIME tm;
@@ -2094,7 +2128,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 				else
 				{
 					bool isEmpty = false;
-					char *psave = p;
+					char* psave = p;
 					p = MimeParser::EatNewLine(p, e, isEmpty);
 					// TODO:  This check may not completely reliable and may need better check and likley more expensive check
 					// Without the end of header check, we could pickup CC and BCC fiekds from mail text
@@ -2108,7 +2142,53 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 							int deb = 1;
 
 						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 
+
+						// search for date
+						if (bDate)
+						{
+							date.Empty();
+
+							_int64 lsize = bufSize - (_int64)(msgStart - orig);
+							int datalen;
+							if (lsize > 0x1fffffff)
+								datalen = 0x1fffffff;
+							else
+								datalen = (int)lsize;
+
+							dateStr.Empty();
+							FindDateInHeader(msgStart, datalen, dateStr);
+
+							if (!dateStr.IsEmpty())
+							{
+								date = dateStr;
+								if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+								{
+									bDate = false;
+									recv = FALSE;
+								}
+								else // if (dateStr.IsEmpty())
+								{
+									date.Empty();
+
+									CStringA rfcDateStr;
+									if (CreateRFC822Date(date, rfcDateStr))
+									{
+										date = rfcDateStr;
+										if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
+										{
+											bDate = false;
+											recv = FALSE;
+										}
+										else
+											date.Empty();
+									}
+									int deb = 1;
+								}
+							}
+							int deb = 1;
+						}
 					}
+
 				}
 			}
 			else

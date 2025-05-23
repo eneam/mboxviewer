@@ -63,12 +63,14 @@ class CPictureCtrl :
 public:
 
 	//Constructor
-	CPictureCtrl(void *pPictureCtrlOwner);
+	CPictureCtrl(void* pPictureCtrlOwner = 0);
 
 	//Destructor
 	~CPictureCtrl(void);
 
 public:
+
+	void SetPictureCtrlOwner(void* pPictureCtrlOwner);
 
 	//Loads an image from a file
 	BOOL LoadFromFile(CStringW &szFilePath, Gdiplus::RotateFlipType rotateType, float zoom);

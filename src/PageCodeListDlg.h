@@ -49,9 +49,13 @@ public:
 	PageCodeListDlg(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~PageCodeListDlg();
 
-	
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
+	CFont m_font;
+
 	void SortCodePageList(int column, BOOL descendingSort);
 	void PrintListCtrl(HTREEITEM hItem, BOOL recursive, int depth);
+	void ResetFont();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME

@@ -34,6 +34,7 @@
 #include "MergeRootFolderAndSubfolders.h"
 #include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 
 // MergeRootFolderAndSubfolders dialog
@@ -41,7 +42,7 @@
 IMPLEMENT_DYNAMIC(MergeRootFolderAndSubfolders, CDialogEx)
 
 MergeRootFolderAndSubfolders::MergeRootFolderAndSubfolders(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_MERGE_FOLDER_AND_SUBFOLDERS, pParent)
+DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_MERGE_FOLDER_AND_SUBFOLDERS, pParent))
 {
 	m_mergeRootFolderStyle = 1;  // merge all mbox files under root folder and all subfolders
 	m_labelAssignmentStyle = 1;  // assign mbox file name as label to each mail
@@ -67,11 +68,21 @@ MergeRootFolderAndSubfolders::MergeRootFolderAndSubfolders(CWnd* pParent /*=null
 	::ReleaseDC(NULL, hdc);
 
 	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
-
+	m_pParent = pParent;
 }
 
 MergeRootFolderAndSubfolders::~MergeRootFolderAndSubfolders()
 {
+}
+
+INT_PTR MergeRootFolderAndSubfolders::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_MERGE_FOLDER_AND_SUBFOLDERS, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void MergeRootFolderAndSubfolders::DoDataExchange(CDataExchange* pDX)
@@ -130,7 +141,7 @@ HBRUSH MergeRootFolderAndSubfolders::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlC
 {
 	// The below works. It is called for every object in the dialog. May not be the most efficient.
 
-	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 #if 0
 	int nID = pWnd->GetDlgCtrlID();
 	if (nID == IDC_USER_SELECTED_FOLDER_PATH)

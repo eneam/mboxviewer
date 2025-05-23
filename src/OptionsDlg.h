@@ -34,13 +34,16 @@
 
 // finestra di dialogo COptionsDlg
 
-class COptionsDlg : public CDialog
+class COptionsDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(COptionsDlg)
 
 public:
 	COptionsDlg(CWnd* pParent = NULL);   // costruttore standard
 	virtual ~COptionsDlg();
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 
 // Dati della finestra di dialogo
 	enum { IDD = IDD_OPTIONS };

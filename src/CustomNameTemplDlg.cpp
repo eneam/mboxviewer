@@ -42,13 +42,24 @@
 IMPLEMENT_DYNAMIC(CustomNameTemplDlg, CDialogEx)
 
 CustomNameTemplDlg::CustomNameTemplDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_NAME_TEMPL_DLG, pParent)
+DIALOG_FROM_TEMPLATE(: CDialogEx(IDD_NAME_TEMPL_DLG, pParent))
 {
 	m_nameTemplateCnf.SetDflts();
+	m_pParent = pParent;
 }
 
 CustomNameTemplDlg::~CustomNameTemplDlg()
 {
+}
+
+INT_PTR CustomNameTemplDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_NAME_TEMPL_DLG, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void CustomNameTemplDlg::DoDataExchange(CDataExchange* pDX)

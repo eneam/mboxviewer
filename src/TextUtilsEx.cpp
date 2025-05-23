@@ -1253,12 +1253,26 @@ BOOL TextUtilsEx::GetCodePageInfo(UINT codePage, CP2NM& cpInfo)
 
 BOOL TextUtilsEx::isNumeric(CString &str) {
 	int i = 0;
+	if (str[i] == L'-')
+		i++;
+	if (i == str.GetLength())
+		return FALSE;
+	for (; i < str.GetLength(); i++) {
+		if (!iswdigit(str[i])) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+BOOL TextUtilsEx::isNumericA(CStringA& str) {
+	int i = 0;
 	if (str[i] == '-')
 		i++;
 	if (i == str.GetLength())
 		return FALSE;
 	for (; i < str.GetLength(); i++) {
-		if (!_istdigit(str[i])) {
+		if (!isdigit(str[i])) {
 			return FALSE;
 		}
 	}
@@ -1807,10 +1821,10 @@ int TextUtilsEx::TokenizeA(CStringA& str, CStringArrayA& a, char del)
 	return 1;
 }
 
-void TextUtilsEx::TraceStringArrayA(CStringArray& a)
+void TextUtilsEx::TraceStringArrayA(CStringArrayA& a)
 {
 	CStringA el;
-	TRACE(L"TraceStringArrayA:StringArray:\n");
+	TRACE(L"TraceStringArrayA:StringArrayA:\n");
 	for (int i = 0; i < a.GetSize(); i++)
 	{
 		el = a.ElementAt(i);

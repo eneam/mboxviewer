@@ -32,6 +32,7 @@
 #include "stdafx.h"
 #include "ColorPickerDlg.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 #ifndef _WIN32_WCE // CColorDialog is not supported for Windows CE.
 
@@ -39,14 +40,28 @@
 
 IMPLEMENT_DYNAMIC(ColorPickerDlg, CColorDialog)
 
-ColorPickerDlg::ColorPickerDlg(COLORREF clrInit, DWORD dwFlags, CWnd* pParentWnd) :
-	CColorDialog(clrInit, dwFlags, pParentWnd)
+ColorPickerDlg::ColorPickerDlg(COLORREF clrInit, DWORD dwFlags, CWnd* pParentWnd)
+// DIALOG_FROM_TEMPLATE(: CColorDialog(clrInit, dwFlags, pParentWnd))  // doesn't work
+	: CColorDialog(clrInit, dwFlags, pParentWnd)
 {
-
+	m_pParent = pParentWnd;
 }
 
 ColorPickerDlg::~ColorPickerDlg()
 {
+}
+
+// Doesn't seem to work
+INT_PTR ColorPickerDlg::DoModal()
+{
+#if 0
+	// This will not work. Can't init from template. Not sure what is the solution to increase font size and template layout
+	UINT Idd = (UINT)m_lpszTemplateName;
+	LOAD_TEMPLATE_FOR_DIALOG(INT_PTR ret = CMainFrame::SetTemplate(this, Idd, m_pParent));
+#else
+	INT_PTR ret = CColorDialog::DoModal();
+#endif
+	return ret;
 }
 
 
