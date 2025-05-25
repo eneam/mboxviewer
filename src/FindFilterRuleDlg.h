@@ -43,6 +43,8 @@ public:
 	virtual INT_PTR DoModal();
 	CWnd* m_pParent;
 
+	CToolTipCtrl m_toolTip;
+
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_FIND_FILTER_DLG };
@@ -56,4 +58,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
+	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 };

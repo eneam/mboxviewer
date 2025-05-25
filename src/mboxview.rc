@@ -681,17 +681,17 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     GROUPBOX        "Select Predefined Filter Rule",IDC_STATIC_FILTER_RULE_1,7,14,430,119
     CONTROL         "((From <--> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER0,
-                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,22,32,408,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,22,32,408,10
     CONTROL         "(From -> To) and CC and BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER1,
-                    "Button",BS_AUTORADIOBUTTON,22,48,408,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY,22,48,408,10
     CONTROL         "((From -> (To or CC or BCC)) and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER2,
-                    "Button",BS_AUTORADIOBUTTON,22,64,408,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY,22,64,408,10
     CONTROL         "((From <--> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER3,
-                    "Button",BS_AUTORADIOBUTTON,22,81,408,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY,22,81,408,10
     CONTROL         "(From -> To) and no CC and no BCC and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER4,
-                    "Button",BS_AUTORADIOBUTTON,22,98,407,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY,22,98,407,10
     CONTROL         "(From or To or CC or BCC) and Subject and (Message Text or Attachment Text) and Attachment Name",IDC_FILTER_NUMBER5,
-                    "Button",BS_AUTORADIOBUTTON,22,114,408,10
+                    "Button",BS_AUTORADIOBUTTON | BS_NOTIFY,22,114,408,10
     GROUPBOX        "NOTE:",IDC_STATIC_FILTER_RULE_2,7,138,430,83
     LTEXT           "1.  (John <--> Tod) will match (Jon --> Tod) and (Tod --> John) mails",IDC_STATIC_FILTER_RULE_3,21,153,409,8,SS_NOTIFY
     LTEXT           "2.  (John --> Tod) will match Jon --> Tod mails",IDC_STATIC_FILTER_RULE_4,21,165,407,8,SS_NOTIFY

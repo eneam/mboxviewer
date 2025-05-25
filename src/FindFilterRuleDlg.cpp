@@ -70,6 +70,7 @@ void FindFilterRuleDlg::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(FindFilterRuleDlg, CDialogEx)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &FindFilterRuleDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -81,10 +82,22 @@ BOOL FindFilterRuleDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-
+	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL FindFilterRuleDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(id);
+	static CString toolTipText;
+
+	CWnd* parentWnd = (CWnd*)this;
+	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
+	*pResult = 0;
+
+	return bRet;
 }
