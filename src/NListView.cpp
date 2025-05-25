@@ -535,6 +535,8 @@ void NListView::ResetFont()
 	{
 		g_pointSize = CMainFrame::m_cnfFontSize *10;
 	}
+	else
+		g_pointSize = 85;
 
 	if( ! m_font.CreatePointFont (g_pointSize, g_fontName) )
 		m_font.CreatePointFont (85, L"Arial");

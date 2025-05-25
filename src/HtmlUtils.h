@@ -62,4 +62,6 @@ public:
 	static char* SkipEmptyLine(char* p, char* e);
 	static int CreateTranslationHtml(CString& inputFile, CString &targetLanguage, CString& outputHtmlFile);
 	static void SetFontSize_Browser(CBrowser& browser, int fontSize);
+	static int GetFontSize_Browser(CBrowser& browser);
+	static BOOL GetFontZoomRange_Browser(CBrowser& browser, int& minZoom, int& maxZoom);
 };

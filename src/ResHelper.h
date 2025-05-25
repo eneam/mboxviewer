@@ -125,6 +125,8 @@ public:
 		UTF32BE
 	};
 
+	static BOOL m_showTooltipsAlways;
+
 	static BOOL g_LoadMenuItemsInfo;  // Traverse dialog & menu controles and create resource filke. i.e. collect text from all items/sub-controls
 	static BOOL g_UpdateMenuItemsInfo;  // Update all text using selected translation file
 

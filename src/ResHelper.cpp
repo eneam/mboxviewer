@@ -38,6 +38,8 @@
 
 CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.42\ResourceRoot\WORK\)";
 
+BOOL ResHelper::m_showTooltipsAlways = TRUE;
+
 // When g_LoadMenuItemsInfo is set to TRUE, MBox Viewer will traverse all controls selected by a user and collect control's window text in the hash table
 // When "File->Dvelopmen->Create Resource File" option is selected, MBox Viewer will merge content of rcFileName, last_sourceFileName, extraFileName 
 // with the content of the hash table and generate the new sourceFileName
@@ -206,6 +208,12 @@ CString ResHelper::GetLanguageCode(CString& languageName)
 		return L"ro";
 	else if (languageName.CompareNoCase(L"japanese") == 0)
 		return L"ja";
+	else if (languageName.CompareNoCase(L"russian") == 0)
+		return L"ru";
+	else if (languageName.CompareNoCase(L"chinese ") == 0)
+		return L"zh-CN";
+	else if (languageName.CompareNoCase(L"arabic ") == 0)
+		return L"ar";
 	else
 		return langaugeCode;
 }
@@ -2458,7 +2466,7 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 				p->GetClientRect(&rec);
 				//rec.InflateRect(-5, 0);
 
-				if (sizeItem.cx > rec.Width())
+				if (m_showTooltipsAlways || sizeItem.cx > rec.Width())
 				{
 					//int w = m_toolTip.SetMaxTipWidth(200);
 

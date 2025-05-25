@@ -292,10 +292,6 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		pFrame->CheckMessagewindowPositionMenuOption(pFrame->GetMessageWindowPosition());
 	}
 
-
-	int fontSize = 200;
-	//HtmlUtils::SetFontSize_Browser(m_browser, fontSize);
-
 	return 0;
 }
 

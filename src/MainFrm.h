@@ -49,6 +49,9 @@
 
 class ConfigTree;
 
+#define FromVariablesToControls FALSE
+#define FromControlsToVariables TRUE
+
 class MBoxViewerDB
 {
 public:
@@ -205,7 +208,6 @@ public:
 public:
 	virtual ~CMainFrame();
 
-	void ResetFont();
 	BOOL m_createCompleted;
 
 	NMsgView * GetMsgView();
@@ -351,6 +353,7 @@ public:
 	static int m_dfltFontSize;
 	static int m_cnfFontSize;
 	static int m_dfltBrowserZoom;
+	static int m_currentBrowserZoom;
 	static int m_cnfBrowserZoom;
 	// valid Zoom range
 	static int m_minBrowserZoom;
@@ -479,6 +482,7 @@ public:
 	afx_msg void OnLanguageSelectlanguange();
 	afx_msg void OnLanguageHelp();
 	afx_msg void OnTestCfileopenfailure();
+	afx_msg void OnFileFontconfig();
 };
 
 /////////////////////////////////////////////////////////////////////////////

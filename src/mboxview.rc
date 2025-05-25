@@ -74,6 +74,7 @@ BEGIN
         MENUITEM "Print Config...",             ID_FILE_PRINTCONFIG
         MENUITEM "Attachments Config...",       ID_FILE_ATTACHMENTSCONFIG
         MENUITEM "Color Style Config...",       ID_FILE_COLORCONFIG
+        MENUITEM "Font Config",                 ID_FILE_FONTCONFIG
         MENUITEM "Data Folder Config...",       ID_FILE_DATAFOLDERCONFIG
         MENUITEM "SMTP Mail Server Config...",  ID_FILE_SMTPMAILSERVERCONFIG
         MENUITEM "General Options Config...",   ID_FILE_GENERALOPTIONS
@@ -886,6 +887,21 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,263,179,50,14
 END
 
+IDD_DIALOG_FONT_SIZE DIALOGEX 0, 0, 309, 108
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Font Config"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,198,84,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,252,84,50,14
+    CONTROL         "Default Size 8 pt",IDC_RADIO_FONT_DFLT,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,19,13,118,10
+    CONTROL         "Custom Size",IDC_RADIO_FONT_CUSTOM,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,144,13,87,10
+    EDITTEXT        IDC_EDIT_CUSTOM_FONT_SIZE,235,13,46,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Affects Dialogs, Mail File Tree, Mail Summary",IDC_STATIC_FONT_CONFIG_1,19,33,274,11,SS_NOTIFY
+    LTEXT           "Menus are not affected currently",IDC_STATIC_FONT_CONFIG_2,19,53,273,8,SS_NOTIFY
+    LTEXT           "Use CTRL+mouse scroll wheel to affect Mail Message",IDC_STATIC_FONT_CONFIG_3,19,71,276,8,SS_NOTIFY
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1169,6 +1185,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 193
     END
+
+    IDD_DIALOG_FONT_SIZE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 302
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 101
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1381,6 +1405,11 @@ BEGIN
 END
 
 IDD_LANG_LIST_DLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_DIALOG_FONT_SIZE AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

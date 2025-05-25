@@ -193,11 +193,19 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 
 #if 0
 	// Best if user usees CTL+mouse scroll to control font size
+	int currentZoomFactor = HtmlUtils::GetFontSize_Browser(*this);
+	int minZoom = 0;
+	int maxZoom = 0;
+	BOOL retGetRange = HtmlUtils::GetFontZoomRange_Browser(*this, minZoom, maxZoom);
 	static int done = 0;
 	if (!done)
 	{
-		int fontSize = 160;
-		HtmlUtils::SetFontSize_Browser(*this, fontSize);
+		int currentZoomFactor = HtmlUtils::GetFontSize_Browser(*this);
+		if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		{
+			int zoomFactor = (float)CMainFrame::m_cnfFontSize/ CMainFrame::m_dfltFontSize * 100;
+			HtmlUtils::SetFontSize_Browser(*this, zoomFactor);
+		}
 		done = 1;
 	}
 #endif

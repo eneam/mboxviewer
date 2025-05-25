@@ -52,6 +52,7 @@
 #include "ResHelper.h"
 #include "SelectLanguageDlg.h"
 #include "FileConfigurationDB.h"
+#include "FontConfig.h"
 
 #include "NTreeView.h"
 
@@ -84,8 +85,10 @@ QWORD CMainFrame::m_lastMailDataPreviewDeletTime = 0;
 
 // Global Font Config
 int CMainFrame::m_dfltFontSize = 8;
-int CMainFrame::m_cnfFontSize = 11;
-int CMainFrame::m_dfltBrowserZoom = 0;
+int CMainFrame::m_cnfFontSize = 8;
+// Browser 
+int CMainFrame::m_dfltBrowserZoom = 100;
+int CMainFrame::m_currentBrowserZoom = 0;
 int CMainFrame::m_cnfBrowserZoom = 0;
 // valid Zoom range
 int CMainFrame::m_minBrowserZoom = 0;
@@ -323,6 +326,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGE_SELECTLANGUANGE, &CMainFrame::OnLanguageSelectlanguange)
 	ON_COMMAND(ID_LANGUAGE_HELP, &CMainFrame::OnLanguageHelp)
 	ON_COMMAND(ID_TEST_CFILEOPENFAILURE, &CMainFrame::OnTestCfileopenfailure)
+	ON_COMMAND(ID_FILE_FONTCONFIG, &CMainFrame::OnFileFontconfig)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -345,6 +349,26 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_createCompleted = FALSE;
 
 	Com_Initialize();  // FIXME
+
+	CString section_font_config = CString(sz_Software_mboxview) + L"\\FontConfig";
+	CString param = L"FontSize";
+	int fontSize = 8;
+	BOOL retval;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_font_config, param, fontSize))
+	{
+		if ((fontSize >= 8) && (fontSize <= 72))
+			CMainFrame::m_cnfFontSize = fontSize;
+		else
+		{
+			retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_font_config, param, CMainFrame::m_dfltFontSize);
+			CMainFrame::m_cnfFontSize = CMainFrame::m_dfltFontSize;
+		}
+	}
+	else
+	{
+		retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_font_config, param, CMainFrame::m_dfltFontSize);
+		CMainFrame::m_cnfFontSize = CMainFrame::m_dfltFontSize;
+	}
 
 	m_ColorStylesDB.LoadFromRegistry();
 
@@ -418,8 +442,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
-
-	ResetFont();
 
 	// create a view to occupy the client area of the frame
 	if (!m_wndView.Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
@@ -6787,20 +6809,41 @@ INT_PTR CMainFrame::SetTemplateEx(CDialogEx* dlg, UINT Id, CWnd* parent)
 
 }
 
-static int g_pointSize = 85;
-static CString g_fontName = "Tahoma";
-
-void CMainFrame::ResetFont()
+void CMainFrame::OnFileFontconfig()
 {
-	m_font.DeleteObject();
-	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	FontConfig dlg;
+
+
+	CString section_font_config = CString(sz_Software_mboxview) + L"\\FontConfig";
+	CString param = L"FontSize";
+	int fontSize = 8;
+	BOOL retval;
+	if (retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_font_config, param, fontSize))
 	{
-		g_pointSize = CMainFrame::m_cnfFontSize * 10;
+		;
 	}
 
-	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
-		m_font.CreatePointFont(g_pointSize, L"Arial");
-	LOGFONT	lf;
-	m_font.GetLogFont(&lf);
-	SetFont(&m_font, TRUE);
+	dlg.m_fontSize = fontSize;
+
+	// TODO: Add your command handler code here
+
+	if (dlg.DoModal() == IDOK)
+	{
+		retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_font_config, param, dlg.m_fontSize);
+		CMainFrame::m_cnfFontSize = dlg.m_fontSize;
+
+		NListView* listView = GetListView();
+		NTreeView* treeView = GetTreeView();
+
+		treeView->ResetFont();
+		listView->ResetFont();
+
+		listView->ResizeColumns();
+
+		//treeView->m_tree.Invalidate();
+		//listView->GetListCtrl()->Invalidate();
+
+	}
+
+	int deb = 1;
 }

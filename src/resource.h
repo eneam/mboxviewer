@@ -69,6 +69,7 @@
 #define IDD_PROGRESS_DLG                238
 #define IDD_GENERAL_OPTIONS_DLG         240
 #define IDD_LANG_LIST_DLG               242
+#define IDD_DIALOG_FONT_SIZE            244
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -107,6 +108,7 @@
 #define IDC_FILTER_NUMBER1              1057
 #define IDC_MERGE_ROOT_FOLDER_AND_SUBFOLDERS 1057
 #define IDC_OPEN_LINK_IN_NEW_TAB        1057
+#define IDC_RADIO_FONT_CUSTOM           1057
 #define IDC_FILTER_NUMBER3              1058
 #define IDC_CHECK1                      1059
 #define IDC_FILTERDATES                 1059
@@ -502,6 +504,11 @@
 #define IDC_MERGE_USER_AGENT            1425
 #define IDC_MERGE_ENABLE_USER_AGENT     1425
 #define IDC_FIND_IN_MAIL_STRING         1426
+#define IDC_RADIO_FONT_DFLT             1427
+#define IDC_STATIC_FONT_CONFIG_1        1428
+#define IDC_STATIC_FONT_CONFIG_2        1429
+#define IDC_EDIT_CUSTOM_FONT_SIZE       1430
+#define IDC_STATIC_FONT_CONFIG_3        1431
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -586,6 +593,7 @@
 #define ID_LANGUAGE_HELP                32936
 #define ID_DEVELOPMENTOPTIONS_TEST      32937
 #define ID_TEST_CFILEOPENFAILURE        32938
+#define ID_FILE_FONTCONFIG              32939
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -594,9 +602,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        244
-#define _APS_NEXT_COMMAND_VALUE         32939
-#define _APS_NEXT_CONTROL_VALUE         1427
+#define _APS_NEXT_RESOURCE_VALUE        246
+#define _APS_NEXT_COMMAND_VALUE         32940
+#define _APS_NEXT_CONTROL_VALUE         1432
 #define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

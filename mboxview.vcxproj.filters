@@ -214,6 +214,9 @@
     <ClCompile Include="src\FileConfigurationDB.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\FontConfig.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -439,6 +442,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\FileConfigurationDB.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FontConfig.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
