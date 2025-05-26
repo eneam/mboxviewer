@@ -4953,7 +4953,7 @@ void CMainFrame::OnFordevelopersMemory()
 
 }
 
-
+// View Raw message headers in Mail Message Pane
 void CMainFrame::OnViewMessageheaders()
 {
 	// TODO: Add your command handler code here
@@ -4970,10 +4970,12 @@ void CMainFrame::OnViewMessageheaders()
 		int iItem = pListView->m_lastSel;
 		if (m_bViewMessageHeaders)
 		{
+			// Show Raw Message Header , not a full mail message
 			pMsgView->ShowMailHeader(iItem);
 		}
 		else
 		{
+			// Show full Mail Message
 			pListView->Invalidate();
 			pListView->SelectItem(pListView->m_lastSel, TRUE);
 		}

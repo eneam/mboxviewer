@@ -2645,7 +2645,7 @@ void NListView::ResizeColumns()
 	//  GetTextExtentPoint32 doesn't work; hardcore dat_len
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 	{
-		date_len = date_len * ((float)CMainFrame::m_cnfFontSize / (float)CMainFrame::m_dfltFontSize);
+		date_len = (int)(date_len * ((float)CMainFrame::m_cnfFontSize / (float)CMainFrame::m_dfltFontSize));
 		if (CMainFrame::m_cnfFontSize == 16) date_len -= 20;
 		else if (CMainFrame::m_cnfFontSize == 14) date_len -= 10;
 		else if (CMainFrame::m_cnfFontSize == 12) date_len -= 6;
@@ -4623,7 +4623,7 @@ int NListView::AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyC
 	return 1;
 }
 
-int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
+int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALSE */)
 {
 	CMainFrame *pFrame = 0;
 	char* bdy;
@@ -4659,6 +4659,9 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader)
 	MboxMail::ShowHint(HintConfig::LabelsHint, h);
 
 	m_lastSel = iItem;
+
+	if (ignoreViewMessageHeader == FALSE)
+		pMsgView->SetMenuToInitialState();
 
 	if (pFrame->m_bViewMessageHeaders == TRUE)
 	{

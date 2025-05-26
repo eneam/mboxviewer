@@ -1029,6 +1029,15 @@ void NMsgView::OnClose()
 	CWnd::OnClose();
 }
 
+const UINT M_CLEAR_FIND_TEXT_Id = 1;
+const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
+const UINT M_SHOW_MAIL_HEADER_Id = 3;
+const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
+const UINT M_SHOW_MAIL_TEXT_Id = 5;
+const UINT M_SHOW_MAIL_HTML_Id = 6;
+
+static BOOL nMenuInitialed = FALSE;
+
 UINT ToggleMenuCheckState(CMenu *menu, UINT commandID)
 {
 	UINT state = menu->GetMenuState(commandID, MF_BYCOMMAND);
@@ -1042,12 +1051,40 @@ UINT ToggleMenuCheckState(CMenu *menu, UINT commandID)
 	return retState;
 }
 
+void NMsgView::SetMenuToInitialState()
+{
+	if (!nMenuInitialed)
+		return;
+
+	NListView* pListView = 0;
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+	}
+
+	if ((pFrame == 0) || (pListView == 0))
+		return;
+
+	UINT retState;
+	if (pFrame->m_bViewMessageHeaders == TRUE)
+		retState = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_CHECKED | MF_BYCOMMAND);
+	else
+		retState = m_menu.CheckMenuItem(M_SHOW_MAIL_HEADER_Id, MF_UNCHECKED | MF_BYCOMMAND);
+
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+	if (color != COLOR_WHITE)
+		retState = m_menu.CheckMenuItem(M_ENABLE_DISABLE_COLOR_Id, MF_CHECKED | MF_BYCOMMAND);
+	else
+		retState = m_menu.CheckMenuItem(M_ENABLE_DISABLE_COLOR_Id, MF_UNCHECKED | MF_BYCOMMAND);
+	int deb = 1;
+}
+
+
 
 void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
-
-	static BOOL nMenuInitialed = FALSE;
 
 	const wchar_t *ClearFindtext = L"Clear Find Text";
 	const wchar_t*CustomColor = L"Custom Color Style";
@@ -1067,13 +1104,6 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	CPoint pt;
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
-
-	const UINT M_CLEAR_FIND_TEXT_Id = 1;
-	const UINT M_ENABLE_DISABLE_COLOR_Id = 2;
-	const UINT M_SHOW_MAIL_HEADER_Id = 3;
-	const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
-	const UINT M_SHOW_MAIL_TEXT_Id = 5;
-	const UINT M_SHOW_MAIL_HTML_Id = 6;
 
 	// To avoid multiple initializations
 	// TODO: Simplify menu  item check state handling
@@ -1124,6 +1154,12 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		ResHelper::LoadMenuItemsInfo(&m_menu, index);
 
 		nMenuInitialed = TRUE;
+
+		SetMenuToInitialState();
+	}
+	else
+	{
+		int deb = 1;
 	}
 
 	int command = m_menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
@@ -1154,6 +1190,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 			else
 			{
 				pListView->Invalidate();
+				// Set ignoreViewMessageHeader to TRUE to prevent SelectItem() from touching m_menu
 				pListView->SelectItem(pListView->m_lastSel, TRUE);
 			}
 		}
@@ -1168,6 +1205,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		{
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
+			// Set ignoreViewMessageHeader to TRUE to prevent SelectItem() from touching m_menu
 			pListView->SelectItem(pListView->m_lastSel, TRUE);
 		}
 		else
@@ -1183,6 +1221,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		{
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
+			// Set ignoreViewMessageHeader to TRUE to prevent SelectItem() from touching m_menu
 			pListView->SelectItem(iItem, TRUE);
 		}
 		else
@@ -1198,6 +1237,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		{
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
+			// Set ignoreViewMessageHeader to TRUE to prevent SelectItem() from touching m_menu
 			pListView->SelectItem(iItem, TRUE);
 		}
 		else
@@ -1214,6 +1254,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		{
 			this->HideMailHeader(iItem);
 			pListView->Invalidate();
+			// Set ignoreViewMessageHeader to TRUE to prevent SelectItem() from touching m_menu
 			pListView->SelectItem(iItem, TRUE);
 		}
 		else

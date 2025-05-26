@@ -44,20 +44,6 @@
 #include "SimpleString.h"
 #include "MenuEdit.h"
 
-#if 0
-class CMenuEdit : public CEdit
-{
-public:
-	CMenuEdit() {};
-
-protected:
-	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
-
-	DECLARE_MESSAGE_MAP()
-};
-#endif
-
 
 class NMsgView : public CWnd
 {
@@ -125,6 +111,8 @@ public:
 	void DisableMailHeader();
 	int HideMailHeader(int iItem);
 	int ShowMailHeader(int iItem);
+	void SetMenuToInitialState();
+
 	static int FindMailHeader(char *data, int datalen);
 	static char *EatFldLine(char *p, char *e);
 
