@@ -1299,7 +1299,7 @@ CStringA htmlDocHdrPlusStyle = LR"----(
 function googleTranslateElementInit()
 {
     new google.translate.TranslateElement({ pageLanguage: 'en', 
-    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja,ru,zh-CN,ar'},
+    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja,ru,zh-CN,ar,uk,hu'},
     'google_translate_element');
 }
 

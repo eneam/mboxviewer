@@ -210,7 +210,7 @@ CString ResHelper::GetLanguageCode(CString& languageName)
 		return L"ja";
 	else if (languageName.CompareNoCase(L"russian") == 0)
 		return L"ru";
-	else if (languageName.CompareNoCase(L"chinese ") == 0)
+	else if (languageName.CompareNoCase(L"chinese-simplified") == 0)
 		return L"zh-CN";
 	else if (languageName.CompareNoCase(L"arabic ") == 0)
 		return L"ar";
