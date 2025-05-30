@@ -266,6 +266,7 @@ public:
 	static BOOL MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4);
 #endif
 	static BOOL SetFont(CWnd* wnd, CFont &cfont, int hight);
+	static void GetMenuFont(HDC hdc, CFont& font, int hight, LOGFONT& menuLogFont, CFont& menuFont);
 
 protected:
 };

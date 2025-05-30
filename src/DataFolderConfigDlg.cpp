@@ -55,7 +55,7 @@ DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_DATA_FOLDER_DLG, pParent))
 	m_folderPathColor = RGB(255, 255, 255);  // white
 	m_folderPathBrush.CreateSolidBrush(m_folderPathColor);
 
-	// Get the log font.
+	// Get the log font. Setting text font works here 
 	NONCLIENTMETRICS ncm;
 	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
 	ncm.cbSize = sizeof(NONCLIENTMETRICS);
@@ -64,14 +64,14 @@ DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_DATA_FOLDER_DLG, pParent))
 		sizeof(NONCLIENTMETRICS), &ncm, 0);
 
 	HDC hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = 400;
+	ncm.lfMessageFont.lfWeight = FW_NORMAL; //  400;
 	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
 	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
 	::ReleaseDC(NULL, hdc);
 
 	hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = FW_BOLD;
-	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	ncm.lfMessageFont.lfWeight = FW_BOLD; // 700
+	ncm.lfMessageFont.lfHeight = -MulDiv(24, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
 	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
 	::ReleaseDC(NULL, hdc);
 

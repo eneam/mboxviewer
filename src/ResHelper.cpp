@@ -2462,6 +2462,8 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 				SIZE sizeItem;
 				BOOL retA = GetTextExtentPoint32(hDC, toolTipText, toolTipText.GetLength(), &sizeItem);
 
+				CSize sizeText = dc.GetTextExtent(toolTipText);
+
 				CRect rec;
 				p->GetClientRect(&rec);
 				//rec.InflateRect(-5, 0);
@@ -3205,6 +3207,27 @@ BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
 
 	return TRUE;
 }
+
+void ResHelper::GetMenuFont(HDC hdc, CFont& font, int hight, LOGFONT& menuLogFont, CFont& menuFont)
+{
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	VERIFY(::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
+		sizeof(NONCLIENTMETRICS), &ncm, 0));
+
+	menuLogFont = ncm.lfMenuFont;
+
+	if (hdc == 0)
+		hdc = ::GetWindowDC(NULL);
+	menuLogFont.lfHeight = -MulDiv(hight, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+
+	::ReleaseDC(NULL, hdc);
+
+	menuFont.CreateFontIndirect(&menuLogFont);
+}
+
 
 #if (_WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
 #include "shellscalingapi.h"

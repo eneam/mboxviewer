@@ -67,7 +67,7 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 // NMsgView
 
 NMsgView::NMsgView()
-	:m_attachments(this), m_hdr()
+	:m_attachments(this), m_hdr(), m_menu(CString(L"MailHdr"))
 {
 	m_hdrPaneLayout = 0;
 	DWORD hdrPaneLayout = 0;
@@ -1156,6 +1156,8 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		nMenuInitialed = TRUE;
 
 		SetMenuToInitialState();
+
+		m_menu.SetMenuAsCustom(&m_menu, 0);
 	}
 	else
 	{

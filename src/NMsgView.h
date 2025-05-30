@@ -43,6 +43,7 @@
 #include "CAttachments.h"
 #include "SimpleString.h"
 #include "MenuEdit.h"
+#include "MyPopupMenu.h"
 
 
 class NMsgView : public CWnd
@@ -136,7 +137,8 @@ public:
 
 	void CalculateViewRec(CRect& rc, int cx, int cy);
 
-	CMenu m_menu;
+	//CMenu m_menu;
+	MyPopupMenu m_menu;
 
 	// Generated message map functions
 protected:

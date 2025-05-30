@@ -627,7 +627,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			::GetCursorPos(&pt);
 			CWnd *wnd = WindowFromPoint(pt);
 
-			CMenu menu;
+			MyPopupMenu menu(CString(L"NList-Restore"));
 			menu.CreatePopupMenu();
 			menu.AppendMenu(MF_SEPARATOR);
 
@@ -639,6 +639,8 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			int index = 0;
 			ResHelper::LoadMenuItemsInfo(&menu, index);
 			ResHelper::UpdateMenuItemsInfo(&menu, index);
+
+			menu.SetMenuAsCustom(&menu, 0);
 
 			UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -704,22 +706,22 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	CPoint ptpos = pnm->ptAction;
 	ClientToScreen(&ptpos);
 
-	CMenu menu;
+	MyPopupMenu menu(CString(L"Single-Main"));
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printToSubMenu;
+	MyPopupMenu printToSubMenu(CString(L"Single-PrintTo"));
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printGroupToSubMenu;
+	MyPopupMenu printGroupToSubMenu(CString(L"Single-PrintGroupTo"));
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printPDFGroupToSubMenu;
+	MyPopupMenu printPDFGroupToSubMenu(CString(L"Single-PrintPDFGroupTo"));
 	printPDFGroupToSubMenu.CreatePopupMenu();
 
-	CMenu exportMailsToSubMenu;
+	MyPopupMenu exportMailsToSubMenu(CString(L"Single-ExportMailsTo"));
 	exportMailsToSubMenu.CreatePopupMenu();
 
 	// Create enums or replace switch statment with if else ..
@@ -888,6 +890,12 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(&menu, index);
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
+
+	menu.SetMenuAsCustom(&menu, 0);
+	printToSubMenu.SetMenuAsCustom(&printToSubMenu, 0);
+	printGroupToSubMenu.SetMenuAsCustom(&printGroupToSubMenu, 0);
+	printPDFGroupToSubMenu.SetMenuAsCustom(&printPDFGroupToSubMenu, 0);
+	exportMailsToSubMenu.SetMenuAsCustom(&exportMailsToSubMenu, 0);
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -1509,23 +1517,23 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
 
-	CMenu menu;
+	MyPopupMenu menu(CString(L"Multiple-Main"));
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printToSubMenu;
+	MyPopupMenu printToSubMenu(CString(L"Multiple-PrintTo"));
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printGroupToSubMenu;
+	MyPopupMenu printGroupToSubMenu(CString(L"Multiple-PrintGroupTo"));
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	CMenu printPDFGroupToSubMenu;
+	MyPopupMenu printPDFGroupToSubMenu(CString(L"Multiple-PrintPDFGroupTo"));
 	printPDFGroupToSubMenu.CreatePopupMenu();
 	printPDFGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	CMenu exportMailsToSubMenu;
+	MyPopupMenu exportMailsToSubMenu(CString(L"Multiple-ExportMails"));
 	exportMailsToSubMenu.CreatePopupMenu();
 
 	// Create enums or replace switch statment with if else ..
@@ -1645,6 +1653,12 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	int index = 0;
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
 	ResHelper::LoadMenuItemsInfo(&menu, index);
+
+	menu.SetMenuAsCustom(&menu, 0);
+	printToSubMenu.SetMenuAsCustom(&printToSubMenu, 0);
+	printGroupToSubMenu.SetMenuAsCustom(&printGroupToSubMenu, 0);
+	printPDFGroupToSubMenu.SetMenuAsCustom(&printPDFGroupToSubMenu, 0);
+	exportMailsToSubMenu.SetMenuAsCustom(&exportMailsToSubMenu, 0);
 	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
