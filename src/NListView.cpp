@@ -522,6 +522,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	//ON_NOTIFY(LVN_GETINFOTIP, IDC_LIST, OnTvnGetInfoTip)
 	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NListView::OnCmdParam_OnSwitchWindow)
 	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &NListView::OnTtnNeedText)
+	ON_WM_MEASUREITEM()
 END_MESSAGE_MAP()
 
 static int g_pointSize = 85;
@@ -640,7 +641,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			ResHelper::LoadMenuItemsInfo(&menu, index);
 			ResHelper::UpdateMenuItemsInfo(&menu, index);
 
-			menu.SetMenuAsCustom(&menu, 0);
+			menu.SetMenuAsCustom();
 
 			UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -891,11 +892,11 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	ResHelper::LoadMenuItemsInfo(&menu, index);
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
 
-	menu.SetMenuAsCustom(&menu, 0);
-	printToSubMenu.SetMenuAsCustom(&printToSubMenu, 0);
-	printGroupToSubMenu.SetMenuAsCustom(&printGroupToSubMenu, 0);
-	printPDFGroupToSubMenu.SetMenuAsCustom(&printPDFGroupToSubMenu, 0);
-	exportMailsToSubMenu.SetMenuAsCustom(&exportMailsToSubMenu, 0);
+	menu.SetMenuAsCustom();
+	printToSubMenu.SetMenuAsCustom();
+	printGroupToSubMenu.SetMenuAsCustom();
+	printPDFGroupToSubMenu.SetMenuAsCustom();
+	exportMailsToSubMenu.SetMenuAsCustom();
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -1654,11 +1655,11 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
 	ResHelper::LoadMenuItemsInfo(&menu, index);
 
-	menu.SetMenuAsCustom(&menu, 0);
-	printToSubMenu.SetMenuAsCustom(&printToSubMenu, 0);
-	printGroupToSubMenu.SetMenuAsCustom(&printGroupToSubMenu, 0);
-	printPDFGroupToSubMenu.SetMenuAsCustom(&printPDFGroupToSubMenu, 0);
-	exportMailsToSubMenu.SetMenuAsCustom(&exportMailsToSubMenu, 0);
+	menu.SetMenuAsCustom();
+	printToSubMenu.SetMenuAsCustom();
+	printGroupToSubMenu.SetMenuAsCustom();
+	printPDFGroupToSubMenu.SetMenuAsCustom();
+	exportMailsToSubMenu.SetMenuAsCustom();
 	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -20377,4 +20378,52 @@ BOOL NListView::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	return bRet;
+}
+
+// Measure item implementation relies on unique control/menu IDs
+void NListView::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct)
+{
+#if 0
+	CWnd::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
+#else
+	// Modified version of CWnd::OnMeasureItem(..) to support submenues
+	if (lpMeasureItemStruct->CtlType == ODT_MENU)
+	{
+		_ASSERTE(lpMeasureItemStruct->CtlID == 0);
+		CMenu* pMenu = NULL;
+
+		_AFX_THREAD_STATE* pThreadState = _afxThreadState.GetData();
+		if (pThreadState->m_hTrackingWindow == m_hWnd)
+		{
+			// start from popup
+			pMenu = CMenu::FromHandle(pThreadState->m_hTrackingMenu);
+		}
+		else
+		{
+			// start from menubar
+			pMenu = GetMenu();
+		}
+
+		_ASSERTE(pMenu);
+
+		//pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+		if (pMenu != NULL)
+		{
+			pMenu->MeasureItem(lpMeasureItemStruct);
+		}
+		else
+		{
+			TRACE(traceAppMsg, 0, "Warning: unknown WM_MEASUREITEM for menu item 0x%04X.\n",
+				lpMeasureItemStruct->itemID);
+		}
+	}
+	else
+	{
+		CWnd* pChild = CWnd::GetDescendantWindow(lpMeasureItemStruct->CtlID, TRUE);
+		if (pChild != NULL && pChild->SendChildNotifyLastMsg())
+			return;     // eaten by child
+	}
+	// not handled - do default
+	CWnd::Default();
+#endif
 }

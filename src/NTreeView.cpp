@@ -43,6 +43,7 @@
 #include "TextUtilities.h"
 #include "ResHelper.h"
 #include "FileConfigurationDB.h"
+#include "MyPopupMenu.h"
 
 
 #ifdef _DEBUG
@@ -188,6 +189,7 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_NOTIFY(TVN_GETINFOTIP, IDC_TREE, OnTvnGetInfoTip)
 	ON_MESSAGE(WM_CMD_PARAM_RESET_TREE_POS_MESSAGE, &NTreeView::OnCmdParam_ResetTreePos)
 	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NTreeView::OnCmdParam_OnSwitchWindow)
+	ON_WM_MEASUREITEM()
 END_MESSAGE_MAP()
 
 
@@ -3163,7 +3165,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			if (linfo->m_nodeType == LabelInfo::MailSubFolder)
 			{
-				CMenu menu;
+				MyPopupMenu menu(CString(L"TREE: RCLICK-FOLDER"));
 				menu.CreatePopupMenu();
 				//menu.AppendMenu(MF_SEPARATOR);
 
@@ -3182,6 +3184,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 				int index = 1;
 				ResHelper::LoadMenuItemsInfo(&menu, index);
 				ResHelper::UpdateMenuItemsInfo(&menu, index);
+				menu.SetMenuAsCustom();
 
 				CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3261,7 +3264,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if ((hParent == 0) && (hItem == hTreeItem))
 	{
-		CMenu menu;
+		MyPopupMenu menu(CString(L"TREE:RCLICK-FOLDER"));
 		menu.CreatePopupMenu();
 		//menu.AppendMenu(MF_SEPARATOR);
 
@@ -3282,6 +3285,8 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		int index = 1;
 		ResHelper::LoadMenuItemsInfo(&menu, index);
 		ResHelper::UpdateMenuItemsInfo(&menu, index);
+
+		menu.SetMenuAsCustom();
 
 		CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3382,12 +3387,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			isLabel = TRUE;
 	}
 
-	CMenu menu;
+	MyPopupMenu menu(CString(L"TREE:RCLICK-PRINT"));
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
 	//
-	CMenu printToSubMenu;
+	MyPopupMenu printToSubMenu(CString(L"TREE:RCLICK-PRINT2"));
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
@@ -3407,7 +3412,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_SEPARATOR);
 
 	//
-	CMenu sortSubMenu;
+	MyPopupMenu sortSubMenu(CString(L"TREE:RCLICK-SORT"));
 	sortSubMenu.CreatePopupMenu();
 	sortSubMenu.AppendMenu(MF_SEPARATOR);
 
@@ -3465,7 +3470,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	// const UINT S_SORT_BY_DATE_AND_SUBJ_Id = 22;   // see above
 
 
-	CMenu labelsSubMenu;
+	MyPopupMenu labelsSubMenu(CString(L"TREE:RCLICK-LABELS"));
 	labelsSubMenu.CreatePopupMenu();
 
 	if (isLabel == FALSE)
@@ -3487,6 +3492,11 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(&menu, index);
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
+
+	menu.SetMenuAsCustom();
+	printToSubMenu.SetMenuAsCustom();
+	sortSubMenu.SetMenuAsCustom();
+	labelsSubMenu.SetMenuAsCustom();
 
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -3746,7 +3756,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case M_CreateFolder_Id:
 	{
 		CreateEmptyFolder(hItem);
-		CMenu menu;
+		MyPopupMenu menu(CString(L"TREE:RCLICK-FOLDER_LIST"));
 		CString mboxFilePath = MboxMail::s_path;
 		CString mboxFileName = ::PathFindFileName(mboxFilePath);
 		HTREEITEM hItem = NTreeView::FindItem(0, mboxFileName);
@@ -10378,4 +10388,54 @@ LRESULT NTreeView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
 	CWheelTreeCtrl	*tree = &m_tree;
 	CMainFrame::SetWindowFocus(tree);
 	return 0;
+}
+
+// Measure item implementation relies on unique control/menu IDs
+void NTreeView::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct)
+{
+#if 0
+	CWnd::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
+#else
+	// Modied version of CWnd::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
+	if (lpMeasureItemStruct->CtlType == ODT_MENU)
+	{
+		_ASSERTE(lpMeasureItemStruct->CtlID == 0);
+		CMenu* pMenu = NULL;
+
+		_AFX_THREAD_STATE* pThreadState = _afxThreadState.GetData();
+		if (pThreadState->m_hTrackingWindow == m_hWnd)
+		{
+			// start from popup
+			pMenu = CMenu::FromHandle(pThreadState->m_hTrackingMenu);
+		}
+		else
+		{
+			// start from menubar
+			pMenu = GetMenu();
+		}
+
+		_ASSERTE(pMenu);
+
+		// Commented out: _AfxFindPopupMenuFromID ignores submenus 
+		// pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+
+		if (pMenu != NULL)
+		{
+			pMenu->MeasureItem(lpMeasureItemStruct);
+		}
+		else
+		{
+			TRACE(traceAppMsg, 0, "Warning: unknown WM_MEASUREITEM for menu item 0x%04X.\n",
+				lpMeasureItemStruct->itemID);
+		}
+	}
+	else
+	{
+		CWnd* pChild = CWnd::GetDescendantWindow(lpMeasureItemStruct->CtlID, TRUE);
+		if (pChild != NULL && pChild->SendChildNotifyLastMsg())
+			return;     // eaten by child
+	}
+	// not handled - do default
+	CWnd::Default();
+#endif
 }

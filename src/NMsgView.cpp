@@ -1157,7 +1157,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 
 		SetMenuToInitialState();
 
-		m_menu.SetMenuAsCustom(&m_menu, 0);
+		m_menu.SetMenuAsCustom();
 	}
 	else
 	{

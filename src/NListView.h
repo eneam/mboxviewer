@@ -725,7 +725,9 @@ public:
 	afx_msg BOOL OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 
+	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
 	virtual void PreSubclassWindow();
+
 
 	void CellHitTest(const CPoint& pt, int& nRow, int& nCol) const;
 	bool ShowToolTip(const CPoint& pt) const;

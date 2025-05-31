@@ -54,23 +54,17 @@ public:
 
 	int m_fontSize;
 	CFont m_font;
+
 	BOOL m_isCustomFont;
 	CString m_menuName;
 
 	BOOL IsCustomFont(int& fontSize);
 
-	void SetMenuAsCustom(CMenu* menu, int index);
-	void ReleaseCustomResources(CMenu* menu, int index);
+	void SetMenuAsCustom(int index = 0);
+	void UpdateFontSize(int fontSize, int index = 0);
+	void ReleaseCustomResources(int index = 0);
 
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct);
-
-	virtual void DrawCheck(HDC hdc, SIZE size);
-	virtual void DrawUnCheck(HDC hdc, SIZE size);
-
-	static RECT m_rec;
-	static CRect m_crec;
-
-	virtual BOOL OnMeasureItem(LPMEASUREITEMSTRUCT lpms);
 };
 
