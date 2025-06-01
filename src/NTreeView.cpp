@@ -369,17 +369,6 @@ BOOL NTreeView::ImboxviewFileFilter(CString& fName)
 // TODO: add MessageBox to report an error
 int NTreeView::ImboxviewFile(CString& fName)
 {
-#if 0
-	if (fName.Compare("F:\\MBOX\\MailTkout1\\message-inline2.eml") == 0)
-		int deb = 1;
-
-	if (fName.Compare("G:\\GMAIL\\takeout-20210705T072046Z-001.zip") == 0)
-		int deb = 1;
-
-	if (fName.Compare("G:\\GMAIL\\takeout-20210713T143614Z-001.zip") == 0)
-		int deb = 1;
-#endif
-
 	if (!ImboxviewFileFilter(fName))
 		return 0;
 
@@ -3494,9 +3483,6 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 	menu.SetMenuAsCustom();
-	printToSubMenu.SetMenuAsCustom();
-	sortSubMenu.SetMenuAsCustom();
-	labelsSubMenu.SetMenuAsCustom();
 
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 
@@ -10418,6 +10404,13 @@ void NTreeView::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruc
 
 		// Commented out: _AfxFindPopupMenuFromID ignores submenus 
 		// pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+		// 
+		// Is this overkill ??
+		if (lpMeasureItemStruct->itemID != -1)
+		{
+			if (!MyPopupMenu::HasID(pMenu, lpMeasureItemStruct->itemID))
+				pMenu = 0;
+		}
 
 		if (pMenu != NULL)
 		{

@@ -711,6 +711,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		SetWindowText(version);
 	}
 
+	MyPopupMenu::SetupFonts();
+
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
 }
@@ -6836,6 +6838,7 @@ void CMainFrame::OnFileFontconfig()
 
 		NListView* listView = GetListView();
 		NTreeView* treeView = GetTreeView();
+		NMsgView* msgView = GetMsgView();
 
 		treeView->ResetFont();
 		listView->ResetFont();
@@ -6845,6 +6848,8 @@ void CMainFrame::OnFileFontconfig()
 		//treeView->m_tree.Invalidate();
 		//listView->GetListCtrl()->Invalidate();
 
+		MyPopupMenu::SetupFonts();
+		msgView->m_menu.UpdateFontSize(24,0);
 	}
 
 	int deb = 1;

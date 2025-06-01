@@ -893,10 +893,6 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	ResHelper::UpdateMenuItemsInfo(&menu, index);
 
 	menu.SetMenuAsCustom();
-	printToSubMenu.SetMenuAsCustom();
-	printGroupToSubMenu.SetMenuAsCustom();
-	printPDFGroupToSubMenu.SetMenuAsCustom();
-	exportMailsToSubMenu.SetMenuAsCustom();
 
 	UINT command = menu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this, 0);
 
@@ -1656,10 +1652,6 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	ResHelper::LoadMenuItemsInfo(&menu, index);
 
 	menu.SetMenuAsCustom();
-	printToSubMenu.SetMenuAsCustom();
-	printGroupToSubMenu.SetMenuAsCustom();
-	printPDFGroupToSubMenu.SetMenuAsCustom();
-	exportMailsToSubMenu.SetMenuAsCustom();
 	
 	UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
 
@@ -20406,7 +20398,16 @@ void NListView::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruc
 
 		_ASSERTE(pMenu);
 
-		//pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+		// Commented out: _AfxFindPopupMenuFromID ignores submenus 
+		// pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+		// 
+		// Is this overkill ??
+		if (lpMeasureItemStruct->itemID != -1)
+		{
+			if (!MyPopupMenu::HasID(pMenu, lpMeasureItemStruct->itemID))
+				pMenu = 0;
+		}
+
 		if (pMenu != NULL)
 		{
 			pMenu->MeasureItem(lpMeasureItemStruct);

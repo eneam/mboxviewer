@@ -50,19 +50,22 @@ class MyPopupMenu:public CMenu
 {
 public:
 	MyPopupMenu(CString& menuName);
-	~MyPopupMenu();
+	virtual ~MyPopupMenu();
 
-	int m_fontSize;
-	CFont m_font;
+	static int m_fontSize;
+	static CFont m_font;
+	static LOGFONT m_menuLogFont;
+	static BOOL m_isCustomFont;
 
-	BOOL m_isCustomFont;
 	CString m_menuName;
-
-	BOOL IsCustomFont(int& fontSize);
 
 	void SetMenuAsCustom(int index = 0);
 	void UpdateFontSize(int fontSize, int index = 0);
 	void ReleaseCustomResources(int index = 0);
+	//
+	static BOOL IsCustomFont(int& fontSize);
+	static BOOL HasID(CMenu* menu, UINT ID);
+	static void SetupFonts();
 
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct);

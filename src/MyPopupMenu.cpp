@@ -33,27 +33,59 @@
 #include "MyPopupMenu.h"
 #include "MainFrm.h"
 
+int MyPopupMenu::m_fontSize = 0;
+CFont MyPopupMenu::m_font;
+LOGFONT MyPopupMenu::m_menuLogFont;
+BOOL MyPopupMenu::m_isCustomFont = FALSE;
+
 MyPopupMenu::MyPopupMenu(CString &menuName)
 {
-	m_fontSize = 8;
 	m_menuName = menuName;
+#if 0
+	m_fontSize = 8;
+
 	HDC hdc = 0;
 	CFont font;
-	int hight = 24;
+
 	LOGFONT menuLogFont;
 	CFont menuFont;
 	m_isCustomFont = IsCustomFont(m_fontSize);
 	if (m_isCustomFont)
 		ResHelper::GetMenuFont(hdc, font, m_fontSize, menuLogFont, m_font);
+#endif
 }
 
 MyPopupMenu::~MyPopupMenu()
 {
-	//ReleaseCustomResources(this, 0);
 	if (m_isCustomFont)
 		ReleaseCustomResources(0);
 	m_font.DeleteObject();
 	int deb = 1;
+}
+
+void MyPopupMenu::SetupFonts()
+{
+	HDC hdc = 0;
+	CFont font;
+	if (m_fontSize == 0)
+	{
+		m_fontSize = CMainFrame::m_dfltFontSize;
+		m_isCustomFont = IsCustomFont(m_fontSize);
+		if (m_isCustomFont)
+			m_fontSize = CMainFrame::CMainFrame::m_cnfFontSize;
+
+		m_font.DeleteObject();
+		ResHelper::GetMenuFont(hdc, font, m_fontSize, m_menuLogFont, m_font);
+	}
+	else
+	{
+		m_isCustomFont = IsCustomFont(m_fontSize);
+		if (m_isCustomFont)
+		{
+			m_font.DeleteObject();
+			ResHelper::GetMenuFont(hdc, font, m_fontSize, m_menuLogFont, m_font);
+		}
+	}
 }
 
 BOOL MyPopupMenu::IsCustomFont(int& fontSize)
@@ -78,10 +110,6 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	COLORREF clrPrevText, clrPrevBkgnd;
 	HFONT hfntPrev;
 	int x, y;
-
-	clrPrevBkgnd = GetSysColor(COLOR_MENUHILIGHT);
-
-	//TRACE(L"%d %d %d %d 0x%04x\n", rcItem.left, rcItem.right, rcItem.top, rcItem.bottom, clrPrevBkgnd);
 
 	// Set the appropriate foreground and background colors. 
 	if (lpDrawItemStruct->itemState & ODS_SELECTED)
@@ -173,8 +201,6 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	}
 #endif
 
-	//TRACE(L"%d %d %d %d\n", rc.left, rc.right, rc.top, rc.bottom);
-
 	if (!checkMark.IsEmpty())
 	{
 		//DWORD color = GetSysColor(COLOR_MENUHILIGHT);  // too dark ??
@@ -210,8 +236,6 @@ void MyPopupMenu::MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct)
 		return;
 	}
 
-	//TRACE(L"MeasureItem: NOT SEPARATOR %d\n", pMyItem->m_fType);
-
 	HDC hdc = ::GetWindowDC(NULL);
 	HFONT hfntOld = (HFONT)SelectObject(hdc, pMyItem->m_hfont);
 	SIZE size;
@@ -240,75 +264,7 @@ void MyPopupMenu::SetMenuAsCustom(int index)
 	const HMENU hMenu = GetSafeHmenu();
 	BOOL isMenu = ::IsMenu(hMenu);
 
-	int count = menu->GetMenuItemCount();
-	CString label;
-	UINT itemID = 0;
-	int retval;
-	UINT nFlags = MF_BYPOSITION;
-	int i;
-	MENUITEMINFO menuItemInfo;
-	menuItemInfo.cbSize = sizeof(menuItemInfo);
-
-	//TRACE(L"SetMenuAsCustom %ldd %s %d !!!!!\n", menu, m_menuName, count);
-
-	for (i = 0; i < count; i++)
-	{
-		itemID = menu->GetMenuItemID(i);
-
-		if (itemID == 0)
-			int deb = 1; // continue;
-
-		retval = menu->GetMenuString(i, label, nFlags);
-		//retval = GetMenuItemString(menu, i, label, nFlags);
-
-		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
-		menuItemInfo.cbSize = sizeof(menuItemInfo);
-		menuItemInfo.fMask = MIIM_ID | MIIM_TYPE;
-		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, nFlags);
-		if (retval == FALSE)
-			int deb = 1; // ignore/return;
-
-
-		MyPopupMenuItem* myItem = new MyPopupMenuItem;
-		myItem->m_fType = menuItemInfo.fType;
-		myItem->m_menuName = m_menuName;
-		myItem->m_text = label;
-		myItem->m_hfont = m_font.operator HFONT();
-
-		//TRACE(L"SetMenuAsCustom: %s %s\n", myItem->m_menuName, myItem->m_text);
-
-		menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_FTYPE;
-		menuItemInfo.fType = MFT_OWNERDRAW;
-		menuItemInfo.dwItemData = (ULONG_PTR)myItem;
-
-		BOOL retset = menu->SetMenuItemInfo(i, &menuItemInfo, TRUE);
-
-		if (itemID == (UINT)-1)
-		{
-			CMenu* submenu = menu->GetSubMenu(i);
-
-			// Each CMenu will process SetMenuAsCustom before inserting itself as submenu
-			// submenu->SetMenuAsCustom(index + 1);
-			int deb = 1;
-		}
-		int deb = 1;
-	}
-	int debM = 1;
-}
-
-void MyPopupMenu::ReleaseCustomResources(int index)
-{
-	MyPopupMenu* menu = this;
-
-	if (!m_isCustomFont)
-		return;
-
-	HMENU hM = m_hMenu;
-	const HMENU hMenu = GetSafeHmenu();
-	BOOL isMenu = ::IsMenu(hMenu);
-
-	//TRACE(L"ReleaseCustomResources %s isMenu=%d\n", m_menuName, isMenu);
-
+	_ASSERTE(isMenu);
 	if (!isMenu)
 		return;
 
@@ -321,18 +277,90 @@ void MyPopupMenu::ReleaseCustomResources(int index)
 	MENUITEMINFO menuItemInfo;
 	menuItemInfo.cbSize = sizeof(menuItemInfo);
 
-	//TRACE(L"ReleaseCustomResources %s %d\n", m_menuName, count);
+	for (i = 0; i < count; i++)
+	{
+		itemID = menu->GetMenuItemID(i);
+
+		if (itemID == 0)
+			int deb = 1; // continue;
+
+		retval = menu->GetMenuString(i, label, nFlags);
+
+		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+		menuItemInfo.cbSize = sizeof(menuItemInfo);
+		menuItemInfo.fMask = MIIM_ID | MIIM_TYPE | MIIM_DATA;
+		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, TRUE);
+		if (retval == FALSE)
+			int deb = 1; // ignore/return;
+
+		_ASSERTE(menuItemInfo.dwItemData == 0);
+		if (menuItemInfo.dwItemData)
+		{
+			// Already set, return error
+			MyPopupMenuItem* myItem = (MyPopupMenuItem*)menuItemInfo.dwItemData;
+			continue;
+		}
+
+		MyPopupMenuItem* myItem = new MyPopupMenuItem;
+		myItem->m_fType = menuItemInfo.fType;
+		myItem->m_menuName = m_menuName;
+		myItem->m_text = label;
+		myItem->m_hfont = m_font.operator HFONT();
+
+		menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_FTYPE;
+		menuItemInfo.fType = MFT_OWNERDRAW;
+		menuItemInfo.dwItemData = (ULONG_PTR)myItem;
+
+		BOOL retset = menu->SetMenuItemInfo(i, &menuItemInfo, TRUE);
+		_ASSERT(retset);
+
+		if (itemID == (UINT)-1)
+		{
+			MyPopupMenu* submenu = (MyPopupMenu*)menu->GetSubMenu(i);
+
+			_ASSERTE(submenu);
+			if (submenu)
+				submenu->SetMenuAsCustom(index + 1);
+			int deb = 1;
+		}
+		int deb = 1;
+	}
+	int debM = 1;
+}
+
+void MyPopupMenu::ReleaseCustomResources(int index)
+{
+	CMenu* menu = this;
+
+	if (!m_isCustomFont)
+		return;
+
+	HMENU hM = m_hMenu;
+	const HMENU hMenu = GetSafeHmenu();
+	if (!hMenu)
+		return;
+	BOOL isMenu = ::IsMenu(hMenu);
+
+	if (!isMenu)
+		return;
+
+	int count = menu->GetMenuItemCount();
+	CString label;
+	UINT itemID = 0;
+	int retval;
+	UINT nFlags = MF_BYPOSITION;
+	int i;
+	MENUITEMINFO menuItemInfo;
 
 	for (i = 0; i < count; i++)
 	{
 		itemID = menu->GetMenuItemID(i);
 
 		retval = menu->GetMenuString(i, label, nFlags);
-		//retval = GetMenuItemString(menu, i, label, nFlags);
 
 		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
 		menuItemInfo.cbSize = sizeof(menuItemInfo);
-		menuItemInfo.fMask = MIIM_ID | MIIM_DATA| MIIM_FTYPE| MIIM_STATE| MIIM_STRING;
+		menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_FTYPE | MIIM_STATE | MIIM_STRING;
 		BOOL retval = menu->GetMenuItemInfo(i, &menuItemInfo, nFlags);
 		if (retval == FALSE)
 			int deb = 1; // ignore/return;
@@ -340,15 +368,17 @@ void MyPopupMenu::ReleaseCustomResources(int index)
 		if (menuItemInfo.dwItemData)
 		{
 			MyPopupMenuItem* myItem = (MyPopupMenuItem*)menuItemInfo.dwItemData;
-			//TRACE(L"Deleting: %s %s\n", myItem->m_menuName, myItem->m_text);
 			delete myItem;
 		}
+		else
+			int deb = 1;
 
 		if (itemID == (UINT)-1)
 		{
-			CMenu* submenu = menu->GetSubMenu(i);
-
-			// submenu->ReleaseCustomResources(index + 1);
+			CMenu* submenu = (MyPopupMenu*)menu->GetSubMenu(i);
+			//_ASSERTE(submenu);
+			// // Let each submenue release its dwItemData resource otherwise we will crash
+			//if (submenu) submenu->ReleaseCustomResources(index + 1);
 		}
 		int deb = 1;
 	}
@@ -366,8 +396,6 @@ void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 	const HMENU hMenu = GetSafeHmenu();
 	BOOL isMenu = ::IsMenu(hMenu);
 
-	//TRACE(L"UpdateFontSize %s isMenu=%d\n", m_menuName, isMenu);
-
 	if (!isMenu)
 		return;
 
@@ -378,16 +406,12 @@ void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 	UINT nFlags = MF_BYPOSITION;
 	int i;
 	MENUITEMINFO menuItemInfo;
-	menuItemInfo.cbSize = sizeof(menuItemInfo);
-
-	//TRACE(L"UpdateFontSize %s %d\n", m_menuName, count);
 
 	for (i = 0; i < count; i++)
 	{
 		itemID = menu->GetMenuItemID(i);
 
-		retval = menu->GetMenuString(i, label, nFlags);
-		//retval = GetMenuItemString(menu, i, label, nFlags);
+		retval = menu->GetMenuString(i, label, nFlags);;
 
 		memset(&menuItemInfo, 0, sizeof(menuItemInfo));
 		menuItemInfo.cbSize = sizeof(menuItemInfo);
@@ -399,16 +423,72 @@ void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 		if (menuItemInfo.dwItemData)
 		{
 			MyPopupMenuItem* myItem = (MyPopupMenuItem*)menuItemInfo.dwItemData;
-			myItem->m_hfont = 0;
+			myItem->m_hfont = m_font.operator HFONT();
 		}
 
 		if (itemID == (UINT)-1)
 		{
-			CMenu* submenu = menu->GetSubMenu(i);
-
-			// submenu->UpdateFontSize(fontSize, index + 1);
+			MyPopupMenu* submenu = (MyPopupMenu*)menu->GetSubMenu(i);
+			_ASSERTE(submenu);
+			if (submenu)
+				submenu->UpdateFontSize(fontSize, index + 1);
 		}
 		int deb = 1;
 	}
 	int debM = 1;
+}
+
+BOOL MyPopupMenu::HasID(CMenu* menu, UINT ID)
+{
+	_ASSERTE(menu);
+	if (!menu)
+		return FALSE;
+
+	HMENU hM = menu->m_hMenu;
+	const HMENU hMenu = menu->GetSafeHmenu();
+	BOOL isMenu = ::IsMenu(hMenu);
+
+	if (!isMenu)
+		return FALSE;
+
+	// Both versions seem to work. If ID == -1 check will fail
+#if 1
+	MENUITEMINFO menuItemInfo;
+	memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+	menuItemInfo.cbSize = sizeof(menuItemInfo);
+	menuItemInfo.fMask = MIIM_ID;
+
+	BOOL fByPos = FALSE;
+	BOOL retExist = menu->GetMenuItemInfo(ID, &menuItemInfo, fByPos);
+	return retExist;
+#else
+	int count = menu->GetMenuItemCount();
+	UINT itemID = 0;
+	int i;
+	for (i = 0; i < count; i++)
+	{
+		itemID = menu->GetMenuItemID(i);
+
+		if (itemID == ID)
+		{
+			_ASSERTE(retExist);
+			return TRUE;
+		}
+
+		if (itemID == (UINT)-1)
+		{
+			CMenu* submenu = (MyPopupMenu*)menu->GetSubMenu(i);
+			_ASSERTE(submenu);
+
+			if (submenu && MyPopupMenu::HasID(submenu, ID))
+			{
+				_ASSERTE(retExist);
+				return TRUE;
+			}
+		}
+		int deb = 1;
+	}
+	_ASSERTE(!retExist);
+	return FALSE;
+#endif
 }
