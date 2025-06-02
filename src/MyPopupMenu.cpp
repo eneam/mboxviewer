@@ -41,26 +41,18 @@ BOOL MyPopupMenu::m_isCustomFont = FALSE;
 MyPopupMenu::MyPopupMenu(CString &menuName)
 {
 	m_menuName = menuName;
-#if 0
-	m_fontSize = 8;
-
-	HDC hdc = 0;
-	CFont font;
-
-	LOGFONT menuLogFont;
-	CFont menuFont;
-	m_isCustomFont = IsCustomFont(m_fontSize);
-	if (m_isCustomFont)
-		ResHelper::GetMenuFont(hdc, font, m_fontSize, menuLogFont, m_font);
-#endif
 }
 
 MyPopupMenu::~MyPopupMenu()
 {
 	if (m_isCustomFont)
 		ReleaseCustomResources(0);
-	m_font.DeleteObject();
 	int deb = 1;
+}
+
+void MyPopupMenu::ReleaseGlobalResources()
+{
+	m_font.DeleteObject();
 }
 
 void MyPopupMenu::SetupFonts()
@@ -70,20 +62,20 @@ void MyPopupMenu::SetupFonts()
 	if (m_fontSize == 0)
 	{
 		m_fontSize = CMainFrame::m_dfltFontSize;
-		m_isCustomFont = IsCustomFont(m_fontSize);
+		m_isCustomFont = IsCustomFont(MyPopupMenu::m_fontSize);
 		if (m_isCustomFont)
-			m_fontSize = CMainFrame::CMainFrame::m_cnfFontSize;
+			MyPopupMenu::m_fontSize = CMainFrame::CMainFrame::m_cnfFontSize;
 
 		m_font.DeleteObject();
-		ResHelper::GetMenuFont(hdc, font, m_fontSize, m_menuLogFont, m_font);
+		ResHelper::GetMenuFont(hdc, font, MyPopupMenu::m_fontSize, MyPopupMenu::m_menuLogFont, MyPopupMenu::m_font);
 	}
 	else
 	{
-		m_isCustomFont = IsCustomFont(m_fontSize);
+		m_isCustomFont = IsCustomFont(MyPopupMenu::m_fontSize);
 		if (m_isCustomFont)
 		{
 			m_font.DeleteObject();
-			ResHelper::GetMenuFont(hdc, font, m_fontSize, m_menuLogFont, m_font);
+			ResHelper::GetMenuFont(hdc, font, MyPopupMenu::m_fontSize, MyPopupMenu::m_menuLogFont, MyPopupMenu::m_font);
 		}
 	}
 }
@@ -154,30 +146,6 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	x = rcItem.left;
 	y = rcItem.top;
 
-	// No longer needed.
-	// Added afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
-	// to NListView and NTreeView and 
-#if 0
-	// MeasureItem() is received by MyPopupMenu for all menu items except Popup submenus
-	// This is a big limitation, may need to explore other more complex solutions
-	// This limitation doesn't allow Windows to correctly size Popup submenue
-	// Calculate adjustment to y to compensate, best guess by try and error
-	int yAdjustmen = 0;
-	if (lpDrawItemStruct->itemID == -1)
-	{
-		if (m_fontSize == 10)
-			yAdjustmen  = 2;
-		else if (m_fontSize == 12)
-			yAdjustmen  = 3;
-		else if (m_fontSize == 14)
-			yAdjustmen  = 4;
-		else if (m_fontSize == 16)
-			yAdjustmen  = 5;
-		// else doesn't work for larger font
-
-		//y -= yAdjustmen;
-	}
-#endif
 	x += textOffset;
 
 	// Select the font and draw the text. 
@@ -194,12 +162,6 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	rc.right = GetSystemMetrics(SM_CXMENUCHECK);
 	x = rc.left + 4;
 	y = rc.top;
-#if 0
-	if (lpDrawItemStruct->itemID == -1)
-	{
-		;// y -= yAdjustmen;
-	}
-#endif
 
 	if (!checkMark.IsEmpty())
 	{
@@ -224,11 +186,6 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 void MyPopupMenu::MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct)
 {
 	MyPopupMenuItem* pMyItem = (MyPopupMenuItem*)lpMeasureItemStruct->itemData;
-
-	if (lpMeasureItemStruct->itemID == -1)
-	{
-		;// TRACE(L"MeasureItem: ID=-1\n");
-	}
 
 	if (pMyItem->m_fType & MFT_SEPARATOR)
 	{
@@ -303,9 +260,9 @@ void MyPopupMenu::SetMenuAsCustom(int index)
 
 		MyPopupMenuItem* myItem = new MyPopupMenuItem;
 		myItem->m_fType = menuItemInfo.fType;
-		myItem->m_menuName = m_menuName;
+		myItem->m_menuName = MyPopupMenu::m_menuName;
 		myItem->m_text = label;
-		myItem->m_hfont = m_font.operator HFONT();
+		myItem->m_hfont = MyPopupMenu::m_font.operator HFONT();
 
 		menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_FTYPE;
 		menuItemInfo.fType = MFT_OWNERDRAW;
@@ -325,7 +282,7 @@ void MyPopupMenu::SetMenuAsCustom(int index)
 		}
 		int deb = 1;
 	}
-	int debM = 1;
+	int deb = 1;
 }
 
 void MyPopupMenu::ReleaseCustomResources(int index)
@@ -377,12 +334,12 @@ void MyPopupMenu::ReleaseCustomResources(int index)
 		{
 			CMenu* submenu = (MyPopupMenu*)menu->GetSubMenu(i);
 			//_ASSERTE(submenu);
-			// // Let each submenue release its dwItemData resource otherwise we will crash
+			// Let each submenue release its dwItemData resource otherwise we will crash
 			//if (submenu) submenu->ReleaseCustomResources(index + 1);
 		}
 		int deb = 1;
 	}
-	int debM = 1;
+	int deb = 1;
 }
 
 void MyPopupMenu::UpdateFontSize(int fontSize, int index)
@@ -423,7 +380,7 @@ void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 		if (menuItemInfo.dwItemData)
 		{
 			MyPopupMenuItem* myItem = (MyPopupMenuItem*)menuItemInfo.dwItemData;
-			myItem->m_hfont = m_font.operator HFONT();
+			myItem->m_hfont = MyPopupMenu::m_font.operator HFONT();
 		}
 
 		if (itemID == (UINT)-1)
@@ -435,7 +392,7 @@ void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 		}
 		int deb = 1;
 	}
-	int debM = 1;
+	int deb = 1;
 }
 
 BOOL MyPopupMenu::HasID(CMenu* menu, UINT ID)
@@ -451,7 +408,7 @@ BOOL MyPopupMenu::HasID(CMenu* menu, UINT ID)
 	if (!isMenu)
 		return FALSE;
 
-	// Both versions seem to work. If ID == -1 check will fail
+	// Both versions work. If ID == -1 check will fail
 #if 1
 	MENUITEMINFO menuItemInfo;
 	memset(&menuItemInfo, 0, sizeof(menuItemInfo));

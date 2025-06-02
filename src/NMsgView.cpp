@@ -67,8 +67,11 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 // NMsgView
 
 NMsgView::NMsgView()
-	:m_attachments(this), m_hdr(), m_menu(CString(L"MailHdr"))
+	:m_attachments(this), m_hdr()
 {
+	m_pMenu = new MyPopupMenu(CString(L"NMsgView:MailHdrMenu"));
+	m_menuInitialed = FALSE;
+
 	m_hdrPaneLayout = 0;
 	DWORD hdrPaneLayout = 0;
 
@@ -193,6 +196,7 @@ NMsgView::NMsgView()
 
 NMsgView::~NMsgView()
 {
+	delete m_pMenu;
 }
 
 
@@ -224,6 +228,7 @@ void NMsgView::PostNcDestroy()
 	m_BigFont.DeleteObject();
 	m_BigBoldFont.DeleteObject();
 	m_attachments.ReleaseResources();
+	MyPopupMenu::ReleaseGlobalResources();
 	DestroyWindow();
 	delete this;
 }
@@ -1036,7 +1041,7 @@ const UINT M_SHOW_MAIL_HTML_AS_TEXT_Id = 4;
 const UINT M_SHOW_MAIL_TEXT_Id = 5;
 const UINT M_SHOW_MAIL_HTML_Id = 6;
 
-static BOOL nMenuInitialed = FALSE;
+//static BOOL nMenuInitialed = FALSE;
 
 UINT ToggleMenuCheckState(CMenu *menu, UINT commandID)
 {
@@ -1053,8 +1058,11 @@ UINT ToggleMenuCheckState(CMenu *menu, UINT commandID)
 
 void NMsgView::SetMenuToInitialState()
 {
-	if (!nMenuInitialed)
+	if (!m_menuInitialed)
 		return;
+
+	_ASSERTE(m_pMenu);
+	MyPopupMenu& m_menu = *m_pMenu;
 
 	NListView* pListView = 0;
 	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -1105,9 +1113,12 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
 
+	_ASSERTE(m_pMenu);
+	MyPopupMenu& m_menu = *m_pMenu;
+
 	// To avoid multiple initializations
 	// TODO: Simplify menu  item check state handling
-	if (nMenuInitialed == FALSE)
+	if (m_menuInitialed == FALSE)
 	{
 		//CMenu menu;
 		m_menu.CreatePopupMenu();
@@ -1153,7 +1164,7 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 		int index = 0;
 		ResHelper::LoadMenuItemsInfo(&m_menu, index);
 
-		nMenuInitialed = TRUE;
+		m_menuInitialed = TRUE;
 
 		SetMenuToInitialState();
 
@@ -1973,4 +1984,24 @@ LRESULT NMsgView::OnCmdParam_OnSizeMsgView(WPARAM wParam, LPARAM lParam)
 {
 	this->UpdateLayout();
 	return 0;
+}
+
+void NMsgView::RecreateMailHdrMenu()
+{
+	_ASSERTE(m_pMenu);
+	delete m_pMenu;
+
+	m_pMenu = new MyPopupMenu(CString(L"NMsgView:MailHdrMenu"));
+	m_menuInitialed = FALSE;
+
+	NListView* pListView = 0;
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame)
+	{
+		pListView = pFrame->GetListView();
+		pListView->m_bApplyColorStyle = TRUE;
+
+		pListView->Invalidate();
+		pListView->SelectItem(pListView->m_lastSel);
+	}
 }

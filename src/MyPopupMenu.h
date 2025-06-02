@@ -66,6 +66,7 @@ public:
 	static BOOL IsCustomFont(int& fontSize);
 	static BOOL HasID(CMenu* menu, UINT ID);
 	static void SetupFonts();
+	static void ReleaseGlobalResources();
 
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct);

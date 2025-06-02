@@ -53,6 +53,8 @@ class NMsgView : public CWnd
 public:
 	NMsgView();
 	DECLARE_DYNCREATE(NMsgView)
+
+
 	CBrowser m_browser;
 	//CListCtrl	m_attachments;
 	CAttachments m_attachments;
@@ -137,8 +139,9 @@ public:
 
 	void CalculateViewRec(CRect& rc, int cx, int cy);
 
-	//CMenu m_menu;
-	MyPopupMenu m_menu;
+	MyPopupMenu *m_pMenu;
+	BOOL m_menuInitialed;
+	void RecreateMailHdrMenu();
 
 	// Generated message map functions
 protected:

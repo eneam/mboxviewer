@@ -6849,7 +6849,7 @@ void CMainFrame::OnFileFontconfig()
 		//listView->GetListCtrl()->Invalidate();
 
 		MyPopupMenu::SetupFonts();
-		msgView->m_menu.UpdateFontSize(24,0);
+		msgView->RecreateMailHdrMenu();
 	}
 
 	int deb = 1;
