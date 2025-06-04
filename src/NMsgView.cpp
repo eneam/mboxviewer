@@ -69,7 +69,7 @@ IMPLEMENT_DYNCREATE(NMsgView, CWnd)
 NMsgView::NMsgView()
 	:m_attachments(this), m_hdr()
 {
-	m_pMenu = new MyPopupMenu(CString(L"NMsgView:MailHdrMenu"));
+	m_pMenu = new MyPopupMenu;
 	m_menuInitialed = FALSE;
 
 	m_hdrPaneLayout = 0;
@@ -1991,7 +1991,7 @@ void NMsgView::RecreateMailHdrMenu()
 	_ASSERTE(m_pMenu);
 	delete m_pMenu;
 
-	m_pMenu = new MyPopupMenu(CString(L"NMsgView:MailHdrMenu"));
+	m_pMenu = new MyPopupMenu;
 	m_menuInitialed = FALSE;
 
 	NListView* pListView = 0;

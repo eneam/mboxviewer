@@ -628,7 +628,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			::GetCursorPos(&pt);
 			CWnd *wnd = WindowFromPoint(pt);
 
-			MyPopupMenu menu(CString(L"NList-Restore"));
+			MyPopupMenu menu;
 			menu.CreatePopupMenu();
 			menu.AppendMenu(MF_SEPARATOR);
 
@@ -707,22 +707,22 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	CPoint ptpos = pnm->ptAction;
 	ClientToScreen(&ptpos);
 
-	MyPopupMenu menu(CString(L"Single-Main"));
+	MyPopupMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printToSubMenu(CString(L"Single-PrintTo"));
+	MyPopupMenu printToSubMenu;
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printGroupToSubMenu(CString(L"Single-PrintGroupTo"));
+	MyPopupMenu printGroupToSubMenu;
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printPDFGroupToSubMenu(CString(L"Single-PrintPDFGroupTo"));
+	MyPopupMenu printPDFGroupToSubMenu;
 	printPDFGroupToSubMenu.CreatePopupMenu();
 
-	MyPopupMenu exportMailsToSubMenu(CString(L"Single-ExportMailsTo"));
+	MyPopupMenu exportMailsToSubMenu;
 	exportMailsToSubMenu.CreatePopupMenu();
 
 	// Create enums or replace switch statment with if else ..
@@ -1514,23 +1514,23 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 	::GetCursorPos(&pt);
 	CWnd *wnd = WindowFromPoint(pt);
 
-	MyPopupMenu menu(CString(L"Multiple-Main"));
+	MyPopupMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printToSubMenu(CString(L"Multiple-PrintTo"));
+	MyPopupMenu printToSubMenu;
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printGroupToSubMenu(CString(L"Multiple-PrintGroupTo"));
+	MyPopupMenu printGroupToSubMenu;
 	printGroupToSubMenu.CreatePopupMenu();
 	printGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu printPDFGroupToSubMenu(CString(L"Multiple-PrintPDFGroupTo"));
+	MyPopupMenu printPDFGroupToSubMenu;
 	printPDFGroupToSubMenu.CreatePopupMenu();
 	printPDFGroupToSubMenu.AppendMenu(MF_SEPARATOR);
 
-	MyPopupMenu exportMailsToSubMenu(CString(L"Multiple-ExportMails"));
+	MyPopupMenu exportMailsToSubMenu;
 	exportMailsToSubMenu.CreatePopupMenu();
 
 	// Create enums or replace switch statment with if else ..

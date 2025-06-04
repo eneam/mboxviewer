@@ -2073,7 +2073,7 @@ int deb = 1;
 
 	// create and load the frame with its resources
 
-	pFrame->LoadFrame(IDR_MAINFRAME,
+	BOOL retLOad = pFrame->LoadFrame(IDR_MAINFRAME,
 		WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, NULL,
 		NULL);
 
@@ -2129,6 +2129,8 @@ int deb = 1;
 	int index = 1;
 	ResHelper::LoadMenuItemsInfo(menu, index);
 	ResHelper::UpdateMenuItemsInfo(menu, index);
+
+	pFrame->SetNewMenu();
 
 	TRACE(L"LoadDialogItemsInfo\n");
 	CDialogBar& dbar = pFrame->GetDialogBar();;

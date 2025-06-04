@@ -3188,8 +3188,7 @@ BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
 	font.DeleteObject();
 	if (!font.CreatePointFont(g_pointSize, g_fontName))
 		font.CreatePointFont(g_pointSize, L"Arial");
-	LOGFONT	lf;
-
+	//LOGFONT	lf;
 	//.CreateFontIndirect(&lf);
 	wnd->SetFont(&font);
 #else
@@ -3207,27 +3206,6 @@ BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
 
 	return TRUE;
 }
-
-void ResHelper::GetMenuFont(HDC hdc, CFont& font, int hight, LOGFONT& menuLogFont, CFont& menuFont)
-{
-	NONCLIENTMETRICS ncm;
-	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-
-	VERIFY(::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-		sizeof(NONCLIENTMETRICS), &ncm, 0));
-
-	menuLogFont = ncm.lfMenuFont;
-
-	if (hdc == 0)
-		hdc = ::GetWindowDC(NULL);
-	menuLogFont.lfHeight = -MulDiv(hight, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-	::ReleaseDC(NULL, hdc);
-
-	menuFont.CreateFontIndirect(&menuLogFont);
-}
-
 
 #if (_WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
 #include "shellscalingapi.h"

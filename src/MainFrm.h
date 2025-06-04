@@ -208,6 +208,8 @@ public:
 public:
 	virtual ~CMainFrame();
 
+	void SetNewMenu();
+
 	BOOL m_createCompleted;
 
 	NMsgView * GetMsgView();
@@ -483,6 +485,8 @@ public:
 	afx_msg void OnLanguageHelp();
 	afx_msg void OnTestCfileopenfailure();
 	afx_msg void OnFileFontconfig();
+	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
+	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 };
 
 /////////////////////////////////////////////////////////////////////////////

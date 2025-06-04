@@ -327,6 +327,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_LANGUAGE_HELP, &CMainFrame::OnLanguageHelp)
 	ON_COMMAND(ID_TEST_CFILEOPENFAILURE, &CMainFrame::OnTestCfileopenfailure)
 	ON_COMMAND(ID_FILE_FONTCONFIG, &CMainFrame::OnFileFontconfig)
+	ON_WM_MEASUREITEM()
+	ON_WM_DRAWITEM()
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -440,8 +442,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Just a test of not related functionality :)
 	//BOOL ret = MboxMail::Test_MergeTwoMailLists();
 
+
+
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
+
+	MyPopupMenu::SetupFonts();
 
 	// create a view to occupy the client area of the frame
 	if (!m_wndView.Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
@@ -711,7 +717,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		SetWindowText(version);
 	}
 
-	MyPopupMenu::SetupFonts();
+	//MyPopupMenu::SetupFonts();
 
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
@@ -6854,3 +6860,96 @@ void CMainFrame::OnFileFontconfig()
 
 	int deb = 1;
 }
+
+void CMainFrame::SetNewMenu()
+{
+#if 1
+	MyPopupMenu* pOldMenu = (MyPopupMenu*)this->GetMenu();
+	//BOOL retLoad = pMenu->LoadMenu(IDR_MAINFRAME);
+	MyPopupMenu::SetCMenuAsCustom(pOldMenu);
+	//BOOL retSet = SetMenu(pMenu);
+	//delete oldMenu;
+
+#else
+	MyPopupMenu* pPopupMenu = &m_myMainMenu;
+	CMenu* pMenu = (CMenu*)pPopupMenu;
+	//CMenu* pMenu = &m_myMainCMenu;
+	// 
+	//HMENU oldMenu = this->GetMenu();
+	CMenu* oldMenu = this->GetMenu();
+	BOOL retLoad = pMenu->LoadMenu(IDR_MAINFRAME);
+	pPopupMenu->SetCMenuAsCustom();
+	BOOL retSet = SetMenu(pMenu);
+	//delete oldMenu;
+#endif
+}
+
+
+// Measure item implementation relies on unique control/menu IDs
+void CMainFrame::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct)
+{
+#if 0
+	CWnd::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
+#else
+	// Modified version of CWnd::OnMeasureItem(..) to support submenues
+	if (lpMeasureItemStruct->CtlType == ODT_MENU)
+	{
+		_ASSERTE(lpMeasureItemStruct->CtlID == 0);
+		CMenu* pMenu = NULL;
+
+		_AFX_THREAD_STATE* pThreadState = _afxThreadState.GetData();
+		if (pThreadState->m_hTrackingWindow == m_hWnd)
+		{
+			// start from popup
+			pMenu = CMenu::FromHandle(pThreadState->m_hTrackingMenu);
+		}
+		else
+		{
+			// start from menubar
+			pMenu = GetMenu();
+		}
+
+		_ASSERTE(pMenu);
+
+		// Commented out: _AfxFindPopupMenuFromID ignores submenus 
+		// pMenu = _AfxFindPopupMenuFromID(pMenu, lpMeasureItemStruct->itemID);
+		// 
+		// Is this overkill ??
+		if (lpMeasureItemStruct->itemID != -1)
+		{
+			if (!MyPopupMenu::HasID(pMenu, lpMeasureItemStruct->itemID))
+				pMenu = 0;
+		}
+
+		if (pMenu != NULL)
+		{
+			HWND hwnd = GetSafeHwnd();
+			MyPopupMenu::OnMeasureItem(hwnd, lpMeasureItemStruct);
+			//MyPopupMenu* pPopupMenu = (MyPopupMenu*)pMenu;
+			//pPopupMenu->MeasureItem(lpMeasureItemStruct);
+			//((MyPopupMenu*)pMenu)->MeasureItem(lpMeasureItemStruct);
+		}
+		else
+		{
+			TRACE(traceAppMsg, 0, "Warning: unknown WM_MEASUREITEM for menu item 0x%04X.\n",
+				lpMeasureItemStruct->itemID);
+		}
+	}
+	else
+	{
+		CWnd* pChild = CWnd::GetDescendantWindow(lpMeasureItemStruct->CtlID, TRUE);
+		if (pChild != NULL && pChild->SendChildNotifyLastMsg())
+			return;     // eaten by child
+	}
+	// not handled - do default
+	CWnd::Default();
+#endif
+}
+
+void CMainFrame::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	MyPopupMenu::OnDrawItem(nIDCtl, lpDrawItemStruct);
+	int deb = 1;
+}
+
+

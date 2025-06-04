@@ -3154,7 +3154,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			if (linfo->m_nodeType == LabelInfo::MailSubFolder)
 			{
-				MyPopupMenu menu(CString(L"TREE: RCLICK-FOLDER"));
+				MyPopupMenu menu;
 				menu.CreatePopupMenu();
 				//menu.AppendMenu(MF_SEPARATOR);
 
@@ -3253,7 +3253,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if ((hParent == 0) && (hItem == hTreeItem))
 	{
-		MyPopupMenu menu(CString(L"TREE:RCLICK-FOLDER"));
+		MyPopupMenu menu;
 		menu.CreatePopupMenu();
 		//menu.AppendMenu(MF_SEPARATOR);
 
@@ -3376,12 +3376,12 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			isLabel = TRUE;
 	}
 
-	MyPopupMenu menu(CString(L"TREE:RCLICK-PRINT"));
+	MyPopupMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_SEPARATOR);
 
 	//
-	MyPopupMenu printToSubMenu(CString(L"TREE:RCLICK-PRINT2"));
+	MyPopupMenu printToSubMenu;
 	printToSubMenu.CreatePopupMenu();
 	printToSubMenu.AppendMenu(MF_SEPARATOR);
 
@@ -3401,7 +3401,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	menu.AppendMenu(MF_SEPARATOR);
 
 	//
-	MyPopupMenu sortSubMenu(CString(L"TREE:RCLICK-SORT"));
+	MyPopupMenu sortSubMenu;
 	sortSubMenu.CreatePopupMenu();
 	sortSubMenu.AppendMenu(MF_SEPARATOR);
 
@@ -3459,7 +3459,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	// const UINT S_SORT_BY_DATE_AND_SUBJ_Id = 22;   // see above
 
 
-	MyPopupMenu labelsSubMenu(CString(L"TREE:RCLICK-LABELS"));
+	MyPopupMenu labelsSubMenu;
 	labelsSubMenu.CreatePopupMenu();
 
 	if (isLabel == FALSE)
@@ -3742,7 +3742,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case M_CreateFolder_Id:
 	{
 		CreateEmptyFolder(hItem);
-		MyPopupMenu menu(CString(L"TREE:RCLICK-FOLDER_LIST"));
+		MyPopupMenu menu;
 		CString mboxFilePath = MboxMail::s_path;
 		CString mboxFileName = ::PathFindFileName(mboxFilePath);
 		HTREEITEM hItem = NTreeView::FindItem(0, mboxFileName);
