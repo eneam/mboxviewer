@@ -44,6 +44,7 @@ typedef struct tagMyPopupMenuItem
 	int m_maxTextLeftPartLengthInPoints;  // true text
 	int m_maxTextRightPartLengthInPoints;  // accelerators
 	int m_fType;
+	int m_drawSeparator;
 } MyPopupMenuItem;
 
 class MyPopupMenu:public CMenu
@@ -51,6 +52,10 @@ class MyPopupMenu:public CMenu
 public:
 	MyPopupMenu();
 	virtual ~MyPopupMenu();
+
+	static UINT  MenuItemInfoMaskAllSet;
+	static UINT  MenuItemInfoMaskTypeAllSet;
+	static UINT  MenuItemInfoMaskFTypeAllSet;
 
 	static int m_fontSize;
 	static CFont m_font;
@@ -61,11 +66,15 @@ public:
 	void UpdateFontSize(int fontSize, int index = 0);
 	void ReleaseCustomResources(int index = 0);
 	//
+	static BOOL TraceMenu(CString& title, CMenu* menu, int index, UINT mask);
+	static BOOL TraceMenuItem(CString& title, CMenu* menu, int index, UINT mask);
+	static void PrintMENUITEMINFO(CString& text, MENUITEMINFO& minfo, UINT mask);
 	static BOOL IsCustomFont(int& fontSize);
 	static BOOL HasID(CMenu* menu, UINT ID);
 	static void SetupFonts();
 	static void ReleaseGlobalResources();
 	static void SetCMenuAsCustom(CMenu* menu, int index = 0);
+	static void RestoreCMenu(CMenu* menu, int index);
 	static void FindLengthOfLongestText(CMenu* menu, BOOL& hasTab, int& maxTextLeftPartLengthInPoints, int& maxTextRightPartLengthInPoints, int index);
 	static void OnMeasureItem(HWND hWnd, MEASUREITEMSTRUCT* lpMeasureItem);
 	static void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);

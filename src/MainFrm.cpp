@@ -434,6 +434,7 @@ CMainFrame::~CMainFrame()
 	//MboxMail::ReleaseResources();
 	if (m_colorStyleDlg)
 		delete m_colorStyleDlg;
+
 	int deb = 1;
 }
 
@@ -706,6 +707,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		else if (language.CompareNoCase(L"portuguese-brazil") == 0)
 		{
 			language = L"Portuguese-Brazil";
+		}
+		else if (language.CompareNoCase(L"chinese-traditional") == 0)
+		{
+			language = L"Chinese-Traditional";
 		}
 
 		CString languageName = language.GetAt(0);
@@ -2237,6 +2242,15 @@ void CMainFrame::OnBnClickedArchiveList()
 {
 	// TODO: Add your control notification handler code here
 
+#ifdef _DEBUG
+	CMenu* menu = (MyPopupMenu*)this->GetMenu();
+	CString title = "SetNewMenu ";
+	int index = 0;
+	//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
+	UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;
+
+	BOOL retval = MyPopupMenu::TraceMenu(title, menu, index, mask);
+#endif
 
 	int nID = IDC_ARCHIVE_LIST;
 	NTreeView * pTreeView = GetTreeView();
@@ -4400,6 +4414,9 @@ void CMainFrame::OnClose()
 		confTree->DumpTree(label);
 #endif
 	}
+
+	CMenu* menu = GetMenu();
+	MyPopupMenu::RestoreCMenu(menu, 0);
 
 	//MboxMail::ReleaseResources();
 	//ResHelper::ReleaseResources();
@@ -6823,7 +6840,6 @@ void CMainFrame::OnFileFontconfig()
 {
 	FontConfig dlg;
 
-
 	CString section_font_config = CString(sz_Software_mboxview) + L"\\FontConfig";
 	CString param = L"FontSize";
 	int fontSize = 8;
@@ -6856,6 +6872,17 @@ void CMainFrame::OnFileFontconfig()
 
 		MyPopupMenu::SetupFonts();
 		msgView->RecreateMailHdrMenu();
+
+		CMenu* menu = GetMenu();
+
+		CString title = "SetNewMenu ";
+		int index = 0;
+		//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
+		UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;
+		BOOL retval = MyPopupMenu::TraceMenu(title, menu, index, mask);
+
+		MyPopupMenu::RestoreCMenu(menu, 0);
+		MyPopupMenu::SetCMenuAsCustom(menu);
 	}
 
 	int deb = 1;
@@ -6864,11 +6891,15 @@ void CMainFrame::OnFileFontconfig()
 void CMainFrame::SetNewMenu()
 {
 #if 1
-	MyPopupMenu* pOldMenu = (MyPopupMenu*)this->GetMenu();
-	//BOOL retLoad = pMenu->LoadMenu(IDR_MAINFRAME);
-	MyPopupMenu::SetCMenuAsCustom(pOldMenu);
-	//BOOL retSet = SetMenu(pMenu);
-	//delete oldMenu;
+	MyPopupMenu* menu = (MyPopupMenu*)this->GetMenu();
+
+	CString title = "SetNewMenu ";
+	int index = 0;
+	//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
+	UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;
+	BOOL retval = MyPopupMenu::TraceMenu(title, menu, index, mask);
+
+	MyPopupMenu::SetCMenuAsCustom(menu);
 
 #else
 	MyPopupMenu* pPopupMenu = &m_myMainMenu;
