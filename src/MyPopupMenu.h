@@ -40,11 +40,13 @@
 typedef struct tagMyPopupMenuItem
 {
 	HFONT m_hfont;
+	HFONT m_hmenuBarFont;
 	CString m_text;
 	int m_maxTextLeftPartLengthInPoints;  // true text
 	int m_maxTextRightPartLengthInPoints;  // accelerators
 	int m_fType;
 	int m_drawSeparator;
+	BOOL m_isMenuBarItem;
 } MyPopupMenuItem;
 
 class MyPopupMenu:public CMenu
@@ -60,6 +62,10 @@ public:
 	static int m_fontSize;
 	static CFont m_font;
 	static LOGFONT m_menuLogFont;
+	//
+	static int m_menuBarFontSize;
+	static CFont m_menuBarFont;
+	static LOGFONT m_menuBarLogFont;
 	static BOOL m_isCustomFont;
 
 	void SetMenuAsCustom(int index = 0);

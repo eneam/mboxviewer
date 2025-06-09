@@ -2172,7 +2172,9 @@ HBRUSH CAboutDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		pDC->SetTextColor(RGB(0, 0, 200));
 		if (m_linkFont.m_hObject == NULL) {
 			LOGFONT lf;
-			GetFont()->GetObject(sizeof(lf), &lf);
+			CFont *aboutFont = GetFont();
+			if (aboutFont)
+				aboutFont->GetObject(sizeof(lf), &lf);
 			lf.lfUnderline = TRUE;
 			m_linkFont.CreateFontIndirect(&lf);
 		}

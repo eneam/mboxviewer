@@ -6775,20 +6775,30 @@ void CMainFrame::OnTestCfileopenfailure()
 
 INT_PTR CMainFrame::SetTemplate(CDialog* dlg, UINT Id, CWnd* parent)
 {
-
 	CDialogTemplate dlt;
 
 	// load dialog template
 	if (!dlt.Load(MAKEINTRESOURCE(Id)))
 		return 0;  // Or  IDCANCEL ???
 
-	// set your own font, for example "Arial", 10 pts. 
-	//dlt.SetFont(L"Arial", 12);
-
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 		dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
 
-	// get pointer to the modified dialog template
+	// dlt.m_hTemplate will be release by CDialogTemplate destructor
+#if 0
+	// display dialog box
+	BOOL ret = dlg->InitModalIndirect(dlt.m_hTemplate, parent);
+
+	INT_PTR retModal = dlg->CDialog::DoModal();
+#else
+	// Examples om Web suggest to use GlobalLock
+	// But it doesn't seem to be needed as per
+	// https://devblogs.microsoft.com/oldnewthing/20240604-00/?p=109847
+	// However, no harm done using GlobalLock occasionally
+	// Hope GlobalLock is released even when crash
+	// 
+	// get pointer to the modified dialog template 
+
 	LPDLGTEMPLATE pData = (LPDLGTEMPLATE)GlobalLock(dlt.m_hTemplate);
 	if (!pData)
 		return 0; // Or  IDCANCEL ???
@@ -6800,41 +6810,27 @@ INT_PTR CMainFrame::SetTemplate(CDialog* dlg, UINT Id, CWnd* parent)
 
 	// unlock memory object
 	GlobalUnlock(dlt.m_hTemplate);
+#endif
 
-	return retModal;
+#if 0
+	// Below works but overkill
+	DWORD dwTemplateSize = dlt.m_dwTemplateSize;
+	BYTE* templateData = new BYTE[dwTemplateSize];
 
-}
-
-INT_PTR CMainFrame::SetTemplateEx(CDialogEx* dlg, UINT Id, CWnd* parent)
-{
-	CDialogTemplate dlt;
-
-	// load dialog template
-	if (!dlt.Load(MAKEINTRESOURCE(Id)))
-		return 0; // Or  IDCANCEL ???
-
-	// set your own font, for example "Arial", 10 pts. 
-	//SetFont(L"Arial", 14);
-	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
-		dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
-
-	// get pointer to the modified dialog template
-	LPDLGTEMPLATE pData = (LPDLGTEMPLATE)GlobalLock(dlt.m_hTemplate);
-	if (!pData)
-		return 0; // Or  IDCANCEL ???
-
+	memcpy_s(templateData, (size_t)dwTemplateSize, dlt.m_hTemplate, (size_t)dwTemplateSize);
 
 	// display dialog box
-	BOOL ret = dlg->InitModalIndirect(dlt.m_hTemplate, parent);
+	BOOL ret = dlg->InitModalIndirect((HGLOBAL)templateData, parent);
 
-	INT_PTR retModal = dlg->CDialogEx::DoModal();
+	INT_PTR retModal = dlg->CDialog::DoModal();
 
-	// unlock memory object
-	GlobalUnlock(dlt.m_hTemplate);
+	delete[] templateData;
+#endif
 
 	return retModal;
 
 }
+
 
 void CMainFrame::OnFileFontconfig()
 {

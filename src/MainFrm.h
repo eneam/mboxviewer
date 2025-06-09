@@ -229,7 +229,6 @@ public:
 	static CString CreateTempFileName(const wchar_t *ext = L"htm");
 
 	static INT_PTR SetTemplate(CDialog* dlg, UINT Id, CWnd* parent);
-	static INT_PTR SetTemplateEx(CDialogEx* dlg, UINT Id, CWnd* parent);
 
 	void UpdateToolsBar();
 	BOOL IsTreeHidden();

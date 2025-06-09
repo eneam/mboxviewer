@@ -36,6 +36,11 @@
 int MyPopupMenu::m_fontSize = 0;
 CFont MyPopupMenu::m_font;
 LOGFONT MyPopupMenu::m_menuLogFont;
+//
+int MyPopupMenu::m_menuBarFontSize = 11;
+CFont MyPopupMenu::m_menuBarFont;
+LOGFONT MyPopupMenu::m_menuBarLogFont;
+//
 BOOL MyPopupMenu::m_isCustomFont = FALSE;
 
 
@@ -63,7 +68,7 @@ void MyPopupMenu::ReleaseGlobalResources()
 void MyPopupMenu::SetupFonts()
 {
 	HDC hdc = 0;
-	CFont font;
+	CFont font;   // Remember to remove since it is not used
 	if (m_fontSize == 0)
 	{
 		m_fontSize = CMainFrame::m_dfltFontSize;
@@ -73,6 +78,10 @@ void MyPopupMenu::SetupFonts()
 
 		m_font.DeleteObject();
 		MyPopupMenu::GetMenuFont(hdc, font, MyPopupMenu::m_fontSize, MyPopupMenu::m_menuLogFont, MyPopupMenu::m_font);
+
+		// Sould never change since I was not able to resize menu bar
+		m_menuBarFont.DeleteObject();
+		MyPopupMenu::GetMenuFont(hdc, font, MyPopupMenu::m_menuBarFontSize, MyPopupMenu::m_menuBarLogFont, MyPopupMenu::m_menuBarFont);
 	}
 	else
 	{
@@ -239,6 +248,11 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	int menuCheckSize = GetSystemMetrics(SM_CXMENUCHECK);
 	int textOffset = (int)((float)2 * (float)menuCheckSize);
+	if (pMyItem->m_isMenuBarItem)
+	{
+		menuCheckSize = 0;
+		textOffset = 16;
+	}
 
 	if (pMyItem->m_fType & MFT_SEPARATOR)
 	{
@@ -304,18 +318,6 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		TRACE(L"OnDrawItem:Label Right = \"%s\" cx=%d cy=%d rec.width=%d rec.hight=%d\n", accelerator, x, y, rc.Width(), rc.Height());
 	}
 
-	if (pMyItem->m_drawSeparator)
-	{
-		CDC dc;
-		dc.Attach(lpDrawItemStruct->hDC);
-		CRect rc = rcItem;
-		rc.left += textOffset;
-
-		UINT nFlags = BF_BOTTOM | BF_FLAT;
-		dc.DrawEdge(&rc, EDGE_ETCHED, nFlags);
-		dc.Detach();
-	}
-
 	// Select the font and draw the check mark character.
 	CString checkMark;
 	if (lpDrawItemStruct->itemState & ODS_CHECKED)
@@ -323,6 +325,7 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	RECT rc = rcItem;
 	rc.right = GetSystemMetrics(SM_CXMENUCHECK);
+	rc.bottom -= 8;  // Find character hight for adjustment
 	x = rc.left + 4;
 	y = rc.top;
 
@@ -338,8 +341,7 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			checkMark.GetLength(), NULL);
 	}
 
-#if 0
-	if (pMyItem->m_drawSeparator)
+	if (pMyItem->m_drawSeparator && !pMyItem->m_isMenuBarItem)
 	{
 		CDC dc;
 		dc.Attach(lpDrawItemStruct->hDC);
@@ -350,7 +352,6 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		dc.DrawEdge(&rc, EDGE_ETCHED, nFlags);
 		dc.Detach();
 	}
-#endif
 
 	// Restore the original font and colors. 
 	SelectObject(lpDrawItemStruct->hDC, hfntPrev);
@@ -424,6 +425,8 @@ void MyPopupMenu::OnMeasureItem(HWND hWnd, MEASUREITEMSTRUCT* lpMeasureItemStruc
 	ReleaseDC(hWnd, hdc);
 
 	int textOffset = (int)((float)4 * (float)GetSystemMetrics(SM_CXMENUCHECK));
+	if (pMyItem->m_isMenuBarItem)
+		textOffset = 16;
 
 	lpMeasureItemStruct->itemWidth = pMyItem->m_maxTextLeftPartLengthInPoints + pMyItem->m_maxTextRightPartLengthInPoints + textOffset;
 	lpMeasureItemStruct->itemHeight = size.cy + 8;
@@ -554,7 +557,7 @@ void MyPopupMenu::SetCMenuAsCustom(CMenu *menu, int index)
 			int deb = 1; // continue;
 
 		int retGetStr = menu->GetMenuString(i, label, nFlags);
-		TRACE(L"SetCMenuAsCustom:Label = \"%s\"\n", label);
+		TRACE(L"SetCMenuAsCustom:Label = \"%s\" MaxLeft=%d maxRight=%d\n", label, maxTextLeftPartLengthInPoints, maxTextRightPartLengthInPoints);
 
 		//BOOL retTraceFType = MyPopupMenu::TraceMenuItem(CString(L"SetCMenuAsCustom:FType: Original Item Info: "), menu, i, MyPopupMenu::MenuItemInfoMaskFTypeAllSet);
 		//BOOL retTraceType = MyPopupMenu::TraceMenuItem(CString(L"SetCMenuAsCustom:Type: Original Item Info: "), menu, i, MyPopupMenu::MenuItemInfoMaskTypeAllSet);
@@ -572,6 +575,10 @@ void MyPopupMenu::SetCMenuAsCustom(CMenu *menu, int index)
 		CString languageMenuItem = L"Language";
 		ResHelper::TranslateString(languageMenuItem);
 
+
+		BOOL isMenuBarItem = FALSE;
+		int textLeftPartLengthInPoints = 0;  // true text
+		int textRightPartLengthInPoints = 0;  // accelerators
 		if ((label.Compare(fileMenuItem) == 0) ||
 			(label.Compare(editMenuItem) == 0) ||
 			(label.Compare(viewMenuItem) == 0) ||
@@ -579,9 +586,15 @@ void MyPopupMenu::SetCMenuAsCustom(CMenu *menu, int index)
 			(label.Compare(languageMenuItem) == 0)
 				)
 		{
+			HFONT hf = MyPopupMenu::m_menuBarFont.operator HFONT();
+
+			HWND hWnd = 0;
+			MyPopupMenu::GetLengthOfMenuLabelPartsInPoints(hWnd, hf, label, textLeftPartLengthInPoints, textRightPartLengthInPoints);
+			isMenuBarItem = TRUE;
 			int deb = 1; //
 		}
-		else if ((itemID > ID_FILE_MRU_FILE1) && (itemID < (ID_FILE_MRU_FILE1 + 16)))
+
+		if ((itemID > ID_FILE_MRU_FILE1) && (itemID < (ID_FILE_MRU_FILE1 + 16)))
 		{
 			int deb = 1;
 		}
@@ -622,17 +635,29 @@ void MyPopupMenu::SetCMenuAsCustom(CMenu *menu, int index)
 
 				//ResHelper::TranslateString(text);  // It is already translated
 				myItem->m_text = text;
-				myItem->m_hfont = MyPopupMenu::m_font.operator HFONT();
-				myItem->m_maxTextLeftPartLengthInPoints = maxTextLeftPartLengthInPoints;
-				myItem->m_maxTextRightPartLengthInPoints = maxTextRightPartLengthInPoints;
-				myItem->m_drawSeparator = TRUE;
+				
+				if (!isMenuBarItem)
+				{
+					myItem->m_hfont = MyPopupMenu::m_font.operator HFONT();
+					myItem->m_maxTextLeftPartLengthInPoints = maxTextLeftPartLengthInPoints;
+					myItem->m_maxTextRightPartLengthInPoints = maxTextRightPartLengthInPoints;
+					myItem->m_drawSeparator = TRUE;
+				}
+				else
+				{
+					myItem->m_hfont = MyPopupMenu::m_menuBarFont.operator HFONT();
+					myItem->m_maxTextLeftPartLengthInPoints = textLeftPartLengthInPoints;
+					myItem->m_maxTextRightPartLengthInPoints = textRightPartLengthInPoints;
+					myItem->m_drawSeparator = FALSE;
+
+				}
+				myItem->m_isMenuBarItem = isMenuBarItem;
 
 				//menuItemInfo.fMask = MIIM_DATA | MIIM_FTYPE;
 				//menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_TYPE;  // FTYPE -> TYPE
 				menuItemInfo.fMask = MIIM_DATA | MIIM_FTYPE;  // FTYPE -> TYPE
 				menuItemInfo.fType |= MFT_OWNERDRAW;
 				menuItemInfo.dwItemData = (ULONG_PTR)myItem;
-
 
 				BOOL retSet = ((CMenu*)menu)->SetMenuItemInfo(i, &menuItemInfo, TRUE);
 				_ASSERT(retSet);
@@ -684,7 +709,7 @@ void MyPopupMenu::RestoreCMenu(CMenu* menu, int index)
 			int deb = 1; // continue;
 
 		int retGetStr = menu->GetMenuString(i, label, nFlags);
-
+#if 0
 		// Currently labels are already translated, no need to translate again
 		// Left just in case if order of initialization would change
 		CString fileMenuItem = L"&File";
@@ -708,6 +733,7 @@ void MyPopupMenu::RestoreCMenu(CMenu* menu, int index)
 			int deb = 1; //
 		}
 		else
+#endif
 		{
 			memset(&menuItemInfo, 0, sizeof(menuItemInfo));
 			menuItemInfo.cbSize = sizeof(menuItemInfo);
@@ -933,6 +959,8 @@ void MyPopupMenu::ReleaseCustomResources(int index)
 	int deb = 1;
 }
 
+
+// Not used currently. Delete ??
 void MyPopupMenu::UpdateFontSize(int fontSize, int index)
 {
 	MyPopupMenu* menu = this;
@@ -1211,6 +1239,7 @@ void MyPopupMenu::PrintMENUITEMINFO(CString &infoText, MENUITEMINFO& minfo, UINT
 BOOL MyPopupMenu::TraceMenuItem(CString &infoText, CMenu *menu, int index, UINT mask)
 {
 	BOOL retval = TRUE;
+#ifdef _DEBUG
 	CString errorText;
 	wchar_t mstr[256];
 
@@ -1232,6 +1261,7 @@ BOOL MyPopupMenu::TraceMenuItem(CString &infoText, CMenu *menu, int index, UINT 
 		retval = FALSE;
 	}
 	TRACE(L"%s\n", infoText);
+#endif
 	return retval;
 }
 
@@ -1239,6 +1269,7 @@ BOOL MyPopupMenu::TraceMenuItem(CString &infoText, CMenu *menu, int index, UINT 
 // Main menubar
 BOOL MyPopupMenu::TraceMenu(CString& title, CMenu* menu, int index, UINT mask)
 {
+#ifdef _DEBUG
 	HMENU hM = menu->m_hMenu;
 	const HMENU hMenu = menu->GetSafeHmenu();
 	BOOL isMenu = ::IsMenu(hMenu);
@@ -1280,6 +1311,7 @@ BOOL MyPopupMenu::TraceMenu(CString& title, CMenu* menu, int index, UINT mask)
 
 	}
 	TRACE(L"END of TraceMenu ++++++++++++++++++++++\n");
+#endif
 	return TRUE;
 }
 

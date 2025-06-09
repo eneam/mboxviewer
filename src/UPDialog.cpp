@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "updialog.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -154,10 +155,29 @@ INT_PTR CUPDialog::DoModal()
 	INT_PTR retcode = IDCANCEL;
 	Cleanup();		//If this is not first time, we had better Terminate any previous instance Threads !!
 
-	if(m_lpszTemplateName == NULL)	// if no custom dialog template is supplied to us, lets use the built-in one
-		retcode = DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE) dlg_145, m_hParentWnd, (DLGPROC) ProgressDlgProc, (LPARAM)this); 
+	if (m_lpszTemplateName == NULL)	// if no custom dialog template is supplied to us, lets use the built-in one
+	{
+		retcode = DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE)dlg_145, m_hParentWnd, (DLGPROC)ProgressDlgProc, (LPARAM)this);
+	}
 	else
-		retcode = DialogBoxParam(m_hInst,m_lpszTemplateName,m_hParentWnd,ProgressDlgProc,(LPARAM)this);
+	{
+		if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		{
+			CDialogTemplate dlt;
+
+			// load dialog template
+			if (!dlt.Load(m_lpszTemplateName))
+				return 0;  // Or  IDCANCEL ???
+
+			dlt.SetSystemFont(CMainFrame::m_cnfFontSize);
+
+			retcode = DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE)dlt.m_hTemplate, m_hParentWnd, (DLGPROC)ProgressDlgProc, (LPARAM)this);
+		}
+		else
+		{
+			retcode = DialogBoxParam(m_hInst, m_lpszTemplateName, m_hParentWnd, ProgressDlgProc, (LPARAM)this);
+		}
+	}
 
 	return retcode;
 }
@@ -369,4 +389,17 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlg,UINT Message,WPARAM wParam,LPARAM lPa
 	}
 
 	return bProcessed;	// We have already processed the message
+}
+
+void CUPDialog::SetDialogTemplate(HINSTANCE hInst, LPCWSTR lpTemplateName, int StaticControlId, int ProgressBarControlId, int CancelButtonId)
+{
+	m_hInst = hInst;
+
+	m_lpszTemplateName = lpTemplateName;
+
+	m_nStaticControlId = StaticControlId;
+
+	m_nProgressBarControlId = ProgressBarControlId;
+
+	m_nCancelButtonId = CancelButtonId;
 }

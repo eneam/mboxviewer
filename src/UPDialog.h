@@ -134,18 +134,7 @@ public:
 	//		StaticControlId:	Identifier of the Static Control on the dialog box. Used for displaying the Progress Messages
 	//		ProgressBarControlId: Identifier of the Progressbar Control on the Dialog Box
 	//		CancelButtonId:		Identifier of the Cancel Button Control on the Dialog Box.
-	inline void SetDialogTemplate(HINSTANCE hInst, LPCWSTR lpTemplateName, int StaticControlId, int ProgressBarControlId, int CancelButtonId)
-	{
-		m_hInst = hInst;
-
-		m_lpszTemplateName = lpTemplateName;
-
-		m_nStaticControlId = StaticControlId;
-		
-		m_nProgressBarControlId = ProgressBarControlId;
-
-		m_nCancelButtonId = CancelButtonId;	
-	}
+	void SetDialogTemplate(HINSTANCE hInst, LPCWSTR lpTemplateName, int StaticControlId, int ProgressBarControlId, int CancelButtonId);
 
 	// SetTerminationDelay sets the amount of time the thread should be allowed to run after receiving a termination
 	// request from user before it is forcefully destoryed with TerminateThread.
