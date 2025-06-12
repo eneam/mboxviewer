@@ -3210,8 +3210,10 @@ BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
 #if (_WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
 #include "shellscalingapi.h"
 
+//BOOL __stdcall MonitorenumprocMy(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4)
 BOOL ResHelper::MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4)
 {
+#ifndef _WIN32
 	MONITORINFOEX mif;
 	mif.cbSize = sizeof(MONITORINFOEX);
 
@@ -3256,18 +3258,20 @@ BOOL ResHelper::MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM A
 	}
 
 	TRACE(L"\n");
-
+#endif
 	return TRUE;
 }
 
 int ResHelper::MonitorInfo()
 {
+#ifndef _WIN32
 	::EnumDisplayMonitors(
 		nullptr,
 		nullptr,
 		ResHelper::MyMonitorenumproc,
 		0);
-		return 1;
+#endif
+	return 1;
 }
 #endif
 

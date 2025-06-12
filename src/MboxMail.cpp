@@ -7461,63 +7461,92 @@ int MboxMail::splitMailAddress(const char* buff, int bufflen, CString& name, CSt
 
 int MboxMail::splitMailAddress(const char *buff, int bufflen, SimpleString *name, SimpleString *addr)
 {
-	register char *token_begin;
-	register char *token_end;
-	char *token_begin_sv;
-	char *token_end_sv;
+	char* last = (char*)buff + bufflen;
+	char* first = (char*)buff;
 
-	register char *last = (char *)&buff[bufflen-1];
-	char *first = (char*)&buff[0];
+	// Find address part of mail address
+	// last character 
+	char* atChar = TextUtilsEx::strchar(first, (char*)last, '@');
+	//_ASSERTE(atChar);
+	if (!atChar)
+	{
+		name->SetCount(0);
+		addr->SetCount(0);
+		return 1;
+	}
 
-	token_begin = first;
-	token_end = last;
-	while ((token_begin <= token_end) && (
-		(*token_end == ' ') || (*token_end == '\t') ||
-		(*token_end == '>') || (*token_end == '<') || 
-		(*token_end == '"') || (*token_end == '\''))
-		)
-		token_end--;
-	token_end_sv = token_end;
+	char* charListEnd = ">\" \t'";
+	first = atChar;
+	char *maddrEnd = TextUtilsEx::findOneOf(first, last, charListEnd);
+	if (maddrEnd == 0)
+		maddrEnd = last;
 
-	while ((token_begin <= token_end) && !(
-		(*token_end == ' ') || (*token_end == '\t') ||
-		(*token_end == '>') || (*token_end == '<') ||
-		(*token_end == '"') || (*token_end == '\''))
-		)
-		token_end--;
+	char* charListBeg = "<\" \t'";
 
-	token_begin = token_end + 1;
-	token_end = token_end_sv;
+	first = (char*)buff;
+	last = atChar + 1;  // must point to last data character  plus one
+	char* maddrBeg = TextUtilsEx::rfindOneOf(first, last, charListBeg);
+	if (maddrBeg == 0)
+		maddrBeg = first;
+	else
+		maddrBeg++;
 
-	int addrlen = IntPtr2Int(token_end - token_begin + 1);
-	int n = 0;
-	char *to_addr = addr->Data();
-	for (char *pos = token_begin; pos <= token_end; pos++, n++) 
-		to_addr[n] = tolower(*pos);
+	int addrlen = IntPtr2Int(maddrEnd - maddrBeg);
+	addr->Copy(maddrBeg, addrlen);
 
-	addr->SetCount(addrlen);
+	// Find name of mail address ######
 
-	token_begin_sv = token_begin;
-	token_begin = first;
-	token_end = token_begin_sv - 1;
+	// first and last must point to first and last character
 
-	while ((token_begin <= token_end) && (
-		(*token_end == ' ') || (*token_end == '\t') ||
-		(*token_end == '>') || (*token_end == '<') ||
-		(*token_end == '"') || (*token_end == '\''))
-		)
-		token_end--;
+	// Check first to the left of addr  @@@
+	first = (char*)buff;
+	last = maddrBeg;
 
-	while ((token_begin <= token_end) && (
-		(*token_begin == ' ') || (*token_begin == '\t') ||
-		(*token_begin == '>') || (*token_begin == '<') ||
-		(*token_begin == '"') || (*token_begin == '\''))
-		)
-		token_begin++;
+	char* charList = "<>\" \t'()";
+	char* beg = TextUtilsEx::findLastOneOf(first, last, charList);
+	if (beg == 0)
+		beg = first;
+	else
+		beg++;
 
-	int namelen = IntPtr2Int(token_end - token_begin + 1);
-	name->Copy(token_begin, namelen);
+	first = beg;
+	last = maddrBeg;
+	char* end = TextUtilsEx::rfindLastOneOf(first, last, charList);
+	if (end == 0)
+		end = last;
 
+	int namelen = IntPtr2Int(end - beg);
+	//_ASSERTE(namelen >= 0);
+	if (namelen > 0)
+	{
+		name->Copy(beg, namelen);
+		return 1;
+	}
+
+	// Check to the right of addr  @@@@
+	first = maddrEnd+1;
+	last = (char*)buff + bufflen;
+
+	//char* charList = "<\" \t'()";
+	beg = TextUtilsEx::findLastOneOf(first, last, charList);
+	if (beg == 0)
+		beg = first;
+	else
+		beg++;
+
+	first = beg+1;
+	last = (char*)buff + bufflen;
+	end = TextUtilsEx::rfindLastOneOf(first, last, charList);
+	if (end == 0)
+		end = last;
+
+	//_ASSERTE(namelen >= 0);
+	namelen = IntPtr2Int(end - beg);
+	if (namelen > 0)
+	{
+		name->Copy(beg, namelen);
+		return 1;
+	}
 	return 1;
 }
 

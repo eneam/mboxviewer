@@ -3020,7 +3020,8 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					if (m_name->Count()) {
 						FieldText.Append(m_name->Data(), m_name->Count());
 					}
-					else {
+					else
+					{
 						int pos = m_addr->Find(0, '@');
 						if (pos >= 0)
 							FieldText.Append(m_addr->Data(), pos);

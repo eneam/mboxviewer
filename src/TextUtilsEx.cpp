@@ -1315,6 +1315,102 @@ char *TextUtilsEx::findOneOf(char *beg, char *end, char *charList)
 	return 0;
 }
 
+char* TextUtilsEx::rfindOneOf(char* beg, char* end, char* charList)
+{
+	end--;
+	char oneOf;
+	char* p_charList;
+	char c;
+
+	while (end >= beg)
+	{
+		p_charList = charList;
+		c = *end;
+		while (oneOf = *p_charList)
+		{
+			if (c == oneOf)
+				return end;
+			else
+				p_charList++;
+		}
+		end--;
+	};
+	return 0;
+}
+
+
+char* TextUtilsEx::findLastOneOf(char* beg, char* end, char* charList)
+{
+	char oneOf;
+	char* p_charList;
+	char c;
+	char* beg_sv = beg;
+	char* sbeg;
+	while (beg < end)
+	{
+		p_charList = charList;
+		c = *beg;
+		sbeg = beg;
+		while (oneOf = *p_charList)
+		{
+			if (c == oneOf)
+			{
+				beg++;
+				break;
+			}
+			else
+				p_charList++;
+		}
+		if (beg == sbeg)
+		{
+			if (beg == beg_sv)
+				return 0;
+			else
+				return --beg;
+		}
+	};
+	return 0;
+}
+
+char* TextUtilsEx::rfindLastOneOf(char* beg, char* end, char* charList)
+{
+	end--;
+	char oneOf;
+	char* p_charList;
+	char c;
+	char* end_sv = end;
+	char* send;
+
+	while (end >= beg)
+	{
+		p_charList = charList;
+		c = *end;
+		send = end;
+		while (oneOf = *p_charList)
+		{
+			if (c == oneOf)
+			{
+				end--;
+				break;
+			}
+			else
+				p_charList++;
+		}
+		if (end == send)
+		{
+			if (end == end_sv)
+				return 0;
+			else
+				return ++end;
+		}
+		else if (end < beg)
+			return ++end;
+
+	};
+	return 0;
+}
+
+
 char *TextUtilsEx::strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength)
 {
 	// TODO: not very efficient; optimize

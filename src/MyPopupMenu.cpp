@@ -424,9 +424,9 @@ void MyPopupMenu::OnMeasureItem(HWND hWnd, MEASUREITEMSTRUCT* lpMeasureItemStruc
 	SelectObject(hdc, hfntOld);
 	ReleaseDC(hWnd, hdc);
 
-	int textOffset = (int)((float)4 * (float)GetSystemMetrics(SM_CXMENUCHECK));
+	int textOffset = (int)((float)3 * (float)GetSystemMetrics(SM_CXMENUCHECK));
 	if (pMyItem->m_isMenuBarItem)
-		textOffset = 16;
+		textOffset = 4;
 
 	lpMeasureItemStruct->itemWidth = pMyItem->m_maxTextLeftPartLengthInPoints + pMyItem->m_maxTextRightPartLengthInPoints + textOffset;
 	lpMeasureItemStruct->itemHeight = size.cy + 8;
@@ -492,7 +492,6 @@ void MyPopupMenu::SetMenuAsCustom(int index)
 		myItem->m_hfont = MyPopupMenu::m_font.operator HFONT();
 
 		menuItemInfo.fMask =  MIIM_DATA | MIIM_FTYPE;
-		//menuItemInfo.fMask = MIIM_ID | MIIM_DATA | MIIM_FTYPE;
 		menuItemInfo.fType = MFT_OWNERDRAW;
 		menuItemInfo.dwItemData = (ULONG_PTR)myItem;
 
@@ -574,7 +573,6 @@ void MyPopupMenu::SetCMenuAsCustom(CMenu *menu, int index)
 		ResHelper::TranslateString(helpMenuItem);
 		CString languageMenuItem = L"Language";
 		ResHelper::TranslateString(languageMenuItem);
-
 
 		BOOL isMenuBarItem = FALSE;
 		int textLeftPartLengthInPoints = 0;  // true text

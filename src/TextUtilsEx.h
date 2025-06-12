@@ -104,6 +104,9 @@ public:
 	static BOOL  isNumericA(CStringA& str);
 	static char *strchar(char *beg, char *end, char c);
 	static char *findOneOf(char *beg, char *end, char *charList);
+	static char *rfindOneOf(char* beg, char* end, char* charList);
+	static char* findLastOneOf(char* beg, char* end, char* charList);
+	static char* rfindLastOneOf(char* beg, char* end, char* charLis);
 	static char *strnstrUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 	static int	 strncmpUpper2Lower(char *any, char *end, const char *lower, int lowerlength);
 	static int   strncmpUpper2Lower(char *any, int anyLength, const char *lower, int lowerlength);

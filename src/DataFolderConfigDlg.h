@@ -53,6 +53,7 @@ public:
 	BOOL m_restartRequired;
 	//CEdit m_introText;
 	CStatic m_introText;
+	int m_fontSize;
 	//
 	CStatic m_defaultDataFolderText;
 	//

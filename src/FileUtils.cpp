@@ -80,7 +80,7 @@ BOOL FileUtils::PathFileExist(LPCWSTR path)
 	{
 		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
-		TRACE(L"(FileSize)error=%ld file=%s\n%s\n", err, path, errText);
+		TRACE(L"(PathFileExist)error=%ld file=%s\n%s\n", err, path, errText);
 		return FALSE;
 	}
 }

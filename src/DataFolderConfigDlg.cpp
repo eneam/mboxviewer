@@ -48,10 +48,10 @@ extern const wchar_t *sz_Software_mboxview;
 DataFolderConfigDlg::DataFolderConfigDlg(BOOL restartRequired, CWnd* pParent /*=nullptr*/)
 DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_DATA_FOLDER_DLG, pParent))
 {
-
 	m_restartRequired = restartRequired;
 	m_returnCode = IDCANCEL;
-
+	m_fontSize = 12;
+#if 0
 	m_folderPathColor = RGB(255, 255, 255);  // white
 	m_folderPathBrush.CreateSolidBrush(m_folderPathColor);
 
@@ -71,9 +71,10 @@ DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_DATA_FOLDER_DLG, pParent))
 
 	hdc = ::GetWindowDC(NULL);
 	ncm.lfMessageFont.lfWeight = FW_BOLD; // 700
-	ncm.lfMessageFont.lfHeight = -MulDiv(24, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
 	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
 	::ReleaseDC(NULL, hdc);
+#endif
 
 	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
 
@@ -99,6 +100,34 @@ BOOL DataFolderConfigDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
+
+	if (m_fontSize < 12)
+		m_fontSize = 12;
+
+#if 1
+	m_folderPathColor = RGB(255, 255, 255);  // white
+	m_folderPathBrush.CreateSolidBrush(m_folderPathColor);
+
+	// Get the log font. Setting text font works here 
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
+		sizeof(NONCLIENTMETRICS), &ncm, 0);
+
+	HDC hdc = ::GetWindowDC(NULL);
+	ncm.lfMessageFont.lfWeight = FW_NORMAL; //  400;
+	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
+	::ReleaseDC(NULL, hdc);
+
+	hdc = ::GetWindowDC(NULL);
+	ncm.lfMessageFont.lfWeight = FW_BOLD; // 700
+	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
+	::ReleaseDC(NULL, hdc);
+#endif
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 

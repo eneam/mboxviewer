@@ -4716,7 +4716,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode == FALSE)
 		{
 			DataFolderConfigDlg dlg;
-
+			dlg.m_fontSize = CMainFrame::m_cnfFontSize;
 			INT_PTR retCode = dlg.DoModal();
 			if (retCode == IDOK)
 			{
@@ -5911,9 +5911,10 @@ void CMainFrame::OnFileDatafolderconfig()
 	_ASSERTE(!currentDataFolder.IsEmpty());
 
 	DataFolderConfigDlg dlg(TRUE);
-
+	dlg.m_fontSize = CMainFrame::m_cnfFontSize;
 	int actionCode = 0;
 	INT_PTR retCode = dlg.DoModal();
+
 	if (retCode == IDOK)
 	{
 		actionCode = dlg.m_returnCode;
@@ -6879,6 +6880,9 @@ void CMainFrame::OnFileFontconfig()
 
 		MyPopupMenu::RestoreCMenu(menu, 0);
 		MyPopupMenu::SetCMenuAsCustom(menu);
+
+		this->DrawMenuBar();
+
 	}
 
 	int deb = 1;
