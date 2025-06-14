@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////
 //
 
-// MyCButton.cpp : implementation file
+// MyPopupMenu.cpp : implementation file
 // 
 // You can set/change the background color
 //
@@ -68,9 +68,8 @@ public:
 	static LOGFONT m_menuBarLogFont;
 	static BOOL m_isCustomFont;
 
-	void SetMenuAsCustom(int index = 0);
+	
 	void UpdateFontSize(int fontSize, int index = 0);
-	static int ReleaseCustomResources(CMenu* menu, int index = 0);
 	//
 	static int TraceMenu(CString& title, CMenu* menu, int index, UINT mask);
 	static BOOL TraceMenuItem(CString& title, CMenu* menu, int index, UINT mask);
@@ -88,7 +87,11 @@ public:
 	static void GetLengthOfMenuLabelPartsInPoints(HWND hWnd, HFONT hf, CString& label, int& textLeftPartLengthInPoints, int& textRightPartLengthInPoints);
 	static BOOL GetLabelParts(CString& label, CString& text, CString& accelerator);
 
+
+	// Below functions are specific for popup context menus
+	void SetMenuAsCustom(int index = 0);
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct);
+	static int ReleaseCustomResources(CMenu* menu, int index = 0);
 };
 
