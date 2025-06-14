@@ -5,8 +5,8 @@ Changes
 v 1.0.3.50
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
- - Added dialog to configure Font Size of GUI objects except Menus.;
- - Added support for Japanese and Chinese languages.;
+ - Added dialog to configure Font Size of GUI objects.;
+ - Added support for Japanese and Chinese-Simplified languages.;
  - Updated User Manual to describe new and updated features.;
 	- 
 v 1.0.3.49

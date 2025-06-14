@@ -41,6 +41,7 @@ Features
 * support for Thunderbird exported mail files;
 * support for multiple languages;
 * support for file based data configuration in addition to the default Registry based;
+* ability to configure font size of GUI objects;
 
 License
 -------
@@ -107,7 +108,7 @@ Multiple Languages
 
 MBox Viewer supports the multiple languages:
 
-English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian and Polish
+English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian, Polish, Japanese and Chinese-Simplified
 
 GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
 Free Google Translations are not domain specific and most likely they will need to be updated by humans.
@@ -138,6 +139,10 @@ Refer to [Introduction to MBox Viewer](https://www.youtube.com/watch?v=qrjjR9Bvz
 
 Refer to provided [UserGuide.pdf](UserGuide.pdf)  how to run MBox Viewer from command line.
 
+Font Size
+----------
+
+User has an option to increase the font size of GUI objects if desired. On the main top menu tool bar, select the `File` option to open the drop menu and then select the `Font Config` option. 
 
 Changes
 -------
