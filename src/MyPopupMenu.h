@@ -70,17 +70,17 @@ public:
 
 	void SetMenuAsCustom(int index = 0);
 	void UpdateFontSize(int fontSize, int index = 0);
-	void ReleaseCustomResources(int index = 0);
+	static int ReleaseCustomResources(CMenu* menu, int index = 0);
 	//
-	static BOOL TraceMenu(CString& title, CMenu* menu, int index, UINT mask);
+	static int TraceMenu(CString& title, CMenu* menu, int index, UINT mask);
 	static BOOL TraceMenuItem(CString& title, CMenu* menu, int index, UINT mask);
-	static void PrintMENUITEMINFO(CString& text, MENUITEMINFO& minfo, UINT mask);
+	static BOOL PrintMENUITEMINFO(CString& text, MENUITEMINFO& minfo, UINT mask);
 	static BOOL IsCustomFont(int& fontSize);
 	static BOOL HasID(CMenu* menu, UINT ID);
 	static void SetupFonts();
 	static void ReleaseGlobalResources();
-	static void SetCMenuAsCustom(CMenu* menu, int index = 0);
-	static void RestoreCMenu(CMenu* menu, int index);
+	static int SetCMenuAsCustom(CMenu* menu, int index = 0);
+	static int RestoreCMenu(CMenu* menu, int index);
 	static void FindLengthOfLongestText(CMenu* menu, BOOL& hasTab, int& maxTextLeftPartLengthInPoints, int& maxTextRightPartLengthInPoints, int index);
 	static void OnMeasureItem(HWND hWnd, MEASUREITEMSTRUCT* lpMeasureItem);
 	static void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);

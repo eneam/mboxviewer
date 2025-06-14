@@ -506,7 +506,6 @@
 #define IDC_FIND_IN_MAIL_STRING         1426
 #define IDC_RADIO_FONT_DFLT             1427
 #define IDC_STATIC_FONT_CONFIG_1        1428
-#define IDC_STATIC_FONT_CONFIG_2        1429
 #define IDC_EDIT_CUSTOM_FONT_SIZE       1430
 #define IDC_STATIC_FONT_CONFIG_3        1431
 #define ID_VIEW_TOOLBARS                32771
@@ -594,6 +593,7 @@
 #define ID_DEVELOPMENTOPTIONS_TEST      32937
 #define ID_TEST_CFILEOPENFAILURE        32938
 #define ID_FILE_FONTCONFIG              32939
+#define ID_HELP_CRASHHELP               32940
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -603,7 +603,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        246
-#define _APS_NEXT_COMMAND_VALUE         32940
+#define _APS_NEXT_COMMAND_VALUE         32941
 #define _APS_NEXT_CONTROL_VALUE         1432
 #define _APS_NEXT_SYMED_VALUE           118
 #endif

@@ -1363,15 +1363,19 @@ int CmboxviewApp::ExitInstance()
 /////////////////////////////////////////////////////////////////////////////
 // CAboutDlg dialog used for App About
 
-class CAboutDlg : public CDialog
+class CAboutDlg : public CDialogEx
 {
 public:
-	CAboutDlg();
+	CAboutDlg(CWnd* pParent = NULL);
+
 	CFont m_linkFont;
 	// Dialog Data
 		//{{AFX_DATA(CAboutDlg)
 	enum { IDD = IDD_ABOUTBOX };
 	//}}AFX_DATA
+
+	virtual INT_PTR DoModal();
+	CWnd* m_pParent;
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CAboutDlg)
@@ -1392,10 +1396,23 @@ public:
 	afx_msg void OnClose();
 };
 
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
+CAboutDlg::CAboutDlg(CWnd* pParent)
+DIALOG_FROM_TEMPLATE(: CDialogEx(CAboutDlg::IDD, pParent))
 {
 	//{{AFX_DATA_INIT(CAboutDlg)
 	//}}AFX_DATA_INIT
+
+	m_pParent = pParent;
+}
+
+INT_PTR CAboutDlg::DoModal()
+{
+#ifdef _DIALOG_FROM_TEMPLATE
+	INT_PTR ret = CMainFrame::SetTemplate(this, IDD_ABOUTBOX, m_pParent);
+#else
+	INT_PTR ret = CDialogEx::DoModal();
+#endif
+	return ret;
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
@@ -1406,7 +1423,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DONATION, m_link);
 }
 
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
+BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 	//{{AFX_MSG_MAP(CAboutDlg)
 	//}}AFX_MSG_MAP
 	ON_STN_CLICKED(IDC_DONATION, &CAboutDlg::OnStnClickedDonation)

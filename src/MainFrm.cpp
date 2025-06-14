@@ -329,6 +329,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_FILE_FONTCONFIG, &CMainFrame::OnFileFontconfig)
 	ON_WM_MEASUREITEM()
 	ON_WM_DRAWITEM()
+	ON_COMMAND(ID_HELP_CRASHHELP, &CMainFrame::OnHelpCrashhelp)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -6984,3 +6985,11 @@ void CMainFrame::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 }
 
 
+void CMainFrame::OnHelpCrashhelp()
+{
+	// TODO: Add your command handler code here
+
+	CString helpFileName = L"CrashHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
+}

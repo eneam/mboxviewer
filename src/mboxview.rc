@@ -151,6 +151,7 @@ BEGIN
         MENUITEM "License",                     ID_HELP_LICENSE
         MENUITEM "Donate",                      ID_HELP_DONATE
         MENUITEM "File Based Configuration",    ID_HELP_FILEBASEDCONFIG
+        MENUITEM "Crash Help",                  ID_HELP_CRASHHELP
     END
     POPUP "Language"
     BEGIN
