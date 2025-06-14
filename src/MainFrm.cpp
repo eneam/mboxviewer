@@ -709,9 +709,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		{
 			language = L"Portuguese-Brazil";
 		}
-		else if (language.CompareNoCase(L"chinese-traditional") == 0)
+		else if (language.CompareNoCase(L"chinese-simplified") == 0)
 		{
-			language = L"Chinese-Traditional";
+			language = L"Chinese-Simplified";
 		}
 
 		CString languageName = language.GetAt(0);
