@@ -4392,8 +4392,10 @@ void NListView::FillCtrl()
 
 		int mailCnt = MboxMail::s_mails.GetCount();
 
+#if 0
 		if (parseCanceledByUser == FALSE)
 		{
+			// FIXME !!!!! Must Review. Below solution differs from older solutions and it is not working
 			if (mailCnt > 1000)
 			{
 				CString txt = L"Inline image files can be pre-created now or created on the fly later. "
@@ -4426,6 +4428,7 @@ void NListView::FillCtrl()
 				int retval = CreateInlineImageCache_Thread(firstMail, lastMail, targetPrintSubFolderName);
 			}
 		}
+#endif
 	}
 
 	MboxMail::s_mails_ref.SetSizeKeepData(MboxMail::s_mails.GetSize());
