@@ -207,8 +207,9 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 				CString fmt = L"%s\n\nFile exists. Open the file location and check file properties.\nMake sure the default application is configured to open the file.\n";
 				ResHelper::TranslateString(fmt);
 				errorTextW.Format(fmt, errText);
-
-
+				errorTextW.Append(L"\n\n\n");
+				errorTextW.Append(*filename);
+				errorTextW.Append(L"\n");
 			}
 			else
 			{
@@ -217,6 +218,9 @@ int CMainFrame::CheckShellExecuteResult(HINSTANCE  result, HWND h, CStringW *fil
 				CString fmt = L"%s\n\nFile doesn't exist.\n";
 				ResHelper::TranslateString(fmt);
 				errorTextW.Format(fmt, errText);
+				errorTextW.Append(L"\n\n\n");
+				errorTextW.Append(*filename);
+				errorTextW.Append(L"\n");
 			}
 		}
 		int answer = ::MessageBoxW(h, errorTextW, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
