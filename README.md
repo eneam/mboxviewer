@@ -142,7 +142,8 @@ Refer to provided [UserGuide.pdf](UserGuide.pdf)  how to run MBox Viewer from co
 Font Size
 ----------
 
-User has an option to increase the font size of GUI objects if desired. On the main top menu tool bar, select the `File` option to open the drop menu and then select the `Font Config` option. 
+User has an option to increase the font size of GUI objects if desired. On the main top menu tool bar, select the `File` option to open the drop menu and then select the `Font Config` option.
+Use CTRL+mouse scroll wheel to change the font size in the mail message window.
 
 Changes
 -------
