@@ -7,8 +7,12 @@ v 1.0.3.50
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
  - Added dialog to configure Font Size of GUI objects.;
  - Added support for Japanese and Chinese-Simplified languages.;
+ - POTENTIAL ISSUES: 
+   Printing to PDF may finish immediately when Edge Browser is configured for printing.
+   File doesn't exist message will be shown unexpectedly when trying to open the generated PDF file.
+   Restaring MBox Viewer seems to resolve the issue. Issue is being investigated.
  - Updated User Manual to describe new and updated features.;
-	- 
+
 v 1.0.3.49
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

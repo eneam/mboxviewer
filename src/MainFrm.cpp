@@ -3778,6 +3778,14 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 		return -1;
 	}
 
+	_ASSERTE(ShExecInfo.hProcess);
+	if (ShExecInfo.hProcess == 0)
+	{
+		CString errText(L"Invalid ShExecInfo.hProcess == 0");
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		int answer = ::MessageBox(h, errText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+
 	int step = 10;
 	int stepCnt = 0;
 	int nSeconds = 0;
@@ -3787,9 +3795,17 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	BOOL signaled = FALSE;
 	BOOL failed = FALSE;
 	int returnCode = 1;
+
+	HANDLE ProcHandle[1];
+	ProcHandle[0] = ShExecInfo.hProcess;
+	DWORD nCount = 1;
+	DWORD dwWakeMask = 0;
+	DWORD dwFlags = 0;
+
 	for (;;)
 	{
 		msec = 100;
+		//DWORD ret = MsgWaitForMultipleObjectsEx(nCount, &ProcHandle[0], msec, dwWakeMask, dwFlags);  // 06/15/2025 Just for eval; seems to work also
 		DWORD ret = WaitForSingleObject(ShExecInfo.hProcess, msec);
 		switch (ret)
 		{
