@@ -526,7 +526,7 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 END_MESSAGE_MAP()
 
 static int g_pointSize = 85;
-static CString g_fontName = "Tahoma";
+static CString g_fontName = L"Tahoma";
 
 void NListView::ResetFont()
 {
@@ -2922,6 +2922,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		else if ((iSubItem >= 1) && (iSubItem <= 5))
 		{
+			USES_CONVERSION;
 			if (iSubItem == 1)
 			{
 				char datebuff[32];
@@ -2931,11 +2932,11 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					MyCTime tt(m->m_timeDate);
 					if (!m_gmtTime)
 					{
-						CStringA lDateTime = tt.FormatLocalTm(m_format);
+						CStringA lDateTime = W2A(tt.FormatLocalTm(m_format));
 						strcpy(datebuff, (LPCSTR)lDateTime);
 					}
 					else {
-						CStringA lDateTime = tt.FormatGmtTm(m_format);
+						CStringA lDateTime = W2A(tt.FormatGmtTm(m_format));
 						strcpy(datebuff, (LPCSTR)lDateTime);
 					}
 				}
@@ -5296,7 +5297,7 @@ void NListView::ClearDescView()
 	FileUtils::RemoveDir(CMainFrame::GetMboxviewTempPath());
 	m_curFile.Empty();
 
-	CString url = "about:blank";
+	CString url = L"about:blank";
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
 
 	{
@@ -10325,6 +10326,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	int cnt = 0;
 	int mergedFileCnt = 0;
 	int i;
+	USES_CONVERSION;
 	for (i = 0; i < in_array.GetCount(); i++)
 	{
 		if (mergeScript.GetLength() > maxCmdLineLength)
@@ -10364,7 +10366,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 
 				// TODO: is this working? Verify
-				CStringA errorTextA = errorText;
+				CStringA errorTextA = W2A(errorText);
 
 				fpMergeError.Write(errorTextA, errorTextA.GetLength());
 
@@ -10392,7 +10394,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		{
 			CString line;
 			line.Format(L"File \"%s\" not found and it will not be merged\n", fileName);
-			CStringA lineA = line;
+			CStringA lineA = W2A(line);
 			fpMergeError.Write(lineA, lineA.GetLength());
 		}
 	}
@@ -11557,7 +11559,8 @@ td:nth-child(2) { text-align: center; white-space:nowrap;}\n\
 		int cnt = (int)selectedMailsIndexList->GetCount();
 
 		char datebuff[32];
-		CStringA format = textConfig.m_dateFormat;
+		USES_CONVERSION;
+		CStringA format = W2A(textConfig.m_dateFormat);
 
 		CString textFile;
 		CString fileName;
@@ -12393,7 +12396,9 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 		{
 			contentSubType = body->m_contentType.Mid(pos + 1);
 			contentTypeMain = body->m_contentType.Left(pos);
-			CString contentTypeExt = "." + contentSubType;
+			USES_CONVERSION;
+			CString contentSubTypeW = A2W(contentSubType);
+			CString contentTypeExt = L"." + contentSubTypeW;
 			isValidContentTypeExtension = GdiUtils::IsSupportedPictureFileExtension(contentTypeExt);
 			contentTypeExtension = contentTypeExt;
 
@@ -12412,12 +12417,13 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 		if ((contentTypeMain.CompareNoCase("image") == 0) || 
 			(body->m_contentDisposition.CompareNoCase("inline") == 0) || isOctetStream)
 		{
+			USES_CONVERSION;
 			BOOL isValidAttachmentNameExtension = FALSE;
 			int pos = body->m_attachmentName.ReverseFind('.');
 			if (pos >= 0)
 			{
 				nameExtension = body->m_attachmentName.Mid(pos);
-				CString nameExtensionW = nameExtension;
+				CString nameExtensionW = A2W(nameExtension);
 				isValidAttachmentNameExtension = GdiUtils::IsSupportedPictureFileExtension(nameExtensionW);
 			}
 
@@ -12426,7 +12432,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 			if (pos >= 0)
 			{
 				idExtension = body->m_contentId.Mid(pos);
-				CString idExtensionW = idExtension;
+				CString idExtensionW = A2W(idExtension);
 				isValidContentIdExtension = GdiUtils::IsSupportedPictureFileExtension(idExtensionW);
 			}
 
@@ -12435,7 +12441,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 			if (pos >= 0)
 			{
 				locationExtension = body->m_contentLocation.Mid(pos);
-				CString idExtensionW = idExtension;
+				CString idExtensionW = A2W(idExtension);
 				isValidContentLocationExtension = GdiUtils::IsSupportedPictureFileExtension(idExtensionW);
 			}
 
@@ -18308,7 +18314,8 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &
 	BOOL cret = FileUtils::CreateDir(labelsCachePath);
 
 	CFile fp;
-	CString labelW = label;
+	USES_CONVERSION;
+	CString labelW = A2W(label);
 	CString labelListFilePath = labelsCachePath + L"\\" + labelW + L".mboxlist";
 
 	_int64 mailFileSize = MboxMail::s_fSize;
@@ -19843,7 +19850,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 
 							CString errorText;
 							CString imageCachePath;
-							CString rootPrintSubFolder = "ImageCache";
+							CString rootPrintSubFolder = L"ImageCache";
 							//CString targetPrintSubFolder = baseFileArchiveName;
 							CString targetPrintSubFolder;
 							if (NListView::m_exportMailsMode)
@@ -20030,12 +20037,12 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 	CString errorText;
 	CString attachmentCachePath;
 	CStringW printCachePathW;
-	CString rootPrintSubFolder = "AttachmentCache";
+	CString rootPrintSubFolder = L"AttachmentCache";
 	CString targetPrintSubFolder;
 	if (NListView::m_exportMailsMode)
 	{
-		rootPrintSubFolder = "ExportCache";
-		targetPrintSubFolder = "Attachments";
+		rootPrintSubFolder = L"ExportCache";
+		targetPrintSubFolder = L"Attachments";
 	}
 
 	if (attachmentFolderPath == 0)

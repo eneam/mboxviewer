@@ -779,7 +779,7 @@ void CFindAdvancedDlg::OnBnClickedButtonHelp()
 {
 	// TODO: Add your control notification handler code here
 
-	CString helpFileName = "SearchHelp.pdf";
+	CString helpFileName = L"SearchHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
 

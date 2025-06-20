@@ -218,7 +218,7 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 					CStringA charset;
 					UINT charsetId = 0;
 					DWORD error;
-					CString Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId, toCharsetId, error);
+					CStringA Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId, toCharsetId, error);
 					// TODO: what about charset and charsetId :)
 					m_Name = Name;
 					m_NamePageCode = charsetId;

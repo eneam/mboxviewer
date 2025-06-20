@@ -1254,14 +1254,14 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 {
 	// TODO: Hash Table ??
 	CArray<CString> cacheFolderList;
-	cacheFolderList.Add("PrintCache");
-	cacheFolderList.Add("ImageCache");
-	cacheFolderList.Add("AttachmentCache");
-	cacheFolderList.Add("EmlCache");
-	cacheFolderList.Add("LabelCache");
-	cacheFolderList.Add("ArchiveCache");
-	cacheFolderList.Add("ListCache");
-	cacheFolderList.Add("MergeCache");
+	cacheFolderList.Add(L"PrintCache");
+	cacheFolderList.Add(L"ImageCache");
+	cacheFolderList.Add(L"AttachmentCache");
+	cacheFolderList.Add(L"EmlCache");
+	cacheFolderList.Add(L"LabelCache");
+	cacheFolderList.Add(L"ArchiveCache");
+	cacheFolderList.Add(L"ListCache");
+	cacheFolderList.Add(L"MergeCache");
 	//NTreeView::SetupCacheFolderList(cacheFolderList);  // should use this but it would need to include NTreeView.h
 
 	rootFolder.TrimRight(L"\\");

@@ -82,6 +82,8 @@
 
 #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 
+#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
+
 #if 0
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions

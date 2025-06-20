@@ -516,7 +516,7 @@ void FolderContext::SetFolderPath(CString &folderPath)
 
 	if (m_rootDataFolderPath.IsEmpty())
 	{
-		m_dataFolderPath = path + "UMBoxViewer\\";
+		m_dataFolderPath = path + L"UMBoxViewer\\";
 		BOOL isReadOnly = FileUtils::IsReadonlyFolder(m_dataFolderPath);
 		if (!isReadOnly)
 		{
@@ -525,7 +525,7 @@ void FolderContext::SetFolderPath(CString &folderPath)
 		else
 		{
 			m_rootDataFolderPath = FileUtils::CreateMboxviewLocalAppPath();
-			m_dataFolderPath = m_rootDataFolderPath + "UMBoxViewer\\";
+			m_dataFolderPath = m_rootDataFolderPath + L"UMBoxViewer\\";
 			BOOL isReadOnly = FileUtils::IsReadonlyFolder(m_rootDataFolderPath);
 			if (isReadOnly)
 			{
@@ -537,7 +537,7 @@ void FolderContext::SetFolderPath(CString &folderPath)
 	}
 	else
 	{
-		m_dataFolderPath = m_rootDataFolderPath + "UMBoxViewer\\";
+		m_dataFolderPath = m_rootDataFolderPath + L"UMBoxViewer\\";
 		if (!m_rootDataFolderPathSubFolderConfig.IsEmpty())
 			m_dataFolderPath.Append(m_rootDataFolderPathSubFolderConfig);
 	}
@@ -1568,7 +1568,8 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"format");
 
-	CStringA format = MboxMail::GetDateFormat(iFormat);
+	USES_CONVERSION;
+	CStringA format = W2A(MboxMail::GetDateFormat(iFormat));
 	CStringA to, from, subject, date, date_orig;
 	CStringA date_fromField;
 	CStringA cc, bcc;
@@ -2113,7 +2114,8 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 				{
 					// 
 					p = MimeParser::GetMultiLine(p, e, line);
-					CString contTypeVal = line.Mid(cContentTypeLen);
+					USES_CONVERSION;
+					CString contTypeVal = A2W(line.Mid(cContentTypeLen));
 					contTypeVal.Trim();
 					// find first ';' separator
 					int pos = contTypeVal.Find(';');
@@ -4020,7 +4022,8 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bDate)
 	{
 		char datebuff[32];
-		CStringA format = MboxMail::GetDateFormat(csvConfig.m_dateFormat);
+		USES_CONVERSION;
+		CStringA format = W2A(MboxMail::GetDateFormat(csvConfig.m_dateFormat));
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -4964,7 +4967,8 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	{
 		char datebuff[32];
 
-		CStringA format = textConfig.m_dateFormat;
+		USES_CONVERSION;
+		CStringA format = W2A(textConfig.m_dateFormat);
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -5010,7 +5014,8 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			char datebuff[32];
 
-			CStringA format = textConfig.m_dateFormat;
+			USES_CONVERSION;
+			CStringA format = W2A(textConfig.m_dateFormat);
 
 			datebuff[0] = 0;
 			if (m->m_timeDate >= 0)
@@ -5031,8 +5036,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (fldCnt)
 				outbuf.Append("\r\n");
 
-
-			CStringA attachmentFileNamePrefixA = attachmentFileNamePrefix;
+			CStringA attachmentFileNamePrefixA = W2A(attachmentFileNamePrefix);
 			CStringA label;
 			label.Format("ATTACHMENTS (%s):", (LPCSTR)attachmentFileNamePrefixA);
 			fldName = (char*)(LPCSTR)label;
@@ -5278,7 +5282,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	CString errorText;
 	CString attachmentCachePath;
 	CStringW printCachePathW;
-	CString rootPrintSubFolder = "AttachmentCache";
+	CString rootPrintSubFolder = L"AttachmentCache";
 	CString targetPrintSubFolder;
 	if (NListView::m_exportMailsMode)
 	{
@@ -6520,12 +6524,13 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldName
 		int nameFontSize = hdrFieldConfig.m_HdrFldFontName.m_nFontSize;
 		int textFontSize = hdrFieldConfig.m_HdrFldFontText.m_nFontSize;
 		//
-		CStringA nameFont = hdrFieldConfig.m_HdrFldFontName.m_fontName;
-		CStringA textFont = hdrFieldConfig.m_HdrFldFontText.m_fontName;
+		USES_CONVERSION;
+		CStringA nameFont = W2A(hdrFieldConfig.m_HdrFldFontName.m_fontName);
+		CStringA textFont = W2A(hdrFieldConfig.m_HdrFldFontText.m_fontName);
 
 		//
-		CStringA nameFontFamily = hdrFieldConfig.m_HdrFldFontName.m_genericFontName;
-		CStringA textFontFamily = hdrFieldConfig.m_HdrFldFontText.m_genericFontName;
+		CStringA nameFontFamily = W2A(hdrFieldConfig.m_HdrFldFontName.m_genericFontName);
+		CStringA textFontFamily = W2A(hdrFieldConfig.m_HdrFldFontText.m_genericFontName);
 		//
 
 		CStringA nameFontWeight;
@@ -6694,7 +6699,8 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	{
 		char datebuff[32];
 
-		CStringA format = textConfig.m_dateFormat;
+		USES_CONVERSION;
+		CStringA format = W2A(textConfig.m_dateFormat);
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -6745,8 +6751,8 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			//encodeTextAsHtml(tmpbuf);
 
-
-			CStringA attachmentFileNamePrefixA = attachmentFileNamePrefix;
+			USES_CONVERSION;
+			CStringA attachmentFileNamePrefixA = W2A(attachmentFileNamePrefix);
 			CStringA label;
 			label.Format("ATTACHMENTS (%s):", (LPCSTR)attachmentFileNamePrefixA);
 			fldName = (char*)(LPCSTR)label;
@@ -8184,7 +8190,8 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		}
 
 		const char *fileNameA = (LPCSTR)body->m_attachmentName;
-		CString fileName = (LPCSTR)body->m_attachmentName;;
+		USES_CONVERSION;
+		CString fileName = A2W(body->m_attachmentName);
 		CFile fp;
 		CFileException ExError;
 		if (fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
@@ -8988,7 +8995,7 @@ void MboxMail::ReleaseResources(BOOL updateRegistry)
 	{
 		MboxMail::m_HintConfig.SaveToRegistry();
 
-		CString processpath = "";
+		CString processpath = L"";
 		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"processPath", processpath);
 	}
 }
@@ -10623,7 +10630,7 @@ int MboxMail::MakeFileNameFromMailArchiveName(int fileType, CString &fileName, C
 	FileUtils::SplitFilePath(mailArchiveFileName, driveName, directory, fileNameBase, fileNameExtention);
 
 	CString printCachePath;
-	CString rootPrintSubFolder = "PrintCache";
+	CString rootPrintSubFolder = L"PrintCache";
 	if (NListView::m_exportMailsMode)
 		rootPrintSubFolder = L"ExportCache";
 
@@ -10633,13 +10640,13 @@ int MboxMail::MakeFileNameFromMailArchiveName(int fileType, CString &fileName, C
 	}
 
 	if (fileType == 0)
-		fileName = printCachePath + "\\" + fileNameBase + ".txt";
+		fileName = printCachePath + L"\\" + fileNameBase + L".txt";
 	else if (fileType == 1)
-		fileName = printCachePath + "\\" + fileNameBase + ".htm";
+		fileName = printCachePath + L"\\" + fileNameBase + L".htm";
 	else if (fileType == 2)
-		fileName = printCachePath + "\\" + fileNameBase + ".pdf";
+		fileName = printCachePath + L"\\" + fileNameBase + L".pdf";
 	else if (fileType == 3)
-		fileName = printCachePath + "\\" + fileNameBase + ".csv";
+		fileName = printCachePath + L"\\" + fileNameBase + L".csv";
 
 	fileExists = FileUtils::PathFileExist(fileName);
 
@@ -10662,7 +10669,7 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 	}
 
 	CString printCachePath;
-	CString rootPrintSubFolder = "PrintCache";
+	CString rootPrintSubFolder = L"PrintCache";
 	if (NListView::m_exportMailsMode)
 		rootPrintSubFolder = L"ExportCache";
 	BOOL retval = CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
@@ -10702,13 +10709,13 @@ int MboxMail::MakeFileNameFromMailHeader(int mailIndex, int fileType, CString &f
 		retMakeFileName = MboxMail::MakeFileName(m, &pFrame->m_NamePatternParams, pFrame->m_NamePatternParams.m_nameTemplateCnf, mailFileNameBase, pFrame->m_NamePatternParams.m_nFileNameFormatSizeLimit, mailFileNameBaseA);
 
 	if (fileType == 0)
-		fileName = printCachePath + "\\" + mailFileNameBase + ".txt";
+		fileName = printCachePath + L"\\" + mailFileNameBase + L".txt";
 	else if (fileType == 1)
-		fileName = printCachePath + "\\" + mailFileNameBase + ".htm";
+		fileName = printCachePath + L"\\" + mailFileNameBase + L".htm";
 	else if (fileType == 2)
-		fileName = printCachePath + "\\" + mailFileNameBase + ".pdf";
+		fileName = printCachePath + L"\\" + mailFileNameBase + L".pdf";
 	else if (fileType == 3)
-		fileName = printCachePath + "\\" + mailFileNameBase + ".csv";
+		fileName = printCachePath + L"\\" + mailFileNameBase + L".csv";
 
 	fileExists = FileUtils::PathFileExist(fileName);
 

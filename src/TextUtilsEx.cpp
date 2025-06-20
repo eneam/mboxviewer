@@ -1129,8 +1129,8 @@ BOOL TextUtilsEx::id2charset(UINT id, std::string &charset)
 
 int TextUtilsEx::showCodePageTable(CString &path)
 {
-	CString codePageIdsFile = "WindowsCodePageIds.htm";
-	CString fullPath = path + "\\" + codePageIdsFile;
+	CString codePageIdsFile = L"WindowsCodePageIds.htm";
+	CString fullPath = path + L"\\" + codePageIdsFile;
 
 	CFile fp;
 	CFileException ExError;
@@ -1798,9 +1798,10 @@ void TextUtilsEx::SplitStringA(const CStringA& strIn, const CStringA& delim, CSt
 	while (!strToken.IsEmpty())
 	{
 		strToken.Trim(" \t");
+		USES_CONVERSION;
 		if (!strToken.IsEmpty())
 		{
-			CString strTokenW = strToken;
+			CString strTokenW = A2W(strToken);
 			a.Add(strTokenW);
 		}
 		strToken = strIn.Tokenize(delim, position);

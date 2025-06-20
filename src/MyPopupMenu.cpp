@@ -340,6 +340,7 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		dc.Attach(lpDrawItemStruct->hDC);
 		CRect rc = rcItem;
 		rc.left += textOffset;
+		rc.bottom -= 3;
 
 		UINT nFlags = BF_BOTTOM | BF_FLAT;
 		dc.DrawEdge(&rc, EDGE_ETCHED, nFlags);

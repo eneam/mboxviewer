@@ -718,7 +718,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			language = L"Chinese-Simplified";
 		}
 
-		CString languageName = language.GetAt(0);
+		CString languageName(language.GetAt(0));
 		languageName.MakeUpper();
 		languageName.Append(language.Right(language.GetLength() - 1));
 
@@ -2249,7 +2249,7 @@ void CMainFrame::OnBnClickedArchiveList()
 
 #ifdef _DEBUG
 	CMenu* menu = (MyPopupMenu*)this->GetMenu();
-	CString title = "SetNewMenu ";
+	CString title = L"SetNewMenu ";
 	int index = 0;
 	//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
 	UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;
@@ -2393,7 +2393,7 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 {
 	// TODO: Add your control notification handler code here
 
-	CString helpFileName = "MailListsInfo.pdf";
+	CString helpFileName = L"MailListsInfo.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
 
@@ -2486,7 +2486,7 @@ void CMainFrame::OnHelpMboxviewhelp()
 {
 	// TODO: Add your command handler code here
 
-	CString helpFileName = "MboxviewerHelp.pdf";
+	CString helpFileName = L"MboxviewerHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
 
@@ -4091,7 +4091,8 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 
 void CSVFILE_CONFIG::SaveToRegistry()
 {
-	CString AttachmentNamesSeparatorString = m_AttachmentNamesSeparatorString;
+	USES_CONVERSION;
+	CString AttachmentNamesSeparatorString = A2W(m_AttachmentNamesSeparatorString);
 
 	CString section_csv = CString(sz_Software_mboxview) + L"\\PrintConfig\\CSV";
 
@@ -4124,7 +4125,7 @@ INT_PTR CMainFrame::SelectFolder(CString &folder, CString *path)
 	fileNameBuffer[0] = 0;
 
 	//CString  sFilters = "Mail Files (*.txt)|*.txt||";
-	CString  sFilters = "Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
+	CString  sFilters = L"Mail Files (*.mbox;*eml)|*.mbox;*.eml||";
 
 	DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	MySelectFolder dlgFile(TRUE, NULL, NULL, dwFlags, sFilters);
@@ -4647,8 +4648,8 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 				url.Append(colorStr);
 				url.Append(";}</style></head><body></body></html><br>");
 			}
-
-			CString wurl = url;
+			USES_CONVERSION;
+			CString wurl = A2W(url);
 			pMsgView->m_browser.Navigate(wurl, NULL);
 			pMsgView->UpdateLayout();
 			pMsgView->PostMessage(WM_PAINT);
@@ -5660,7 +5661,9 @@ BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 	// Convert to wchar ???  // FIXMEFIXME
 	CStringA section = "[MailService]\r\n";
 	fp.Write(section, section.GetLength());
-	CStringA fld = "ActiveMailService=" + m_mailDB.ActiveMailService + "\r\n";
+	USES_CONVERSION;
+	CStringA ActiveMailServiceA = W2A(m_mailDB.ActiveMailService);
+	CStringA fld = "ActiveMailService=" + ActiveMailServiceA + "\r\n";
 	fp.Write(fld, fld.GetLength());
 
 	WriteMTPServerConfig(m_mailDB.GmailSMTPConfig, fp);
@@ -6893,7 +6896,7 @@ void CMainFrame::OnFileFontconfig()
 
 		CMenu* menu = GetMenu();
 
-		CString title = "SetNewMenu ";
+		CString title = L"SetNewMenu ";
 		int index = 0;
 		//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
 		UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;
@@ -6914,7 +6917,7 @@ void CMainFrame::SetNewMenu()
 #if 1
 	MyPopupMenu* menu = (MyPopupMenu*)this->GetMenu();
 
-	CString title = "SetNewMenu ";
+	CString title = L"SetNewMenu ";
 	int index = 0;
 	//UINT mask = MyPopupMenu::MenuItemInfoMaskTypeAllSet;
 	UINT mask = MyPopupMenu::MenuItemInfoMaskFTypeAllSet;

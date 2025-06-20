@@ -1279,7 +1279,8 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 // Needs more investigation. More error checking, etc
 int HtmlUtils::CreateTranslationHtml(CString& inputFile, CString& targetLanguageCode, CString& outputHtmlFile)
 {
-	CStringA languageCode = targetLanguageCode;
+	USES_CONVERSION;
+	CStringA languageCode = W2A(targetLanguageCode);
 	SimpleString txt;
 	BOOL retval = FileUtils::ReadEntireFile(inputFile, txt);
 
@@ -1290,7 +1291,7 @@ int HtmlUtils::CreateTranslationHtml(CString& inputFile, CString& targetLanguage
 	TextUtilsEx::EncodeAsHtmlText(inData, inDataLen, &encbuff);
 
 
-CStringA htmlDocHdrPlusStyle = LR"----(
+CStringA htmlDocHdrPlusStyle = R"----(
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
@@ -1341,21 +1342,21 @@ body {
 
 )----";
 
-CStringA htmlBodyDivTranslate = LR"----(
+CStringA htmlBodyDivTranslate = R"----(
 
 <!-- Text that WILL be translated -->
 <div id="google_translate_element"></div>
 
 )----";
 
-CStringA htmlBodyAllsDone = LR"----(
+CStringA htmlBodyAllsDone = R"----(
 <br>
 </body>
 </html>
 )----";
 
 
-CString htmlBodyDicNoTranslate = LR"----(
+CStringA htmlBodyDicNoTranslate = R"----(
 
 <!-- Text that will NOT be translated -->
 <div class="notranslate">

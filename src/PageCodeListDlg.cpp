@@ -521,7 +521,7 @@ void PageCodeListDlg::OnTimer(UINT_PTR nIDEvent)
 }
 
 static int g_pointSize = 85;
-static CString g_fontName = "Tahoma";
+static CString g_fontName = L"Tahoma";
 
 void PageCodeListDlg::ResetFont()
 {

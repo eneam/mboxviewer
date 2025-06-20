@@ -742,7 +742,7 @@ void HtmlPdfHdrConfigDlg::OnBnClickedHdrFldHelp()
 {
 	// TODO: Add your control notification handler code here
 
-	CString helpFileName = "HTML_PDF_HdrConfigHelp.pdf";
+	CString helpFileName = L"HTML_PDF_HdrConfigHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
 

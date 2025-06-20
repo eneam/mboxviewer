@@ -255,7 +255,7 @@ int CALLBACK MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 
 
 static int g_pointSize = 85;
-static CString g_fontName = "Tahoma";
+static CString g_fontName = L"Tahoma";
 
 void NTreeView::ResetFont()
 {
@@ -2610,7 +2610,7 @@ void NTreeView::OpenLastSelection(MailSelectionInfo* mailSelection)
 	PrintFolderNames(0, TRUE);
 
 #ifdef  _DEBUG
-	CString pathTest = "F:\\Thunderbird\\Project.sbd\\Sub-project-1.sbd";
+	CString pathTest = L"F:\\Thunderbird\\Project.sbd\\Sub-project-1.sbd";
 	//pathTest = "F:\\Thunderbird\\";
 	//pathTest = "fake";
 
@@ -5377,7 +5377,8 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 			}
 
 			// Multiple sequential slash chracters will be replaced with just one
-			CString validLabel = v;
+			USES_CONVERSION;
+			CString validLabel = A2W(v);
 			v.Empty();
 			int valen = (int)va.GetSize();
 			for (ii = 0; ii < valen; ii++)
@@ -5532,8 +5533,8 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 
 		_ASSERTE(MboxMail::s_mails_label.GetCount() <= mailCnt); // FIXMEFIXME it is normal to have multiple labels per one mail
 
-
-		CStringA labelsCachePathA = labelsCachePath;
+		USES_CONVERSION;
+		CStringA labelsCachePathA = W2A(labelsCachePath);
 		int r = pListView->SaveAsLabelFile(&MboxMail::s_mails_label, labelsCachePath, iter.element->GetLabelA(), iter.element->GetCodePage(), iter.element->m_mappedLabelPath, errorText);
 		if (r < 0) {
 			MboxMail::assert_unexpected();

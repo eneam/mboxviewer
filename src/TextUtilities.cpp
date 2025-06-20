@@ -574,8 +574,10 @@ static std::vector<CString>* CreateArray(const char *arr[])
 {
 	std::vector<CString>* cm = new std::vector<CString>;
 	const char **mp = arr;
+	USES_CONVERSION;
 	while (**mp) {
-		cm->push_back(*mp);
+		CString mpW = A2W(*mp);
+		cm->push_back(mpW);
 		mp++;
 	}
 	return cm;
