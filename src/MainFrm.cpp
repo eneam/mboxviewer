@@ -448,8 +448,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Just a test of not related functionality :)
 	//BOOL ret = MboxMail::Test_MergeTwoMailLists();
 
-
-
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
@@ -745,7 +743,15 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 //	cs.style = WS_OVERLAPPED | WS_CAPTION | FWS_ADDTOTITLE
 //		| WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
-	cs.dwExStyle &= ~(WS_EX_MDICHILD|WS_EX_CLIENTEDGE);
+	if (CmboxviewApp::m_isRTL == FALSE)
+	{
+		cs.dwExStyle &= ~(WS_EX_MDICHILD | WS_EX_CLIENTEDGE);
+	}
+	else
+	{
+		cs.dwExStyle &= ~(WS_EX_MDICHILD | WS_EX_CLIENTEDGE | WS_EX_LTRREADING | WS_EX_RTLREADING | WS_EX_LEFT);
+		cs.dwExStyle |= WS_EX_LAYOUTRTL| WS_EX_RIGHT;
+	}
 	cs.lpszClass = AfxRegisterWndClass(0);
 
 	return TRUE;
@@ -4091,8 +4097,8 @@ void CSVFILE_CONFIG::Copy(CSVFILE_CONFIG &src)
 
 void CSVFILE_CONFIG::SaveToRegistry()
 {
-	USES_CONVERSION;
-	CString AttachmentNamesSeparatorString = A2W(m_AttachmentNamesSeparatorString);
+	MY_USES_CONVERSION;
+	CString AttachmentNamesSeparatorString = MYA2W(m_AttachmentNamesSeparatorString);
 
 	CString section_csv = CString(sz_Software_mboxview) + L"\\PrintConfig\\CSV";
 
@@ -4614,6 +4620,7 @@ void CMainFrame::OnFileColorconfig()
 
 LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 {
+	MY_USES_CONVERSION;
 	static int flag = 0;
 
 	int selectedColorStyle = (int)wParam;
@@ -4648,8 +4655,7 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 				url.Append(colorStr);
 				url.Append(";}</style></head><body></body></html><br>");
 			}
-			USES_CONVERSION;
-			CString wurl = A2W(url);
+			CString wurl = MYA2W(url);
 			pMsgView->m_browser.Navigate(wurl, NULL);
 			pMsgView->UpdateLayout();
 			pMsgView->PostMessage(WM_PAINT);
@@ -5636,6 +5642,7 @@ void CMainFrame::OpenTranslatedHelpFile(CString& helpFileName, HWND h)
 // Convert to Unicode wchar ???  // FIXMEFIXME
 BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 {
+	MY_USES_CONVERSION;
 	CFile fp;
 	CFileException ExError;
 	if (!fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))
@@ -5661,8 +5668,8 @@ BOOL CMainFrame::CreateMailDbFile(MailDB &m_mailDB, CString &fileName)
 	// Convert to wchar ???  // FIXMEFIXME
 	CStringA section = "[MailService]\r\n";
 	fp.Write(section, section.GetLength());
-	USES_CONVERSION;
-	CStringA ActiveMailServiceA = W2A(m_mailDB.ActiveMailService);
+
+	CStringA ActiveMailServiceA = MYW2A(m_mailDB.ActiveMailService);
 	CStringA fld = "ActiveMailService=" + ActiveMailServiceA + "\r\n";
 	fp.Write(fld, fld.GetLength());
 

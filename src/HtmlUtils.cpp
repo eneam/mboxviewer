@@ -370,8 +370,8 @@ BOOL HtmlUtils::CreateHTMLDocument(IHTMLDocument2 **lpDocument, SimpleString *in
 	//int deb = 1;
 
 #if 0
-	USES_CONVERSION;
-	BSTR  bstr = SysAllocString(A2W(inbuf->Data())); // efficient but relies on stack and not heap; but what is Data() is > stack ?
+	MY_USES_CONVERSION;
+	BSTR  bstr = SysAllocString(MYA2W(inbuf->Data())); // efficient but relies on stack and not heap; but what is Data() is > stack ?
 	int bstrLen = SysStringByteLen(bstr);
 	int wlen = wcslen(bstr);
 #else
@@ -1279,8 +1279,8 @@ int HtmlUtils::ReplaceAllHtmlTags(char *inData, int inDataLen, SimpleString *out
 // Needs more investigation. More error checking, etc
 int HtmlUtils::CreateTranslationHtml(CString& inputFile, CString& targetLanguageCode, CString& outputHtmlFile)
 {
-	USES_CONVERSION;
-	CStringA languageCode = W2A(targetLanguageCode);
+	MY_USES_CONVERSION;
+	CStringA languageCode = MYW2A(targetLanguageCode);
 	SimpleString txt;
 	BOOL retval = FileUtils::ReadEntireFile(inputFile, txt);
 

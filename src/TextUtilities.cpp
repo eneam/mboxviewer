@@ -572,11 +572,12 @@ void TextUtilities::MakeConversionTable(const char* from, const char* to, char* 
 
 static std::vector<CString>* CreateArray(const char *arr[])
 {
+	MY_USES_CONVERSION;
 	std::vector<CString>* cm = new std::vector<CString>;
 	const char **mp = arr;
-	USES_CONVERSION;
+
 	while (**mp) {
-		CString mpW = A2W(*mp);
+		CString mpW = MYA2W(*mp);
 		cm->push_back(mpW);
 		mp++;
 	}

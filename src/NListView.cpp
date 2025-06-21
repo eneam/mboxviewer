@@ -2732,7 +2732,7 @@ void NListView::ResetSize()
 void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
 #define MarkColor	RGB(220, 20, 60)
-
+	MY_USES_CONVERSION;
 	LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)pNMHDR;
 	NMCUSTOMDRAW   &nmcd = lplvcd->nmcd;
 	MboxMail *m;
@@ -2922,7 +2922,6 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		else if ((iSubItem >= 1) && (iSubItem <= 5))
 		{
-			USES_CONVERSION;
 			if (iSubItem == 1)
 			{
 				char datebuff[32];
@@ -2932,11 +2931,11 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					MyCTime tt(m->m_timeDate);
 					if (!m_gmtTime)
 					{
-						CStringA lDateTime = W2A(tt.FormatLocalTm(m_format));
+						CStringA lDateTime = MYW2A(tt.FormatLocalTm(m_format));
 						strcpy(datebuff, (LPCSTR)lDateTime);
 					}
 					else {
-						CStringA lDateTime = W2A(tt.FormatGmtTm(m_format));
+						CStringA lDateTime = MYW2A(tt.FormatGmtTm(m_format));
 						strcpy(datebuff, (LPCSTR)lDateTime);
 					}
 				}
@@ -10262,6 +10261,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray &out_array, CString &mergedFilePrefix, CString &targetPrintFolderPath, 
 	CString& pdfboxJarFileName, CString &errortext)
 {
+	MY_USES_CONVERSION;
 	CString mergeScript;
 	CStringA mergeScriptA;
 	CStringA echoCmd = "@echo off\n\n";
@@ -10326,7 +10326,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 	int cnt = 0;
 	int mergedFileCnt = 0;
 	int i;
-	USES_CONVERSION;
+
 	for (i = 0; i < in_array.GetCount(); i++)
 	{
 		if (mergeScript.GetLength() > maxCmdLineLength)
@@ -10366,7 +10366,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
 
 				// TODO: is this working? Verify
-				CStringA errorTextA = W2A(errorText);
+				CStringA errorTextA = MYW2A(errorText);
 
 				fpMergeError.Write(errorTextA, errorTextA.GetLength());
 
@@ -10394,7 +10394,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		{
 			CString line;
 			line.Format(L"File \"%s\" not found and it will not be merged\n", fileName);
-			CStringA lineA = W2A(line);
+			CStringA lineA = MYW2A(line);
 			fpMergeError.Write(lineA, lineA.GetLength());
 		}
 	}
@@ -11421,6 +11421,7 @@ int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 int NListView::CreateIndexFileForExportedMails_Thread(MailIndexList* selectedMailsIndexList, CString& targetPrintSubFolderName,
 	CString& targetPrintFolderPath)
 {
+	MY_USES_CONVERSION;
 	PRINT_MAIL_GROUP_TO_SEPARATE_PDF_ARGS args;
 
 	if (!NListView::m_exportMailsMode)
@@ -11559,8 +11560,7 @@ td:nth-child(2) { text-align: center; white-space:nowrap;}\n\
 		int cnt = (int)selectedMailsIndexList->GetCount();
 
 		char datebuff[32];
-		USES_CONVERSION;
-		CStringA format = W2A(textConfig.m_dateFormat);
+		CStringA format = MYW2A(textConfig.m_dateFormat);
 
 		CString textFile;
 		CString fileName;
@@ -12353,6 +12353,7 @@ int NListView::FindFilenameCount(std::vector <MailBodyContent*> &contentDetailsA
 
 int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsImageType, MboxMail *m, CStringA &cidName, CString &imageFilePath, MailBodyContent **foundBody, int mailPosition)
 {
+	MY_USES_CONVERSION;
 	if (m == 0)
 	{
 		// TODO: Assert ??
@@ -12396,8 +12397,8 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 		{
 			contentSubType = body->m_contentType.Mid(pos + 1);
 			contentTypeMain = body->m_contentType.Left(pos);
-			USES_CONVERSION;
-			CString contentSubTypeW = A2W(contentSubType);
+
+			CString contentSubTypeW = MYA2W(contentSubType);
 			CString contentTypeExt = L"." + contentSubTypeW;
 			isValidContentTypeExtension = GdiUtils::IsSupportedPictureFileExtension(contentTypeExt);
 			contentTypeExtension = contentTypeExt;
@@ -12417,13 +12418,12 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 		if ((contentTypeMain.CompareNoCase("image") == 0) || 
 			(body->m_contentDisposition.CompareNoCase("inline") == 0) || isOctetStream)
 		{
-			USES_CONVERSION;
 			BOOL isValidAttachmentNameExtension = FALSE;
 			int pos = body->m_attachmentName.ReverseFind('.');
 			if (pos >= 0)
 			{
 				nameExtension = body->m_attachmentName.Mid(pos);
-				CString nameExtensionW = A2W(nameExtension);
+				CString nameExtensionW = MYA2W(nameExtension);
 				isValidAttachmentNameExtension = GdiUtils::IsSupportedPictureFileExtension(nameExtensionW);
 			}
 
@@ -12432,7 +12432,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 			if (pos >= 0)
 			{
 				idExtension = body->m_contentId.Mid(pos);
-				CString idExtensionW = A2W(idExtension);
+				CString idExtensionW = MYA2W(idExtension);
 				isValidContentIdExtension = GdiUtils::IsSupportedPictureFileExtension(idExtensionW);
 			}
 
@@ -12441,7 +12441,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 			if (pos >= 0)
 			{
 				locationExtension = body->m_contentLocation.Mid(pos);
-				CString idExtensionW = A2W(idExtension);
+				CString idExtensionW = MYA2W(idExtension);
 				isValidContentLocationExtension = GdiUtils::IsSupportedPictureFileExtension(idExtensionW);
 			}
 
@@ -18240,6 +18240,7 @@ int NListView::WriteMboxLabelListFile(MailArray* mailsArray, CStringA &gLabel, D
 
 int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &labelName, DWORD labelCodePage, CStringA& mappedLabelName, CString &errorText)
 {
+	MY_USES_CONVERSION;
 	static const char* cCategory = "category ";
 	static const int cCategoryLength = istrlen(cCategory);
 
@@ -18314,8 +18315,8 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &
 	BOOL cret = FileUtils::CreateDir(labelsCachePath);
 
 	CFile fp;
-	USES_CONVERSION;
-	CString labelW = A2W(label);
+
+	CString labelW = MYA2W(label);
 	CString labelListFilePath = labelsCachePath + L"\\" + labelW + L".mboxlist";
 
 	_int64 mailFileSize = MboxMail::s_fSize;

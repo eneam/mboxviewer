@@ -112,6 +112,9 @@ public:
 	static CString m_configFilePath;
 	static BOOL m_configFileLoaded;
 	//static DebugCString m_configFilePath;  // for testing object life cycle
+	//
+	static BOOL m_isRTL; // arabic language is right-to-left
+	static CString m_language;
 
 	static BOOL GetProcessPath(CString &processpath);
 	static HWND GetActiveWndGetSafeHwnd();

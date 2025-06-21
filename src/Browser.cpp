@@ -215,9 +215,9 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 		VARIANT* Flags, VARIANT* TargetFrameName,
 		VARIANT* PostData, VARIANT* Headers, BOOL* Cancel)
 {
+	MY_USES_CONVERSION;
 	_ASSERTE(V_VT(URL) == VT_BSTR);
 	_ASSERTE(Cancel != NULL);
-	USES_CONVERSION;
 
 	CString strURL = V_BSTR(URL);
 	CString locURL = m_ie.GetLocationURL();
@@ -271,7 +271,7 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 
 BOOL CBrowser::OnAmbientProperty(COleControlSite* pSite, DISPID dispid, VARIANT* pvar) 
 {
-USES_CONVERSION;
+MY_USES_CONVERSION;
 	// Change download properties - no java, no scripts...
 	if (dispid == DISPID_AMBIENT_DLCONTROL)
 	{

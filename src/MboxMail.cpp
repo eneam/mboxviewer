@@ -1531,6 +1531,7 @@ int		g_szFromLen;
 
 bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register char *p, DWORD bufSize, _int64 startOffset,  bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent)
 {
+	MY_USES_CONVERSION;
 	static const char *cFromMailBegin = "From ";
 	static const int cFromMailBeginLen = istrlen(cFromMailBegin);
 	static const char *cFrom = "from:";
@@ -1568,8 +1569,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 
 	int iFormat = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_options, L"format");
 
-	USES_CONVERSION;
-	CStringA format = W2A(MboxMail::GetDateFormat(iFormat));
+	CStringA format = MYW2A(MboxMail::GetDateFormat(iFormat));
 	CStringA to, from, subject, date, date_orig;
 	CStringA date_fromField;
 	CStringA cc, bcc;
@@ -2114,8 +2114,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 				{
 					// 
 					p = MimeParser::GetMultiLine(p, e, line);
-					USES_CONVERSION;
-					CString contTypeVal = A2W(line.Mid(cContentTypeLen));
+					CString contTypeVal = MYA2W(line.Mid(cContentTypeLen));
 					contTypeVal.Trim();
 					// find first ';' separator
 					int pos = contTypeVal.Find(';');
@@ -3986,6 +3985,7 @@ int MboxMail::DetermineLimitedLength(SimpleString *str, int maxLinesTextLimit)
 
 int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, CSVFILE_CONFIG &csvConfig)
 {
+	MY_USES_CONVERSION;
 	DWORD error;
 	MboxMail *m;
 	bool separatorNeeded;
@@ -4022,8 +4022,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bDate)
 	{
 		char datebuff[32];
-		USES_CONVERSION;
-		CStringA format = W2A(MboxMail::GetDateFormat(csvConfig.m_dateFormat));
+		CStringA format = MYW2A(MboxMail::GetDateFormat(csvConfig.m_dateFormat));
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -4842,6 +4841,7 @@ int MboxMail::printSingleMailToCSVFile(/*out*/ CFile &fp, int mailPosition, /*in
 
 int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in mail body*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig)
 {
+	MY_USES_CONVERSION;
 	static char *border = "--------------------------------------------------------------------------------\r\n";
 
 	int fldNumb;
@@ -4966,9 +4966,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	if (hdrFieldConfig.m_HdrFldList.IsFldSet(fldNumb))
 	{
 		char datebuff[32];
-
-		USES_CONVERSION;
-		CStringA format = W2A(textConfig.m_dateFormat);
+		CStringA format = MYW2A(textConfig.m_dateFormat);
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -5014,8 +5012,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			char datebuff[32];
 
-			USES_CONVERSION;
-			CStringA format = W2A(textConfig.m_dateFormat);
+			CStringA format = MYW2A(textConfig.m_dateFormat);
 
 			datebuff[0] = 0;
 			if (m->m_timeDate >= 0)
@@ -5036,7 +5033,7 @@ int MboxMail::printMailHeaderToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 			if (fldCnt)
 				outbuf.Append("\r\n");
 
-			CStringA attachmentFileNamePrefixA = W2A(attachmentFileNamePrefix);
+			CStringA attachmentFileNamePrefixA = MYW2A(attachmentFileNamePrefix);
 			CStringA label;
 			label.Format("ATTACHMENTS (%s):", (LPCSTR)attachmentFileNamePrefixA);
 			fldName = (char*)(LPCSTR)label;
@@ -6500,6 +6497,7 @@ void MboxMail::encodeTextAsHtmlLinkLabel(CStringA link, CStringA& htmlLink)
 
 int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldNameFontStyle, CStringA &fldTextFontStyle)
 {
+	MY_USES_CONVERSION;
 	const int lineHeight = 120;
 	if (hdrFieldConfig.m_bHdrFontDflt == 0)
 	{
@@ -6524,13 +6522,13 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldName
 		int nameFontSize = hdrFieldConfig.m_HdrFldFontName.m_nFontSize;
 		int textFontSize = hdrFieldConfig.m_HdrFldFontText.m_nFontSize;
 		//
-		USES_CONVERSION;
-		CStringA nameFont = W2A(hdrFieldConfig.m_HdrFldFontName.m_fontName);
-		CStringA textFont = W2A(hdrFieldConfig.m_HdrFldFontText.m_fontName);
+
+		CStringA nameFont = MYW2A(hdrFieldConfig.m_HdrFldFontName.m_fontName);
+		CStringA textFont = MYW2A(hdrFieldConfig.m_HdrFldFontText.m_fontName);
 
 		//
-		CStringA nameFontFamily = W2A(hdrFieldConfig.m_HdrFldFontName.m_genericFontName);
-		CStringA textFontFamily = W2A(hdrFieldConfig.m_HdrFldFontText.m_genericFontName);
+		CStringA nameFontFamily = MYW2A(hdrFieldConfig.m_HdrFldFontName.m_genericFontName);
+		CStringA textFontFamily = MYW2A(hdrFieldConfig.m_HdrFldFontText.m_genericFontName);
 		//
 
 		CStringA nameFontWeight;
@@ -6568,6 +6566,7 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldName
 
 int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in*/ CFile &fpm, TEXTFILE_CONFIG &textConfig, HdrFldConfig &hdrFieldConfig, CString &attachmentFilesFolderPath)
 {
+	MY_USES_CONVERSION;
 	int fldNumb;
 	int fldNameLength;
 	int fldTxtLength;
@@ -6699,8 +6698,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	{
 		char datebuff[32];
 
-		USES_CONVERSION;
-		CStringA format = W2A(textConfig.m_dateFormat);
+		CStringA format = MYW2A(textConfig.m_dateFormat);
 
 		datebuff[0] = 0;
 		if (m->m_timeDate >= 0)
@@ -6751,8 +6749,7 @@ int MboxMail::printMailHeaderToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		{
 			//encodeTextAsHtml(tmpbuf);
 
-			USES_CONVERSION;
-			CStringA attachmentFileNamePrefixA = W2A(attachmentFileNamePrefix);
+			CStringA attachmentFileNamePrefixA = MYW2A(attachmentFileNamePrefix);
 			CStringA label;
 			label.Format("ATTACHMENTS (%s):", (LPCSTR)attachmentFileNamePrefixA);
 			fldName = (char*)(LPCSTR)label;
@@ -8098,6 +8095,7 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 // TODO: Not used currently and code incomplete. might be used to dynamically create image files
 int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleString *outbuf)
 {
+	MY_USES_CONVERSION;
 	_int64 fileOffset;
 	int bodyCnt = 0;
 
@@ -8190,8 +8188,8 @@ int MboxMail::CreateImgAttachmentFiles(CFile &fpm, int mailPosition, SimpleStrin
 		}
 
 		const char *fileNameA = (LPCSTR)body->m_attachmentName;
-		USES_CONVERSION;
-		CString fileName = A2W(body->m_attachmentName);
+
+		CString fileName = MYA2W(body->m_attachmentName);
 		CFile fp;
 		CFileException ExError;
 		if (fp.Open(fileName, CFile::modeWrite | CFile::modeCreate, &ExError))

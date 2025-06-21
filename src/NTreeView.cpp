@@ -5164,6 +5164,8 @@ int NTreeView::IsGmailLabelFile(CString& mboxFile)
 
 int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 {
+	MY_USES_CONVERSION;
+
 	HWND h = GetSafeHwnd();
 	//MboxMail::ShowHint(HintConfig::MessageRemoveFileHint, h);
 
@@ -5377,8 +5379,7 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 			}
 
 			// Multiple sequential slash chracters will be replaced with just one
-			USES_CONVERSION;
-			CString validLabel = A2W(v);
+			CString validLabel = MYA2W(v);
 			v.Empty();
 			int valen = (int)va.GetSize();
 			for (ii = 0; ii < valen; ii++)
@@ -5533,8 +5534,8 @@ int  NTreeView::CreateGmailLabelFiles(HTREEITEM hItem)
 
 		_ASSERTE(MboxMail::s_mails_label.GetCount() <= mailCnt); // FIXMEFIXME it is normal to have multiple labels per one mail
 
-		USES_CONVERSION;
-		CStringA labelsCachePathA = W2A(labelsCachePath);
+		MY_USES_CONVERSION;
+		CStringA labelsCachePathA = MYW2A(labelsCachePath);
 		int r = pListView->SaveAsLabelFile(&MboxMail::s_mails_label, labelsCachePath, iter.element->GetLabelA(), iter.element->GetCodePage(), iter.element->m_mappedLabelPath, errorText);
 		if (r < 0) {
 			MboxMail::assert_unexpected();

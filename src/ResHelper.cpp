@@ -76,17 +76,19 @@ CString ResHelper::resourceFile = L"rc.txt";
 HANDLE ResHelper::hResourceFile = INVALID_HANDLE_VALUE;
 
 
-void ResHelper::FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList)
+int ResHelper::FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList)
 {
 	const wchar_t* p = (LPCWSTR)str;
 	wchar_t c;
 	const wchar_t* pbegin;
 	const wchar_t* pend;
 	CString spec;
+	int specifierCnt = 0;
 	conversionSpecifiersList.Empty();
+	register wchar_t c_amper = L'%';
 	while ((c = *p) != 0)
 	{
-		if (c != L'%')
+		if (c != c_amper)
 		{
 			p++;
 			continue;
@@ -107,18 +109,22 @@ void ResHelper::FindConversionSpecifiers(CString& str, CString& conversionSpecif
 			}
 			pend = p;
 			if (!conversionSpecifiersList.IsEmpty())
+			{
 				conversionSpecifiersList.AppendChar(L' ');
+			}
 			conversionSpecifiersList.Append(pbegin, (int)(pend - pbegin + 1));
+			specifierCnt++;
 			break;
 		}
 	}
+	return specifierCnt;
 }
 
-void ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray)
+int ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray)
 {
 	const wchar_t* p = (LPCWSTR)str;
 	wchar_t c;
-	const wchar_t *pbegin;
+	const wchar_t* pbegin;
 	const wchar_t* pend;
 	CString spec;
 	while ((c = *p) != 0)
@@ -149,6 +155,7 @@ void ResHelper::FindConversionSpecifiers(CString& str, CStringArray& conversionS
 			break;
 		}
 	}
+	return (int)conversionSpecifiersArray.GetCount();
 }
 
 BOOL ResHelper::CompareCStringArrays(CStringArray &ar1, CStringArray& ar2)
@@ -463,6 +470,11 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
 
+	if (CmboxviewApp::m_isRTL == TRUE)
+	{
+		wnd->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+	}
+
 	// TODO: wnd param not used ??
 
 	CString strClassName;
@@ -483,6 +495,11 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 
 		if (pw == 0)
 			continue;
+
+		if (CmboxviewApp::m_isRTL == TRUE)
+		{
+			pw->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+		}
 
 		CString wtext;
 		pw->GetWindowText(wtext);
@@ -1725,7 +1742,7 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 	file.Close();
 }
 
-void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
+int ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 {
 	CString out;
 	out.Format(L"%d", g_UpdateMenuItemsInfo);
@@ -1733,8 +1750,9 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)  // Do I need separate control var ?
-		return;
+		return 0;
 
+	int retcode = 1;
 	CString controlName;
 	CString strLine;
 	CString str;
@@ -1763,23 +1781,24 @@ void ResHelper::LoadLanguageMap(CString& languageTranslationFilePath)
 
 	if (bom == ResHelper::TextEncoding::UTF16LE)
 	{
-		LoadLanguageMapFromFileF16LE(languageFile);
+		retcode = LoadLanguageMapFromFileF16LE(languageFile);
 		int deb = 1;
 	}
 	else  // TODO: Ansi ???
 	{
-		int deb = 1;
+		retcode = -1;
 	}
-	return;
+	return retcode;
 }
 
 // This is the only valid function
-void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath)
+int ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath)
 {
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
 	if (g_UpdateMenuItemsInfo == FALSE)  // Do I need separate control var ?
-		return;
+		return 0;
 
+	int retcode = 1;
 	CString controlName;
 	CString strLine;
 	CString str;
@@ -1832,9 +1851,8 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 		HWND h = NULL; // we don't have any window yet
 		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
-		return;
+		return -1;
 	}
-
 
 	int nLastSourceTextId = -1;
 	int nSourceTextId;
@@ -1848,6 +1866,7 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 	CString translatedText;
 	int retlen;
 	int cnt = 0;
+	int errorCnt = 0;
 	while ((retlen = ResHelper::CStdioFileReadLine(file, strLine)) >= 0)
 	{
 		// TODO: Implement RemoveBOM()
@@ -1872,6 +1891,9 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 			if (nSourceTextId != (nLastSourceTextId + 1))
 			{
 				_ASSERTE(0);
+				retcode = -1;
+				// Should we try to resynchronize??
+				break;
 			}
 			else
 				nLastSourceTextId = nSourceTextId;
@@ -1887,7 +1909,6 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 
 		cnt++;
 
-
 		if (ResHelper::CStdioFileReadLine(file, strLine) < 0)
 			break;
 
@@ -1899,16 +1920,13 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 		if (nTranslatedTextId == 397)
 			int deb = 1;
 
-		if (nTranslatedTextId != nTranslatedTextId)
-		{
-			_ASSERTE(0);
-		}
-
 		if (nTranslatedTextId >= 0)
 		{
 			if (nTranslatedTextId != (nLastTranslatedTextId + 1))
 			{
 				_ASSERTE(0);
+				retcode = -1;
+				break;
 			}
 			else
 				nLastTranslatedTextId = nTranslatedTextId;
@@ -1930,13 +1948,25 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 			CString specSourceList;
 			CString specTraslatedList;
 
-			ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
-			ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
-			if (specSourceList.GetLength() > 0)
+			int sourceCnt = ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
+			int translatedCnt = ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
+			if (sourceCnt != translatedCnt)
+			{
 				int deb = 1;
+				_ASSERTE(0);
+				// Assume Non fatal errr. English text will not be translated to avoid potential crash;
+				errorCnt++;
+				continue;
+			}
+
 			if (specSourceList.Compare(specTraslatedList))
+			{
 				int deb = 1;
-				//_ASSERTE(0);
+				_ASSERTE(0);
+				// Assume Non fatal errr. English text will not be translated to avoid potential crash;
+				errorCnt++;
+				continue;
+			}
 
 			ResourceInfo* rinfo = new ResourceInfo(sourceText, translatedText);
 			g_LanguageMap.insert(hsum, rinfo);
@@ -1945,7 +1975,7 @@ void ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePat
 			int deb = 1;
 
 	}
-	int deb = 1;
+	return retcode;
 }
 
 void ResHelper::RenumberLanguageFile()
@@ -2120,12 +2150,23 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 			CString specSourceList;
 			CString specTraslatedList;
 
-			ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
-			ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
-			if (specSourceList.GetLength() > 0)
+			int sourceCnt = ResHelper::FindConversionSpecifiers(esourceText, specSourceList);
+			int translatedCnt = ResHelper::FindConversionSpecifiers(etranslatedText, specTraslatedList);
+			if (sourceCnt != translatedCnt)
+			{
+				int deb = 1;
+				_ASSERTE(0);
+			}
+			if (sourceCnt > 1)
+				int deb = 1;
+
+			if (specSourceList.GetLength() > 1)
 				int deb = 1;
 			if (specSourceList.Compare(specTraslatedList))
+			{
+				int deb = 1;
 				_ASSERTE(0);
+			}
 
 			ResourceInfo* rinfo = new ResourceInfo(esourceText, etranslatedText);
 			resInfoMap.insert(hsum, rinfo);
@@ -2161,7 +2202,6 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 	nNumberOfBytesToWrite = 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(hResourceFile, BOMF16LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
-
 
 	CString resInfoText1;
 	CString resInfoText2;

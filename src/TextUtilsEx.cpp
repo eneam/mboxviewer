@@ -1020,6 +1020,9 @@ void TextUtilsEx::delete_charset2Id()
 
 UINT TextUtilsEx::charset2Id(const char *char_set)
 {
+	if (char_set[0] == 0)
+		return 0;
+
 	UINT id = 0;
 	CP2NM *item;
 	myMap::iterator it;
@@ -1790,6 +1793,7 @@ void TextUtilsEx::TraceStringArrayW(CStringArray &a)
 
 void TextUtilsEx::SplitStringA(const CStringA& strIn, const CStringA& delim, CStringArray& a)
 {
+	MY_USES_CONVERSION;
 	int position = 0;
 	CStringA strToken;
 
@@ -1798,10 +1802,9 @@ void TextUtilsEx::SplitStringA(const CStringA& strIn, const CStringA& delim, CSt
 	while (!strToken.IsEmpty())
 	{
 		strToken.Trim(" \t");
-		USES_CONVERSION;
 		if (!strToken.IsEmpty())
 		{
-			CString strTokenW = A2W(strToken);
+			CString strTokenW = MYA2W(strToken);
 			a.Add(strTokenW);
 		}
 		strToken = strIn.Tokenize(delim, position);

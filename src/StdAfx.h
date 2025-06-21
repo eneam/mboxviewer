@@ -82,7 +82,7 @@
 
 #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 
-#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
+//#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 
 #if 0
 #include <afxwin.h>         // MFC core and standard components
@@ -104,6 +104,18 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 #endif
 
+#if 0
+// Tried to use conversion macros but it cores executables
+// Need to review macros in loops to avoid stack overflow??
+#define MY_USES_CONVERSION MY_USES_CONVERSION
+#define MYA2W(a2w) A2W(a2w)
+#define MYW2A(w2a) W2A(w2a)
+#else
+#define MYA2W(a2w) a2w
+#define MYW2A(w2a) w2a
+#define MY_USES_CONVERSION
+#endif
+
 #include "profile.h"
 #include "BrowseForFolder.h"
 #include <afxcontrolbars.h>
@@ -117,6 +129,10 @@ inline int istrlen(const char* _Str) { return ((int)strlen(_Str)); }
 inline int uistrlen(const char* _Str) { return ((UINT)strlen(_Str)); }
 inline int iwstrlen(const wchar_t* _Str) { return ((int)_tcslen(_Str)); }
 inline int uiwstrlen(const wchar_t* _Str) { return ((UINT)_tcslen(_Str)); }
+
+int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption = NULL, UINT nType = MB_OK);
+int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption = NULL, UINT nType = MB_OK);
+int MyAfxMessageBox(LPCTSTR lpszText, UINT nType = MB_OK);
 
 #if (_WIN32_WINNT < _WIN32_WINNT_WIN7)
 #define GetTickCount64 GetTickCount

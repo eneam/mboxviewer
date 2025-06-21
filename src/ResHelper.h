@@ -225,8 +225,8 @@ public:
 	static void LoadToolBarItemsInfo(CToolBar* tbar);
 	static void UpdateToolBarItemsInfo(CToolBar* tbar);
 
-	static void LoadLanguageMap(CString & languageFolder);
-	static void LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath);
+	static int LoadLanguageMap(CString & languageFolder);
+	static int LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath);
 	static void RenumberLanguageFile();
 	static int RenumberLanguageFileF16LE(CString& languageTranslationFilePath);
 
@@ -251,8 +251,8 @@ public:
 	static void GetProcessFolderPath(CString& folderPath);
 	static BOOL IsEnglishConfigured(CString &languageName);
 	static CString GetLanguageCode(CString& languageName);
-	static void FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray);
-	static void FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList);
+	static int FindConversionSpecifiers(CString& str, CStringArray& conversionSpecifiersArray);
+	static int FindConversionSpecifiers(CString& str, CString& conversionSpecifiersList);
 	static BOOL CompareCStringArrays(CStringArray& ar1, CStringArray& ar2);
 
 	static void MyTrace(CString& txt1, CString& txt2);

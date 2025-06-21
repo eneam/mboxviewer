@@ -88,9 +88,33 @@ CString CmboxviewApp::m_configFilePath;
 BOOL CmboxviewApp::m_configFileLoaded = FALSE;
 //DebugCString CmboxviewApp::m_configFilePath;
 
+BOOL CmboxviewApp::m_isRTL = FALSE;
+CString CmboxviewApp::m_language = L"english";
+
 CWnd* CmboxviewApp::wndFocus = 0;
 
 //#pragma warning(3 : 4840 4477)  // useless -:(((
+
+
+int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
+{
+	nType |= MB_RTLREADING | MB_RIGHT;
+	return ::MessageBox(h, lpszText, lpszCaption, nType);
+}
+
+int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
+{
+	HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+	nType |= MB_RTLREADING | MB_RIGHT;
+	return MessageBox(h, lpszText, lpszCaption, nType);
+}
+
+int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
+{
+	nType |= MB_RTLREADING | MB_RIGHT;
+	return AfxMessageBox(lpszText, nType);
+}
+
 
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {
@@ -1869,7 +1893,15 @@ BOOL CmboxviewApp::InitInstance()
 		CString translationFileNamePath = languageFolderPath + L"\\" + translationFileName;
 
 		ResHelper::EnableLanguageLoading();
-		ResHelper::LoadLanguageMap(translationFileNamePath);
+		int retcode = ResHelper::LoadLanguageMap(translationFileNamePath);
+		if (retcode > 0)
+		{
+			CmboxviewApp::m_language = folderName;
+			if (CmboxviewApp::m_language.Compare(L"arabic") == 0)
+			{
+				CmboxviewApp::m_isRTL = TRUE;
+			}
+		}
 	}
 	else
 	{
