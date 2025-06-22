@@ -123,13 +123,13 @@ void GeneralOptionsDlg::OnBnClickedOk()
 	if (m_numberOfHTML2ToMerge.IsEmpty())
 	{
 		CString txt = L"Count of HTML Mails to merge entry can't be empty";
-		int answer1 = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer1 = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
 	}
 	if (_wtoi(m_numberOfHTML2ToMerge) <= 0)
 	{
 		CString txt = L"Count of HTML Mails to merge entry must be greater than zero";
-		int answer1 = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer1 = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
 	}
 

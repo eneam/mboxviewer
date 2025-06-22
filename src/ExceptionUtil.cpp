@@ -185,7 +185,7 @@ BOOL DumpStack(MyStackWalker *sw, wchar_t *fileName, const char *seText, UINT se
 			CString txt = L"Could not create Stack Dump File\"" + procFullPath;
 			txt += L"\" file.\n";
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			ret = FALSE;
 		}
@@ -292,7 +292,7 @@ BOOL DumpMailData(wchar_t *fileName, const CHAR *seText, UINT seNumb, int mailPo
 #if 1
 		HWND h = 0;
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, filePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, filePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 

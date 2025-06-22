@@ -123,7 +123,7 @@ void CCheckListBoxDlg::OnBnClickedOk()
 	if (m_OutList.GetCount() <= 0) {
 		CString txt = L"No folders selected!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

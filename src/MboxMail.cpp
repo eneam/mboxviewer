@@ -2444,7 +2444,7 @@ void MboxMail::Parse(LPCWSTR path)
 			ResHelper::TranslateString(txt);
 
 			HWND h = NULL; // we don't have any window yet ??
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			int deb = 1;
 			break;
 		}
@@ -2646,7 +2646,7 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 			ResHelper::TranslateString(txt);
 
 			HWND h = NULL; // we don't have any window yet ??
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			int deb = 1;
 			break;
 		}
@@ -4459,7 +4459,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		ResHelper::TranslateString(txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -4470,7 +4470,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		ResHelper::TranslateString(txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;  // Hopefully s_path wil fail first
 	}
 
@@ -4507,7 +4507,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 
 	if (ret < 0) {
 		HWND h = NULL;
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 	csvFileName = csvFile;
@@ -4540,7 +4540,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			return -1;
 		}
@@ -4569,7 +4569,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 				//errorText = txt;
 
 				HWND h = NULL; // we don't have any window yet
-				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 
 				fp.Close();
@@ -4652,7 +4652,7 @@ int MboxMail::exportToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvFileName, i
 		if (!args.errorText.IsEmpty()) 
 		{
 			HWND h = NULL; 
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return - 1;
 		}
 
@@ -5292,7 +5292,7 @@ int MboxMail::printAttachmentNamesAsHtml(CFile *fpm, int mailPosition, SimpleStr
 	{
 		HWND h = NULL; // we don't have any window yet  
 		// TODO: what to do ?
-		//int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		//int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		//return -1;
 	}
 
@@ -6898,7 +6898,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 	if (ret < 0) {
 		HWND h = NULL; 
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -6933,7 +6933,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			return -1;
 		}
@@ -6960,7 +6960,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			fp.Close();
 			return -1;
@@ -7075,7 +7075,7 @@ int MboxMail::exportToTextFile(TEXTFILE_CONFIG &textConfig, CString &textFileNam
 
 		if (!args.errorText.IsEmpty()) {
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, args.errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			return -1;
 		}
 	}
@@ -7089,8 +7089,8 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 
 	CString mailFile = MboxMail::s_path;
 
-	// Simplify and start MessageBox here if error inset of errorText ?
-	// Cons is that MessageBox and progress bar are visible at the same time
+	// Simplify and start MyMessageBox here if error inset of errorText ?
+	// Cons is that MyMessageBox and progress bar are visible at the same time
 
 	if (s_path.IsEmpty()) {
 		errorText = L"Please open mail file first.";
@@ -7106,7 +7106,7 @@ int MboxMail::printMailArchiveToTextFile(TEXTFILE_CONFIG &textConfig, CString &t
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -7258,8 +7258,8 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 
 	CString mailFile = MboxMail::s_path;
 
-	// Simplify and start MessageBox here if error inset of errorText ?
-	// Cons is tehat MessageBox and progress bar are visible at the same time
+	// Simplify and start MyMessageBox here if error inset of errorText ?
+	// Cons is tehat MyMessageBox and progress bar are visible at the same time
 
 	if (s_path.IsEmpty()) {
 		errorText = L"Please open mail file first.";
@@ -7275,7 +7275,7 @@ int MboxMail::printMailArchiveToCSVFile(CSVFILE_CONFIG &csvConfig, CString &csvF
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, csvFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -8332,7 +8332,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)  // FIXMEF
 	if (s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -8362,7 +8362,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)  // FIXMEF
 		txt += exErrorStr;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -8757,7 +8757,7 @@ int MboxMail::exportToCSVFileFullMailParse(CSVFILE_CONFIG &csvConfig)  // FIXMEF
 
 	CString infotxt = L"Created \"" + csvFile + L"\" file.";
 	HWND h = NULL; // we don't have any window yet
-	int answer = ::MessageBox(h, infotxt, L"Success", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int answer = MyMessageBox(h, infotxt, L"Success", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 #endif
 	return 1;
 }
@@ -9026,7 +9026,7 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 	if (s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -9057,7 +9057,7 @@ int MboxMail::DumpMailStatsToFile(MailArray *mailsArray, int mailsArrayCount)
 		txt += exErrorStr;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -9151,7 +9151,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -9187,7 +9187,7 @@ int MboxMail::DumpMailSummaryToFile(MailArray* mailsArray, int mailsArrayCount)
 		txt.Format(fmt, statsFile, exErrorStr);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -10757,7 +10757,7 @@ int MboxMail::PrintMailRangeToSingleTextFile(TEXTFILE_CONFIG &textConfig, CStrin
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -10863,7 +10863,7 @@ int MboxMail::PrintMailRangeToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &textC
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -11044,7 +11044,7 @@ int MboxMail::PrintMailSelectedToSingleTextFile_WorkerThread(TEXTFILE_CONFIG &te
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, textFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -11623,7 +11623,7 @@ void MboxMail::ShowHint(int hintNumber, HWND h)
 		ResHelper::TranslateString(hintText);
 		CString title = L"Did you know?";
 		ResHelper::TranslateString(title);
-		::MessageBox(h, hintText, title, MB_OK | MB_ICONEXCLAMATION);
+		MyMessageBox(h, hintText, title, MB_OK | MB_ICONEXCLAMATION);
 #if 0
 		// Right now wil not use this
 		MSGBOXPARAMSA mbp;
@@ -12019,7 +12019,7 @@ void MboxMail::DumpMailParseException(_int64 msgOffset)
 	ResHelper::TranslateString(fmt);
 	errorTxt.Format(fmt, seNumb, szCauseW, se_mailDumpFileName, progDir, se_mailDumpFileName);
 
-	AfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
+	MyAfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
 #endif
 }
 

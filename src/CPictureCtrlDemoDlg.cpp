@@ -436,7 +436,7 @@ void CCPictureCtrlDemoDlg::OnBnClickedButtonPrt()
 			CString errorText;
 			ShellExecuteError2Text((UINT_PTR)result, errorText);
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		}
 	}
 }

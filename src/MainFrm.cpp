@@ -1005,7 +1005,7 @@ void CMainFrame::OnFileOpen()
 		txt.Format(fmt, path);
 
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 
 	DoOpen(path);
@@ -1235,7 +1235,7 @@ BOOL CMainFrame::DoOpen(CString& path)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, path, fpath);
 
-		int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+		int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 		return FALSE;
 	}
 
@@ -1267,7 +1267,7 @@ BOOL CMainFrame::DoOpen(CString& path)
 						L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n";
 					ResHelper::TranslateString(txt);
 
-					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+					int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 
 					if (answer == IDYES)
 					{
@@ -1294,7 +1294,7 @@ BOOL CMainFrame::DoOpen(CString& path)
 					L"Do you wish to rerun discovery using relaxed mail file validation rules ???\n";
 				ResHelper::TranslateString(txt);
 
-				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+				int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 
 				if (answer == IDYES)
 				{
@@ -1326,7 +1326,7 @@ BOOL CMainFrame::DoOpen(CString& path)
 						L"by selecting \"File->Development->Relaxed Mail File Validation\" option\n\n";
 					ResHelper::TranslateString(txt);
 
-					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+					int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 					if (answer == IDNO)
 					{
 						CMainFrame::m_relaxedMboxFileValidation = FALSE;
@@ -1341,7 +1341,7 @@ BOOL CMainFrame::DoOpen(CString& path)
 						L"by selecting \"File->Development->Relexed Mail File Validation\" option\n\n";
 					ResHelper::TranslateString(txt);
 
-					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+					int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 					if (answer == IDNO)
 					{
 						CMainFrame::m_relaxedMboxFileValidation = FALSE;
@@ -1561,7 +1561,7 @@ void CMainFrame::OnPrinttoCsv()
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 	OnFileExportToCsv();
@@ -1582,7 +1582,7 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); 
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -1674,7 +1674,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = GetSafeHwnd(); 
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -1792,7 +1792,7 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 							TRACE(L"%s\n", txt);
 
 							HWND h = GetSafeHwnd();
-							int answer1 = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+							int answer1 = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 							int answer2 = FileUtils::CheckIfFileLocked(textFileName, lastErr, h);
 #endif
 							int deb = 1;
@@ -2590,7 +2590,7 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, newPos, curPos);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 		m_newMsgViewPosition = msgViewPosition;
 		CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", m_newMsgViewPosition);
 
@@ -2616,7 +2616,7 @@ void CMainFrame::ConfigMessagewindowPosition(int msgViewPosition)
 	ResHelper::TranslateString(fmt);
 	txt.Format(fmt, curPos, newPos);
 
-	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
 	{
 		m_newMsgViewPosition = msgViewPosition;
@@ -2792,7 +2792,7 @@ restart:
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, strFilePath);
 
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 				if (answer == IDRETRY)
 				{
 					goto restart;
@@ -2858,7 +2858,7 @@ restart:
 
 				TRACE(L"%s\n", txt);
 
-				int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 				HWND h = GetSafeHwnd();
 				int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
 #endif
@@ -2901,7 +2901,7 @@ restart:
 						TRACE(L"%s\n", txt);
 
 						//HWND h = NULL; // we don't have any window yet
-						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						HWND h = GetSafeHwnd();
 						int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
 #endif
@@ -3015,7 +3015,7 @@ int CMainFrame::MergeMboxArchiveFiles(CArray<MergeFileInfo> &fileList, CString &
 		BOOL ret = fpMergeTo.GetStatus(rStatus);
 
 		//HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		HWND h = GetSafeHwnd();
 		int answer2 = FileUtils::CheckIfFileLocked(mergedMboxFilePath, lastErr, h);
 #endif
@@ -3132,7 +3132,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 		BOOL ret = fpList.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -3176,7 +3176,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 			BOOL ret = fpList.GetStatus(rStatus);
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			return -1;
 		}
@@ -3213,7 +3213,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 			ResHelper::TranslateString(fmt);
 			txt.Format(fmt, filePath, mboxListFilePath);
 
-			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 			fpList.Close();
 			return -1;
@@ -3242,7 +3242,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, filePath);
 
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 				fpList.Close();
 				return -1;
@@ -3295,7 +3295,7 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, filePath, mboxListFilePath);
 
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 				fpList.Close();
 				return -1;
@@ -3394,7 +3394,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 			return -1;
 		}
@@ -3528,7 +3528,7 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 				ResHelper::TranslateString(txt);
 
 				HWND h = GetSafeHwnd(); // we don't have any window yet
-				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 			return TRUE;
@@ -3550,7 +3550,7 @@ void CMainFrame::OnPrinttoPdf()
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -3789,7 +3789,7 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 	{
 		CString errText(L"Invalid ShExecInfo.hProcess == 0");
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-		int answer = ::MessageBox(h, errText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, errText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 
 	int step = 10;
@@ -4277,7 +4277,7 @@ void CMainFrame::OnClose()
 		{
 			CString txt = L"User Selected Mails List not empty. Terminate program?";
 			ResHelper::TranslateString(txt);
-			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_YESNO);
 			if (answer == IDNO)
 				return;
 		}
@@ -4781,7 +4781,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		
 		AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		return 0;
@@ -4968,7 +4968,7 @@ void CMainFrame::OnFordevelopersMemory()
 	text.Format(L"Allocated Memory: %s\n", txt);
 
 	HWND h = GetSafeHwnd();
-	int answer = ::MessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int answer = MyMessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	int deb = 1;
 
 	CString bufferSizes;
@@ -5129,7 +5129,7 @@ int CommandLineParms::VerifyParameters()
 			;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -5159,7 +5159,7 @@ int CommandLineParms::VerifyParameters()
 			txt.Format(fmt, m_mboxFileNameOrPath, m_mboxFileNameOrPath);
 
 			HWND h = NULL; // we don't have any window yet  
-			const int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			const int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
 			else
@@ -5171,7 +5171,7 @@ int CommandLineParms::VerifyParameters()
 				"No such File or Directory\n\n\"%s\"\n\n",
 				m_mboxFileNameOrPath, m_mboxFileNameOrPath);
 			HWND h = NULL; // we don't have any window yet  
-			const int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			const int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 			return -1;
 #endif
@@ -5210,7 +5210,7 @@ int CommandLineParms::VerifyParameters()
 			txt.Format(fmt, m_mboxFileNameOrPath, mboxFilePath);
 
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
 		}
 
@@ -5255,7 +5255,7 @@ int CommandLineParms::VerifyParameters()
 			txt.Format(fmt, folderPath, folderPath);
 
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 		}
 
@@ -5276,7 +5276,7 @@ int CommandLineParms::VerifyParameters()
 
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -5308,7 +5308,7 @@ int CommandLineParms::VerifyParameters()
 
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -5345,7 +5345,7 @@ int CommandLineParms::VerifyParameters()
 
 
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
 		}
 
@@ -5367,7 +5367,7 @@ int CommandLineParms::VerifyParameters()
 			txt.Format(fmt, m_mergeToFilePath, mboxFolderPath);
 
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			return -1;
 		}
 
@@ -5377,7 +5377,7 @@ int CommandLineParms::VerifyParameters()
 			CString txt = L"The \"MBoxViewer\" name is reserved and it can't appear in the file path.\n"
 				"Please create different name and try again.";
 			HWND h = NULL;
-			int answer = MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 #endif
 			return -1;
 		}
@@ -5392,7 +5392,7 @@ int CommandLineParms::VerifyParameters()
 
 			//txt += L"Do you want to continue?";
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return -1;
 #if 0
 			if (answer == IDNO)
@@ -5425,7 +5425,7 @@ int CommandLineParms::VerifyParameters()
 			txt.Format(fmt, m_mergeToFilePath, m_mergeToFilePath);
 
 			HWND h = NULL; // we don't have any window yet  
-			int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
 			else
@@ -5444,7 +5444,7 @@ int CommandLineParms::VerifyParameters()
 
 		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -5462,7 +5462,7 @@ int CommandLineParms::VerifyParameters()
 
 		//txt += L"\nDo you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 #if 0
 		if (answer == IDNO)
@@ -5494,7 +5494,7 @@ BOOL CMainFrame::CanMboxBeSavedInFolder(CString &destinationFolder)
 		txt.Format(fmt, destinationFolder, destinationFolder);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return FALSE;
 	}
 	else
@@ -5602,7 +5602,7 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h, BOOL ignoreLanguage
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, filePath);
 
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 	}
 	int deb = 1;
 }
@@ -5812,7 +5812,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, path, errorText);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -5854,7 +5854,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, fileCnt);
 
-				int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+				int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 				if (answer == IDCANCEL)
 					return -1;
 				else if (answer == IDTRYAGAIN)
@@ -5893,7 +5893,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 			ResHelper::TranslateString(fmt);
 			txt.Format(fmt, fileCnt);
 
-			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+			int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 			if (answer == IDCANCEL)
 				return -1;
 			else if (answer == IDTRYAGAIN)
@@ -5911,7 +5911,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 			"Please create folder, move the mbox files to that folder and try again.";
 		ResHelper::TranslateString(txt);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
 
@@ -6006,7 +6006,7 @@ void CMainFrame::OnFileMergerootfoldersub()
 	CString txt = L"MBox Viewer will traverse selected root folder and all sub-folders and merge all mbox files found into a single mbox file.\n\n"
 		"MBox Viewer will assign a label to each folder and each mbox file and create Tree of Labels View\n\n"
 		"Do you want to continue?\n";
-	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		FileSelectrootfolder(2);
@@ -6053,7 +6053,7 @@ void CMainFrame::OnFileSelectasrootfolder()
 		L"Select \"File->Select root folder for merging\" option to enable search across all mails\n"
 		;
 #if 0
-	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		FileSelectrootfolder(1);
@@ -6061,7 +6061,7 @@ void CMainFrame::OnFileSelectasrootfolder()
 #else
 
 	BOOL ret = ResHelper::TranslateString(txt);
-	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+	int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 	if (answer == IDYES)
 	{
 		int wantsToRetry = -2;
@@ -6104,7 +6104,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	{
 		CString txt = L"Please select mail archive and one of mails.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -6115,7 +6115,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 	{
 		CString txt = L"Internal Error. Please re-select mail archive and one of mails.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -6190,7 +6190,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 		//errorText = txt;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 
 		return;
@@ -6217,7 +6217,7 @@ void CMainFrame::OnDevelopmentoptionsDumprawdata()
 		//TRACE(L"%s\n", txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 
 		fpr.Close();
@@ -6351,7 +6351,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	aboutSystem.Append(L"\n");
 	
 	HWND h = GetSafeHwnd();
-	int answer = MessageBox(aboutSystem, L"Info", MB_APPLMODAL | MB_OK);
+	int answer = MyMessageBox(aboutSystem, L"Info", MB_APPLMODAL | MB_OK);
 
 	int deb = 1;
 }
@@ -6612,7 +6612,7 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 		txt.Format(fmt, languageFolder);
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONEXCLAMATION | MB_OK);
 
 		if (languageFolderPath.IsEmpty())
 			languageFolder.Empty();

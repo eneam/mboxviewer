@@ -142,7 +142,7 @@ void CFindDlg::OnOK()
 	{
 		CString txt = L"Cannot search for an empty string!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

@@ -98,20 +98,23 @@ CWnd* CmboxviewApp::wndFocus = 0;
 
 int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 {
-	nType |= MB_RTLREADING | MB_RIGHT;
-	return ::MessageBox(h, lpszText, lpszCaption, nType);
+	if (CmboxviewApp::m_isRTL == TRUE)
+		nType |= MB_RTLREADING | MB_RIGHT;
+	return MessageBox(h, lpszText, lpszCaption, nType);
 }
 
 int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 {
 	HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-	nType |= MB_RTLREADING | MB_RIGHT;
+	if (CmboxviewApp::m_isRTL == TRUE)
+		nType |= MB_RTLREADING | MB_RIGHT;
 	return MessageBox(h, lpszText, lpszCaption, nType);
 }
 
 int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
 {
-	nType |= MB_RTLREADING | MB_RIGHT;
+	if (CmboxviewApp::m_isRTL == TRUE)
+		nType |= MB_RTLREADING | MB_RIGHT;
 	return AfxMessageBox(lpszText, nType);
 }
 
@@ -182,7 +185,7 @@ LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 #else
 		errorTxt.Format(L"%s: Code=%8.8x Description=%s\n\n", exceptionName, seNumb, szCauseW);
 #endif
-		AfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox((LPCWSTR)errorTxt, MB_OK | MB_ICONHAND);
 
 		MboxMail::ignoreException = TRUE;
 
@@ -227,7 +230,7 @@ void __cdecl InvalidParameterHandler(
 	DWORD error;
 	BOOL retW2A = TextUtilsEx::WStr2Ansi(txt, txtA, error);
 
-	AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+	MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 
 	// GetExceptionPointers(0, &pExceptionPtrs);
 
@@ -1547,7 +1550,7 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 {
 	HWND h = NULL; // we don't have any window yet  
 	//CString ptxt = CString(L"ParseParam() must delete this line:  ") + lpszParam;
-	//int answer = ::MessageBox(h, ptxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	//int answer = MyMessageBox(h, ptxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
@@ -1600,7 +1603,7 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 				txt.Format(fmt, lpszParam);
 
 				HWND h = NULL; // we don't have any window yet  
-				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
@@ -1632,7 +1635,7 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 				txt.Format(fmt, lpszParam);
 
 				HWND h = NULL; // we don't have any window yet  
-				int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDNO)
 					m_bError = TRUE;
 			}
@@ -1687,7 +1690,7 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 
 			CMainFrame::m_commandLineParms.Clear();
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_YESNO);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_YESNO);
 			if (answer == IDNO)
 				m_bError = TRUE;
 		}
@@ -1741,7 +1744,7 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 #ifdef _DEBUG
 #if 0
 		HWND h = 0;
-		int answer = MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_OK);
 #endif
 #endif
 
@@ -1775,7 +1778,7 @@ BOOL CmboxviewApp::InitInstance()
 		if (retSetup == FALSE)
 		{
 			HWND h = NULL; // we don't have any window yet 
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			MboxMail::ReleaseResources();
 			return FALSE;
@@ -1789,7 +1792,7 @@ BOOL CmboxviewApp::InitInstance()
 		if (retcheck == FALSE)
 		{
 			HWND h = NULL; // we don't have any window yet 
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
 			MboxMail::ReleaseResources(FALSE);
@@ -1822,7 +1825,7 @@ BOOL CmboxviewApp::InitInstance()
 			ResHelper::TranslateString(fmt);
 			txt.Format(fmt, CmboxviewApp::m_configFilePath);
 
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
 			MboxMail::ReleaseResources(FALSE);
@@ -1868,7 +1871,7 @@ BOOL CmboxviewApp::InitInstance()
 
 			ResHelper::TranslateString(txt);
 
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 			// To stop memory leaks reports by debugger
 			MboxMail::ReleaseResources(FALSE);
@@ -2009,7 +2012,7 @@ int deb = 1;
 			"It will be generated if program crashes or it is killed from Task Manager.\n\n";
 		txt += L"Do you want to continue?";
 		HWND h = NULL; // we don't have any window yet  
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 		{
 			MboxMail::ReleaseResources();
@@ -2169,7 +2172,7 @@ int deb = 1;
 
 	if (AfxSocketInit() == FALSE)
 	{
-		AfxMessageBox(L"Sockets Could Not Be Initialized");
+		MyAfxMessageBox(L"Sockets Could Not Be Initialized");
 		return FALSE;
 	}
 

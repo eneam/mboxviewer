@@ -186,7 +186,7 @@ void CFindAdvancedDlg::OnOK()
 		CString txt;
 		txt.Format(L"No text type plain and/or html are checked!");
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -217,7 +217,7 @@ void CFindAdvancedDlg::OnOK()
 		CString txt;
 		txt.Format(L"Date filter is not set and no filter fields are checked!");
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -235,7 +235,7 @@ void CFindAdvancedDlg::OnOK()
 			ResHelper::TranslateString(fieldStr);
 			txt.Format(fmt, fieldStr);
 
-			AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+			MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 			return;
 		}
 	}

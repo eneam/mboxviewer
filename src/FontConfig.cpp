@@ -90,7 +90,7 @@ void FontConfig::OnBnClickedOk()
 	{
 		CString txt = L"Font Size out of valid range 8-72 !!!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

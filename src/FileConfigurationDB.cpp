@@ -1335,7 +1335,7 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 		//HWND h = NULL; // we don't have any window yet
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		int answer2 = FileUtils::CheckIfFileLocked(configFileNamePath, lastErr, h);
 #endif
 

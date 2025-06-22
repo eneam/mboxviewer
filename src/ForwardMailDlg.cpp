@@ -134,7 +134,7 @@ void ForwardMailDlg::OnBnClickedOk()
 	{
 		CString txt;
 		txt.Format(L"Empty \"To:\" field not allowed!");
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

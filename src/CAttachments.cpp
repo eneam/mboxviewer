@@ -260,7 +260,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+			int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
 			if (answer == IDYES)
 				forceOpen = true;
 		}

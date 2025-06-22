@@ -145,7 +145,7 @@ void OpenArchiveFileDlg::OnBnClickedYes()
 	{
 		CString txt = L"File \"" + mboxFilePath;
 		txt += L"\" exists.\nOverwrite?";
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;
 	}
@@ -172,7 +172,7 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 		CString txt;
 		txt.Format(fmt, mboxFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;
 	}

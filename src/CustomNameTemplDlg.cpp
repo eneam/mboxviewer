@@ -97,7 +97,7 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	{
 		CString txt = L"Template format can't be empty!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -105,7 +105,7 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	{
 		CString txt = L"Either From User Account Name or From Domain must be checked!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 
@@ -113,7 +113,7 @@ void CustomNameTemplDlg::OnBnClickedOk()
 	{
 		CString txt = L"Either To User Account Name or To Domain must be checked!";
 		ResHelper::TranslateString(txt);
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 

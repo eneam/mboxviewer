@@ -1156,7 +1156,7 @@ int TextUtilsEx::showCodePageTable(CString &path)
 		txt.Format(fmt, fullPath, szCause);
 
 		HWND h = NULL; // we don't have any window yet ??
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}

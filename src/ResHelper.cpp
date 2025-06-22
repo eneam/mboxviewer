@@ -1686,7 +1686,7 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 		BOOL ret = file.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return;
 	}
@@ -1711,7 +1711,7 @@ void ResHelper::LoadResInfoFromFile(CString& resFile, ResInfoArrayType &resArray
 		if (retval == 0)
 			break;
 
-		if (nTextId == 394)
+		if (nTextId == 525)
 			int deb = 1;
 
 		if (nLastTextId >= 0)
@@ -1849,7 +1849,7 @@ int ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath
 		BOOL ret = file.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -2055,7 +2055,7 @@ int ResHelper::RenumberLanguageFileF16LE(CString& languageTranslationFilePath)
 		BOOL ret = file.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -2309,7 +2309,7 @@ int ResHelper::SplitTranslationFile(CString& languageTranslationFilePath)
 		BOOL ret = file.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -2759,7 +2759,7 @@ int ResHelper::GetCodePageFromFile(LPCWSTR filePath)
 		BOOL ret = file.GetStatus(rStatus);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return FALSE;
 	}
@@ -2985,7 +2985,7 @@ int ResHelper::IsFileUTF8(LPCWSTR filePath)
 		//HWND h = NULL; // we don't have any window yet
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		
-		int answer = MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return FALSE;
 	}

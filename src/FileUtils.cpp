@@ -1608,9 +1608,9 @@ int FileUtils::CheckIfFileLocked(CString& filePath, DWORD lastErr, HWND h)
 	if (!infoText.IsEmpty())
 	{
 		if (h != 0)
-			answer = MessageBox(h, infoText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			answer = MyMessageBox(h, infoText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		else
-			answer = AfxMessageBox(infoText, MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			answer = MyAfxMessageBox(infoText, MB_APPLMODAL | MB_ICONERROR | MB_OK);
 	}
 	return answer;
 }
@@ -1625,7 +1625,7 @@ CString FileUtils::ProcessCFileFailure(CString& fmt, CString& filePath, CFileExc
 
 	TRACE(L"%s\n", txt);
 
-	int answer1 = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+	int answer1 = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 	int answer2 = FileUtils::CheckIfFileLocked(filePath, lastErr, h);
 
 	int deb = 1;

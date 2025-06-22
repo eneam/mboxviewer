@@ -366,7 +366,7 @@ BOOL NTreeView::ImboxviewFileFilter(CString& fName)
 }
 
 // This function checks whether file archive is valid
-// TODO: add MessageBox to report an error
+// TODO: add MyMessageBox to report an error
 int NTreeView::ImboxviewFile(CString& fName)
 {
 	if (!ImboxviewFileFilter(fName))
@@ -1729,7 +1729,7 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 						txt.Format(fmt, errText, mboxFilePath);
 					}
 
-					int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+					int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 				}
 
 				found = fileSizes.Lookup(fn, info);
@@ -1771,7 +1771,7 @@ HTREEITEM NTreeView::LoadFileSizes(HTREEITEM hParent, CString& path, FileSizeMap
 					{
 						CString txt = L"Invalid mail file name \n\n\"" + fn;
 						txt += L"\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n";
-						int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+						int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 						continue;
 					}
 #endif
@@ -2689,7 +2689,7 @@ void NTreeView::SelectMailFile(CString* fileNm)
 			ResHelper::TranslateString(fmt);
 			txt.Format(fmt, mailFile);
 
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		}
 		else
@@ -2701,7 +2701,7 @@ void NTreeView::SelectMailFile(CString* fileNm)
 			CString fmt = L"Nonexistent Mail File \"%s\".\nDo you want to continue?";
 			ResHelper::TranslateString(fmt);
 			txt.Format(fmt, mailFile);
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				AfxGetMainWnd()->PostMessage(WM_CLOSE);
 		}
@@ -3133,7 +3133,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString errorText = L"Right Click is supported on selected items only.\nUse left click to select mail folder first.";
 		ResHelper::TranslateString(errorText);
 		HWND h = wnd->GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -3142,7 +3142,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString errorText = L"Right Click is supported on selected items only.\nUse left click to select mail file first.";
 		ResHelper::TranslateString(errorText);
 		HWND h = wnd->GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -3195,7 +3195,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 					if (path.Compare(pathLast))
 						int deb = 1;
 					HWND h = wnd->GetSafeHwnd();
-					int answer = ::MessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
+					int answer = MyMessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 				}
 				break;
 				case M_FolderLocation_Id:
@@ -3307,7 +3307,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			if (path.Compare(pathLast))
 				int deb = 1;
 			HWND h = wnd->GetSafeHwnd();
-			int answer = ::MessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
+			int answer = MyMessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 		}
 		break;
 		case M_FolderLocation_Id:
@@ -3330,7 +3330,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString path = MboxMail::GetLastPath();
 			path.TrimRight(L"\\");
 			HWND h = wnd->GetSafeHwnd();
-			//int answer = ::MessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
+			//int answer = MyMessageBox(h, path, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_USERICON);
 			if (hItem)
 			{
 				BOOL ret = RefreshFolder(hItem);
@@ -3594,7 +3594,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		txt += tmp;
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		int deb = 1;
 	}
 	break;
@@ -3688,7 +3688,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 			ForceParseMailFile(hItem);
 		// For internal testing
@@ -3703,7 +3703,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 		{
 			int firstMail = 0;
@@ -3724,7 +3724,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 		{
 			int firstMail = 0;
@@ -3830,7 +3830,7 @@ void NTreeView::OnSelchanging(NMHDR* pNMHDR, LRESULT* pResult)
 				L"Content will be lost if you switch to new mail archive.\n"
 				L"Do you want to continue?";
 			ResHelper::TranslateString(txt);
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 			{
 				*pResult = 1;
@@ -6551,7 +6551,7 @@ BOOL NTreeView::DeleteFolderIfEmpty(CString& path)
 
 
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			int deb = 1;
 			return TRUE;
 		}
@@ -6652,7 +6652,7 @@ HTREEITEM NTreeView::OpenFolder(HTREEITEM hFolder, CString& path, BOOL selectFol
 
 		ResHelper::TranslateString(txt);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return 0;
 	}
 
@@ -6739,7 +6739,7 @@ void NTreeView::OpenRootFolderAndSubfolders(HTREEITEM hParent, CString& path, BO
 	BOOL bRet = tree.PopulateFolderTree(path, tree, rnode, errorText, maxDepth);
 	if (!errorText.IsEmpty())
 	{
-		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 	int treeFolderCount = tree.Count();
@@ -6762,7 +6762,7 @@ void NTreeView::OpenRootFolderAndSubfolders(HTREEITEM hParent, CString& path, BO
 		ResHelper::TranslateString(fmt);
 		errorText.Format(fmt, path);
 
-		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -6794,7 +6794,7 @@ void NTreeView::OpenRootFolderAndSubfolders(HTREEITEM hParent, CString& path, BO
 			path, m_globalFolderInfoDB.m_problemFolderPath);
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONHAND | MB_YESNO);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONHAND | MB_YESNO);
 		if (answer == IDYES)
 		{
 			m_globalFolderInfoDB.RemoveRootFolder(path);
@@ -6972,7 +6972,7 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	{
 		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return 0;
 	}
 
@@ -7048,7 +7048,7 @@ HTREEITEM NTreeView::OpenRootSubFolder(HTREEITEM hFolder, CString& path, BOOL ad
 	{
 		CString txt = L"The mbox files must be installed under a named folder\n."
 			"Please create folder, move the mbox files to that folder and try again.";
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return hItem;
 	}
 
@@ -7766,7 +7766,7 @@ void NTreeView::DoOpenFolder(CString& folderPath, BOOL selectFolder, BOOL uncond
 		}
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONHAND | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONHAND | MB_OK);
 
 		//ArchiveFileInfoMap *fileSizesMap = SetupFileSizeMap(path);
 		//m_fileSizesMap = fileSizesMap;
@@ -7871,7 +7871,7 @@ restart:
 					CString txt;
 					txt.Format(fmt, strFilePath);
 
-					int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
+					int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 					if (answer == IDRETRY)
 					{
 						goto restart;
@@ -7987,7 +7987,7 @@ restart:
 								txt.Format(fmt, strFilePath, errorText);
 
 								HWND h = NULL; // we don't have any window yet
-								int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+								int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 								return -1;
 							}
 
@@ -8236,7 +8236,7 @@ int NTreeView::RefreshMboxFilesList(CString& folderPath, HTREEITEM hFolder)
 						{
 							CString txt = L"Invalid mail file name \n\n\"" + fn;
 							txt += L"\".\n\nBase name of the file (name without the extension) can't have trailing white spaces. Ignoring.\n";
-							int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+							int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 							continue;
 						}
 #endif
@@ -9115,7 +9115,7 @@ BOOL MySaveFileDialog::OnFileNameOK()
 	{
 		CString txt = L"Folder path can't be changed.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 
 		UpdateOFNFromShellDialog();
 		return TRUE;
@@ -9185,7 +9185,7 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 	BOOL bRet = tree.PopulateFolderTree(path, tree, rnode, errorText, maxDepth);
 	if (!errorText.IsEmpty())
 	{
-		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 	int treeFolderCount = tree.Count();
@@ -9210,7 +9210,7 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 		ResHelper::TranslateString(fmt);
 		errorText.Format(fmt, path);
 
-		int answer = MessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return;
 	}
 
@@ -9329,7 +9329,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, m_rootMboxFilePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, m_rootMboxFilePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
@@ -9344,7 +9344,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		BOOL ret = m_rootMboxCfile.GetStatus(rStatus);;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 
 		return -1;
@@ -9397,7 +9397,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		L"Make sure you select proper target folder.\n";
 	ResHelper::TranslateString(txt);
 
-	int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 	CString saveFileName = fileName + L".mbox";
 	CString title = L"Enter Name for Merged Archive File";
@@ -9441,7 +9441,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		HWND h = GetSafeHwnd();
 		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString fmt = L"Could not create Merge To File \"%s\" file.\n%s"; // old format
-		errorText = FileUtils::ProcessCFileFailure(fmt, filePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, filePath, exMergeTo, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(exMergeTo);
 
@@ -9456,7 +9456,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		BOOL ret = m_rootMboxCfile.GetStatus(rStatus);;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 
 		return -1;
@@ -9574,7 +9574,7 @@ int NTreeView::MergeRootSubFolder_NoLabels(CString& relativeFolderPath, CString&
 		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
 
@@ -9686,7 +9686,7 @@ int NTreeView::MergeRootSubFolder(CString& relativeFolderPath, CString& path, BO
 		CString txt = L"The mbox files must be installed under a named folder.\n"
 			L"Please create folder, move the mbox files to that folder and try again.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return -1;
 	}
 
@@ -10231,7 +10231,7 @@ int NTreeView::ArchiveMailsRemoveDuplicates(CFile& fp, CString& filePath)
 			txt.Format(fmt, m_rootMboxFilePath, errorText);
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 #else
@@ -10248,7 +10248,7 @@ int NTreeView::ArchiveMailsRemoveDuplicates(CFile& fp, CString& filePath)
 			txt.Append(errorText);
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 #endif
@@ -10316,7 +10316,7 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 				CString txt = L"The mbox files must be installed under a named folder.\n\n"
 					L"Please select different folder or create new folder while in Save File Dialog and try again.";
 				ResHelper::TranslateString(txt);
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 
@@ -10325,7 +10325,7 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 				CString txt = L"The \"UMBoxViewer\" name is reserved and it can't appear in the file path.\n"
 					L"Please create different name and try again.";
 				ResHelper::TranslateString(txt);
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 
@@ -10334,7 +10334,7 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 				CString txt = L"Selecting target folder to source root folder for merged file is not recommended or allowed.\n\nPlease try again.";
 				ResHelper::TranslateString(txt);
 				HWND h = GetSafeHwnd(); // we don't have any window yet
-				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				continue;
 			}
 
@@ -10347,7 +10347,7 @@ BOOL NTreeView::SaveMergedFileDialog(CString& fileName, CString& fileNameFilter,
 					CString txt = L"Selected target folder is already open as the root folder.\n\nPlease try again.";
 					ResHelper::TranslateString(txt);
 					HWND h = GetSafeHwnd(); // we don't have any window yet
-					int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+					int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 					continue;
 				}
 			}

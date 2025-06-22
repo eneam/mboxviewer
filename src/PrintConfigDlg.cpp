@@ -126,7 +126,7 @@ void PrintConfigDlg::OnBnClickedOk()
 	{
 		CString txt;
 		txt.Format("No fields are checked!");
-		AfxMessageBox(txt, MB_OK | MB_ICONHAND);
+		MyAfxMessageBox(txt, MB_OK | MB_ICONHAND);
 		return;
 	}
 #endif

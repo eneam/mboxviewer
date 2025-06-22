@@ -125,7 +125,7 @@ void DevelopmentCreateArchive::OnBnClickedOk()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 			return;
 

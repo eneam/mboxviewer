@@ -210,7 +210,7 @@ void HtmlPdfHdrConfigDlg::OnBnClickedOk()
 
 	if (!errorTxt.IsEmpty())
 	{
-		int answer = MessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return;
 	}
 
@@ -414,7 +414,7 @@ void HtmlPdfHdrConfigDlg::OnBnClickedPickConcreteFont()
 				ResHelper::TranslateString(fmt);
 				errorTxt.Format(fmt, pFont->m_nFontSize);
 			}
-			int answer = MessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(errorTxt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			pFont->m_nFontSize = 16;
 		}
 

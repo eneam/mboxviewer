@@ -611,7 +611,7 @@ void NListView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 			ResHelper::TranslateString(InfoTxt);
 
-			int answer = MessageBox(InfoTxt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(InfoTxt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			return;
 		}
 	}
@@ -1283,7 +1283,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES) {
 			RemoveAllMails();
 		}
@@ -1420,7 +1420,7 @@ void NListView::OnRClickSingleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 		{
 			int firstMail = -1;
@@ -1874,7 +1874,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES) {
 			RemoveAllMails();
 		}
@@ -2013,7 +2013,7 @@ void NListView::OnRClickMultipleSelect(NMHDR* pNMHDR, LRESULT* pResult)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDYES)
 		{
 			int firstMail = -1;
@@ -3522,7 +3522,7 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 
 		HWND h = GetSafeHwnd();
 		TRACE(L"%s\n", errorText);
-		//int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		//int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		ret = -2;
 		goto ERR;
@@ -3609,7 +3609,7 @@ int NListView::LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, Mail
 		sz.close();
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return ret;
 	}
 
@@ -3699,7 +3699,7 @@ int NListView::LoadMails_WorkerThread(LPCWSTR cache, MailArchiveFileInfo& maileF
 		sz.close();
 
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return ret;
 	}
 
@@ -3959,7 +3959,7 @@ int NListView::FillCtrl_ParseMbox(CString &mboxPath)
 	if (!pTreeView)
 		return -1;
 
-	// TODO: MessageBox ??
+	// TODO: MyMessageBox ??
 
 	if (FileUtils::PathFileExist(mboxPath) == FALSE)
 	{
@@ -4062,7 +4062,7 @@ void NListView::FillCtrl()
 		pMsgView->DisableMailHeader();
 
 
-	// TODO: MessageBox ??
+	// TODO: MyMessageBox ??
 	// m_path is set to mboxFilePath not just to mboxFileName
 	if (FileUtils::PathFileExist(m_path) == FALSE)
 	{
@@ -4147,7 +4147,7 @@ void NListView::FillCtrl()
 					errorText.Format(fmt, cache);
 
 					HWND h = GetSafeHwnd();
-					int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+					int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				}
 
 				ni = 0;
@@ -4231,7 +4231,7 @@ void NListView::FillCtrl()
 						txt.Format(fmt, cache);
 
 						HWND h = GetSafeHwnd();
-						int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+						int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 					}
 
 					ni = 0;
@@ -4296,7 +4296,7 @@ void NListView::FillCtrl()
 				L"\nWhile viewing the selected mail file, in order to view all mails you need to refresh the index file. In order to refresh index file, right-click on the mail file and select \"Refresh Index File\".\n\n"
 				L"Or, Select parent folder or any folder or different mail file under Tree View and select again the same mail file.\n";
 			ResHelper::TranslateString(txt);
-			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			int deb = 1;
 		}
 		else
@@ -4373,7 +4373,7 @@ void NListView::FillCtrl()
 			if (!wargs.errorText.IsEmpty())
 			{
 
-				int answer = MessageBox(wargs.errorText, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+				int answer = MyMessageBox(wargs.errorText, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 			}
 		}
 
@@ -4402,7 +4402,7 @@ void NListView::FillCtrl()
 					"Image cache improves performance when printing large number of mails to PDF or viewing in Browser.\n"
 					"\nCreate cache of inline images (may take several minutes depending on the mail count and content) ?";
 				ResHelper::TranslateString(txt);
-				int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+				int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 				if (answer == IDYES)
 				{
 					int firstMail = 0;
@@ -4500,7 +4500,7 @@ int NListView::MailFileFillCtrl(CString &errorText)
 		pMsgView->DisableMailHeader();
 
 
-	// TODO: MessageBox ??
+	// TODO: MyMessageBox ??
 	// m_path is set to mboxFilePath not just to mboxFileName
 	if (FileUtils::PathFileExist(m_path) == FALSE)
 		return -1;
@@ -4528,7 +4528,7 @@ int NListView::MailFileFillCtrl(CString &errorText)
 				errorText.Format(fmt, cache);
 
 				HWND h = GetSafeHwnd();
-				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			}
 
 			ni = 0;
@@ -4739,7 +4739,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		//errorText = txt;
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		//fp.Close();
 		return -1;
@@ -5520,7 +5520,7 @@ void NListView::OnEditFind()
 				CString total;
 				total.Format(L"(DoFastFind) Total search time %d milliseconds !!!!!!!!!!!.\n", delta);
 				TRACE(L"%s", (LPCWSTR)total);
-				//MessageBox(L"info", total, MB_OK | MB_ICONHAND);
+				//MyMessageBox(L"info", total, MB_OK | MB_ICONHAND);
 
 				int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
 				int retResult = LOWORD(nResult);
@@ -6322,7 +6322,7 @@ void NListView::OnEditFindAgain()
 		CString total;
 		total.Format(L"(DoFastFind) Total search time %d milliseconds !!!!!!!!!!!.\n", delta);
 		TRACE(L"%s", (LPCWSTR)total);
-		//MessageBox(L"info", total, MB_OK | MB_ICONHAND);
+		//MyMessageBox(L"info", total, MB_OK | MB_ICONHAND);
 
 		int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
 		int retResult = LOWORD(nResult);
@@ -6420,7 +6420,7 @@ void NListView::OnEditVieweml()
 				HWND h = GetSafeHwnd();
 				//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-				CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+				CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 				CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError); // TODO
 #endif
@@ -6632,7 +6632,7 @@ BOOL NListView::SetupFileMapView(_int64 offset, DWORD length, BOOL findNext)
 		TRACE(L"(SetFileMapView)MapViewOfFileEx failed: error= %ld\n", err);
 
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errTxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(h, errTxt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		CloseMailFile();
 		m_bMappingError = TRUE;
 		return FALSE;
@@ -7350,7 +7350,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 
 				//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
 				HWND h = GetSafeHwnd(); // we don't have any window yet
-				int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+				int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 				//return;
 			}
 			return;
@@ -7377,7 +7377,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 
 		ResHelper::TranslateString(txt);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 		{
 			return;
@@ -7438,7 +7438,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 						CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
 						CString errorText = FileUtils::ProcessCFileFailure(fmt, textFileName, ExError, lastErr, h);
 #else
-						// MessageBox ??
+						// MyMessageBox ??
 						CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  //TODO
 #endif
 						int deb = 1;
@@ -7690,7 +7690,7 @@ int NListView::CopyAllMails()
 {
 	CString txt = L"Do you want to copy all mails to Users Selected Mails?";
 	ResHelper::TranslateString(txt);
-	int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+	int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 	if (answer == IDYES) 
 	{
 		MboxMail *m;
@@ -8511,7 +8511,7 @@ void NListView::EditFindAdvanced(MboxMail *m)
 				CString total;
 				total.Format(L"(EditFindAdvanced) Total search time %ld milliseconds !!!!!!!!!!!.\n", delta);
 				TRACE(L"%s", (LPCWSTR)total);
-				//MessageBox(L"info", total, MB_OK | MB_ICONHAND);
+				//MyMessageBox(L"info", total, MB_OK | MB_ICONHAND);
 
 				int cancelledbyUser = HIWORD(nResult); // when Cancel button is selected
 				int retResult = LOWORD(nResult);
@@ -8989,7 +8989,7 @@ int NListView::OpenArchiveFileLocation()
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -9010,7 +9010,7 @@ int NListView::OpenArchiveFileLocation()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		//return -1;  // Go ahead and open folder without highlighting merge file
 	}
 	if (FileUtils::BrowseToFile(mboxFilePath) == FALSE) {  // TODO: s_path error checking ??
@@ -9053,7 +9053,7 @@ int NListView::OpenMailListFileLocation()
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -9074,7 +9074,7 @@ int NListView::OpenMailListFileLocation()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 	if (FileUtils::BrowseToFile(mboxFilePath) == FALSE) {  // TODO: s_path error checking ??
@@ -9244,7 +9244,7 @@ int NListView::PrintMailSelectedToSinglePDF_Merge_Thread(MailIndexList* selected
 		MboxMail::assert_unexpected();
 		HWND h = GetSafeHwnd();
 
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 	int ret = PrintMailSelectedToSeparatePDF_Thread(0, targetPrintSubFolderName, targetPrintFolderPath, TRUE);
@@ -9274,14 +9274,14 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 		if (ret < 0)
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
 	else
 	{
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		errorText.Append(L"Internal error. Try again.");
 		return -1;
 	}
@@ -9295,7 +9295,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -9389,7 +9389,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 						L"Select OK to open the file with the list of failed mails\n";
 					ResHelper::TranslateString(txt);
 
-					int answer = ::MessageBox(h, txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
+					int answer = MyMessageBox(h, txt, L"Warning", MB_APPLMODAL | MB_ICONWARNING | MB_OK);
 
 					HINSTANCE result = ShellExecute(h, L"open", mergeErrorFilepath, NULL, NULL, SW_SHOWNORMAL);
 					CMainFrame::CheckShellExecuteResult(result, h, &mergeErrorFilepath);
@@ -9430,7 +9430,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
 
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -9439,7 +9439,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Thread(MailIndexList* selectedMail
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -9465,14 +9465,14 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 		if (ret < 0)
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
 	else
 	{
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		errorText.Append(L"Internal error. Try again.");
 		return -1;
 	}
@@ -9489,7 +9489,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -9585,7 +9585,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -9594,7 +9594,7 @@ int NListView::PrintMailSelectedToSinglePDF_Thread(MailIndexList* selectedMailsI
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -9810,7 +9810,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		DWORD lastErr = ::GetLastError();
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 		return -1;
 	}
 	fpMergeError.Close();  // Write Append in 
@@ -9830,7 +9830,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 		return -1;
 	}
 	fp.Close();
@@ -9848,7 +9848,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		//CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
 		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeAllCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 		return -1;
 	}
 
@@ -9968,7 +9968,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 				//HWND h = GetSafeHwnd();
 				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-				errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+				errorText = FileUtils::ProcessCFileFailure(fmt, htmlFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 				return -1;
 			}
 		}
@@ -10077,7 +10077,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 	{
 		CString errText = FileUtils::GetLastErrorAsString();
 		TRACE(L"CopyFile: %s\n%s", pdfboxJarFilePath, errText);
-		// TODO: MessageBox
+		// TODO: MyMessageBox
 	}
 	//
 	CString pdfboxConfigFilePath = processFolderPath + L"\\scripts\\pdfbox-config.txt";
@@ -10110,7 +10110,7 @@ int NListView::PrintMailSelectedToSeparatePDF_Merge_WorkerThread(MailIndexList* 
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Merge PDF files failed. Could not create file\n\n\"%s\"\n\n%s";
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError3, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError3, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 
 		fpm.Close();
 		return -1;
@@ -10280,7 +10280,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeErrorFilePath, ExMergeError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 		return -1;
 	}
 
@@ -10296,7 +10296,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 
 		fpMergeError.Close();
 
@@ -10363,7 +10363,7 @@ int NListView::MergePDfFileList(CFile &fpm, CStringArray &in_array, CStringArray
 				HWND h = GetSafeHwnd();
 				//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 				CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+				errorText = FileUtils::ProcessCFileFailure(fmt, mergeCmdFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 
 				// TODO: is this working? Verify
 				CStringA errorTextA = MYW2A(errorText);
@@ -10808,7 +10808,7 @@ int NListView::ExportMails_CopyExportMails2PDF()
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -10843,7 +10843,7 @@ BOOL  NListView::CanGoAheadWithExport()
 		BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, exportSubFolder, exportCachePath, errorText);
 		if (retval == FALSE) {
 			HWND h = NULL; // we don't have any window yet  
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return FALSE;
 		}
 
@@ -10873,7 +10873,7 @@ BOOL  NListView::CanGoAheadWithExport()
 				errorText.Format(fmt, exportCachePath);
 
 				HWND h = GetSafeHwnd();
-				int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNOCANCEL);
+				int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNOCANCEL);
 				if (answer == IDYES)
 				{
 					bool recursive = true;
@@ -10919,7 +10919,7 @@ BOOL  NListView::CanGoAheadWithExport()
 						else
 						{
 							HWND h = GetSafeHwnd();
-							int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+							int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						}
 						int deb = 1;
 					}
@@ -10932,7 +10932,7 @@ BOOL  NListView::CanGoAheadWithExport()
 					BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, exportSubFolder, exportCacheParentPath, errorText);
 					if (retval == FALSE) {
 						HWND h = NULL; // we don't have any window yet  
-						int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						return -1;
 					}
 #if 1
@@ -10993,7 +10993,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11077,7 +11077,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 					BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, exportSubFolder, exportCachePath, errorText);
 					if (retval == FALSE) {
 						HWND h = GetSafeHwnd(); // we don't have any window yet  
-						int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+						int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 						return -1;
 					}
 				}
@@ -11122,7 +11122,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -11131,7 +11131,7 @@ int NListView::PrintMailSelectedToSeparateHTML_Thread(MailIndexList* selectedMai
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -11167,7 +11167,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11266,7 +11266,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -11275,7 +11275,7 @@ int NListView::PrintMailSelectedToSingleHTML_Thread(MailIndexList* selectedMails
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -11398,7 +11398,7 @@ int NListView::PrintMailRangeToSingleCSV_Thread(int iItem)
 
 			//txt += "Select \"View\"->\"Sort By\" ->\"Conversation\" or left click on the first column.";
 			HWND h = GetSafeHwnd(); // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			//return -1;
 		}
 		return -1;
@@ -11448,7 +11448,7 @@ int NListView::CreateIndexFileForExportedMails_Thread(MailIndexList* selectedMai
 	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, exportHtmlCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11456,7 +11456,7 @@ int NListView::CreateIndexFileForExportedMails_Thread(MailIndexList* selectedMai
 	retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, exportCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11708,7 +11708,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		{
 			CString txt = L"User Selected Mails List is not empty. Overwrite?";
 			ResHelper::TranslateString(txt);
-			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer == IDNO)
 				return -1;
 			else if (answer == IDYES)
@@ -11724,7 +11724,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11749,7 +11749,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11775,7 +11775,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mailFile);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11791,7 +11791,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11807,7 +11807,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -11857,7 +11857,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile, strVersion, strCachedVersion);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11870,19 +11870,19 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 
 	if (!sz.readInt64(&mailFileSize)) { // main mbox mail
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!sz.readInt64(&mboxFileSize)) {  // derived mbox mail file
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!sz.readInt(&mailListCnt)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11900,7 +11900,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		(mailFileSize != nMailFileSize) || (mboxFileSize != nMboxFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -11936,7 +11936,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		return -1; // do nothing
 	}
@@ -11955,7 +11955,7 @@ int NListView::ReloadMboxListFile_v2(CString *mbxListFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 	else
 	{
@@ -12003,7 +12003,7 @@ int NListView::SaveAsMboxListFile_v2()
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -12028,7 +12028,7 @@ int NListView::SaveAsMboxListFile_v2()
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -12070,7 +12070,7 @@ int NListView::SaveAsMboxListFile_v2()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -12122,7 +12122,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -12147,7 +12147,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -12164,7 +12164,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
 	}
@@ -12177,7 +12177,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		HWND h = GetSafeHwnd();
 		//HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, mboxFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -12186,7 +12186,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxFilePath, exErrorStr);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -12714,7 +12714,7 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -12764,7 +12764,7 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -12773,7 +12773,7 @@ int NListView::CreateAttachmentCache_Thread(int firstMail, int lastMail, CString
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -12817,7 +12817,7 @@ BOOL CreateAttachmentCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString 
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -12958,7 +12958,7 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -13022,7 +13022,7 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -13031,7 +13031,7 @@ int NListView::CreateEmlCache_Thread(int firstMail, int lastMail, CString &targe
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -13075,7 +13075,7 @@ BOOL NListView::CreateEmlCache_WorkerThread(MailIndexList* selectedMailsIndexLis
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -13276,7 +13276,7 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 	if (retval == FALSE)
 	{
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -13325,7 +13325,7 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -13334,7 +13334,7 @@ int NListView::CreateInlineImageCache_Thread(int firstMail, int lastMail, CStrin
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -13354,7 +13354,7 @@ BOOL CreateInlineImageCache_WorkerThread(LPCWSTR cache, BOOL mainThread, CString
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		// TODO: critical failure
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -13500,7 +13500,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 	BOOL retval = MboxMail::CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
 	if (retval == FALSE) {
 		HWND h = GetSafeHwnd(); // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -13599,7 +13599,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
@@ -13608,7 +13608,7 @@ int NListView::PrintMailSelectedToSingleTEXT_Thread(CString &targetPrintSubFolde
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -13856,7 +13856,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -13894,7 +13894,7 @@ int NListView::PrintMailAttachments(CFile *fpm, int mailPosition, AttachmentMgr 
 	{
 		HWND h = NULL; // we don't have any window yet  
 		// TODO: what to do ?
-		//int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		//int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		//return -1;
 	}
 
@@ -14012,7 +14012,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+			CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 			// TODO: critical failure
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
@@ -14065,7 +14065,7 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create eml file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -14074,10 +14074,10 @@ int NListView::PrintAsEmlFile(CFile *fpm, int mailPosition, CString &emlFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, fileName, exErrorStr);
 
-		// PrintAsEmlFile is the static function. Must use global MessageBox
+		// PrintAsEmlFile is the static function. Must use global MyMessageBox
 		// Not ideal because program is not blocked. TODO: invetsigate and change 
 		HWND h = NULL;
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		// continue for now ??
 #endif
 		return -1;
@@ -14140,7 +14140,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 			//HWND h = GetSafeHwnd();
 			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 			CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+			errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 			CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -14181,7 +14181,7 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 		//HWND h = GetSafeHwnd();
 		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		errorText = FileUtils::ProcessCFileFailure(fmt, fileName, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -14193,13 +14193,13 @@ int NListView::ExportAsEmlFile(CFile *fpm, int mailPosition, CString &targetDire
 
 		errorText = txt;
 #if 0
-		// ExportAsEmlFile is the static function. Must use global MessageBox
+		// ExportAsEmlFile is the static function. Must use global MyMessageBox
 		// It can be called from non main thread and need to figure whether calling
-		// :: MessageBox is valid. Note: it seems to work
+		// :: MyMessageBox is valid. Note: it seems to work
 		// Not ideal because program is not blocked. TODO: invetsigate and change 
 
 		HWND h = NULL;
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 #endif
 		// continue for now.
@@ -14556,7 +14556,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -14580,7 +14580,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 	if (retval == FALSE)
 	{
 		HWND h = NULL; // we don't have any window yet  
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -14620,7 +14620,7 @@ int NListView::CreateEmptyFolderListFile(CString &path, CString &folderNameFile)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, mboxListFile);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -14806,7 +14806,7 @@ int NListView::ScanAllMailsInMbox_NewParser()
 		//TRACE(L"%s\n", txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
 		return -1;
 	}
@@ -15046,7 +15046,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 	{
 		CString txt = L"Folder Selected Mails List not empty. Overwrite?";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
 	}
@@ -15057,7 +15057,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -15090,7 +15090,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, folderNameCompletePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -15106,7 +15106,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, folderNameCompletePath);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -15145,25 +15145,25 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		ResHelper::TranslateString(fmt);
 		txt.Format(fmt, folderNameCompletePath, strVersion, strCachedVersion);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!sz.readInt64(&mailFileSize)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!sz.readInt64(&mboxFileSize)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
 	if (!sz.readInt(&mailListCnt)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -15174,7 +15174,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		(mailFileSize != nMailFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -15210,7 +15210,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		CString txt;
 		txt.Format(fmt, folderNameCompletePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 
 		return -1; // do nothing
 	}
@@ -15230,7 +15230,7 @@ int NListView::LoadFolderListFile_v2(CString &folderPath, CString &folderName)
 		CString txt;
 		txt.Format(fmt, folderNameCompletePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 	}
 	else
 	{
@@ -16936,7 +16936,7 @@ int NListView::SaveAsEmlFile(char *bdy, int bdylen)
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, emlFile, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -17238,7 +17238,7 @@ int NListView::ForwardMailDialog(int iItem)
 		ResHelper::TranslateString(txt);
 
 		HWND h = GetSafeHwnd(); // we don't have any window yet
-		int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		return -1;
 	}
 
@@ -17306,7 +17306,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 
 
 			HWND h = GetSafeHwnd(); // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 			//return -1;
 		}
 		return -1;
@@ -17326,7 +17326,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 
 		ResHelper::TranslateString(txt);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 		{
 			return -1;
@@ -17369,7 +17369,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 			txt.Format(fmt, largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
 
 
-			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer != IDYES)
 			{
 				return -1;
@@ -17411,7 +17411,7 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 
 		ResHelper::TranslateString(txt);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer != IDYES)
 		{
 			return -1;
@@ -17444,7 +17444,7 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 			CString txt;
 			txt.Format(fmt, largeMailsCnt, MaxMailSize, pFrame->m_mailDB.SMTPConfig.MailServiceName);
 
-			int answer = MessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+			int answer = MyMessageBox(txt, L"Warning", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 			if (answer != IDYES)
 			{
 				return -1;
@@ -17501,14 +17501,14 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 		if (ret < 0)
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 	}
 	else
 	{
 		HWND h = GetSafeHwnd();
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		errorText.Append(L"Internal error. Try again.");
 		return -1;
 	}
@@ -17610,7 +17610,7 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 
 		HWND h = GetSafeHwnd();
 		// Both statements work
-		int answer = ::MessageBox(h, (LPCWSTR)errorTxtW.Data(), L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, (LPCWSTR)errorTxtW.Data(), L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		//int answer = ::MessageBoxA(h, (LPCSTR)errorTxt.Data(), "Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
@@ -17626,7 +17626,7 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 		{
 			MboxMail::assert_unexpected();
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			MboxMail::assert_unexpected();
 			return -1;
 		}
@@ -17636,7 +17636,7 @@ int NListView::ForwardSelectedMails_Thread(MailIndexList *selectedMailsIndexList
 		if (!args.errorText.IsEmpty())
 		{
 			HWND h = GetSafeHwnd();
-			int answer = ::MessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, args.errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 		else
@@ -18158,7 +18158,7 @@ int NListView::WriteMboxListFile_v2(MailArray *mailsArray, CString &filePath, _i
 		txt.Format(fmt, filePath, lastError);
 
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18205,7 +18205,7 @@ int NListView::WriteMboxLabelListFile(MailArray* mailsArray, CStringA &gLabel, D
 		CString txt;
 		txt.Format(fmt, filePath, lastError);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18255,7 +18255,7 @@ int NListView::SaveAsLabelFile(MailArray *marray, CString &targetDir, CStringA &
 	if (MboxMail::s_path.IsEmpty()) {
 		CString txt = L"Please open mail file first.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18348,7 +18348,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	if (MboxMail::IsFolderMailsSelected())
 	{
 		CString txt = L"Folder Selected Mails List not empty. Overwrite?";
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
 	}
@@ -18361,7 +18361,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		ResHelper::TranslateString(txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18386,7 +18386,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		CString txt;
 		txt.Format(fmt, listFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18405,7 +18405,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		CString txt;
 		txt.Format(fmt, listFilePath, lastError);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18461,7 +18461,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		ResHelper::TranslateString(fmt);
 		text.Format(fmt, listFilePath, strVersion, strExpectedVersion, mboxFilePath);
 
-		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18473,21 +18473,21 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 
 	if (!sz.readInt64(&mailFileSize)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
 
 	if (!sz.readInt64(&mboxFileSize)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
 
 	if (!sz.readInt(&mailListCnt)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18499,7 +18499,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		(mailFileSize != nMailFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18507,7 +18507,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	CStringA gLabel;
 	if (!sz.readString(gLabel)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18516,7 +18516,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 	int codePage = 0;
 	if (!sz.readInt(&codePage)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18554,7 +18554,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		CString txt;
 		txt.Format(fmt, listFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1; // do nothing
 	}
@@ -18573,7 +18573,7 @@ int NListView::LoadLabelListFile_v2(CString &listFilePath, CString &folderName, 
 		CString txt;
 		txt.Format(fmt, listFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 	}
 	else
@@ -18626,7 +18626,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (MboxMail::IsFolderMailsSelected())
 	{
 		CString txt = L"Folder Selected Mails List not empty. Overwrite?";
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return -1;
 	}
@@ -18640,7 +18640,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		ResHelper::TranslateString(txt);
 
 		HWND h = NULL; // we don't have any window yet
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18665,7 +18665,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		CString txt;
 		txt.Format(fmt, listFilePath);
 
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18685,7 +18685,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		CString txt;
 		txt.Format(fmt, listFilePath, lastError);
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18745,7 +18745,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		ResHelper::TranslateString(fmt);
 		text.Format(fmt, listFilePath, strVersion, strExpectedVersion, mboxFilePath);
 
-		int answer = MessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18759,7 +18759,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (!sz.readInt64(&mailFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18767,7 +18767,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (!sz.readInt64(&mboxFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18775,7 +18775,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (!sz.readInt(&mailListCnt))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18787,7 +18787,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 		(mailFileSize != nMailFileSize))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18796,7 +18796,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	//CString gLabel;
 	if (!sz.readString(gLabel)) {
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18805,7 +18805,7 @@ int NListView::GetLabelFromLabelListFile_v2(CString& listFilePath, CStringA& gLa
 	if (!sz.readInt(&codePage))
 	{
 		sz.close();
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 		MboxMail::assert_unexpected();
 		return -1;
 	}
@@ -18836,7 +18836,7 @@ int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *select
 
 	if (ret < 0) {
 		HWND h = NULL;
-		int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+		int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 		return -1;
 	}
 
@@ -18864,7 +18864,7 @@ int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *select
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			return -1;
 		}
 
@@ -18884,7 +18884,7 @@ int NListView::ExportTextToTextFile(CString &textFileName, MailIndexList *select
 			//errorText = txt;
 
 			HWND h = NULL; // we don't have any window yet
-			int answer = ::MessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			fp.Close();
 			return -1;
 		}
@@ -19844,7 +19844,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 							//HWND h = GetSafeHwnd();
 							HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 							CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-							CString errText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MessageBox ??
+							CString errText = FileUtils::ProcessCFileFailure(fmt, imageFilePath, ExError, lastErr, h);  // it looks like it may  result in duplicate MyMessageBox ??
 #else
 							CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);  // TODO
 #endif
@@ -19865,7 +19865,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 							{
 								HWND h = NULL; // we don't have any window yet  
 								// TODO: what to do ?
-								//int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+								//int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 								//return -1;
 							}
 							retryOpen = TRUE;
@@ -19889,7 +19889,7 @@ int NListView::UpdateInlineSrcImgPathEx(CFile *fpm, char* inData, int indDataLen
 
 							HWND h = NULL;
 							// Ignore for now
-							//int answer = ::MessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+							//int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
 #endif
 						}
 						else
@@ -20054,7 +20054,7 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 		{
 			HWND h = NULL; // we don't have any window yet  
 			// TODO: what to do ?
-			//int answer = ::MessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			//int answer = MyMessageBox(h, errorText, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			_ASSERTE(FALSE);
 			//return -1;  // FIXME
 		}
@@ -20340,7 +20340,7 @@ BOOL NListView::ConfigureExportOfMails()
 	ResHelper::TranslateString(helpText);
 
 	HWND h = GetSafeHwnd();
-	int answer = ::MessageBox(h, helpText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNOCANCEL);
+	int answer = MyMessageBox(h, helpText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNOCANCEL);
 	BOOL bHdrAttachmentLinkOpenMode = -1;
 	if (answer == IDYES)
 	{

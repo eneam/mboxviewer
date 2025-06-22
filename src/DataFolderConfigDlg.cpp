@@ -248,7 +248,7 @@ void DataFolderConfigDlg::OnBnClickedSelectDataFolderButton()
 					ResHelper::TranslateString(fmt);
 					text.Format(fmt, path);
 
-					int answer = MessageBox(text, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
+					int answer = MyMessageBox(text, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_RETRYCANCEL);
 					if (answer == IDRETRY)
 					{
 						continue;
@@ -330,7 +330,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 	{
 		CString txt = L"Please select root data folder.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return;
 	}
 
@@ -346,7 +346,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 		CString txt = L"The data files must be created under a named folder.\n"
 			"Please create the named folder and try again.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return;
 	}
 	m_strUserConfiguredDataFolder.TrimRight(L"\\");
@@ -356,7 +356,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 		CString txt = L"Folder name \"UMBoxViewer\" is reserved.\n"
 			"Please create different folder name and try again.";
 		ResHelper::TranslateString(txt);
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 		return;
 	}
 
@@ -366,7 +366,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 		{
 			CString txt = L"Current Data Folder and new Data Folder are the same.";
 			ResHelper::TranslateString(txt);
-			int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
+			int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_OK);
 			return;
 		}
 	}
@@ -378,7 +378,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 			"Select \"Try Again\" to delete existing \"UMBoxViewer\" folder and continue.\n\n" 
 			"Select \"Cancel\" to go back.\n\n";
 
-		int answer = MessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONQUESTION | MB_CANCELTRYCONTINUE);
 		m_returnCode = answer;
 		if (answer == IDCANCEL)
 		{
@@ -427,7 +427,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 			ResHelper::TranslateString(restartText);
 			txt += restartText;
 		}
-		int answer = MessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
+		int answer = MyMessageBox(txt, L"Info", MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO);
 		if (answer == IDNO)
 			return;
 	}
