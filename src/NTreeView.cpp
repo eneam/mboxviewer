@@ -279,7 +279,7 @@ int NTreeView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	if (!m_tree.Create(WS_CHILD | WS_VISIBLE | TVS_INFOTIP |
+	if (!m_tree.Create(WS_CHILD | WS_VISIBLE | TVS_INFOTIP | TVS_RTLREADING |
 		TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS |
 		TVS_SHOWSELALWAYS | TVS_EDITLABELS, // TVS_EDITLABELS | TVS_DISABLEDRAGDROP,
 		CRect(0, 0, 0, 0), this, IDC_TREE))

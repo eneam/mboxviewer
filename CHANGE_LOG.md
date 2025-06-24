@@ -2,6 +2,15 @@
 Changes
 -------
 
+v 1.0.3.51
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added experimental support for Arabic language.;
+ - Looking for feedback from users fluent in English and Arabic.;
+ - Fixed rare crash during DateTime field discovery introduced in v1.0.3.50.;
+ - Resolved few langauge translation issues.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.50
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

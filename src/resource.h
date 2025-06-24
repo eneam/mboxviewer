@@ -594,6 +594,7 @@
 #define ID_TEST_CFILEOPENFAILURE        32938
 #define ID_FILE_FONTCONFIG              32939
 #define ID_HELP_CRASHHELP               32940
+#define ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS 32941
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 
@@ -602,8 +603,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        246
-#define _APS_NEXT_COMMAND_VALUE         32941
+#define _APS_NEXT_RESOURCE_VALUE        247
+#define _APS_NEXT_COMMAND_VALUE         32942
 #define _APS_NEXT_CONTROL_VALUE         1432
 #define _APS_NEXT_SYMED_VALUE           118
 #endif

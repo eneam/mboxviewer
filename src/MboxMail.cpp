@@ -1303,7 +1303,6 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 			{
 				TextUtilsEx::CopyUpToEndOfLine(day, e, dateStr);
 				break;
-				int deb = 1;
 			}
 			else
 			{
@@ -1314,11 +1313,21 @@ void MboxMail::FindDateInHeader(char *data, int datalen, CStringA &dateStr)
 				TextUtilsEx::SplitStringA2A(dateStr, delim, va);
 				TextUtilsEx::TraceStringArrayA(va);
 
-				BOOL isNumDay = TextUtilsEx::isNumericA(va[1]);
-				BOOL isNumYear = TextUtilsEx::isNumericA(va[3]);
-
-				if ((va.GetCount() == 5) && isNumDay && isNumYear)
+				if (va.GetCount() == 5)
 				{
+					BOOL isNumDay = TextUtilsEx::isNumericA(va[1]);
+					if (!isNumDay)
+						continue;
+					BOOL isNumYear = TextUtilsEx::isNumericA(va[3]);
+					if (!isNumYear)
+						continue;
+
+					CStringA rcvtime = va[2];
+					rcvtime.Remove(':');
+					BOOL isTime = TextUtilsEx::isNumericA(rcvtime);
+					if (!isTime)
+						continue;
+
 					dateStr.Format("%s %s %s %s %s", va[1], va[0], va[3], va[2], va[4]);
 					break;
 				}
@@ -1783,7 +1792,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 
 							int index = s_mails.GetCount() - 1;
 
-							if (s_mails.GetCount() == 1098)
+							if (s_mails.GetCount() == 11680)
 								int deb = 1;
 
 							UINT_PTR dwProgressbarPos = 0;
@@ -11803,6 +11812,13 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 			"\n"
 		);
 	}
+	else if (hintNumber == HintConfig::FontSizeHint)
+	{
+		hintText.Append(
+			L"You can change the Font Size of GUI objects by selecting \"File->Font Config\" option.\n"
+			"\n"
+		);
+		}
 }
 
 // Fix static buffer allocation, it is bad !!!

@@ -334,6 +334,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_MEASUREITEM()
 	ON_WM_DRAWITEM()
 	ON_COMMAND(ID_HELP_CRASHHELP, &CMainFrame::OnHelpCrashhelp)
+	ON_COMMAND(ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS, &CMainFrame::OnDevelopmentoptionsTogglertlfordialogs)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -5590,6 +5591,22 @@ void CMainFrame::OpenHelpFile(CString &helpFileName, HWND h, BOOL ignoreLanguage
 
 		filePath = processDir + "\\HelpFiles\\" + language + L"\\" + helpFileName;
 	}
+#ifdef USE_STACK_WALKER
+	if (!FileUtils::PathFileExist(filePath))
+	{
+		if (ignoreLanguage)
+		{
+			filePath = processDir + L"\\..\\" + helpFileName;
+		}
+		else
+		{
+			if (language.IsEmpty())
+				language = L"english"; //  handling of english language too complicated
+
+			filePath = processDir + "\\..\\HelpFiles\\" + language + L"\\" + helpFileName;
+		}
+	}
+#endif
 
 	if (FileUtils::PathFileExist(filePath))
 	{
@@ -5621,6 +5638,11 @@ void CMainFrame::OpenTranslatedHelpFile(CString& helpFileName, HWND h)
 		FileUtils::CPathGetPath(processPath, processDir);
 
 		CString inputFile = processDir + L"\\" + helpFileName;
+#ifdef USE_STACK_WALKER
+		if (!FileUtils::PathFileExist(inputFile))
+			inputFile = processDir + L"\\..\\" + helpFileName;
+#endif
+
 		CString HelpPath = CMainFrame::GetMboxviewTempPath(L"MboxHelp");
 
 		BOOL createDirOk = TRUE;
@@ -6014,6 +6036,7 @@ void CMainFrame::OnFileMergerootfoldersub()
 #else
 	int wantsToRetry = -2;
 	MergeRootFolderAndSubfolders dlg;
+	dlg.m_fontSize = CMainFrame::m_cnfFontSize;
 
 	while (wantsToRetry == -2)
 	{
@@ -6626,6 +6649,8 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 		//ResHelper::LoadLanguageMap(languageTranslationFilePath);
 
 		AfxGetMainWnd()->PostMessage(WM_CLOSE);
+
+		CMainFrame::OnFileRestorehintmessages();
 	}
 	else
 	{
@@ -7022,4 +7047,13 @@ void CMainFrame::OnHelpCrashhelp()
 	CString helpFileName = L"CrashHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
+}
+
+void CMainFrame::OnDevelopmentoptionsTogglertlfordialogs()
+{
+	// TODO: Add your command handler code here
+	if (CmboxviewApp::m_isRTL)
+	{
+		CmboxviewApp::m_isRTLForDialogs = !CmboxviewApp::m_isRTLForDialogs;
+	}
 }

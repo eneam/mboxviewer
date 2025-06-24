@@ -163,7 +163,8 @@ public:
 		MergeFilesHint = 13,
 		LabelsHint = 14,
 		SubjectSortingHint = 15,
-		MaxHintNumber = 16
+		FontSizeHint = 16,
+		MaxHintNumber = 17
 	};
 };
 

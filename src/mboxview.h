@@ -113,6 +113,7 @@ public:
 	static BOOL m_configFileLoaded;
 	//static DebugCString m_configFilePath;  // for testing object life cycle
 	//
+	static BOOL m_isRTLForDialogs;
 	static BOOL m_isRTL; // arabic language is right-to-left
 	static CString m_language;
 

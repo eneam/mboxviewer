@@ -58,6 +58,7 @@ public:
 	CFont m_BoldFont;
 	CFont m_TextFont;
 	CBrush m_ButtonBrush;
+	int m_fontSize;
 	//
 	CToolTipCtrl m_toolTip;
 

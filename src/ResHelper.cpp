@@ -219,7 +219,7 @@ CString ResHelper::GetLanguageCode(CString& languageName)
 		return L"ru";
 	else if (languageName.CompareNoCase(L"chinese-simplified") == 0)
 		return L"zh-CN";
-	else if (languageName.CompareNoCase(L"arabic ") == 0)
+	else if (languageName.CompareNoCase(L"arabic") == 0)
 		return L"ar";
 	else
 		return langaugeCode;
@@ -472,7 +472,11 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 
 	if (CmboxviewApp::m_isRTL == TRUE)
 	{
-		wnd->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+		if (CmboxviewApp::m_isRTLForDialogs)
+		{
+			wnd->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+			//wnd->ModifyStyleEx(WS_EX_LTRREADING, WS_EX_RTLREADING);
+		}
 	}
 
 	// TODO: wnd param not used ??
@@ -498,7 +502,11 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 
 		if (CmboxviewApp::m_isRTL == TRUE)
 		{
-			pw->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+			if (CmboxviewApp::m_isRTLForDialogs)
+			{
+				pw->ModifyStyleEx(WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RTLREADING, WS_EX_RIGHT | WS_EX_LAYOUTRTL);
+				//pw->ModifyStyleEx(WS_EX_LTRREADING, WS_EX_RTLREADING);
+			}
 		}
 
 		CString wtext;

@@ -88,6 +88,7 @@ CString CmboxviewApp::m_configFilePath;
 BOOL CmboxviewApp::m_configFileLoaded = FALSE;
 //DebugCString CmboxviewApp::m_configFilePath;
 
+BOOL CmboxviewApp::m_isRTLForDialogs = FALSE;
 BOOL CmboxviewApp::m_isRTL = FALSE;
 CString CmboxviewApp::m_language = L"english";
 
@@ -2206,6 +2207,9 @@ int deb = 1;
 
 		pFrame->m_createCompleted = TRUE;
 	}
+
+	h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+	MboxMail::ShowHint(HintConfig::FontSizeHint, h);
 
 	return TRUE;
 }

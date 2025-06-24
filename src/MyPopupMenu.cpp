@@ -37,7 +37,7 @@ int MyPopupMenu::m_fontSize = 0;
 CFont MyPopupMenu::m_font;
 LOGFONT MyPopupMenu::m_menuLogFont;
 //
-int MyPopupMenu::m_menuBarFontSize = 11;
+int MyPopupMenu::m_menuBarFontSize = 12;
 CFont MyPopupMenu::m_menuBarFont;
 LOGFONT MyPopupMenu::m_menuBarLogFont;
 //
@@ -288,8 +288,19 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	if (!hasTab)
 	{
+		CRect rcTBar = rcItem;
+		if (pMyItem->m_isMenuBarItem)
+		{
+			rcTBar.top -= 2;
+			rcTBar.bottom += 0;
+
+			x = rcTBar.left;
+			y = rcTBar.top;
+			x += textOffset;
+
+		}
 		ExtTextOut(lpDrawItemStruct->hDC, x, y, ETO_OPAQUE,
-			&rcItem, itemText, itemText.GetLength(), NULL);
+			&rcTBar, itemText, itemText.GetLength(), NULL);
 	}
 	else
 	{

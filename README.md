@@ -108,12 +108,14 @@ Multiple Languages
 
 MBox Viewer supports the multiple languages:
 
-English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian, Polish, Japanese and Chinese-Simplified
+English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian, Polish, Japanese, Chinese-Simplified and Arabic.
 
 GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
 Free Google Translations are not domain specific and most likely they will need to be updated by humans.
 
 By default English language is enabled. User can select different language during runtime by selecting 'Language->Select Language' option on the main menu.
+
+Support for Arabic language is experimental. Looking for feedback from users fluent in English and Arabic.
 
 
 Running

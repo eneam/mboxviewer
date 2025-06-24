@@ -47,27 +47,8 @@ DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_MERGE_FOLDER_AND_SUBFOLDERS, pParent))
 	m_mergeRootFolderStyle = 1;  // merge all mbox files under root folder and all subfolders
 	m_labelAssignmentStyle = 1;  // assign mbox file name as label to each mail
 
-	// Get the log font.
-	NONCLIENTMETRICS ncm;
-	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	m_fontSize = 12;
 
-	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-		sizeof(NONCLIENTMETRICS), &ncm, 0);
-
-	HDC hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = 400;
-	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
-
-	hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = FW_BOLD;
-	ncm.lfMessageFont.lfHeight = -MulDiv(12, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
-
-	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
 	m_pParent = pParent;
 }
 
@@ -110,6 +91,33 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
+
+	m_fontSize += 2;
+	if (m_fontSize < 12)
+		m_fontSize = 12;
+
+
+		// Get the log font.
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
+		sizeof(NONCLIENTMETRICS), &ncm, 0);
+
+	HDC hdc = ::GetWindowDC(NULL);
+	ncm.lfMessageFont.lfWeight = 400;
+	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
+	::ReleaseDC(NULL, hdc);
+
+	hdc = ::GetWindowDC(NULL);
+	ncm.lfMessageFont.lfWeight = FW_BOLD;
+	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
+	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
+	::ReleaseDC(NULL, hdc);
+
+	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
 
 	m_introText.SetFont(&m_TextFont);
 #if 0

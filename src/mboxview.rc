@@ -95,6 +95,7 @@ BEGIN
                 MENUITEM "Resource File Property",      ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY
                 MENUITEM "Split Translation File",      ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE
             END
+            MENUITEM "Toggle RTL for Dialogs",      ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS
             MENUITEM "Select Language",             ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE
             POPUP "Test"
             BEGIN
@@ -791,24 +792,24 @@ BEGIN
     LTEXT           "Select Data Folder",IDC_DATA_FOLDER_INTRO_1,22,7,416,79,SS_NOTIFY
 END
 
-IDD_MERGE_FOLDER_AND_SUBFOLDERS DIALOGEX 0, 0, 391, 247
+IDD_MERGE_FOLDER_AND_SUBFOLDERS DIALOGEX 0, 0, 353, 211
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Merge Root Folder and Sub-folders Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "",IDC_STATIC,7,134,377,24
-    CONTROL         "Merge Root Folder",IDC_MERGE_ROOT_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_GROUP,21,141,135,10
+    GROUPBOX        "",IDC_STATIC,7,104,337,24
+    CONTROL         "Merge Root Folder",IDC_MERGE_ROOT_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_GROUP,21,111,135,10
     CONTROL         "Merge Root Folder and Subfolders",IDC_MERGE_ROOT_FOLDER_AND_SUBFOLDERS,
-                    "Button",BS_AUTORADIOBUTTON,162,141,216,10
-    GROUPBOX        "",IDC_STATIC,7,162,377,61
-    CONTROL         "Assign no Labels",IDC_LABEL_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,21,170,297,10
+                    "Button",BS_AUTORADIOBUTTON,163,111,178,10
+    GROUPBOX        "",IDC_STATIC,7,132,339,61
+    CONTROL         "Assign no Labels",IDC_LABEL_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,21,140,317,10
     CONTROL         "Assign a label per each MBOX file",IDC_LABEL_PER_MBOX_FILE,
-                    "Button",BS_AUTORADIOBUTTON,21,186,351,10
+                    "Button",BS_AUTORADIOBUTTON,21,156,315,10
     CONTROL         "Assign same label to all MBOX files per containing folder",IDC_LABEL_PER_FOLDER,
-                    "Button",BS_AUTORADIOBUTTON,21,206,353,10
-    DEFPUSHBUTTON   "OK",IDOK,278,229,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,334,229,50,14
-    LTEXT           "Merge Root Folders",IDC_MERGE_FOLDERS_INTRO_1,9,7,375,123
+                    "Button",BS_AUTORADIOBUTTON,21,176,316,10
+    DEFPUSHBUTTON   "OK",IDOK,245,194,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,297,194,50,14
+    LTEXT           "Merge Root Folders",IDC_MERGE_FOLDERS_INTRO_1,7,7,335,90
 END
 
 IDD_DEV_CREATE_ARCHIVE DIALOGEX 0, 0, 309, 176
@@ -909,7 +910,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,3,50
+ FILEVERSION 1,0,3,51
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -926,7 +927,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Mbox Mail Archive Viewer MFC Application"
-            VALUE "FileVersion", "1.0.3.50"
+            VALUE "FileVersion", "1.0.3.51"
             VALUE "InternalName", "mboxview"
             VALUE "LegalCopyright", "Copyright (C) 2005"
             VALUE "OriginalFilename", "mboxview.EXE"
@@ -1133,9 +1134,8 @@ BEGIN
     IDD_MERGE_FOLDER_AND_SUBFOLDERS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 384
         TOPMARGIN, 7
-        BOTTOMMARGIN, 246
+        BOTTOMMARGIN, 210
     END
 
     IDD_DEV_CREATE_ARCHIVE, DIALOG
