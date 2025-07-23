@@ -161,4 +161,6 @@ MBox Viewer project executables are built under VS 2022. Project contains two so
 
 **ForwardEmlFile/ForwardEmlFile.sln** -  this will build  Release and Debug versions of ForwardEmlFile.exe
 
+Similar free tools for Windows 11, 10, 8.1, and 7 (This .exe could be directly installable)
 
+https://www.shoviv.com/mbox-viewer.html
