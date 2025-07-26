@@ -194,6 +194,7 @@ BOOL CFindDlg::OnInitDialog()
 		CString dateFmt;
 		CString wTxt;
 		p->GetWindowText(wTxt);
+		ResHelper::TranslateString(wTxt);
 
 		if (m_params.m_dateTimeFormat.Compare(L"MM/dd/yyyy") == 0)
 		{
@@ -210,7 +211,7 @@ BOOL CFindDlg::OnInitDialog()
 			dateFmt.LoadStringW(IDS_YEAR_MONTH_DAY);
 			//dateFmt.Append(L"year/month/day");
 		}
-
+		ResHelper::TranslateString(dateFmt);
 		wTxt.Append(dateFmt);
 		(p)->SetWindowText(wTxt);
 		int deb = 1;

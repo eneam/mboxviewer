@@ -121,18 +121,21 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 
 	m_introText.SetFont(&m_TextFont);
 #if 0
-	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
+	CString introText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\r\n\r\n"
 		L"When merging thousands of mail files, typically eml files, make sure to select an option to assign the same label to all files within containing folder (or assign no label)."
 		L" Folder name will be assigned as the label name."
 		L" By default, MBox Viewer creates a separate label per each mail file."
 		L" This would create thousands of labels under the Mail Tree and make mail viewing unmanageable.\r\n")
 	;
 #else
-	m_introText.SetWindowText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account.\n\n"
-		L"Select \"Assign no Labels\" option when merging Gmail mail files.\n\n"
+	CString introText(L"This dialog enables users to configure root mail folder and sub-folders for merging mbox files exported from the same mail account. "
+		"Find functions will search all mails.\n\n"
+		L"Select \"Assign no Labels\" option when merging Gmail mail files. "
 		L"Select \"Assign no Labels\" or \"Assign same label to all MBOX files per containing folder\" option when merging thousands of mail files.")
 		;
 #endif
+
+	m_introText.SetWindowText(introText);
 
 	// Set TABSTOPS to FALSE to stop highlighting text
 	m_introText.EnableWindow(TRUE);

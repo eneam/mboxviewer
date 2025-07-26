@@ -30,6 +30,7 @@
 //
 
 #include "stdafx.h"
+#include "windowsx.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
 #include "HtmlUtils.h"
@@ -2480,6 +2481,20 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	DWORD exStyle = m_list.GetExtendedStyle();
 	m_list.SetExtendedStyle(exStyle|LVS_EX_FULLROWSELECT);
+
+	HWND hwnd = GetSafeHwnd();
+	DWORD dwStyle = GetWindowExStyle(hwnd);
+	BOOL bWSLayout = dwStyle & WS_EX_LAYOUTRTL;
+	BOOL bWSReading = dwStyle & WS_EX_RTLREADING;
+
+	hwnd = m_list.GetSafeHwnd();
+	dwStyle = GetWindowExStyle(hwnd);
+	bWSLayout = dwStyle & WS_EX_LAYOUTRTL;
+	bWSReading = dwStyle & WS_EX_RTLREADING;
+
+	int d = 1;
+
+
 #if 0
 	// // TVS_INFOTIP doesn't seem to work with LS_OWNERDATA I believe
 	exStyle = m_list.GetExtendedStyle();
@@ -2504,7 +2519,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_list.InsertColumn(2, L"from", LVCFMT_LEFT, 150, 0);
 		m_list.InsertColumn(3, L"to", LVCFMT_LEFT, 150, 0);
 		m_list.InsertColumn(4, L"subject", LVCFMT_LEFT, 400, 0);
-		m_list.InsertColumn(5, L"size(KB)", LVCFMT_LEFT, 120, 0);
+		m_list.InsertColumn(5, L"size(KB)", LVCFMT_LEFT, 400, 0);
 	}
 	else
 	{
@@ -2513,7 +2528,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_list.InsertColumn(2, L"from", LVCFMT_LEFT, 100, 0);
 		m_list.InsertColumn(3, L"to", LVCFMT_LEFT, 100, 0);
 		m_list.InsertColumn(4, L"subject", LVCFMT_LEFT, 400, 0);
-		m_list.InsertColumn(5, L"size(KB)", LVCFMT_LEFT, 120, 0);
+		m_list.InsertColumn(5, L"size(KB)", LVCFMT_LEFT, 400, 0);
 	}
 
 #if 0
@@ -2706,6 +2721,8 @@ void NListView::ResizeColumns()
 			subj_len += space_left;
 		}
 	}
+
+	size_len = w;
 
 	m_list.SetColumnWidth(1, date_len);
 	m_list.SetColumnWidth(2, from_len);

@@ -6830,6 +6830,8 @@ void NTreeView::OpenRootFolderAndSubfolders(HTREEITEM hParent, CString& path, BO
 BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 {
 	CString datapath = MboxMail::GetLastDataPath();
+	if (!FileUtils::PathDirExists(datapath))
+		FileUtils::CreateDir(datapath);
 	CFile fp;
 	CFileException ExError;
 	CString rootFolderFile = datapath + L".urootfolder";
