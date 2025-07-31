@@ -86,6 +86,8 @@ QWORD CMainFrame::m_lastMailDataPreviewDeletTime = 0;
 // Global Font Config
 int CMainFrame::m_dfltFontSize = 8;
 int CMainFrame::m_cnfFontSize = 8;
+CFont CMainFrame::m_dfltFont;
+CFont CMainFrame::m_cnfFont;
 // Browser 
 int CMainFrame::m_dfltBrowserZoom = 100;
 int CMainFrame::m_currentBrowserZoom = 0;
@@ -434,6 +436,41 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 #endif
 }
 
+void CMainFrame::CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc)
+{
+#if 0
+	font.DeleteObject();
+	int fontHeight = CMainFrame::m_dfltFontSize;
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		fontHeight = CMainFrame::m_cnfFontSize;
+	}
+
+	if (hdc == 0) hdc = ::GetWindowDC(NULL);
+	int pointFontHeight = -MulDiv(fontHeight, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	::ReleaseDC(NULL, hdc);
+
+	if (!font.CreatePointFont(pointFontHeight, fontName))
+		font.CreatePointFont(pointFontHeight, L"Arial");
+
+	font.GetLogFont(&logFont);
+#else
+	int pointFontHeight = 85;
+
+	m_dfltFont.DeleteObject();
+	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+	{
+		pointFontHeight = CMainFrame::m_cnfFontSize * 10;
+	}
+
+	if (!m_dfltFont.CreatePointFont(pointFontHeight, fontName))
+		m_dfltFont.CreatePointFont(pointFontHeight, L"Arial");
+	LOGFONT	lf;
+	m_dfltFont.GetLogFont(&lf);
+#endif
+}
+
+
 CMainFrame::~CMainFrame()
 {
 	// To stop memory leaks reports by debugger
@@ -728,11 +765,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	//MyPopupMenu::SetupFonts();
 
+	CString fontName = L"Tahoma";
+	int fontHeight = CMainFrame::m_dfltFontSize;
+	LOGFONT logFont;
+	CMainFrame::CreateTooltipFont(CMainFrame::m_font, fontName, logFont);
+
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
 }
-
-
 
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 {
@@ -6924,6 +6964,10 @@ void CMainFrame::OnFileFontconfig()
 		//listView->GetListCtrl()->Invalidate();
 
 		MyPopupMenu::SetupFonts();
+		CString fontName = L"Tahoma";
+		LOGFONT logFont;
+		CMainFrame::CreateTooltipFont(CMainFrame::m_font, fontName, logFont);
+
 		msgView->RecreateMailHdrMenu();
 
 		CMenu* menu = GetMenu();

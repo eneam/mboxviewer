@@ -258,7 +258,7 @@ public:
 // Implementation
 public:
 
-	CToolTipCtrl m_toolTip;  // doesn't work likely because of CustomDraw; need to investigate 
+	CToolTipCtrl m_toolTip; 
 
 	// Global Vars -- FIXME
 	// avoid changes to multiple interfaces -- find better solution
@@ -682,6 +682,8 @@ public:
 	BOOL ConfigureExportOfMails();
 
 	BOOL m_developmentMode;
+
+	void GetListItemText(int nItem, int nSubItem, CString& txt);
 
 	// Generated message map functions
 protected:

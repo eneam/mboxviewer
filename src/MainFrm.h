@@ -356,9 +356,13 @@ public:
 	static int m_dfltBrowserZoom;
 	static int m_currentBrowserZoom;
 	static int m_cnfBrowserZoom;
+	static CFont m_dfltFont;
+	static CFont m_cnfFont;
 	// valid Zoom range
 	static int m_minBrowserZoom;
 	static int m_maxBrowserZoom;
+
+	void CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc = 0);
 
 	// From MergeFolderAndSubfolders
 	int m_mergeRootFolderStyle;

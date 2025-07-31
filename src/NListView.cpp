@@ -541,7 +541,7 @@ void NListView::ResetFont()
 		g_pointSize = 85;
 
 	if( ! m_font.CreatePointFont (g_pointSize, g_fontName) )
-		m_font.CreatePointFont (85, L"Arial");
+		m_font.CreatePointFont (g_pointSize, L"Arial");
 	LOGFONT	lf;
 	m_font.GetLogFont(&lf);
 	lf.lfWeight = FW_BOLD;
@@ -2579,8 +2579,8 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	BOOL ret = TrackMouseEvent(&tr);
 #endif
-	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);  // doesn't work due to CustomDraw ? investigate when 
-	//EnableToolTips();
+	//BOOL retA = ResHelper::ActivateToolTips(&this->m_list, m_toolTip); 
+	//BOOL retE = this->m_list.EnableToolTips();
 	return 0;
 }
 
@@ -3123,6 +3123,188 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	}
 	int deb = 1;
+}
+
+void NListView::GetListItemText(int nItem, int nSubItem, CString &txt)
+{
+	MY_USES_CONVERSION;
+
+	int iItem = nItem;
+	int iSubItem = nSubItem;
+
+	txt.Empty();
+	if ((iItem < 0) || (iItem > MboxMail::s_mails.GetCount()))
+	{
+		return;
+	}
+
+	MboxMail* m;
+	DWORD error;
+
+	NMsgView* pMsgView = 0;
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+	if (pFrame) {
+		pMsgView = pFrame->GetMsgView();
+	}
+
+	CStringW strW;
+	const char* nul = "";
+
+	m = MboxMail::s_mails[iItem];
+
+	CStringW txtW;
+	CStringA FieldText;
+	CStringA Charset;
+	UINT charsetId;
+
+	if ((iSubItem >= 1) && (iSubItem <= 5))
+	{
+		if (iSubItem == 1)
+		{
+			char datebuff[32];
+			datebuff[0] = 0;
+			if (m->m_timeDate >= 0)
+			{
+				MyCTime tt(m->m_timeDate);
+				if (!m_gmtTime)
+				{
+					CStringA lDateTime = MYW2A(tt.FormatLocalTm(m_format));
+					strcpy(datebuff, (LPCSTR)lDateTime);
+				}
+				else {
+					CStringA lDateTime = MYW2A(tt.FormatGmtTm(m_format));
+					strcpy(datebuff, (LPCSTR)lDateTime);
+				}
+			}
+			FieldText = datebuff;
+			Charset = "UTF-8";
+			charsetId = CP_UTF8;
+		}
+		else if (iSubItem == 2)
+		{
+			Charset = m->m_from_charset;
+			charsetId = m->m_from_charsetId;
+
+			if ((charsetId == 0) && pMsgView) {
+				if (pMsgView->m_cnf_from_charsetId)
+					charsetId = pMsgView->m_cnf_from_charsetId;
+				else
+					charsetId = CP_UTF8;
+
+				//Charset = Charset;
+			}
+
+			if (m_bLongMailAddress) {
+				FieldText = m->m_from;
+			}
+			else
+			{
+				int fromlen = m->m_from.GetLength();
+				m_name->ClearAndResize(fromlen);
+				m_addr->ClearAndResize(fromlen);
+				MboxMail::splitMailAddress(m->m_from, fromlen, m_name, m_addr);
+				FieldText.Empty();
+				if (m_name->Count()) {
+					FieldText.Append(m_name->Data(), m_name->Count());
+				}
+				else {
+					int pos = m_addr->Find(0, '@');
+					if (pos >= 0)
+						FieldText.Append(m_addr->Data(), pos);
+					else
+						FieldText.Append(m_addr->Data(), m_addr->Count());
+				}
+			}
+		}
+		else if (iSubItem == 3)
+		{
+
+			Charset = m->m_to_charset;
+			charsetId = m->m_to_charsetId;
+
+			if ((charsetId == 0) && pMsgView) {
+				if (pMsgView->m_cnf_to_charsetId)
+					charsetId = pMsgView->m_cnf_to_charsetId;
+				else
+					charsetId = CP_UTF8;
+
+				//Charset = Charset;
+			}
+
+			if (m_bLongMailAddress) {
+				FieldText = m->m_to;
+			}
+			else
+			{
+				CStringA from;
+
+				int posBeg = 0;
+				int posEnd = 0;
+				posEnd = m->m_to.Find("@", posBeg);
+				if ((posEnd >= 0) && ((posEnd + 1) < m->m_to.GetLength()))
+					posEnd = m->m_to.Find(",", posEnd + 1);
+
+				if (posEnd >= 0)
+					from = m->m_to.Mid(posBeg, posEnd - posBeg);
+				else
+					from = m->m_to.Mid(posBeg, m->m_to.GetLength());
+
+				int fromlen = from.GetLength();
+				m_name->ClearAndResize(fromlen);
+				m_addr->ClearAndResize(fromlen);
+				MboxMail::splitMailAddress(from, fromlen, m_name, m_addr);
+				FieldText.Empty();
+				if (m_name->Count()) {
+					FieldText.Append(m_name->Data(), m_name->Count());
+				}
+				else
+				{
+					int pos = m_addr->Find(0, '@');
+					if (pos >= 0)
+						FieldText.Append(m_addr->Data(), pos);
+					else
+						FieldText.Append(m_addr->Data(), m_addr->Count());
+				}
+			}
+		}
+		else if (iSubItem == 4)
+		{
+			FieldText = m->m_subj;
+			Charset = m->m_subj_charset;
+			charsetId = m->m_subj_charsetId;
+
+			if ((charsetId == 0) && pMsgView) {
+				if (pMsgView->m_cnf_subj_charsetId)
+					charsetId = pMsgView->m_cnf_subj_charsetId;
+				else
+					charsetId = CP_UTF8;
+
+				//Charset = Charset;
+			}
+		}
+		else if (iSubItem == 5)
+		{
+			char sizebuff[32];
+
+			int length = m->m_length;
+			int kb = length / 1000;
+			if (length % 1000)
+				kb++;
+			sizebuff[0] = 0;
+			_itoa(kb, sizebuff, 10);
+
+			FieldText = sizebuff;
+			Charset = "UTF-8";
+			charsetId = CP_UTF8;
+		}
+
+		strW.Empty();
+		if (TextUtilsEx::Str2WStr(FieldText, charsetId, strW, error))
+		{
+			// strW.Replace(L"&", L"&&");   // not needed here
+		}
+	}
+	txt = strW;
 }
 
 void NListView::PostNcDestroy() 
@@ -19041,9 +19223,9 @@ int NListView::ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	return 1;
 }
 
-/// ToolTips
-// Doesn't work. Likely du to Custom Draw. Neeed to investigate when timepermits
-// move below to CWheelListCtrl
+// ToolTips
+// Not used
+// Now using CWheelListCtrl
 //
 void NListView::CellHitTest(const CPoint& pt, int& nRow, int& nCol) const
 {
@@ -19068,22 +19250,12 @@ BOOL NListView::OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 
 	CString tooltip = GetToolTipText(nRow, nCol);
 	if (tooltip.IsEmpty())
-		return FALSE;
+		return TRUE;
 
 	// Non-unicode applications can receive requests for tooltip-text in unicode
-	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
 	TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
-#ifndef _UNICODE
-	if (pNMHDR->code == TTN_NEEDTEXTA)
-		lstrcpyn(pTTTA->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTA->szText));
-	else
-		mbstowcs(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
-#else
-	if (pNMHDR->code == TTN_NEEDTEXTA)
-		_wcstombsz(pTTTA->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTA->szText));
-	else
-		lstrcpyn(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
-#endif
+
+	lstrcpyn(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
 	// If wanting to display a tooltip which is longer than 80 characters,
 	// then one must allocate the needed text-buffer instead of using szText,
 	// and point the TOOLTIPTEXT::lpszText to this text-buffer.

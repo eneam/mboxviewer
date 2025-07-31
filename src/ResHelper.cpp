@@ -2488,9 +2488,16 @@ int ResHelper::PrintResInfo()
 
 BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipText)
 {
+	// toolTipText is defined as static by the caller
+	// TODO: Need to figure out how to set Tooltip font size
+
 	NMTTDISPINFO* pTTT = (NMTTDISPINFO*)pNMHDR;
-	HWND hwndID = (HWND)pNMHDR->idFrom;
-	BOOL bRet = FALSE;
+	HWND hwndID = (HWND)pTTT->hdr.idFrom;
+	//HWND hwndID = (HWND)pTTT->hdr.hwndFrom;
+	UINT code = pTTT->hdr.code;
+	BOOL bRet = TRUE;
+
+	pTTT->lpszText = L"";
 
 	if (pTTT->uFlags & TTF_IDISHWND)
 	{
@@ -2514,21 +2521,31 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 
 				CRect rec;
 				p->GetClientRect(&rec);
+				int x = rec.left;
+				int y = rec.top;
+				int w = rec.Width();
+				int h = rec.Height();
 				//rec.InflateRect(-5, 0);
 
 				if (m_showTooltipsAlways || sizeItem.cx > rec.Width())
 				{
-					//int w = m_toolTip.SetMaxTipWidth(200);
-
 					pTTT->lpszText = (LPWSTR)((LPCWSTR)toolTipText);
-
-					RECT rec;
-					p->GetWindowRect(&rec);
+#if 0
+					CRect wrec;
+					p->GetWindowRect(&wrec);
+					int x = rec.left;
+					int y = rec.top;
+					int w = wrec.Width();
+					int h = wrec.Height();
 
 					HWND hwndToolTip = pNMHDR->hwndFrom;
 
-					RECT rc = rec;
-					::SendMessage(hwndToolTip, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);
+					RECT rc = wrec;
+					LRESULT lresS1 = ::SendMessage(hwndToolTip, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);
+
+					LRESULT lresS2 = ::SetWindowPos(hwndToolTip, NULL, rc.left, rc.top, 0, 0,
+						SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+#endif
 					bRet = TRUE;
 				}
 			}
@@ -2567,17 +2584,20 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 			//tipText = L"Expand/Colapse tree containing folders\nExpand/Collapse mail folders";
 			tipText = L"Expand/Collapse mail folders";
 		}
+		else
+		{
+			;// tipText = L"TOOLTIPS NOT WORKING";
+		}
 
 		if (!tipText.IsEmpty())
 		{
-			CString newTipText;
-			BOOL retFind = DetermineString(tipText, newTipText);
+			BOOL retFind = DetermineString(tipText, toolTipText);
 
-			if (newTipText.GetLength())
+			if (toolTipText.GetLength())
 			{
 				CWnd* p = parentWnd;
 
-				pTTT->lpszText = (LPWSTR)((LPCWSTR)newTipText);
+				pTTT->lpszText = (LPWSTR)((LPCWSTR)toolTipText);
 
 				RECT rec;
 				p->GetWindowRect(&rec);
@@ -2592,7 +2612,7 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 				{
 					if (pFrame) {
 						int paneId = 0;
-						pFrame->SetStatusBarPaneText(paneId, newTipText, FALSE);
+						pFrame->SetStatusBarPaneText(paneId, toolTipText, FALSE);
 					}
 				}
 				bRet = TRUE;
@@ -2608,13 +2628,14 @@ BOOL ResHelper::ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl)
 	if (g_UpdateMenuItemsInfo == FALSE) // do I need separate control var ?
 		return FALSE;
 
-	parentWnd->EnableToolTips(TRUE);
-	BOOL cret = toolTipCtrl.Create(parentWnd);
-	if (cret)
+	BOOL retE = parentWnd->EnableToolTips(TRUE);
+	BOOL retC = toolTipCtrl.Create(parentWnd);
+	if (retC)
 	{
 		BOOL ret = toolTipCtrl.AddTool(parentWnd, LPSTR_TEXTCALLBACK);
-		//int w = toolTipCtrl.SetMaxTipWidth(600);
+
 		toolTipCtrl.Activate(TRUE);
+
 		return TRUE;
 	}
 	return FALSE;
