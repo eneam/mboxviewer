@@ -202,9 +202,6 @@ int CWheelListCtrl::PreTranslateMessage(MSG* pMsg)
 
 void CWheelListCtrl::PreSubclassWindow()
 {
-	// Doesn't work. Probably since we do customdraw
-	_ASSERT(1);
-	//SetExtendedStyle(LVS_EX_INFOTIP | LVS_EX_LABELTIP | LVS_EX_DOUBLEBUFFER | GetExtendedStyle());
 	CListCtrl::PreSubclassWindow();
 
 	SetExtendedStyle(LVS_EX_INFOTIP | LVS_EX_LABELTIP | LVS_EX_DOUBLEBUFFER | GetExtendedStyle());
@@ -275,9 +272,9 @@ int CWheelListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// TODO:  Add your specialized creation code here
 
-	BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
-	BOOL retE = EnableToolTips();
-
+	CToolTipCtrl* ttips = GetToolTips();
+	if (!ttips)
+		BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip, TRUE);
 	return 0;
 }
 
@@ -314,7 +311,8 @@ BOOL CWheelListCtrl::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	pTTT->lpszText = (LPWSTR)((LPCWSTR)toolTipText);
 
 	HDC hDC = ::GetDC(m_hWnd);
-	HFONT hf = CMainFrame::m_dfltFont.operator HFONT();
+	//HFONT hf = CMainFrame::m_dfltFont.operator HFONT();
+	HFONT hf = ((NListView*)m_list)->m_font.operator HFONT();
 	HFONT hfntOld = (HFONT)SelectObject(hDC, hf);
 
 	SIZE sizeItem;
@@ -331,7 +329,7 @@ BOOL CWheelListCtrl::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	BOOL retRect = lhdr->GetItemRect(nCol, &irec);
 	colWidth = irec.Width();
 
-	if (labelSize <= (colWidth - 4))
+	if (labelSize <= (colWidth - 8))
 		pTTT->lpszText = L"";
 
 #if 0

@@ -346,11 +346,11 @@ protected:  // control bar embedded members
 	HICON m_MinusIcon;
 	HICON m_HideIcon;
 	HICON m_UnHideIcon;
-	CFont m_font;
-
 
 public:
 	// Global Font Config
+	static int m_dfltPointFontSize;
+	static CString m_dfltFontName;
 	static int m_dfltFontSize;
 	static int m_cnfFontSize;
 	static int m_dfltBrowserZoom;

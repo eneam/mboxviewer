@@ -80,28 +80,20 @@ BOOL DataFolderConfigDlg::OnInitDialog()
 	if (m_fontSize < 12)
 		m_fontSize = 12;
 
+	CString fontName = CMainFrame::m_dfltFontName;
+	int fontHight = 0;
+	LOGFONT logFont;
+
+	HDC hDC = ::GetDC(m_hWnd);
+	ResHelper::CreateMessageFont(fontName, m_fontSize, FW_NORMAL, logFont, m_TextFont, hDC);
+	ResHelper::CreateMessageFont(fontName, m_fontSize, FW_BOLD, logFont, m_BoldFont, hDC);
+
+	if (hDC) ::ReleaseDC(m_hWnd, hDC);
+
 	m_folderPathColor = RGB(255, 255, 255);  // white
 	m_folderPathBrush.CreateSolidBrush(m_folderPathColor);
 
-	// Get the log font. Setting text font works here 
-	NONCLIENTMETRICS ncm;
-	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-
-	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-		sizeof(NONCLIENTMETRICS), &ncm, 0);
-
-	HDC hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = FW_NORMAL; //  400;
-	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
-
-	hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = FW_BOLD; // 700
-	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
+	int debF = 1;
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
@@ -190,6 +182,7 @@ BEGIN_MESSAGE_MAP(DataFolderConfigDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_USER_SELECTED_FOLDER_PATH, &DataFolderConfigDlg::OnEnChangeUserSelectedFolderPath)
 	ON_EN_CHANGE(IDC_CURRENT_FOLDER_PATH, &DataFolderConfigDlg::OnEnChangeCurrentFolderPath)
 	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &DataFolderConfigDlg::OnTtnNeedText)
+	ON_STN_CLICKED(IDC_DATA_FOLDER_INTRO_1, &DataFolderConfigDlg::OnStnClickedDataFolderIntro1)
 END_MESSAGE_MAP()
 
 
@@ -455,4 +448,8 @@ BOOL DataFolderConfigDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult
 	*pResult = 0;
 
 	return bRet;
+}
+void DataFolderConfigDlg::OnStnClickedDataFolderIntro1()
+{
+	// TODO: Add your control notification handler code here
 }

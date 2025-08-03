@@ -91,10 +91,10 @@ NMsgView::NMsgView()
 	VERIFY(::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
 		sizeof(NONCLIENTMETRICS), &ncm, 0));
 	
-	ncm.lfMessageFont.lfWeight = 700;
+	ncm.lfMessageFont.lfWeight = FW_BOLD;
 	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
 
-	ncm.lfMessageFont.lfWeight = 400;
+	ncm.lfMessageFont.lfWeight = FW_NORMAL;
 	m_NormFont.CreateFontIndirect(&ncm.lfMessageFont);
 
 	HDC hdc = ::GetWindowDC(NULL);
@@ -102,10 +102,10 @@ NMsgView::NMsgView()
 	//ncm.lfMessageFont.lfHeight = -MulDiv(11, GetDeviceCaps(hdc, LOGPIXELSY), 72);
 	::ReleaseDC(NULL, hdc);
 
-	ncm.lfMessageFont.lfWeight = 400;
+	ncm.lfMessageFont.lfWeight = FW_NORMAL;
 	m_BigFont.CreateFontIndirect(&ncm.lfMessageFont);
 
-	ncm.lfMessageFont.lfWeight = 700;
+	ncm.lfMessageFont.lfWeight = FW_BOLD;
 	m_BigBoldFont.CreateFontIndirect(&ncm.lfMessageFont);
 
 	m_strTitleSubject.LoadString(IDS_TITLE_SUBJECT);
@@ -249,9 +249,9 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_attachments.SetTextColor(RGB(0, 0, 0));
-	if (!m_font.CreatePointFont(85, L"Tahoma"))
-		if (!m_font.CreatePointFont(85, L"Verdana"))
-			m_font.CreatePointFont(85, L"Arial");
+	if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName))
+		if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Verdana"))
+			m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Arial");
 
 	m_attachments.SetFont(&m_font);
 	CImageList sysImgList;

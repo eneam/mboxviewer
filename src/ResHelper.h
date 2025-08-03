@@ -244,7 +244,7 @@ public:
 	static CString TranslateMsg(const wchar_t* fmt, ...);
 
 	static BOOL OnTtnNeedText(CWnd* parentWindow, NMHDR* pNMHDR, CString &toolTipText);
-	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl);
+	static BOOL ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl, BOOL forceActivation = FALSE);
 	
 	static BOOL GetMenuItemString(CMenu* menu, UINT nIDItem, CString& rString, UINT nFlags);
 
@@ -266,6 +266,17 @@ public:
 	static BOOL MyMonitorenumproc(HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4);
 #endif
 	static BOOL SetFont(CWnd* wnd, CFont &cfont, int hight);
+	//
+	// Font processing is complex. Below is basic stuff
+	// fontHight is in points, example 8pt
+	static void CreateMessageFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
+	static void CreateMenuFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
+	static void CreateTextFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
+	//
+	// fontHight is 1/10th of points, example 8pt == 80
+	static void CreateMessagePointFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
+	static void CreateMenuPointFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
+	static void CreateTextPointFont(CString& fontName, int fontHight, int fontWeight, /*in-out*/LOGFONT& logFont, CFont& font, HDC hdc = 0);
 
 protected:
 };

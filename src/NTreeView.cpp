@@ -253,22 +253,20 @@ int CALLBACK MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	return -1;
 }
 
-
-static int g_pointSize = 85;
-static CString g_fontName = L"Tahoma";
-
 void NTreeView::ResetFont()
 {
-	m_font.DeleteObject();
+	int g_pointSize = CMainFrame::m_dfltPointFontSize;
+	CString g_fontName = CMainFrame::m_dfltFontName;
+
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 	{
 		g_pointSize = CMainFrame::m_cnfFontSize * 10;
 	}
-	else
-		g_pointSize = 85;
 
+	m_font.DeleteObject();
 	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
 		m_font.CreatePointFont(g_pointSize, L"Arial");
+
 	LOGFONT	lf;
 	m_font.GetLogFont(&lf);
 	m_tree.SetFont(&m_font);

@@ -520,19 +520,22 @@ void PageCodeListDlg::OnTimer(UINT_PTR nIDEvent)
 	//CDialogEx::OnTimer(nIDEvent);
 }
 
-static int g_pointSize = 85;
-static CString g_fontName = L"Tahoma";
+
 
 void PageCodeListDlg::ResetFont()
 {
-	m_font.DeleteObject();
+	static int g_pointSize = CMainFrame::m_dfltPointFontSize;
+	static CString g_fontName = CMainFrame::m_dfltFontName;
+
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 	{
 		g_pointSize = CMainFrame::m_cnfFontSize * 10;
 	}
 
+	m_font.DeleteObject();
 	if (!m_font.CreatePointFont(g_pointSize, g_fontName))
 		m_font.CreatePointFont(g_pointSize, L"Arial");
+
 	LOGFONT	lf;
 	m_font.GetLogFont(&lf);
 	m_list.SetFont(&m_font);

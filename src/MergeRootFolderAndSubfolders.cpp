@@ -96,26 +96,15 @@ BOOL MergeRootFolderAndSubfolders::OnInitDialog()
 	if (m_fontSize < 12)
 		m_fontSize = 12;
 
+	CString fontName = CMainFrame::m_dfltFontName;
+	int fontHight = 0;
+	LOGFONT logFont;
 
-		// Get the log font.
-	NONCLIENTMETRICS ncm;
-	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	HDC hDC = ::GetDC(m_hWnd);
+	ResHelper::CreateMessageFont(fontName, m_fontSize, FW_NORMAL, logFont, m_TextFont, hDC);
+	ResHelper::CreateMessageFont(fontName, m_fontSize, FW_BOLD, logFont, m_BoldFont, hDC);
 
-	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-		sizeof(NONCLIENTMETRICS), &ncm, 0);
-
-	HDC hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = 400;
-	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_TextFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
-
-	hdc = ::GetWindowDC(NULL);
-	ncm.lfMessageFont.lfWeight = FW_BOLD;
-	ncm.lfMessageFont.lfHeight = -MulDiv(m_fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);;
-	m_BoldFont.CreateFontIndirect(&ncm.lfMessageFont);
-	::ReleaseDC(NULL, hdc);
+	if (hDC) ::ReleaseDC(m_hWnd, hDC);
 
 	m_ButtonBrush.CreateSolidBrush(RGB(255, 255, 0));
 

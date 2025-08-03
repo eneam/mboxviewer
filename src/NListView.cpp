@@ -522,30 +522,49 @@ BEGIN_MESSAGE_MAP(NListView, CWnd)
 	ON_MESSAGE(WM_CMD_PARAM_ATTACHMENT_HINT_MESSAGE, &NListView::OnCmdParam_AttachmentHint)
 	//ON_NOTIFY(LVN_GETINFOTIP, IDC_LIST, OnTvnGetInfoTip)
 	ON_MESSAGE(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, &NListView::OnCmdParam_OnSwitchWindow)
-	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &NListView::OnTtnNeedText)
 	ON_WM_MEASUREITEM()
 END_MESSAGE_MAP()
 
-static int g_pointSize = 85;
-static CString g_fontName = L"Tahoma";
+
 
 void NListView::ResetFont()
 {
-	m_boldFont.DeleteObject();
-	m_font.DeleteObject();
+#if 1
+	CString fontName = CMainFrame::m_dfltFontName;
+	int fontHeight = 0;
+	LOGFONT logFont;
+	LOGFONT boldLogFont;
+
+	HWND hWnd = m_hWnd;
+	hWnd = m_list.GetSafeHwnd();
+	HDC hDC = ::GetDC(hWnd);
+
+	ResHelper::CreateMessageFont(fontName, fontHeight, FW_NORMAL, logFont, m_font, hDC);
+	ResHelper::CreateMessageFont(fontName, fontHeight, FW_BOLD, boldLogFont, m_boldFont, hDC);
+
+	if (hDC) ::ReleaseDC(hWnd, hDC);
+
+#else
+	int fontHeight = CMainFrame::m_dfltPointFontSize; // 85/10 = 8.5 pt
+	CString fontName = CMainFrame::m_dfltFontName;
+
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 	{
-		g_pointSize = CMainFrame::m_cnfFontSize *10;
+		fontHeight = CMainFrame::m_cnfFontSize *10;
 	}
-	else
-		g_pointSize = 85;
 
-	if( ! m_font.CreatePointFont (g_pointSize, g_fontName) )
-		m_font.CreatePointFont (g_pointSize, L"Arial");
+	m_font.DeleteObject();
+	if( ! m_font.CreatePointFont (fontHeight, fontName) )
+		m_font.CreatePointFont (fontHeight, L"Arial");
+
 	LOGFONT	lf;
 	m_font.GetLogFont(&lf);
 	lf.lfWeight = FW_BOLD;
+
+	m_boldFont.DeleteObject();
 	m_boldFont.CreateFontIndirect(&lf);
+#endif
+
     m_list.SetFont(&m_font);
 }
 
@@ -2493,18 +2512,6 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	bWSReading = dwStyle & WS_EX_RTLREADING;
 
 	int d = 1;
-
-
-#if 0
-	// // TVS_INFOTIP doesn't seem to work with LS_OWNERDATA I believe
-	exStyle = m_list.GetExtendedStyle();
-	m_list.SetExtendedStyle(exStyle | LVS_EX_LABELTIP );
-	//m_list.SetExtendedStyle(exStyle | LVS_EX_LABELTIP | LVS_EX_INFOTIP);
-
-	//SetWindowTheme(m_list.m_hWnd, L"Explorer", NULL);
-	//exStyle = m_list.GetExtendedStyle();
-	//m_list.SetExtendedStyle(exStyle | LVS_EX_DOUBLEBUFFER);
-#endif
 
 	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0); // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
 	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
@@ -19223,66 +19230,6 @@ int NListView::ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	return 1;
 }
 
-// ToolTips
-// Not used
-// Now using CWheelListCtrl
-//
-void NListView::CellHitTest(const CPoint& pt, int& nRow, int& nCol) const
-{
-	nRow = -1;
-	nCol = -1;
-
-	LVHITTESTINFO lvhti = { 0 };
-	lvhti.pt = pt;
-	nRow = ListView_SubItemHitTest(m_hWnd, &lvhti);	// SubItemHitTest is non-const
-	nCol = lvhti.iSubItem;
-	if (!(lvhti.flags & LVHT_ONITEMLABEL))
-		nRow = -1;
-}
-
-BOOL NListView::OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
-{
-	CPoint pt(GetMessagePos());
-	ScreenToClient(&pt);
-
-	int nRow, nCol;
-	CellHitTest(pt, nRow, nCol);
-
-	CString tooltip = GetToolTipText(nRow, nCol);
-	if (tooltip.IsEmpty())
-		return TRUE;
-
-	// Non-unicode applications can receive requests for tooltip-text in unicode
-	TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
-
-	lstrcpyn(pTTTW->szText, static_cast<LPCWSTR>(tooltip), sizeof(pTTTW->szText) / sizeof(WCHAR));
-	// If wanting to display a tooltip which is longer than 80 characters,
-	// then one must allocate the needed text-buffer instead of using szText,
-	// and point the TOOLTIPTEXT::lpszText to this text-buffer.
-	// When doing this, then one is required to release this text-buffer again
-	return TRUE;
-}
-
-bool NListView::ShowToolTip(const CPoint& pt) const
-{
-	// Lookup up the cell
-	int nRow, nCol;
-	CellHitTest(pt, nRow, nCol);
-
-	if (nRow != -1 && nCol != -1)
-		return true;
-	else
-		return false;
-}
-
-CString NListView::GetToolTipText(int nRow, int nCol)
-{
-	if (nRow != -1 && nCol != -1)
-		return m_list.GetItemText(nRow, nCol);	// Cell-ToolTip
-	else
-		return CString("");
-}
-
 namespace {
 	LRESULT EnableWindowTheme(HWND hwnd, LPCWSTR classList, LPCWSTR subApp, LPCWSTR idlist)
 	{
@@ -20559,18 +20506,6 @@ LRESULT NListView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
 	CWnd *wnd = CMainFrame::SetWindowFocus(&m_list);
 	
 	return 0;
-}
-
-BOOL NListView::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
-{
-	UNREFERENCED_PARAMETER(id);
-	static CString toolTipText;
-
-	CWnd* parentWnd = (CWnd*)this;
-	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
-	*pResult = 0;
-
-	return bRet;
 }
 
 // Measure item implementation relies on unique control/menu IDs

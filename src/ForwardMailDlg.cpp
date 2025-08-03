@@ -172,7 +172,7 @@ void MyCustomEdit::OnPaint()
 	HDC hDC = dc.GetSafeHdc();
 
 	CFont newFont;
-	newFont.CreatePointFont(85, L"Tahoma");
+	newFont.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName);
 
 	// Set new font. Should reinstall old oldFont?? doesn't seem to matter
 	CFont  *pOldFont = dc.SelectObject(&newFont);
@@ -186,6 +186,8 @@ void MyCustomEdit::OnPaint()
 	int ypos = 3;
 
 	BOOL ret = ::ExtTextOutW(hDC, xpos, ypos, ETO_CLIPPED, &rect, (LPCWSTR)m_subjectW, m_subjectW.GetLength(), NULL);
+
+	if (pOldFont) CFont* pRetFont = dc.SelectObject(pOldFont);
 
 	int deb = 1;
 }

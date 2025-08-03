@@ -231,6 +231,7 @@ struct MailArchiveFileInfo
 class NListView : public CWnd
 {
 	CWheelListCtrl	m_list;
+public:
 	CFont		m_font;
 	CFont m_boldFont;
 	UINT m_acp; // ANSI code page for this system
@@ -724,16 +725,8 @@ public:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnTvnGetInfoTip(NMHDR* pNMHDR, LRESULT* pResult);
 
-	afx_msg BOOL OnToolNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
-
 	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
 	virtual void PreSubclassWindow();
-
-
-	void CellHitTest(const CPoint& pt, int& nRow, int& nCol) const;
-	bool ShowToolTip(const CPoint& pt) const;
-	CString GetToolTipText(int nRow, int nCol);
 };
 
 struct FORWARD_MAILS_ARGS

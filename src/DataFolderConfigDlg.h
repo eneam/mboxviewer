@@ -87,4 +87,5 @@ public:
 	afx_msg void OnEnChangeUserSelectedFolderPath();
 	afx_msg void OnEnChangeCurrentFolderPath();
 	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnStnClickedDataFolderIntro1();
 };

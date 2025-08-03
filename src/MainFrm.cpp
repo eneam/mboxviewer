@@ -30,6 +30,7 @@
 //
 
 #include "stdafx.h"
+#include "Windows.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
 #include "HtmlUtils.h"
@@ -84,6 +85,8 @@ CString CMainFrame::m_numberOfHTML2ToMerge = L"1";
 QWORD CMainFrame::m_lastMailDataPreviewDeletTime = 0;
 
 // Global Font Config
+int CMainFrame::m_dfltPointFontSize = 110;  //  set by Enea to 85
+CString CMainFrame::m_dfltFontName = L"Tahoma";
 int CMainFrame::m_dfltFontSize = 8;
 int CMainFrame::m_cnfFontSize = 8;
 CFont CMainFrame::m_dfltFont;
@@ -455,18 +458,16 @@ void CMainFrame::CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logF
 
 	font.GetLogFont(&logFont);
 #else
-	int pointFontHeight = 85;
-
-	m_dfltFont.DeleteObject();
+	int pointFontHeight = CMainFrame::m_dfltPointFontSize;
 	if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
 	{
 		pointFontHeight = CMainFrame::m_cnfFontSize * 10;
 	}
 
-	if (!m_dfltFont.CreatePointFont(pointFontHeight, fontName))
-		m_dfltFont.CreatePointFont(pointFontHeight, L"Arial");
-	LOGFONT	lf;
-	m_dfltFont.GetLogFont(&lf);
+	font.DeleteObject();
+	if (!font.CreatePointFont(pointFontHeight, fontName))
+		font.CreatePointFont(pointFontHeight, L"Arial");
+	font.GetLogFont(&logFont);
 #endif
 }
 
@@ -524,7 +525,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndToolBar.SetBarStyle(m_wndToolBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_TOP | CBRS_SIZE_DYNAMIC);
 #endif
 
-	CToolBarCtrl &wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
+	CToolBarCtrl& wndToolBarCtrl = m_wndToolBar.GetToolBarCtrl();
 	CImageList* imgList = wndToolBarCtrl.GetImageList();
 
 	DWORD bkcolor = RGB(0, 0, 0);
@@ -541,13 +542,23 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_bTreeExpanded = FALSE;
 
+	DWORD dwCtrlStatusStyle = WS_CHILD | WS_VISIBLE | CBRS_BOTTOM | CBRS_TOOLTIPS;  // dflt from source code except CBRS_TOOLTIPS
+	//if (!m_wndStatusBar.Create(this, dwCtrlStatusStyle) ||
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
-		  sizeof(indicators)/sizeof(UINT)))
+			sizeof(indicators) / sizeof(UINT)))
 	{
 		TRACE0("Failed to create status bar\n");
 		return -1;      // fail to create
 	}
+
+	m_wndStatusBar.ModifyStyle(0, CBRS_TOOLTIPS);   // DOESN'T SEEM TO WORK for dynamic text
+
+	HWND hwnd = GetSafeHwnd();
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
+	float dpi = ::GetDpiForWindow(hwnd); // (WINVER >= 0x0605)  _WIN32_WINNT_WIN10
+#endif
+	//m_wndStatusBar.GetStatusBarCtrl().SetMinHeight(28);  // WORKS BUT MORE NEEDS TO BE DONE
 
 	if (!m_wndDlgBar.Create(this, IDD_EDITOR,
 		CBRS_ALIGN_TOP | CBRS_ALIGN_LEFT | CBRS_TOOLTIPS, AFX_IDW_DIALOGBAR))
@@ -765,10 +776,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	//MyPopupMenu::SetupFonts();
 
-	CString fontName = L"Tahoma";
+	CString fontName = CMainFrame::m_dfltFontName;
 	int fontHeight = CMainFrame::m_dfltFontSize;
 	LOGFONT logFont;
-	CMainFrame::CreateTooltipFont(CMainFrame::m_font, fontName, logFont);
+	CMainFrame::CreateTooltipFont(CMainFrame::m_dfltFont, fontName, logFont);
+
+	m_wndStatusBar.SetFont(&m_dfltFont); // WORKS BUT MORE NEEDES TO BE DONE
 
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
@@ -4526,7 +4539,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				COLORREF txtColo = dc.GetTextColor();
 				CFont *curFont = dc.GetCurrentFont();
 				CFont newFont;
-				newFont.CreatePointFont(85, L"Tahoma");
+				newFont.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName);
 
 				COLORREF crRet = 0;
 				if (setColor)
@@ -6964,9 +6977,9 @@ void CMainFrame::OnFileFontconfig()
 		//listView->GetListCtrl()->Invalidate();
 
 		MyPopupMenu::SetupFonts();
-		CString fontName = L"Tahoma";
+		CString fontName = CMainFrame::m_dfltFontName;
 		LOGFONT logFont;
-		CMainFrame::CreateTooltipFont(CMainFrame::m_font, fontName, logFont);
+		CMainFrame::CreateTooltipFont(CMainFrame::m_dfltFont, fontName, logFont);
 
 		msgView->RecreateMailHdrMenu();
 

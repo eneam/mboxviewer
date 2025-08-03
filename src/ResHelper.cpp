@@ -2530,7 +2530,7 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 				if (m_showTooltipsAlways || sizeItem.cx > rec.Width())
 				{
 					pTTT->lpszText = (LPWSTR)((LPCWSTR)toolTipText);
-#if 0
+
 					CRect wrec;
 					p->GetWindowRect(&wrec);
 					int x = rec.left;
@@ -2541,8 +2541,12 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 					HWND hwndToolTip = pNMHDR->hwndFrom;
 
 					RECT rc = wrec;
+#if 0
+					// 
 					LRESULT lresS1 = ::SendMessage(hwndToolTip, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);
 
+					// Almost works but tip keeps blinking if cursor remains within tip's window/rect
+					// Somwhow would have to check if cursor is withing tip rect
 					LRESULT lresS2 = ::SetWindowPos(hwndToolTip, NULL, rc.left, rc.top, 0, 0,
 						SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 #endif
@@ -2622,10 +2626,11 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 	return bRet;
 }
 
-BOOL ResHelper::ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl)
+BOOL ResHelper::ActivateToolTips(CWnd* parentWnd, CToolTipCtrl &toolTipCtrl, BOOL forceActivation)
 {
 	_ASSERTE((g_LoadMenuItemsInfo == FALSE) || (g_UpdateMenuItemsInfo == FALSE));
-	if (g_UpdateMenuItemsInfo == FALSE) // do I need separate control var ?
+
+	if ((g_UpdateMenuItemsInfo == FALSE) && (forceActivation == FALSE)) // do I need separate control var ?
 		return FALSE;
 
 	BOOL retE = parentWnd->EnableToolTips(TRUE);
@@ -3249,11 +3254,133 @@ void ResHelper::UnescapeString(const CString& input, CString &output)
 
 /////////  FONT
 
+void ResHelper::CreateMenuFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
+	_ASSERTE(ver);
+
+	logFont = ncm.lfMenuFont;
+
+	ResHelper::CreateTextFont(fontName, fontHight, fontWeight, logFont, font, hdc);
+}
+
+void ResHelper::CreateMessageFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
+	_ASSERTE(ver);
+
+	logFont = ncm.lfMessageFont;
+
+	ResHelper::CreateTextFont(fontName, fontHight, fontWeight, logFont, font, hdc);
+}
+
+void ResHelper::CreateTextFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	LOGFONT lf = logFont; // ??
+	HDC hdcSaved = hdc;
+
+	if (fontHight == 0)
+	{
+		//fontHight = CMainFrame::m_dfltPointFontSize/10;  // m_dfltPointFontSize is in 1/10 of point  110 == 11pt
+		fontHight = CMainFrame::m_dfltFontSize;
+		if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		{
+			fontHight = CMainFrame::m_cnfFontSize;
+		}
+	}
+
+	if (hdc == 0) hdc = ::GetWindowDC(NULL);
+
+	// GetDeviceCaps(hdc, LOGPIXELSY)
+	// 72 is the number of pixels per inch
+	// Number of pixels per logical inch along the screen height.In a system with multiple display monitors, this value is the same for all monitors.
+	int pixelsPerLogicalInch = GetDeviceCaps(hdc, LOGPIXELSY);  // device context
+	lf.lfHeight = -MulDiv(fontHight, pixelsPerLogicalInch, 72);
+	int h = -(int)(((float)pixelsPerLogicalInch / (float)72) * (float)fontHight);
+	_tcscpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
+	lf.lfWeight = fontWeight;
+
+	if (hdcSaved == 0) ::ReleaseDC(NULL, hdc);
+
+	logFont = lf;
+
+	font.DeleteObject();
+	font.CreateFontIndirect(&logFont);
+}
+
+void ResHelper::CreateMenuPointFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
+	_ASSERTE(ver);
+
+	logFont = ncm.lfMenuFont;
+
+	ResHelper::CreateTextPointFont(fontName, fontHight, fontWeight, logFont, font, hdc);
+}
+
+void ResHelper::CreateMessagePointFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	NONCLIENTMETRICS ncm;
+	memset(&ncm, 0, sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+	BOOL ver = ::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
+	_ASSERTE(ver);
+
+	logFont = ncm.lfMessageFont;
+
+	ResHelper::CreateTextPointFont(fontName, fontHight, fontWeight, logFont, font, hdc);
+}
+
+void ResHelper::CreateTextPointFont(CString& fontName, int fontHight, int fontWeight, LOGFONT& logFont, CFont& font, HDC hdc)
+{
+	LOGFONT lf = logFont; // ??
+	HDC hdcSaved = hdc;
+
+	if (fontHight == 0)
+	{
+		int fontHight = CMainFrame::m_dfltPointFontSize;
+		if (CMainFrame::m_cnfFontSize != CMainFrame::m_dfltFontSize)
+		{
+			fontHight = CMainFrame::m_cnfFontSize*10;
+		}
+	}
+
+	if (hdc == 0) hdc = ::GetWindowDC(NULL);
+
+	//BOOL CreatePointFont(int nPointSize, LPCTSTR lpszFaceName, CDC * pDC = NULL);
+	//BOOL CreatePointFontIndirect(const LOGFONT * lpLogFont, CDC * pDC = NULL);
+
+	lf.lfHeight = -MulDiv(fontHight, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	_tcscpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
+	lf.lfWeight = fontWeight;
+
+	if (hdcSaved == 0) ::ReleaseDC(NULL, hdc);
+
+	logFont = lf;
+
+	font.DeleteObject();
+	font.CreatePointFontIndirect(&logFont);
+}
+
+// For testing only for now
 BOOL ResHelper::SetFont(CWnd* wnd, CFont &font, int hight)
 {
 #if 1
 	int g_pointSize = 180;
-	CString g_fontName(L"Tahoma");
+	CString g_fontName(L"Tahoma");  // or CMainFrame::m_dfltFontName
 	font.DeleteObject();
 	if (!font.CreatePointFont(g_pointSize, g_fontName))
 		font.CreatePointFont(g_pointSize, L"Arial");

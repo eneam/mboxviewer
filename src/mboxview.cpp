@@ -2224,9 +2224,11 @@ HBRUSH CAboutDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 	if (nCtlColor == CTLCOLOR_STATIC &&
 		pWnd->GetSafeHwnd() == m_link.GetSafeHwnd()
-		) {
+		)
+	{
 		pDC->SetTextColor(RGB(0, 0, 200));
-		if (m_linkFont.m_hObject == NULL) {
+		if (m_linkFont.m_hObject == NULL)
+		{
 			LOGFONT lf;
 			CFont *aboutFont = GetFont();
 			if (aboutFont)
