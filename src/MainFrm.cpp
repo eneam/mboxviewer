@@ -91,6 +91,7 @@ int CMainFrame::m_dfltFontSize = 8;
 int CMainFrame::m_cnfFontSize = 8;
 CFont CMainFrame::m_dfltFont;
 CFont CMainFrame::m_cnfFont;
+CFont CMainFrame::m_dfltStatusBarFont;
 // Browser 
 int CMainFrame::m_dfltBrowserZoom = 100;
 int CMainFrame::m_currentBrowserZoom = 0;
@@ -441,6 +442,8 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 
 void CMainFrame::CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc)
 {
+	// TODO: Font setting is inconsistent currently !!!
+	// To many different set font functions exist. Find time abd fix it
 #if 0
 	font.DeleteObject();
 	int fontHeight = CMainFrame::m_dfltFontSize;
@@ -781,8 +784,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	LOGFONT logFont;
 	CMainFrame::CreateTooltipFont(CMainFrame::m_dfltFont, fontName, logFont);
 
-	m_wndStatusBar.SetFont(&m_dfltFont); // WORKS BUT MORE NEEDES TO BE DONE
-
+	LOGFONT barLogFont;
+	//CMainFrame::CreateTooltipFont(CMainFrame::m_dfltStatusBarFont, fontName, barLogFont);
+	CMainFrame::m_dfltStatusBarFont.DeleteObject();
+	if (!CMainFrame::m_dfltStatusBarFont.CreatePointFont(CMainFrame::m_dfltPointFontSize,fontName))
+		CMainFrame::m_dfltStatusBarFont.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Arial");
+	CMainFrame::m_dfltStatusBarFont.GetLogFont(&barLogFont);
+	
+	m_wndStatusBar.SetFont(&m_dfltStatusBarFont); 
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
 }
@@ -4515,9 +4524,13 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 	{
 		if (m_wndStatusBar.GetSafeHwnd())
 		{
+			// TODO: review fint handling, looks suspect, seems to work
 			if (setColor == FALSE) 
 			{
+				CClientDC dc(&m_wndStatusBar);
+				CFont* pOldFont = dc.SelectObject(&CMainFrame::m_dfltStatusBarFont);
 				m_wndStatusBar.GetStatusBarCtrl().SetText(sText, paneId, 0);
+				if (pOldFont) CFont* pRetFornt = dc.SelectObject(pOldFont);
 			}
 			else
 			{
@@ -4538,21 +4551,22 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				COLORREF bgColo = dc.GetBkColor();
 				COLORREF txtColo = dc.GetTextColor();
 				CFont *curFont = dc.GetCurrentFont();
-				CFont newFont;
-				newFont.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName);
 
 				COLORREF crRet = 0;
 				if (setColor)
 					crRet = dc.SetTextColor(RGB(0, 0, 200));
 
-				// Set new font
-				CFont  *pOldFont = dc.SelectObject(&newFont);
+				// Set font
+				CFont  *pOldFont = dc.SelectObject(&CMainFrame::m_dfltStatusBarFont);
 
 				UINT nFormat = DT_EXTERNALLEADING | DT_SINGLELINE | DT_VCENTER;
 				int retVal = dc.DrawText(sText, &r, nFormat);
 
 				// Restore oldFont
 				if (pOldFont) CFont *pRetFornt = dc.SelectObject(pOldFont);
+				if (setColor)
+					crRet = dc.SetTextColor(txtColo);
+
 			}
 			int deb = 1;
 		}

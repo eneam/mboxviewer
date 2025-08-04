@@ -358,6 +358,7 @@ public:
 	static int m_cnfBrowserZoom;
 	static CFont m_dfltFont;
 	static CFont m_cnfFont;
+	static CFont m_dfltStatusBarFont;
 	// valid Zoom range
 	static int m_minBrowserZoom;
 	static int m_maxBrowserZoom;
