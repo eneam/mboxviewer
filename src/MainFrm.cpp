@@ -364,6 +364,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 
 	Com_Initialize();  // FIXME
 
+	m_mergeSelectTargetFolder = FALSE;
+	m_mergeRootFolderStyle = FALSE;
+	m_labelAssignmentStyle = 0;
+
 	CString section_font_config = CString(sz_Software_mboxview) + L"\\FontConfig";
 	CString param = L"FontSize";
 	int fontSize = 8;
@@ -5858,9 +5862,14 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 	if (m_bEnhancedSelectFolderDlg == FALSE)
 	{
 		path = MboxMail::GetLastPath();
-		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
+		//CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, IDS_SELECT_FOLDER);
+		CBrowseForFolder bff(GetSafeHwnd(), CSIDL_DESKTOP, NULL);
 		if (!path.IsEmpty())
 			bff.SetDefaultFolder(path);
+
+		CString title(L"Select Root Folder");
+		ResHelper::TranslateString(title);
+		bff.SetTitle(title);
 
 		bff.SetFlags(BIF_RETURNONLYFSDIRS);
 		if (bff.SelectFolder())
@@ -5905,6 +5914,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		return -1;
 	}
 
+	int maxFilesToMergeLimitWarnings = 300;
 	if (treeType == 2)  // merge all mbox files and optinally create label based tree view
 	{
 		// m_mergeRootFolderStyle == 0 merge all mbox files under root folder only
@@ -5920,7 +5930,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 			BOOL recursive = TRUE;
 
 			int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
-			if (fileCnt > 1000)
+			if (fileCnt > maxFilesToMergeLimitWarnings)
 			{
 #if 0
 				CString txt;
@@ -5960,7 +5970,7 @@ int CMainFrame::FileSelectrootfolder(int treeType)
 		BOOL recursive = TRUE;
 
 		int fileCnt = FileUtils::GetFolderFileCount(path, recursive);
-		if (fileCnt > 1000)
+		if (fileCnt > maxFilesToMergeLimitWarnings)
 		{
 #if 0
 			CString txt;
@@ -6107,6 +6117,7 @@ void CMainFrame::OnFileMergerootfoldersub()
 
 	while (wantsToRetry == -2)
 	{
+		m_mergeSelectTargetFolder = FALSE;
 		INT_PTR retCode = dlg.DoModal();
 		if (retCode == IDOK)
 		{
@@ -6114,6 +6125,8 @@ void CMainFrame::OnFileMergerootfoldersub()
 			m_mergeRootFolderStyle = dlg.m_mergeRootFolderStyle;  
 			// 0==no labels;1=labels per each mail same as mbox file name;2==same as folder name
 			m_labelAssignmentStyle = dlg.m_labelAssignmentStyle; 
+
+			m_mergeSelectTargetFolder = dlg.m_selectTargetFolder;
 
 			// user may decide to return and try different options
 			// wantsToRetry == -2, cancel == -1, continue == 1

@@ -47,6 +47,7 @@ DIALOG_FROM_TEMPLATE( : CDialogEx(IDD_MERGE_FOLDER_AND_SUBFOLDERS, pParent))
 	m_mergeRootFolderStyle = 1;  // merge all mbox files under root folder and all subfolders
 	m_labelAssignmentStyle = 1;  // assign mbox file name as label to each mail
 
+	m_selectTargetFolder = FALSE;
 	m_fontSize = 12;
 
 	m_pParent = pParent;
@@ -72,6 +73,7 @@ void MergeRootFolderAndSubfolders::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_MERGE_FOLDERS_INTRO_1, m_introText);
 	DDX_Radio(pDX, IDC_MERGE_ROOT_FOLDER, m_mergeRootFolderStyle);
 	DDX_Radio(pDX, IDC_LABEL_NONE, m_labelAssignmentStyle);
+	DDX_Check(pDX, IDC_MERGE_SELECT_TARGET_FOLDER, m_selectTargetFolder);
 }
 
 

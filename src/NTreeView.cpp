@@ -9391,16 +9391,22 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		int cnt = MboxMail::LinkDuplicateMails(MboxMail::s_mails);  // put all equal mails on seprate collision lists of hash table
 	}
 
-	CString txt = L"All mail files are merged.\n\n"
+	CString allFilesAreMergedTxt = L"All mail files are merged.\n\n"
 		L"Next, You will be asked to enter the target folder for the merged file.\n"
 		L"Be aware that MBox Viewer will open the merged file automatically.\n"
-		L"Make sure you select proper target folder.\n";
-	ResHelper::TranslateString(txt);
+		L"Make sure you select proper target folder.\n\n";
+	ResHelper::TranslateString(allFilesAreMergedTxt);
 
-	int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+#if 0
+	if (pFrame && pFrame->m_mergeSelectTargetFolder)
+	{
+		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+#endif
 
 	CString saveFileName = fileName + L".mbox";
 	CString title = L"Enter Name for Merged Archive File";
+	ResHelper::TranslateString(title);
 	CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 	CString dfltExtention = L".mbox";
 #if 0
@@ -9416,15 +9422,52 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	BOOL retCreate = FileUtils::CreateDir((LPCWSTR)inFolderPath);
 #endif
 	CString outFolderPath;
-
-	retval = SaveMergedFileDialog(saveFileName, fileNameFilter, dfltExtention, inFolderPath, outFolderPath, title);
-	if (retval == FALSE)
-		return -1;
-
-	if (outFolderPath.IsEmpty())
-		return -1;
-
 	CString filePath = outFolderPath + saveFileName;
+
+	if (pFrame && !pFrame->m_mergeSelectTargetFolder)
+	{
+		outFolderPath = inFolderPath + L"\\";
+		filePath = outFolderPath + saveFileName;
+
+		if (FileUtils::PathFileExist(filePath) == TRUE)
+		{
+			CString fmt = L"Merged file\n\n%s\n\nexists. Override?";
+			ResHelper::TranslateString(fmt);
+			CString txt;
+			txt.Format(fmt, filePath);
+			int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+			if (answer != IDYES)
+			{
+				pFrame->m_mergeSelectTargetFolder = TRUE;  // user must select
+			}
+		}
+		else
+			int deb = 1;
+	}
+
+	if (pFrame && pFrame->m_mergeSelectTargetFolder)
+	{
+		int answer = MyMessageBox(allFilesAreMergedTxt, L"Error", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+	}
+
+	if (pFrame && pFrame->m_mergeSelectTargetFolder)
+	{
+		retval = SaveMergedFileDialog(saveFileName, fileNameFilter, dfltExtention, inFolderPath, outFolderPath, title);
+		if (retval == FALSE)
+			return -1;
+
+		if (outFolderPath.IsEmpty())
+			return -1;
+
+		filePath = outFolderPath + saveFileName;
+	}
+	else
+	{
+		outFolderPath = inFolderPath + L"\\";
+		filePath = outFolderPath + saveFileName;
+	}
+
+	//CString filePath = outFolderPath + saveFileName;
 
 	MboxMail::SetLastPath(outFolderPath);
 	CString lDataPath = MboxMail::GetLastDataPath();

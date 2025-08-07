@@ -49,6 +49,7 @@ public:
 #endif
 
 	CEdit m_introText;
+	BOOL m_selectTargetFolder;
 
 	int m_mergeRootFolderStyle;
 	int m_labelAssignmentStyle;

@@ -1890,7 +1890,7 @@ int ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath
 		if (retval <= 0)
 			break;
 
-		if (nSourceTextId == 407)
+		if (nSourceTextId == 567)
 		{
 			int deb = 1;
 		}
@@ -2501,9 +2501,13 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 
 	if (pTTT->uFlags & TTF_IDISHWND)
 	{
-		// idFrom is actually the HWND of the tool
-		int nID = ::GetDlgCtrlID(hwndID);
-		//if (nID && (nID != IDC_DATA_FOLDER_INTRO_1))
+#if 0
+		wchar_t wndText[2049];
+		int wndTextLen = 2048;
+		int retCnt = GetWindowTextW(hwndID, wndText, wndTextLen);  // it works fine
+#endif
+
+		int nID = ::GetDlgCtrlID(hwndID);  // HWND hwndID = (HWND)pTTT->hdr.idFrom;
 		if (nID)
 		{
 			CWnd* p = parentWnd->GetDlgItem(nID);
@@ -2540,7 +2544,8 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 
 					HWND hwndToolTip = pNMHDR->hwndFrom;
 
-					RECT rc = wrec;
+					CRect rc = wrec;
+
 #if 0
 					// 
 					LRESULT lresS1 = ::SendMessage(hwndToolTip, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);

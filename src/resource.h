@@ -123,6 +123,7 @@
 #define IDC_SSL_ON                      1059
 #define IDC_RELAX_MBOX_FILE_VALIDATION  1059
 #define IDC_STATIC_FORWARD_CC           1059
+#define IDC_MERGE_SELECT_TARGET_FOLDER  1059
 #define IDC_CHECK_TO_A                  1060
 #define IDC_EDIT_TO_CHECKED             1060
 #define IDC_ALL_ATTACHMENT_TYPES_INDICATOR 1060

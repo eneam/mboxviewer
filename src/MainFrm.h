@@ -366,6 +366,7 @@ public:
 	void CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc = 0);
 
 	// From MergeFolderAndSubfolders
+	int m_mergeSelectTargetFolder;
 	int m_mergeRootFolderStyle;
 	int m_labelAssignmentStyle;  // 0 == no labels; 1 == mbox file names as labels; 2 == folder names as labels
 

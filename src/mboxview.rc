@@ -810,6 +810,8 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,245,172,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,297,172,50,14
     LTEXT           "Merge Root Folders",IDC_MERGE_FOLDERS_INTRO_1,7,7,335,91
+    CONTROL         "Select target folder for merged mail files",IDC_MERGE_SELECT_TARGET_FOLDER,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,21,174,216,10
 END
 
 IDD_DEV_CREATE_ARCHIVE DIALOGEX 0, 0, 309, 176
