@@ -4302,7 +4302,7 @@ BOOL MySelectFolder::OnFileNameOK()
 		return TRUE;
 }
 
-void CMainFrame::OnClose()
+void CMainFrame::SaveLastSelection()
 {
 	// TODO: Add your message handler code here and/or call default
 
@@ -4336,6 +4336,15 @@ void CMainFrame::OnClose()
 	ret = CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_lastSelection, L"lastLabelFilePath", lastLabelFilePath);
 	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_lastSelection, L"lastMailIndex", lastMailIndex);
 	ret = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_lastSelection, L"lastWhichSort", lastWhichSort);
+}
+
+void CMainFrame::OnClose()
+{
+	NTreeView* pTreeView = GetTreeView();
+	NListView* pListView = GetListView();
+	NMsgView* pMsgView = GetMsgView();
+
+	SaveLastSelection();
 
 	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
 	if ((MboxMail::IsUserMailsSelected() && (MboxMail::s_mails.GetCount() > 0)) || (MboxMail::s_mails_edit.GetCount() > 0))
@@ -6101,6 +6110,8 @@ void CMainFrame::OpenRootFolderAndSubfolders_LabelView(CString &path)
 void CMainFrame::OnFileMergerootfoldersub()
 {
 	// TODO: Add your command handler code here
+
+	SaveLastSelection();
 #if 0
 	CString txt = L"MBox Viewer will traverse selected root folder and all sub-folders and merge all mbox files found into a single mbox file.\n\n"
 		"MBox Viewer will assign a label to each folder and each mbox file and create Tree of Labels View\n\n"

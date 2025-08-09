@@ -241,6 +241,8 @@ public:
 		return m_bIsTreeHidden;
 	}
 
+	void SaveLastSelection();
+
 	BOOL DeleteAllPlacementKeys(CString& section_wnd);
 
 	BOOL DoOpen(CString& path);

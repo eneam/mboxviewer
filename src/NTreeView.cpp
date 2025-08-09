@@ -9232,14 +9232,16 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 	// TODO: Investigate if separate MergeTreeFolders_NoLabels() would be cleaner solution
 	// Merge mbox files, follow user selected configuration 
 	int retM = MergeTreeFolders(tree, errorText);
-	if (retM < 0)
-		return;
+	if (retM > 0)
+	{
+		MboxMail::SetLastPath(path);
+		if (selectFolder)
+			HTREEITEM hLastFolder = SelectTreeItem(&path);
 
-	MboxMail::SetLastPath(path);
-	if (selectFolder)
-		HTREEITEM hLastFolder = SelectTreeItem(&path);
-
-	m_globalFolderInfoDB.Print();
+		m_globalFolderInfoDB.Print();
+	}
+	else
+		OpenLastSelection();
 
 	sText.Format(L"Ready", fname);
 	ResHelper::TranslateString(sText);
@@ -9454,10 +9456,16 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 	{
 		retval = SaveMergedFileDialog(saveFileName, fileNameFilter, dfltExtention, inFolderPath, outFolderPath, title);
 		if (retval == FALSE)
+		{
+			MboxMail::Destroy(&MboxMail::s_mails);
 			return -1;
+		}
 
 		if (outFolderPath.IsEmpty())
+		{
+			MboxMail::Destroy(&MboxMail::s_mails);
 			return -1;
+		}
 
 		filePath = outFolderPath + saveFileName;
 	}
@@ -9501,7 +9509,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 		HWND h = NULL; // we don't have any window yet
 		int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 #endif
-
+		MboxMail::Destroy(&MboxMail::s_mails);
 		return -1;
 	}
 
