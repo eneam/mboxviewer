@@ -27,7 +27,8 @@
 //
 
 // CheckListBoxDlg.cpp : implementation file
-//
+
+#define DONT_USE_DIALOG_FROM_TEMPLATE   // compiler complains because set before #include "stdafx.h" ??
 
 #include "stdafx.h"
 #include "CheckListBoxDlg.h"
@@ -63,6 +64,10 @@ INT_PTR CCheckListBoxDlg::DoModal()
 
 int CCheckListBoxDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
+	//DWORD dwStyle = LBS_STANDARD;
+	//const CRect rec(10, 10, 100, 100);
+	//m_listBox.Create(dwStyle, rec, this, IDC_LIST_CHECK_LIST_BOX);
+
 	return 0;
 }
 
@@ -75,7 +80,7 @@ void CCheckListBoxDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CCheckListBoxDlg, CDialogEx)
 	ON_BN_CLICKED(IDOK, &CCheckListBoxDlg::OnBnClickedOk)
-	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CCheckListBoxDlg::OnTtnNeedText)
+	//ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CCheckListBoxDlg::OnTtnNeedText)
 END_MESSAGE_MAP()
 
 
@@ -87,7 +92,10 @@ BOOL CCheckListBoxDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-	m_listBox.SetFont(GetFont());
+	// 
+
+	//m_listBox.SetFont(GetFont());
+	m_listBox.SetFont(&CMainFrame::m_dfltStatusBarFont);
 
 	SetWindowText(m_title);
 
@@ -95,6 +103,8 @@ BOOL CCheckListBoxDlg::OnInitDialog()
 
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
+
+	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip, TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -135,17 +145,20 @@ void CCheckListBoxDlg::LoadData()
 	int i;
 	for (i = 0; i < m_InList.GetCount(); i++)
 	{
+		//int ret = m_listBox.SetItemHeight(i, 24);
 		m_listBox.AddString(m_InList.GetAt(i));
 	}
 
-	ResizeDialogWindow();
+	// Config font size capability broke this ? works in 1.0.3.44 for example
+	// // Had to chnage template because dynamic resize is not working
+	// // TODO: need to investigate
+	//ResizeDialogWindow();
 }
 
 void CCheckListBoxDlg::ResizeDialogWindow()
 {
 	CRect wndRect;
 	GetWindowRect(wndRect);
-
 
 	int nMaxWidth;
 	m_listBox.updateWidth(nMaxWidth);
@@ -202,6 +215,7 @@ BOOL CCheckListBoxDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	UNREFERENCED_PARAMETER(id);
 	static CString toolTipText;
 
+	// needs custom handler !! or possibly custom DrawItem and MeasureItem
 	CWnd* parentWnd = (CWnd*)this;
 	BOOL bRet = ResHelper::OnTtnNeedText(parentWnd, pNMHDR, toolTipText);
 	*pResult = 0;
@@ -211,6 +225,7 @@ BOOL CCheckListBoxDlg::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 
 #if 0
 
+// No longer valid in 1.0.3.52 due  to problems with dialog dynamic resize
 Dialog resource configuration.
 
 IDD_CHECK_LIST_BOX_DLG DIALOGEX 0, 0, 117, 45

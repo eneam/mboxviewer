@@ -602,7 +602,8 @@ public:
 	static _int64 s_curmap, s_step;
 	static const CUPDUPDATA* pCUPDUPData;
 	static void Parse(LPCWSTR path);
-	static bool Process(CString &filePath, ProgressTimer &progressTimer, char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, _int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
+	static bool Process(CString &filePath, ProgressTimer &progressTimer, char *p, DWORD size, _int64 startOffset, bool bFirstView, bool bLastView, 
+		_int64 &lastStartOffset, bool bEml, _int64 &msgOffset, CString &statusText, BOOL parseContent = TRUE);
 	static void FindDateInHeader(char *data, int datelen, CStringA& dateStr);
 	static void MonthToString(int month, CStringA &monthStr);
 	static time_t parseRFC822Date(CStringA &date, CStringA &format);
@@ -616,8 +617,10 @@ public:
 	
 
 	// TODO:  need to rewrite, encapsulate in objects, etc
-	static MailArray s_mails_ref;  // original master cache. elemenyt order must not change !!!!!
-	static MailArray s_mails;  // other lists need to be copied here since that is how initial implementation works, would need to change in too many places
+	static MailArray s_mails_ref;  // original master cache. element order must not change !!!!!
+	static MailArray s_mails;	// other lists need to be copied to s_mails for viewing. be carefull how you use this
+								// this is how initial implementation works. would need to change in too many places
+								// TODO: consider changes for merge options
 	static MailArray s_mails_all;
 	static MailArray s_mails_find;
 	static MailArray s_mails_edit;  // TODO: rename to User Selected List

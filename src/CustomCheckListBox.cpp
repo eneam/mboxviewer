@@ -29,6 +29,7 @@
 
 #include "stdafx.h"
 #include "CustomCheckListBox.h"
+#include "MainFrm.h"
 
 CCustomCheckListBox::CCustomCheckListBox()
 {
@@ -38,6 +39,24 @@ CCustomCheckListBox::CCustomCheckListBox()
 CCustomCheckListBox::~CCustomCheckListBox()
 {
 }
+
+#if 0
+int CCustomCheckListBox::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	return 0;
+}
+#endif
+
+#if 0
+void CCustomCheckListBox::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	int itemID = lpDrawItemStruct->itemID;
+	CString txt;
+	GetText(itemID, txt);
+	CCheckListBox::DrawItem(lpDrawItemStruct);
+	return;
+}
+#endif
 
 void CCustomCheckListBox::updateWidth(int &maxWidth)
 {
@@ -56,9 +75,10 @@ void CCustomCheckListBox::updateWidth(CString &s)
 {
 #if 1
 	CClientDC dc(this);
-	CFont * f = CListBox::GetFont();
+	//CFont * f = CListBox::GetFont();
+	CFont& f = CMainFrame::m_dfltFont;
 
-	dc.SelectObject(f);
+	dc.SelectObject(&f);
 	CSize sz = dc.GetTextExtent(s);
 	sz.cx += 3 * ::GetSystemMetrics(SM_CXBORDER);
 	if (sz.cx > m_nWidth)

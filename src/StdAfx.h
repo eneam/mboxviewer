@@ -138,7 +138,10 @@ int MyAfxMessageBox(LPCTSTR lpszText, UINT nType = MB_OK);
 #define GetTickCount64 GetTickCount
 #endif
 
+#ifndef DONT_USE_DIALOG_FROM_TEMPLATE
 #define _DIALOG_FROM_TEMPLATE
+#endif
+
 
 #ifdef _DIALOG_FROM_TEMPLATE
 #define DIALOG_FROM_TEMPLATE(x)

@@ -103,12 +103,15 @@ bool MboxMail::b_mails_sorted = false;
 int MboxMail::b_mails_which_sorted = 0;  // order by file offset
 
 MailArray MboxMail::s_mails_ref;
-MailArray MboxMail::s_mails;
+MailArray MboxMail::s_mails;  // mail index of currently selected  mbox file
 MailArray MboxMail::s_mails_all;
 MailArray MboxMail::s_mails_find;
 MailArray MboxMail::s_mails_edit;
 MailArray MboxMail::s_mails_folder;
 MailArray MboxMail::s_mails_label;
+
+MailArray MboxMail::s_mails_selected;
+MailArray MboxMail::s_mails_merged;
 
 MailList *MboxMail::m_mailList = &MboxMail::m_allMails;
 
@@ -119,9 +122,6 @@ MailList MboxMail::m_findMails(IDC_FIND_LIST);
 MailList MboxMail::m_editMails(IDC_EDIT_LIST);
 MailList MboxMail::m_folderMails(IDC_FOLDER_LIST);
 MailList MboxMail::m_labelMails(IDC_LABEL_LIST);
-
-MailArray MboxMail::s_mails_selected;
-MailArray MboxMail::s_mails_merged;
 
 _int64 MboxMail::s_fSize = 0;
 _int64 MboxMail::s_oSize = 0;

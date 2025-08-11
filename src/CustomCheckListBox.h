@@ -37,11 +37,15 @@ public:
 	~CCustomCheckListBox();
 
 	//virtual BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
-	//virtual void DrawItem(LPDRAWITEMSTRUCT /*lpDrawItemStruct*/);
+	//void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	int m_nWidth;
 
 	void updateWidth(CString &s);
 	void updateWidth(int &maxWidth);
+
+	//DECLARE_MESSAGE_MAP()
+public:
+	//afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 
 protected:
 };
