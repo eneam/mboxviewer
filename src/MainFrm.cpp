@@ -3991,17 +3991,19 @@ int CMainFrame::ExecCommand_WorkerThread(CString &htmFileName, CString &errorTex
 
 	if (returnCode < 0)
 	{
-		// Delay return if pdf file doesnt exist
+		// 08/15/2025 Delay return if pdf file doesnt exist
 		// For some not understood reason ShellExecuteEx return immediately but pdf is created eventually
 		// This happens very rarely
-		// Total delay of 300 msec should work for smaller mostly text emails, maybe
+		// Total delay of 2000 msec may  work for smaller mostly text emails, maybe
 		// In case of true problem, the delay is just waste of time, hopefully not noticed by users
 		if (!FileUtils::PathFileExist(pdfFileName))
 		{
-			Sleep(100);
-			if (!FileUtils::PathFileExist(pdfFileName))
+			for (int i = 0; i <= 3; i++)
 			{
-				Sleep(200);
+				if (!FileUtils::PathFileExist(pdfFileName))
+				{
+					Sleep(500);
+				}
 			}
 		}
 	}
