@@ -1,3 +1,31 @@
+//
+//////////////////////////////////////////////////////////////////
+//
+//  Windows Mbox Viewer is a free tool to view, search and print mbox mail archives.
+//
+// Source code and executable can be downloaded from
+//  https://sourceforge.net/projects/mbox-viewer/  and
+//  https://github.com/eneam/mboxviewer
+//
+//  Copyright(C) 2019  Enea Mansutti, Zbigniew Minciel
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the version 3 of GNU Affero General Public License
+//  as published by the Free Software Foundation; 
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the GNU
+//  Library General Public License for more details.
+//
+//  You should have received a copy of the GNU Library General Public
+//  License along with this program; if not, write to the
+//  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+//  Boston, MA  02110 - 1301, USA.
+//
+//////////////////////////////////////////////////////////////////
+//
+
 // CustomMsgBox.cpp : implementation file
 //
 
@@ -65,20 +93,6 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// TODO:  Add extra initialization here
 
-#if 0
-// Need o figure out how to create Gripper icon
-// Instead decided to write  arrow character into CStatic as the gripper. 
-// I think it works OK to indicate resizing feature
-//
-// Decided to install CStatusBar with Gripper, not ideal solution
-//
-	m_gripper.ModifyStyle(0, WS_CHILD | WS_VISIBLE | SS_ICON | SS_GRAYFRAME);  // SS_ICON seems to be required for strange reason
-	CString arrow = L" \u21D8";
-	//arrow = L" \u2198";
-	// arrow = L" \u21F2";
-	m_gripper.SetWindowText(arrow);
-#endif
-
 	m_text.EnableWindow(TRUE);
 	m_text.SetFont(&CMainFrame::m_dfltFont);
 
@@ -101,17 +115,6 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// Calculate text rectangle size, width and height
 	// CString fontName = CMainFrame::m_dfltFontName;
-
-	LOGFONT logFont;
-	CWnd* p = 0;
-	BOOL hidden = TRUE;
-#if 0
-	m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"CANCEL", TRUE);
-	m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDCANCEL, L"CANCEL", TRUE);
-	m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDCANCEL, L"CANCEL", TRUE);
-#endif
-
-	ProcessType(m_nType);
 
 	HWND h = GetSafeHwnd();
 
@@ -222,15 +225,15 @@ BOOL CustomMsgBox::OnInitDialog()
 	int maxTextRectagleWidth = screenWidth / 2;
 	int configTextRectagleWidth = 600;  // ???
 
-	configTextRectagleWidth = configTextRectagleWidth + 0.25 * ((float)configTextRectagleWidth * CMainFrame::m_cnfFontSize) / CMainFrame::m_dfltFontSize;
+	configTextRectagleWidth = configTextRectagleWidth + (int)(0.25 * ((float)configTextRectagleWidth * CMainFrame::m_cnfFontSize) / CMainFrame::m_dfltFontSize);
 
 	int textRectagleWidth = configTextRectagleWidth;
 	if (textRectagleWidth > maxTextRectagleWidth)
 		textRectagleWidth = maxTextRectagleWidth;
 
 	// Aproximate, may need to do better later
-	longetWordLen = ((float)textSize.cx * longetWordLen) / longestWordText.GetLength();
-	longetLineLen = ((float)textSize.cx * longetLineLen) / longestLineText.GetLength();
+	longetWordLen = (int)(((float)textSize.cx * longetWordLen) / longestWordText.GetLength());
+	longetLineLen = (int)(((float)textSize.cx * longetLineLen) / longestLineText.GetLength());
 	if ((longetWordLen < textRectagleWidth) && (longetLineLen < textRectagleWidth))
 	{
 		textRectagleWidth = max(longetWordLen, longetLineLen);
@@ -297,6 +300,9 @@ BOOL CustomMsgBox::OnInitDialog()
 	ResHelper::UpdateDialogItemsInfo(this);
 	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
+
+	ProcessType(m_nType);
+	ProcessType(m_nType);
 	//SetFocus();
 
 	//return TRUE;  // return TRUE unless you set the focus to a control
@@ -523,50 +529,50 @@ void CustomMsgBox::ProcessType(UINT nType)
 	switch (nType & MB_TYPEMASK)
 	{
 	case MB_OK:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"OK");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"Ok");
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 
 	case MB_OKCANCEL:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"CANCEL");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"Cancel");
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 
 	case MB_YESNO:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDNO, L"NO");
-		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDYES, L"YES");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDNO, L"No");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDYES, L"Yes");
 		SetDefaultButton(m_button1, ID_MSG_BOX_BUTTON_2, this);
 		break;
 
 	case MB_YESNOCANCEL:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"CANCEL");
-		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDNO, L"NO");
-		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDYES, L"YES");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"Cancel");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDNO, L"No");
+		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDYES, L"Yes");
 		SetDefaultButton(m_button2, ID_MSG_BOX_BUTTON_3, this);
 		break;
 
 	case MB_ABORTRETRYIGNORE:
-		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDABORT, L"ABORT");
-		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDRETRY, L"RETRY");
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDIGNORE, L"IGNORE");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDIGNORE, L"Ignore");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDRETRY, L"Retry");
+		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDABORT, L"Abort");
 		SetDefaultButton(m_button2, ID_MSG_BOX_BUTTON_3, this);
 		break;
 
 	case MB_RETRYCANCEL:
-		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDRETRY, L"RETRY");
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"CANCEL");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"Cancel");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDRETRY, L"Retry");
 		SetDefaultButton(m_button1, ID_MSG_BOX_BUTTON_2, this);
 		break;
 
 	case MB_CANCELTRYCONTINUE:
-		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDCANCEL, L"CANCEL");
-		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDTRYAGAIN, L"TRYAGAIN");
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCONTINUE, L"CONTIINUE");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCONTINUE, L"Continue");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDTRYAGAIN, L"Try Again");
+		m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDCANCEL, L"Cancel");
 		SetDefaultButton(m_button2, ID_MSG_BOX_BUTTON_3, this);
 		break;
 
 	default:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"OK");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"Ok");
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 	}
@@ -656,7 +662,9 @@ void TestCustomMsgBox()
 	CString caption = L"Info";
 	//UINT nType = MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO;
 	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_ABORTRETRYIGNORE;
-	UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_YESNOCANCEL;
+	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_YESNOCANCEL;
+	UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_CANCELTRYCONTINUE;
+	
 	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_YESNOCANCEL| MB_RTLREADING;
 	
 
