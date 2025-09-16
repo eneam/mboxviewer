@@ -56,6 +56,10 @@
 #include "Shobjidl.h"
 #include "shobjidl_core.h"
 
+//#ifdef _DEBUG
+#include "CustomMsgBox.h"
+//#endif
+
 int JsonTest();
 
 //#include "afxglobals.h"
@@ -101,7 +105,16 @@ int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 {
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
+
+#if 0
 	return MessageBox(h, lpszText, lpszCaption, nType);
+#else
+	int textFontHeight = 12;
+	CWnd* pParent = 0;
+	CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
+	INT_PTR code = mbox.DoModal();
+	return (int)code;
+#endif
 }
 
 int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
@@ -109,14 +122,31 @@ int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
+#if 0
 	return MessageBox(h, lpszText, lpszCaption, nType);
+#else
+	int textFontHeight = 12;
+	CWnd* pParent = 0;
+	CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
+	INT_PTR code = mbox.DoModal();
+	return (int)code;
+#endif
 }
 
 int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
 {
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
+#if 0
 	return AfxMessageBox(lpszText, nType);
+#else
+	int textFontHeight = 12;
+	CWnd* pParent = 0;
+	CString caption;
+	CustomMsgBox mbox(lpszText, caption, nType, textFontHeight, pParent);
+	INT_PTR code = mbox.DoModal();
+	return (int)code;
+#endif
 }
 
 
@@ -1464,6 +1494,10 @@ void CmboxviewApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
+
+#if 1
+	TestCustomMsgBox();
+#endif
 }
 
 void CmboxviewApp::OnHelpDonate()

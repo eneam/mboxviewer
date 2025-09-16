@@ -670,6 +670,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release-StackTrace|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="src\CustomCheckListBox.cpp" />
+    <ClCompile Include="src\CustomMsgBox.cpp" />
     <ClCompile Include="src\CustomNameTemplDlg.cpp" />
     <ClCompile Include="src\DataFolderConfigDlg.cpp" />
     <ClCompile Include="src\DateParser.cpp">
@@ -993,6 +994,7 @@
     <ClInclude Include="src\ColorStyleConfigDlg.h" />
     <ClInclude Include="src\CPictureCtrlDemoDlg.h" />
     <ClInclude Include="src\CustomCheckListBox.h" />
+    <ClInclude Include="src\CustomMsgBox.h" />
     <ClInclude Include="src\CustomNameTemplDlg.h" />
     <ClInclude Include="src\DataFolderConfigDlg.h" />
     <ClInclude Include="src\DateParser.h" />

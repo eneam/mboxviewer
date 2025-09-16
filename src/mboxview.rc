@@ -905,6 +905,18 @@ BEGIN
     LTEXT           "Use CTRL+mouse scroll wheel to affect Mail Message",IDC_STATIC_FONT_CONFIG_3,19,46,276,8,SS_NOTIFY
 END
 
+IDD_CUSTOM_MSG_BOX DIALOGEX 0, 0, 175, 46
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "OK",ID_MSG_BOX_BUTTON_2,62,24,50,14
+    PUSHBUTTON      "Cancel",ID_MSG_BOX_BUTTON_1,116,24,50,14
+    LTEXT           "Static",IDC_MSG_BOX_ICON,14,8,26,13
+    EDITTEXT        IDC_MSG_BOX_EDIT_TEXT,51,8,110,12,ES_MULTILINE | ES_READONLY | NOT WS_BORDER
+    PUSHBUTTON      "Retry",ID_MSG_BOX_BUTTON_3,10,24,49,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1195,6 +1207,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 76
     END
+
+    IDD_CUSTOM_MSG_BOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 168
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 39
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1416,6 +1436,16 @@ END
 IDD_MyCDialogBar AFX_DIALOG_LAYOUT
 BEGIN
     0
+END
+
+IDD_CUSTOM_MSG_BOX AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    100, 100, 0, 0,
+    100, 100, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 100, 100,
+    100, 100, 0, 0
 END
 
 

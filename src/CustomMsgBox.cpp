@@ -69,7 +69,6 @@ void CustomMsgBox::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_MSG_BOX_BUTTON_3, m_button2);
 	DDX_Control(pDX, IDC_MSG_BOX_EDIT_TEXT, m_text);
 	DDX_Control(pDX, IDC_MSG_BOX_ICON, m_icon);
-	DDX_Control(pDX, IDC_MSG_BOX_GRIPPER, m_gripper);
 }
 
 void MB_BUTTON::Set(CButton& button, WORD id, int actionType, CString name, BOOL hidden)
@@ -93,12 +92,10 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// TODO:  Add extra initialization here
 
+	SetWindowText(captionStr);
+
 	m_text.EnableWindow(TRUE);
 	m_text.SetFont(&CMainFrame::m_dfltFont);
-
-
-	// Hide for now
-	m_gripper.ShowWindow(SW_HIDE);
 
 	// Create CStatusBar to create Gripper to make user aware of resing capability
 	DWORD dwCtrlStatusStyle = WS_CHILD | WS_VISIBLE | CBRS_BOTTOM | CBRS_GRIPPER;
@@ -116,9 +113,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	// Calculate text rectangle size, width and height
 	// CString fontName = CMainFrame::m_dfltFontName;
 
-	HWND h = GetSafeHwnd();
-
-	BOOL bRepaint = TRUE;
+	BOOL bRepaint = TRUE; // ??
 
 
 	// From .rc file
@@ -218,22 +213,32 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// Decide on new text rectagle width, critical for other  calculations 
 
-	// This is used during development
 	// Need to decide on max width and possibly the longest word
 	// User will have option to resize manually if desired
 
-	int maxTextRectagleWidth = screenWidth / 2;
-	int configTextRectagleWidth = 600;  // ???
+	int maxTextRectagleWidth = screenWidth / 3;
+	int configTextRectagleWidth = 400;  // ???
 
-	configTextRectagleWidth = configTextRectagleWidth + (int)(0.25 * ((float)configTextRectagleWidth * CMainFrame::m_cnfFontSize) / CMainFrame::m_dfltFontSize);
+
+	//Make sure we don't divide by zero
+	if (CMainFrame::m_dfltFontSize > 0)
+		configTextRectagleWidth = configTextRectagleWidth + (int)(0.15 * ((float)configTextRectagleWidth * CMainFrame::m_cnfFontSize) / CMainFrame::m_dfltFontSize);
+	else
+		; // 
 
 	int textRectagleWidth = configTextRectagleWidth;
 	if (textRectagleWidth > maxTextRectagleWidth)
 		textRectagleWidth = maxTextRectagleWidth;
 
 	// Aproximate, may need to do better later
-	longetWordLen = (int)(((float)textSize.cx * longetWordLen) / longestWordText.GetLength());
-	longetLineLen = (int)(((float)textSize.cx * longetLineLen) / longestLineText.GetLength());
+	//Make sure we don't divide by zero
+	if (longestWordText.GetLength())
+		longetWordLen = (int)(((float)textSize.cx * longetWordLen) / longestWordText.GetLength());
+
+	if (longestLineText.GetLength())
+		longetLineLen = (int)(((float)textSize.cx * longetLineLen) / longestLineText.GetLength());
+
+
 	if ((longetWordLen < textRectagleWidth) && (longetLineLen < textRectagleWidth))
 	{
 		textRectagleWidth = max(longetWordLen, longetLineLen);
@@ -267,7 +272,10 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	MoveWindow(&newRecDlgRc, bRepaint);
 
-	if ((CmboxviewApp::m_isRTL == TRUE) && (CmboxviewApp::m_isRTLForDialogs))
+
+	
+	//if ((CmboxviewApp::m_isRTL == TRUE) && (CmboxviewApp::m_isRTLForDialogs))
+	if (m_nType & MB_RTLREADING)
 	{
 		newTextRec.left -= 2 * SpacingSize;
 		newTextRec.right -= 1 * SpacingSize;
@@ -288,7 +296,7 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	int lcnt = m_text.GetLineCount();
 
-	// Need to do extra MoveWindow for proper scaling. Figure out later why 
+	// Need to do extra MoveWindow for proper scaling.
 	lcnt++;
 	int newTextHeigth = lcnt*textSize.cy;
 	newRecDlgRcButtom = recDlgRc.bottom + (newTextHeigth - recTextRc.Height());
@@ -296,14 +304,14 @@ BOOL CustomMsgBox::OnInitDialog()
 	newRecDlgRc.SetRect(newRecDlgRcLeft, newRecDlgRcTop, newRecDlgRcRight, newRecDlgRcButtom);
 	MoveWindow(&newRecDlgRc, bRepaint);
 
+
+	ProcessType(m_nType);
+	ProcessType(m_nType);
+	//SetFocus(); // focus is already set on one of the buttons
+
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
 	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
-
-
-	ProcessType(m_nType);
-	ProcessType(m_nType);
-	//SetFocus();
 
 	//return TRUE;  // return TRUE unless you set the focus to a control
 	return FALSE;  // return TRUE unless you set the focus to a control
@@ -526,6 +534,10 @@ void CustomMsgBox::ProcessType(UINT nType)
 {
 	HWND h = GetSafeHwnd();
 
+	m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"", TRUE);
+	m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDCANCEL, L"", TRUE);
+	m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDRETRY, L"", TRUE);
+
 	switch (nType & MB_TYPEMASK)
 	{
 	case MB_OK:
@@ -576,6 +588,8 @@ void CustomMsgBox::ProcessType(UINT nType)
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 	}
+
+	//UpdateData(FromVariablesToControls);
 }
 
 MB_BUTTON* CustomMsgBox::FindButton(WORD id)
@@ -583,7 +597,7 @@ MB_BUTTON* CustomMsgBox::FindButton(WORD id)
 	int i = 0;
 	for (i = 0; i < 3; i++)
 	{
-		if (m_buttons[i].m_id == id)
+		if (!m_buttons[i].m_hidden && m_buttons[i].m_id == id)
 			return &m_buttons[i];
 	}
 	return 0;
@@ -602,7 +616,7 @@ CButton* CustomMsgBox::FindDfltCButton()
 {
 	// Def array of CButton in .h file ??
 	BOOL isDflt = IsDfltCButton(m_button1);
-	_ASSERTE(isDflt); // se .rc file
+	//_ASSERTE(isDflt); // se .rc file , currently no button set as default
 	if (isDflt)
 		return(&m_button1);
 	isDflt = IsDfltCButton(m_button0);

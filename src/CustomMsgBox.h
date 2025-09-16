@@ -98,8 +98,6 @@ public:
 	HICON	m_hIcon;  // standard MessageBox win system icon
 	CStatic m_icon;
 	//
-	HICON	m_hGripper;  // didn't yet work. May need to cleanup later
-	CStatic m_gripper;
 
 	HICON LoadMsgBoxIcon(BOOL systemIcon, PCWSTR pszName, int lims, CString &errorText);
 	int LongestWordLength(CString& str, CString* longetWord = 0);

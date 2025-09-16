@@ -524,8 +524,11 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 		}
 		else if (strClassName.CompareNoCase(L"Edit") == 0)
 		{
-			;//if (nID == IDC_DATA_FOLDER_INTRO_1)
-				//pw->SetWindowText(newWndText);
+			if (nID == IDC_MSG_BOX_EDIT_TEXT)
+			{
+				if (newWndText.GetLength())
+					pw->SetWindowText(newWndText);
+			}
 		}
 		else if (strClassName.CompareNoCase(L"ListBox") == 0)
 		{

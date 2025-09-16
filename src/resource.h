@@ -70,6 +70,7 @@
 #define IDD_GENERAL_OPTIONS_DLG         240
 #define IDD_LANG_LIST_DLG               242
 #define IDD_DIALOG_FONT_SIZE            244
+#define IDD_CUSTOM_MSG_BOX              247
 #define IDC_BUTTON_PREV                 1001
 #define IDC_PRT_PAGE_SETP               1001
 #define IDC_EDIT_RESET                  1001
@@ -509,6 +510,11 @@
 #define IDC_STATIC_FONT_CONFIG_1        1428
 #define IDC_EDIT_CUSTOM_FONT_SIZE       1430
 #define IDC_STATIC_FONT_CONFIG_3        1431
+#define IDC_MSG_BOX_ICON                1432
+#define IDC_MSG_BOX_EDIT_TEXT           1433
+#define ID_MSG_BOX_BUTTON_1             1434
+#define ID_MSG_BOX_BUTTON_2             1435
+#define ID_MSG_BOX_BUTTON_3             1436
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -604,9 +610,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        247
+#define _APS_NEXT_RESOURCE_VALUE        249
 #define _APS_NEXT_COMMAND_VALUE         32942
-#define _APS_NEXT_CONTROL_VALUE         1432
+#define _APS_NEXT_CONTROL_VALUE         1437
 #define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

@@ -220,6 +220,9 @@
     <ClCompile Include="src\MyPopupMenu.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\CustomMsgBox.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -451,6 +454,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\MyPopupMenu.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CustomMsgBox.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
