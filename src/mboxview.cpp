@@ -92,7 +92,7 @@ CString CmboxviewApp::m_configFilePath;
 BOOL CmboxviewApp::m_configFileLoaded = FALSE;
 //DebugCString CmboxviewApp::m_configFilePath;
 
-BOOL CmboxviewApp::m_isRTLForDialogs = FALSE;
+BOOL CmboxviewApp::m_isRTLForDialogs = TRUE;
 BOOL CmboxviewApp::m_isRTL = FALSE;
 CString CmboxviewApp::m_language = L"english";
 
@@ -106,15 +106,18 @@ int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
 
-#if 0
-	return MessageBox(h, lpszText, lpszCaption, nType);
-#else
-	int textFontHeight = 12;
-	CWnd* pParent = 0;
-	CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
-	INT_PTR code = mbox.DoModal();
-	return (int)code;
-#endif
+	if (CMainFrame::m_cnfFontSize == CMainFrame::m_dfltFontSize) {
+		return MessageBox(h, lpszText, lpszCaption, nType);
+	}
+	else
+	{
+		int textFontHeight = 12;
+		CWnd* pParent = 0;
+		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
+		INT_PTR code = mbox.DoModal();
+		return (int)code;
+	}
+
 }
 
 int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
@@ -122,33 +125,38 @@ int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
-#if 0
-	return MessageBox(h, lpszText, lpszCaption, nType);
-#else
-	int textFontHeight = 12;
-	CWnd* pParent = 0;
-	CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
-	INT_PTR code = mbox.DoModal();
-	return (int)code;
-#endif
+
+	if (CMainFrame::m_cnfFontSize == CMainFrame::m_dfltFontSize) {
+		return MessageBox(h, lpszText, lpszCaption, nType);
+	}
+	else
+	{
+		int textFontHeight = 12;
+		CWnd* pParent = 0;
+		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
+		INT_PTR code = mbox.DoModal();
+		return (int)code;
+	}
 }
 
 int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
 {
 	if (CmboxviewApp::m_isRTL == TRUE)
 		nType |= MB_RTLREADING | MB_RIGHT;
-#if 0
-	return AfxMessageBox(lpszText, nType);
-#else
-	int textFontHeight = 12;
-	CWnd* pParent = 0;
-	CString caption;
-	CustomMsgBox mbox(lpszText, caption, nType, textFontHeight, pParent);
-	INT_PTR code = mbox.DoModal();
-	return (int)code;
-#endif
-}
 
+	if (CMainFrame::m_cnfFontSize == CMainFrame::m_dfltFontSize) {
+		return AfxMessageBox(lpszText, nType);
+	}
+	else
+	{
+		int textFontHeight = 12;
+		CWnd* pParent = 0;
+		CString caption;
+		CustomMsgBox mbox(lpszText, caption, nType, textFontHeight, pParent);
+		INT_PTR code = mbox.DoModal();
+		return (int)code;
+	}
+}
 
 LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPtrs)
 {

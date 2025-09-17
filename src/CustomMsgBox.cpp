@@ -32,7 +32,6 @@
 #include "stdafx.h"
 #include "afxdialogex.h"
 #include "CustomMsgBox.h"
-#include "MainFrm.h"
 #include "mboxview.h"
 
 // CustomMsgBox dialog
@@ -161,7 +160,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	int iconRecButtom = 0;
 
 	iconRecLeft = SpacingSize;
-	iconRecTop = recTextRc.top + SpacingSize;
+	iconRecTop = recTextRc.top + SpacingSize/2;
 	iconRecRight = iconRecLeft + cxIcon + SpacingSize;
 	iconRecButtom = iconRecTop + cyIcon + SpacingSize;
 
@@ -272,8 +271,6 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	MoveWindow(&newRecDlgRc, bRepaint);
 
-
-	
 	//if ((CmboxviewApp::m_isRTL == TRUE) && (CmboxviewApp::m_isRTLForDialogs))
 	if (m_nType & MB_RTLREADING)
 	{
@@ -297,7 +294,8 @@ BOOL CustomMsgBox::OnInitDialog()
 	int lcnt = m_text.GetLineCount();
 
 	// Need to do extra MoveWindow for proper scaling.
-	lcnt++;
+	//lcnt++; // ????
+
 	int newTextHeigth = lcnt*textSize.cy;
 	newRecDlgRcButtom = recDlgRc.bottom + (newTextHeigth - recTextRc.Height());
 
@@ -661,6 +659,122 @@ void CustomMsgBox::SetDefaultButton(CButton& newDflt, WORD id, CDialogEx *dlg)
 	newDflt.SetFocus();
 	return;
 }
+
+// Added Ctrl-C feature based on
+// http://www.codeproject.com/KB/dialog/xmessagebox.aspx
+// Discovered xmessagebox after implemented most of the CustomMsgBox
+// POssibly xmessagebox should be fully tested and could be used instead of CustomMsgBox
+
+int CustomMsgBox::PreTranslateMessage(MSG* pMsg)
+{
+	if ((pMsg->message & 0xffff) == WM_KEYDOWN)
+	{
+		if ((pMsg->wParam == 'c') || (pMsg->wParam == 'C'))
+		{
+			CString msgBoxString;
+
+			TRACE(L"_____ CustomMsgBox::OnKeyDown: Ctrl-C\n");
+			wchar_t* pszDivider = L"\r\n---------------------------\r\n";
+
+			msgBoxString.Append(pszDivider);
+			msgBoxString.Append(captionStr);
+			msgBoxString.Append(pszDivider);
+
+			msgBoxString.Append(m_textStr);
+			msgBoxString.Append(pszDivider);
+
+			CString buttonText;
+			CString allButtonText;
+			int i = 0;
+			for (i = 2; i >= 0; i--)
+			{
+				if (m_buttons[i].m_hidden)
+					continue;
+
+				CWnd* button = GetDlgItem(m_buttons[i].m_id);
+				if (button)
+				{
+					button->GetWindowText(buttonText);
+					{
+						buttonText.Replace(L"&", L"");
+						buttonText.Append(L"   ");
+					}
+					allButtonText.Append(buttonText);
+				}
+			}
+
+			msgBoxString.Append(allButtonText);
+			msgBoxString.Append(pszDivider);
+
+			SetClipboardText(msgBoxString);
+
+			int deb = 1;
+		}
+	}
+	return CWnd::PreTranslateMessage(pMsg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SetClipboardText - Places text on the clipboard
+///////////////////////////////////////////////////////////////////////////////
+//
+// Parameters:
+//	lpszBuffer - pointer to a string to put on the clipboard
+//
+// Return Values:
+//	TRUE       - Text was successfully copied onto clipboard
+//	FALSE      - Text not copied
+//
+BOOL CustomMsgBox::SetClipboardText(CString& buffer)
+{
+	BOOL bSuccess = FALSE;
+
+	// First, open the clipboard. OpenClipboard() takes one
+	// parameter, the handle of the window that will temporarily
+	// be it's owner. If NULL is passed, the current process
+	// is assumed. After opening, empty the clipboard so we
+	// can put our text on it.
+	if (::OpenClipboard(NULL))
+	{
+		::EmptyClipboard();
+
+		// Get the size of the string in the buffer that was
+		// passed into the function, so we know how much global
+		// memory to allocate for the string.
+		size_t nSize = buffer.GetLength();
+
+		// Allocate the memory for the string.
+		HGLOBAL hGlobal = ::GlobalAlloc(GMEM_ZEROINIT, (nSize + 1) * sizeof(TCHAR));
+
+		// If we got any error during the memory allocation,
+		// we have been returned a NULL handle.
+		if (hGlobal)
+		{
+			// Now we have a global memory handle to the text
+			// stored on the clipboard. We have to lock this global
+			// handle so that we have access to it.
+			LPTSTR lpszData = (LPTSTR) ::GlobalLock(hGlobal);
+
+			if (lpszData)
+			{
+				// Now, copy the text from the buffer into the allocated
+				// global memory pointer
+				_tcscpy(lpszData, (LPCWSTR)buffer);
+
+				// Now, simply unlock the global memory pointer,
+				// set the clipboard data type and pointer,
+				// and close the clipboard.
+				::GlobalUnlock(hGlobal);
+				::SetClipboardData(CF_UNICODETEXT, hGlobal);
+				bSuccess = TRUE;
+			}
+		}
+		::CloseClipboard();
+	}
+
+	return bSuccess;
+}
+
 
 void TestCustomMsgBox()
 {
