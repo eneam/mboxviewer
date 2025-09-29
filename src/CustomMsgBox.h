@@ -55,9 +55,9 @@ public:
 	WORD m_id;  // // ID_MSG_BOX_BUTTON_(1-3)
 	CString m_name;  // "OK", "NO", etc
 
-	UINT m_action;  // for now limited to ?? MB_OK, MB_NO, MB_YES, MB_CANCEL, MB_RETRY
+	UINT m_action;  // MB_OK, MB_NO, MB_YES, MB_CANCEL, MB_RETRY, etc
 	BOOL m_hidden;
-	int m_actionType; // for now limited to IDOK, IDNO, IDYES, IDCANCEL, IDRETRY
+	int m_actionType; // IDOK, IDNO, IDYES, IDCANCEL, IDRETRY, etc
 };
 
 class CustomMsgBox : public CDialogEx
@@ -92,7 +92,7 @@ public:
 	CEdit m_text;
 	int m_sctionCode;
 
-	CStatusBar	m_wndStatusBar;  // just to show Gripper
+	CStatusBar	m_wndStatusBar;  // just to implement Gripper
 	int m_StatusBarHeight;
 
 	HICON	m_hIcon;  // standard MessageBox win system icon
@@ -116,6 +116,7 @@ protected:
 
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg LRESULT OnCmdParam_OnSetRTLForButtons(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
 public:

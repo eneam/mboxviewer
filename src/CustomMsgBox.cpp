@@ -130,6 +130,12 @@ BOOL CustomMsgBox::OnInitDialog()
 	int wRecTextRc = recTextRc.Width();
 	int hRecTextRc = recTextRc.Height();
 
+
+	CRect brec;
+	m_button0.GetWindowRect(brec);
+	int buttonDeltaTop = recDlgRc.bottom - brec.top;
+	int buttonDeltaBottom = recDlgRc.bottom - brec.bottom;
+
 	// CStatic icon is used to load standard MessageBox icon
 	// ------------------------------------------------------
 
@@ -270,46 +276,84 @@ BOOL CustomMsgBox::OnInitDialog()
 	newRecDlgRc.SetRect(newRecDlgRcLeft, newRecDlgRcTop, newRecDlgRcRight, newRecDlgRcButtom);
 
 	MoveWindow(&newRecDlgRc, bRepaint);
-
-	//if ((CmboxviewApp::m_isRTL == TRUE) && (CmboxviewApp::m_isRTLForDialogs))
+	
 	if (m_nType & MB_RTLREADING)
 	{
-		newTextRec.left -= 2 * SpacingSize;
-		newTextRec.right -= 1 * SpacingSize;
-		//newTextRec.DeflateRect(-2*SpacingSize, 0);
+		iconRecRight = newRecDlgRc.Width() - SpacingSize;
+		iconRecLeft = iconRecRight - (cxIcon + 2*SpacingSize);
 
-		m_text.SetRect(&newTextRec);
-		m_text.MoveWindow(newTextRec, bRepaint);
-
-		iconRecLeft = newRecDlgRc.Width() - (cxIcon + 2*SpacingSize);
-		iconRecTop = newTextRec.top;
-		iconRecRight = newRecDlgRc.Width() - 2*SpacingSize;
-		iconRecButtom = iconRecTop + cyIcon + SpacingSize;
+		iconRecTop = 0;
 
 		SetRect(&iconrect, iconRecLeft, iconRecTop, iconRecRight, iconRecButtom);
 		HICON retIcon = m_icon.SetIcon(m_hIcon);
 		m_icon.MoveWindow(iconrect, bRepaint);
+
+		int textRecRight = iconRecLeft;
+		int textRecLeft = 2 * SpacingSize;
+		int textRecTop = SpacingSize;
+
+		newTextRec.SetRect(textRecLeft, textRecTop, textRecRight, textRecButtom);
+
+		m_text.SetRect(&newTextRec);
+		m_text.MoveWindow(newTextRec, bRepaint);
 	}
 
 	int lcnt = m_text.GetLineCount();
-
-	// Need to do extra MoveWindow for proper scaling.
-	//lcnt++; // ????
+	lcnt++;
+	if (lcnt == 1)
+		lcnt++;
 
 	int newTextHeigth = lcnt*textSize.cy;
 	newRecDlgRcButtom = recDlgRc.bottom + (newTextHeigth - recTextRc.Height());
-
-	newRecDlgRc.SetRect(newRecDlgRcLeft, newRecDlgRcTop, newRecDlgRcRight, newRecDlgRcButtom);
-	MoveWindow(&newRecDlgRc, bRepaint);
-
 
 	ProcessType(m_nType);
 	ProcessType(m_nType);
 	//SetFocus(); // focus is already set on one of the buttons
 
+	newRecDlgRc.SetRect(newRecDlgRcLeft, newRecDlgRcTop, newRecDlgRcRight, newRecDlgRcButtom);
+	MoveWindow(&newRecDlgRc, bRepaint);
+
+	if (m_nType & MB_RTLREADING)
+	{
+		CRect wrc;
+		m_button0.GetWindowRect(&wrc);
+
+		CRect brc;
+		SetRect(&brc, 0, wrc.top, wrc.Width(), wrc.bottom);
+
+		UINT nFlags = SWP_NOZORDER | SWP_SHOWWINDOW;
+
+		// Calculation of the "top" are by trial and error unfortunately
+		// Need better solution !!!!
+		int delta = buttonDeltaTop + brc.Height() + 8;
+		int top = newRecDlgRc.Height() - delta;
+
+		int pos = 6;
+		if (!m_buttons[0].m_hidden)
+		{
+			int retPos = m_button0.SetWindowPos(0, pos, top, brc.Width(), brc.Height(), nFlags);
+		}
+
+		pos += brc.Width() + 6;
+		if (!m_buttons[1].m_hidden)
+		{
+			int retPos = m_button1.SetWindowPos(0, pos, top, brc.Width(), brc.Height(), nFlags);
+		}
+
+		pos += brc.Width() + 6;
+		if (!m_buttons[2].m_hidden)
+		{
+			int retPos = m_button2.SetWindowPos(0, pos, top, brc.Width(), brc.Height(), nFlags);
+		}
+
+		MoveWindow(&newRecDlgRc, bRepaint);
+	}
+
 	ResHelper::LoadDialogItemsInfo(this);
 	ResHelper::UpdateDialogItemsInfo(this);
 	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
+
+	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE, 0, 0);
 
 	//return TRUE;  // return TRUE unless you set the focus to a control
 	return FALSE;  // return TRUE unless you set the focus to a control
@@ -369,6 +413,7 @@ BEGIN_MESSAGE_MAP(CustomMsgBox, CDialogEx)
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_1, &CustomMsgBox::OnBnClickedMsgBoxButton1)
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_2, &CustomMsgBox::OnBnClickedMsgBoxButton2)
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_3, &CustomMsgBox::OnBnClickedMsgBoxButton3)
+	ON_MESSAGE(WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE, &CustomMsgBox::OnCmdParam_OnSetRTLForButtons)
 END_MESSAGE_MAP()
 
 
@@ -394,8 +439,9 @@ void CustomMsgBox::OnSize(UINT nType, int cx, int cy)
 		GetWindowRect(&recWin);
 		int pos_cy = cy - m_StatusBarHeight;
 		UINT nFlags = SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOSIZE;
-		nFlags = SWP_NOZORDER;
+		nFlags = SWP_NOZORDER | SWP_SHOWWINDOW;
 		BOOL retPos = m_wndStatusBar.SetWindowPos(0, 0, pos_cy, cx, m_StatusBarHeight, nFlags);
+
 		int deb = 1;
 	}
 }
@@ -532,20 +578,21 @@ void CustomMsgBox::ProcessType(UINT nType)
 {
 	HWND h = GetSafeHwnd();
 
-	m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"", TRUE);
-	m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDCANCEL, L"", TRUE);
-	m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDRETRY, L"", TRUE);
+	m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"XX", TRUE);
+	m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDCANCEL, L"XX", TRUE);
+	m_buttons[2].Set(m_button2, ID_MSG_BOX_BUTTON_3, IDRETRY, L"XX", TRUE);
 
 	switch (nType & MB_TYPEMASK)
 	{
 	case MB_OK:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"Ok");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"OK");
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 
 	case MB_OKCANCEL:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDCANCEL, L"Cancel");
-		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"OK");
+		m_buttons[1].Set(m_button1, ID_MSG_BOX_BUTTON_2, IDCANCEL, L"Cancel");
+		SetDefaultButton(m_button1, ID_MSG_BOX_BUTTON_2, this);
 		break;
 
 	case MB_YESNO:
@@ -582,10 +629,12 @@ void CustomMsgBox::ProcessType(UINT nType)
 		break;
 
 	default:
-		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"Ok");
+		m_buttons[0].Set(m_button0, ID_MSG_BOX_BUTTON_1, IDOK, L"OK");
 		SetDefaultButton(m_button0, ID_MSG_BOX_BUTTON_1, this);
 		break;
 	}
+
+	::MessageBeep(nType & MB_ICONMASK);
 
 	//UpdateData(FromVariablesToControls);
 }
@@ -775,51 +824,79 @@ BOOL CustomMsgBox::SetClipboardText(CString& buffer)
 	return bSuccess;
 }
 
+LRESULT CustomMsgBox::OnCmdParam_OnSetRTLForButtons(WPARAM wParam, LPARAM lParam)
+{
+	int deb = 1;
+	return 0;
+}
+
 
 void TestCustomMsgBox()
 {
-	//CustomMsgBox  mbox;
 	CString text = L"This dialog enables users to configure the root data folder."
 		" MBox Viewer will create a UMBoxViewer folder under the configured root data folder"
 		" for all files generated by MBox Viewer such as mails exported in PDF format.\n\n"
 		"IMPORTANT: Data Folder path should be as short as possible to avoid truncation of names of files generated by MBox Viewer."
 		" Note that the file path is limited to 255 characters.";
 
-	//text = L"";
+	//text = L"Hello Hello hello hello";
+	text = L"Hello";
+	text = L"";
 
 	CString caption = L"Info";
-	//UINT nType = MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO;
-	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_ABORTRETRYIGNORE;
-	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_YESNOCANCEL;
-	UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_CANCELTRYCONTINUE;
-	
-	//UINT nType = MB_APPLMODAL | MB_ICONHAND | MB_YESNOCANCEL| MB_RTLREADING;
-	
+
+
+	UINT nType = MB_APPLMODAL | MB_ICONQUESTION | MB_YESNO;
 
 	int textFontHeight = 16;
 
-	CWnd * pParent = 0;
-	CustomMsgBox mbox(text, caption, nType, textFontHeight, pParent);
+	UINT RTL = MB_RTLREADING;
+	//RTL = 0;
 
-	INT_PTR code = mbox.DoModal();
+	int i;
+	for (i = 0; i <= 6; i++ )
+	{
+		if (i == 0)
+			nType = MB_APPLMODAL | MB_ICONQUESTION | MB_OK;
+		else if (i == 1)
+			nType = MB_APPLMODAL | MB_ICONHAND | MB_OKCANCEL;
+		else if (i == 2)
+			nType = nType = MB_APPLMODAL | MB_ICONASTERISK | MB_ABORTRETRYIGNORE;
+		else if (i == 3)
+			nType = MB_APPLMODAL | MB_ICONEXCLAMATION | MB_YESNOCANCEL;
+		else if (i == 4)
+			nType = MB_APPLMODAL | MB_USERICON | MB_YESNO;
+		else if (i == 5)
+			nType = MB_APPLMODAL | MB_ICONHAND | MB_RETRYCANCEL;
+		else if (i == 6)
+			nType = MB_APPLMODAL | MB_ICONERROR | MB_CANCELTRYCONTINUE;
 
-	if (code == IDOK)
-	{
-		int deb = 1;
-	}
-	else
-	{
-		int deb = 1;
-	}
+		if (RTL)
+			nType |= RTL;
 
-	HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
-	int result = MessageBox(h, text, caption, nType);
-	if (result == IDOK)
-	{
-		int deb = 1;
-	}
-	else
-	{
-		int deb = 1;
+		CWnd* pParent = 0;
+		CustomMsgBox mbox(text, caption, nType, textFontHeight, pParent);
+
+		INT_PTR code = mbox.DoModal();
+
+		if (code == IDOK)
+		{
+			int deb = 1;
+		}
+		else
+		{
+			int deb = 1;
+		}
+
+		HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+		int result = MessageBox(h, text, caption, nType);
+		if (result == IDOK)
+		{
+			int deb = 1;
+		}
+		else
+		{
+			int deb = 1;
+		}
 	}
 }

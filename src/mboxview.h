@@ -56,6 +56,7 @@ extern const wchar_t *sz_Software_mboxview;
 #define WM_CMD_PARAM_RESET_TREE_POS_MESSAGE  (WM_APP + 6)
 #define WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE  (WM_APP + 7)
 #define WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE  (WM_APP + 8)
+#define WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE  (WM_APP + 9)
 
 /////////////////////////////////////////////////////////////////////////////
 // CmboxviewApp:

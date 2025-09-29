@@ -98,9 +98,6 @@ CString CmboxviewApp::m_language = L"english";
 
 CWnd* CmboxviewApp::wndFocus = 0;
 
-//#pragma warning(3 : 4840 4477)  // useless -:(((
-
-
 int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 {
 	if (CmboxviewApp::m_isRTL == TRUE)
@@ -113,6 +110,7 @@ int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	{
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
 		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;
@@ -133,6 +131,7 @@ int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	{
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
 		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;
@@ -152,6 +151,7 @@ int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
 		CString caption;
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
 		CustomMsgBox mbox(lpszText, caption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;

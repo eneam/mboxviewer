@@ -518,7 +518,7 @@ void NMsgView::CalculateViewRec(CRect& rc, int cx, int cy)
 
 	rc.SetRect(0,0,cx, height);
 
-	// Doesn't work well. Calculation of height are not accurate; force retry. Will invoke  UpdateLayout !!!!
+	// Above Doesn't work well. Calculation of height are not accurate; force retry. Will invoke  UpdateLayout !!!!
 	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SIZE_MSGVIEW_MESSAGE, 0, 0);
 }
 
