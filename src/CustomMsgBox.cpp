@@ -91,6 +91,9 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// TODO:  Add extra initialization here
 
+
+	// All calcualtions are a bit impresized because dialog and dialog's elements are resizezable !!!!
+	// It works now but need to revisit all calculations when time permits
 	// TODO: consider max screen width and height; may need to loop if max width or max heigth is reached
 
 	SetWindowText(captionStr);
@@ -103,7 +106,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	if (!m_wndStatusBar.CreateEx(this, 0, dwCtrlStatusStyle))
 	{
 		TRACE0("Failed to create status bar\n");
-		return -1;      // fail to create
+		return FALSE;      // fail to create
 	}
 
 	BOOL retM = m_wndStatusBar.ModifyStyle(0, CBRS_GRIPPER);  // just is case
@@ -115,7 +118,6 @@ BOOL CustomMsgBox::OnInitDialog()
 	// CString fontName = CMainFrame::m_dfltFontName;
 
 	BOOL bRepaint = TRUE; // ??
-
 
 	// From .rc file
 	// --------------
@@ -142,42 +144,46 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	m_icon.ModifyStyle(0, WS_CHILD | WS_VISIBLE | SS_ICON | SS_CENTERIMAGE );
 
-
 	// TODO: Handle no icon set
-	LPWSTR lpIcon = GetIconId(m_nType);
-
-	BOOL winSystemIcon = TRUE;
-	int lims = LIM_LARGE;
-	CString errorText;
-	HICON m_hIcon = LoadMsgBoxIcon(winSystemIcon, lpIcon, lims, errorText);
-	if (m_hIcon == 0)
-	{
-		TRACE(L"%s\n", errorText);
-		// ignore ??;
-	}
-
-	int cxIcon = GetSystemMetrics(SM_CXICON);
-	int cyIcon = GetSystemMetrics(SM_CYICON);
-
 	int SpacingSize = 16;
 
 	CRect iconrect;
-
 	int iconRecLeft = 0;
 	int iconRecTop = 0;
 	int iconRecRight = 0;
 	int iconRecButtom = 0;
 
-	iconRecLeft = SpacingSize;
-	iconRecTop = recTextRc.top + SpacingSize/2;
-	iconRecRight = iconRecLeft + cxIcon + SpacingSize;
-	iconRecButtom = iconRecTop + cyIcon + SpacingSize;
+	int cxIcon = 0;
+	int cyIcon = 0;
 
-	SetRect(&iconrect, iconRecLeft, iconRecTop, iconRecRight, iconRecButtom);
+	BOOL winSystemIcon = TRUE;
+	int lims = LIM_LARGE;
+	CString errorText;
 
-	HICON retIcon = m_icon.SetIcon(m_hIcon);
+	LPWSTR lpIcon = GetIconId(m_nType);
+	if (lpIcon)
+	{
+		m_hIcon = LoadMsgBoxIcon(winSystemIcon, lpIcon, lims, errorText);
+		if (m_hIcon == 0)
+		{
+			TRACE(L"%s\n", errorText);
+			// ignore ??;
+		}
 
-	m_icon.MoveWindow(iconrect, bRepaint);
+		cxIcon = GetSystemMetrics(SM_CXICON);
+		cyIcon = GetSystemMetrics(SM_CYICON);
+
+		iconRecLeft = SpacingSize;
+		iconRecTop = recTextRc.top + SpacingSize / 2;
+		iconRecRight = iconRecLeft + cxIcon + SpacingSize;
+		iconRecButtom = iconRecTop + cyIcon + SpacingSize;
+
+		SetRect(&iconrect, iconRecLeft, iconRecTop, iconRecRight, iconRecButtom);
+
+		HICON retIcon = m_icon.SetIcon(m_hIcon);
+
+		m_icon.MoveWindow(iconrect, bRepaint);
+	}
 
 	// Determine rectangle for translated text. Translation can return original english text
 	// ------------------------------------------------------
@@ -240,11 +246,11 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// Aproximate, may need to do better later
 	// Make sure we don't divide by zero
-	if (longestWordText.GetLength())
-		longetWordLen = (int)(((float)textSize.cx * longetWordLen) / longestWordText.GetLength());
+	if (textLen)
+		longetWordLen = (int)(((float)textSize.cx * longetWordLen) / textLen);
 
-	if (longestLineText.GetLength())
-		longetLineLen = (int)(((float)textSize.cx * longetLineLen) / longestLineText.GetLength());
+	if (textLen)
+		longetLineLen = (int)(((float)textSize.cx * longetLineLen) / textLen);
 
 
 	if ((longetWordLen < textRectagleWidth) && (longetLineLen < textRectagleWidth))
@@ -252,9 +258,14 @@ BOOL CustomMsgBox::OnInitDialog()
 		textRectagleWidth = max(longetWordLen, longetLineLen);
 	}
 
+	if (textRectagleWidth < wRecTextRc)
+		textRectagleWidth = wRecTextRc;
+
 	m_text.SetWindowText(m_textStr);
 
-	int textRecLeft = iconrect.right;
+	int textRecLeft = 2*SpacingSize;
+	if (lpIcon)
+		textRecLeft = iconrect.right;
 	int textRecTop = recTextRc.top + SpacingSize;
 	int textRecRight = textRecLeft + textRectagleWidth;
 	int textRecButtom = textRecTop + screenHeight / 2;
@@ -282,16 +293,22 @@ BOOL CustomMsgBox::OnInitDialog()
 	
 	if (m_nType & MB_RTLREADING)
 	{
-		iconRecRight = newRecDlgRc.Width() - SpacingSize;
-		iconRecLeft = iconRecRight - (cxIcon + 2*SpacingSize);
+		if (lpIcon)
+		{
+			iconRecRight = newRecDlgRc.Width() - SpacingSize;
+			iconRecLeft = iconRecRight - (cxIcon + 2 * SpacingSize);
 
-		iconRecTop = 0;
+			iconRecTop = 0;
 
-		SetRect(&iconrect, iconRecLeft, iconRecTop, iconRecRight, iconRecButtom);
-		HICON retIcon = m_icon.SetIcon(m_hIcon);
-		m_icon.MoveWindow(iconrect, bRepaint);
+			SetRect(&iconrect, iconRecLeft, iconRecTop, iconRecRight, iconRecButtom);
+			HICON retIcon = m_icon.SetIcon(m_hIcon);
+			m_icon.MoveWindow(iconrect, bRepaint);
+		}
 
-		int textRecRight = iconRecLeft;
+		int textRecRight = newRecDlgRc.Width() - 2 * SpacingSize;
+		if (lpIcon)
+			textRecRight = iconRecLeft;
+
 		int textRecLeft = 2 * SpacingSize;
 		int textRecTop = SpacingSize;
 
@@ -568,6 +585,7 @@ int CustomMsgBox::LongestLineLength(CString& str, CString *longestLine)
 LPWSTR CustomMsgBox::GetIconId(UINT nType)
 {
 	LPWSTR iconId = IDI_EXCLAMATION;
+	iconId = 0;
 	switch (nType & MB_ICONMASK)
 	{
 	case MB_ICONEXCLAMATION: iconId = IDI_EXCLAMATION; break;
@@ -845,8 +863,8 @@ void TestCustomMsgBox()
 		" Note that the file path is limited to 255 characters.";
 
 	//text = L"Hello Hello hello hello";
-	text = L"Hello";
-	text = L"";
+	//text = L"Hello";
+	//text = L"";
 
 	CString caption = L"Info";
 
@@ -856,15 +874,16 @@ void TestCustomMsgBox()
 	int textFontHeight = 16;
 
 	UINT RTL = MB_RTLREADING;
-	RTL = 0;
+	//RTL = 0;
 
 	int i;
-	for (i = 0; i <= 6; i++ )
+	for (i = 0; i <= 1; i++ )
 	{
 		if (i > 0)
 			caption = L"Error";
 		if (i == 0)
-			nType = MB_APPLMODAL | MB_ICONQUESTION | MB_OK;
+			nType = MB_APPLMODAL | MB_OK;
+			//nType = MB_APPLMODAL | MB_ICONQUESTION | MB_OK;
 		else if (i == 1)
 			nType = MB_APPLMODAL | MB_ICONHAND | MB_OKCANCEL;
 		else if (i == 2)
@@ -876,7 +895,7 @@ void TestCustomMsgBox()
 		else if (i == 5)
 			nType = MB_APPLMODAL | MB_ICONHAND | MB_RETRYCANCEL;
 		else if (i == 6)
-			nType = MB_APPLMODAL | MB_ICONERROR | MB_CANCELTRYCONTINUE;
+			nType = MB_APPLMODAL | MB_CANCELTRYCONTINUE;
 
 		if (RTL)
 			nType |= RTL;

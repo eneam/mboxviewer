@@ -9,6 +9,7 @@ v 1.0.3.52
  - Enhanced “Select root folder for merging” option to reduce user interaction.;
  - Fixed broken "Restore Removed Files" GUI option.;
  - Updated language translation files.;
+ - Implemented custom MessagBox with configurable font size.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.51
