@@ -91,6 +91,8 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	// TODO:  Add extra initialization here
 
+	// TODO: consider max screen width and height; may need to loop if max width or max heigth is reached
+
 	SetWindowText(captionStr);
 
 	m_text.EnableWindow(TRUE);
@@ -130,7 +132,6 @@ BOOL CustomMsgBox::OnInitDialog()
 	int wRecTextRc = recTextRc.Width();
 	int hRecTextRc = recTextRc.Height();
 
-
 	CRect brec;
 	m_button0.GetWindowRect(brec);
 	int buttonDeltaTop = recDlgRc.bottom - brec.top;
@@ -141,6 +142,8 @@ BOOL CustomMsgBox::OnInitDialog()
 
 	m_icon.ModifyStyle(0, WS_CHILD | WS_VISIBLE | SS_ICON | SS_CENTERIMAGE );
 
+
+	// TODO: Handle no icon set
 	LPWSTR lpIcon = GetIconId(m_nType);
 
 	BOOL winSystemIcon = TRUE;
@@ -236,7 +239,7 @@ BOOL CustomMsgBox::OnInitDialog()
 		textRectagleWidth = maxTextRectagleWidth;
 
 	// Aproximate, may need to do better later
-	//Make sure we don't divide by zero
+	// Make sure we don't divide by zero
 	if (longestWordText.GetLength())
 		longetWordLen = (int)(((float)textSize.cx * longetWordLen) / longestWordText.GetLength());
 
@@ -299,7 +302,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	}
 
 	int lcnt = m_text.GetLineCount();
-	lcnt++;
+	//lcnt++;
 	if (lcnt == 1)
 		lcnt++;
 
@@ -353,6 +356,8 @@ BOOL CustomMsgBox::OnInitDialog()
 	ResHelper::UpdateDialogItemsInfo(this);
 	//BOOL retA = ResHelper::ActivateToolTips(this, m_toolTip);
 
+
+	// Post message to itself to process buttons position
 	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE, 0, 0);
 
 	//return TRUE;  // return TRUE unless you set the focus to a control
@@ -851,11 +856,13 @@ void TestCustomMsgBox()
 	int textFontHeight = 16;
 
 	UINT RTL = MB_RTLREADING;
-	//RTL = 0;
+	RTL = 0;
 
 	int i;
 	for (i = 0; i <= 6; i++ )
 	{
+		if (i > 0)
+			caption = L"Error";
 		if (i == 0)
 			nType = MB_APPLMODAL | MB_ICONQUESTION | MB_OK;
 		else if (i == 1)

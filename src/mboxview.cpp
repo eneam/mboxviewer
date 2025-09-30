@@ -56,9 +56,7 @@
 #include "Shobjidl.h"
 #include "shobjidl_core.h"
 
-//#ifdef _DEBUG
 #include "CustomMsgBox.h"
-//#endif
 
 int JsonTest();
 
@@ -110,7 +108,7 @@ int MyMessageBox(HWND h, LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	{
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
-		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I suppose
 		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;
@@ -131,7 +129,7 @@ int MyMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
 	{
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
-		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I suppose
 		CustomMsgBox mbox(lpszText, lpszCaption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;
@@ -151,7 +149,7 @@ int MyAfxMessageBox(LPCTSTR lpszText, UINT nType)
 		int textFontHeight = 12;
 		CWnd* pParent = 0;
 		CString caption;
-		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I guess
+		// lpszText is already translated but CustomMsgBox will try to translate again, no harm I suppose
 		CustomMsgBox mbox(lpszText, caption, nType, textFontHeight, pParent);
 		INT_PTR code = mbox.DoModal();
 		return (int)code;
@@ -1503,7 +1501,7 @@ void CmboxviewApp::OnAppAbout()
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 
-#if 1
+#if 0
 	TestCustomMsgBox();
 #endif
 }
