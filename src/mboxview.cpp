@@ -645,6 +645,8 @@ CmboxviewApp::~CmboxviewApp()
 	int deb = 1;
 }
 
+#include <regex>
+
 CmboxviewApp::CmboxviewApp()
 {
 	// TODO: add construction code here,
@@ -652,6 +654,25 @@ CmboxviewApp::CmboxviewApp()
 	int deb10 = 1;
 
 #ifdef _DEBUG
+
+#if 0
+	std::string text = "Quick brown fox jumps over the lazy dog.";
+	std::regex pat("fox");
+
+	std::smatch match_results;
+	int start_index = 0;
+	int end_index = text.length();
+	std::string::const_iterator b = text.begin() + start_index;
+	std::string::const_iterator e = text.begin() + end_index;
+
+	if (std::regex_search(b, e, match_results, pat, std::regex_constants::match_default))
+	{
+		std::cout << "Match found: " << match_results.str() << std::endl;
+	}
+	else {
+		std::cout << "No match found." << std::endl;
+	}
+#endif
 
 #if 0
 	{

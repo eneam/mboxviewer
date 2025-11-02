@@ -7610,7 +7610,6 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 		{
 			if (FileUtils::PathDirExists(datapath))
 			{ // likely :) 
-				//CString text = L"Created file \n\n" + textFileName;
 				CString text = L"Created file";
 				ResHelper::TranslateString(text);
 				if (createFileOnly) {

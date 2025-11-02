@@ -1568,11 +1568,8 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToCSVFile(csvConfig);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					//CString text = L"Created file \n\n" + csvFileName;
-					CString text;
-					CString fmt = L"Created file \n\n%s";
-					ResHelper::TranslateString(fmt);
-					text.Format(fmt, csvFileName);
+					CString text = L"Created file";
+					ResHelper::TranslateString(text);
 
 					OpenContainingFolderDlg dlg(text, csvFileName);
 					INT_PTR nResponse = dlg.DoModal();
@@ -1696,7 +1693,6 @@ void CMainFrame::OnPrinttoTextFile(int textType)
 			if (!datapath.IsEmpty())  // not likely since the path was valid in MboxMail::exportToTextFile(...);
 			{
 				if (FileUtils::PathDirExists(datapath)) { // likely :) 
-					//CString text = L"Created file \n\n" + textFileName;
 					CString text = L"Created file";
 					ResHelper::TranslateString(text);   // RESTODO
 
@@ -1788,7 +1784,6 @@ int CMainFrame::OnPrintSingleMailtoText(int mailPosition, int textType, CString 
 			{
 				if (FileUtils::PathDirExists(datapath))
 				{ // likely :) 
-					//CString text = L"Created file \n\n" + textFileName;
 					CString text = L"Created file";
 					ResHelper::TranslateString(text);
 					if (createFileOnly) {
