@@ -645,6 +645,9 @@ CStringA TextUtilsEx::DecodeString(CStringA &subj, CStringA &charset, UINT &char
 	{
 		int maxOutputLen = 2 * outputLen + 2;
 		unsigned char *outBuf = (unsigned char*)malloc(maxOutputLen);
+		if (outBuf == NULL)
+			return subj;
+
 		int decodeLen = tfc.GetOutput(outBuf, maxOutputLen);
 		outBuf[decodeLen] = 0;
 		CStringA str(outBuf);

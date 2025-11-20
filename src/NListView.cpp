@@ -3411,7 +3411,9 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	19
+
+// Update CACHE_VERSION to 20 to resolve broken data and tikme processing
+#define CACHE_VERSION	20 // 19  --> 20 11/19/2025 getting ready for v1.0.3.53
 
 BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 {

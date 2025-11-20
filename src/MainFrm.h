@@ -133,6 +133,7 @@ public:
 	BOOL m_bDate;
 	BOOL m_bCC;
 	BOOL m_bBCC;
+	BOOL m_bSize;
 	BOOL m_bContent;
 	BOOL m_bAttachmentNames;
 	CStringA m_AttachmentNamesSeparatorString;

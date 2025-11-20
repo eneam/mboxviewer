@@ -515,6 +515,7 @@
 #define ID_MSG_BOX_BUTTON_1             1434
 #define ID_MSG_BOX_BUTTON_2             1435
 #define ID_MSG_BOX_BUTTON_3             1436
+#define IDC_EXPORT_SIZE                 1437
 #define ID_VIEW_TOOLBARS                32771
 #define ID_EDIT_FINDAGAIN               32839
 #define ID_FILE_REFRESH                 32840
@@ -612,7 +613,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        249
 #define _APS_NEXT_COMMAND_VALUE         32942
-#define _APS_NEXT_CONTROL_VALUE         1437
+#define _APS_NEXT_CONTROL_VALUE         1438
 #define _APS_NEXT_SYMED_VALUE           118
 #endif
 #endif

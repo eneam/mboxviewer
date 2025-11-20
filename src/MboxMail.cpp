@@ -3955,6 +3955,13 @@ int MboxMail::exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile 
 		separatorNeeded = true;
 	}
 
+	if (csvConfig.m_bSize) {
+		if (separatorNeeded)
+			colLabels += csvConfig.m_separator;
+		colLabels += "Size (KB)";
+		separatorNeeded = true;
+	}
+
 	if (csvConfig.m_bAttachmentNames) {
 		if (separatorNeeded)
 			colLabels += csvConfig.m_separator;
@@ -4355,7 +4362,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bBCC)
 	{
 		int tolen = m->m_bcc.GetLength();
-		if ((tolen*1.5) > MboxMail::m_largebuf->Capacity())
+		if ((tolen * 1.5) > MboxMail::m_largebuf->Capacity())
 		{
 			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
 		}
@@ -4421,6 +4428,41 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		}
 
 		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
+
+		outbuf.Append('"');
+
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bSize)
+	{
+		int tolen = 8;  // max length of mail size string in KB
+		if ((tolen * 1.5) > MboxMail::m_largebuf->Capacity())
+		{
+			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
+		}
+
+		if (separatorNeeded)
+			outbuf.Append(sepchar);
+
+		outbuf.Append('"');
+
+		int begCount = outbuf.Count();
+
+		char sizebuff[32];
+		int length = m->m_length;
+		int kb = length / 1000;
+		if (length % 1000)
+			kb++;
+		sizebuff[0] = 0;
+		_itoa(kb, sizebuff, 10);
+
+		outbuf.Append(sizebuff);
+
+		char* data = outbuf.Data(begCount);
 		int dataLength = outbuf.Count() - begCount;
 		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
 		outbuf.SetCount(begCount + retLength);

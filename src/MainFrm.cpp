@@ -1503,6 +1503,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 	d.m_bDate = m_csvConfig.m_bDate;
 	d.m_bCC = m_csvConfig.m_bCC;
 	d.m_bBCC = m_csvConfig.m_bBCC;
+	d.m_bSize = m_csvConfig.m_bSize;
 	d.m_bContent = m_csvConfig.m_bContent;
 	d.m_bAttachmentNames = m_csvConfig.m_bAttachmentNames;
 	d.m_AttachmentNamesSeparatorString = m_csvConfig.m_AttachmentNamesSeparatorString;
@@ -1522,6 +1523,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		m_csvConfig.m_bDate = d.m_bDate;
 		m_csvConfig.m_bCC = d.m_bCC;
 		m_csvConfig.m_bBCC = d.m_bBCC;
+		m_csvConfig.m_bSize = d.m_bSize;
 		m_csvConfig.m_bContent = d.m_bContent;
 		m_csvConfig.m_bAttachmentNames = d.m_bAttachmentNames;
 		m_csvConfig.m_AttachmentNamesSeparatorString = d.m_AttachmentNamesSeparatorString;

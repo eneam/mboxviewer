@@ -99,6 +99,12 @@ public:
 	CStatic m_icon;
 	//
 
+	// timer
+	UINT_PTR m_nIDEvent;
+	UINT m_nElapse;
+
+	void StartTimer();
+
 	HICON LoadMsgBoxIcon(BOOL systemIcon, PCWSTR pszName, int lims, CString &errorText);
 	int LongestWordLength(CString& str, CString* longetWord = 0);
 	int LongestLineLength(CString& str, CString* longetLine = 0);
@@ -117,6 +123,7 @@ protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg LRESULT OnCmdParam_OnSetRTLForButtons(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 	DECLARE_MESSAGE_MAP()
 public:
