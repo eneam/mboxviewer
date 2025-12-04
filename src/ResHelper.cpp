@@ -792,6 +792,7 @@ BOOL  ResHelper::DetermineString(CString &str, CString &newString)
 		newString = rinfo->m_controlName;
 		return TRUE;
 	}
+	newString.Empty();
 	return FALSE;
 }
 
@@ -2604,6 +2605,9 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 		if (!tipText.IsEmpty())
 		{
 			BOOL retFind = DetermineString(tipText, toolTipText);
+
+			if (toolTipText.IsEmpty())
+				toolTipText = tipText;
 
 			if (toolTipText.GetLength())
 			{

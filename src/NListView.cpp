@@ -3745,6 +3745,8 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 	// TODO: Verify file length of both mbox and mboxview files
 	if (fSize != FileUtils::FileSize(MboxMail::s_path))
 	{
+		errorText.Append(L"Invalid Index file size.");
+		ResHelper::TranslateString(errorText);
 		goto ERR;
 	}
 
@@ -3759,7 +3761,7 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 
 	if (!sz.readInt64(&latestMailTime))
 	{
-		goto ERR;;
+		goto ERR;
 	}
 	maileFileInfo.m_latestMailTime = latestMailTime;
 
@@ -3815,6 +3817,7 @@ int NListView::LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, Mail
 	if (ret < 0)
 	{
 		sz.close();
+		Sleep(700);
 
 		HWND h = GetSafeHwnd();
 		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -3905,6 +3908,7 @@ int NListView::LoadMails_WorkerThread(LPCWSTR cache, MailArchiveFileInfo& maileF
 	if (ret < 0)
 	{
 		sz.close();
+		Sleep(700);
 
 		HWND h = GetSafeHwnd();
 		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -4413,7 +4417,11 @@ void NListView::FillCtrl()
 					// worker thread was killed
 					// we may crash anyway but set the last element to 0 if the last element was not fully constructed
 					// we don't care if memory leaks
-					MboxMail::s_mails.SetAt(ni - 1, 0);
+					// ZMM Take time to understand (ni -1) < 0 after mbox file refresh
+					if (MboxMail::s_mails.GetSize() >= 1)
+					{
+						MboxMail::s_mails.SetAt(ni - 1, 0);
+					}
 				}
 
 				MboxMail::Destroy(&MboxMail::s_mails);

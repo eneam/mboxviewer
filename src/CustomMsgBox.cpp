@@ -45,7 +45,7 @@ CustomMsgBox::CustomMsgBox(CWnd* pParent /*=nullptr*/)
 	m_StatusBarHeight = 12;
 
 	m_nIDEvent = 1;
-	m_nElapse = 200;
+	m_nElapse = 300;
 }
 
 CustomMsgBox::CustomMsgBox(LPCWSTR lpszText, LPCWSTR lpszCaption, UINT nType, int textFontHeight, CWnd* pParent)
@@ -59,7 +59,7 @@ CustomMsgBox::CustomMsgBox(LPCWSTR lpszText, LPCWSTR lpszCaption, UINT nType, in
 	m_StatusBarHeight = 12;
 
 	m_nIDEvent = 1;
-	m_nElapse = 200;
+	m_nElapse = 300;
 }
 
 CustomMsgBox::~CustomMsgBox()
@@ -383,7 +383,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	// Post message to itself to process buttons position
 	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE, 0, 0);
 
-	StartTimer();
+	//StartTimer();
 
 	//return TRUE;  // return TRUE unless you set the focus to a control
 	return FALSE;  // return TRUE unless you set the focus to a control
@@ -439,7 +439,7 @@ HICON CustomMsgBox::LoadMsgBoxIcon(BOOL systemIcon, PCWSTR pszName, int lims, CS
 
 BEGIN_MESSAGE_MAP(CustomMsgBox, CDialogEx)
 	//ON_WM_CREATE()
-	ON_WM_TIMER()
+	//ON_WM_TIMER()
 	ON_WM_SIZE()
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_1, &CustomMsgBox::OnBnClickedMsgBoxButton1)
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_2, &CustomMsgBox::OnBnClickedMsgBoxButton2)
