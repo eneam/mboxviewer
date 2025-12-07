@@ -67,17 +67,17 @@ void MboxCMimeHelper::GetContentDisposition(CMimeBody* pBP, CStringA &value)
 }
 void MboxCMimeHelper::GetCharset(CMimeBody* pBP, CStringA &value)
 {
-	string str = pBP->GetCharset();
+	std::string str = pBP->GetCharset();
 	value = str.c_str();
 }
 void MboxCMimeHelper::Name(CMimeBody* pBP, CStringA &value)
 {
-	string str = pBP->GetName();
+	std::string str = pBP->GetName();
 	value = str.c_str();
 }
 void MboxCMimeHelper::Filename(CMimeBody* pBP, CStringA &value)
 {
-	string str = pBP->GetFilename();
+	std::string str = pBP->GetFilename();
 	value = str.c_str();
 }
 void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CStringA &value)
@@ -85,7 +85,7 @@ void MboxCMimeHelper::GetValue(CMimeBody* pBP, const char* fieldName, CStringA &
 	const CMimeField *pFld = pBP->CMimeHeader::GetField(fieldName);
 	if (pFld)
 	{
-		string strValue;
+		std::string strValue;
 		pFld->GetValue(strValue);
 		value = strValue.c_str();
 	}

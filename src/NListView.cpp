@@ -12894,7 +12894,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 int NListView::FindFilenameCount(CMimeBody::CBodyList &bodies,  CStringA &fileName)
 {
 	CMimeBody* pBP;
-	string strName;
+	std::string strName;
 	strName.resize(128);
 	int fileCnt = 0;
 	CMimeBody::CBodyList::const_iterator it;
@@ -12902,7 +12902,7 @@ int NListView::FindFilenameCount(CMimeBody::CBodyList &bodies,  CStringA &fileNa
 	{
 		pBP = *it;
 
-		string strName = pBP->GetFilename();
+		std::string strName = pBP->GetFilename();
 		if (strName.empty())
 			strName = pBP->GetName();
 

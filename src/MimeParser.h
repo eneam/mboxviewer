@@ -151,7 +151,7 @@ public:
 	int Load(char *& pszDatabase, const char* pszData, int nDataSize);
 	BOOL AssertData(MboxMail *mail);
 
-	typedef list<MailBody*> MailBodyList;
+	typedef std::list<MailBody*> MailBodyList;
 	int GetBodyPartList(MailBodyList& rList);
 	int m_bodyDataOffset;
 	int m_bodyDataLength;

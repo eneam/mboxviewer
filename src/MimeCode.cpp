@@ -24,10 +24,10 @@
 // CMimeEnvironment - global environment to manage encoding/decoding
 //////////////////////////////////////////////////////////////////////
 bool CMimeEnvironment::m_bAutoFolding = false;
-string CMimeEnvironment::m_strCharset;
-list<CMimeEnvironment::CODER_PAIR> CMimeEnvironment::m_listCoders;
-list<CMimeEnvironment::FIELD_CODER_PAIR> CMimeEnvironment::m_listFieldCoders;
-list<CMimeEnvironment::MEDIA_TYPE_PAIR> CMimeEnvironment::m_listMediaTypes;
+std::string CMimeEnvironment::m_strCharset;
+std::list<CMimeEnvironment::CODER_PAIR> CMimeEnvironment::m_listCoders;
+std::list<CMimeEnvironment::FIELD_CODER_PAIR> CMimeEnvironment::m_listFieldCoders;
+std::list<CMimeEnvironment::MEDIA_TYPE_PAIR> CMimeEnvironment::m_listMediaTypes;
 CMimeEnvironment CMimeEnvironment::m_globalMgr;
 
 CMimeEnvironment::CMimeEnvironment()
@@ -75,10 +75,10 @@ void CMimeEnvironment::SetAutoFolding(bool bAutoFolding)
 void CMimeEnvironment::RegisterCoder(const char* pszCodingName, CODER_FACTORY pfnCreateObject/*=NULL*/)
 {
 	_ASSERTE(pszCodingName != NULL);
-	list<CODER_PAIR>::iterator it = m_listCoders.begin();
+	std::list<CODER_PAIR>::iterator it = m_listCoders.begin();
 	while (it != m_listCoders.end())
 	{
-		list<CODER_PAIR>::iterator it2 = it;
+		std::list<CODER_PAIR>::iterator it2 = it;
 		it++;
 		if (!::_stricmp(pszCodingName, (*it2).first))
 			m_listCoders.erase(it2);
@@ -95,7 +95,7 @@ CMimeCodeBase* CMimeEnvironment::CreateCoder(const char* pszCodingName)
 	if (!pszCodingName || !::strlen(pszCodingName))
 		pszCodingName = "7bit";
 
-	for (list<CODER_PAIR>::iterator it=m_listCoders.begin(); it!=m_listCoders.end(); it++)
+	for (std::list<CODER_PAIR>::iterator it=m_listCoders.begin(); it!=m_listCoders.end(); it++)
 	{
 		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszCodingName, (*it).first))
@@ -112,10 +112,10 @@ CMimeCodeBase* CMimeEnvironment::CreateCoder(const char* pszCodingName)
 void CMimeEnvironment::RegisterFieldCoder(const char* pszFieldName, FIELD_CODER_FACTORY pfnCreateObject/*=NULL*/)
 {
 	_ASSERTE(pszFieldName != NULL);
-	list<FIELD_CODER_PAIR>::iterator it = m_listFieldCoders.begin();
+	std::list<FIELD_CODER_PAIR>::iterator it = m_listFieldCoders.begin();
 	while (it != m_listFieldCoders.end())
 	{
-		list<FIELD_CODER_PAIR>::iterator it2 = it;
+		std::list<FIELD_CODER_PAIR>::iterator it2 = it;
 		it++;
 		if (!::_stricmp(pszFieldName, (*it2).first))
 			m_listFieldCoders.erase(it2);
@@ -130,7 +130,7 @@ void CMimeEnvironment::RegisterFieldCoder(const char* pszFieldName, FIELD_CODER_
 CFieldCodeBase* CMimeEnvironment::CreateFieldCoder(const char* pszFieldName)
 {
 	_ASSERTE(pszFieldName != NULL);
-	for (list<FIELD_CODER_PAIR>::iterator it=m_listFieldCoders.begin(); it!=m_listFieldCoders.end(); it++)
+	for (std::list<FIELD_CODER_PAIR>::iterator it=m_listFieldCoders.begin(); it!=m_listFieldCoders.end(); it++)
 	{
 		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszFieldName, (*it).first))
@@ -146,10 +146,10 @@ CFieldCodeBase* CMimeEnvironment::CreateFieldCoder(const char* pszFieldName)
 void CMimeEnvironment::RegisterMediaType(const char* pszMediaType, BODY_PART_FACTORY pfnCreateObject/*=NULL*/)
 {
 	_ASSERTE(pszMediaType != NULL);
-	list<MEDIA_TYPE_PAIR>::iterator it = m_listMediaTypes.begin();
+	std::list<MEDIA_TYPE_PAIR>::iterator it = m_listMediaTypes.begin();
 	while (it != m_listMediaTypes.end())
 	{
-		list<MEDIA_TYPE_PAIR>::iterator it2 = it;
+		std::list<MEDIA_TYPE_PAIR>::iterator it2 = it;
 		it++;
 		if (!::_stricmp(pszMediaType, (*it2).first))
 			m_listMediaTypes.erase(it2);
@@ -167,7 +167,7 @@ CMimeBody* CMimeEnvironment::CreateBodyPart(const char* pszMediaType)
 		pszMediaType = "text";
 
 	_ASSERTE(pszMediaType != NULL);
-	for (list<MEDIA_TYPE_PAIR>::iterator it=m_listMediaTypes.begin(); it!=m_listMediaTypes.end(); it++)
+	for (std::list<MEDIA_TYPE_PAIR>::iterator it=m_listMediaTypes.begin(); it!=m_listMediaTypes.end(); it++)
 	{
 		_ASSERTE((*it).first != NULL);
 		if (!::_stricmp(pszMediaType, (*it).first))
@@ -789,7 +789,7 @@ int CMimeEncodedWord::QEncode(unsigned char* pbOutput, int nMaxSize) const
 int CFieldCodeBase::GetEncodeLength() const
 {
 	// use the global charset if there's no specified charset
-	string strCharset = m_strCharset;
+	std::string strCharset = m_strCharset;
 	if (strCharset.empty())
 		strCharset = CMimeEnvironment::GetGlobalCharset();
 	if (strCharset.empty() && !CMimeEnvironment::AutoFolding())
@@ -831,7 +831,7 @@ int CFieldCodeBase::GetEncodeLength() const
 int CFieldCodeBase::Encode(unsigned char* pbOutput, int nMaxSize) const
 {
 	// use the global charset if there's no specified charset
-	string strCharset = m_strCharset;
+	std::string strCharset = m_strCharset;
 	if (strCharset.empty())
 		strCharset = CMimeEnvironment::GetGlobalCharset();
 	if (strCharset.empty() && !CMimeEnvironment::AutoFolding())
@@ -844,7 +844,7 @@ int CFieldCodeBase::Encode(unsigned char* pbOutput, int nMaxSize) const
 	int nNonAsciiChars, nDelimeter = GetDelimeter();
 	int nLineLen = 0;
 	unsigned char* pbSpace = NULL;
-	string strUnit;
+	std::string strUnit;
 	strUnit.reserve(nInputSize);
 
 	// divide the field into syntactic units to encode
@@ -930,7 +930,7 @@ int CFieldCodeBase::Decode(unsigned char* pbOutput, int nMaxSize)
 	CMimeEncodedWord coder;
 	coder.SetInput((const char*)m_pbInput, m_nInputSize, false);
 
-	string strField;
+	std::string strField;
 	strField.resize(coder.GetOutputLength());
 	int nDecoded = coder.GetOutput((unsigned char*) strField.c_str(), (int) strField.capacity());
 	strField.resize(nDecoded);
@@ -943,12 +943,12 @@ int CFieldCodeBase::Decode(unsigned char* pbOutput, int nMaxSize)
 	return nSize;
 }
 
-void CFieldCodeBase::UnfoldField(string& strField) const
+void CFieldCodeBase::UnfoldField(std::string& strField) const
 {
 	for (;;)
 	{
-		string::size_type pos = strField.rfind("\r\n");
-		if (pos == string::npos)
+		std::string::size_type pos = strField.rfind("\r\n");
+		if (pos == std::string::npos)
 			break;
 
 		strField.erase(pos, 2);

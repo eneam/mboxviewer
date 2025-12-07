@@ -19,7 +19,6 @@
 #include <utility>
 #include <string>
 #include <list>
-using namespace std;
 
 #pragma warning(disable:4786)	// identifier was truncated to 'number' characters in the debug information
 
@@ -75,16 +74,16 @@ public:
 
 private:
 	static bool m_bAutoFolding;
-	static string m_strCharset;
+	static std::string m_strCharset;
 
-	typedef pair<const char*, CODER_FACTORY> CODER_PAIR;
-	static list<CODER_PAIR> m_listCoders;
+	typedef std::pair<const char*, CODER_FACTORY> CODER_PAIR;
+	static std::list<CODER_PAIR> m_listCoders;
 
-	typedef pair<const char*, FIELD_CODER_FACTORY> FIELD_CODER_PAIR;
-	static list<FIELD_CODER_PAIR> m_listFieldCoders;
+	typedef std::pair<const char*, FIELD_CODER_FACTORY> FIELD_CODER_PAIR;
+	static std::list<FIELD_CODER_PAIR> m_listFieldCoders;
 
-	typedef pair<const char*, BODY_PART_FACTORY> MEDIA_TYPE_PAIR;
-	static list<MEDIA_TYPE_PAIR> m_listMediaTypes;
+	typedef std::pair<const char*, BODY_PART_FACTORY> MEDIA_TYPE_PAIR;
+	static std::list<MEDIA_TYPE_PAIR> m_listMediaTypes;
 
 	static CMimeEnvironment m_globalMgr;
 };
@@ -273,7 +272,7 @@ protected:
 
 private:
 	int m_nEncoding;
-	string m_strCharset;
+	std::string m_strCharset;
 
 public:
 	int BEncode(unsigned char* pbOutput, int nMaxSize) const;
@@ -291,12 +290,12 @@ public:
 	const char* GetCharset() const { return m_strCharset.c_str(); }
 
 protected:
-	string m_strCharset;
+	std::string m_strCharset;
 
 	virtual bool IsFoldingChar(char /*ch*/) const { return false; }
 	virtual int GetDelimeter() const { return 0; }
 	int FindSymbol(const char* pszData, int nSize, int& nDelimeter, int& nNonAscChars) const;
-	void UnfoldField(string& strField) const;
+	void UnfoldField(std::string& strField) const;
 	int SelectEncoding(int nLength, int nNonAsciiChars) const
 	{
 		int nQEncodeSize = nLength + nNonAsciiChars * 2;
