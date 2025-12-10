@@ -410,6 +410,9 @@ void FileUtils::GetFolderPath(CString &fileNamePath, CString &folderPath)
 	CString directory;
 	CString fileNameBase;
 	CString fileNameExtention;
+
+	fileNamePath.Trim(L" ");
+	fileNamePath.Trim(L"\"");
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 }
@@ -420,6 +423,10 @@ void FileUtils::GetFolderPathAndFileName(CString &fileNamePath, CString &folderP
 	CStringW directory;
 	CStringW fileNameBase;
 	CStringW fileNameExtention;
+
+	fileNamePath.Trim(L" ");
+	fileNamePath.Trim(L"\"");
+	fileNamePath.TrimRight(L"\\");
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 	fileName = fileNameBase + fileNameExtention;

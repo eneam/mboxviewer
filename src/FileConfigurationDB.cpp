@@ -1414,7 +1414,6 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 {
 	if (isConfigFileMailPreviewType)
 	{
-
 		txt.Append(LR"(
 #
 # MBox Viewer supports Windows Registry based configuration and the file based configuration
@@ -1422,8 +1421,9 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 #
 # The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
 # MBox Viewer will run in the preview mode when it is started with:
-# 1) the following comamnd line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
-# 2) when user double-click on a the mail file assuming the MBox Viewer is configured as the default application to 
+# 1) "mail-file-path" without any command line options
+# 2) the following command line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
+# 3) when user double left-click on a the mail file assuming the MBox Viewer is configured as the default application to 
 # open .mbox, .eml type files
 #
 # During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in:
@@ -1474,8 +1474,6 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 #
 
 )");
-
-
 	}
 }
 

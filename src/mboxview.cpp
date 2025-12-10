@@ -633,7 +633,9 @@ CmboxviewApp::~CmboxviewApp()
 			confTree->DumpTree();
 
 			if (CmboxviewApp::m_configFileLoaded)
+			{
 				confTree->Dump2File();
+			}
 
 			confTree->DeleteAllNodes();
 
@@ -654,6 +656,38 @@ CmboxviewApp::CmboxviewApp()
 	int deb10 = 1;
 
 #ifdef _DEBUG
+
+#if 0
+	CString ReplacedFileName = LR"(C:\Users\tata\Downloads\file1.txt)";
+	CString ReplacementFileName = LR"(C:\Users\tata\Downloads\file2.txt)";   // file2 -> file1
+	LPCWSTR lpBackupFileName = 0;
+	DWORD  dwReplaceFlags = REPLACEFILE_IGNORE_MERGE_ERRORS| REPLACEFILE_IGNORE_ACL_ERRORS;
+	LPVOID lpExclude = 0;
+	LPVOID lpReserved = 0;
+
+
+	BOOL retcode = ReplaceFile(ReplacedFileName, ReplacementFileName, lpBackupFileName, dwReplaceFlags, lpExclude, lpReserved);
+	if (!retcode)
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+	}
+	int deb = 1;
+#endif
+
+#if 0
+	CString ReplacedFileName = LR"(C:\Users\tata\Downloads\file1.txt)";
+	CString ReplacementFileName = LR"(C:\Users\tata\Downloads\file2.txt)";
+
+	DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+	BOOL retMove = MoveFileEx(ReplacementFileName, ReplacedFileName, nFlags);  // ReplacementFileName -> ReplacedFileName
+	if (retMove == FALSE)
+	{
+		CString errText = FileUtils::GetLastErrorAsString();
+		DWORD err = GetLastError();
+	}
+	int deb = 1;
+#endif
 
 #if 0
 	std::string text = "Quick brown fox jumps over the lazy dog.";
@@ -1631,7 +1665,8 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 	{
 		m_lastParam = lpszParam;
 	}
-	else if (bFlag)
+	//else if (bFlag)
+	if (bFlag)
 	{
 		CMainFrame::m_commandLineParms.m_hasOptions = TRUE;  // avoid this; redo
 		if (_tcsncmp(lpszParam, L"FOLDER=", 7) == 0)
@@ -1708,7 +1743,7 @@ void CCmdLine::ParseParam(LPCWSTR lpszParam, BOOL bFlag, BOOL bLast) // bLast )
 				CMainFrame::m_commandLineParms.m_progressBarDelay = progressBarDelay;
 			}
 		}
-		else if (_tcsncmp(lpszParam, L"EML_PREVIEW_MODE", 19) == 0)
+		else if (_tcsncmp(lpszParam, L"EML_PREVIEW_MODE", 16) == 0)
 		{
 			CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
 		}
@@ -1815,6 +1850,16 @@ BOOL CmboxviewApp::GetProcessPath(CString& procressPath)
 	else
 		return FALSE;
 }
+
+/*
+* if CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;
+* C:\Users\tata\AppData\Local\UMBoxViewer\MailPreview\MBoxViewer.config will be shared by all instances of mboxview.exe
+* Registry is not used and doesn't have to be configured to view eml files.
+* C:\Users\tata\AppData\Local\UMBoxViewer\PView. - dflt data folder in preview mode
+* C:\Users\tata\AppData\Local\Temp\UMBoxViewerPreview\NNNN - NNNN process id of instane of mboxview.exe
+* The C:\Users\tata\AppData\Local\Temp\UMBoxViewerPreview\NNNN folder is deletd when proces terminates gracefully
+* Contains the  same type of files as C:\Users\tata\AppData\Local\Temp\UMBoxViewer in no preview mode
+*/
 
 
 BOOL CmboxviewApp::InitInstance()
@@ -2040,6 +2085,7 @@ int deb = 1;
 		CMainFrame::m_commandLineParms.m_bEmlPreviewMode = TRUE;  // m_bDirectFileOpenMode handling is now the same as m_bEmlPreviewMode
 		//CMainFrame::m_commandLineParms.m_bDirectFileOpenMode = TRUE;
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath = CMainFrame::m_commandLineParms.m_allCommanLineOptions;
+		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L" ");
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.Trim(L"\"");
 		CMainFrame::m_commandLineParms.m_mboxFileNameOrPath.TrimRight(L"\\");
 

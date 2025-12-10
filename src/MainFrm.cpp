@@ -4917,7 +4917,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 	if (actionCode == IDTRYAGAIN)
 	{
-		// dlete UMBoxViewer Folder under Data Folder
+		// delete UMBoxViewer Folder under Data Folder
 		CString folder = dataFolder + L"UMBoxViewer";
 		bool recursive = true;
 		bool removeFolders = false;
@@ -6090,7 +6090,7 @@ void CMainFrame::OnFileDatafolderconfig()
 		{
 			if (actionCode == IDTRYAGAIN)
 			{
-				// dlete UMBoxViewer Folder under Data Folder
+				// delete UMBoxViewer Folder under Data Folder
 				CString folder = newDataFolder + L"UMBoxViewer";
 				bool recursive = true;
 				bool removeFolders = false;
@@ -6430,6 +6430,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 
+	int processId = GetCurrentProcessId();
 
 	info.Format(L"Windows Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
 	aboutSystem.Append(info);
@@ -6438,6 +6439,9 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	aboutSystem.Append(info);
 
 	info.Format(L"\nmboxview Process  Path:\n\"%s\"\n", m_processPath);
+	aboutSystem.Append(info);
+
+	info.Format(L"\nmboxview Process Id: \"%d\"\n", processId);
 	aboutSystem.Append(info);
 
 	if (CProfile::IsRegistryConfig())
@@ -6525,7 +6529,13 @@ CString CMainFrame::GetMboxviewTempPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 	if (name == 0)
 	{
 		if (m_mboxviewTempPath.IsEmpty())
@@ -6546,7 +6556,13 @@ CString CMainFrame::GetMboxviewLocalAppDataPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 
 	CString mboxviewLocalAppDataPath = FileUtils::GetMboxviewLocalAppDataPath(tempFolder, name);
 	return mboxviewLocalAppDataPath;
@@ -6557,7 +6573,13 @@ CString CMainFrame::CreateTempFileName(const wchar_t *ext)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 	CString fileName = FileUtils::CreateTempFileName(tempFolder, ext);
 	return fileName;
 }

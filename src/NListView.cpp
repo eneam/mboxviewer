@@ -3319,7 +3319,11 @@ void NListView::PostNcDestroy()
 	m_font.DeleteObject();
 	m_boldFont.DeleteObject();
 
-	FileUtils::RemoveDir(CMainFrame::GetMboxviewTempPath());
+	bool removeFolders = false;
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		removeFolders = true;
+	bool recursive = false;
+	FileUtils::RemoveDir(CMainFrame::GetMboxviewTempPath(), recursive, removeFolders);
 	MboxMail::Destroy();
 	DestroyWindow();
 	delete this;
