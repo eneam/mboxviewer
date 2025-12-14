@@ -1353,13 +1353,13 @@ int NMsgView::FindMailHeader(char *data, int datalen)
 				p = MimeParser::EatNewLine(p, e);
 		}
 		int headerLength = -1;
-		if (p < e)
+		//if (p < e)  // ZM commented out 12/12/2025
 			headerLength = IntPtr2Int(p - data);
 		return headerLength;
 	}
 	else
 	{
-		// may find one or two extar lines
+		// may find one or two extra lines
 		int fldNameCnt = 0;
 		char c;
 		while (p < e)
@@ -1469,6 +1469,7 @@ int NMsgView::ShowMailHeader(int mailPosition)
 	{
 		// Get raw mail body
 		ret = m->GetBodySS(&m_hdrDataTmp, 0);
+		char* data = m_hdrDataTmp.Data();
 		pListView->SaveAsEmlFile(m_hdrDataTmp.Data(), m_hdrDataTmp.Count());
 	}
 	else
