@@ -75,7 +75,7 @@
 #endif
 #define _WIN32_WINDOWS SUPPORTED_WINVER
 
-#ifndef _WIN32_IE
+#ifdef _WIN32_IE
 #undef _WIN32_IE
 #endif
 #define _WIN32_IE SUPPORTED_WINVER

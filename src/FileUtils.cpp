@@ -27,6 +27,9 @@
 //
 
 
+#pragma warning (disable : 4996) // warning C4996 : 'wcscpy' : This function or variable may be unsafe.Consider using wcscpy_s instead.
+								// To disable deprecation, use _CRT_SECURE_NO_WARNINGS.See online help for details.
+
 #include "stdafx.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"

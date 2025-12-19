@@ -137,6 +137,10 @@ public:
 	CStringA m_InReplyId;
 	//unsigned __int64 m_ThreadId;
 	CStringA m_ThreadId;
+	CStringA m_From;
+	CStringA m_To;
+	CStringA m_CC;
+	CStringA m_BCC;
 };
 
 class MailBodyPool;
