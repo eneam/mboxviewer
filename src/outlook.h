@@ -290,6 +290,7 @@ struct OutlookMsgHelper
     FILE* out;
 };
 
+int IsValidOutlookMsgFile(CString& fname);
 
 //int ParseOutlookMsg(void* cookie, struct cfbf* cfbf, DirEntry* e,
     //DirEntry* parent, unsigned long entry_id, int depth);

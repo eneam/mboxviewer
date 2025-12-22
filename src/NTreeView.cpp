@@ -54,6 +54,8 @@
 
 IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
+int IsValidOutlookMsgFile(CString& fname);
+
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
 
@@ -354,7 +356,8 @@ BOOL NTreeView::ImboxviewFileFilter(CString& fName)
 		fileNameExtension.CompareNoCase(L".mboxo") &&
 		fileNameExtension.CompareNoCase(L".mboxrd") &&
 		fileNameExtension.CompareNoCase(L".mboxcl") &&
-		fileNameExtension.CompareNoCase(L".mboxcl2")
+		fileNameExtension.CompareNoCase(L".mboxcl2") &&
+		fileNameExtension.CompareNoCase(L".msg")  // Outlook support
 		)
 	{
 		return FALSE;
@@ -379,6 +382,15 @@ int NTreeView::ImboxviewFile(CString& fName)
 	int retval = 0;
 	CString fileNameExtention;
 	FileUtils::GetFileExtension(fName, fileNameExtention);
+
+	if (fileNameExtention.CompareNoCase(L".msg") == 0)
+	{
+		//std::string msgFilepath((LPCWSTR)fName, fName.GetLength());
+		//CString emlFilePath;
+		//int retcode = ConvertOutlookMsgToEml(msgFilePath, emlFilePath);
+		int retcode = IsValidOutlookMsgFile(fName);
+		return retcode;
+	}
 
 	if (fileNameExtention.CompareNoCase(L".mboxview") == 0)
 		return 0;
@@ -1489,9 +1501,15 @@ HTREEITEM NTreeView::InsertAllDiscoveredMailFilesToTreeCtrl(HTREEITEM hParent, C
 		while (pos)
 		{
 			fileSizes.GetNextAssoc(pos, fn, info);
+			CString extension;
+			FileUtils::GetFileExtension(fn, extension);
 			if (info.bShow)
 			{
-				HTREEITEM hItem = InsertTreeItem(fn, 8, 9, hRoot);
+				HTREEITEM hItem = 0;
+				if (extension.CompareNoCase(L".msg") != 0)
+					hItem = InsertTreeItem(fn, 8, 9, hRoot);
+				else
+					hItem = InsertTreeItem(fn, 10, 11, hRoot);
 				if (hItem)
 				{
 					//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
@@ -2824,7 +2842,13 @@ void NTreeView::InsertMailFile(CString& mailFile)
 				BOOL ret = FileUtils::DelFile(mboxIndexFilepath);
 
 
-				HTREEITEM hItem = InsertTreeItem(mailFileName, 8, 9, hFolder);
+				CString extension;
+				FileUtils::GetFileExtension(mailFileName, extension);
+				HTREEITEM hItem = 0;
+				if (extension.CollateNoCase(L".msg") != 0)
+					hItem = InsertTreeItem(mailFileName, 8, 9, hFolder);
+				else
+					hItem = InsertTreeItem(mailFileName, 10, 11, hFolder);
 				if (hItem)
 				{
 					DeleteLabelsForSingleMailFile(hItem);
@@ -5063,11 +5087,16 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap& fileSizes, BOOL isS
 			fileSizes[s].bShow = 1;
 
 			//HTREEITEM hItemRet = m_tree.InsertItem(s, 8, 9, hItem);
-			HTREEITEM hItemRet = InsertTreeItem(s, 8, 9, hItem);
+			CString extension;
+			FileUtils::GetFileExtension(s, extension);
+			HTREEITEM hItemRet = 0;
+			if (extension.CompareNoCase(L".msg") != 0)
+				hItemRet = InsertTreeItem(s, 8, 9, hItem);
+			else
+				hItemRet = InsertTreeItem(s, 10, 11, hItem);  // Outloog msg icon
 
 			int nId = m_labelInfoStore.GetNextId();
 			m_tree.SetItemData(hItemRet, nId);
-
 
 			LabelInfo* linfo = new LabelInfo(nId, filePath);  // MailFile
 			m_labelInfoStore.Add(linfo, nId);

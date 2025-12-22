@@ -2707,6 +2707,12 @@ void OutlookMessage::FileClose(HANDLE hFile)
         CloseHandle(hFile);
 }
 
+int IsValidOutlookMsgFile(CString& fname)
+{
+    return 1;
+}
+
+
 
 
 
