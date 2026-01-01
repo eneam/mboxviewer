@@ -80,10 +80,13 @@ void ConfigTree::DumpTree(CString &title)
 {
 	// Reenable for testing
 #if 0
-	TRACE(L"%s %s", title, L"TREE DUMP\n");
+#if 0
+	//TRACE(L"%s %s", title, L"TREE DUMP\n");
 	//SortTree();
-
-	DumpNode(&m_rootNode, 0);
+	//DumpNode(&m_rootNode, 0);
+#else
+	DumpTree();
+#endif
 #endif
 }
 
@@ -126,11 +129,13 @@ void ConfigTree::DumpNode(ConfigNode* node, int level)
 void ConfigTree::DumpTree()
 {
 #ifdef _DEBUG
-#if 1
+#if 0
 	CString out;
 	out.Preallocate(10000);
 
 	DumpNode(&m_rootNode, out);
+
+	const wchar_t* outdata = (LPCWSTR)out;
 
 	TRACE(L"%s\n", L"TREE DUMP CONFIG TREE");
 	TRACE(L"%s\n", out);
@@ -799,7 +804,7 @@ BOOL ConfigTree::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 {
 #ifdef _DEBUG
 	CString label = L"_DeleteValue";
-	//DumpTree(label);
+	DumpTree(label);
 #endif
 
 	CString configSection;
@@ -816,6 +821,9 @@ BOOL ConfigTree::_DeleteValue(HKEY hKey, LPCWSTR section, LPCWSTR key)
 		node->m_parent->m_pConfigList->remove(node);
 		delete node;
 	}
+#ifdef _DEBUG
+	DumpTree(label);
+#endif
 	return TRUE;
 }
 
@@ -947,6 +955,38 @@ int  ConfigTree::Dump2File()
 
 BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& errorText)
 {
+#if 1
+	// Configuration file can be shared by multiple instances of MBox Viewer
+	// Acces to the file needs to be controlled using LockFile
+	SimpleMemoryLockFile memFile;
+	BOOL setLock = TRUE;
+	DWORD dwDesiredAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+	BOOL retOpen = memFile.Open(filepath, errorText, dwDesiredAccess, dwCreationDisposition, setLock);
+	if (retOpen == FALSE)
+		return retOpen;
+
+	BYTE BOMF16LE[2] = { 0xFF, 0xFE };
+
+	int retval;
+	DWORD nNumberOfBytesToWrite = 2;
+	DWORD nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(memFile.GetFileHandle(), BOMF16LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	CString out;
+	out.Preallocate(20000);
+
+	BOOL isConfigFileMailPreviewType = TRUE;
+	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
+
+	nNumberOfBytesToWrite = out.GetLength() * 2;
+	nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(memFile.GetFileHandle(), (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	BOOL retClose = memFile.Close(errorText);
+
+	return TRUE;
+#else
 	int retval;
 
 	h = FileUtils::FileOpen(filepath, errorText, TRUE);
@@ -967,37 +1007,6 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 	BOOL isConfigFileMailPreviewType = TRUE;
 	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
 
-#if 0
-	out = LR"(
-#
-# MBox Viewer supports Windows Registry based configuration and the file based configuration
-# when runing MBox Viewer in the default mode.
-#
-# The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
-# MBox Viewer will run in the preview mode when it is started with:
-# 1) the following comamnd line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
-# 2) when user double-click on a the mail file assuming the MBox Viewer is configured as the default application to 
-# open .mbox, .eml type files
-#
-# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in:
-#        C:\Users\UserName\AppData\Local\UMBoxViewer\MailPreview
-#
-# If the file doesn't exists, MBox Viewer will create one.
-# Note that C:\Users\UserName\AppData\Local folder is the standard per user folder created by Windows system
-#
-# The config file format is similar to the format of ".reg" registry file
-# [UMBoxViewer\LastSelection]
-# "parameter"="value"
-#
-# White spaces are not allowed in the front of each line and around the "=" character.
-# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
-#
-# MBoxViewer.config file must be encoded as UTF16LE BOM file
-#
-#
-
-)";
-#endif
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(h, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
@@ -1005,10 +1014,52 @@ BOOL ConfigTree::CreateEmptyConfigFile(CString& filepath, HANDLE& h, CString& er
 	FileUtils::FileClose(h);
 
 	return TRUE;
+#endif
 }
 
 int  ConfigTree::Dump2File(CString& filepath, BOOL isConfigFileMailPreviewType)
 {
+#if 1
+	// Configuration file can be shared by multiple instances of MBox Viewer
+	// Acces to the file needs to be controlled using LockFile
+	SimpleMemoryLockFile memFile;
+	CString errorText;
+	BOOL setLock = TRUE;
+	DWORD dwDesiredAccess = GENERIC_WRITE;
+	DWORD dwCreationDisposition = CREATE_ALWAYS;
+	BOOL retOpen = memFile.Open(filepath, errorText, dwDesiredAccess, dwCreationDisposition, setLock);
+	if (retOpen == FALSE)
+		return retOpen;
+
+	BYTE BOMF16LE[2] = { 0xFF, 0xFE };
+
+	int retval;
+	//CString errorText;
+	DWORD nNumberOfBytesToWrite = 2;
+	DWORD nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(memFile.GetFileHandle(), BOMF16LE, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	CString out;
+	out.Preallocate(20000);
+
+	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
+
+	nNumberOfBytesToWrite = out.GetLength() * 2;
+	nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(memFile.GetFileHandle(), (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	out.Empty();
+	DumpNode(&m_rootNode, out);
+	const wchar_t* outdata = (LPCWSTR)out;
+
+	nNumberOfBytesToWrite = out.GetLength() * 2;
+	nNumberOfBytesWritten = 0;
+	retval = FileUtils::Write2File(memFile.GetFileHandle(), (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
+
+	BOOL retClose = memFile.Close(errorText);
+
+	return 1;
+#else
 	int retval;
 	CString errorText;
 
@@ -1031,34 +1082,6 @@ int  ConfigTree::Dump2File(CString& filepath, BOOL isConfigFileMailPreviewType)
 
 	ConfigTree::GetConfigFileIntroText(isConfigFileMailPreviewType, out);
 
-#if 0
-	out = LR"(
-#
-# MBox Viewer supports Windows Registry based configuration and the file based configuration.
-# By default, Windows Registry is used to store configuration data.
-# During startup, the MBox Viewer will check whether the MBoxViewer.config file exists and is writeable in:
-#
-#   1) the Config subfolder under the MBox Viewer software installation folder  or
-#   2) in the UMBoxViewer\Config subfolder under the  user specific folder created by Windows system 
-#        example : C:\Users\UserName\AppData\Local\UMBoxViewer\Config
-#
-# The config file format is similar to the format of ".reg" registry file
-# [UMBoxViewer\LastSelection]
-# "parameter"="value"
-#
-# White spaces are not allowed in the front of each line and around the "=" character.
-# All parameter values are encoded as strings and converted by MBox Viewer to numbers or other data types when needed.
-#
-# MBoxViewer.config file must be encoded as UTF16LE BOM file
-#
-# MBoxViewer.config.sample file is included in the software package under the Config folder.
-# In order to enable MBox Viewer to use the file based configuration, 
-# user needs to rename this file to MBoxViewer.config file or copy the sample file
-# to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
-#
-
-)";
-#endif
 	nNumberOfBytesToWrite = out.GetLength() * 2;
 	nNumberOfBytesWritten = 0;
 	retval = FileUtils::Write2File(hConfigFile, (BYTE*)(LPWSTR)(LPCWSTR)out, nNumberOfBytesToWrite, &nNumberOfBytesWritten);
@@ -1073,6 +1096,7 @@ int  ConfigTree::Dump2File(CString& filepath, BOOL isConfigFileMailPreviewType)
 	FileUtils::FileClose(hConfigFile);
 
 	return 1;
+#endif
 }
 
 void ConfigTree::SortTree()
@@ -1280,14 +1304,97 @@ int ConfigTree::LoadConfigFromFile(CString& configFileNamePath)
 
 #if 1
 
-void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
+BOOL ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 {
 	CString controlName;
 	CString strLine;
 	CString str;
 	CString strW;
 
+#if 1
+	// Configuration file can be shared by multiple instances of MBox Viewer
+	// Acces to the file needs to be controlled using LockFile
+	SimpleMemoryLockFile memFile;
+	CString errorText;
+	BOOL setLock = TRUE;
+	DWORD dwDesiredAccess = GENERIC_READ;
+	DWORD dwCreationDisposition = OPEN_EXISTING;
+	BOOL retOpen = memFile.Open(configFileNamePath, errorText, dwDesiredAccess, dwCreationDisposition, setLock);
+	if (retOpen == FALSE)
+		return retOpen;
 
+	BOOL retRead = memFile.ReadEntireFile(errorText);
+	if (retRead == FALSE)
+		return retRead;
+
+	BOOL retClose = memFile.Close(errorText);
+
+	// CStdioFile is not BOM aware !!!! 
+
+	while (memFile.ReadString(strLine, errorText))
+	{
+		// TODO: Implement RemoveBOM()
+		const unsigned char* p = (unsigned char*)((LPCWSTR)strLine);
+		if ((*p == 0xFF) && (*(p + 1) == 0xFE))  // UTF16LE
+		{
+			CString str = strLine.Right(strLine.GetLength() - 1);
+			strLine = str;
+		}
+
+		if (strLine[0] == L'[')
+		{
+			int slen = strLine.GetLength();
+			int pos = strLine.Find(L']');
+			if (pos < 2)
+				return FALSE;
+
+
+			LPCWSTR key = 0;
+			CString value;
+			CString section = strLine.Mid(1, pos - 1);
+
+			// Create section in a file if not already present
+			CProfile::_WriteProfileString(HKEY_CURRENT_USER, section, key, value);
+
+			// Process all parameters in the section
+			while (memFile.ReadString(strLine, errorText))
+			{
+				if (TextUtilsEx::isWhiteLine(strLine))
+					break;
+
+				int pos = strLine.Find(L'=');
+				if (pos < 3)
+					return FALSE;
+
+				CString param = strLine.Mid(1, pos - 2);
+				int slen = strLine.GetLength();
+				if (strLine.GetAt(slen - 1) == L'\"')
+				{
+					value = strLine.Mid(pos + 2, slen - pos - 3);
+				}
+				else
+				{
+					value = strLine.Mid(pos + 2, slen - pos - 2);
+					pos = value.ReverseFind(L'\"');
+					if (pos >= 0)
+					{
+						value = value.Left(pos);
+						int deb = 1;
+					}
+					else
+						int deb = 1; // TODO: ignore error ???
+				}
+
+				CProfile::_WriteProfileString(HKEY_CURRENT_USER, section, param, value);
+
+				int deb = 1;
+			}
+			int deb = 1;
+		}
+	}
+
+	return TRUE;
+#else
 	UINT nOpenFlags = CFile::modeRead | CFile::typeText | CFile::shareDenyNone;
 
 	ResHelper::TextEncoding  bom = ResHelper::GetFileBOM(configFileNamePath);
@@ -1339,7 +1446,7 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 		int answer2 = FileUtils::CheckIfFileLocked(configFileNamePath, lastErr, h);
 #endif
 
-		return;
+		return FALSE;
 	}
 	// CStdioFile is not BOM aware !!!! 
 	// wchar_t BOM[1];
@@ -1360,7 +1467,7 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 			int slen = strLine.GetLength();
 			int pos = strLine.Find(L']');
 			if (pos < 2)
-				return;
+				return FALSE;
 
 
 			LPCWSTR key = 0;
@@ -1378,7 +1485,7 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 
 				int pos = strLine.Find(L'=');
 				if (pos < 3)
-					return;
+					return FALSE;
 
 				CString param = strLine.Mid(1, pos - 2);
 				int slen = strLine.GetLength();
@@ -1406,7 +1513,8 @@ void ConfigTree::LoadLConfigFromFileUTF16LE(CString& configFileNamePath)
 			int deb = 1;
 		}
 	}
-	int deb = 1;
+	return TRUE;
+#endif
 }
 #endif
 
@@ -1421,7 +1529,7 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 #
 # The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
 # MBox Viewer will run in the preview mode when it is started with:
-# 1) "mail-file-path" without any command line options
+# 1) "mail-file-path" is single command line argument only
 # 2) the following command line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
 # 3) when user double left-click on a the mail file assuming the MBox Viewer is configured as the default application to 
 # open .mbox, .eml type files
@@ -1447,7 +1555,6 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 	}
 	else
 	{
-
 		txt.Append(LR"(
 #
 # MBox Viewer supports Windows Registry based configuration and the file based configuration.
@@ -1476,4 +1583,257 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 )");
 	}
 }
+
+// FlushFileBuffers(hFile);
+
+BOOL SimpleMemoryLockFile::Open(CString& cStrNamePath, CString& errorText, DWORD dwDesiredAccess, DWORD dwCreationDisposition, BOOL setLock)
+{
+	m_fileNamePath = cStrNamePath;
+	m_fsize = 0;
+	m_setLock = setLock;
+	m_unicodeMode = TRUE;
+
+	DWORD dwShareMode = FILE_SHARE_READ;  // ZMM try = 0 ??
+	SECURITY_ATTRIBUTES* lpSecurityAttributes = NULL;
+	DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+	HANDLE hTemplateFile = NULL;
+
+	errorText.Empty();
+	m_hFile = CreateFile(cStrNamePath, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+		dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	if (m_hFile == INVALID_HANDLE_VALUE)
+	{
+		DWORD errorCode = GetLastError();
+		errorText = FileUtils::GetLastErrorAsString(errorCode);
+		return NULL;
+	}
+	else if (m_setLock)
+	{
+		DWORD  dwFileOffsetLow = 0;
+		DWORD  dwFileOffsetHigh = 0;
+		DWORD nNumberOfBytesToLockLow = 0xFFFFFFFF;
+		DWORD  nNumberOfBytesToLockHigh = 0;  // or 0xFFFFFFFF  ??
+
+		int i;
+		BOOL retLock = TRUE;
+		DWORD errorCode = 0;
+		for (i = 1; i < 5; i++)
+		{
+			retLock = LockFile(m_hFile, dwFileOffsetLow, dwFileOffsetHigh,
+				nNumberOfBytesToLockLow, nNumberOfBytesToLockHigh);
+			if (retLock == FALSE)
+			{
+				errorCode = GetLastError();
+				errorText = FileUtils::GetLastErrorAsString(errorCode);
+
+				//HWND hw = GetSafeHwnd();
+				CFileException exList;
+				HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+				CString fmt = L"Could not lock file:\n\n\"%s\"\n\n%s";  // new format
+				errorText = FileUtils::ProcessCFileFailure(fmt, CString(m_fileNamePath), exList, errorCode, h);
+				Sleep(200 * i);
+			}
+			else
+				break;
+		}
+		if (retLock == FALSE)
+		{
+			errorText.Format(L"Failed to lock file %s", cStrNamePath);
+
+			//HWND hw = GetSafeHwnd();
+			CFileException exList;
+			HWND h = CmboxviewApp::GetActiveWndGetSafeHwnd();
+			CString fmt = L"Could not open file:\n\n\"%s\"\n\n%s";  // new format
+			errorText = FileUtils::ProcessCFileFailure(fmt, CString(m_fileNamePath), exList, errorCode, h);
+
+			FileUtils::FileClose(m_hFile);
+			m_hFile = INVALID_HANDLE_VALUE;
+			return FALSE;
+		}
+	}
+	errorText.Empty();
+	m_fsize = FileUtils::FileSize(cStrNamePath);
+	return TRUE;
+}
+
+BOOL SimpleMemoryLockFile::Close(CString& errorText)
+{
+	if (m_setLock && (m_hFile != INVALID_HANDLE_VALUE))
+	{
+		DWORD dwFileOffsetLow = 0;
+		DWORD dwFileOffsetHigh = 0;
+		DWORD nNumberOfBytesToLockLow = 0xFFFFFFFF;
+		DWORD nNumberOfBytesToLockHigh = 0;  // or 0xFFFFFFFF  ??
+
+		BOOL retUnLock = UnlockFile(m_hFile, dwFileOffsetLow, dwFileOffsetHigh,
+			nNumberOfBytesToLockLow, nNumberOfBytesToLockHigh);
+	}
+
+	if (m_hFile != INVALID_HANDLE_VALUE)
+		::CloseHandle(m_hFile);
+
+	return TRUE;  // ZMM review this
+}
+
+BOOL SimpleMemoryLockFile::ReadEntireFile(CString& errorText)
+{
+	if (m_hFile == INVALID_HANDLE_VALUE)
+	{
+		errorText = L"File is not open";
+		return FALSE;
+	}
+
+	LPOVERLAPPED lpOverlapped = 0;
+	LPVOID       lpBuffer;
+	DWORD        nNumberOfBytesToRead;
+	DWORD      nNumberOfBytesRead;
+
+	_int64 bytesLeft = m_fsize;
+	m_buffer.ClearAndResize((int)m_fsize + 4);
+	lpBuffer = m_buffer.Data();
+	BOOL retval = TRUE;
+	while (bytesLeft > 0)
+	{
+		if (bytesLeft > 0xffffffff)
+			nNumberOfBytesToRead = 0xffffffff;
+		else
+			nNumberOfBytesToRead = (DWORD)bytesLeft;
+
+		retval = ::ReadFile(m_hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
+		if (retval == FALSE)
+			break;
+
+		int newCount = m_buffer.Count() + nNumberOfBytesRead;
+		m_buffer.SetCount(newCount);
+		lpBuffer = m_buffer.Data(newCount);
+		bytesLeft -= nNumberOfBytesRead;
+	}
+
+	char* data = m_buffer.Data();
+	data[m_buffer.Count() + 1] = 0;
+	data[m_buffer.Count() + 2] = 0;
+	wchar_t* wdata = (wchar_t*)m_buffer.Data();
+
+	return retval;
+}
+
+// SimpleMemoryFile for relatively small files since entire file data is loaded into memory
+
+SimpleMemoryLockFile::SimpleMemoryLockFile()
+{
+	m_setLock = FALSE;
+	m_unicodeMode = FALSE;
+	m_position = 0;
+	m_hFile = INVALID_HANDLE_VALUE;
+}
+
+SimpleMemoryLockFile::~SimpleMemoryLockFile()
+{
+	int deb = 1;
+}
+
+BOOL SimpleMemoryLockFile::ReadString(CStringA& str, CString& errorText)
+{
+	if (m_unicodeMode)
+	{
+		errorText = L"File type is Unicode";
+		return FALSE;
+	}
+	char* p = m_buffer.Data(m_position);
+	char* plast = p + m_buffer.Count() - m_position;
+
+	int len = -1;
+	char* pStrBegin = p;
+	char* pStrEnd = 0;
+	BOOL retval = FALSE;
+	while (p < plast)
+	{
+		retval = TRUE;
+		char c = *p;
+		if (c == '\r')
+		{
+			pStrEnd = p;
+			char* pnext = p + 1;
+			if ((pnext < plast) && (*pnext == '\n'))
+			{
+				pStrEnd = p++;
+			}
+			break;
+		}
+		else if (c == '\n')
+		{
+			pStrEnd = p++;
+			break;
+		}
+		else
+			p++;
+	}
+	if (pStrEnd == 0)
+		pStrEnd = p;
+
+	m_position += (int)(p - pStrBegin);
+	char* pnext = m_buffer.Data(m_position);
+
+	int slen = (int)(pStrEnd - pStrBegin);
+
+	str.Empty();
+	str.Append(pStrBegin, slen);
+
+	return retval;
+}
+
+BOOL SimpleMemoryLockFile::ReadString(CString& str, CString& errorText)
+{
+	if (m_unicodeMode == FALSE)
+	{
+		errorText = L"File type is not Unicode";
+		return FALSE;
+	}
+
+	wchar_t* data = (wchar_t*)m_buffer.Data();
+	wchar_t* p = &data[m_position];
+	int charlen = m_buffer.Count();
+	int wcharlen = charlen / 2;
+	wchar_t* plast = p + (wcharlen - m_position);
+
+	int len = -1;
+	wchar_t* pStrBegin = p;
+	wchar_t* pStrEnd = 0;
+	BOOL retval = FALSE;
+	while (p < plast)
+	{
+		retval = TRUE;
+		wchar_t c = *p;
+		if (c == L'\r')
+		{
+			pStrEnd = p;
+			wchar_t* pnext = p + 1;
+			if ((pnext < plast) && (*pnext == L'\n'))
+			{
+				pStrEnd = p++;
+			}
+			break;
+		}
+		else if (c == L'\n')
+		{
+			pStrEnd = p++;
+			break;
+		}
+		else
+			p++;
+	}
+	if (pStrEnd == 0)
+		pStrEnd = p;
+
+	m_position += (int)(p - pStrBegin);
+	wchar_t* pnext = &data[m_position];
+
+	int slen = (int)(pStrEnd - pStrBegin);
+
+	str.Empty();
+	str.Append(pStrBegin, slen);
+
+	return retval;
+}
+
 

@@ -2879,7 +2879,46 @@ int SimpleMemoryFile::ReadString(CStringA &str)
 
 int SimpleMemoryFile::ReadString(CString& str)
 {
-	return 0;
+	wchar_t* data = (wchar_t*)m_buffer.Data(m_position);
+	wchar_t* p = &data[m_position];
+	wchar_t* plast = p + (m_buffer.Count()/2) - m_position;
+
+	int len = -1;
+	wchar_t* pStrBegin = p;
+	wchar_t* pStrEnd = 0;
+	while (p < plast)
+	{
+		wchar_t c = *p;
+		if (c == L'\r')
+		{
+			pStrEnd = p;
+			wchar_t* pnext = p + 1;
+			if ((pnext < plast) && (*pnext == L'\n'))
+			{
+				pStrEnd = p++;
+			}
+			break;
+		}
+		else if (c == L'\n')
+		{
+			pStrEnd = p++;
+			break;
+		}
+		else
+			p++;
+	}
+	if (pStrEnd == 0)
+		pStrEnd = p;
+
+	m_position += (int)(p - pStrBegin);
+	wchar_t* pnext = &data[m_position];
+
+	int slen = (int)(pStrEnd - pStrBegin);
+
+	str.Empty();
+	str.Append(pStrBegin, slen);
+
+	return slen;
 }
 
 #include <stdint.h>
