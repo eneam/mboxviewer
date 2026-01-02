@@ -3223,6 +3223,98 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	}
 
+	if ((hParent != 0) && IsValidOutlookMsgFile(itemTxt))
+	{
+		MyPopupMenu menu;
+		menu.CreatePopupMenu();
+		//menu.AppendMenu(MF_SEPARATOR);
+
+		const UINT M_FileLocation_Id = 1;
+		MyAppendMenu(&menu, M_FileLocation_Id, L"Open File Location");
+
+		const UINT M_Properties_Id = 12;
+		MyAppendMenu(&menu, M_Properties_Id, L"Properties");
+
+		int index = 1;
+		ResHelper::LoadMenuItemsInfo(&menu, index);
+		ResHelper::UpdateMenuItemsInfo(&menu, index);
+		menu.SetMenuAsCustom();
+
+		CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+		UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+		UINT nFlags = TPM_RETURNCMD;
+		CString menuString;
+		int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+		switch (command)
+		{
+		case M_FileLocation_Id:
+		{
+			UINT nFlags = MF_BYCOMMAND;
+			CString Label;
+			int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
+
+			CString path = MboxMail::GetLastPath();
+			if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, L"open", path, NULL, NULL, SW_SHOWNORMAL);
+				CMainFrame::CheckShellExecuteResult(result, h);
+			}
+		}
+		break;
+		case M_Properties_Id:  // ZMM Implement as functions
+		{
+			wchar_t sizeStr_inKB[256];
+			wchar_t sizeStr_inBytes[256];
+			int sizeStrSize = 256;
+			CString txt;
+			CString tmp;
+
+			_int64 fileSize = FileUtils::FileSize(MboxMail::s_path); // TODO: error checking ??
+			LPCWSTR fileSizeStr_inKB = StrFormatKBSize(fileSize, &sizeStr_inKB[0], sizeStrSize);
+			if (!fileSizeStr_inKB)
+				sizeStr_inKB[0] = 0;
+
+			LPCWSTR fileSizeStr_inBytes = StrFormatByteSize64(fileSize, &sizeStr_inBytes[0], sizeStrSize);
+			if (!fileSizeStr_inBytes)
+				sizeStr_inBytes[0] = 0;
+
+			int mailCount = MboxMail::s_mails_ref.GetCount();
+
+			txt.Empty();
+			CString folder;
+			FileUtils::GetFolderPath(MboxMail::s_path, folder);
+			txt.Format(L"Folder: %s\n", folder);
+
+			tmp.Format(L"File: %s\n", mailFile);
+			txt.Append(tmp);
+
+			CString cstr;
+			INT64 numb = fileSize;
+			TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+
+			tmp.Format(L"File size:  %s  (%s) (%s)\n", cstr, sizeStr_inKB, sizeStr_inBytes);
+			txt += tmp;
+			tmp.Empty();
+			tmp.Format(L"Mail Count: %d\n", mailCount);
+			txt += tmp;
+
+			HWND h = GetSafeHwnd();
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int deb = 1;
+		}
+		break;
+		default: {
+			int deb = 1;
+		}
+		break;
+		}
+
+		return;
+	}
+
 	if (hItem)
 	{
 		DWORD nId = (DWORD)m_tree.GetItemData(hItem);

@@ -1532,7 +1532,7 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 # 1) single command line argument: "mail-file-path"
 # 2) the following command line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
 # 3) when user double left-click on a the mail file assuming the MBox Viewer is configured as the default application to 
-# open .mbox, .eml type files
+# open .mbox, .eml and .msg type files
 #
 # During startup, the MBox Viewer will check whether the MBoxViewer.config file exists in:
 #        C:\Users\UserName\AppData\Local\UMBoxViewer\MailPreview

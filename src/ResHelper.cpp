@@ -36,6 +36,8 @@
 
 //
 
+#ifndef OUTLOOK_MODE
+
 CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.42\ResourceRoot\WORK\)";
 
 BOOL ResHelper::m_showTooltipsAlways = TRUE;
@@ -3520,5 +3522,13 @@ int ResHelper::MonitorInfo()
 #endif
 	return 1;
 }
+#endif
+
+#else
+
+BOOL ResHelper::TranslateString(CString& text) {
+	return TRUE;
+}
+
 #endif
 

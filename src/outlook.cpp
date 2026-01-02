@@ -862,8 +862,26 @@ bool OutlookMessage::GetNativeBody(UINT64& nNativeBody, std::string& NativeBody)
 
 bool OutlookMessage::GetDate(std::string& Date)
 {
+    static char* days[] = { "Sun","Mon","Tue","Wed","Thu","Fri","Sat" };
+    static char* months[] = { "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
+
     Date.clear();
 
+#if 1
+    UINT16 propertyId = PidTagClientSubmitTime;
+    bool isRootParent = true;
+
+    UINT64 value = 0;
+    UINT16 type;
+    bool found = OutlookMessage::GetDirPropertyValueFixedLength(this->m_cfbf, isRootParent, m_body.m_properties_version1_0, propertyId, value, type);
+    if (!found)
+    {
+        // propertyId = PidTagCreationTime;  // Seems to be applicable to attachments. Outlook seem to rely on PidTagClientSubmitTime only
+        //found = OutlookMessage::GetDirPropertyValueFixedLength(this->m_cfbf, isRootParent, m_body.m_properties_version1_0, propertyId, value, type);
+        int deb = 1;
+    }
+
+#else
     UINT16 propertyId = PidTagCreationTime;
     bool isRootParent = true;
 
@@ -875,6 +893,7 @@ bool OutlookMessage::GetDate(std::string& Date)
         propertyId = PidTagClientSubmitTime;
         found = OutlookMessage::GetDirPropertyValueFixedLength(this->m_cfbf, isRootParent, m_body.m_properties_version1_0, propertyId, value, type);
     }
+#endif
 
     if (!found)
         return false;
@@ -890,16 +909,30 @@ bool OutlookMessage::GetDate(std::string& Date)
 
     SYSTEMTIME sysTime;
     BOOL validConversion = FileTimeToSystemTime(&ft, &sysTime);
-    UINT16 errCode = GetLastError();
-
-    char dateBuff[128]; dateBuff[0] = 0;
-    sprintf(dateBuff, "%d/%d/%d %d:%d\n", sysTime.wMonth, sysTime.wDay, sysTime.wYear, sysTime.wHour, sysTime.wSecond);
-    Date.append(dateBuff, strlen(dateBuff) -1);
-
-    if (!Date.empty())
-        return true;
-    else
+    if (!validConversion)
+    {
+        UINT16 errCode = GetLastError();
         return false;
+    }
+
+    //  long MS_EPOCH_OFFSET = 11644473600000L;
+    // "Date: Fri, 1 Feb 2013 19:22:07 +0000 (GMT)"
+
+    char dateBuff[128];
+    dateBuff[0] = 0;
+
+    char* day = "Mon";
+    if ((sysTime.wDayOfWeek >= 0) && (sysTime.wDayOfWeek <= 6))
+        day = days[sysTime.wDayOfWeek];
+
+    char* month = "Jan";
+    if ((sysTime.wMonth >= 1) && (sysTime.wMonth <= 12))
+        month = months[sysTime.wMonth-1];
+
+    sprintf(dateBuff, "%s, %d %s %d %d:%d:%d +0000 (GMT)", day, sysTime.wDay, month, sysTime.wYear, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
+    Date.append(dateBuff, strlen(dateBuff));
+
+    return true;
 }
 
 bool OutlookMessage::GetMessageId(std::string& MessageId)
@@ -1661,7 +1694,6 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
     std::string Date;
     bool foundDate = OutlookMessage::GetDate(Date);
-    //long MS_EPOCH_OFFSET = 11644473600000L;
 
     std::string MessageId;
     bool foundMessageId = OutlookMessage::GetMessageId(MessageId);
@@ -2724,7 +2756,12 @@ void OutlookMessage::FileClose(HANDLE hFile)
 
 int IsValidOutlookMsgFile(CString& fname)
 {
-    return 1;
+    CString fileNameExtention;
+    FileUtils::GetFileExtension(fname, fileNameExtention);
+    if (fileNameExtention.CompareNoCase(L".msg") == 0)
+        return 1;
+    else
+        return 0;
 }
 
 
@@ -2736,7 +2773,7 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
     if (cfbf_open(msgFileNamePath, &cfbf, errorText) != 0)
     {
         erText.Format(L"Failed to open %s file\n\n", msgFileNamePath);
-        ResHelper::TranslateMsg(erText);
+        ResHelper::TranslateString(erText);
 
         // ZMM This total mess, fix this
         size_t out_len = 0;

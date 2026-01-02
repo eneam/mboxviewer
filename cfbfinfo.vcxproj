@@ -54,6 +54,7 @@
     <ClCompile Include="src\mimetypes.cpp" />
     <ClCompile Include="src\outlook.cpp" />
     <ClCompile Include="src\property.cpp" />
+    <ClCompile Include="src\ResHelper.cpp" />
     <ClCompile Include="src\RTF2HTMLConverter.cpp" />
     <ClCompile Include="src\RtfDecompressor.cpp" />
     <ClCompile Include="src\SimpleString.cpp" />

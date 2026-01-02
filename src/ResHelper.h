@@ -291,9 +291,7 @@ class SimpleString;
 class ResHelper
 {
 public:
-	static BOOL TranslateString(CString& text) {
-		return TRUE;
-	}
+	static BOOL TranslateString(CString& text);
 };
 
 #endif

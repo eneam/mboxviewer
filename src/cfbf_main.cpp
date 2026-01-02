@@ -528,7 +528,7 @@ int wmain(int argc, wchar_t** argv)
 	}
 	else if (create_mbox)
 	{
-		FILE* outFile = NULL;
+		FILE* outFile = out;
 		if (outFile)
 		{
 			cfbf.out = outFile;
