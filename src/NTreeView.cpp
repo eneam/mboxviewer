@@ -55,6 +55,7 @@
 IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
 int IsValidOutlookMsgFile(CString& fname);
+BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText);
 
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
@@ -2008,6 +2009,60 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		pMsgView->DisableMailHeader();
 
 	pListView->CloseMailFile();
+
+
+	if (!newItemName.IsEmpty())
+	{
+		CString errorText;
+		CString msgFileName;
+		FileUtils::CPathStripPath(newItemName, msgFileName);
+
+		CString msgFileNamePath(LR"(F:\MBOX\Outlook\)");
+		msgFileNamePath.Append(newItemName);
+
+		CString msgFileBaseName;
+		CString msgFileNameExtention;
+		FileUtils::GetFileBaseNameAndExtension(msgFileName, msgFileBaseName, msgFileNameExtention);
+		if (msgFileNameExtention.CompareNoCase(L".msg") == 0)
+		{
+			if (hOldItem > 0)
+			{
+				CString text = m_tree.GetItemText(hOldItem);
+				m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
+			}
+			m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
+
+			CString emlFilePath(LR"(C:\Users\tata\Downloads\msgTOeml\)");
+			CString emlFileNamePath = emlFilePath;
+			emlFileNamePath.Append(msgFileBaseName);
+			emlFileNamePath.Append(L".eml");
+
+			BOOL retConv = ConvertOutlookMsg2Eml(msgFileNamePath, emlFileNamePath, errorText);
+			if (retConv)
+			{
+				int MaxShellExecuteErrorCode = 32;
+				HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+
+				CString mboxviewPath = CMainFrame::m_processPath;
+				result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, emlFilePath, SW_SHOW);
+				if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
+				{
+					CString errorText;
+					CString errText;
+					ShellExecuteError2Text((UINT_PTR)result, errText);
+					CString fmt = L"\"%s\"\n\nOk to try to open this file ?";
+					ResHelper::TranslateString(fmt);
+					errorText.Format(fmt, errText);
+
+					HWND h = GetSafeHwnd();
+					int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+					if (answer == IDYES)
+						int deb = 1; // forceOpen = true;
+				}
+				return;
+			}
+		}
+	}
 
 	// 	TODO: find better place for below
 	pListView->m_path = L"";

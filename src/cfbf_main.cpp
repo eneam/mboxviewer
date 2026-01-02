@@ -528,12 +528,12 @@ int wmain(int argc, wchar_t** argv)
 	}
 	else if (create_mbox)
 	{
-		FILE* outFile = out;
+		FILE* outFile = NULL;
 		if (outFile)
 		{
 			cfbf.out = outFile;
 			cfbf.printEnabled = true;
-			fprintf(out, "%-8s %10s  %10s    NAME\n", "TYPE", "START SEC", "SIZE");
+			fprintf(outFile, "%-8s %10s  %10s    NAME\n", "TYPE", "START SEC", "SIZE");
 		}
 
 		//wchar_t* cStrNamePath = L"";
@@ -564,9 +564,9 @@ int wmain(int argc, wchar_t** argv)
 
 		if (outFile)
 		{
-			fprintf(out, "\nOutlookMessage::Print @@@@@@@@@@@@@@@@@@@@@@@@\n");
+			fprintf(outFile, "\nOutlookMessage::Print @@@@@@@@@@@@@@@@@@@@@@@@\n");
 			msgHelper.msg.Print();
-			fprintf(out, "\nOutlookMessage::Print END ###########################################\n");
+			fprintf(outFile, "\nOutlookMessage::Print END ###########################################\n");
 		}
 
 		std::string msg_utf8;

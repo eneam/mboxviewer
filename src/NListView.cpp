@@ -19459,6 +19459,9 @@ void NListView::AppendPictureAttachments(MboxMail *m, AttachmentMgr& attachmentD
 			//pics.Append("\r\n<img style=\"max-height:80%;\" src=\"");
 			pics.Append((LPCSTR)srcPrefix, srcPrefix.GetLength());
 			pics.Append((LPCSTR)attachementPathA, attachementPathA.GetLength());
+			pics.Append("\"");
+			pics.Append(" alt=\"");
+			pics.Append((LPCSTR)attachmenNameA, attachmenNameA.GetLength());
 			pics.Append("\">\r\n");
 
 #if 1

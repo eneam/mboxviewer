@@ -102,7 +102,8 @@ cfbf_open(const wchar_t* wfilename, struct cfbf* cfbf, std::string& errorText)
 
 	cfbf->file_size = st.st_size;
 
-	if (cfbf->file_size < sizeof(struct StructuredStorageHeader)) {
+	if (cfbf->file_size < sizeof(struct StructuredStorageHeader))
+	{
 		char txt[512];
 		sprintf(txt, "%s is too small (%lld bytes) to contain a StructuredStorageHeader (%d bytes)",
 			filename, cfbf->file_size, (int)sizeof(struct StructuredStorageHeader));

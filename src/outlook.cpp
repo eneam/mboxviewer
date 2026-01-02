@@ -60,6 +60,7 @@
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
 #include "mimetypes.h"
+#include "ResHelper.h"
 
 
 extern int maxTextDumpLength;
@@ -632,9 +633,17 @@ OutlookMessage::~OutlookMessage()
         itR = m_recipList.erase(itR);
     }
 
-    std::list<AttachmentInfo>::iterator itA;
+    std::list<AttachmentInfo_>::iterator itA;
     for (itA = m_attachList.begin(); itA != m_attachList.end(); ++itA)
     {
+        if (itA->m_attach.m_OutlookMessage)
+        {
+            std::list<AttachmentInfo_>::iterator itC;
+            for (itC = itA->m_attach.m_OutlookMessage->m_attachList.begin(); itC != itA->m_attach.m_OutlookMessage->m_attachList.end(); ++itC)
+            {
+                int deb = 1;
+            }
+        }
         int deb = 1;
     }
 
@@ -655,9 +664,9 @@ RecipientInfo* OutlookMessage::FindRecip(std::string& name)
     return 0;
 }
 
-AttachmentInfo* OutlookMessage::FindAttach(std::string& name)
+AttachmentInfo_* OutlookMessage::FindAttach(std::string& name)
 {
-    std::list<AttachmentInfo>::iterator it;
+    std::list<AttachmentInfo_>::iterator it;
     for (it = m_attachList.begin(); it != m_attachList.end(); ++it) {
         if (it->m_name == name)
             return &(*it);
@@ -1040,10 +1049,10 @@ int OutlookMessage::SetProperty(DirEntry* parent, DirEntry* entry)
     }
     else if (strncmp(parent_name_utf8.c_str(), attachDirNamePrefix.c_str(), attachDirNamePrefix.length()) == 0)
     {
-        AttachmentInfo* attachInfo = FindAttach(parent_name_utf8);
+        AttachmentInfo_* attachInfo = FindAttach(parent_name_utf8);
         if (attachInfo == 0)
         {
-            AttachmentInfo aInfo;
+            AttachmentInfo_ aInfo;
             aInfo.m_name = parent_name_utf8;
             memset(&aInfo.m_attach, 0, sizeof(Attachment));
             m_attachList.push_back(aInfo);
@@ -1590,7 +1599,7 @@ void OutlookMessage::Print()
 
     FILE* out = m_cfbf->out;
 
-    std::list<AttachmentInfo>::iterator ait;
+    std::list<AttachmentInfo_>::iterator ait;
     for (ait = m_attachList.begin(); ait != m_attachList.end(); ++ait) {
         fprintf(out, "[%s]  !!!!!!!!!!!!!!!\n", ait->m_name.c_str());
         ait->m_attach.Print(m_cfbf, 2);
@@ -1853,7 +1862,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
         if (m_attachList.size())
         {
-            std::list<AttachmentInfo>::iterator it;
+            std::list<AttachmentInfo_>::iterator it;
             for (it = m_attachList.begin(); it != m_attachList.end(); ++it)
             {
                 std::string str_PidTagAttachLongFilename;
@@ -1931,7 +1940,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
     bool hasValidAttachments = false;
     if (m_attachList.size())
     {
-        std::list<AttachmentInfo>::iterator it;
+        std::list<AttachmentInfo_>::iterator it;
         for (it = m_attachList.begin(); it != m_attachList.end(); ++it)
         {
             if ((it->m_attach.m_PidTagAttachDataBinary) || (it->m_attach.m_PidTagAttachDataObject))
@@ -2227,7 +2236,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
     if (hasValidAttachments && m_attachList.size())
     {
-        std::list<AttachmentInfo>::iterator it;
+        std::list<AttachmentInfo_>::iterator it;
         for (it = m_attachList.begin(); it != m_attachList.end(); ++it)
         {
 
@@ -2389,6 +2398,11 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
                 if (it->m_attach.m_OutlookMessage)
                 {
                     OutlookMessage* nested_msg = it->m_attach.m_OutlookMessage;
+                    _ASSERTE(nested_msg);
+                    _ASSERTE(nested_msg->emlFile);
+                    _ASSERTE(nested_msg->m_cfbf);
+                    _ASSERTE(nested_msg->m_cfbf->filepath);
+
                     std::string MessageClass;
                     bool found_MessageClass = nested_msg->GetMessageClass(MessageClass);
                     if (found_MessageClass &&
@@ -2469,6 +2483,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
                         int deb = 1;
                     }
                     delete nested_msg;
+                    it->m_attach.m_OutlookMessage = 0;
                 }
             }
             int deb = 1;
@@ -2710,6 +2725,89 @@ void OutlookMessage::FileClose(HANDLE hFile)
 int IsValidOutlookMsgFile(CString& fname)
 {
     return 1;
+}
+
+
+BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText)
+{
+    std::string errorText;
+
+    struct cfbf cfbf;
+    if (cfbf_open(msgFileNamePath, &cfbf, errorText) != 0)
+    {
+        erText.Format(L"Failed to open %s file\n\n", msgFileNamePath);
+        ResHelper::TranslateMsg(erText);
+
+        // ZMM This total mess, fix this
+        size_t out_len = 0;
+        wchar_t* buff16 = UTF8ToUTF16((char*)errorText.c_str(), errorText.size(), &out_len);
+
+        if (buff16)
+        {
+            erText.Append(buff16, out_len);
+            free(buff16);
+        }
+
+        return FALSE;
+    }
+
+    FILE* outFile = NULL;
+    if (outFile)
+    {
+        cfbf.out = outFile;
+        cfbf.printEnabled = false;
+        if (cfbf.printEnabled)
+            fprintf(outFile, "%-8s %10s  %10s    NAME\n", "TYPE", "START SEC", "SIZE");
+    }
+
+    CString errText;
+    BOOL truncate = TRUE;
+
+    size_t outlen = 0;
+    //wchar_t* filePathW = UTF8ToUTF16((char*)cfbf.filepath, strlen(cfbf.filepath), &outlen);
+    wchar_t* filePathW = cfbf.filepath;
+
+    CStringW fileName;
+    FileUtils::CPathStripPath(filePathW, fileName);
+
+#if 0
+    CString cStrNamePath(LR"(C:\Users\tata\Downloads\msg2eml\)");
+    cStrNamePath.Append(fileName);
+    cStrNamePath.Append(L".eml");
+#endif
+
+    wchar_t* emlFilePath = (wchar_t*)(LPCWSTR)emlFileNamePath;
+
+    HANDLE emlFileHandle = OutlookMessage::FileOpen(emlFilePath, errText, truncate);
+
+    OutlookMsgHelper msgHelper(&cfbf, emlFileHandle, outFile);
+
+    int ret = msgHelper.msg.ParseMsg(&cfbf, ParseOutlookMsg, msgHelper, errorText);
+    if ((ret < 0) || (!errorText.empty()))
+        _ASSERTE((ret >= 0) && (errorText.empty()));
+
+    if (outFile)
+    {
+        fprintf(outFile, "\nOutlookMessage::Print @@@@@@@@@@@@@@@@@@@@@@@@\n");
+        msgHelper.msg.Print();
+        fprintf(outFile, "\nOutlookMessage::Print END ###########################################\n");
+    }
+
+    std::string msg_utf8;
+    int retcode = msgHelper.msg.Msg2Eml(msg_utf8, errorText);
+    if ((retcode < 0) || !errorText.empty())
+    {
+        _ASSERTE(errorText.empty());
+    }
+
+    DWORD NumberOfBytesWritten = 0;
+    int retCode = OutlookMessage::Write2File(emlFileHandle, msg_utf8.c_str(), msg_utf8.size(), &NumberOfBytesWritten);
+
+    OutlookMessage::FileClose(emlFileHandle);
+
+    cfbf_close(&cfbf);
+
+    return TRUE;
 }
 
 

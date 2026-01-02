@@ -298,10 +298,16 @@ cfbf_walk_dir_tree_from_chain(struct cfbf* cfbf, void** dir_chain,
 			//fprintf(stdout, "Attach Object Type END !!!\n");
 			OutlookMsgHelper* msgHelper = (OutlookMsgHelper*)cookie;
 			OutlookMessage* active_msg = msgHelper->active_msg;
+			_ASSERTE(active_msg);
+			_ASSERTE(active_msg->emlFile);
+			_ASSERTE(active_msg->m_cfbf);
+			_ASSERTE(active_msg->m_cfbf->filepath);
+
 
 			_ASSERTE(!msgHelper->m_msgList.empty());
 			_ASSERTE(msgHelper->m_msgList.size() >= 1);
-			if (!msgHelper->m_msgList.empty()) {
+			if (!msgHelper->m_msgList.empty())
+			{
 				msgHelper->active_msg = msgHelper->m_msgList.back();
 				msgHelper->m_msgList.pop_back();
 			}
@@ -310,7 +316,7 @@ cfbf_walk_dir_tree_from_chain(struct cfbf* cfbf, void** dir_chain,
 				_ASSERTE(msgHelper->active_msg == &msgHelper->msg);
 			}
 
-			AttachmentInfo* attachInfo = msgHelper->active_msg->FindAttach(parent_name_utf8);
+			AttachmentInfo_* attachInfo = msgHelper->active_msg->FindAttach(parent_name_utf8);
 			if (attachInfo)
 			{
 				attachInfo->m_attach.m_OutlookMessage = active_msg;

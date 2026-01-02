@@ -1529,7 +1529,7 @@ void ConfigTree::GetConfigFileIntroText(BOOL isConfigFileMailPreviewType, CStrin
 #
 # The viewer will use the file based configuration when running MBox Viewer in the so called preview mode.
 # MBox Viewer will run in the preview mode when it is started with:
-# 1) "mail-file-path" is single command line argument only
+# 1) single command line argument: "mail-file-path"
 # 2) the following command line options: -EML_PREVIEW_MODE -MAIL_FILE="mail-file-path", or
 # 3) when user double left-click on a the mail file assuming the MBox Viewer is configured as the default application to 
 # open .mbox, .eml type files

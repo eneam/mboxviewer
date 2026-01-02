@@ -115,7 +115,7 @@ struct Attachment
     void Print(struct cfbf* cfbf, int level);
 };
 
-struct AttachmentInfo
+struct AttachmentInfo_
 {
     std::string m_name;
     Attachment m_attach;
@@ -198,7 +198,8 @@ struct OutlookMsgHelper;
 class OutlookMessage
 {
 public:
-    OutlookMessage() {
+    OutlookMessage()
+    {
         logFile = 0;
         emlFile = 0;
         m_cfbf = 0;
@@ -206,6 +207,7 @@ public:
     }
     OutlookMessage(FILE* outLogFile, HANDLE msg2emlFile, struct cfbf* icfbf)
     {
+        _ASSERTE(icfbf);
         logFile = outLogFile;
         emlFile = msg2emlFile;
         m_cfbf = icfbf;
@@ -222,11 +224,11 @@ public:
     FILE* logFile;
     Body m_body;
     std::list<RecipientInfo> m_recipList;
-    std::list<AttachmentInfo> m_attachList;
+    std::list<AttachmentInfo_> m_attachList;
 
     int SetProperty(DirEntry* parent, DirEntry* entry);
     RecipientInfo* FindRecip(std::string& name);
-    AttachmentInfo* FindAttach(std::string& name);
+    AttachmentInfo_* FindAttach(std::string& name);
 
     void GetToLists(std::string& To, std::string& CC, std::string& BCC);
     bool GetMessageClass(std::string& MessageClass);
@@ -278,6 +280,7 @@ struct OutlookMsgHelper
     }
     ~OutlookMsgHelper()
     {
+        _ASSERTE(m_msgList.size() == 0);
         int deb = 1;
     }
 
