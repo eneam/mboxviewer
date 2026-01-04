@@ -769,6 +769,7 @@ public:
 	HTREEITEM InsertTreeItem(LPCWSTR lpszItem, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 
 	int MergeMailArchiveFiles(HTREEITEM hFolder);
+	int MergeOutlookMsgMailFiles(HTREEITEM hFolder);
 
 	int RefreshSubFolder(HTREEITEM hItem);
 	int RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder);
