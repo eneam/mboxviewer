@@ -162,7 +162,7 @@ void OpenArchiveFileDlg::OnBnClickedOk()
 
 	UpdateData(TRUE);
 
-	CString mboxFilePath = m_targetFolder + m_archiveFileName;
+	CString mboxFilePath = m_targetFolder + L"\\" + m_archiveFileName;
 
 	if (FileUtils::PathFileExist(mboxFilePath))
 	{

@@ -12451,10 +12451,20 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		CString txt;
 		CString fmt = L"Open Created Archive File \n\n%s";
 		txt.Format(fmt, mboxFilePath);
+
 		OpenArchiveFileDlg dlg;
+
 		dlg.m_sourceFolder = archiveCachePath;
 		dlg.m_targetFolder = path;
 		dlg.m_archiveFileName = archiveFile;
+
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+		CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+		inFolderPath += L"MergeFolder";
+		BOOL retCreate = FileUtils::CreateDir((LPCWSTR)inFolderPath);
+		dlg.m_targetFolder = inFolderPath;
+
+
 		INT_PTR nResponse = dlg.DoModal();
 		////////////
 		if (nResponse == IDOK)
@@ -12462,7 +12472,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 			if (pFrame)
 			{
-				CString archiveFilePath = dlg.m_targetFolder + dlg.m_archiveFileName;
+				CString archiveFilePath = dlg.m_targetFolder + L"\\" + dlg.m_archiveFileName;
 
 				DWORD nFlags = MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH|MOVEFILE_COPY_ALLOWED;
 				BOOL retMove = MoveFileEx(mboxFilePath, archiveFilePath, nFlags);

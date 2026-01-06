@@ -44,6 +44,8 @@ struct DirEntry;
 struct StructuredStorageHeader;
 class OutlookMessage;
 
+bool IsLittleEndianType();
+
 struct Body
 {
     DirEntry* m_PidTagMessageFlags;

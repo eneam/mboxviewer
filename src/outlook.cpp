@@ -2769,6 +2769,16 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 {
     std::string errorText;
 
+    // It is likely unnesseray check
+    // ZMM What about encoding in Compound File Binary File Format (CFBF) files
+    // Parsing will fail if CFBF file is not encoded as little-endian
+    // Investigate if mix encoding is permitted in CFBF
+    if (!IsLittleEndianType())
+    {
+        erText = L"Outlook .msg files are supported on little-indian systems only\n.This system is little-endian.\n";
+        return FALSE;
+    }
+
     struct cfbf cfbf;
     if (cfbf_open(msgFileNamePath, &cfbf, errorText) != 0)
     {
@@ -2845,6 +2855,16 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
     cfbf_close(&cfbf);
 
     return TRUE;
+}
+
+bool IsLittleEndianType()
+{
+    union {
+        unsigned int ui;
+        char c[4];
+    } val = { 0x01020304 };
+
+    return(val.c[0] == 0x04);
 }
 
 

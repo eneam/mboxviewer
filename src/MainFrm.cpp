@@ -3550,12 +3550,18 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title)
 {
 	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
-	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 1;
+	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 4;
 
 	CString path = MboxMail::GetLastPath();
 	CString datapath = MboxMail::GetLastDataPath();
 	CString mergeCachePath = datapath + "MergeCache";
 	BOOL ret = FileUtils::CreateDir(mergeCachePath);
+
+	CString tmp_datapath = datapath;
+	tmp_datapath.TrimRight(L"\\");
+
+	CString folderName;
+	FileUtils::CPathStripPath(tmp_datapath, folderName);
 
 	for (;;)
 	{
@@ -3564,19 +3570,25 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 
 		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 		dwFlags &= ~OFN_NOCHANGEDIR;
-		CFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
-		//MySaveFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
+		CString initialFileName = folderName;
+		CFileDialog dlgFile(FALSE, dfltExtention, folderName, dwFlags, fileNameFilter);
 
 		OPENFILENAME& ofn = dlgFile.GetOFN();
-		//ofn.Flags |= ??;
-		//ofn.lpstrFile = fileNameBuffer;
-		//ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+
+#if 0
+		// This works also instead of parameter "folderName" to CFileDialog dlgFile
+		wcscpy(fileNameBuffer, (LPCWSTR)folderName);
+		ofn.lpstrFile = fileNameBuffer;
+		ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+#endif
 		ofn.lpstrInitialDir = mergeCachePath;
 		ofn.lpstrTitle = title;
 
 		INT_PTR ret = dlgFile.DoModal();
 		if (ret == IDOK)
 		{
+			OPENFILENAME& ofn = dlgFile.GetOFN();
+
 			fileName = dlgFile.GetFileName();
 			CString fileFilePath = dlgFile.GetPathName();
 			BOOL ret = FileUtils::CPathGetPath(fileFilePath, outFolderPath);
