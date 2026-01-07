@@ -103,6 +103,20 @@ In order to enable MBox Viewer to use the file based configuration,
 user needs to rename this file to MBoxViewer.config file or copy the sample file
 to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
 
+Outlook .msg
+------------
+
+Starting with v1.0.3.54, MBox Viewer offers experimental support for Outlook .msg files. The .msg files are converted to Mime .eml files first in order to leverage standard MBox Viewer features. 
+
+User can view individual .msg file or all .msg files can be converted to .eml files first and merged into a single .mbox file.
+
+Processing of .msg files is quite complicated and requires significant effort. This initial release doesn't support:
+
+1. processing winmail.dat attachements
+2. message body encoded as RTF Text
+
+User feedback will help to decide whether additional development effort is justified.
+
 Multiple Languages
 ------------------
 
