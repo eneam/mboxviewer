@@ -248,7 +248,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if (command == M_PRINT_Id)
 	{
 		CStringW filePath = path + attachmentName;
-		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOW);
+		result = ShellExecuteW(NULL, L"print", attachmentName, NULL, path, SW_SHOWNORMAL);
 		if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
 		{
 			CString errorText;
@@ -273,8 +273,27 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		DWORD binaryType = 0;
 		BOOL isExe = GetBinaryTypeW(filePath, &binaryType);
 
+		CString mboxviewPath = CMainFrame::m_processPath;
+
+		CString fileNameExtention;
+		FileUtils::GetFileExtension(attachmentName, fileNameExtention);
+
 		HWND h = GetSafeHwnd();
-		result = ShellExecuteW(h, L"open", attachmentName, NULL, path, SW_SHOWNORMAL);
+
+		if ((fileNameExtention.CompareNoCase(L".eml") == 0) ||
+			(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
+			(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
+			(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
+			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0) ||
+			(fileNameExtention.CompareNoCase(L".msg") == 0))
+		{
+			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_SHOWNORMAL);
+		}
+		else
+		{
+			result = ShellExecuteW(h, L"open", attachmentName, NULL, path, SW_SHOWNORMAL);
+		}
+
 		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
 
 		int deb = 1;

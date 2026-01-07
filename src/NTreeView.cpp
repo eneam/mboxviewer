@@ -2029,7 +2029,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 		DWORD nId = (DWORD)m_tree.GetItemData(hNewItem);
 		LabelInfo* linfo = m_labelInfoStore.Find(nId);
-		if (linfo && LabelInfo::MailFile)
+		if (linfo && (linfo->m_nodeType == LabelInfo::MailFile))
 		{
 			CString fileNamePath = linfo->m_filePath;
 			CString fileName;
@@ -2072,26 +2072,28 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 					HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
 
 					CString mboxviewPath = CMainFrame::m_processPath;
-					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOW);
+					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOWNORMAL);
 					if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
 					{
 						CString errorText;
 						CString errText;
 						ShellExecuteError2Text((UINT_PTR)result, errText);
-						CString fmt = L"\"%s\"\n\nOk to try to open this file ?";
+						CString fmt = L"\"%s\"\n\nFailed to open the eml file";
 						ResHelper::TranslateString(fmt);
 						errorText.Format(fmt, errText);
 
 						HWND h = GetSafeHwnd();
-						int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
-						if (answer == IDYES)
-							int deb = 1; // forceOpen = true;
+						int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+						if (answer == IDOK)
+							int deb = 1;  // ZMM Try again ??
 					}
 					return;
 				}
 				else
 				{
+					_ASSERTE(!errorText.IsEmpty());   // ZMM Review ConvertOutlookMsg2Eml
 				}
+				return;
 			}
 		}
 	}
@@ -3257,6 +3259,22 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if ((hParent != 0) && IsValidOutlookMsgFile(itemTxt))
 	{
+		LabelInfo* linfo = 0;
+		CString msgFilePath;
+		if (hItem)
+		{
+			DWORD nId = (DWORD)m_tree.GetItemData(hItem);
+			linfo = m_labelInfoStore.Find(nId);
+			if (linfo)
+				msgFilePath = linfo->m_filePath;
+		}
+		if (msgFilePath.IsEmpty())
+			return;
+
+		CString msgFolderPath;
+		CString msgFileName;
+		FileUtils::GetFolderPathAndFileName(msgFilePath, msgFolderPath, msgFileName);
+
 		MyPopupMenu menu;
 		menu.CreatePopupMenu();
 		//menu.AppendMenu(MF_SEPARATOR);
@@ -3264,7 +3282,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		const UINT M_FileLocation_Id = 1;
 		MyAppendMenu(&menu, M_FileLocation_Id, L"Open File Location");
 
-		const UINT M_Properties_Id = 12;
+		const UINT M_Properties_Id = 2;
 		MyAppendMenu(&menu, M_Properties_Id, L"Properties");
 
 		int index = 1;
@@ -3288,10 +3306,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString Label;
 			int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
 
-			CString path = MboxMail::GetLastPath();
-			if (FileUtils::BrowseToFile(MboxMail::s_path) == FALSE) {  // TODO: s_path error checking ??
+			if (FileUtils::BrowseToFile(msgFilePath) == FALSE) {  // TODO: s_path error checking ??
 				HWND h = GetSafeHwnd();
-				HINSTANCE result = ShellExecute(h, L"open", path, NULL, NULL, SW_SHOWNORMAL);
+				HINSTANCE result = ShellExecute(h, L"open", msgFolderPath, NULL, NULL, SW_SHOWNORMAL);
 				CMainFrame::CheckShellExecuteResult(result, h);
 			}
 		}
@@ -3304,7 +3321,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString txt;
 			CString tmp;
 
-			_int64 fileSize = FileUtils::FileSize(MboxMail::s_path); // TODO: error checking ??
+			_int64 fileSize = FileUtils::FileSize(msgFilePath); // TODO: error checking ??
 			LPCWSTR fileSizeStr_inKB = StrFormatKBSize(fileSize, &sizeStr_inKB[0], sizeStrSize);
 			if (!fileSizeStr_inKB)
 				sizeStr_inKB[0] = 0;
@@ -3316,11 +3333,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			int mailCount = MboxMail::s_mails_ref.GetCount();
 
 			txt.Empty();
-			CString folder;
-			FileUtils::GetFolderPath(MboxMail::s_path, folder);
-			txt.Format(L"Folder: %s\n", folder);
+			txt.Format(L"Folder: %s\n", msgFolderPath);
 
-			tmp.Format(L"File: %s\n", mailFile);
+			tmp.Format(L"File: %s\n", msgFileName);
 			txt.Append(tmp);
 
 			CString cstr;
@@ -3329,9 +3344,14 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 			tmp.Format(L"File size:  %s  (%s) (%s)\n", cstr, sizeStr_inKB, sizeStr_inBytes);
 			txt += tmp;
+
+			txt.Append(L"Mail Count: \n");
+#if 0
+			// ZMM Figure out later the mail count for msg file
 			tmp.Empty();
 			tmp.Format(L"Mail Count: %d\n", mailCount);
 			txt += tmp;
+#endif
 
 			HWND h = GetSafeHwnd();
 			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -8061,6 +8081,8 @@ int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 	}
 
+
+	CArray<CString> failedConversionFileList;
 	CArray<MergeFileInfo> fileList;
 	WIN32_FIND_DATA data;
 	__int64 size = 0;
@@ -8116,6 +8138,11 @@ int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
 				int mboxFileType = 1;
 				MergeFileInfo mergeFileInfo(emlFileNamePath, mboxFileType);
 				fileList.Add(mergeFileInfo);
+			}
+			else
+			{
+				failedConversionFileList.Add(msgFileName);
+				_ASSERTE(failedConversionFileList.GetCount());
 			}
 		}
 		int deb = 1;
