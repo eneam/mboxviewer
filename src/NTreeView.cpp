@@ -2078,7 +2078,7 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 						CString errorText;
 						CString errText;
 						ShellExecuteError2Text((UINT_PTR)result, errText);
-						CString fmt = L"\"%s\"\n\nFailed to open the eml file";
+						CString fmt = L"\"%s\"\n\nFailed to open the eml file: ";
 						ResHelper::TranslateString(fmt);
 						errorText.Format(fmt, errText);
 
@@ -8159,6 +8159,7 @@ int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
 
 	// All archive files are valid; merge
 	CString title = L"Enter Name for New Archive File";
+	ResHelper::TranslateString(title);
 	CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 	CString dfltExtension = L".mbox";
 
@@ -8416,6 +8417,7 @@ restart:
 
 			// All archive files are valid; merge
 			CString title = L"Enter Name for New Archive File";
+			ResHelper::TranslateString(title);
 			CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 			CString dfltExtension = L".mbox";
 

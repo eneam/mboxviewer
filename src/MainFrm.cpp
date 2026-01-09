@@ -341,6 +341,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_DRAWITEM()
 	ON_COMMAND(ID_HELP_CRASHHELP, &CMainFrame::OnHelpCrashhelp)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS, &CMainFrame::OnDevelopmentoptionsTogglertlfordialogs)
+	ON_COMMAND(ID_HELP_OUTLOOKSUPPORT, &CMainFrame::OnHelpOutlooksupport)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -2867,6 +2868,7 @@ restart:
 
 		// All archive files are valid; merge
 		CString title = L"Enter Name for New Archive File";
+		ResHelper::TranslateString(title);
 		CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 		CString dfltExtension = L".mbox";
 
@@ -7201,4 +7203,13 @@ void CMainFrame::OnDevelopmentoptionsTogglertlfordialogs()
 	{
 		CmboxviewApp::m_isRTLForDialogs = !CmboxviewApp::m_isRTLForDialogs;
 	}
+}
+
+void CMainFrame::OnHelpOutlooksupport()
+{
+	// TODO: Add your command handler code here
+
+	CString helpFileName = L"OutlookHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
 }
