@@ -38,7 +38,7 @@
 
 #ifndef OUTLOOK_MODE
 
-CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.42\ResourceRoot\WORK\)";
+CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.50\ResourceRoot\WORK\)";
 
 BOOL ResHelper::m_showTooltipsAlways = TRUE;
 

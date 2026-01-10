@@ -6403,7 +6403,9 @@ int NTreeView::LoadLabels()
 		hChild = m_tree.GetNextSiblingItem(hChild);
 	}
 
-	sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
+	if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	return 1;
 }
 
@@ -6517,7 +6519,9 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 		BOOL retval = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText, &linfo->m_filePath);
 		if (retval == FALSE) {
 			MboxMail::assert_unexpected();
-			sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+			sText.Format(L"Ready");
+			ResHelper::TranslateString(sText);
+			if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 			return -1;  // goto instead ?
 		}
 

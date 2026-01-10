@@ -42,6 +42,7 @@ Features
 * support for multiple languages;
 * support for file based data configuration in addition to the default Registry based;
 * ability to configure font size of GUI objects;
+* support for Outlook .msg mail files;
 
 License
 -------
@@ -122,7 +123,7 @@ Multiple Languages
 
 MBox Viewer supports the multiple languages:
 
-English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian, Polish, Japanese, Chinese-Simplified and Arabic.
+English, Italian, Spanish, German, French, Portuguese, Portuguese-Brazil, Romanian, Polish, Japanese, Chinese-Simplified, Russian and Arabic.
 
 GUI strings and documentation were translated from English to target languages using free Google Translation service and were not reviewed by humans yet. 
 Free Google Translations are not domain specific and most likely they will need to be updated by humans.
