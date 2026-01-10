@@ -2659,7 +2659,8 @@ void NListView::ResizeColumns()
 	int max_to_len = 400;
 	int min_subj_len = 200;
 	int dflt_subj_len = 400;
-	int size_len = 80;
+	int min_size_len = 80;
+	int size_len = min_size_len;
 
 	CPaintDC dc(&m_list);
 	HDC hDC = dc.GetSafeHdc();
@@ -2729,7 +2730,10 @@ void NListView::ResizeColumns()
 		}
 	}
 
-	size_len = w;
+	int total_col_len = col_zero_len + date_len + from_len + to_len + subj_len;
+	size_len = w - total_col_len;
+	if (size_len < min_size_len)
+		size_len = min_size_len;
 
 	m_list.SetColumnWidth(1, date_len);
 	m_list.SetColumnWidth(2, from_len);
