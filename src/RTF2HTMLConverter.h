@@ -150,8 +150,9 @@ public:
 
     CharsetHelper m_CharsetHelper;
     Charset m_ansicpg;
+    bool m_ansicpg_setUTF8;
 
-    std::string rtf2html(char* crtf);
+    std::string rtf2html(char* crtf, std::string& result);
 
     void appendIfNotIgnoredGroup(std::string& result, std::string& symbol, Group& group) {
         if (!group.ignore && !group.htmlRtf) {
@@ -159,5 +160,15 @@ public:
             int deb = 1;
         }
     }
-    std::string hexToString(const std::string& hex);
+    std::string hexToString(const std::string& hex, Charset charset);
 };
+
+typedef struct
+{
+    int charsetNumber;
+    int pageCode;
+    char* name;
+} RTFCharset;
+
+int RTFCharsetNumber2CodePage(char* charsetNumberStr);
+int RTFCharsetNumber2CodePage(int charsetNumber);

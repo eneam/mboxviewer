@@ -89,11 +89,12 @@ BEGIN
             MENUITEM "Developer Mode",              ID_DEVELOPMENTOPTIONS_DEVELO
             POPUP "Language Tools..."
             BEGIN
-                MENUITEM "Create Resource File",        ID_LANGUAGETOOLS_CREATERESOURCEFILE
+                MENUITEM "Split Translation File",      ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE
                 MENUITEM "Create Translation File",     ID_LANGUAGETOOLS_CREATETRANSLATIONFILE
+                MENUITEM "Create Resource File",        ID_LANGUAGETOOLS_CREATERESOURCEFILE
                 MENUITEM "Resort Translation File",     ID_LANGUAGETOOLS_RESORTTRANSLATIONFILE
                 MENUITEM "Resource File Property",      ID_LANGUAGETOOLS_RESOURCEFILEPROPERTY
-                MENUITEM "Split Translation File",      ID_LANGUAGETOOLS_SPLITTRANSLATIONFILE
+                MENUITEM "Update Translation Files",    ID_LANGUAGETOOLS_UPDATETRANSLATIONFILES
             END
             MENUITEM "Toggle RTL for Dialogs",      ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS
             MENUITEM "Select Language",             ID_DEVELOPMENTOPTIONS_SELECTLANGUAGE

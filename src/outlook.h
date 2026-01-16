@@ -70,6 +70,7 @@ struct Body
     DirEntry* m_PidTagOriginalDisplayTo;
     DirEntry* m_PidTagRecipientType;
     DirEntry* m_PidTagSenderName;
+    DirEntry* m_PidTagSentRepresentingName;
     DirEntry* m_PidTagSenderEmailAddress;
     DirEntry* m_PidTagSenderSmtpAddress;
     DirEntry* m_PidTagSentRepresentingSmtpAddress;
@@ -90,6 +91,7 @@ struct Body
     DirEntry* m_PidTagInternetMessageId;
     DirEntry* m_PidTagBodyContentLocation;
     DirEntry* m_PidTagBodyContentId;
+    DirEntry* m_PidTagLastModifierName;
 
     DirEntry* m_properties_version1_0;
     int SetProperty(int propertIdNumb, int propertTypeNumb, DirEntry* entry);
@@ -220,6 +222,7 @@ public:
     int ParseMsg(struct cfbf* cfbf, Parse_Outlook_Msg _ParseOutlookMsg, OutlookMsgHelper& msgHelper, std::string& errorText);
     int Msg2Eml(std::string& errorText);
     int Msg2Eml(std::string& msg_utf8, std::string& errorText);
+    int WordEncode(std::string& fld, std::string& wordEncodedFld, int encodeType = 'Q');
 
     struct cfbf* m_cfbf;
     HANDLE emlFile;
@@ -273,7 +276,7 @@ public:
 struct OutlookMsgHelper
 {
     OutlookMsgHelper(struct cfbf* _cfbf, HANDLE emlFile, FILE* _out = stdout)
-        :msg(out, emlFile, _cfbf)
+        :msg(_out, emlFile, _cfbf)
     {
         cfbf = _cfbf;
         out = _out;
@@ -286,7 +289,7 @@ struct OutlookMsgHelper
         int deb = 1;
     }
 
-    std::list<OutlookMessage*> m_msgList;
+    std::list<OutlookMessage*> m_msgList;  // MSG attachments
     std::string msg_utf8;
     OutlookMessage msg;
     OutlookMessage* active_msg;

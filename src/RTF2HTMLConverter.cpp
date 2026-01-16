@@ -47,8 +47,11 @@
 #include <list>
 #include <string>
 #include <regex>
+#include "TextUtilsEx.h"
 
 #include "RTF2HTMLConverter.h"
+
+std::string UTF16ToUTF8(wchar_t* in, size_t in_len);
 
 static std::string CONTROL_WORD_PATTERN(R"(\\(([^a-zA-Z])|(([a-zA-Z]+)(-?\d*) ?)))");
 static std::string ENCODED_CHARACTER_PATTERN(R"(^\\'([0-9a-fA-F]{2}))");
@@ -64,16 +67,111 @@ static std::string ENCODED_CHARACTER_PATTERN(R"(^\\'([0-9a-fA-F]{2}))");
  */
 
 
-RTF2HTMLConverter::RTF2HTMLConverter()
+#if 0
+ // from wingdi.h
+#define ANSI_CHARSET            0
+#define DEFAULT_CHARSET         1
+#define SYMBOL_CHARSET          2
+#define SHIFTJIS_CHARSET        128
+#define HANGEUL_CHARSET         129
+#define HANGUL_CHARSET          129
+#define GB2312_CHARSET          134
+#define CHINESEBIG5_CHARSET     136
+#define OEM_CHARSET             255
+#if(WINVER >= 0x0400)
+#define JOHAB_CHARSET           130
+#define HEBREW_CHARSET          177
+#define ARABIC_CHARSET          178
+#define GREEK_CHARSET           161
+#define TURKISH_CHARSET         162
+#define VIETNAMESE_CHARSET      163
+#define THAI_CHARSET            222
+#define EASTEUROPE_CHARSET      238
+#define RUSSIAN_CHARSET         204
+
+#define MAC_CHARSET             77
+#define BALTIC_CHARSET          186
+#endif
+#endif
+
+//RTF charset number , codepage , Windows/Mac name
+static RTFCharset rtfCharsetArr[] =
 {
-	m_ansicpg = 0;  //invalid
+	{ 0 , 1252 , "ANSI" },
+	{ 1 , 0 , "Default" },
+	{ 2 , 42 , "Symbol" },
+	{ 77 , 10000 , "Mac Roman" },
+	{ 78 , 10001 , "Mac Shift Jis" },
+	{ 79 , 10003 , "Mac Hangul" },
+	{ 80 , 10008 , "Mac GB2312" },
+	{ 81 , 10002 , "Mac Big5" },
+	{ 82 , -1 , "Mac Johab(old)" },
+	{ 83 , 10005 , "Mac Hebrew" },
+	{ 84 , 10004 , "Mac Arabic" },
+	{ 85 , 10006 , "Mac Greek" },
+	{ 86 , 10081 , "Mac Turkish" },
+	{ 87 , 10021 , "Mac Thai" },
+	{ 88 , 10029 , "Mac East Europe" },
+	{ 89 , 10007 , "Mac Russian" },
+	{ 128 , 932 , "Shift JIS" },
+	{ 129 , 949 , "Hangul" },
+	{ 130 , 1361 , "Johab" },
+	{ 134 , 936 , "GB2312" },
+	{ 136 , 950 , "Big5" },
+	{ 161 , 1253 , "Greek" },
+	{ 162 , 1254 , "Turkish" },
+	{ 163 , 1258 , "Vietnamese" },
+	{ 177 , 1255 , "Hebrew" },
+	{ 178 , 1256 , "Arabic" },
+	{ 179 , -1 , "arabic Traditional(old)" },
+	{ 180 , -1 , "arabic user(old)" },
+	{ 181 , -1 , "Hebrew user(old)" },
+	{ 186 , 1257 , "Baltic" },
+	{ 204 , 1251 , "Russian" },
+	{ 222 , 874 , "Thai" },
+	{ 238 , 1250 , "Eastern European" },
+	{ 254 , 437 , "PC 437" },
+	{ 255 , 850 , "OEM" }
 };
 
-std::string RTF2HTMLConverter::rtf2html(char* crtf)
+int RTFCharsetNumber2CodePage(char* charsetNumberStr)
 {
+	int charsetNumber = -1;
+	sscanf(charsetNumberStr, "%d", &charsetNumber);
+	return charsetNumber;
+}
+
+int RTFCharsetNumber2CodePage(int charsetNumber)
+{
+	int pageCode = -1;
+	int arraySize = sizeof(rtfCharsetArr) / sizeof(RTFCharset);
+	int i = 0;
+	for (i = 0; i < arraySize; i++)
+	{
+		RTFCharset* charSet = &rtfCharsetArr[i];
+		if (charSet->charsetNumber == charsetNumber)
+		{
+			return charSet->pageCode;
+		}
+	}
+
+	return -1;
+}
+
+RTF2HTMLConverter::RTF2HTMLConverter()
+{
+	m_ansicpg = 0;  // windows ansi , 1252
+	m_ansicpg_setUTF8 = false;
+};
+
+std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
+{
+	result.clear();
 	FontMap fontTable;
 	std::string rtf(crtf);
 
+	// Determine charset from content. Normally asnsicpg should be present and it will reset
+	// what was found. For not set to 1252 windows ansi
 	Charset charset = m_CharsetHelper.detectCharsetFromRtfContent(rtf);
 
 	// RTF processing requires stack holding current settings, each group adds new settings to stack
@@ -84,9 +182,10 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 
 	RegexMacher controlWordMatcher(CONTROL_WORD_PATTERN, rtf);
 	RegexMacher encodedCharMatcher(ENCODED_CHARACTER_PATTERN, rtf);
-	std::string result;
+	//std::string result;
 	int length = rtf.length();
 	int charIndex = 0;
+	Integer nullControlNumber = 0x7FFFFFFF;
 
 	while (charIndex < length)
 	{
@@ -120,7 +219,8 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 			if (encodedCharMatcher.lookingAt())
 			{
 				std::string encodedSequence;
-				while (encodedCharMatcher.lookingAt()) {
+				while (encodedCharMatcher.lookingAt())
+				{
 					String group_1 = encodedCharMatcher.group(1);
 					encodedSequence.append(group_1);
 					charIndex += 4;
@@ -142,9 +242,11 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 					}
 				}
 
-				//String decoded = hexToString(encodedSequence.c_str(), effectiveCharset);
-				String decoded = RTF2HTMLConverter::hexToString(encodedSequence.c_str());  // ignored effectiveCharset for now  !!!!
+				String decoded = RTF2HTMLConverter::hexToString(encodedSequence.c_str(), effectiveCharset);
+				if (!decoded.empty())
+					int deb = 1;
 				appendIfNotIgnoredGroup(result, decoded, currentGroup);
+				m_ansicpg_setUTF8 = true;  // update  m_ansicpg = CP_UTF8 before return from function
 				continue;
 			}
 
@@ -154,19 +256,19 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 			{
 				std::string err("RTF file has invalid structure. Failed to match character '" +
 					String(&c, 1) + "' at [" + std::to_string(charIndex) + "/" + std::to_string(length) + "] to a control symbol or word.");
-				return String("");  // Indicate failure
+				return String(err);  // Indicate failure
 			}
 
-			std::string all1 = controlWordMatcher.GetMatch();
-			int indx = all1.find("par");
+			std::string allGropus = controlWordMatcher.GetMatch();  // testing
+			int indx = allGropus.find("par");
 			if (indx >= 0)
 				int deb = 1;
 
 			//checking for control symbol or control word
 			//control word can have optional number following it and the optional space as well
-			Integer controlNumber = 0x7FFFFFFF;
-			String controlWord = controlWordMatcher.group(4); // group(2) matches control symbol; !!!! changed from group(2) to group(4) need explanation
-			if (!controlWord.empty())
+			Integer controlNumber = nullControlNumber;
+			String controlWord = controlWordMatcher.group(2); // group(2) matches control symbol; !!!! changed from group(2) to group(4) need explanation
+			if (controlWord.empty())  // ZMM
 			{
 				controlWord = controlWordMatcher.group(4); // group(4) matches control word
 				String controlNumberString = controlWordMatcher.group(5);
@@ -193,10 +295,11 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 
 			//switch (controlWord)  // For now rely on == later on switch once all works !!!
 			{
-				if (controlWord == "htmlrtf") {
+				if (controlWord == "htmlrtf")
+				{
 					//htmlrtf starts ignored text area, htmlrtf0 ends it
 					//Though technically this is not a group, it's easier to treat it as such to ignore everything in between
-					if ((controlNumber == 0x7FFFFFFF) || (controlNumber == 1))  // 0x7FFFFFFF  to indicate no number FIX this
+					if ((controlNumber == nullControlNumber) || (controlNumber == 1))  // nullControlNumber = 0x7FFFFFFF  to indicate ull/invalid number may need to FIX this
 						currentGroup.htmlRtf = 1;
 					else
 						currentGroup.htmlRtf = 0;
@@ -209,13 +312,14 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 					appendIfNotIgnoredGroup(result, String("\n"), currentGroup);
 				else if (controlWord == "tab")
 					appendIfNotIgnoredGroup(result, String("\t"), currentGroup);
-				else if (controlWord == "ansicpg") {
+				else if (controlWord == "ansicpg")
+				{
 					//charset definition is important for decoding ansi encoded values
 					//charset = CharsetHelper.findCharsetForCodePage(requireNonNull(controlNumber).toString());
 					if (controlNumber >= 0)
 					{
 						charset = controlNumber;
-						if (m_ansicpg == 0)  // allow onlu first "ansicpg" for now
+						if (m_ansicpg == 0)  // allow only first "ansicpg" for now
 							m_ansicpg = controlNumber;
 					}
 				}
@@ -226,19 +330,20 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 				else if (controlWord == "f") {
 					// font table index. Might be a new one, or an existing one
 					_ASSERTE(controlNumber >= 0);
-					if (controlNumber != 0x7FFFFFFF)
+					if (controlNumber != nullControlNumber)
 						currentGroup.fontTableIndex = controlNumber;
 				}
 				else if (controlWord == "fcharset")
 				{
-					if (controlNumber != 0x7FFFFFFF && currentGroup.fontTableIndex != 0)
+					if (controlNumber != nullControlNumber && currentGroup.fontTableIndex != 0)
 					{
 						//Charset possibleCharset = CodePage.getCharsetByCodePage(controlNumber);
-						Charset possibleCharset = 0;
+						Charset possibleCharset = RTFCharsetNumber2CodePage(controlNumber);
 						if (possibleCharset != 0)
 						{
 							FontMap::iterator iter_entry = fontTable.find(currentGroup.fontTableIndex);
-							if (iter_entry != fontTable.end()) {
+							if (iter_entry == fontTable.end())
+							{
 								FontTableEntry new_entry;
 								fontTable.insert({ currentGroup.fontTableIndex, new_entry });
 								FontMap::iterator iter = fontTable.find(currentGroup.fontTableIndex);
@@ -250,20 +355,63 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 					}
 				}
 				else if (controlWord == "uc") {
+					char* frag = &crtf[charIndex-32];
 					// This denotes a number of characters to skip after unicode symbols
-					if (controlNumber != 0x7FFFFFFF)
+					if (controlNumber != nullControlNumber)
 						currentGroup.unicodeCharLength = (controlNumber == 0) ? 1 : controlNumber;
 				}
 				else if (controlWord == "u")
 				{
-					// Unicode symbols
-					if (controlNumber != 0x7FFFFFFF)
+					char* frag = &crtf[charIndex - 32];
+					// Unicode symbols, ZMM RTF doc is confusing; need to investigate more; example msg files would help
+#if 0
+					// ZMM is this applicable to Mail also? How she know ?
+					// Should we check for if Unocde value is between 
+					// I don't have enpugh examples
+					// From very confusing RTF doc:
+						Occasionally Word writes SYMBOL_CHARSET(nonUnicode) characters in the range
+						U+F020..U+F0FF instead of U+0020..U+00FF.
+						Internally Word uses the values U+F020..U+F0FF
+						for these characters so that plain - text searches don’t mistakenly match SYMBOL_CHARSET
+						characters when searching for Unicode characters in the range U+0020..U+00FF.To find out the
+						correct symbol font to use, e.g., Wingdings, Symbol, etc., find the last SYMBOL_CHARSET font
+						control word \fN used, look up font N in the font table and find the face name.The charset is
+						specified by the \fcharsetN control word and SYMBOL_CHARSET is for N = 2. This corresponds
+						to codepage 42.
+#endif
+					if (controlNumber != nullControlNumber)
 					{
-						if (controlNumber != 0x7FFFFFFF) {
-							char unicodeSymbol = (char)controlNumber;
-							appendIfNotIgnoredGroup(result, String(&unicodeSymbol, 1), currentGroup);
-							charIndex += currentGroup.unicodeCharLength;
+#if 0
+						// Direct port from Java source. Howver, In Java the char type is 2 bytes most of the time
+						char unicodeSymbol = (char)controlNumber;  // 
+						appendIfNotIgnoredGroup(result, String(&unicodeSymbol, 1), currentGroup);
+#else
+						// ZMM Investigate if not Symbol , private Unicode range ??
+						// 
+						wchar_t unicodeSymbol = (wchar_t)controlNumber;
+						CString unicodeSymbolStr(unicodeSymbol);
+
+						if ((unicodeSymbol >= 0xF020) && (unicodeSymbol <= 0xF0FF))
+							int deb = 1;
+						else
+							int deb = 1;
+
+						CStringA resultA;
+						DWORD error;
+						BOOL ret = TextUtilsEx::WStr2UTF8(&unicodeSymbolStr, &resultA, error);
+						if (ret)
+						{
+							const char* buff = (LPCSTR)resultA;
+							int len = resultA.GetLength();
+							String encode_utf8(buff, len);
+							appendIfNotIgnoredGroup(result, encode_utf8, currentGroup);
+
+							m_ansicpg_setUTF8 = true;  // update  m_ansicpg = CP_UTF8 before return from function
 						}
+						else
+							_ASSERTE(true);
+#endif
+						charIndex += currentGroup.unicodeCharLength;
 					}
 				}
 				else if ((controlWord == "{") || (controlWord == "}") || (controlWord == "\\"))  // Escaped characters
@@ -273,17 +421,19 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf)
 				else
 					int deb = 1;
 			}
-
 		}
 		else {
 			appendIfNotIgnoredGroup(result, String(&c, 1), currentGroup);
 			charIndex++;
 		}
 	}
-	return result;
+	if (m_ansicpg_setUTF8)
+		m_ansicpg = CP_UTF8;
+
+	return String("");  // Indicate ok;
 };
 
-std::string RTF2HTMLConverter::hexToString(const std::string& hex)
+std::string RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumber)
 {
 	std::string result;
 	for (size_t i = 0; i < hex.length(); i += 2) {
@@ -292,7 +442,24 @@ std::string RTF2HTMLConverter::hexToString(const std::string& hex)
 		result.push_back(chr);
 		int deb = 1;
 	}
-	return result;
+	if (result.size() > 0)
+	{
+		const char* str = result.c_str();
+		int strlen =  result.size();
+		CStringA outstr;
+		DWORD error;
+
+		int inCodePage = RTFCharsetNumber2CodePage(charsetNumber);
+		if (inCodePage < 0)
+			inCodePage = charsetNumber;
+
+		BOOL ret = TextUtilsEx::Str2UTF8(str, strlen, inCodePage, outstr, error);
+
+		std::string str_utf8(outstr, outstr.GetLength());
+		return str_utf8;
+	}
+	else
+		return std::string("");
 }
 
 bool RegexMacher::lookingAt()
@@ -340,7 +507,7 @@ int RegexMacher::start()
 		return start;
 	}
 	else
-		return 0; // -1 ??
+		return 0; // -1 ??  ZMM
 };
 
 int RegexMacher::end()
@@ -351,7 +518,7 @@ int RegexMacher::end()
 		return end;
 	}
 	else
-		return 0; // -1 ??
+		return 0; // -1 ??  ZMM
 };
 
 int RegexMacher::GetSize() {

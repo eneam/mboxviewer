@@ -498,6 +498,7 @@ public:
 	afx_msg void OnHelpCrashhelp();
 	afx_msg void OnDevelopmentoptionsTogglertlfordialogs();
 	afx_msg void OnHelpOutlooksupport();
+	afx_msg void OnLanguagetoolsUpdatetranslationfiles();
 };
 
 /////////////////////////////////////////////////////////////////////////////

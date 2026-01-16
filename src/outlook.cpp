@@ -244,11 +244,20 @@ void DumpRTF(FILE* out, const void* buffer, size_t len)
 
         RTF2HTMLConverter rtf2html;
 
-        std::string result = rtf2html.rtf2html((char*)dst);
-        std::string html((const char*)result.c_str(), retlen);
+
+        std::string result;
+        std::string errorText = rtf2html.rtf2html((char*)dst, result);
+        _ASSERTE(errorText.empty());
+        if (!errorText.empty())
+        {
+            // return partial result?
+            // append errorText to result ??
+            // copy errorText to result ??
+            int deb = 1;
+        }
 
         //fprintf(stdout, "\n\nRTF2HTMLConverter: rtf2html: !!!!!!!!!!!!!!!\n%s\n\n", html.c_str());
-        fprintf(out, " %s \"%s\"", RtfContentType.c_str(), html.c_str());
+        fprintf(out, " %s \"%s\"", RtfContentType.c_str(), result.c_str());
 
         free(dst);
     }
@@ -419,7 +428,8 @@ ParseOutlookMsg(void* cookie, struct cfbf* cfbf, DirEntry* e,
     {
         if (name_utf8.compare("__substg1.0_3701000D") == 0)
         {
-            //fprintf(stdout, "Attach Object Type found __substg1.0_3701000D\n");
+            if (out)
+                fprintf(stdout, "Attach Object Type found __substg1.0_3701000D\n");
 
             msgHelper->m_msgList.push_back(msgHelper->active_msg);
             msgHelper->active_msg = new OutlookMessage(msgHelper->out, msgHelper->emlFileHandle, cfbf);
@@ -697,21 +707,63 @@ bool OutlookMessage::GetFromAddress(std::string& From)
     std::string errorText;
     From.clear();
 
+    bool valid = false;
     if (m_body.m_PidTagSenderName)
     {
         std::string value_utf8;
         UINT16 type = 0;
-        bool valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSenderName, value_utf8, type, errorText);
+        valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSenderName, value_utf8, type, errorText);
         if (valid) {
             From.append(value_utf8);
         }
     }
 
-    if (m_body.m_PidTagSenderEmailAddress)
+	if ((valid == false) && m_body.m_PidTagSentRepresentingName)
+	{
+		std::string value_utf8;
+		UINT16 type = 0;
+		valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSentRepresentingName, value_utf8, type, errorText);
+		if (valid) {
+			From.append(value_utf8);
+		}
+	}
+
+    // ZMM one more to try ??
+    // PidTagOriginalSentRepresentingName
+
+    if (!From.empty())
+    {
+        // check address; search fo @ character
+        if (From.find("@") != std::string::npos)
+            return true;
+    }
+
+#if 0
+        PidTagSmtpAddress = 0x39FE,
+        PidTagSenderSmtpAddress = 0x5D01,
+        PidTagSentRepresentingSmtpAddress = 0x5D02,
+        PidTagSentRepresentingAddressType = 0x0064,
+        PidTagSentRepresentingEmailAddress = 0x0065,
+        PidTagOriginalSenderAddressType = 0x0066,
+        PidTagOriginalSenderEmailAddress = 0x0067,
+        PidTagOriginalSentRepresentingAddressType = 0x0068,
+        PidTagOriginalSentRepresentingEmailAddress = 0x0069,
+
+#endif
+
+    valid = false;
+    if (m_body.m_PidTagSenderSmtpAddress)
     {
         std::string value_utf8;
         UINT16 type = 0;
-        bool valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSenderEmailAddress, value_utf8, type, errorText);
+        valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSenderSmtpAddress, value_utf8, type, errorText);
+        if (valid)
+        {
+            // validate address; search fo @ character
+            if (value_utf8.find("@") == std::string::npos)
+                valid = false;
+        }
+        // ZMM Move to end
         if (valid) {
             From.append(" <");
             From.append(value_utf8);
@@ -719,8 +771,48 @@ bool OutlookMessage::GetFromAddress(std::string& From)
             return true;
         }
     }
-    // or check if From is empty
-    return false;
+
+    if ((valid == false) && m_body.m_PidTagSenderEmailAddress)
+    {
+        std::string value_utf8;
+        UINT16 type = 0;
+        valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagSenderEmailAddress, value_utf8, type, errorText);
+        if (valid)
+        {
+            // validate address; search fo @ character
+            if (value_utf8.find("@") == std::string::npos)
+                valid = false;
+        }
+        if (valid) {
+            From.append(" <");
+            From.append(value_utf8);
+            From.append(">");
+            return true;
+        }
+    }
+    if ((valid == false) && m_body.m_PidTagLastModifierName)
+    {
+        std::string value_utf8;
+        UINT16 type = 0;
+        valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, m_body.m_PidTagLastModifierName, value_utf8, type, errorText);
+        if (valid)
+        {
+            // validate address; search fo @ character
+            if (value_utf8.find("@") == std::string::npos)
+                valid = false;
+        }
+        if (valid) {
+            From.append(" <");
+            From.append(value_utf8);
+            From.append(">");
+            return true;
+        }
+    }
+    // check if From is empty
+    if (!From.empty())
+        return true;
+    else
+        return false;
 }
 
 void OutlookMessage::GetToLists(std::string& To, std::string& CC, std::string& BCC)
@@ -742,51 +834,69 @@ void OutlookMessage::GetToLists(std::string& To, std::string& CC, std::string& B
             recipientType = value & 0x03;
 
         std::string recip;
+        bool addressDone = false;
         if (entry.m_PidTagDisplayName)
         {
             std::string value_utf8;
             UINT16 type;
             bool valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, entry.m_PidTagDisplayName, value_utf8, type, errorText);
-            recip.append(value_utf8);
+            if (valid)
+            {
+                recip.append(value_utf8);
+                // check address; search fo @ character
+                if (value_utf8.find("@") != std::string::npos)
+                    addressDone = true;
+            }
         }
-        if (entry.m_PidTagEmailAddress)
+
+        valid = false;
+
+        if ((addressDone == false) && (valid == false) && entry.m_PidTagSmtpAddress)
+        {
+            std::string value_utf8;
+            UINT16 type = 0;
+            valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, entry.m_PidTagSmtpAddress, value_utf8, type, errorText);
+            if (valid)
+            {
+                recip.append(" <");
+                recip.append(value_utf8);
+                recip.append(">");
+            }
+        }
+
+        if ((addressDone == false) && (valid == false) && entry.m_PidTagEmailAddress)
         {
             std::string value_utf8;
             UINT16 type = 0;
             bool valid = OutlookMessage::GetStreamDirEntryValueString(this->m_cfbf, entry.m_PidTagEmailAddress, value_utf8, type, errorText);
-            recip.append(" <");
-            recip.append(value_utf8);
-            recip.append(">");
+            if (valid)
+            {
+                recip.append(" <");
+                recip.append(value_utf8);
+                recip.append(">");
+            }
         }
 
-        std::string recipNotEncode = recip;
-
-        CStringA wordEncodedRecip;
-        int encodeType = 'Q';   // 'Q' == quoted (best for asci) 'B' ==  base64
-        CStringA txt(recip.c_str(), recip.size());
-        CStringA encodedTxt;
-        TextUtilsEx::WordEncode(txt, encodedTxt, encodeType);
-
-        recip.clear();
-        recip.append((LPCSTR)encodedTxt, encodedTxt.GetLength());
+        std::string wordEncodedRecip;
+        int retEncode = OutlookMessage::WordEncode(recip, wordEncodedRecip);
 
         if (recipientType == 1)
         {
             if (!To.empty())
                 To.append(",\r\n    ");
-            To.append(recip);
+            To.append(wordEncodedRecip);
         }
         else if (recipientType == 2)
         {
             if (!CC.empty())
                 CC.append(",\r\n    ");
-            CC.append(recip);
+            CC.append(wordEncodedRecip);
         }
         else if (recipientType == 3)
         {
             if (!BCC.empty())
                 BCC.append(",\r\n    ");
-            BCC.append(recip);
+            BCC.append(wordEncodedRecip);
         }
         int deb = 1;;
     }
@@ -1125,6 +1235,7 @@ int Body::SetProperty(int propertIdNumb, int propertTypeNumb, DirEntry* entry)
     case  PidTagOriginalDisplayTo: { m_PidTagOriginalDisplayTo = entry; } break;
     case  PidTagRecipientType: { m_PidTagRecipientType = entry; } break;
     case  PidTagSenderName: { m_PidTagSenderName = entry; } break;
+    case  PidTagSentRepresentingName: { m_PidTagSentRepresentingName = entry; } break;
     case  PidTagSenderEmailAddress: { m_PidTagSenderEmailAddress = entry; } break;
     case  PidTagSenderSmtpAddress: { m_PidTagSenderSmtpAddress = entry; } break;
     case  PidTagSentRepresentingSmtpAddress: { m_PidTagSentRepresentingSmtpAddress = entry; } break;
@@ -1143,6 +1254,11 @@ int Body::SetProperty(int propertIdNumb, int propertTypeNumb, DirEntry* entry)
     case  PidTagMessageCodepage: { m_PidTagMessageCodepage = entry; } break;
     case  PidTagInternetCodepage: { m_PidTagInternetCodepage = entry; } break;
     case  PidTagInternetMessageId: { m_PidTagInternetMessageId = entry; } break;
+
+    case  PidTagBodyContentLocation: { m_PidTagBodyContentLocation = entry; } break;
+    case  PidTagBodyContentId: { m_PidTagBodyContentId = entry; } break;
+    case  PidTagLastModifierName: { m_PidTagLastModifierName = entry; } break;
+
     default:
     {
         std::string name_utf8 = UTF16ToUTF8((wchar_t*)entry->name, entry->name_length);
@@ -1461,7 +1577,7 @@ bool OutlookMessage::GetDirPropertyValueFixedLength(struct cfbf* cfbf, bool isRo
                     return true;
                 }
             }
-            //fprintf(out, "%08x %04x %s %s %llu\n", e->PropertyTag, e->Flags, propertyName, propertyTypeName, e->Value);
+            //if (out) fprintf(out, "%08x %04x %s %s %llu\n", e->PropertyTag, e->Flags, propertyName, propertyTypeName, e->Value);
         }
         free(data);
     }
@@ -1559,6 +1675,7 @@ void Body::Print(struct cfbf* cfbf, int level)
     PrintProperty(cfbf, level, m_PidTagOriginalDisplayTo);
     PrintProperty(cfbf, level, m_PidTagRecipientType);
     PrintProperty(cfbf, level, m_PidTagSenderName);
+    PrintProperty(cfbf, level, m_PidTagSentRepresentingName);
     PrintProperty(cfbf, level, m_PidTagSenderEmailAddress);
     PrintProperty(cfbf, level, m_PidTagSenderSmtpAddress);
     PrintProperty(cfbf, level, m_PidTagSentRepresentingSmtpAddress);
@@ -1577,6 +1694,10 @@ void Body::Print(struct cfbf* cfbf, int level)
     PrintProperty(cfbf, level, m_PidTagMessageCodepage);
     PrintProperty(cfbf, level, m_PidTagInternetCodepage);
     PrintProperty(cfbf, level, m_PidTagInternetMessageId);
+
+    PrintProperty(cfbf, level, m_PidTagBodyContentLocation);
+    PrintProperty(cfbf, level, m_PidTagBodyContentId);
+    PrintProperty(cfbf, level, m_PidTagLastModifierName);
     //
     PrintProperty(cfbf, level, m_properties_version1_0);
     OutlookMessage::PrintDirProperties(cfbf, 0, m_properties_version1_0);
@@ -1643,6 +1764,19 @@ void OutlookMessage::Print()
         fprintf(out, "[%s]  !!!!!!!!!!!!!!!\n", rit->m_name.c_str());
        rit->m_recip.Print(m_cfbf, 2);
     }
+}
+
+int OutlookMessage::WordEncode(std::string &fld, std::string& wordEncodedFld, int encodeType)
+{
+    //int encodeType = 'Q';   // 'Q' == quoted (best for asci) 'B' ==  base64
+
+    std::string wordEncodedFrom;
+    CStringA txt(fld.c_str(), fld.size());
+    CStringA encodedTxt;
+    int ret = TextUtilsEx::WordEncode(txt, encodedTxt, encodeType);
+    wordEncodedFld.append((LPCSTR)encodedTxt, encodedTxt.GetLength());
+
+    return ret;
 }
 
 int OutlookMessage::ParseMsg(struct cfbf* cfbf, Parse_Outlook_Msg _ParseOutlookMsg, OutlookMsgHelper& msgHelper, std::string& errorText)
@@ -1761,15 +1895,16 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
     //   MIME header values, the encoding specified in [RFC2047] MUST be used to encode Unicode 
 
 
-#if 0
-    fprintf(stdout, 
-        "From: %s\nDate: %s\nTo: %s\nCC: %s\nBCC: %s\nSubject: %s\n"
-        "message-id: %s\nin-reply-to: %s\ncontent-location: %s\ncontent-id: %s\n"
-        "MessageCodepage: %s\nInternetCodepage: %s\nStoreSupportMask: 0x%s STORE_UNICODE_OK: %d\nNativeBody: %s\n", 
-        From.c_str(), Date.c_str(), To.c_str(), CC.c_str(), BCC.c_str(), Subject.c_str(),
-        MessageId.c_str(), InReplyTo.c_str(), ContentLocation.c_str(), ContentId.c_str(),
-        MessageCodepage.c_str(), InternetCodepage.c_str(), StoreSupportMask.c_str(), STORE_UNICODE_OK, NativeBody.c_str());
-#endif
+    if (out)
+    {
+        fprintf(stdout,
+            "From: %s\nDate: %s\nTo: %s\nCC: %s\nBCC: %s\nSubject: %s\n"
+            "message-id: %s\nin-reply-to: %s\ncontent-location: %s\ncontent-id: %s\n"
+            "MessageCodepage: %s\nInternetCodepage: %s\nStoreSupportMask: 0x%s STORE_UNICODE_OK: %d\nNativeBody: %s\n",
+            From.c_str(), Date.c_str(), To.c_str(), CC.c_str(), BCC.c_str(), Subject.c_str(),
+            MessageId.c_str(), InReplyTo.c_str(), ContentLocation.c_str(), ContentId.c_str(),
+            MessageCodepage.c_str(), InternetCodepage.c_str(), StoreSupportMask.c_str(), STORE_UNICODE_OK, NativeBody.c_str());
+    }
 
 
     if (!hasMessageHeaders)
@@ -1777,19 +1912,16 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         // hope this is never the case or very rare but forces us to do extra more tricky work
         // will need to create mime header from .msg content other than m_PidTagTransportMessageHeaders
 
-        int encodeType = 'Q';   // 'Q' == quoted (best for asci) 'B' ==  base64
-
         std::string wordEncodedFrom;
-        CStringA txt(From.c_str(), From.size());
-        CStringA encodedTxt;
-        TextUtilsEx::WordEncode(txt, encodedTxt, encodeType);
-        wordEncodedFrom.append((LPCSTR)txt, txt.GetLength());
+        std::string wordEncodedSubject;
+        int retEncode = OutlookMessage::WordEncode(From, wordEncodedFrom);
+        retEncode = OutlookMessage::WordEncode(Subject, wordEncodedSubject);
 
         //InReplyTo  -> wordEncodedInReplyTo ; InReplyTo is likely comma separated list
 
         //hdr_utf8.append("\r\n"); to force refresh index
         hdr_utf8.append("Subject: ");
-        hdr_utf8.append(Subject);
+        hdr_utf8.append(wordEncodedSubject);
         hdr_utf8.append("\r\n");
         hdr_utf8.append("Date: ");
         hdr_utf8.append(Date);
@@ -1798,19 +1930,19 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         hdr_utf8.append(wordEncodedFrom);
         hdr_utf8.append("\r\n");
         hdr_utf8.append("To: ");
-        hdr_utf8.append(To);
+        hdr_utf8.append(To);  // already word encoded
         hdr_utf8.append("\r\n");
         hdr_utf8.append("Cc: "); 
-        hdr_utf8.append(CC);
+        hdr_utf8.append(CC); // already word encoded
         hdr_utf8.append("\r\n");
         hdr_utf8.append("Bcc: "); 
-        hdr_utf8.append(BCC);
+        hdr_utf8.append(BCC); // already word encoded
         hdr_utf8.append("\r\n");
         hdr_utf8.append("In-Reply-To: "); 
-        hdr_utf8.append(InReplyTo);
+        hdr_utf8.append(InReplyTo); // ZMM list?? to be word encoded ??
         hdr_utf8.append("\r\n");
-        hdr_utf8.append("Message-Id: ");
-        hdr_utf8.append(MessageId);
+        hdr_utf8.append("Message-Id: "); 
+        hdr_utf8.append(MessageId);  // ZMM no need to word encode I think
         hdr_utf8.append("\r\n");
         hdr_utf8.append("MIME-Version: 1.0");
         hdr_utf8.append("\r\n");
@@ -1846,7 +1978,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
         if (!data)
         {
-            fprintf(out, "\n");
+            if (out)
+                fprintf(out, "\n");
             m2eReturn();
             return 1;
         }
@@ -1945,7 +2078,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
                 if (!data)
                 {
-                    fprintf(out, "\n");
+                    if (out)
+                        fprintf(out, "\n");
                     m2eReturn();
                     return 1;
                 }
@@ -2078,7 +2212,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         free(data);
         free(eBuffer);
 
-        //fprintf(stdout, "\n\n%s\n", "Found PlainBody");
+        if(out)
+            fprintf(out, "\n\n%s\n", "Found PlainBody");
     }
     else
         ;// return -1;
@@ -2092,7 +2227,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         char* data = cfbf_read_entry_data(m_cfbf, entry, &data_len, errorText);
         if (!data)
         {
-            fprintf(out, "\n");
+            if (out)
+                fprintf(out, "\n");
             m2eReturn();
             return 1;
         }
@@ -2147,11 +2283,13 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
             free(eBuffer);
 
             bodyFound = true;
-            //fprintf(stdout, "\n\n%s\n", "Found HtmlBody");
+            if(out)
+                fprintf(out, "\n\n%s\n", "Found HtmlBody");
         }
         else
         {
-            //fprintf(stdout, "\n\n%s\n", "Found but ignorted HtmlBody encoded as UTF16");
+            if (out)
+                fprintf(stdout, "\n\n%s\n", "Found but ignorted HtmlBody encoded as UTF16");
             ; // convert to utf8 ??
         }
     }
@@ -2164,7 +2302,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
         if (!data)
         {
-            fprintf(out, "\n");
+            if (out)
+                fprintf(out, "\n");
             m2eReturn();
             return 1;
         }
@@ -2183,7 +2322,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
             std::string bin((const char*)dst, retlen);
 
-            //fprintf(stdout, "%s\n", bin.c_str());
+            if (out)
+                fprintf(stdout, "%s\n", bin.c_str());
 
             char* cpos = strstr((char*)dst, "fromhtml1");  // large effort is required to support fromtext
 
@@ -2196,8 +2336,19 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
                 RTF2HTMLConverter rtf2html;
 
-                std::string result_utf8 = rtf2html.rtf2html((char*)dst);  // simplified extraction of Html, need to do berer later
-                //fprintf(stdout, "\n\nRTF2HTMLConverter: rtf2html: !!!!!!!!!!!!!!!\n%s\n\n", result.c_str());
+                std::string result_utf8;
+                std::string errorText = rtf2html.rtf2html((char*)dst, result_utf8); // simplified extraction of Html, need to do better later
+                _ASSERTE(errorText.empty());
+                if (!errorText.empty())
+                {
+                    // return partial result_utf8?
+                    // append errorText to result_utf8 ??
+                    // copy errorText to result_utf8 ??
+                    int deb = 1;
+                }
+
+                if (out)
+                    fprintf(stdout, "\n\nRTF2HTMLConverter: rtf2html: !!!!!!!!!!!!!!!\n%s\n\n", result_utf8.c_str());
 
                 // Optymistic guessing, may need to enhance once I learn more
                 UINT pageCode = 65001;  // utf-8
@@ -2244,11 +2395,13 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
                 free(eBuffer);
 
                 bodyFound = true;
-                //fprintf(stdout, "\n\n%s\n", "Found RtfCompressed HtmlBody");
+                if(out)
+                    fprintf(out, "\n\n%s\n", "Found RtfCompressed HtmlBody");
 			}
             else
             {
-                //fprintf(stdout, "\n\n%s\n", "Found but ignorted RtfCompressed TextBody");
+                if (out)
+                    fprintf(stdout, "\n\n%s\n", "Found but ignorted RtfCompressed TextBody");
                 ; // result_utf8.append((const char*)dst, retlen); // and
                 ; // covert text RTF to HTML
             }
@@ -2676,7 +2829,7 @@ bool OutlookMessage::Write2File(wchar_t* cStrNamePath, const unsigned char* data
 }
 
 // Property Data can be set to PtyBinary or PtyString but in reality is PtyString8
-// Optymistic check
+// Optymistic check; ZMM investigate more reliable check
 bool OutlookMessage::IsString8(char* buf, int buflen)
 {
     int cnt = 0;
@@ -2798,7 +2951,9 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
         return FALSE;
     }
 
-    FILE* outFile = NULL;
+    // ZMM !!!!!!
+    FILE* outFile = stdout;
+    outFile = NULL;
     if (outFile)
     {
         cfbf.out = outFile;

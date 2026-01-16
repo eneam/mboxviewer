@@ -342,6 +342,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_HELP_CRASHHELP, &CMainFrame::OnHelpCrashhelp)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS, &CMainFrame::OnDevelopmentoptionsTogglertlfordialogs)
 	ON_COMMAND(ID_HELP_OUTLOOKSUPPORT, &CMainFrame::OnHelpOutlooksupport)
+	ON_COMMAND(ID_LANGUAGETOOLS_UPDATETRANSLATIONFILES, &CMainFrame::OnLanguagetoolsUpdatetranslationfiles)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -7212,4 +7213,120 @@ void CMainFrame::OnHelpOutlooksupport()
 	CString helpFileName = L"OutlookHelp.pdf";
 	HWND h = GetSafeHwnd();
 	CMainFrame::OpenHelpFile(helpFileName, h);
+}
+
+#include <regex>
+
+void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
+{
+	// TODO: Add your command handler code here
+#ifdef _DEBUG
+
+#if 0
+	struct from_to_patternW
+	{
+		wchar_t* from;
+		wchar_t* to;
+	};
+
+	from_to_patternW patternW[] =
+	{
+		{ L"Attachmensts" , L"Attachments" },
+		{ L"embeded" , L"embedded" },
+		{ L"occurences" , L"occurrences" },
+		{ L"attchement" , L"attachment" },
+		{ L"dinamically" , L"dynamically" },
+		{ L"jcorvel@gmail.com" , L"gmail.com" },
+		{ L"danielsh@apache.org" , L"apache.org" },
+		{ L"evalute" , L"evaluate" },
+		{ L"ptinting" , L"printing" },
+		{ L"widcard" , L"wildcard" },
+		{ L"arcoss" , L"across" },
+		{ L"shudown" , L"shutdown" },
+		{ L"hurs" , L"hours" },
+		{ L"Invalied" , L"Invalid" },
+		{ L"overwritting" , L"overwriting" },
+		{ L"fragmentaion" , L"fragmentation" },
+		{ L"easly" , L"easily" },
+		{ L"easly" , L"easily" }
+	};
+
+	//wchar_t* wcsstr(wchar_t* str, const wchar_t* strSearch); // C++ only
+
+	std::smatch m_match;
+	std::regex m_pattern;
+
+#endif
+
+	struct from_to_pattern
+	{
+		char16_t* from;
+		char16_t* to;
+	};
+
+	from_to_pattern pattern[] =
+	{
+		{ u"Attachmensts" , u"Attachments" },
+		{ u"embeded" , u"embedded" },
+		{ u"occurences" , u"occurrences" },
+		{ u"attchement" , u"attachment" },
+		{ u"dinamically" , u"dynamically" },
+		{ u"jcorvel@gmail.com" , u"gmail.com" },
+		{ u"danielsh@apache.org" , u"apache.org" },
+		{ u"evalute" , u"evaluate" },
+		{ u"ptinting" , u"printing" },
+		{ u"widcard" , u"wildcard" },
+		{ u"arcoss" , u"across" },
+		{ u"shudown" , u"shutdown" },
+		{ u"hurs" , u"hours" },
+		{ u"Invalied" , u"Invalid" },
+		{ u"overwritting" , u"overwriting" },
+		{ u"fragmentaion" , u"fragmentation" },
+		{ u"easly" , u"easily" },
+		{ u"easly" , u"easily" }
+	};
+
+	SimpleString txt;
+
+	CString cStrNamePath = LR"(C:\Users\tata\Downloads\Language\polish\polish.txt)";
+
+	BOOL retRead = FileUtils::ReadEntireFile(cStrNamePath, txt);
+	*(txt.Data(txt.Count())) = 0;
+	*(txt.Data(txt.Count()+1)) = 0;
+
+	const wchar_t* txt_wchar_t = reinterpret_cast<const wchar_t*>(txt.Data());
+
+		// Define a UTF-16 string
+	std::u16string input((char16_t*)txt.Data());
+	std::u16string to_find;
+	std::u16string to_replace;
+
+	int i;
+	for (i = 0; i < sizeof(pattern) / sizeof(from_to_pattern); i++)
+	{
+		to_find = pattern[i].from;
+		to_replace = pattern[i].to;
+
+
+		// Find the first occurrence
+		size_t pos = input.find(to_find);
+
+		// Replace all occurrences
+		while (pos != std::u16string::npos)
+		{
+			input.replace(pos, to_find.length(), to_replace);
+			pos = input.find(to_find, pos + to_replace.length());
+		}
+	}
+
+	// Output the modified string
+	const wchar_t* data = reinterpret_cast<const wchar_t*>(input.c_str());
+	int dataLength = (int)input.size();
+
+	CString cStrNamePath_copy = cStrNamePath + L".txt";
+	BOOL retWrite = FileUtils::Write2File(cStrNamePath_copy, data, dataLength);
+
+
+	int deb = 1;
+#endif
 }

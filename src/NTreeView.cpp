@@ -2069,7 +2069,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 				if (retConv)
 				{
 					int MaxShellExecuteErrorCode = 32;
-					HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+					//HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+					HINSTANCE result = (HINSTANCE)(32 + 1);
 
 					CString mboxviewPath = CMainFrame::m_processPath;
 					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOWNORMAL);
