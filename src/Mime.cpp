@@ -19,6 +19,8 @@
 //
 //  Original posting of the mime code is not known to us
 
+#pragma warning (disable : 4996) // warning C4996 : 'wcscpy' : This function or variable may be unsafe.Consider using wcscpy_s instead.
+								// To disable deprecation, use _CRT_SECURE_NO_WARNINGS.See online help for details.
 #include "stdafx.h"
 #include <stdlib.h>
 #include <time.h>
@@ -65,10 +67,10 @@ static const char* FindString(const char* pszStr1, const char* pszStr2, const ch
 // CMimeField class - Represents a field of a MIME body part header
 //////////////////////////////////////////////////////////////////////
 
-void CMimeField::GetValue(string& strValue) const
+void CMimeField::GetValue(std::string& strValue) const
 {
-	string::size_type nEnd = m_strValue.find(';');
-	if (nEnd != string::npos)
+	std::string::size_type nEnd = m_strValue.find(';');
+	if (nEnd != std::string::npos)
 	{
 		while (nEnd > 0 && CMimeChar::IsSpace((unsigned char)m_strValue[nEnd-1]))
 			nEnd--;
@@ -82,7 +84,7 @@ void CMimeField::GetValue(string& strValue) const
 void CMimeField::SetParameter(const char* pszAttr, const char* pszValue)
 {
 	int nSize = pszValue ? (int)::strlen(pszValue) : 0;
-	string strValue;
+	std::string strValue;
 	strValue.reserve(nSize+3);
 	if (!pszValue || *pszValue != '"')
 		strValue = "\"";
@@ -109,7 +111,7 @@ void CMimeField::SetParameter(const char* pszAttr, const char* pszValue)
 }
 
 // get the value of a parameter
-bool CMimeField::GetParameter(const char* pszAttr, string& strValue) const
+bool CMimeField::GetParameter(const char* pszAttr, std::string& strValue) const
 {
 	int nPos, nSize;
 	if (!FindParameter(pszAttr, nPos, nSize))
@@ -276,9 +278,9 @@ CMimeHeader::MediaType CMimeHeader::GetMediaType() const
 }
 
 // get the top-level media type
-string CMimeHeader::GetMainType() const
+std::string CMimeHeader::GetMainType() const
 {
-	string strType;
+	std::string strType;
 	const char* pszType = GetContentType();
 	if (pszType != NULL)
 	{
@@ -294,15 +296,15 @@ string CMimeHeader::GetMainType() const
 }
 
 // get the subtype
-string CMimeHeader::GetSubType() const
+std::string CMimeHeader::GetSubType() const
 {
-	string strSubType;
+	std::string strSubType;
 	const CMimeField *pfd = GetField(CMimeConst::ContentType());
 	if (pfd != NULL)
 	{
-		string strType;
+		std::string strType;
 		pfd->GetValue(strType);
-		string::size_type nSlash = strType.find('/');
+		std::string::size_type nSlash = strType.find('/');
 		if (nSlash > 0)
 			strSubType = strType.substr(nSlash+1);
 	}
@@ -335,7 +337,7 @@ void CMimeHeader::SetName(const char* pszName)
 	{
 		// get the appropriate media-type/subtype according to file extension
 		_ASSERTE(pszName != NULL);
-		string strType;
+		std::string strType;
 		const char* pszType = "application/octet-stream";
 		const char* pszFileExt = ::strrchr(pszName, '.');
 		if (pszFileExt != NULL)
@@ -406,7 +408,7 @@ void CMimeHeader::Clear()
 int CMimeHeader::GetLength() const
 {
 	int nLength = 0;
-	list<CMimeField>::const_iterator it;
+	std::list<CMimeField>::const_iterator it;
 	for (it = m_listFields.begin(); it != m_listFields.end(); it++)
 		nLength += (*it).GetLength();
 	return nLength + 2;				// a pair of CRLF indicate the end of header
@@ -417,7 +419,7 @@ int CMimeHeader::Store(char* pszData, int nMaxSize) const
 {
 	_ASSERTE(pszData != NULL);
 	int nOutput = 0;
-	list<CMimeField>::const_iterator it;
+	std::list<CMimeField>::const_iterator it;
 	for (it = m_listFields.begin(); it != m_listFields.end(); it++)
 	{
 		const CMimeField& fd = *it;
@@ -462,9 +464,9 @@ int CMimeHeader::Load(const char* pszData, int nDataSize)
 	return nInput;				// skip the ending CRLF
 }
 
-list<CMimeField>::const_iterator CMimeHeader::FindField(const char* pszFieldName) const
+std::list<CMimeField>::const_iterator CMimeHeader::FindField(const char* pszFieldName) const
 {
-	list<CMimeField>::const_iterator it;
+	std::list<CMimeField>::const_iterator it;
 	for (it = m_listFields.begin(); it != m_listFields.end(); it++)
 	{
 		const CMimeField& fd = *it;
@@ -474,9 +476,9 @@ list<CMimeField>::const_iterator CMimeHeader::FindField(const char* pszFieldName
 	return it;
 }
 
-list<CMimeField>::iterator CMimeHeader::FindField(const char* pszFieldName)
+std::list<CMimeField>::iterator CMimeHeader::FindField(const char* pszFieldName)
 {
-	list<CMimeField>::iterator it;
+	std::list<CMimeField>::iterator it;
 	for (it = m_listFields.begin(); it != m_listFields.end(); it++)
 	{
 		CMimeField& fd = *it;
@@ -518,7 +520,7 @@ int CMimeBody::GetText(char* pbText, int nMaxSize)
 	return nSize;
 }
 
-int CMimeBody::GetText(string& strText)
+int CMimeBody::GetText(std::string& strText)
 {
 	if (m_pbText != NULL)
 		strText.assign((const char*) m_pbText, m_nTextSize);
@@ -694,7 +696,7 @@ int CMimeBody::GetBodyPartList(CBodyList& rList) const
 	}
 	else
 	{
-		list<CMimeBody*>::const_iterator it;
+		std::list<CMimeBody*>::const_iterator it;
 		for (it=m_listBodies.begin(); it!=m_listBodies.end(); it++)
 		{
 			CMimeBody* pBP = *it;
@@ -778,7 +780,7 @@ int CMimeBody::GetAttachmentList(CBodyList& rList) const
 
 	if (MEDIA_MULTIPART != nMediaType)
 	{
-		string strName = GetName();
+		std::string strName = GetName();
 		if (strName.size() > 0)
 		{
 			rList.push_back((CMimeBody*)this);
@@ -787,7 +789,7 @@ int CMimeBody::GetAttachmentList(CBodyList& rList) const
 	}
 	else
 	{
-		list<CMimeBody*>::const_iterator it;
+		std::list<CMimeBody*>::const_iterator it;
 		for (it=m_listBodies.begin(); it!=m_listBodies.end(); it++)
 		{
 			CMimeBody* pBP = *it;
@@ -819,9 +821,9 @@ int CMimeBody::GetLength() const
 	if (m_listBodies.empty())
 		return nLength;
 
-	string strBoundary = GetBoundary();
+	std::string strBoundary = GetBoundary();
 	int nBoundSize = (int) strBoundary.size();
-	list<CMimeBody*>::const_iterator it;
+	std::list<CMimeBody*>::const_iterator it;
 	for (it=m_listBodies.begin(); it!=m_listBodies.end(); it++)
 	{
 		nLength += nBoundSize + 6;	// include 2 leading hyphens and 2 pair of CRLFs
@@ -860,7 +862,7 @@ int CMimeBody::Store(char* pszData, int nMaxSize) const
 		return (int)(pszData - pszDataBegin);
 
 	// store child body parts
-	string strBoundary = GetBoundary();
+	std::string strBoundary = GetBoundary();
 	if (strBoundary.empty())
 		return -1;					// boundary not be set
 
@@ -914,7 +916,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 	if (MEDIA_MULTIPART == nMediaType)
 	{
 		// find the begin boundary
-		string strBoundary = GetBoundary();
+		std::string strBoundary = GetBoundary();
 		if (!strBoundary.empty())
 		{
 			strBoundary = "\n--" + strBoundary;
@@ -956,7 +958,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 		return (int)(pszData - pszDataBegin);
 
 	// load child body parts
-	string strBoundary = GetBoundary();
+	std::string strBoundary = GetBoundary();
 	_ASSERTE(strBoundary.size() > 0);
 	strBoundary = "\n--" + strBoundary;
 
@@ -983,7 +985,7 @@ int CMimeBody::Load(const char*& pszDataBase, const char* pszData, int nDataSize
 		// find the media type of this body part:
 		CMimeHeader header;
 		header.Load(pszStart, nEntitySize);
-		string strMediaType = header.GetMainType();
+		std::string strMediaType = header.GetMainType();
 		CMimeBody* pBP = CreatePart(strMediaType.c_str());
 
 		int nInputSize = pBP->Load(pszDataBase, pszStart, nEntitySize);

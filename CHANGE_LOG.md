@@ -2,6 +2,21 @@
 Changes
 -------
 
+v 1.0.3.54
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added support for Outlook .msg mail files.;
+ - Re-enabled Refresh All Folder global button.;
+ - Updated language translation files.;
+ - Updated User Manual to describe new and updated features.;
+
+v 1.0.3.53
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added support for mail size column when printing to CSV.;
+ - Fixed mail date and time processing broken in v1.0.3.49. Existing Index Files will be refreshed automatically to resolve the issue.;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.52
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

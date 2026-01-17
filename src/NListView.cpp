@@ -2659,7 +2659,8 @@ void NListView::ResizeColumns()
 	int max_to_len = 400;
 	int min_subj_len = 200;
 	int dflt_subj_len = 400;
-	int size_len = 80;
+	int min_size_len = 80;
+	int size_len = min_size_len;
 
 	CPaintDC dc(&m_list);
 	HDC hDC = dc.GetSafeHdc();
@@ -2729,7 +2730,10 @@ void NListView::ResizeColumns()
 		}
 	}
 
-	size_len = w;
+	int total_col_len = col_zero_len + date_len + from_len + to_len + subj_len;
+	size_len = w - total_col_len;
+	if (size_len < min_size_len)
+		size_len = min_size_len;
 
 	m_list.SetColumnWidth(1, date_len);
 	m_list.SetColumnWidth(2, from_len);
@@ -3319,7 +3323,11 @@ void NListView::PostNcDestroy()
 	m_font.DeleteObject();
 	m_boldFont.DeleteObject();
 
-	FileUtils::RemoveDir(CMainFrame::GetMboxviewTempPath());
+	bool removeFolders = false;
+	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+		removeFolders = true;
+	bool recursive = false;
+	FileUtils::RemoveDir(CMainFrame::GetMboxviewTempPath(), recursive, removeFolders);
 	MboxMail::Destroy();
 	DestroyWindow();
 	delete this;
@@ -3411,7 +3419,9 @@ bool ALongRightProcessProcFastSearch(const CUPDUPDATA* pCUPDUPData)
 	return true;
 }
 
-#define CACHE_VERSION	19
+
+// Update CACHE_VERSION to 20 to resolve broken data and tikme processing
+#define CACHE_VERSION	20 // 19  --> 20 11/19/2025 getting ready for v1.0.3.53
 
 BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 {
@@ -3743,6 +3753,8 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 	// TODO: Verify file length of both mbox and mboxview files
 	if (fSize != FileUtils::FileSize(MboxMail::s_path))
 	{
+		errorText.Append(L"Invalid Index file size.");
+		ResHelper::TranslateString(errorText);
 		goto ERR;
 	}
 
@@ -3757,7 +3769,7 @@ int NListView::LoadMailsInfo(SerializerHelper &sz, MailArchiveFileInfo& maileFil
 
 	if (!sz.readInt64(&latestMailTime))
 	{
-		goto ERR;;
+		goto ERR;
 	}
 	maileFileInfo.m_latestMailTime = latestMailTime;
 
@@ -3813,6 +3825,7 @@ int NListView::LoadMails(LPCWSTR cache, MailArchiveFileInfo& maileFileInfo, Mail
 	if (ret < 0)
 	{
 		sz.close();
+		Sleep(700);
 
 		HWND h = GetSafeHwnd();
 		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -3903,6 +3916,7 @@ int NListView::LoadMails_WorkerThread(LPCWSTR cache, MailArchiveFileInfo& maileF
 	if (ret < 0)
 	{
 		sz.close();
+		Sleep(700);
 
 		HWND h = GetSafeHwnd();
 		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
@@ -4411,7 +4425,11 @@ void NListView::FillCtrl()
 					// worker thread was killed
 					// we may crash anyway but set the last element to 0 if the last element was not fully constructed
 					// we don't care if memory leaks
-					MboxMail::s_mails.SetAt(ni - 1, 0);
+					// ZMM Take time to understand (ni -1) < 0 after mbox file refresh
+					if (MboxMail::s_mails.GetSize() >= 1)
+					{
+						MboxMail::s_mails.SetAt(ni - 1, 0);
+					}
 				}
 
 				MboxMail::Destroy(&MboxMail::s_mails);
@@ -12437,10 +12455,20 @@ int NListView::SaveAsMboxArchiveFile_v2()
 		CString txt;
 		CString fmt = L"Open Created Archive File \n\n%s";
 		txt.Format(fmt, mboxFilePath);
+
 		OpenArchiveFileDlg dlg;
+
 		dlg.m_sourceFolder = archiveCachePath;
 		dlg.m_targetFolder = path;
 		dlg.m_archiveFileName = archiveFile;
+
+		CString section_general = CString(sz_Software_mboxview) + L"\\General";
+		CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+		inFolderPath += L"MergeFolder";
+		BOOL retCreate = FileUtils::CreateDir((LPCWSTR)inFolderPath);
+		dlg.m_targetFolder = inFolderPath;
+
+
 		INT_PTR nResponse = dlg.DoModal();
 		////////////
 		if (nResponse == IDOK)
@@ -12448,7 +12476,7 @@ int NListView::SaveAsMboxArchiveFile_v2()
 			CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 			if (pFrame)
 			{
-				CString archiveFilePath = dlg.m_targetFolder + dlg.m_archiveFileName;
+				CString archiveFilePath = dlg.m_targetFolder + L"\\" + dlg.m_archiveFileName;
 
 				DWORD nFlags = MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH|MOVEFILE_COPY_ALLOWED;
 				BOOL retMove = MoveFileEx(mboxFilePath, archiveFilePath, nFlags);
@@ -12884,7 +12912,7 @@ int NListView::DetermineImageFileName(CFile* fpm, BOOL verifyAttachmentDataAsIma
 int NListView::FindFilenameCount(CMimeBody::CBodyList &bodies,  CStringA &fileName)
 {
 	CMimeBody* pBP;
-	string strName;
+	std::string strName;
 	strName.resize(128);
 	int fileCnt = 0;
 	CMimeBody::CBodyList::const_iterator it;
@@ -12892,7 +12920,7 @@ int NListView::FindFilenameCount(CMimeBody::CBodyList &bodies,  CStringA &fileNa
 	{
 		pBP = *it;
 
-		string strName = pBP->GetFilename();
+		std::string strName = pBP->GetFilename();
 		if (strName.empty())
 			strName = pBP->GetName();
 
@@ -19445,6 +19473,9 @@ void NListView::AppendPictureAttachments(MboxMail *m, AttachmentMgr& attachmentD
 			//pics.Append("\r\n<img style=\"max-height:80%;\" src=\"");
 			pics.Append((LPCSTR)srcPrefix, srcPrefix.GetLength());
 			pics.Append((LPCSTR)attachementPathA, attachementPathA.GetLength());
+			pics.Append("\"");
+			pics.Append(" alt=\"");
+			pics.Append((LPCSTR)attachmenNameA, attachmenNameA.GetLength());
 			pics.Append("\">\r\n");
 
 #if 1

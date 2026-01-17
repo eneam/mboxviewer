@@ -43,6 +43,9 @@ CustomMsgBox::CustomMsgBox(CWnd* pParent /*=nullptr*/)
 {
 	m_textFontHeight = 12;
 	m_StatusBarHeight = 12;
+
+	m_nIDEvent = 1;
+	m_nElapse = 300;
 }
 
 CustomMsgBox::CustomMsgBox(LPCWSTR lpszText, LPCWSTR lpszCaption, UINT nType, int textFontHeight, CWnd* pParent)
@@ -54,6 +57,9 @@ CustomMsgBox::CustomMsgBox(LPCWSTR lpszText, LPCWSTR lpszCaption, UINT nType, in
 	m_nType = nType;
 
 	m_StatusBarHeight = 12;
+
+	m_nIDEvent = 1;
+	m_nElapse = 300;
 }
 
 CustomMsgBox::~CustomMsgBox()
@@ -377,6 +383,8 @@ BOOL CustomMsgBox::OnInitDialog()
 	// Post message to itself to process buttons position
 	LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SET_RTL_FOR_BUTTONS_MESSAGE, 0, 0);
 
+	//StartTimer();
+
 	//return TRUE;  // return TRUE unless you set the focus to a control
 	return FALSE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -431,6 +439,7 @@ HICON CustomMsgBox::LoadMsgBoxIcon(BOOL systemIcon, PCWSTR pszName, int lims, CS
 
 BEGIN_MESSAGE_MAP(CustomMsgBox, CDialogEx)
 	//ON_WM_CREATE()
+	//ON_WM_TIMER()
 	ON_WM_SIZE()
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_1, &CustomMsgBox::OnBnClickedMsgBoxButton1)
 	ON_BN_CLICKED(ID_MSG_BOX_BUTTON_2, &CustomMsgBox::OnBnClickedMsgBoxButton2)
@@ -463,6 +472,8 @@ void CustomMsgBox::OnSize(UINT nType, int cx, int cy)
 		UINT nFlags = SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOSIZE;
 		nFlags = SWP_NOZORDER | SWP_SHOWWINDOW;
 		BOOL retPos = m_wndStatusBar.SetWindowPos(0, 0, pos_cy, cx, m_StatusBarHeight, nFlags);
+
+		SetFocus();
 
 		int deb = 1;
 	}
@@ -849,9 +860,31 @@ BOOL CustomMsgBox::SetClipboardText(CString& buffer)
 
 LRESULT CustomMsgBox::OnCmdParam_OnSetRTLForButtons(WPARAM wParam, LPARAM lParam)
 {
+	SetFocus();
 	int deb = 1;
 	return 0;
 }
+
+void CustomMsgBox::StartTimer()
+{
+	UINT_PTR retpts = SetTimer(m_nIDEvent, m_nElapse, NULL);
+	int deb = 1;
+}
+
+
+void CustomMsgBox::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	SetFocus();
+	// Need just one shot timer
+	// Is killing timer from the timer callback ok ? Seem to work -:)
+	KillTimer(nIDEvent);
+
+	// But dont send msg after KillTimer
+	//CWnd::OnTimer(nIDEvent);
+}
+
 
 
 void TestCustomMsgBox()
@@ -926,3 +959,5 @@ void TestCustomMsgBox()
 		}
 	}
 }
+
+

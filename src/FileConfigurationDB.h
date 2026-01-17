@@ -35,11 +35,39 @@
 #include <algorithm>
 #include "dllist.h"
 #include "IHashTable.h"
+#include "SimpleString.h"
 
 
 class CFile;
 
 using namespace std;
+
+
+// ZMM See ResHelper SimpleMemoryFile and merge
+class SimpleMemoryLockFile
+{
+public:
+	SimpleMemoryLockFile();
+	~SimpleMemoryLockFile();
+	BOOL Open(CString& cStrNamePath, CString& errorText, DWORD dwDesiredAccess, DWORD dwCreationDisposition, BOOL setLock);
+	BOOL Close(CString& errorTex);
+	BOOL ReadEntireFile(CString& errorText);
+	BOOL ReadString(CStringA& str, CString& errorText);
+	BOOL ReadString(CString& str, CString& errorText);
+
+	HANDLE GetFileHandle() {
+		return m_hFile; 
+	}
+
+protected:
+	CString m_fileNamePath;
+	_int64 m_fsize;
+	BOOL m_setLock;
+	HANDLE m_hFile;
+	BOOL m_unicodeMode;
+	SimpleString m_buffer;
+	int  m_position;  // used in unnicode and non-unicode mode  
+};
 
 enum ConfigNodeType
 {
@@ -48,11 +76,9 @@ enum ConfigNodeType
 	BINARY_NODE = 3
 };
 
-
 class ConfigNode
 {
 public:
-	
 	ConfigNode();
 	~ConfigNode();
 
@@ -160,7 +186,10 @@ public:
 	int LoadConfigFromFile();
 	int LoadConfigFromRegistry();
 	int LoadConfigFromFile(CString& filepath);
-	void LoadLConfigFromFileUTF16LE(CString& configFileNamePath);
+	BOOL LoadLConfigFromFileUTF16LE(CString& configFileNamePath);
+	BOOL OpenFile(CString& cStrNamePath, SimpleString& txt, CString& errorText, BOOL setLock);
+	HANDLE CloseFile(HANDLE file, CString& errorText);
+	HANDLE ReadEntireFile(HANDLE file, SimpleString& txt, CString& errorText, BOOL setLock);
 
 	int LoadConfigFromUMBoxViewerRegistry();
 

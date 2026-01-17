@@ -16,7 +16,6 @@
 
 #include <string>
 #include <list>
-using namespace std;
 
 // RFC 1521 - Mechanisms for Specifying and Describing the Format of Internet Message Bodies
 // RFC 2045 - Format of Internet Message Bodies
@@ -73,9 +72,9 @@ public:
 	const char* GetName() const;
 	void SetValue(const char* pszValue);
 	const char* GetValue() const;
-	void GetValue(string& strValue) const;
+	void GetValue(std::string& strValue) const;
 	void SetParameter(const char* pszAttr, const char* pszValue);
-	bool GetParameter(const char* pszAttr, string& strValue) const;
+	bool GetParameter(const char* pszAttr, std::string& strValue) const;
 	void SetCharset(const char* pszCharset);
 	const char* GetCharset() const;
 
@@ -85,9 +84,9 @@ public:
 	int Load(const char* pszData, int nDataSize);
 
 private:
-	string m_strName;				// field name
-	string m_strValue;				// field value
-	string m_strCharset;			// charset for non-ascii text
+	std::string m_strName;				// field name
+	std::string m_strValue;				// field value
+	std::string m_strCharset;			// charset for non-ascii text
 
 private:
 	bool FindParameter(const char* pszAttr, int& nPos, int& nSize) const;
@@ -139,7 +138,7 @@ public:
 	void SetFieldValue(const char* pszFieldName, const char* pszFieldValue, const char* pszCharset=NULL);
 	const char* GetFieldValue(const char* pszFieldName) const;
 	bool SetParameter(const char* pszFieldName, const char* pszAttr, const char* pszValue);
-	string GetParameter(const char* pszFieldName, const char* pszAttr) const;
+	std::string GetParameter(const char* pszFieldName, const char* pszAttr) const;
 	void SetFieldCharset(const char* pszFieldName, const char* pszCharset);
 	const char* GetFieldCharset(const char* pszFieldName) const;
 
@@ -147,28 +146,28 @@ public:
 	const char* GetContentId() const;	
 	void SetContentType(const char* pszValue, const char* pszCharset=NULL);
 	const char* GetContentType() const;			// Content-Type: mediatype/subtype
-	string GetMainType() const;
-	string GetSubType() const;
+	std::string GetMainType() const;
+	std::string GetSubType() const;
 	void SetCharset(const char* pszCharset);	// Content-Type: text/...; charset=...
-	string GetCharset() const;
+	std::string GetCharset() const;
 	void SetName(const char* pszName);			// Content-Type: image/...; name=...
-	string GetName() const;
+	std::string GetName() const;
 	void SetBoundary(const char* pszBoundary=NULL);	// Content-Type: multipart/...; boundary=...
-	string GetBoundary() const;
+	std::string GetBoundary() const;
 
 	void SetTransferEncoding(const char* pszValue);
 	const char* GetTransferEncoding() const;	// Content-Transfer-Encoding: ...
 	void SetDisposition(const char* pszValue, const char* pszCharset=NULL);
 	const char* GetDisposition() const;			// Content-Disposition: ...
-	string GetFilename() const;					// Content-Disposition: ...; filename=...
+	std::string GetFilename() const;					// Content-Disposition: ...; filename=...
 	void SetDescription(const char* pszValue, const char* pszCharset=NULL);
 	const char* GetDescription() const;			// Content-Description: ...
 
 
-	string GetNameCharset() const;
-	string GetFilenameCharset() const;
+	std::string GetNameCharset() const;
+	std::string GetFilenameCharset() const;
 
-	typedef list<CMimeField> CFieldList;
+	typedef std::list<CMimeField> CFieldList;
 	CFieldList& Fields() { return m_listFields; }
 
 public:
@@ -181,9 +180,9 @@ public:
 
 
 protected:
-	list<CMimeField> m_listFields;	// list of all header fields
-	list<CMimeField>::const_iterator FindField(const char* pszFieldName) const;
-	list<CMimeField>::iterator FindField(const char* pszFieldName);
+	std::list<CMimeField> m_listFields;	// list of all header fields
+	std::list<CMimeField>::const_iterator FindField(const char* pszFieldName) const;
+	std::list<CMimeField>::iterator FindField(const char* pszFieldName);
 
 
 	struct MediaTypeCvt
@@ -204,7 +203,7 @@ private:
 // add a new field or update an existing field
 inline void CMimeHeader::SetField(const CMimeField& field)
 {
-	list<CMimeField>::iterator it = FindField(field.GetName());
+	std::list<CMimeField>::iterator it = FindField(field.GetName());
 	if (it != m_listFields.end())
 		*it = field;
 	else
@@ -214,7 +213,7 @@ inline void CMimeHeader::SetField(const CMimeField& field)
 // find a field by name
 inline const CMimeField* CMimeHeader::GetField(const char* pszFieldName) const
 {
-	list<CMimeField>::const_iterator it = FindField(pszFieldName);
+	std::list<CMimeField>::const_iterator it = FindField(pszFieldName);
 	if (it != m_listFields.end())
 		return &(*it);
 	return NULL;
@@ -222,7 +221,7 @@ inline const CMimeField* CMimeHeader::GetField(const char* pszFieldName) const
 
 inline CMimeField* CMimeHeader::GetField(const char* pszFieldName)
 {
-	list<CMimeField>::iterator it = FindField(pszFieldName);
+	std::list<CMimeField>::iterator it = FindField(pszFieldName);
 	if (it != m_listFields.end())
 		return &(*it);
 	return NULL;
@@ -276,9 +275,9 @@ inline bool CMimeHeader::SetParameter(const char* pszFieldName, const char* pszA
 	return false;
 }
 
-inline string CMimeHeader::GetParameter(const char* pszFieldName, const char* pszAttr) const
+inline std::string CMimeHeader::GetParameter(const char* pszFieldName, const char* pszAttr) const
 {
-	string strVal;
+	std::string strVal;
 	const CMimeField *pfd = GetField(pszFieldName);
 	if (pfd)
 		pfd->GetParameter(pszAttr, strVal);
@@ -296,20 +295,20 @@ inline const char* CMimeHeader::GetContentId() const
 	return GetFieldValue(CMimeConst::ContentID());
 }
 
-inline string CMimeHeader::GetCharset() const
+inline std::string CMimeHeader::GetCharset() const
 { return GetParameter(CMimeConst::ContentType(), CMimeConst::Charset()); }
 
-inline string CMimeHeader::GetName() const
+inline std::string CMimeHeader::GetName() const
 {
 	return GetParameter(CMimeConst::ContentType(), CMimeConst::Name());
 }
-inline string CMimeHeader::GetNameCharset() const
+inline std::string CMimeHeader::GetNameCharset() const
 {
 	const CMimeField *pfd = GetField(CMimeConst::ContentType());
 	return (pfd != 0) ? pfd->GetCharset() : "";
 }
 
-inline string CMimeHeader::GetBoundary() const
+inline std::string CMimeHeader::GetBoundary() const
 { return GetParameter(CMimeConst::ContentType(), CMimeConst::Boundary()); }
 
 inline void CMimeHeader::SetTransferEncoding(const char* pszValue)
@@ -328,10 +327,10 @@ inline void CMimeHeader::SetDisposition(const char* pszValue, const char* pszCha
 inline const char* CMimeHeader::GetDisposition() const
 { return GetFieldValue(CMimeConst::ContentDisposition()); }
 
-inline string CMimeHeader::GetFilename() const
+inline std::string CMimeHeader::GetFilename() const
 { return GetParameter(CMimeConst::ContentDisposition(), CMimeConst::Filename()); }
 
-inline string CMimeHeader::GetFilenameCharset() const
+inline std::string CMimeHeader::GetFilenameCharset() const
 {
 	const CMimeField *pfd = GetField(CMimeConst::ContentDisposition());
 	return (pfd != 0) ? pfd->GetCharset() : "";
@@ -367,7 +366,7 @@ public:
 	bool IsText() const;
 	int SetText(const char* pbText, int nLength=0);
 	int GetText(char* pbText, int nMaxSize);
-	int GetText(string& strText);
+	int GetText(std::string& strText);
 
 	// operations for 'message' media
 	bool IsMessage() const;
@@ -387,7 +386,7 @@ public:
 	CMimeBody* FindFirstPart();
 	CMimeBody* FindNextPart();
 
-	typedef list<CMimeBody*> CBodyList;
+	typedef std::list<CMimeBody*> CBodyList;
 	int GetBodyPartList(CBodyList& rList) const;
 	int GetAttachmentList(CBodyList& rList) const;
 

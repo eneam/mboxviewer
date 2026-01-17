@@ -80,7 +80,7 @@ public:
 	MBoxFolderNode() { m_parent = 0; m_valid = TRUE; }
 	CString m_folderName;
 	MBoxFolderNode *m_parent;
-	list<MBoxFolderNode> m_nodeList;
+	std::list<MBoxFolderNode> m_nodeList;
 	BOOL m_valid;
 };
 
@@ -91,7 +91,7 @@ public:
 	CString m_name;
 	MBoxFolderNode m_rootNode;
 	MBoxFolderNode *m_root;
-	list<MBoxFolderNode> m_rootList;
+	std::list<MBoxFolderNode> m_rootList;
 
 
 	BOOL IsEmpty() { return m_root == 0;}
@@ -172,7 +172,7 @@ public:
 
 // table of tables. Table of all folders info, i.e table of FileSizeMap info
 // Folder name is the key. The same as m_folderPath in ArchiveFileInfoMap
-typedef unordered_map<std::wstring, ArchiveFileInfoMap*> GlobalFileSizeMap;
+typedef std::unordered_map<std::wstring, ArchiveFileInfoMap*> GlobalFileSizeMap;
 
 class MySimpleDeque;
 
@@ -769,6 +769,7 @@ public:
 	HTREEITEM InsertTreeItem(LPCWSTR lpszItem, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 
 	int MergeMailArchiveFiles(HTREEITEM hFolder);
+	int MergeOutlookMsgMailFiles(HTREEITEM hFolder);
 
 	int RefreshSubFolder(HTREEITEM hItem);
 	int RefreshMboxFilesList(CString &folderPath, HTREEITEM hFolder);

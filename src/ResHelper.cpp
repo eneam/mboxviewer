@@ -36,7 +36,9 @@
 
 //
 
-CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.42\ResourceRoot\WORK\)";
+#ifndef OUTLOOK_MODE
+
+CString ResHelper::resourceRootPath = LR"(F:\Documents\GIT1.0.3.50\ResourceRoot\WORK\)";
 
 BOOL ResHelper::m_showTooltipsAlways = TRUE;
 
@@ -792,6 +794,7 @@ BOOL  ResHelper::DetermineString(CString &str, CString &newString)
 		newString = rinfo->m_controlName;
 		return TRUE;
 	}
+	newString.Empty();
 	return FALSE;
 }
 
@@ -2605,6 +2608,9 @@ BOOL ResHelper::OnTtnNeedText(CWnd* parentWnd, NMHDR* pNMHDR, CString& toolTipTe
 		{
 			BOOL retFind = DetermineString(tipText, toolTipText);
 
+			if (toolTipText.IsEmpty())
+				toolTipText = tipText;
+
 			if (toolTipText.GetLength())
 			{
 				CWnd* p = parentWnd;
@@ -2875,7 +2881,46 @@ int SimpleMemoryFile::ReadString(CStringA &str)
 
 int SimpleMemoryFile::ReadString(CString& str)
 {
-	return 0;
+	wchar_t* data = (wchar_t*)m_buffer.Data(m_position);
+	wchar_t* p = &data[m_position];
+	wchar_t* plast = p + (m_buffer.Count()/2) - m_position;
+
+	int len = -1;
+	wchar_t* pStrBegin = p;
+	wchar_t* pStrEnd = 0;
+	while (p < plast)
+	{
+		wchar_t c = *p;
+		if (c == L'\r')
+		{
+			pStrEnd = p;
+			wchar_t* pnext = p + 1;
+			if ((pnext < plast) && (*pnext == L'\n'))
+			{
+				pStrEnd = p++;
+			}
+			break;
+		}
+		else if (c == L'\n')
+		{
+			pStrEnd = p++;
+			break;
+		}
+		else
+			p++;
+	}
+	if (pStrEnd == 0)
+		pStrEnd = p;
+
+	m_position += (int)(p - pStrBegin);
+	wchar_t* pnext = &data[m_position];
+
+	int slen = (int)(pStrEnd - pStrBegin);
+
+	str.Empty();
+	str.Append(pStrBegin, slen);
+
+	return slen;
 }
 
 #include <stdint.h>
@@ -3477,5 +3522,13 @@ int ResHelper::MonitorInfo()
 #endif
 	return 1;
 }
+#endif
+
+#else
+
+BOOL ResHelper::TranslateString(CString& text) {
+	return TRUE;
+}
+
 #endif
 

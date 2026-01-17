@@ -1584,7 +1584,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 	CStringA cc, bcc;
 	CStringA msgId, thrdId, referenceIds;
 	time_t tdate = -1;
-	time_t tdate_fromField = 1;
+	time_t tdate_fromField = -1;  //  tdate from From header field. Used if explicit Date missing
 	bool	bTo = true, bFrom = true, bSubject = true, bDate = true, bRcvDate = true; // indicates not found, false means found
 	bool bMsgId = true, bThrdId = true, bReferenceIds = true;
 	bool bCC = true, bBCC = true;
@@ -1690,14 +1690,18 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 			//if ((*(DWORD*)p == 0x6d6f7246 && p[4] == ' ') && IsFromValidDelimiter(p, e)) // "From "  marks beginning of the next mail
 			if ((TextUtilsEx::strncmpExact(p, e, cFromMailBegin, cFromMailBeginLen) == 0) && IsFromValidDelimiter(p,e)) // "From "  marks beginning of the next mail
 			{
+				// Found new message
 				headerDone = FALSE;
+				// msgStart = NULL is set upon entry
 				if (msgStart == NULL)  // keep parsing header until next "From" or the end file
 				{
-					time_t tdate_fromField = 1;
+					time_t tdate_fromField = -1;  // ZMM we also have this global; is local correct??
 					date_fromField.Empty();
 					SYSTEMTIME tm;
 
-					if (ParseDateInFromField(p, e, &tm))
+					// process date in From field
+					// we may not find Date & Time later anywhere
+					if (ParseDateInFromField(p, e, &tm)) 
 					{
 						MyCTime::fixSystemtime(&tm);
 						if (DateParser::validateSystemtime(&tm))
@@ -1708,7 +1712,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 								date_fromField = tt.FormatLocalTmA(format);
 							if (date_fromField.IsEmpty())
 								int deb = 1;
-							tdate_fromField = tt.GetTime();
+							tdate_fromField = tt.GetTime();  // ZMM tdate_fromField is local and will be lost, is this intentional??
 						}
 					}
 
@@ -1725,7 +1729,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 							tdate = tdate_fromField;
 						}
 
-						time_t tdate_fromField = 1;
+						time_t tdate_fromField = -1;  // ZMM we also have this global; is local correct??
 						date_fromField.Empty();
 
 						SYSTEMTIME tm;
@@ -1744,8 +1748,19 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 							}
 						}
 
-						if (!from.IsEmpty() || !to.IsEmpty() ||  !subject.IsEmpty() ||  !date.IsEmpty())
+						int fldCnt = 0;
+						if (bFrom == false) fldCnt++;
+						if (bTo == false) fldCnt++;
+						if (bSubject == false) fldCnt++;
+						if (bDate == false) fldCnt++;
+
+						if ((!from.IsEmpty() || !to.IsEmpty() ||  !subject.IsEmpty() ||  !date.IsEmpty()) || (fldCnt > 2))
 						{
+							if (date.IsEmpty())
+							{
+								if (tdate >= 0)
+									int deb = 1;
+							}
 							tc_end = GetTickCount64();
 
 							if (subject.Find("Dostosuj Gmaila") >= 0)
@@ -1768,6 +1783,8 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 							m->m_subj.Replace("\r", "");
 							m->m_subj.Replace("\n", "");
 							m->m_timeDate = tdate;
+							if (m->m_timeDate == 1)
+								int deb = 1;
 							m->m_recv = recv;
 							m->m_headLength = 0;  // set in ParseContent()
 							m->m_messageId = msgId;
@@ -2198,10 +2215,9 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 							int deb = 1;
 						}
 					}
-
 				}
 			}
-			else
+			else  // else if (msgStart && !headerDone)
 			{
 				p = MimeParser::EatNewLine(p, e);
 			}
@@ -2211,10 +2227,16 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 	// should save state for cross boundary emails - resolved 2018
 	if (msgStart != NULL && msgStart != p)
 	{
+		int fldCnt = 0;
+		if (bFrom == false) fldCnt++;
+		if (bTo == false) fldCnt++;
+		if (bSubject == false) fldCnt++;
+		if (bDate == false) fldCnt++;
+
 		if (!bLastView) {
 			lastStartOffset = startOffset + (_int64)(msgStart - orig);
 		}
-		else if ((bTo == false) || (bFrom == false) || (bSubject == false))
+		else if ((bTo == false) || (bFrom == false) || (bSubject == false) || (fldCnt > 2))
 		{
 			mustAbort = FALSE;
 
@@ -2238,7 +2260,7 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 					//AfxThrowOleException(sc);
 				}
 #endif
-				if (!from.IsEmpty() || !to.IsEmpty() || !subject.IsEmpty() || !date.IsEmpty())
+				if (!from.IsEmpty() || !to.IsEmpty() || !subject.IsEmpty() || !date.IsEmpty() || (fldCnt > 2))
 				{
 					UINT toCharacterId = 0;  // not used anyway
 					MboxMail *m = new MboxMail();
@@ -2259,6 +2281,8 @@ bool MboxMail::Process(CString &filePath, ProgressTimer& progressTimer, register
 					m->m_subj.Replace("\n", "");
 					m->m_recv = recv;
 					m->m_timeDate = tdate;
+					if (m->m_timeDate == 1)
+						int deb = 1;
 					m->m_headLength = 0; // set in ParseContent()
 					m->m_messageId = msgId;
 					m->m_threadId = thrdId;
@@ -3955,6 +3979,13 @@ int MboxMail::exportHeaderFieldLabelsToCSVFile(CSVFILE_CONFIG &csvConfig, CFile 
 		separatorNeeded = true;
 	}
 
+	if (csvConfig.m_bSize) {
+		if (separatorNeeded)
+			colLabels += csvConfig.m_separator;
+		colLabels += "Size (KB)";
+		separatorNeeded = true;
+	}
+
 	if (csvConfig.m_bAttachmentNames) {
 		if (separatorNeeded)
 			colLabels += csvConfig.m_separator;
@@ -4355,7 +4386,7 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 	if (csvConfig.m_bBCC)
 	{
 		int tolen = m->m_bcc.GetLength();
-		if ((tolen*1.5) > MboxMail::m_largebuf->Capacity())
+		if ((tolen * 1.5) > MboxMail::m_largebuf->Capacity())
 		{
 			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
 		}
@@ -4421,6 +4452,41 @@ int MboxMail::printMailHeaderToCSVFile(/*out*/CFile &fp, int mailPosition, /*in 
 		}
 
 		char *data = outbuf.Data(begCount);
+		int dataLength = outbuf.Count() - begCount;
+		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
+		outbuf.SetCount(begCount + retLength);
+
+		outbuf.Append('"');
+
+		separatorNeeded = true;
+	}
+
+	if (csvConfig.m_bSize)
+	{
+		int tolen = 8;  // max length of mail size string in KB
+		if ((tolen * 1.5) > MboxMail::m_largebuf->Capacity())
+		{
+			MboxMail::m_largebuf->ClearAndResize(2 * tolen);
+		}
+
+		if (separatorNeeded)
+			outbuf.Append(sepchar);
+
+		outbuf.Append('"');
+
+		int begCount = outbuf.Count();
+
+		char sizebuff[32];
+		int length = m->m_length;
+		int kb = length / 1000;
+		if (length % 1000)
+			kb++;
+		sizebuff[0] = 0;
+		_itoa(kb, sizebuff, 10);
+
+		outbuf.Append(sizebuff);
+
+		char* data = outbuf.Data(begCount);
 		int dataLength = outbuf.Count() - begCount;
 		int retLength = EnforceFieldTextCharacterLimit(data, dataLength, csvConfig.m_MessageLimitCharsString);
 		outbuf.SetCount(begCount + retLength);

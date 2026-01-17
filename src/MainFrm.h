@@ -133,6 +133,7 @@ public:
 	BOOL m_bDate;
 	BOOL m_bCC;
 	BOOL m_bBCC;
+	BOOL m_bSize;
 	BOOL m_bContent;
 	BOOL m_bAttachmentNames;
 	CStringA m_AttachmentNamesSeparatorString;
@@ -496,6 +497,8 @@ public:
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	afx_msg void OnHelpCrashhelp();
 	afx_msg void OnDevelopmentoptionsTogglertlfordialogs();
+	afx_msg void OnHelpOutlooksupport();
+	afx_msg void OnLanguagetoolsUpdatetranslationfiles();
 };
 
 /////////////////////////////////////////////////////////////////////////////

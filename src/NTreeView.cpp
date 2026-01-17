@@ -54,6 +54,9 @@
 
 IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 
+int IsValidOutlookMsgFile(CString& fname);
+BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText);
+
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
 
@@ -175,8 +178,8 @@ BEGIN_MESSAGE_MAP(NTreeView, CWnd)
 	ON_WM_SIZE()
 	ON_WM_ERASEBKGND()
 	ON_WM_MOUSEWHEEL()
-	//ON_UPDATE_COMMAND_UI(ID_FILE_REFRESH, OnUpdateFileRefresh)
-	//ON_COMMAND(ID_FILE_REFRESH, OnFileRefresh)
+	ON_UPDATE_COMMAND_UI(ID_FILE_REFRESH, OnUpdateFileRefresh)
+	ON_COMMAND(ID_FILE_REFRESH, OnFileRefresh)
 	ON_UPDATE_COMMAND_UI(ID_TREE_EXPAND, OnUpdateTreeExpand)
 	ON_COMMAND(ID_TREE_EXPAND, OnTreeExpand)
 	//}}AFX_MSG_MAP
@@ -354,7 +357,8 @@ BOOL NTreeView::ImboxviewFileFilter(CString& fName)
 		fileNameExtension.CompareNoCase(L".mboxo") &&
 		fileNameExtension.CompareNoCase(L".mboxrd") &&
 		fileNameExtension.CompareNoCase(L".mboxcl") &&
-		fileNameExtension.CompareNoCase(L".mboxcl2")
+		fileNameExtension.CompareNoCase(L".mboxcl2") &&
+		fileNameExtension.CompareNoCase(L".msg")  // Outlook support
 		)
 	{
 		return FALSE;
@@ -379,6 +383,15 @@ int NTreeView::ImboxviewFile(CString& fName)
 	int retval = 0;
 	CString fileNameExtention;
 	FileUtils::GetFileExtension(fName, fileNameExtention);
+
+	if (fileNameExtention.CompareNoCase(L".msg") == 0)
+	{
+		//std::string msgFilepath((LPCWSTR)fName, fName.GetLength());
+		//CString emlFilePath;
+		//int retcode = ConvertOutlookMsgToEml(msgFilePath, emlFilePath);
+		int retcode = IsValidOutlookMsgFile(fName);
+		return retcode;
+	}
 
 	if (fileNameExtention.CompareNoCase(L".mboxview") == 0)
 		return 0;
@@ -541,6 +554,7 @@ int NTreeView::IsValidMailFile(char* data, int datalen)
 	}
 
 	int allFieldCnt = 0;
+	int hdrFldCnt = 0;
 	BOOL endOfHeaderFound = FALSE;
 
 	while (p < e)
@@ -583,6 +597,7 @@ int NTreeView::IsValidMailFile(char* data, int datalen)
 			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cMimeVersion, cMimeVersionLen) == 0)
 			{
 				bMimeVersion = TRUE;
+				hdrFldCnt++;
 			}
 			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cMessageID, cMessageIDLen) == 0)
 			{
@@ -591,14 +606,17 @@ int NTreeView::IsValidMailFile(char* data, int datalen)
 			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cTo, cToLen) == 0)
 			{
 				bTo = TRUE;
+				hdrFldCnt++;
 			}
 			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cSubject, cSubjectLen) == 0)
 			{
 				bSubject = TRUE;
+				hdrFldCnt++;
 			}
 			else if (TextUtilsEx::strncmpUpper2Lower(psave, e, cDate, cDateLen) == 0)
 			{
 				bDate = TRUE;
+				hdrFldCnt++;
 			}
 
 			maxLineLen = maxLineLenght;
@@ -615,6 +633,13 @@ int NTreeView::IsValidMailFile(char* data, int datalen)
 
 	if (CMainFrame::m_relaxedMboxFileValidation == FALSE)
 	{
+		if ((hdrFldCnt > 2))
+		{
+			if (bMboxFrom)
+				return 1;
+			else
+				return 2;
+		}
 		if (bFrom)
 		{
 			if ((bMimeVersion && (bMboxFrom || bMessageID)) ||
@@ -630,7 +655,7 @@ int NTreeView::IsValidMailFile(char* data, int datalen)
 	}
 	else
 	{
-		if (bFrom || bTo || bSubject || bDate)
+		if ((bFrom || bTo || bSubject || bDate) && (hdrFldCnt >= 2))
 			return 1;
 	}
 	if (endOfHeaderFound == FALSE)
@@ -1207,7 +1232,7 @@ BOOL NTreeView::ImportLegacyMboxviewRegistryData()
 	arr[11] = { REG_DWORD, L"printFileNameMaxLength", L"fileNameMaxLength" };
 
 	retCode = CProfile::CopyKeyValueList(hKey, fromSection, toSection, arr);
-	
+
 	//##############
 	toSection = CString(sz_Software_mboxview) + L"\\PrintConfig\\FileNameCustomTemplate";
 
@@ -1489,9 +1514,15 @@ HTREEITEM NTreeView::InsertAllDiscoveredMailFilesToTreeCtrl(HTREEITEM hParent, C
 		while (pos)
 		{
 			fileSizes.GetNextAssoc(pos, fn, info);
+			CString extension;
+			FileUtils::GetFileExtension(fn, extension);
 			if (info.bShow)
 			{
-				HTREEITEM hItem = InsertTreeItem(fn, 8, 9, hRoot);
+				HTREEITEM hItem = 0;
+				if (extension.CompareNoCase(L".msg") != 0)
+					hItem = InsertTreeItem(fn, 8, 9, hRoot);
+				else
+					hItem = InsertTreeItem(fn, 10, 11, hRoot);
 				if (hItem)
 				{
 					//m_tree.SetItemState(hItem, TVIS_BOLD, TVIS_BOLD);
@@ -1831,9 +1862,9 @@ HTREEITEM NTreeView::FillCtrl(HTREEITEM hParent, BOOL selectFolder, BOOL uncondi
 		UINT nCode = TVGN_CARET;
 		//BOOL retval = m_tree.Select(hRoot, nCode);
 		BOOL retval = SelectTreeItem(hRoot);
-}
-	return hRoot;
 	}
+	return hRoot;
+}
 
 HTREEITEM NTreeView::FillCtrl_Internal(HTREEITEM hParent, BOOL unconditionalFolderInsert, BOOL expand)
 {
@@ -1990,6 +2021,83 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 		pMsgView->DisableMailHeader();
 
 	pListView->CloseMailFile();
+
+	// Check if Outlook .msg 
+	if (!newItemName.IsEmpty())
+	{
+		CString errorText;
+
+		DWORD nId = (DWORD)m_tree.GetItemData(hNewItem);
+		LabelInfo* linfo = m_labelInfoStore.Find(nId);
+		if (linfo && (linfo->m_nodeType == LabelInfo::MailFile))
+		{
+			CString fileNamePath = linfo->m_filePath;
+			CString fileName;
+			CString folderPath;
+			FileUtils::GetFolderPathAndFileName(fileNamePath, folderPath, fileName);
+			_ASSERTE(newItemName.Compare(fileName) == 0);
+
+			CString msgFileBaseName;
+			CString msgFileNameExtention;
+			FileUtils::GetFileBaseNameAndExtension(newItemName, msgFileBaseName, msgFileNameExtention);
+			if (msgFileNameExtention.CompareNoCase(L".msg") == 0)
+			{
+				if (hOldItem > 0)
+				{
+					CString text = m_tree.GetItemText(hOldItem);
+					m_tree.SetItemState(hOldItem, 0, TVIS_BOLD);
+				}
+				m_tree.SetItemState(hNewItem, TVIS_BOLD, TVIS_BOLD);
+
+				MboxMail::SetLastPath(folderPath);
+
+				CString datapath = MboxMail::GetLastDataPath();
+				CString msg2emlCachePath = datapath + "Msg2EmlCache";
+				BOOL retCreate = FileUtils::CreateDir(msg2emlCachePath);
+
+				CString path = MboxMail::GetLastPath();
+
+				CString msgFileNamePath = path;
+				msgFileNamePath.Append(newItemName);
+
+				CString emlFileNamePath = msg2emlCachePath;
+				emlFileNamePath.Append(L"\\");
+				emlFileNamePath.Append(msgFileBaseName);
+				emlFileNamePath.Append(L".eml");
+
+				BOOL retConv = ConvertOutlookMsg2Eml(msgFileNamePath, emlFileNamePath, errorText);
+				if (retConv)
+				{
+					int MaxShellExecuteErrorCode = 32;
+					//HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+					HINSTANCE result = (HINSTANCE)(32 + 1);
+
+					CString mboxviewPath = CMainFrame::m_processPath;
+					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOWNORMAL);
+					if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
+					{
+						CString errorText;
+						CString errText;
+						ShellExecuteError2Text((UINT_PTR)result, errText);
+						CString fmt = L"\"%s\"\n\nFailed to open the eml file: ";
+						ResHelper::TranslateString(fmt);
+						errorText.Format(fmt, errText);
+
+						HWND h = GetSafeHwnd();
+						int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+						if (answer == IDOK)
+							int deb = 1;  // ZMM Try again ??
+					}
+					return;
+				}
+				else
+				{
+					_ASSERTE(!errorText.IsEmpty());   // ZMM Review ConvertOutlookMsg2Eml
+				}
+				return;
+			}
+		}
+	}
 
 	// 	TODO: find better place for below
 	pListView->m_path = L"";
@@ -2824,7 +2932,13 @@ void NTreeView::InsertMailFile(CString& mailFile)
 				BOOL ret = FileUtils::DelFile(mboxIndexFilepath);
 
 
-				HTREEITEM hItem = InsertTreeItem(mailFileName, 8, 9, hFolder);
+				CString extension;
+				FileUtils::GetFileExtension(mailFileName, extension);
+				HTREEITEM hItem = 0;
+				if (extension.CollateNoCase(L".msg") != 0)
+					hItem = InsertTreeItem(mailFileName, 8, 9, hFolder);
+				else
+					hItem = InsertTreeItem(mailFileName, 10, 11, hFolder);
 				if (hItem)
 				{
 					DeleteLabelsForSingleMailFile(hItem);
@@ -2965,7 +3079,7 @@ void NTreeView::SaveData(HTREEITEM hItem)
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h); 
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, viewFile, ExError, lastErr, h);
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -3144,6 +3258,116 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 	}
 
+	if ((hParent != 0) && IsValidOutlookMsgFile(itemTxt))
+	{
+		LabelInfo* linfo = 0;
+		CString msgFilePath;
+		if (hItem)
+		{
+			DWORD nId = (DWORD)m_tree.GetItemData(hItem);
+			linfo = m_labelInfoStore.Find(nId);
+			if (linfo)
+				msgFilePath = linfo->m_filePath;
+		}
+		if (msgFilePath.IsEmpty())
+			return;
+
+		CString msgFolderPath;
+		CString msgFileName;
+		FileUtils::GetFolderPathAndFileName(msgFilePath, msgFolderPath, msgFileName);
+
+		MyPopupMenu menu;
+		menu.CreatePopupMenu();
+		//menu.AppendMenu(MF_SEPARATOR);
+
+		const UINT M_FileLocation_Id = 1;
+		MyAppendMenu(&menu, M_FileLocation_Id, L"Open File Location");
+
+		const UINT M_Properties_Id = 2;
+		MyAppendMenu(&menu, M_Properties_Id, L"Properties");
+
+		int index = 1;
+		ResHelper::LoadMenuItemsInfo(&menu, index);
+		ResHelper::UpdateMenuItemsInfo(&menu, index);
+		menu.SetMenuAsCustom();
+
+		CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+		UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, this);
+
+		UINT nFlags = TPM_RETURNCMD;
+		CString menuString;
+		int chrCnt = menu.GetMenuString(command, menuString, nFlags);
+
+		switch (command)
+		{
+		case M_FileLocation_Id:
+		{
+			UINT nFlags = MF_BYCOMMAND;
+			CString Label;
+			int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
+
+			if (FileUtils::BrowseToFile(msgFilePath) == FALSE) {  // TODO: s_path error checking ??
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, L"open", msgFolderPath, NULL, NULL, SW_SHOWNORMAL);
+				CMainFrame::CheckShellExecuteResult(result, h);
+			}
+		}
+		break;
+		case M_Properties_Id:  // ZMM Implement as functions
+		{
+			wchar_t sizeStr_inKB[256];
+			wchar_t sizeStr_inBytes[256];
+			int sizeStrSize = 256;
+			CString txt;
+			CString tmp;
+
+			_int64 fileSize = FileUtils::FileSize(msgFilePath); // TODO: error checking ??
+			LPCWSTR fileSizeStr_inKB = StrFormatKBSize(fileSize, &sizeStr_inKB[0], sizeStrSize);
+			if (!fileSizeStr_inKB)
+				sizeStr_inKB[0] = 0;
+
+			LPCWSTR fileSizeStr_inBytes = StrFormatByteSize64(fileSize, &sizeStr_inBytes[0], sizeStrSize);
+			if (!fileSizeStr_inBytes)
+				sizeStr_inBytes[0] = 0;
+
+			int mailCount = MboxMail::s_mails_ref.GetCount();
+
+			txt.Empty();
+			txt.Format(L"Folder: %s\n", msgFolderPath);
+
+			tmp.Format(L"File: %s\n", msgFileName);
+			txt.Append(tmp);
+
+			CString cstr;
+			INT64 numb = fileSize;
+			TextUtilsEx::Int2WstrWithCommas(numb, cstr);
+
+			tmp.Format(L"File size:  %s  (%s) (%s)\n", cstr, sizeStr_inKB, sizeStr_inBytes);
+			txt += tmp;
+
+			txt.Append(L"Mail Count: \n");
+#if 0
+			// ZMM Figure out later the mail count for msg file
+			tmp.Empty();
+			tmp.Format(L"Mail Count: %d\n", mailCount);
+			txt += tmp;
+#endif
+
+			HWND h = GetSafeHwnd();
+			int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+			int deb = 1;
+		}
+		break;
+		default: {
+			int deb = 1;
+		}
+			   break;
+		}
+
+		return;
+	}
+
 	if (hItem)
 	{
 		DWORD nId = (DWORD)m_tree.GetItemData(hItem);
@@ -3268,6 +3492,9 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		MyAppendMenu(&menu, M_OpenHiddenFiles_Id, L"Restore Removed Files");
 		const UINT M_MergeMailArchiveFiles_Id = 6;
 		MyAppendMenu(&menu, M_MergeMailArchiveFiles_Id, L"Merge Mail Archive Files");
+		// Outlook msg
+		const UINT M_MergeOutlookMsgMailFiles_Id = 7;
+		MyAppendMenu(&menu, M_MergeOutlookMsgMailFiles_Id, L"Merge Outlook Msg Mail Files");
 
 		int index = 1;
 		ResHelper::LoadMenuItemsInfo(&menu, index);
@@ -3350,6 +3577,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			if (hItem)
 			{
 				int ret = MergeMailArchiveFiles(hItem);
+			}
+		}
+		break;
+
+		case M_MergeOutlookMsgMailFiles_Id:
+		{
+			if (hItem)
+			{
+				int ret = MergeOutlookMsgMailFiles(hItem);
 			}
 		}
 		break;
@@ -4547,7 +4783,7 @@ HTREEITEM NTreeView::DetermineRootMboxFile(HTREEITEM hItem)
 #else
 
 	DWORD nId = (DWORD)m_tree.GetItemData(hItem);
-	LabelInfo *linfo = m_labelInfoStore.Find(nId);
+	LabelInfo* linfo = m_labelInfoStore.Find(nId);
 	if ((linfo->m_nodeType == LabelInfo::MailFolder) || (linfo->m_nodeType == LabelInfo::MailSubFolder))
 		return hItem;
 
@@ -4845,14 +5081,14 @@ BOOL CRegArray::LoadFromConfigFile(CSArray& ar)  // FIXMEFIXME
 
 	ConfigTree* config = CProfile::GetConfigTree();
 
-	ConfigNode * node = config->ConfigTree::FindNode(configSection);
+	ConfigNode* node = config->ConfigTree::FindNode(configSection);
 	if ((node == 0) || !node->m_isSectionNode)
 	{
 		return 0;
 	}
 
 	int ii = 0;
-	ConfigNode * childNode;
+	ConfigNode* childNode;
 	INT_PTR indx;
 	for (childNode = node->m_configList.first(); childNode != 0; childNode = node->m_configList.next(childNode))
 	{
@@ -5063,11 +5299,16 @@ int NTreeView::OpenHiddenFiles(HTREEITEM hItem, FileSizeMap& fileSizes, BOOL isS
 			fileSizes[s].bShow = 1;
 
 			//HTREEITEM hItemRet = m_tree.InsertItem(s, 8, 9, hItem);
-			HTREEITEM hItemRet = InsertTreeItem(s, 8, 9, hItem);
+			CString extension;
+			FileUtils::GetFileExtension(s, extension);
+			HTREEITEM hItemRet = 0;
+			if (extension.CompareNoCase(L".msg") != 0)
+				hItemRet = InsertTreeItem(s, 8, 9, hItem);
+			else
+				hItemRet = InsertTreeItem(s, 10, 11, hItem);  // Outloog msg icon
 
 			int nId = m_labelInfoStore.GetNextId();
 			m_tree.SetItemData(hItemRet, nId);
-
 
 			LabelInfo* linfo = new LabelInfo(nId, filePath);  // MailFile
 			m_labelInfoStore.Add(linfo, nId);
@@ -6163,7 +6404,9 @@ int NTreeView::LoadLabels()
 		hChild = m_tree.GetNextSiblingItem(hChild);
 	}
 
-	sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+	sText.Format(L"Ready");
+	ResHelper::TranslateString(sText);
+	if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	return 1;
 }
 
@@ -6277,7 +6520,9 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 		BOOL retval = MboxMail::GetCachePath(rootPrintSubFolder, targetPrintSubFolder, labelsCachePath, errorText, &linfo->m_filePath);
 		if (retval == FALSE) {
 			MboxMail::assert_unexpected();
-			sText.Format(L"Ready"); if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
+			sText.Format(L"Ready");
+			ResHelper::TranslateString(sText);
+			if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 			return -1;  // goto instead ?
 		}
 
@@ -6286,7 +6531,7 @@ int NTreeView::LoadLabels(HTREEITEM hItem)
 			int ret = ShowGmailLabels(hChild, labelsCachePath, linfo->m_filePath);
 			if (ret < 0) {
 				MboxMail::assert_unexpected();
-				sText.Format(L"Ready"); 
+				sText.Format(L"Ready");
 				ResHelper::TranslateString(sText);
 				if (pFrame) pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 				return -1;  // goto instead ?
@@ -6839,7 +7084,7 @@ BOOL NTreeView::SetFolderAsRoorFolder(CString& folderPath)
 #if 1
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not create file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, rootFolderFile, ExError, lastErr, h); 
+		CString errorText = FileUtils::ProcessCFileFailure(fmt, rootFolderFile, ExError, lastErr, h);
 #else
 		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError);
 
@@ -7480,8 +7725,8 @@ BOOL NTreeView::AssertTreeCtrl_Internal(HTREEITEM hItem)
 				MboxMail::assert_unexpected();
 				return FALSE;
 			}
-			}
 		}
+	}
 
 	if (m_tree.ItemHasChildren(hItem))
 	{
@@ -7493,7 +7738,7 @@ BOOL NTreeView::AssertTreeCtrl_Internal(HTREEITEM hItem)
 		}
 	}
 	return TRUE;
-	}
+}
 
 BOOL NTreeView::AssertNTreeView()
 {
@@ -7798,6 +8043,288 @@ HTREEITEM NTreeView::InsertTreeItem(LPCWSTR lpszItem, HTREEITEM hParent, HTREEIT
 }
 
 // Called upon  a right-click Folder option
+// ZMM Rewrite both MergeOutlookMsgMailFiles and MergeMailArchiveFiles functions
+// Create separate functions :
+// Determine list of .msg files
+// Use list of .msg files to convert to eml file and return list of paths to eml files
+// Merge eml files
+// Decide where to place merged file
+// etc, etc
+//
+int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
+{
+	int retcode = 1;
+
+	HWND hwnd = GetSafeHwnd();
+	//MboxMail::ShowHint(HintConfig::MergeFilesHint, hwnd);
+
+	CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+
+	DWORD nId = (DWORD)m_tree.GetItemData(hFolder);
+	LabelInfo* linfo = m_labelInfoStore.Find(nId);
+	CString fPath;
+	if (linfo)
+	{
+		_ASSERTE(linfo->m_nodeType == LabelInfo::MailFolder);
+		fPath = linfo->m_mailFolderPath;
+	}
+
+	CString path = MboxMail::GetLastPath();
+	path.TrimRight(L"\\");
+
+	_ASSERTE(path.Compare(fPath) == 0);
+
+	CString datapath = MboxMail::GetLastDataPath();
+	CString msg2emlCachePath = datapath + "Msg2EmlCache";
+	BOOL retCreate = FileUtils::CreateDir(msg2emlCachePath);
+
+	int paneId = 0;
+	if (pFrame)
+	{
+		CString sText = L"Converting Outlook Msg files to Eml files ...";
+		ResHelper::TranslateString(sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+	}
+
+
+	CArray<CString> failedConversionFileList;
+	CArray<MergeFileInfo> fileList;
+	WIN32_FIND_DATA data;
+	__int64 size = 0;
+	CString folderPath = path;
+	folderPath.TrimRight(L"\\");
+	CString filePath = folderPath + L"\\*.msg";
+
+	HANDLE h = FindFirstFile(filePath, &data);
+	if (h == INVALID_HANDLE_VALUE)
+	{
+		CString errorText = L"No Outlook Msg files found";
+		ResHelper::TranslateString(errorText);
+
+		HWND h = GetSafeHwnd();
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return 1;
+	}
+
+	do
+	{
+		if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			continue;
+
+		CString errorText;
+		CString msgFileName = data.cFileName;
+
+		CString msgFileNamePath = folderPath + L"\\" + data.cFileName;
+
+		CString msgFileBaseName;
+		CString msgFileNameExtention;
+		FileUtils::GetFileBaseNameAndExtension(msgFileName, msgFileBaseName, msgFileNameExtention);
+		if (msgFileNameExtention.CompareNoCase(L".msg") == 0)
+		{
+
+			CString emlFileNamePath = msg2emlCachePath;
+			emlFileNamePath.Append(L"\\");
+			emlFileNamePath.Append(msgFileBaseName);
+			emlFileNamePath.Append(L".eml");
+
+			if (pFrame)
+			{
+				CString fmt = L"Converting Outlook Msg file \"%s\" ...";
+				ResHelper::TranslateString(fmt);
+				CString sText;
+				sText.Format(fmt, msgFileName);
+				pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+			}
+
+			BOOL retConv = ConvertOutlookMsg2Eml(msgFileNamePath, emlFileNamePath, errorText);
+			BOOL retFileExists = FileUtils::PathFileExist(emlFileNamePath);
+			if (retConv && retFileExists)
+			{
+				int mboxFileType = 1;
+				MergeFileInfo mergeFileInfo(emlFileNamePath, mboxFileType);
+				fileList.Add(mergeFileInfo);
+			}
+			else
+			{
+				failedConversionFileList.Add(msgFileName);
+				_ASSERTE(failedConversionFileList.GetCount());
+			}
+		}
+		int deb = 1;
+	} while (FindNextFile(h, &data) != 0);
+
+	FindClose(h);
+
+	if (pFrame)
+	{
+		CString sText = L"Converting Outlook Msg files to Eml files done !!!";
+		ResHelper::TranslateString(sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+	}
+
+	// All archive files are valid; merge
+	CString title = L"Enter Name for New Archive File";
+	ResHelper::TranslateString(title);
+	CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
+	CString dfltExtension = L".mbox";
+
+	CString outFolderPath;
+	CString fileName;
+
+	CString inFolderPath = msg2emlCachePath;
+	BOOL ret = pFrame->SaveFileDialog(fileName, fileNameFilter, dfltExtension, msg2emlCachePath, outFolderPath, title);
+	if (ret == TRUE)
+	{
+		CString filePath = outFolderPath + L"\\" + fileName;
+		CString fileExtension = ::PathFindExtension(fileName);
+		CString fileName2 = ::PathFindFileName(filePath);
+
+		CString dataFolder = outFolderPath;
+		CString viewFile = dataFolder + L"\\" + fileName + L".mboxview";
+		if (FileUtils::PathFileExist(viewFile))
+		{
+			if (FileUtils::DelFile(viewFile, FALSE))
+			{
+				int deb = 1;
+			}
+			int deb = 1;
+		}
+
+		if (pFrame)
+		{
+			CString sText = L"Merging Outlook Msg files converted to Eml files ...";
+			ResHelper::TranslateString(sText);
+			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+		}
+
+		int retMerge = pFrame->MergeMboxArchiveFiles(fileList, filePath);
+
+		if (pFrame)
+		{
+			CString sText = L"Merging Outlook Msg files converted to Eml files done !!!";
+			ResHelper::TranslateString(sText);
+			pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+		}
+
+		if (retMerge < 0)
+		{
+			goto fail;
+		}
+
+		//CString txt = L"Created Mbox Mail Archive file \n\n" + filePath;
+		CString txt = L"Created Mbox Mail Archive file";
+		ResHelper::TranslateString(txt);
+
+		BOOL supressOpenFileOption = FALSE;
+		//if (filePath.Compare(datapath) == 0)  // ZMM TODO: 
+			//supressOpenFileOption = TRUE;
+		OpenContainingFolderDlg dlg(txt, filePath, supressOpenFileOption);
+		INT_PTR nResponse = dlg.DoModal();
+		////////////
+		if (nResponse == IDOK)
+		{
+			if (FileUtils::BrowseToFile(filePath) == FALSE) {
+				HWND h = GetSafeHwnd();
+				HINSTANCE result = ShellExecute(h, L"open", outFolderPath, NULL, NULL, SW_SHOWNORMAL);
+				CMainFrame::CheckShellExecuteResult(result, h);
+			}
+			goto done;
+		}
+		else if (nResponse == IDYES)
+		{
+			CString txt = L"Open Created Archive File \n\n" + filePath;
+			OpenArchiveFileDlg dlg;
+			dlg.m_sourceFolder = outFolderPath;
+
+			CString section_general = CString(sz_Software_mboxview) + L"\\General";
+			CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+			inFolderPath += L"MergeFolder";
+			BOOL retCreate = FileUtils::CreateDir((LPCWSTR)inFolderPath);
+			dlg.m_targetFolder = inFolderPath;
+
+			//CString driveName;
+			//CString directory;
+			CString fileBaseName;
+			CString fileNameExtention;
+
+			FileUtils::GetFileBaseNameAndExtension(fileName, fileBaseName, fileNameExtention);
+
+			dlg.m_archiveFileName = fileBaseName + L"_MERGE.mbox";
+
+			INT_PTR nResponse = dlg.DoModal();
+			////////////
+			if (nResponse == IDOK)
+			{
+				CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
+				if (pFrame)
+				{
+					CString archiveFilePath = dlg.m_targetFolder + L"\\" + dlg.m_archiveFileName;
+
+					DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
+					BOOL retMove = MoveFileEx(filePath, archiveFilePath, nFlags);
+					if (retMove == FALSE)
+					{
+						CString errorText = FileUtils::GetLastErrorAsString();
+						TRACE(L"MergeOutlookMsgMailFiles: MoveFileEx failed \"%s\"\n", errorText);
+#if 0
+						CString txt = L"Failed to move file \"" + strFilePath;
+						txt += L"\" file.\n\n";
+						txt.Append(errorText);
+#endif
+
+						CString fmt = L"Failed to move file \"%s\" file.\n\n%s";
+						ResHelper::TranslateString(fmt);
+						CString txt;
+						txt.Format(fmt, filePath, errorText);
+
+						HWND h = NULL; // we don't have any window yet
+						int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+
+						goto fail;
+					}
+
+					NTreeView* pTreeView = pFrame->GetTreeView();
+					if (pTreeView)
+					{
+						// delete index file to make sure it is not used in case old and new length of new mbox file are the same
+						// InsertMailFile will delete index file
+						//CString indexFile = archiveFilePath + ".mboxview";
+						//DeleteFile(indexFile);
+
+						pTreeView->InsertMailFile(archiveFilePath);
+					}
+				}
+				goto done;
+			}
+			else if (nResponse == IDCANCEL)
+			{
+				int deb = 1;
+			}
+			int deb = 1;
+		}
+		else if (nResponse == IDCANCEL)
+		{
+			int deb = 1;
+		}
+	}
+	else
+	{
+		int deb = 1;
+	}
+
+done:
+	if (pFrame)
+	{
+		CString sText = L"Ready";
+		ResHelper::TranslateString(sText);
+		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
+	}
+	return retcode;
+fail:
+	retcode = -1;
+	goto done;
+}
+
 int NTreeView::MergeMailArchiveFiles(HTREEITEM hFolder)
 {
 	HWND h = GetSafeHwnd();
@@ -7895,6 +8422,7 @@ restart:
 
 			// All archive files are valid; merge
 			CString title = L"Enter Name for New Archive File";
+			ResHelper::TranslateString(title);
 			CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 			CString dfltExtension = L".mbox";
 
@@ -7950,6 +8478,11 @@ restart:
 					CString txt = L"Open Created Archive File \n\n" + filePath;
 					OpenArchiveFileDlg dlg;
 					dlg.m_sourceFolder = outFolderPath;
+
+					CString section_general = CString(sz_Software_mboxview) + L"\\General";
+					CString inFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
+					inFolderPath += L"MergeFolder";
+					BOOL retCreate = FileUtils::CreateDir((LPCWSTR)inFolderPath);
 					dlg.m_targetFolder = inFolderPath;
 
 					CString driveName;
@@ -7967,7 +8500,7 @@ restart:
 						CMainFrame* pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
 						if (pFrame)
 						{
-							CString archiveFilePath = dlg.m_targetFolder + dlg.m_archiveFileName;
+							CString archiveFilePath = dlg.m_targetFolder + L"\\" + dlg.m_archiveFileName;
 
 							DWORD nFlags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH | MOVEFILE_COPY_ALLOWED;
 							BOOL retMove = MoveFileEx(filePath, archiveFilePath, nFlags);
@@ -8019,10 +8552,10 @@ restart:
 			{
 				int deb = 1;
 			}
-			}
 		}
-	return -1;
 	}
+	return -1;
+}
 
 void NTreeView::TreeCtrlTest()
 {
@@ -8291,7 +8824,7 @@ int NTreeView::PruneFolder(HTREEITEM hItem)
 			{
 				MboxMail::assert_unexpected();
 				goto NEXT;
-}
+			}
 			if (linfo->m_nodeType != LabelInfo::MailFile)
 			{
 				goto NEXT;
@@ -8309,8 +8842,8 @@ int NTreeView::PruneFolder(HTREEITEM hItem)
 			BOOL retval = NTreeView::DeleteItem(hChild);
 
 		NEXT:		hChild = m_tree.GetNextSiblingItem(hChild);
-}
-}
+		}
+	}
 	return 0;
 }
 
@@ -8829,7 +9362,7 @@ void GlobalFolderInfoDB::Print()
 
 hashsum_t GlobalFolderInfoDB::GetHashsum(CString* key)
 {
-	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
+	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength() * 2);
 	return hashsum;
 };
 
@@ -9025,7 +9558,7 @@ void TreeCtrlInfoDB::Print()
 
 hashsum_t TreeCtrlInfoDB::GetHashsum(CString* key)
 {
-	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength()*2);
+	hashsum_t hashsum = StrHash((const char*)(LPCWSTR)*key, key->GetLength() * 2);
 	return hashsum;
 };
 
@@ -9528,7 +10061,7 @@ int NTreeView::MergeTreeFolders(MBoxFolderTree& tree, CString& errorText)
 
 	MboxMail::Destroy(&MboxMail::s_mails);
 
-	if (m_rootMboxCfile.m_hFile != CFile::hFileNull )
+	if (m_rootMboxCfile.m_hFile != CFile::hFileNull)
 		m_rootMboxCfile.Close();
 
 	BOOL retdel = FileUtils::DelFile(m_rootMboxFilePath);
@@ -10424,7 +10957,7 @@ void NTreeView::SetupCacheFolderList(CArray<CString>& cacheFolderList)
 
 LRESULT NTreeView::OnCmdParam_OnSwitchWindow(WPARAM wParam, LPARAM lParam)
 {
-	CWheelTreeCtrl	*tree = &m_tree;
+	CWheelTreeCtrl* tree = &m_tree;
 	CMainFrame::SetWindowFocus(tree);
 	return 0;
 }

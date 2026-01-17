@@ -12,11 +12,21 @@ freely used, as we understand, by individuals and organizations.
 The mbox viewer software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-Please check the below links for the detailed information on GPL and CPOL license terms.
+Please check the below links for the detailed information on GPL, CPOL and MIT license terms.
+
+https://mit-license.org/
+
+https://github.com/jstedfast/MailKit/blob/master/LICENSE
 
 https://www.gnu.org/licenses/agpl-3.0.txt
 
 https://www.codeproject.com/info/cpol10.aspx
+
+https://github.com/elocemearg/cfbfinfo/blob/master/LICENSE.txt
+
+https://github.com/Sicos1977/MSGReader/blob/master/MsgReader/Outlook/RtfDecompressor.cs
+
+https://github.com/bbottema/rtf-to-html/blob/master/LICENSE-2.0.txt
 
 Links to additional publications that can be usefull.
 

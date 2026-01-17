@@ -341,6 +341,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_DRAWITEM()
 	ON_COMMAND(ID_HELP_CRASHHELP, &CMainFrame::OnHelpCrashhelp)
 	ON_COMMAND(ID_DEVELOPMENTOPTIONS_TOGGLERTLFORDIALOGS, &CMainFrame::OnDevelopmentoptionsTogglertlfordialogs)
+	ON_COMMAND(ID_HELP_OUTLOOKSUPPORT, &CMainFrame::OnHelpOutlooksupport)
+	ON_COMMAND(ID_LANGUAGETOOLS_UPDATETRANSLATIONFILES, &CMainFrame::OnLanguagetoolsUpdatetranslationfiles)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1503,6 +1505,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 	d.m_bDate = m_csvConfig.m_bDate;
 	d.m_bCC = m_csvConfig.m_bCC;
 	d.m_bBCC = m_csvConfig.m_bBCC;
+	d.m_bSize = m_csvConfig.m_bSize;
 	d.m_bContent = m_csvConfig.m_bContent;
 	d.m_bAttachmentNames = m_csvConfig.m_bAttachmentNames;
 	d.m_AttachmentNamesSeparatorString = m_csvConfig.m_AttachmentNamesSeparatorString;
@@ -1522,6 +1525,7 @@ void CMainFrame::PrintMailsToCSV(int firstMail, int lastMail, BOOL selectedMails
 		m_csvConfig.m_bDate = d.m_bDate;
 		m_csvConfig.m_bCC = d.m_bCC;
 		m_csvConfig.m_bBCC = d.m_bBCC;
+		m_csvConfig.m_bSize = d.m_bSize;
 		m_csvConfig.m_bContent = d.m_bContent;
 		m_csvConfig.m_bAttachmentNames = d.m_bAttachmentNames;
 		m_csvConfig.m_AttachmentNamesSeparatorString = d.m_AttachmentNamesSeparatorString;
@@ -2865,6 +2869,7 @@ restart:
 
 		// All archive files are valid; merge
 		CString title = L"Enter Name for New Archive File";
+		ResHelper::TranslateString(title);
 		CString  fileNameFilter = L"Mail Files (*.mbox)|*.mbox||";
 		CString dfltExtension = L".mbox";
 
@@ -3548,12 +3553,18 @@ int CMainFrame::MergeMboxArchiveFile(CFile &fpMergeTo, CString &mboxFilePath, BO
 BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title)
 {
 	// TODO: customize CFileDialog to avoid potential buffer overflow and corruption
-	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 1;
+	int FILE_LIST_BUFFER_SIZE = (2 * (MAX_PATH + 1)) + 4;
 
 	CString path = MboxMail::GetLastPath();
 	CString datapath = MboxMail::GetLastDataPath();
 	CString mergeCachePath = datapath + "MergeCache";
 	BOOL ret = FileUtils::CreateDir(mergeCachePath);
+
+	CString tmp_datapath = datapath;
+	tmp_datapath.TrimRight(L"\\");
+
+	CString folderName;
+	FileUtils::CPathStripPath(tmp_datapath, folderName);
 
 	for (;;)
 	{
@@ -3562,19 +3573,25 @@ BOOL CMainFrame::SaveFileDialog(CString &fileName, CString &fileNameFilter, CStr
 
 		DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 		dwFlags &= ~OFN_NOCHANGEDIR;
-		CFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
-		//MySaveFileDialog dlgFile(FALSE, dfltExtention, NULL, dwFlags, fileNameFilter);
+		CString initialFileName = folderName;
+		CFileDialog dlgFile(FALSE, dfltExtention, folderName, dwFlags, fileNameFilter);
 
 		OPENFILENAME& ofn = dlgFile.GetOFN();
-		//ofn.Flags |= ??;
-		//ofn.lpstrFile = fileNameBuffer;
-		//ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+
+#if 0
+		// This works also instead of parameter "folderName" to CFileDialog dlgFile
+		wcscpy(fileNameBuffer, (LPCWSTR)folderName);
+		ofn.lpstrFile = fileNameBuffer;
+		ofn.nMaxFile = FILE_LIST_BUFFER_SIZE;
+#endif
 		ofn.lpstrInitialDir = mergeCachePath;
 		ofn.lpstrTitle = title;
 
 		INT_PTR ret = dlgFile.DoModal();
 		if (ret == IDOK)
 		{
+			OPENFILENAME& ofn = dlgFile.GetOFN();
+
 			fileName = dlgFile.GetFileName();
 			CString fileFilePath = dlgFile.GetPathName();
 			BOOL ret = FileUtils::CPathGetPath(fileFilePath, outFolderPath);
@@ -4915,7 +4932,7 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 	if (actionCode == IDTRYAGAIN)
 	{
-		// dlete UMBoxViewer Folder under Data Folder
+		// delete UMBoxViewer Folder under Data Folder
 		CString folder = dataFolder + L"UMBoxViewer";
 		bool recursive = true;
 		bool removeFolders = false;
@@ -6088,7 +6105,7 @@ void CMainFrame::OnFileDatafolderconfig()
 		{
 			if (actionCode == IDTRYAGAIN)
 			{
-				// dlete UMBoxViewer Folder under Data Folder
+				// delete UMBoxViewer Folder under Data Folder
 				CString folder = newDataFolder + L"UMBoxViewer";
 				bool recursive = true;
 				bool removeFolders = false;
@@ -6428,6 +6445,7 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 
+	int processId = GetCurrentProcessId();
 
 	info.Format(L"Windows Code Page:\n%d \"%s\"\n", codePage, codePageInfo);
 	aboutSystem.Append(info);
@@ -6436,6 +6454,9 @@ void CMainFrame::OnDeveloperOptionsAboutSystem()
 	aboutSystem.Append(info);
 
 	info.Format(L"\nmboxview Process  Path:\n\"%s\"\n", m_processPath);
+	aboutSystem.Append(info);
+
+	info.Format(L"\nmboxview Process Id: \"%d\"\n", processId);
 	aboutSystem.Append(info);
 
 	if (CProfile::IsRegistryConfig())
@@ -6523,7 +6544,13 @@ CString CMainFrame::GetMboxviewTempPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 	if (name == 0)
 	{
 		if (m_mboxviewTempPath.IsEmpty())
@@ -6544,7 +6571,13 @@ CString CMainFrame::GetMboxviewLocalAppDataPath(const wchar_t* name)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 
 	CString mboxviewLocalAppDataPath = FileUtils::GetMboxviewLocalAppDataPath(tempFolder, name);
 	return mboxviewLocalAppDataPath;
@@ -6555,7 +6588,13 @@ CString CMainFrame::CreateTempFileName(const wchar_t *ext)
 {
 	CString tempFolder = L"UMBoxViewer";
 	if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode || CMainFrame::m_commandLineParms.m_bDirectFileOpenMode)
+	{
 		tempFolder = L"UMBoxViewerPreview";
+		int processId = GetCurrentProcessId();
+		CString processIdStr;
+		processIdStr.Format(L"\\%d", processId);
+		tempFolder.Append(processIdStr);
+	}
 	CString fileName = FileUtils::CreateTempFileName(tempFolder, ext);
 	return fileName;
 }
@@ -7165,4 +7204,129 @@ void CMainFrame::OnDevelopmentoptionsTogglertlfordialogs()
 	{
 		CmboxviewApp::m_isRTLForDialogs = !CmboxviewApp::m_isRTLForDialogs;
 	}
+}
+
+void CMainFrame::OnHelpOutlooksupport()
+{
+	// TODO: Add your command handler code here
+
+	CString helpFileName = L"OutlookHelp.pdf";
+	HWND h = GetSafeHwnd();
+	CMainFrame::OpenHelpFile(helpFileName, h);
+}
+
+#include <regex>
+
+void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
+{
+	// TODO: Add your command handler code here
+#ifdef _DEBUG
+
+#if 0
+	struct from_to_patternW
+	{
+		wchar_t* from;
+		wchar_t* to;
+	};
+
+	from_to_patternW patternW[] =
+	{
+		{ L"Attachmensts" , L"Attachments" },
+		{ L"embeded" , L"embedded" },
+		{ L"occurences" , L"occurrences" },
+		{ L"attchement" , L"attachment" },
+		{ L"dinamically" , L"dynamically" },
+		{ L"jcorvel@gmail.com" , L"gmail.com" },
+		{ L"danielsh@apache.org" , L"apache.org" },
+		{ L"evalute" , L"evaluate" },
+		{ L"ptinting" , L"printing" },
+		{ L"widcard" , L"wildcard" },
+		{ L"arcoss" , L"across" },
+		{ L"shudown" , L"shutdown" },
+		{ L"hurs" , L"hours" },
+		{ L"Invalied" , L"Invalid" },
+		{ L"overwritting" , L"overwriting" },
+		{ L"fragmentaion" , L"fragmentation" },
+		{ L"easly" , L"easily" },
+		{ L"easly" , L"easily" }
+	};
+
+	//wchar_t* wcsstr(wchar_t* str, const wchar_t* strSearch); // C++ only
+
+	std::smatch m_match;
+	std::regex m_pattern;
+
+#endif
+
+	struct from_to_pattern
+	{
+		char16_t* from;
+		char16_t* to;
+	};
+
+	from_to_pattern pattern[] =
+	{
+		{ u"Attachmensts" , u"Attachments" },
+		{ u"embeded" , u"embedded" },
+		{ u"occurences" , u"occurrences" },
+		{ u"attchement" , u"attachment" },
+		{ u"dinamically" , u"dynamically" },
+		{ u"jcorvel@gmail.com" , u"gmail.com" },
+		{ u"danielsh@apache.org" , u"apache.org" },
+		{ u"evalute" , u"evaluate" },
+		{ u"ptinting" , u"printing" },
+		{ u"widcard" , u"wildcard" },
+		{ u"arcoss" , u"across" },
+		{ u"shudown" , u"shutdown" },
+		{ u"hurs" , u"hours" },
+		{ u"Invalied" , u"Invalid" },
+		{ u"overwritting" , u"overwriting" },
+		{ u"fragmentaion" , u"fragmentation" },
+		{ u"easly" , u"easily" },
+		{ u"easly" , u"easily" }
+	};
+
+	SimpleString txt;
+
+	CString cStrNamePath = LR"(C:\Users\tata\Downloads\Language\polish\polish.txt)";
+
+	BOOL retRead = FileUtils::ReadEntireFile(cStrNamePath, txt);
+	*(txt.Data(txt.Count())) = 0;
+	*(txt.Data(txt.Count()+1)) = 0;
+
+	const wchar_t* txt_wchar_t = reinterpret_cast<const wchar_t*>(txt.Data());
+
+		// Define a UTF-16 string
+	std::u16string input((char16_t*)txt.Data());
+	std::u16string to_find;
+	std::u16string to_replace;
+
+	int i;
+	for (i = 0; i < sizeof(pattern) / sizeof(from_to_pattern); i++)
+	{
+		to_find = pattern[i].from;
+		to_replace = pattern[i].to;
+
+
+		// Find the first occurrence
+		size_t pos = input.find(to_find);
+
+		// Replace all occurrences
+		while (pos != std::u16string::npos)
+		{
+			input.replace(pos, to_find.length(), to_replace);
+			pos = input.find(to_find, pos + to_replace.length());
+		}
+	}
+
+	// Output the modified string
+	const wchar_t* data = reinterpret_cast<const wchar_t*>(input.c_str());
+	int dataLength = (int)input.size();
+
+	CString cStrNamePath_copy = cStrNamePath + L".txt";
+	BOOL retWrite = FileUtils::Write2File(cStrNamePath_copy, data, dataLength);
+
+
+	int deb = 1;
+#endif
 }

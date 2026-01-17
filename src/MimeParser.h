@@ -137,6 +137,10 @@ public:
 	CStringA m_InReplyId;
 	//unsigned __int64 m_ThreadId;
 	CStringA m_ThreadId;
+	CStringA m_From;
+	CStringA m_To;
+	CStringA m_CC;
+	CStringA m_BCC;
 };
 
 class MailBodyPool;
@@ -151,7 +155,7 @@ public:
 	int Load(char *& pszDatabase, const char* pszData, int nDataSize);
 	BOOL AssertData(MboxMail *mail);
 
-	typedef list<MailBody*> MailBodyList;
+	typedef std::list<MailBody*> MailBodyList;
 	int GetBodyPartList(MailBodyList& rList);
 	int m_bodyDataOffset;
 	int m_bodyDataLength;

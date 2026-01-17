@@ -146,7 +146,7 @@ bool DateParser::parseRFC822Date(const char *str1, SYSTEMTIME *sysTime, int date
 		i++;
 	}
 
-	int cnt = TextUtilsEx::ReplaceChar(str, '-', ' ');
+	// int cnt = TextUtilsEx::ReplaceChar(str, '-', ' ');  // broke stardard format ; any good reason for this
  
 	SKIP_WHITESPACE();
 	CHECK_PREMATURE_END();

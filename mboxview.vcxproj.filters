@@ -223,6 +223,42 @@
     <ClCompile Include="src\CustomMsgBox.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\cfbf_dir.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_fat.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_file.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_publisher_text.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_walk.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cfbf_winhelper.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mimetypes.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\outlook.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\property.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RTF2HTMLConverter.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RtfDecompressor.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BrowseForFolder.h">
@@ -457,6 +493,27 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\CustomMsgBox.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cfbf.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cfbf_winhelper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mimetypes.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\outlook.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\property.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RTF2HTMLConverter.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RtfDecompressor.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

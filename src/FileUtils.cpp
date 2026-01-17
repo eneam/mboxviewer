@@ -27,6 +27,9 @@
 //
 
 
+#pragma warning (disable : 4996) // warning C4996 : 'wcscpy' : This function or variable may be unsafe.Consider using wcscpy_s instead.
+								// To disable deprecation, use _CRT_SECURE_NO_WARNINGS.See online help for details.
+
 #include "stdafx.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
@@ -410,6 +413,9 @@ void FileUtils::GetFolderPath(CString &fileNamePath, CString &folderPath)
 	CString directory;
 	CString fileNameBase;
 	CString fileNameExtention;
+
+	fileNamePath.Trim(L" ");
+	fileNamePath.Trim(L"\"");
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 }
@@ -420,6 +426,10 @@ void FileUtils::GetFolderPathAndFileName(CString &fileNamePath, CString &folderP
 	CStringW directory;
 	CStringW fileNameBase;
 	CStringW fileNameExtention;
+
+	fileNamePath.Trim(L" ");
+	fileNamePath.Trim(L"\"");
+	fileNamePath.TrimRight(L"\\");
 	SplitFilePath(fileNamePath, driveName, directory, fileNameBase, fileNameExtention);
 	folderPath = driveName + directory;
 	fileName = fileNameBase + fileNameExtention;

@@ -41,8 +41,11 @@
 #include "TextUtilsEx.h"
 #include "MimeParser.h"
 
+
+#ifndef OUTLOOK_MODE
 #include "MainFrm.h"
 #include "MboxMail.h"
+#endif
 
 
 #ifdef _DEBUG
@@ -75,8 +78,11 @@ void MailHeader::Clear()
 	m_ContentLocation.Empty();
 	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
+	m_AttachmentNamePageCode = 0;
 	m_AttachmentName2.Empty();
+	m_AttachmentNamePageCode2 = 0;
 	m_Name.Empty();
+	m_NamePageCode = 0;
 	m_MessageId.Empty();
 	m_ReplyId.Empty();
 	m_InReplyId.Empty();
@@ -86,6 +92,18 @@ void MailHeader::Clear()
 
 int MailHeader::Load(const char* pszData, int nDataSize)
 {
+	static const char* cFrom = "from:";
+	static const int cFromLen = istrlen(cFrom);
+
+	static const char* cTo = "to:";
+	static const int cToLen = istrlen(cTo);
+
+	static const char* cCC = "cc:";
+	static const int cCCLen = istrlen(cCC);
+
+	static const char* cBCC = "bcc:";
+	static const int cBCCLen = istrlen(cBCC);
+
 	static const char *cType = "content-type:";
 	static const int cTypeLen = istrlen(cType);
 	static const char *cContentLocation = "content-location:";
@@ -158,6 +176,26 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			int headLength = IntPtr2Int(p - pszData);
 			return headLength;
 			break;  // end of header
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cFrom, cFromLen) == 0) {
+			BreakParser();
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cFromLen, m_From);
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cTo, cToLen) == 0) {
+			BreakParser();
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cToLen, m_To);
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cCC, cCCLen) == 0) {
+			BreakParser();
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cCCLen, m_CC);
+		}
+		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cBCC, cBCCLen) == 0) {
+			BreakParser();
+			p = MimeParser::GetMultiLine(p, e, line);
+			MimeParser::GetFieldValue(line, cBCCLen, m_BCC);
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cType, cTypeLen) == 0)
 		{
@@ -1176,3 +1214,7 @@ char *MimeParser::EatNewLine(char* p, char*e, int &maxLineLength)
 	return p;
 #endif
 }
+
+#ifdef OUTLOOK_MODE
+MailBodyPool* MailBody::m_mpool = 0;
+#endif

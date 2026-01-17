@@ -32,6 +32,9 @@
 
 #pragma once
 
+
+#ifndef OUTLOOK_MODE
+
 class SimpleMemoryFile
 {
 public:
@@ -280,6 +283,18 @@ public:
 
 protected:
 };
+
+#else
+
+class SimpleString;
+
+class ResHelper
+{
+public:
+	static BOOL TranslateString(CString& text);
+};
+
+#endif
 
 
 

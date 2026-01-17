@@ -645,6 +645,9 @@ CStringA TextUtilsEx::DecodeString(CStringA &subj, CStringA &charset, UINT &char
 	{
 		int maxOutputLen = 2 * outputLen + 2;
 		unsigned char *outBuf = (unsigned char*)malloc(maxOutputLen);
+		if (outBuf == NULL)
+			return subj;
+
 		int decodeLen = tfc.GetOutput(outBuf, maxOutputLen);
 		outBuf[decodeLen] = 0;
 		CStringA str(outBuf);
@@ -1009,7 +1012,7 @@ Name2AlternateName name2altname[] = {
 
 #include <unordered_map>
 
-typedef unordered_map<std::string, unsigned int> myMap;
+typedef std::unordered_map<std::string, unsigned int> myMap;
 static myMap *cids = 0;
 
 void TextUtilsEx::delete_charset2Id()
@@ -1069,7 +1072,7 @@ UINT TextUtilsEx::charset2Id(const char *char_set)
 	return id;
 }
 
-typedef unordered_map<unsigned int, std::string> myIdMap;
+typedef std::unordered_map<unsigned int, std::string> myIdMap;
 static myIdMap *ids = 0;
 
 void TextUtilsEx::delete_id2charset()
