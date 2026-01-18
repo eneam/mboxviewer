@@ -150,17 +150,19 @@ public:
 
     CharsetHelper m_CharsetHelper;
     Charset m_ansicpg;
-    bool m_ansicpg_setUTF8;
+    bool m_ansicpg_setUTF8;  // set to UTF8 when done conversion
+    std::string m_txt7bit;  // ASCII text fragment; characters  0 -127;
+    bool m_alwaysEncodeASCII2UTF8;   // can we assume all charsets have Ascii ??
 
     std::string rtf2html(char* crtf, std::string& result);
 
-    void appendIfNotIgnoredGroup(std::string& result, std::string& symbol, Group& group) {
-        if (!group.ignore && !group.htmlRtf) {
-            result.append(symbol);
-            int deb = 1;
-        }
-    }
-    std::string hexToString(const std::string& hex, Charset charset);
+    void appendIfNotIgnoredGroup(std::string& result, std::string& symbol, Group& group, bool char7bit=false);
+    bool hexToString(const std::string& hex, Charset charset, std::string& result);
+    //
+    bool utf16TOutf8(wchar_t inchar, std::string& outstr, DWORD& error);
+    //
+    bool ansipgcTOutf8(const char* instr, int inlen, int ansipgc, std::string& outstr_utf8, DWORD& error);
+    bool ansipgcTOutf8(std::string& instr, int ansipgc, std::string& outstr_utf8, DWORD& error);
 };
 
 typedef struct
