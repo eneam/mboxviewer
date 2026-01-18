@@ -2473,7 +2473,7 @@ void MboxMail::Parse(LPCWSTR path)
 		if (pview == 0)
 		{
 			DWORD err = GetLastError();
-			CString txt = L"Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.";
+			CString txt = L"Could not finish parsing due to memory fragmentation. Please restart the mbox viewer to resolve.";
 			ResHelper::TranslateString(txt);
 
 			HWND h = NULL; // we don't have any window yet ??
@@ -2675,7 +2675,7 @@ void MboxMail::Parse_LabelView(LPCWSTR path)
 		if (pview == 0)
 		{
 			DWORD err = GetLastError();
-			CString txt = L"Could not finish parsing due to memory fragmentaion. Please restart the mbox viewer to resolve.";
+			CString txt = L"Could not finish parsing due to memory fragmentation. Please restart the mbox viewer to resolve.";
 			ResHelper::TranslateString(txt);
 
 			HWND h = NULL; // we don't have any window yet ??
@@ -11753,7 +11753,7 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 			"\n\n"
 			"You can also select \"File->Print Config->User Defined Script\" to "
 			"use free wkhtmltopdf tool to print custom header and footer"
-			" and evalute whether wkhtmltopdf works for you."
+			" and evaluate whether wkhtmltopdf works for you."
 		);
 	}
 	else if (hintNumber == HintConfig::PrintToPrinterHint)
@@ -11816,12 +11816,12 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 	else if (hintNumber == HintConfig::AttachmentConfigHint)
 	{
 		hintText.Append(
-			L"By default attachments other than those embeded into mail\n"
+			L"By default attachments other than those embedded into mail\n"
 			"are shown in the attachment window.\n\n"
 			"You can configure to shown all attachments, both inline and\n"
 			"non-inline, by selecting\n"
 			"\"File->Attachments Config->Attachment Window\" dialog\n\n"
-			"Attachment Config dialog enables users to append image attachments to mails when viewing and/or ptinting\n"
+			"Attachment Config dialog enables users to append image attachments to mails when viewing and/or printing\n"
 		);
 	}
 	else if (hintNumber == HintConfig::MessageHeaderConfigHint)
@@ -11856,7 +11856,7 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 			L"Mbox and eml mail files can also be merged via two command line options:\n\n"
 			"-MBOX_MERGE_LIST_FILE=Path to File containing list of mbox files to merge\n\n"
 			"-MBOX_MERGE_TO_FILE=Path to File to save merge results\n\n"
-			"List of files to merge supports widcard file names\n\n\n"
+			"List of files to merge supports wildcard file names\n\n\n"
 			"Use \"Select root folder for merging..\" folder option to merge root folder and subfolders\n"
 			"\n"
 		);

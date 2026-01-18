@@ -390,7 +390,7 @@ void DataFolderConfigDlg::OnBnClickedOk()
 #endif
 		if (m_restartRequired)
 		{
-			CString restartText = L"\n\n!!!!!! MBox Viewer will shudown and must be restarted by the user in order for the change to take effect !!!!!!\n\n";
+			CString restartText = L"\n\n!!!!!! MBox Viewer will shutdown and must be restarted by the user in order for the change to take effect !!!!!!\n\n";
 			ResHelper::TranslateString(restartText);
 			txt += restartText;
 		}

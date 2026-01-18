@@ -7593,7 +7593,7 @@ void NListView::PrintMailGroupToText(BOOL multipleSelectedMails, int iItem, int 
 		CString txt = L"Printing large number of mails using \"Print To -> Printer\""
 			L" is not the prefered option, use \"Print to ->PDF\" option instead.\n\n"
 			L"\"Print to -> Printer\" runs in the main thread and it can't be cancelled"
-			L" easly if desired except by killing MBox Viewer process\n\n"
+			L" easily if desired except by killing MBox Viewer process\n\n"
 			L"Depending on the content of mails it may take long time for \"Print to -> Printer\" to complete."
 			L" No feedback is provided to users until user is asked to select folder and PDF document name to save\n\n"
 			L"Run \"Print to -> Printer\" option if other print options didn't create well formatted PDF.\n\n"
@@ -17554,7 +17554,7 @@ int NListView::ForwardMailRange(int iSelectedItem)
 	{
 		CString txt = L"Mail sending limit imposed by Mail Service is not well defined.\n"
 			L"Number of mails you selected to forward is greater than 100\n"
-			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n\n"
+			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hours.\n\n"
 			L"Do you want to forward selected mails anyway?\n";
 
 		ResHelper::TranslateString(txt);
@@ -17638,7 +17638,7 @@ int NListView::ForwardSelectedMails(int iSelectedItem)
 	{
 		CString txt = L"Mail sending limit imposed by Mail Service is not well defined.\n"
 			L"Number of mails you selected to forward is greater than 100\n"
-			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hurs.\n"
+			L"Mail Service imposed sending limit may or not be exceeded and result in your mail account being suspended for 24 hours.\n"
 			L"You make take manual action to unblock the accout without delay\n\n"
 			L"Do you want to forward selected emails anyway?\n";
 

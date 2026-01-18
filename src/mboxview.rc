@@ -217,7 +217,7 @@ BEGIN
     CONTROL         "Custom1",IDC_BROWSER,"",WS_TABSTOP,14,129,50,14
     CONTROL         "Custom1",IDC_EXPLORER,"",WS_TABSTOP,82,131,50,14
     CONTROL         "List1",IDC_ATTACHMENTS,"SysListView32",WS_BORDER | WS_TABSTOP,7,67,60,50
-    LTEXT           "This dialog is not used. I create here all controls that are created dinamically so\nvstudio defines id automatically in resource.h",IDC_STATIC,13,7,256,32,SS_NOTIFY
+    LTEXT           "This dialog is not used. I create here all controls that are created dynamically so\nvstudio defines id automatically in resource.h",IDC_STATIC,13,7,256,32,SS_NOTIFY
     EDITTEXT        IDC_EDIT_MAIL_HDR,206,69,52,50,ES_MULTILINE | WS_VSCROLL | WS_HSCROLL,WS_EX_CLIENTEDGE
 END
 
@@ -230,7 +230,7 @@ BEGIN
     EDITTEXT        IDC_STRING,43,7,123,14,ES_AUTOHSCROLL
     CONTROL         "&Whole word",IDC_WHOLE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,43,24,54,10
     CONTROL         "&Case sensitive",IDC_CASE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,100,24,61,10
-    CONTROL         "Highlight all occurences in Message",IDC_CHECK_HIGHLIGHT_ALL,
+    CONTROL         "Highlight all occurrences in Message",IDC_CHECK_HIGHLIGHT_ALL,
                     "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,43,39,129,10
     DEFPUSHBUTTON   "OK",IDOK,176,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,176,24,50,14,BS_NOTIFY
@@ -447,7 +447,7 @@ BEGIN
     LTEXT           "Select mail text block for search",IDC_TEXT_TYPE,17,258,106,8,SS_NOTIFY | SS_WORDELLIPSIS | WS_TABSTOP
     CONTROL         "html if no plain text",IDC_HTML_TEXT_IF,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,200,258,77,10
     PUSHBUTTON      "Help",IDC_BUTTON_HELP,299,255,50,14,BS_NOTIFY
-    CONTROL         "Highlight all occurences in Message",IDC_HIGHLIGHT_ALL,
+    CONTROL         "Highlight all occurrences in Message",IDC_HIGHLIGHT_ALL,
                     "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,213,196,144,10
 END
 
@@ -553,13 +553,13 @@ BEGIN
     GROUPBOX        "Mail Attachment Indicator",IDC_STATIC_ATTACHMENT_4,7,91,365,45,BS_NOTIFY
     CONTROL         "Set when any attachment present",IDC_ALL_ATTACHMENT_TYPES_INDICATOR,
                     "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,19,122,341,10
-    LTEXT           "By default attachments other than those embeded into mail message are shown in the attachment window",IDC_STATIC_ATTACHMENT_2,20,36,342,8,SS_NOTIFY | SS_WORDELLIPSIS | NOT WS_GROUP
-    LTEXT           "NOTE that ""Show All Attachments"" will affect output from Print To, View in Browser and Export All Mail Attachmensts options",IDC_STATIC_ATTACHMENT_3,20,64,344,18,SS_NOTIFY
+    LTEXT           "By default attachments other than those embedded into mail message are shown in the attachment window",IDC_STATIC_ATTACHMENT_2,20,36,342,8,SS_NOTIFY | SS_WORDELLIPSIS | NOT WS_GROUP
+    LTEXT           "NOTE that ""Show All Attachments"" will affect output from Print To, View in Browser and Export All Mail Attachments options",IDC_STATIC_ATTACHMENT_3,20,64,344,18,SS_NOTIFY
     GROUPBOX        "Append Picture Attachments to Mail View",IDC_STATIC_ATTACHMENT_6,7,140,183,30,BS_NOTIFY
     CONTROL         "Single Mail",IDC_APPEND_SINGLE_MAIL_VIEW,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,19,156,47,10
     CONTROL         "Multiple Selected Mails",IDC_APPEND_MULTIPLE_MAILS_VIEW,
                     "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,79,156,102,10
-    GROUPBOX        "Append Picture Attachmenst to Mail Print",IDC_STATIC_ATTACHMENT_7,203,140,169,27,BS_NOTIFY
+    GROUPBOX        "Append Picture Attachments to Mail Print",IDC_STATIC_ATTACHMENT_7,203,140,169,27,BS_NOTIFY
     CONTROL         "Single Mail",IDC_APPEND_SINGLE_MAIL_PRINT,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,210,154,48,10
     CONTROL         "Multiple Selected Mails",IDC_APPEND_MULTIPLE_MAILS_PRINT,
                     "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,263,154,102,10
@@ -662,7 +662,7 @@ BEGIN
     PUSHBUTTON      "Help",IDC_HDR_FLD_HELP,17,157,50,14
     CONTROL         "Name",IDC_HDR_FLD_NAME,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,198,50,54,10
     CONTROL         "Text",IDC_HDR_FLD_TEXT,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,255,50,26,10
-    GROUPBOX        "How to open attchement link:",IDC_STATIC_MAIL_HDR_3,16,113,277,35,BS_NOTIFY
+    GROUPBOX        "How to open attachment link:",IDC_STATIC_MAIL_HDR_3,16,113,277,35,BS_NOTIFY
     CONTROL         "Open in current Tab",IDC_OPEN_LINK_IN_CURRENT_TAB,
                     "Button",BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,24,129,103,10
     CONTROL         "Open in new Tab",IDC_OPEN_LINK_IN_NEW_TAB,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,132,131,155,10
@@ -740,7 +740,7 @@ BEGIN
     EDITTEXT        IDC_SMTP_SERVER_PORT,55,108,54,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_USER_ACCOUNT,55,179,112,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_USER_PASSWORD,55,198,111,14,ES_AUTOHSCROLL
-    GROUPBOX        "SMTP Server Addres",IDC_STATIC_SMTP_3,7,79,175,50,BS_NOTIFY
+    GROUPBOX        "SMTP Server Address",IDC_STATIC_SMTP_3,7,79,175,50,BS_NOTIFY
     LTEXT           "Name",IIDC_STATIC_SMTP_4,15,95,34,8,SS_NOTIFY
     LTEXT           "Port",IDC_STATIC_SMTP_5,15,108,30,8,SS_NOTIFY
     GROUPBOX        "SMTP User",IDC_STATIC_SMTP_7,7,169,175,51,BS_NOTIFY

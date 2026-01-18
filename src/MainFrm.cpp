@@ -3305,12 +3305,12 @@ int CMainFrame::MergeMboxArchiveFiles(CString &mboxListFilePath, CString &merged
 			{
 #if 0
 				CString txt;
-				txt.Format(L"Invalied Folder path \"%s\".\n\nCan't continue merging files\n", filePath);
+				txt.Format(L"Invalid Folder path \"%s\".\n\nCan't continue merging files\n", filePath);
 #endif
 
 
 				CString txt;
-				CString fmt = L"Invalied Folder path \"%s\".\n\nCan't continue merging files\n";
+				CString fmt = L"Invalid Folder path \"%s\".\n\nCan't continue merging files\n";
 				ResHelper::TranslateString(fmt);
 				txt.Format(fmt, filePath);
 
@@ -5530,7 +5530,7 @@ int CommandLineParms::VerifyParameters()
 			CString txt;
 			txt.Format(L"Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
 				"File Exists\"%s\"\n\n"
-			"!!!  Make sure you are not overwritting original mbox file from mail service such as Gmail !!!\n\n"
+			"!!!  Make sure you are not overwriting original mbox file from mail service such as Gmail !!!\n\n"
 			"It is always good idea to have backup of original mbox mail files\n\n",
 				m_mergeToFilePath, m_mergeToFilePath);
 			txt += L"Override and continue?";
@@ -5539,7 +5539,7 @@ int CommandLineParms::VerifyParameters()
 			CString txt;
 			CString fmt = L"Possibly Invalid -MBOX_MERGE_TO_FILE=\"%s\" option.\n\n"
 				L"File Exists\"%s\"\n\n"
-				L"!!!  Make sure you are not overwritting original mbox file from mail service such as Gmail !!!\n\n"
+				L"!!!  Make sure you are not overwriting original mbox file from mail service such as Gmail !!!\n\n"
 				L"It is always good idea to have backup of original mbox mail files\n\n"
 				L"Override and continue?";
 
@@ -6204,7 +6204,7 @@ void CMainFrame::OnFileSelectasrootfolder()
 	// TODO: Add your command handler code here
 	CString txt = L"MBox Viewer will traverse selected root folder and all sub-folders and create Tree of Folders View.\n\n"
 		L"Do you want to continue?\n\n\n"
-		L"Note that search arcoss all mails is not supported by this option. "
+		L"Note that search across all mails is not supported by this option. "
 		L"Select \"File->Select root folder for merging\" option to enable search across all mails\n"
 		;
 #if 0
@@ -6842,10 +6842,11 @@ void CMainFrame::OnLanguagetoolsCreatetranslationfile()
 void CMainFrame::OnLanguagetoolsResorttranslationfile()
 {
 	// TODO: Add your command handler code here
-
+#ifdef _DEBUG
 	//ResHelper::ResortLanguageFile();
 	ResHelper::RenumberLanguageFile();
 	int deb = 1;
+#endif
 }
 
 
@@ -6853,7 +6854,7 @@ void CMainFrame::OnLanguagetoolsResourcefileproperty()
 {
 	// TODO: Add your command handler code here
 
-
+#ifdef _DEBUG
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
 	CString lastFolderName;
@@ -6906,6 +6907,7 @@ void CMainFrame::OnLanguagetoolsResourcefileproperty()
 
 
 	int deb = 1;
+#endif
 }
 
 
@@ -7225,48 +7227,10 @@ void CMainFrame::OnHelpOutlooksupport()
 	CMainFrame::OpenHelpFile(helpFileName, h);
 }
 
-#include <regex>
-
 void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
 {
 	// TODO: Add your command handler code here
 #ifdef _DEBUG
-
-#if 0
-	struct from_to_patternW
-	{
-		wchar_t* from;
-		wchar_t* to;
-	};
-
-	from_to_patternW patternW[] =
-	{
-		{ L"Attachmensts" , L"Attachments" },
-		{ L"embeded" , L"embedded" },
-		{ L"occurences" , L"occurrences" },
-		{ L"attchement" , L"attachment" },
-		{ L"dinamically" , L"dynamically" },
-		{ L"jcorvel@gmail.com" , L"gmail.com" },
-		{ L"danielsh@apache.org" , L"apache.org" },
-		{ L"evalute" , L"evaluate" },
-		{ L"ptinting" , L"printing" },
-		{ L"widcard" , L"wildcard" },
-		{ L"arcoss" , L"across" },
-		{ L"shudown" , L"shutdown" },
-		{ L"hurs" , L"hours" },
-		{ L"Invalied" , L"Invalid" },
-		{ L"overwritting" , L"overwriting" },
-		{ L"fragmentaion" , L"fragmentation" },
-		{ L"easly" , L"easily" },
-		{ L"easly" , L"easily" }
-	};
-
-	//wchar_t* wcsstr(wchar_t* str, const wchar_t* strSearch); // C++ only
-
-	std::smatch m_match;
-	std::regex m_pattern;
-
-#endif
 
 	struct from_to_pattern
 	{
@@ -7293,50 +7257,92 @@ void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
 		{ u"overwritting" , u"overwriting" },
 		{ u"fragmentaion" , u"fragmentation" },
 		{ u"easly" , u"easily" },
-		{ u"easly" , u"easily" }
+		{ u"prefered" , u"preferred" },
+		{ u"Address" , u"Addres" },
+		{ u"Addres" , u"Address" },
+		{ u"accout" , u"account" }
 	};
 
-	SimpleString txt;
+	WIN32_FIND_DATA data;
+	CString folderPath = LR"(F:\Documents\GIT1.0.3.50\Language\)";;
+	//folderPath.TrimRight(L"\\");
+	CString filePath = folderPath + L"\\*.*";
 
-	CString cStrNamePath = LR"(C:\Users\tata\Downloads\Language\polish\polish.txt)";
-
-	BOOL retRead = FileUtils::ReadEntireFile(cStrNamePath, txt);
-	*(txt.Data(txt.Count())) = 0;
-	*(txt.Data(txt.Count()+1)) = 0;
-
-	const wchar_t* txt_wchar_t = reinterpret_cast<const wchar_t*>(txt.Data());
-
-		// Define a UTF-16 string
-	std::u16string input((char16_t*)txt.Data());
-	std::u16string to_find;
-	std::u16string to_replace;
-
-	int i;
-	for (i = 0; i < sizeof(pattern) / sizeof(from_to_pattern); i++)
+	HANDLE h = FindFirstFile(filePath, &data);
+	if (h == INVALID_HANDLE_VALUE)
 	{
-		to_find = pattern[i].from;
-		to_replace = pattern[i].to;
+		CString errorText = L"No Outlook Msg files found";
+		ResHelper::TranslateString(errorText);
 
-
-		// Find the first occurrence
-		size_t pos = input.find(to_find);
-
-		// Replace all occurrences
-		while (pos != std::u16string::npos)
-		{
-			input.replace(pos, to_find.length(), to_replace);
-			pos = input.find(to_find, pos + to_replace.length());
-		}
+		HWND h = GetSafeHwnd();
+		int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+		return;
 	}
 
-	// Output the modified string
-	const wchar_t* data = reinterpret_cast<const wchar_t*>(input.c_str());
-	int dataLength = (int)input.size();
+	do
+	{
+		if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			continue;
 
-	CString cStrNamePath_copy = cStrNamePath + L".txt";
-	BOOL retWrite = FileUtils::Write2File(cStrNamePath_copy, data, dataLength);
+		CString errorText;
+		CString langFileName = data.cFileName;
+
+		if (langFileName.Compare(L".") == 0)
+			continue;
+
+		if (langFileName.Compare(L"..") == 0)
+			continue;
+
+		CString langFileNamePath = folderPath + langFileName + L"\\" + langFileName + L".txt";
+
+		if (!FileUtils::PathFileExist(langFileNamePath))
+		{
+			continue;
+		}
+
+		SimpleString txt;
+
+		CString cStrNamePath = langFileNamePath;
+
+		BOOL retRead = FileUtils::ReadEntireFile(cStrNamePath, txt);
+		*(txt.Data(txt.Count())) = 0;
+		*(txt.Data(txt.Count() + 1)) = 0;
+
+		const wchar_t* txt_wchar_t = reinterpret_cast<const wchar_t*>(txt.Data());
+
+		// Define a UTF-16 string
+		std::u16string input((char16_t*)txt.Data());
+		std::u16string to_find;
+		std::u16string to_replace;
+
+		int i;
+		for (i = 0; i < sizeof(pattern) / sizeof(from_to_pattern); i++)
+		{
+			to_find = pattern[i].from;
+			to_replace = pattern[i].to;
 
 
-	int deb = 1;
-#endif
+			// Find the first occurrence
+			size_t pos = input.find(to_find);
+
+			// Replace all occurrences
+			while (pos != std::u16string::npos)
+			{
+				input.replace(pos, to_find.length(), to_replace);
+				pos = input.find(to_find, pos + to_replace.length());
+			}
+		}
+
+		// Output the modified string
+		const wchar_t* dataW = reinterpret_cast<const wchar_t*>(input.c_str());
+		int dataLength = (int)input.size();
+
+		CString cStrNamePath_copy = cStrNamePath; // +L".txt";
+		BOOL retWrite = FileUtils::Write2File(cStrNamePath_copy, dataW, dataLength);
+
+		int deb = 1;
+
+	} while (FindNextFile(h, &data) != 0);
+
+#endif   // _DEBUG
 }
