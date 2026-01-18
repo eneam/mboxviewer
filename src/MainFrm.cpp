@@ -63,6 +63,8 @@
 #define new DEBUG_NEW
 #endif
 
+BOOL CMainFrame::m_exitAfterDoneWithMSGProcessing = FALSE;
+
 CString CMainFrame::m_processPath = L"";
 CString CMainFrame::m_startupPath = L"";
 CString CMainFrame::m_currentPath = L"";
@@ -361,6 +363,9 @@ static UINT indicators[] =
 CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 {
 	// TODO: add member initialization code here
+
+	//this->ShowWindow(SW_NORMAL);
+	//this->EnableWindow(FALSE);
 
 	m_createCompleted = FALSE;
 
@@ -4848,8 +4853,6 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 
 	CString dataFolder = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder");
 
-
-
 	int actionCode = 0;
 	if (dataFolder.IsEmpty())
 	{
@@ -4979,6 +4982,13 @@ LRESULT CMainFrame::OnCmdParam_LoadFolders(WPARAM wParam, LPARAM lParam)
 	}
 	else if (m_commandLineParms.m_bEmlPreviewMode && !m_commandLineParms.m_mboxFileNameOrPath.IsEmpty())
 	{
+		CString extension;
+		FileUtils::GetFileExtension(m_commandLineParms.m_mboxFileNameOrPath, extension);
+		if (extension.CompareNoCase(L".msg") == 0) {
+			CMainFrame::m_exitAfterDoneWithMSGProcessing = TRUE;
+			//this->EnableWindow(FALSE);  // doesn't really works, window still visible; need better fix
+		}
+
 		pTreeView->DoOpenFilePreview(m_commandLineParms.m_mboxFileNameOrPath);
 	}
 	else if (!m_commandLineParms.m_mboxFileNameOrPath.IsEmpty())

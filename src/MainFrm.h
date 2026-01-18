@@ -365,6 +365,8 @@ public:
 	// valid Zoom range
 	static int m_minBrowserZoom;
 	static int m_maxBrowserZoom;
+	// Outlook handling
+	static BOOL m_exitAfterDoneWithMSGProcessing;
 
 	void CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc = 0);
 

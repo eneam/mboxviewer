@@ -2073,6 +2073,8 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 					HINSTANCE result = (HINSTANCE)(32 + 1);
 
 					CString mboxviewPath = CMainFrame::m_processPath;
+					INT nShowCmd = SW_SHOWNORMAL;
+					
 					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOWNORMAL);
 					if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
 					{
@@ -2088,12 +2090,13 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 						if (answer == IDOK)
 							int deb = 1;  // ZMM Try again ??
 					}
-					return;
 				}
 				else
 				{
 					_ASSERTE(!errorText.IsEmpty());   // ZMM Review ConvertOutlookMsg2Eml
 				}
+				if (CMainFrame::m_exitAfterDoneWithMSGProcessing)
+					AfxGetMainWnd()->PostMessage(WM_CLOSE);
 				return;
 			}
 		}
