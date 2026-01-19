@@ -2,6 +2,15 @@
 Changes
 -------
 
+v 1.0.3.55
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Enhanced Outlook .msg files handling to support multiple character sets within single RTF message body.;
+ - The .mbox file created by merging multiple Outlook .msg files would not open in the default case.;
+ - Removed duplicate spaces from GUI object labels (thanks to Aemony).;
+ - Resolved typos in user visible text such as GUI object labels (thanks to Greg Roberts).;
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.54
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
