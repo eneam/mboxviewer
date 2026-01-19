@@ -5086,8 +5086,10 @@ void CMainFrame::OnFordevelopersMemory()
 	tmp.Format(L"%s  (%s) (%s)\n", cstr, sizeStr_inKB, sizeStr_inBytes);
 	txt += tmp;
 
+	CString key(L"Allocated Memory");
+	ResHelper::TranslateString(key);
 	CString text;
-	text.Format(L"Allocated Memory: %s\n", txt);
+	text.Format(L"%s: %s\n", key, txt);
 
 	HWND h = GetSafeHwnd();
 	int answer = MyMessageBox(h, text, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
