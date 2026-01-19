@@ -2095,12 +2095,23 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					_ASSERTE(!errorText.IsEmpty());   // ZMM Review ConvertOutlookMsg2Eml
 				}
-				if (CMainFrame::m_exitAfterDoneWithMSGProcessing)
+				if (CMainFrame::m_exitAfterDoneWithMSGProcessing) {
 					AfxGetMainWnd()->PostMessage(WM_CLOSE);
+				}
+				else
+				{
+					pListView->m_lastSel = -1;
+					pListView->m_path = L"";
+					pListView->m_path_label = L"";
+					pListView->m_which = NULL;
+					pListView->ResetSize();
+					pListView->FillCtrl();
+
+				}
 				return;
 			}
 		}
-	}
+	}  // End Outlook MSG
 
 	// 	TODO: find better place for below
 	pListView->m_path = L"";
@@ -2969,7 +2980,11 @@ void NTreeView::InsertMailFile(CString& mailFile)
 				{
 					pListView->m_path = L"";
 					MboxMail::SetMboxFilePath(pListView->m_path, TRUE);
-					retval = SelectTreeItem(hParent);
+					// ZMM 01/19/226 Commented out. This will open folder. 
+					// It didn't work fo merge Outlook MSGs and possibly in other cases
+					// Need to investigate; should left some comments but didn't
+					//retval = SelectTreeItem(hParent); 
+					retval = SelectTreeItem(hItem);
 				}
 				else
 					retval = SelectTreeItem(hItem);
@@ -8284,6 +8299,11 @@ int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
 						int answer = MyMessageBox(txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
 
 						goto fail;
+					}
+
+					if (pFrame)
+					{
+						BOOL retOpen = pFrame->DoOpen(dlg.m_targetFolder);
 					}
 
 					NTreeView* pTreeView = pFrame->GetTreeView();
