@@ -1,7 +1,7 @@
 Simple mbox viewer
 =======
 
-A simple but powerfull viewer to view mbox files such as Thunderbird Archives, Google mail archives or simple Eml files.
+A simple but powerful viewer to view mbox files such as Thunderbird Archives, Google mail archives or simple Eml files.
 [![Download Windows MBox Viewer](https://img.shields.io/sourceforge/dm/mbox-viewer.svg)](https://sourceforge.net/projects/mbox-viewer/files/latest/download)
 
 Supported OS
@@ -27,7 +27,7 @@ Features
 * open a single or multiple selected mails or group of related mails in external browser;
 * sort emails by date, from, to, subject and conversation columns;
 * find user defined text in the message and highlight all occurrences;
-* search mails by user defined date range and text in the subject, sender, recepient, cc, bcc, message text, attachments text and attachment names;
+* search mails by user defined date range and text in the subject, sender, recipient, cc, bcc, message text, attachments text and attachment names;
 * search for mails that didn't match the search criteria specified by a user;
 * support for header fields and body text encoded with any Windows supported character sets/page codes;
 * ability to compose mail list from single or multiple search results and archiving if desired;
@@ -47,7 +47,7 @@ Features
 License
 -------
 Mbox viewer is a free software. Most of it is licensed under AGPLv3.
-Small parts are licenced under CPOL 1.02.
+Small parts are licensed under CPOL 1.02.
 MailKit open source library linked to connect to SMTP servers is licensed under MIT.
 See the [LICENSE.txt](LICENSE.txt) file included in the distribution for further details.
 
@@ -107,13 +107,13 @@ to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
 Outlook .msg
 ------------
 
-Starting with v1.0.3.54, MBox Viewer offers experimental support for Outlook .msg files. The .msg files are converted to Mime .eml files first in order to leverage standard MBox Viewer features. 
+Starting with v1.0.3.54, MBox Viewer offers experimental support for Outlook .msg files in addition to .mbox and .eml files. The .msg files are converted to Mime .eml files first in order to leverage standard MBox Viewer features. 
 
 User can view individual .msg file or all .msg files can be converted to .eml files first and merged into a single .mbox file.
 
 Processing of .msg files is quite complicated and requires significant effort. This initial release doesn't support:
 
-1. processing winmail.dat attachements
+1. processing winmail.dat attachments
 2. message body encoded as RTF Text
 
 User feedback will help to decide whether additional development effort is justified.

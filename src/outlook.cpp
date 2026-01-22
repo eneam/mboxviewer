@@ -1383,12 +1383,12 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
 		if (propertyName)
 			fprintf(out, "  %s", propertyName);
 		else
-			fprintf(out, "  Uknown Property Name");
+			fprintf(out, "  Unknown Property Name");
 
 		if (type)
 			fprintf(out, "  %s", type);
 		else
-			fprintf(out, "  Uknown Property Type 0x%s", propertyTypeStr.c_str());
+			fprintf(out, "  Unknown Property Type 0x%s", propertyTypeStr.c_str());
 	}
 
     if (propertyName == 0)
@@ -1721,7 +1721,7 @@ void Recipient::Print(struct cfbf* cfbf, int level)
 int Recipient::GetRecipientType(struct cfbf* cfbf, DirEntry* m_properties_version1_0)
 {
     // Skip header and iterate array to find PidTagRecipientFlags
-    // Root Message handling differs from handling embeded Message
+    // Root Message handling differs from handling embedded Message
     return 1;
 }
 
@@ -2111,7 +2111,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         {
             if ((it->m_attach.m_PidTagAttachDataBinary) || (it->m_attach.m_PidTagAttachDataObject))
             {
-                hasValidAttachments = true; // assume attachments are valid; optimisticly
+                hasValidAttachments = true; // assume attachments are valid; optimistically
             }
             int deb = 1;
         }
@@ -2171,7 +2171,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         if (isString8 && (nInternetCodepage != 0))
             pageCode = nInternetCodepage;
         else
-            ;   // or must quess somehow
+            ;   // or must guess somehow
 
         std::string charset;
         BOOL ret = TextUtilsEx::id2charset(pageCode, charset);
@@ -2246,7 +2246,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
             if (nInternetCodepage != 0)
                 pageCode = nInternetCodepage;
             else
-                ;   // or must quess somehow
+                ;   // or must guess somehow
 
             std::string charset;
             BOOL ret = TextUtilsEx::id2charset(pageCode, charset);
@@ -2289,7 +2289,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         else
         {
             if (out)
-                fprintf(stdout, "\n\n%s\n", "Found but ignorted HtmlBody encoded as UTF16");
+                fprintf(stdout, "\n\n%s\n", "Found but ignored HtmlBody encoded as UTF16");
             ; // convert to utf8 ??
         }
     }
@@ -2829,7 +2829,7 @@ bool OutlookMessage::Write2File(wchar_t* cStrNamePath, const unsigned char* data
 }
 
 // Property Data can be set to PtyBinary or PtyString but in reality is PtyString8
-// Optymistic check; ZMM investigate more reliable check
+// Optimistic check; ZMM investigate more reliable check
 bool OutlookMessage::IsString8(char* buf, int buflen)
 {
     int cnt = 0;
@@ -2922,13 +2922,13 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 {
     std::string errorText;
 
-    // It is likely unnesseray check
+    // It is likely unnecessary check
     // ZMM What about encoding in Compound File Binary File Format (CFBF) files
     // Parsing will fail if CFBF file is not encoded as little-endian
     // Investigate if mix encoding is permitted in CFBF
     if (!IsLittleEndianType())
     {
-        erText = L"Outlook .msg files are supported on little-indian systems only\n.This system is little-endian.\n";
+        erText = L"Outlook .msg files are supported on little-endian systems only\n.This system is little-endian.\n";
         return FALSE;
     }
 
