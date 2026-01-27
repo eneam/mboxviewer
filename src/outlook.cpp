@@ -107,14 +107,15 @@ strchr_utf16(const uint16_t *s, int c)
 
 void GetIndentStr(int level, std::string& indentstr)
 {
-    indentstr.append(level * 4, ' ');
+    int indent = 2;
+    indentstr.append((level+1) * indent, ' ');
 
     char levelStrBuff[16];
     char* levelStr = _itoa(level, levelStrBuff, 10);
-    if (level <= 1)
+    if (level < 1)
         indentstr[0] = levelStr[0];
     else
-        indentstr[(level - 1) * 4] = levelStr[0];
+        indentstr[((level+1) - 1) * indent] = levelStr[0];
 }
 
 bool IsSubStream(std::string& name)
@@ -193,6 +194,12 @@ void DumpBuffer(FILE* out, const void* buffer, size_t len);
 
 void DumpRTF(FILE* out, const void* buffer, size_t len)
 {
+    fprintf(out, "  %d ", len);
+
+    if (len <= 0) {
+        fprintf(out, "\"\"\n");
+        return;
+    }
     int maxDumpLength = maxRtfDumpLength;
     if (maxDumpLength == 0)
     {
@@ -219,10 +226,10 @@ void DumpRTF(FILE* out, const void* buffer, size_t len)
     {
         dst[retlen] = 0;
 
-        std::string RtfContentType("HTML");
+        std::string RtfContentType("HTML Text");
         char* cpos = strstr((char*)dst, "fromhtml1");
         if (cpos == 0)
-            RtfContentType = "TEXT";
+            RtfContentType = "Plain Text";
 
         if (maxDumpLength < 0)
         {
@@ -257,7 +264,8 @@ void DumpRTF(FILE* out, const void* buffer, size_t len)
         }
 
         //fprintf(stdout, "\n\nRTF2HTMLConverter: rtf2html: !!!!!!!!!!!!!!!\n%s\n\n", html.c_str());
-        fprintf(out, " %s \"%s\"", RtfContentType.c_str(), result.c_str());
+        // ZMM fprintf(out, " %s \"%s\"", RtfContentType.c_str(), result.c_str());
+        fprintf(out, "  \"%s\"", RtfContentType.c_str());
 
         free(dst);
     }
@@ -271,6 +279,12 @@ void DumpRTF(FILE* out, const void* buffer, size_t len)
 
 void DumpBuffer(FILE* out, const void* buffer, size_t len)
 {
+    fprintf(out, "  %d ", len);
+
+    if (len <= 0) {
+        fprintf(out, "\"\"\n");
+        return;
+    }
     int maxDumpLength = maxBinaryDumpLength;
     if (maxDumpLength == 0)
     {
@@ -287,11 +301,12 @@ void DumpBuffer(FILE* out, const void* buffer, size_t len)
 		len = maxDumpLength;
 
     if (len <= 16)
-        fprintf(out, " ");
+        fprintf(out, "  ");
     else
         fprintf(out, "\n");
 
     const unsigned char* str = static_cast<const unsigned char*>(buffer);
+    fprintf(out, "\"");
     for (size_t i = 0; i < len; i++)
     {
         if (i > 0 && i % 16 == 0)
@@ -299,11 +314,17 @@ void DumpBuffer(FILE* out, const void* buffer, size_t len)
 
         fprintf(out, "%02x ", static_cast<int>(str[i]));
     }
-    fprintf(out, "\n");
+    fprintf(out, "\"\n");
 }
 
 void DumpTextU16(FILE* out, const char* buffer, size_t len)
 {
+    fprintf(out, "  %d ", len/2);
+
+    if (len <= 0) {
+        fprintf(out, "\"\"\n");
+        return;
+    }
     int maxDumpLength = maxTextDumpLength;
     if (maxDumpLength == 0)
     {
@@ -321,7 +342,7 @@ void DumpTextU16(FILE* out, const char* buffer, size_t len)
     char* str = (char*)buffer;
     if ((int)len <= maxDumpLength)
     {
-        fprintf(out, " ");
+        fprintf(out, "  ");
         char* buf = (char*)cfbf_malloc(len);
         for (int i = 0; i < (int)len; i++) // Fix type casting ZMM
         {
@@ -339,13 +360,20 @@ void DumpTextU16(FILE* out, const char* buffer, size_t len)
 
 	std::string buff8 = UTF16ToUTF8((wchar_t*)str, len / 2);
 	char* wstr = (char*)buff8.c_str();
-	fprintf(out, "%s\n", wstr);
+	fprintf(out, "\"%s\"\n", wstr);
 	if (str != buffer)
 		free(str);
 }
 
 void DumpTextU8(FILE* out, const char* buffer, size_t len)
 {
+    fprintf(out, "  %d ", len);
+
+    if (len <= 0) {
+        fprintf(out, "\"\"\n");
+        return;
+    }
+
     int maxDumpLength = maxTextDumpLength;
     if (maxDumpLength == 0)
     {
@@ -363,7 +391,7 @@ void DumpTextU8(FILE* out, const char* buffer, size_t len)
     char* str = (char*)buffer;
     if ((int)len <= maxDumpLength)
     {
-        fprintf(out, " ");
+        fprintf(out, "  ");
         char* buf = (char*)cfbf_malloc(len);
         for (int i = 0; i < (int)len; i++)  // Fix type casting ZMM
         {
@@ -380,7 +408,7 @@ void DumpTextU8(FILE* out, const char* buffer, size_t len)
     }
 
 	std::string txt(str, len);
-	fprintf(out, "%s\n", txt.c_str());
+	fprintf(out, "\"%s\"\n", txt.c_str());
 	if (str != buffer)
 		free(str);
 }
@@ -457,7 +485,6 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
     OutlookMsgHelper* msgHelper = (OutlookMsgHelper*)cookie;
     FILE* out = msgHelper->out;
 
-    int indent = (depth - 1) * 4;
     std::string indentstr;
     GetIndentStr(depth, indentstr);
 
@@ -472,6 +499,11 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
 
     int is_substg1 = (strncmp(name_utf8.c_str(), "__substg1.0_", strlen("__substg1.0_")) == 0) ? 1 : 0;
     int is_properties_version1 = (strncmp(name_utf8.c_str(), "__properties_version1", strlen("__properties_version1")) == 0) ? 1 : 0;
+    int is_recipient = (strncmp(name_utf8.c_str(), "__recip_version1", strlen("__recip_version1")) == 0) ? 1 : 0;
+    int is_attachment = (strncmp(name_utf8.c_str(), "__attach_version1", strlen("__attach_version1")) == 0) ? 1 : 0;
+    int is_nameid = (strncmp(name_utf8.c_str(), "__nameid_version1", strlen("__nameid_version1")) == 0) ? 1 : 0;
+
+    
     if (is_properties_version1)
         int deb = 1;
     
@@ -497,13 +529,19 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
 
     if (isStorage)
 	{
-		fprintf(out, "%-9s %8s%s %10llu    ", obj_type_str,
-			start_sector.c_str(),
-			isMiniStream ? "m" : " ",
-			(unsigned long long) e->stream_size);
+        if (0)
+        {
+            fprintf(out, "%-9s %8s%s %10llu    ", obj_type_str,
+                start_sector.c_str(),
+                isMiniStream ? "m" : " ",
+                (unsigned long long) e->stream_size);
+        }
 
 		fprintf(out, "%s", indentstr.c_str());
-		fprintf(out, "%s", name_utf8.c_str());
+        if (is_properties_version1 || is_recipient || is_attachment || is_nameid)
+		    fprintf(out, "[%s]", name_utf8.c_str());
+        else
+            fprintf(out, "%s", name_utf8.c_str());
 
         if (name_utf8.compare("__substg1.0_3701000D") == 0)
 		{
@@ -515,26 +553,32 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
             if (!is_properties_version1)
             {
                 if (propertyName)
-                    fprintf(out, "  %s", propertyName);
+                    fprintf(out, "   %s", propertyName);
                 else
-                    fprintf(out, "  Unknown Property Name");
+                    fprintf(out, "   Unknown");
 
                 if (type)
                     fprintf(out, "  %s", type);
                 else
-                    fprintf(out, "  Uknown Property Type 0x%s", propertyTypeStr.c_str());
+                    fprintf(out, "  Unknown 0x%s", propertyTypeStr.c_str());
             }
 		}
 	}
     else
 	{
-		fprintf(out, "%-9s %8s%s %10llu    ", obj_type_str,
-			start_sector.c_str(),
-			isMiniStream ? "m" : " ",
-			(unsigned long long) e->stream_size);
+        if (0)
+        {
+            fprintf(out, "%-9s %8s%s %10llu    ", obj_type_str,
+                start_sector.c_str(),
+                isMiniStream ? "m" : " ",
+                (unsigned long long) e->stream_size);
+        }
 
 		fprintf(out, "%s", indentstr.c_str());
-		fprintf(out, "%s", name_utf8.c_str());
+        if (is_properties_version1 || is_recipient || is_attachment || is_nameid)
+            fprintf(out, "[%s]", name_utf8.c_str());
+        else
+            fprintf(out, "%s", name_utf8.c_str());
 
 		GetPropertyIdAndType(name_utf8, propertyIdStr, propertyIdNumb, propertyTypeStr, propertyTypeNumb);
 
@@ -549,14 +593,16 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
             if (propertyName)
                 fprintf(out, "  %s", propertyName);
             else
-                fprintf(out, "  Unknown Property Name");
+                fprintf(out, "  Unknown");
 
             if (type)
                 fprintf(out, "  %s", type);
             else
-                fprintf(out, "  Uknown Property Type 0x%s", propertyTypeStr.c_str());
+                fprintf(out, "  Unknown  0x%s", propertyTypeStr.c_str());
         }
 	}
+
+    OutlookMessage::PrintDirProperties(cfbf, depth-1, e, depth+1);
 
     if (!isStream)
     {
@@ -564,7 +610,9 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
         goto end;
     }
 
-    if ((propertyName == 0) || (type == 0))
+
+    //if ((propertyName == 0) || (type == 0))
+    if (type == 0)
     {
         fprintf(out, "\n");
         goto end;
@@ -596,7 +644,7 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
         maxTextDumpLength = maxTextDumpLength;
         int maxTextDumpLength_sv = maxTextDumpLength;
         if (propertyIdNumb == PidTagTransportMessageHeaders)
-            maxTextDumpLength = -1;
+            ; //  ZMM maxTextDumpLength = -1;
 
         DumpTextU16(out, data, data_len);
 
@@ -607,7 +655,7 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
         maxTextDumpLength = maxTextDumpLength;
         int maxTextDumpLength_sv = maxTextDumpLength;
         if (propertyIdNumb == PidTagTransportMessageHeaders)
-            maxTextDumpLength = -1;
+            ; // ZMM  maxTextDumpLength = -1;
 
         DumpTextU8(out, data, data_len);
 
@@ -1383,12 +1431,12 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
 		if (propertyName)
 			fprintf(out, "  %s", propertyName);
 		else
-			fprintf(out, "  Unknown Property Name");
+			fprintf(out, "  Unknown");
 
 		if (type)
 			fprintf(out, "  %s", type);
 		else
-			fprintf(out, "  Unknown Property Type 0x%s", propertyTypeStr.c_str());
+			fprintf(out, "  Unknown 0x%s", propertyTypeStr.c_str());
 	}
 
     if (propertyName == 0)
@@ -1422,7 +1470,7 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
         maxTextDumpLength = maxTextDumpLength;
         int maxTextDumpLength_sv = maxTextDumpLength;
         if (propertyIdNumb == PidTagTransportMessageHeaders)
-            maxTextDumpLength = -1;
+            ; // ZMM  maxTextDumpLength = -1;
 
         DumpTextU16(out, data, data_len);
 
@@ -1433,7 +1481,7 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
         maxTextDumpLength = maxTextDumpLength;
         int maxTextDumpLength_sv = maxTextDumpLength;
         if (propertyIdNumb == PidTagTransportMessageHeaders)
-            maxTextDumpLength = -1;
+            ; // ZMM  maxTextDumpLength = -1;
 
         DumpTextU8(out, data, data_len);
 
@@ -1452,11 +1500,14 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
 	free(data);
 }
 
-void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* entry)
+void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* entry, int depth)
 {
     std::string errorText;
     if (entry == 0)
         return;
+
+    std::string indentstr;
+    GetIndentStr(depth, indentstr);
 
     FILE* out = cfbf->out;
 
@@ -1494,6 +1545,10 @@ void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* 
         }
         int entryCount = arrayLength / sizeof(PropertyEntry);
 
+        if (entryCount > 50)
+            int deb = 1;
+
+        fprintf(out, "\n");
         int i = 0;
         for (i = 0; i < entryCount; i++)
         {
@@ -1511,7 +1566,12 @@ void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* 
             if (propertyTypeName == 0)
                 propertyTypeName = "Unknown";
 
-            fprintf(out, "%08x %04x %s %s %llu\n", e->PropertyTag, e->Flags, propertyName, propertyTypeName, e->Value);
+            UINT64 value = e->Value;
+            if (!isFixedLengthType64Bit(type))
+                value = 0xFFFFFFFF & value;
+            else
+                int deb = 1;
+            fprintf(out, "%s %08x %04x %s %s %lld\n", indentstr.c_str(), e->PropertyTag, e->Flags, propertyName, propertyTypeName, value);
         }
         free(data);
     }
@@ -2142,17 +2202,22 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
     // Preference order: HtmlBody, hasRtfBody, hasPlainBody or check PidTagNativeBody ??
 
+
+
     if (hasPlainBody)
     {
-        DirEntry* entry = m_body.m_PidTagBody;
+        char* data = 0;
         int data_len = 0;
-        char* data = cfbf_read_entry_data(m_cfbf, entry, &data_len, errorText);
+
+        DirEntry* entry = m_body.m_PidTagBody;
+        data = cfbf_read_entry_data(m_cfbf, entry, &data_len, errorText);
 
         if (!data)
         {
-            fprintf(out, "\n");
+            if (out)
+                fprintf(out, "\n");
             m2eReturn();
-            return 1;
+            goto htmlbody;
         }
 
         if (foundInternetCodepage)
@@ -2218,6 +2283,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
     else
         ;// return -1;
 
+htmlbody:
 
     bool bodyFound = false;
     if (hasHtmlBody && !bodyFound)
@@ -2230,7 +2296,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
             if (out)
                 fprintf(out, "\n");
             m2eReturn();
-            return 1;
+            goto rtfbody;
         }
 
         // data should not be UTF16
@@ -2294,6 +2360,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         }
     }
 
+rtfbody:
+
     if (hasRtfBody && !bodyFound)
     {
         DirEntry* entry = m_body.m_PidTagRtfCompressed;
@@ -2305,7 +2373,7 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
             if (out)
                 fprintf(out, "\n");
             m2eReturn();
-            return 1;
+            goto attachments;
         }
 
         int srclen = 0;
@@ -2410,6 +2478,8 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
         }
         free(data);
     }
+
+attachments:
 
     hdr_utf8.append("\r\n\r\n--");
     hdr_utf8.append(alternativeBoundary);
@@ -2928,7 +2998,7 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
     // Investigate if mix encoding is permitted in CFBF
     if (!IsLittleEndianType())
     {
-        erText = L"Outlook .msg files are supported on little-endian systems only\n.This system is little-endian.\n";
+        erText = L"Outlook .msg files are supported on little-endian systems only\n.This system is big-endian.\n";
         return FALSE;
     }
 
@@ -3011,6 +3081,107 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 
     return TRUE;
 }
+
+BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CString& erText)
+{
+    std::string errorText;
+
+    // It is likely unnecessary check
+    // ZMM What about encoding in Compound File Binary File Format (CFBF) files
+    // Parsing will fail if CFBF file is not encoded as little-endian
+    // Investigate if mix encoding is permitted in CFBF
+    if (!IsLittleEndianType())
+    {
+        erText = L"Outlook .msg files are supported on little-endian systems only\n.This system is big-endian.\n";
+        return FALSE;
+    }
+
+    struct cfbf cfbf;
+    if (cfbf_open(msgFileNamePath, &cfbf, errorText) != 0)
+    {
+        erText.Format(L"Failed to open %s file\n\n", msgFileNamePath);
+        ResHelper::TranslateString(erText);
+
+        // ZMM This total mess, fix this
+        size_t out_len = 0;
+        wchar_t* buff16 = UTF8ToUTF16((char*)errorText.c_str(), errorText.size(), &out_len);
+
+        if (buff16)
+        {
+            erText.Append(buff16, out_len);
+            free(buff16);
+        }
+
+        return FALSE;
+    }
+
+    // ZMM !!!!!!
+
+    wchar_t* fopen_mode = L"wb";  // "w" Opens an empty file for writing. If the given file exists, its contents are destroyed.
+    FILE* outFile = _wfopen(outputFileNamePath, fopen_mode);
+    if (outFile == NULL)
+    {
+        erText.Format(L"Failed to open %s file\n\n", outputFileNamePath);
+        ResHelper::TranslateString(erText);
+
+        // ZMM This total mess, fix this
+        size_t out_len = 0;
+        wchar_t* buff16 = UTF8ToUTF16((char*)errorText.c_str(), errorText.size(), &out_len);
+
+        if (buff16)
+        {
+            erText.Append(buff16, out_len);
+            free(buff16);
+        }
+
+        return FALSE;
+    }
+
+    if (outFile)
+    {
+        cfbf.out = outFile;
+        cfbf.printEnabled = false;
+        if (cfbf.printEnabled)
+            fprintf(outFile, "%-8s %10s  %10s    NAME\n", "TYPE", "START SEC", "SIZE");
+    }
+
+    CString errText;
+    BOOL truncate = TRUE;
+
+    size_t outlen = 0;
+    wchar_t* filePathW = cfbf.filepath;
+
+    CStringW fileName;
+    FileUtils::CPathStripPath(filePathW, fileName);
+
+    HANDLE emlFileHandle = INVALID_HANDLE_VALUE;
+
+    FILE* outputFile = outFile;
+
+    OutlookMsgHelper msgHelper(&cfbf, emlFileHandle, outputFile);
+
+    int ret = msgHelper.msg.ParseMsg(&cfbf, ParseOutlookMsg, msgHelper, errorText);
+    if ((ret < 0) || (!errorText.empty()))
+        _ASSERTE((ret >= 0) && (errorText.empty()));
+
+
+    outputFile = outFile;
+    outputFile = NULL;
+
+    if (outputFile)
+    {
+        fprintf(outputFile, "\nOutlookMessage::Print @@@@@@@@@@@@@@@@@@@@@@@@\n");
+        msgHelper.msg.Print();
+        fprintf(outputFile, "\nOutlookMessage::Print END ###########################################\n");
+    }
+
+    fclose(outFile);
+
+    cfbf_close(&cfbf);
+
+    return TRUE;
+}
+
 
 bool IsLittleEndianType()
 {

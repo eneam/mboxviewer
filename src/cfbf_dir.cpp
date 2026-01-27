@@ -351,10 +351,14 @@ cfbf_walk_dir_tree(struct cfbf* cfbf,
 		return -1;
 	}
 
+	if (cfbf->out)
+		fprintf(cfbf->out, "[Root Entry]\n");
+
+	int depth = 0;
 	ret = cfbf_walk_dir_tree_from_chain(cfbf, dir_chain, num_dir_secs,
 		cfbf_get_sector_size(cfbf),
 		cfbf_get_sector_size(cfbf) / sizeof(DirEntry),
-		0, NULL, 0, callback, cookie, errorText);
+		0, NULL, depth, callback, cookie, errorText);
 
 	free(dir_chain);
 

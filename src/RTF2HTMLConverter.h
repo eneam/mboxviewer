@@ -117,6 +117,7 @@ public:
         unicodeCharLength = 1;
         htmlRtf = false;
         fontTableIndex = 0;
+        id = next_id++;
     }
 
     Group(const Group &group)
@@ -128,11 +129,15 @@ public:
         htmlRtf = group.htmlRtf;
         // Don't inherit fontTableIndex from parent group.   ??? only in one case see below
         fontTableIndex = group.fontTableIndex;
+        id = next_id++;
     }
+
     bool ignore;
     int unicodeCharLength;
     bool htmlRtf;
     Integer fontTableIndex;
+    int id;
+static int next_id;
 };
 
 class FontTableEntry
@@ -158,6 +163,7 @@ public:
 
     void appendIfNotIgnoredGroup(std::string& result, std::string& symbol, Group& group, bool char7bit=false);
     bool hexToString(const std::string& hex, Charset charset, std::string& result);
+    void AppendNL(std::list<Group> & groupStack, std::string& result, Group& currentGroup);
     //
     bool utf16TOutf8(wchar_t inchar, std::string& outstr, DWORD& error);
     //

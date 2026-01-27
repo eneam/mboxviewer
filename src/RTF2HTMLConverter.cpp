@@ -32,6 +32,9 @@
 //  Version 2.0, January 2004
 //  http://www.apache.org/licenses/
 //
+// Note: the ported code works with available MSG files
+// However, more complete implementation might be needed based on RTF specification
+// Using regular expression is too limited
 
 
 // Fix vars definitions
@@ -55,6 +58,8 @@ std::string UTF16ToUTF8(wchar_t* in, size_t in_len);
 
 static std::string CONTROL_WORD_PATTERN(R"(\\(([^a-zA-Z])|(([a-zA-Z]+)(-?\d*) ?)))");
 static std::string ENCODED_CHARACTER_PATTERN(R"(^\\'([0-9a-fA-F]{2}))");
+
+int Group::next_id = 0;
 
 
 /**
@@ -205,6 +210,8 @@ RTF2HTMLConverter::RTF2HTMLConverter()
 
 std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 {
+	std::string strLF("\n");
+	std::string strTAB("\t");
 	result.clear();
 	FontMap fontTable;
 	std::string rtf(crtf);
@@ -244,7 +251,11 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 			groupStack.push_front(new_group);
 			charIndex++;
 		}
-		else if (c == '}') {  //exiting group
+		else if (c == '}')  //exiting group
+		{
+			// Break very long single HTML line. Need better solution
+			AppendNL(groupStack, result, currentGroup);
+
 			groupStack.pop_front();
 			//Not outputting anything after last closing brace matching opening brace.
 			if (groupStack.size() == 1) {
@@ -347,15 +358,21 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 					currentGroup.htmlRtf = 1;
 				else
 					currentGroup.htmlRtf = 0;
+
+				//appendIfNotIgnoredGroup(result, strLF, currentGroup, false);
 			}
-			else if (controlWord == "pard")
-				appendIfNotIgnoredGroup(result, String("\n"), currentGroup, false);
-			else if (controlWord == "par")
-				appendIfNotIgnoredGroup(result, String("\n"), currentGroup, false);
-			else if (controlWord == "line")
-				appendIfNotIgnoredGroup(result, String("\n"), currentGroup, false);
-			else if (controlWord == "tab")
-				appendIfNotIgnoredGroup(result, String("\t"), currentGroup, false);
+			else if (controlWord == "pard") {
+				appendIfNotIgnoredGroup(result, strLF, currentGroup, false);
+			}
+			else if (controlWord == "par") {
+				appendIfNotIgnoredGroup(result, strLF, currentGroup, false);
+			}
+			else if (controlWord == "line") {
+				appendIfNotIgnoredGroup(result, strLF, currentGroup, false);
+			}
+			else if (controlWord == "tab") {
+				appendIfNotIgnoredGroup(result, strTAB, currentGroup, false);
+			}
 			else if (controlWord == "ansicpg")
 			{
 				//charset definition is important for decoding ansi encoded values
@@ -367,11 +384,14 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 						m_ansicpg = controlNumber;
 				}
 			}
-			else if (controlWord == "fonttbl") // skipping these groups' contents - these are font and color settings
+			else if (controlWord == "fonttbl") { // skipping these groups' contents - these are font and color settings
 				currentGroup.ignore = true;   // !!!! ignore will remain set until the first/oldest group with ignore set is deleted
-			else if (controlWord == "colortbl")
+			}
+			else if (controlWord == "colortbl") {
 				currentGroup.ignore = true;  // !!!! ignore will remain set until the first/oldest group with ignore set is deleted
-			else if (controlWord == "f") {
+			}
+			else if (controlWord == "f")
+			{
 				// font table index. Might be a new one, or an existing one
 				_ASSERTE(controlNumber >= 0);
 				if (controlNumber != nullControlNumber)
@@ -458,14 +478,15 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 						str_utf8.assign("?");
 						appendIfNotIgnoredGroup(result, str_utf8, currentGroup, false);  // ZMM what would be correct handling ??
 					}
-
 					charIndex += currentGroup.unicodeCharLength;
 				}
 			}
-			else if ((controlWord == "{") || (controlWord == "}") || (controlWord == "\\"))  // Escaped characters
+			else if ((controlWord == "{") || (controlWord == "}") || (controlWord == "\\")) { // Escaped characters
 				appendIfNotIgnoredGroup(result, controlWord, currentGroup, false);  // bool isUTF8EncodedSymbols = false
-			else if (controlWord == "pntext")
+			}
+			else if (controlWord == "pntext") {
 				currentGroup.ignore = true;  // !!!! ignore will remain set until the first/oldest group with ignore set is deleted
+			}
 			else
 				int deb = 1;
 		}
@@ -592,6 +613,30 @@ bool RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumbe
 		}
 	}
 	return isUTF8EncodedSymbols;
+}
+
+void RTF2HTMLConverter::AppendNL(std::list<Group> & groupStack, std::string& result, Group & currentGroup)
+{
+	if ((m_txt7bit.size() && (m_txt7bit.back() == '>')) || (result.size() && (result.back() == '>')))
+	{
+		int cnt = 0;
+		std::list<Group>::iterator it;
+		for (it = groupStack.begin(); it != groupStack.end(); ++it) {
+			if (!it->htmlRtf && !it->ignore)
+				cnt++;
+		}
+
+		if (cnt == 1)
+		{
+			bool ignore = currentGroup.ignore;
+			bool htmlRtf = currentGroup.htmlRtf;
+			currentGroup.ignore = false;
+			currentGroup.htmlRtf = false;
+			appendIfNotIgnoredGroup(result, std::string("\n"), currentGroup, false);
+			currentGroup.ignore = ignore;
+			currentGroup.htmlRtf = htmlRtf;
+		}
+	}
 }
 
 bool RegexMacher::lookingAt()

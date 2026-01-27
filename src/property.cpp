@@ -839,3 +839,18 @@ bool isFixedLengthType(UINT16 type)
     else
         return false;
 }
+
+bool isFixedLengthType64Bit(UINT16 type)
+{
+    // Fixed Length Properties
+    if (
+        (type == PtypFloating64) ||
+        (type == PtypInteger64) ||
+        (type == PtypTime) ||
+        (type == PtypGuid))
+    {
+        return true;
+    }
+    else
+        return false;
+}

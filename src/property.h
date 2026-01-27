@@ -668,5 +668,6 @@ char* idMailFilter2name(UINT16 id);
 char* idBody2name(UINT16 id);
 char* id2type(const char *id);
 bool isFixedLengthType(UINT16 type);
+bool isFixedLengthType64Bit(UINT16 type);
 
 void* cfbf_malloc(size_t _Size);
