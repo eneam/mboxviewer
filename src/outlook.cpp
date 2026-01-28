@@ -425,6 +425,7 @@ ParseOutlookMsg(void* cookie, struct cfbf* cfbf, DirEntry* e,
     int retval = 1;
 
     OutlookMsgHelper* msgHelper = (OutlookMsgHelper*)cookie;
+    _ASSERTE(msgHelper->active_msg);
     FILE* out = msgHelper->out;
 
     // Ignore for now. Review later
@@ -461,6 +462,7 @@ ParseOutlookMsg(void* cookie, struct cfbf* cfbf, DirEntry* e,
 
             msgHelper->m_msgList.push_back(msgHelper->active_msg);
             msgHelper->active_msg = new OutlookMessage(msgHelper->out, msgHelper->emlFileHandle, cfbf);
+            msgHelper->active_msg->m_baseDepthLevel = depth + 1;
             int deb = 1;
         }
     }
@@ -502,6 +504,7 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
     int is_recipient = (strncmp(name_utf8.c_str(), "__recip_version1", strlen("__recip_version1")) == 0) ? 1 : 0;
     int is_attachment = (strncmp(name_utf8.c_str(), "__attach_version1", strlen("__attach_version1")) == 0) ? 1 : 0;
     int is_nameid = (strncmp(name_utf8.c_str(), "__nameid_version1", strlen("__nameid_version1")) == 0) ? 1 : 0;
+    int is_object = (name_utf8.compare("__substg1.0_3701000D") == 0) ? 1 : 0;
 
     
     if (is_properties_version1)
@@ -575,7 +578,7 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
         }
 
 		fprintf(out, "%s", indentstr.c_str());
-        if (is_properties_version1 || is_recipient || is_attachment || is_nameid)
+        if (is_properties_version1 || is_recipient || is_attachment || is_nameid || is_object)
             fprintf(out, "[%s]", name_utf8.c_str());
         else
             fprintf(out, "%s", name_utf8.c_str());
@@ -602,7 +605,29 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
         }
 	}
 
-    OutlookMessage::PrintDirProperties(cfbf, depth-1, e, depth+1);
+    // Top Level Header  vs
+    // Embedded Message object Storage - what is this and how to apply ??
+    // ZMM Only top level seems to work on .msg Message Object
+
+    _ASSERTE(msgHelper->active_msg);
+    int depthLevel = depth;
+    if (msgHelper->active_msg)
+    {
+        if (msgHelper->active_msg->m_baseDepthLevel == 0) {
+            depthLevel = depth;
+            if (depth == 1)
+                depthLevel = 0;
+        }
+        else
+        {
+            depthLevel = depth;
+            if (depth == msgHelper->active_msg->m_baseDepthLevel)
+                depthLevel = 1;
+            int deb = 1;
+        }
+    }
+
+    OutlookMessage::PrintDirProperties(cfbf, depthLevel, e, depth+1);
 
     if (!isStream)
     {
@@ -1018,11 +1043,52 @@ bool OutlookMessage::GetNativeBody(UINT64& nNativeBody, std::string& NativeBody)
     return found;
 }
 
-bool OutlookMessage::GetDate(std::string& Date)
+bool OutlookMessage::Time2Date(UINT64 value, std::string& Date)
 {
     static char* days[] = { "Sun","Mon","Tue","Wed","Thu","Fri","Sat" };
     static char* months[] = { "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
 
+    Date.clear();
+
+    if (value > 0x8000000000000000LL)
+        int deb = 1;
+
+    FILETIME ft;
+    ULARGE_INTEGER ularge;
+    ularge.QuadPart = value; // your_uint64_value is the UINT64 you want to convert
+    ft.dwLowDateTime = ularge.LowPart;
+    ft.dwHighDateTime = ularge.HighPart;
+
+    SYSTEMTIME sysTime;
+    BOOL validConversion = FileTimeToSystemTime(&ft, &sysTime);
+    if (!validConversion)
+    {
+        UINT16 errCode = GetLastError();
+        return false;
+    }
+
+    //  long MS_EPOCH_OFFSET = 11644473600000L;
+    // "Date: Fri, 1 Feb 2013 19:22:07 +0000 (GMT)"
+
+    char dateBuff[128];
+    dateBuff[0] = 0;
+
+    char* day = "Mon";
+    if ((sysTime.wDayOfWeek >= 0) && (sysTime.wDayOfWeek <= 6))
+        day = days[sysTime.wDayOfWeek];
+
+    char* month = "Jan";
+    if ((sysTime.wMonth >= 1) && (sysTime.wMonth <= 12))
+        month = months[sysTime.wMonth - 1];
+
+    sprintf(dateBuff, "%s, %d %s %d %d:%d:%d +0000 (GMT)", day, sysTime.wDay, month, sysTime.wYear, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
+    Date.append(dateBuff, strlen(dateBuff));
+
+    return true;
+}
+
+bool OutlookMessage::GetDate(std::string& Date)
+{
     Date.clear();
 
 #if 1
@@ -1056,41 +1122,9 @@ bool OutlookMessage::GetDate(std::string& Date)
     if (!found)
         return false;
 
-    if (value > 0x8000000000000000LL)
-        int deb = 1;
+    bool retTime2Data = OutlookMessage::Time2Date(value, Date);
 
-    FILETIME ft;
-    ULARGE_INTEGER ularge;
-    ularge.QuadPart = value; // your_uint64_value is the UINT64 you want to convert
-    ft.dwLowDateTime = ularge.LowPart;
-    ft.dwHighDateTime = ularge.HighPart;
-
-    SYSTEMTIME sysTime;
-    BOOL validConversion = FileTimeToSystemTime(&ft, &sysTime);
-    if (!validConversion)
-    {
-        UINT16 errCode = GetLastError();
-        return false;
-    }
-
-    //  long MS_EPOCH_OFFSET = 11644473600000L;
-    // "Date: Fri, 1 Feb 2013 19:22:07 +0000 (GMT)"
-
-    char dateBuff[128];
-    dateBuff[0] = 0;
-
-    char* day = "Mon";
-    if ((sysTime.wDayOfWeek >= 0) && (sysTime.wDayOfWeek <= 6))
-        day = days[sysTime.wDayOfWeek];
-
-    char* month = "Jan";
-    if ((sysTime.wMonth >= 1) && (sysTime.wMonth <= 12))
-        month = months[sysTime.wMonth-1];
-
-    sprintf(dateBuff, "%s, %d %s %d %d:%d:%d +0000 (GMT)", day, sysTime.wDay, month, sysTime.wYear, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
-    Date.append(dateBuff, strlen(dateBuff));
-
-    return true;
+    return retTime2Data;
 }
 
 bool OutlookMessage::GetMessageId(std::string& MessageId)
@@ -1529,11 +1563,18 @@ void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* 
 
         int arrayLength = 0;
         char* entry_data = 0;
-        if (level == 0)
+        if (level == 0)  // top level message
         {
             int topHdrSize = sizeof(PropertyHeaderTop);
             arrayLength = entry->stream_size - topHdrSize;
             PropertyHeaderTop* hdr = (PropertyHeaderTop*)data;
+            entry_data = data + topHdrSize;
+        }
+        else if (level == 1)  // not a top level message, ie embedded message
+        {
+            int topHdrSize = sizeof(PropertyHeaderEmbeded);
+            arrayLength = entry->stream_size - topHdrSize;
+            PropertyHeaderEmbeded* hdr = (PropertyHeaderEmbeded*)data;
             entry_data = data + topHdrSize;
         }
         else
@@ -1571,7 +1612,20 @@ void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* 
                 value = 0xFFFFFFFF & value;
             else
                 int deb = 1;
-            fprintf(out, "%s %08x %04x %s %s %lld\n", indentstr.c_str(), e->PropertyTag, e->Flags, propertyName, propertyTypeName, value);
+
+
+            fprintf(out, "%s %08x %04x  %s  %s  %lld", indentstr.c_str(), e->PropertyTag, e->Flags, propertyName, propertyTypeName, value);
+
+            std::string Date;
+            if (type == PtypTime) {
+                bool retTime2Data = Time2Date(value, Date);
+                fprintf(out, "  \"%s\"\n", Date.c_str());
+            }
+            else
+                fprintf(out, "\n");
+
+
+            
         }
         free(data);
     }
@@ -3041,12 +3095,6 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 
     CStringW fileName;
     FileUtils::CPathStripPath(filePathW, fileName);
-
-#if 0
-    CString cStrNamePath(LR"(C:\Users\tata\Downloads\msg2eml\)");
-    cStrNamePath.Append(fileName);
-    cStrNamePath.Append(L".eml");
-#endif
 
     wchar_t* emlFilePath = (wchar_t*)(LPCWSTR)emlFileNamePath;
 

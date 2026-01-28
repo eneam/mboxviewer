@@ -460,6 +460,7 @@ cfbf_alloc_chain_content(struct cfbf* cfbf, SECT first_sector, int64_t data_size
 		errorText = txt;
 		goto fail;
 	}
+	_ASSERTE(!(((UINT64)data % 2) || ((UINT64)data % 4) || ((UINT64)data %8)));
 	return data;
 fail:
 	free(data);

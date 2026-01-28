@@ -204,6 +204,7 @@ class OutlookMessage
 public:
     OutlookMessage()
     {
+        m_baseDepthLevel = 9;
         logFile = 0;
         emlFile = 0;
         m_cfbf = 0;
@@ -212,6 +213,7 @@ public:
     OutlookMessage(FILE* outLogFile, HANDLE msg2emlFile, struct cfbf* icfbf)
     {
         _ASSERTE(icfbf);
+        m_baseDepthLevel = 0;
         logFile = outLogFile;
         emlFile = msg2emlFile;
         m_cfbf = icfbf;
@@ -224,6 +226,7 @@ public:
     int Msg2Eml(std::string& msg_utf8, std::string& errorText);
     int WordEncode(std::string& fld, std::string& wordEncodedFld, int encodeType = 'Q');
 
+    int m_baseDepthLevel;
     struct cfbf* m_cfbf;
     HANDLE emlFile;
     FILE* logFile;
@@ -251,6 +254,8 @@ public:
 
     bool GetFixedLengthPropertValue(struct cfbf* cfbf, bool isRootParent, DirEntry* entry, UINT16 propertyId, UINT64& nValue, UINT16& type, std::string& sValue, bool hexFormat = false);
     bool GetPropertyString(struct cfbf* cfbf, DirEntry* entry, std::string& value_utf8, UINT16& type, std::string& errorText);
+
+    static bool Time2Date(UINT64 value, std::string& Date);
 
     static bool GetDirPropertyValueFixedLength(struct cfbf* cfbf, bool isRootParent, DirEntry* entry, UINT16 propertyId, UINT64& value, UINT16& type);
     static bool GetStreamDirEntryValueString(struct cfbf* cfbf, DirEntry* entry, std::string& value, UINT16& type, std::string& errorText);

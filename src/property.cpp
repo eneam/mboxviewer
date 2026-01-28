@@ -846,8 +846,8 @@ bool isFixedLengthType64Bit(UINT16 type)
     if (
         (type == PtypFloating64) ||
         (type == PtypInteger64) ||
-        (type == PtypTime) ||
-        (type == PtypGuid))
+        (type == PtypTime)
+        )
     {
         return true;
     }
