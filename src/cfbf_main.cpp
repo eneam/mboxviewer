@@ -61,9 +61,10 @@ typedef enum {
 PropertyFilter propFilter = PROPERTY_NO_FILTER;
 static bool PrintEntryInfo = false;
 static bool printEntryData = false;
-int maxTextDumpLength = 160;
-int maxBinaryDumpLength = 16;
+int maxTextDumpLength = 80;
+int maxBinaryDumpLength = 32;
 int maxRtfDumpLength = 80;
+int expandedPrint = false;
 
 char* id2name(UINT16 id)
 {

@@ -185,6 +185,8 @@ static const int Mela = 0x414c454d;
 		int crc32 = (int)GetU32(src, inPos);
 		inPos += 4;
 
+		unsigned char* data = src + 16;
+
 		// process the data
 		switch (compType)
 		{
@@ -206,6 +208,9 @@ static const int Mela = 0x414c454d;
 				strncpy(errorText, "uncompressed-RTF cfbf_malloc failed", errTextLen);
 				return 0;
 			}
+			if ((srclen - uncompressedSize) < 16)
+				uncompressedSize = srclen - 16;
+
 			memcpy(dst, &src[inPos], uncompressedSize); // just copy it as it is
 		}
 		break;
@@ -282,6 +287,8 @@ static const int Mela = 0x414c454d;
 
 			// copy it back without the pre buffered data
 			memcpy(dst, &dst[PrebufLen], uncompressedSize);
+
+			_ASSERTE(outPos == (PrebufLen + uncompressedSize));
 		}
 		break;
 

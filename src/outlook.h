@@ -204,7 +204,7 @@ class OutlookMessage
 public:
     OutlookMessage()
     {
-        m_baseDepthLevel = 9;
+        m_baseDepthLevel = 0;
         logFile = 0;
         emlFile = 0;
         m_cfbf = 0;
@@ -226,7 +226,7 @@ public:
     int Msg2Eml(std::string& msg_utf8, std::string& errorText);
     int WordEncode(std::string& fld, std::string& wordEncodedFld, int encodeType = 'Q');
 
-    int m_baseDepthLevel;
+    int m_baseDepthLevel;  // used to determine root top level or embedded top level message
     struct cfbf* m_cfbf;
     HANDLE emlFile;
     FILE* logFile;
@@ -252,12 +252,12 @@ public:
     bool GetStoreSupportMask(UINT64& nStoreSupportMask, std::string& StoreSupportMask);
     bool GetNativeBody(UINT64& nNativeBody, std::string& NativeBody);
 
-    bool GetFixedLengthPropertValue(struct cfbf* cfbf, bool isRootParent, DirEntry* entry, UINT16 propertyId, UINT64& nValue, UINT16& type, std::string& sValue, bool hexFormat = false);
+    bool GetFixedLengthPropertValue(struct cfbf* cfbf, int dirType, DirEntry* entry, UINT16 propertyId, UINT64& nValue, UINT16& type, std::string& sValue, bool hexFormat = false);
     bool GetPropertyString(struct cfbf* cfbf, DirEntry* entry, std::string& value_utf8, UINT16& type, std::string& errorText);
 
     static bool Time2Date(UINT64 value, std::string& Date);
 
-    static bool GetDirPropertyValueFixedLength(struct cfbf* cfbf, bool isRootParent, DirEntry* entry, UINT16 propertyId, UINT64& value, UINT16& type);
+    static bool GetDirPropertyValueFixedLength(struct cfbf* cfbf, int dirType, DirEntry* entry, UINT16 propertyId, UINT64& value, UINT16& type);
     static bool GetStreamDirEntryValueString(struct cfbf* cfbf, DirEntry* entry, std::string& value, UINT16& type, std::string& errorText);
     static char* GetStreamDirEntryValue(struct cfbf* cfbf, DirEntry* entry, UINT16& type, int& data_len, std::string& errorText);
 

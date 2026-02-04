@@ -57,6 +57,8 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 int IsValidOutlookMsgFile(CString& fname);
 BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText);
 BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& oyputFileNamePath, CString& erText);
+extern int expandedPrint;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // NTreeView
@@ -3203,7 +3205,6 @@ void MyAppendMenu(CMenu* menu, int commandId, const wchar_t* commandName, BOOL c
 
 void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
-
 	SCROLLINFO si;
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -3299,13 +3300,31 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		menu.CreatePopupMenu();
 		//menu.AppendMenu(MF_SEPARATOR);
 
-		const UINT M_Print_Id = 1;
-		MyAppendMenu(&menu, M_Print_Id, L"Print");
+		////////////////
 
-		const UINT M_FileLocation_Id = 2;
+		//
+		MyPopupMenu printToSubMenu;
+		printToSubMenu.CreatePopupMenu();
+		printToSubMenu.AppendMenu(MF_SEPARATOR);
+
+		const UINT M_Basic_Id = 1;
+		MyAppendMenu(&printToSubMenu, M_Basic_Id, L"Basic");
+
+		const UINT M_Expanded_Id = 2;
+		MyAppendMenu(&printToSubMenu, M_Expanded_Id, L"Expanded");
+
+		menu.AppendMenu(MF_POPUP | MF_STRING, (INT_PTR)printToSubMenu.GetSafeHmenu(), L"Print");
+		menu.AppendMenu(MF_SEPARATOR);
+
+		/////////////////
+
+		//const UINT M_Print_Id = 1;
+		//MyAppendMenu(&menu, M_Print_Id, L"Print");
+
+		const UINT M_FileLocation_Id = 3;
 		MyAppendMenu(&menu, M_FileLocation_Id, L"Open File Location");
 
-		const UINT M_Properties_Id = 3;
+		const UINT M_Properties_Id = 4;
 		MyAppendMenu(&menu, M_Properties_Id, L"Properties");
 
 		int index = 1;
@@ -3323,29 +3342,15 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 		switch (command)
 		{
-		case M_Print_Id:
+		case M_Expanded_Id:
+			expandedPrint = true;
+		case M_Basic_Id:
 		{
 			UINT nFlags = MF_BYCOMMAND;
 			CString Label;
 			int retLabel = menu.GetMenuString(M_FileLocation_Id, Label, nFlags);
 
-			////  msgFilePath
-
-#if 0
-			CString printCachePath;
-			CString rootPrintSubFolder = L"PrintCache";
-
-			BOOL retval = CreateCachePath(rootPrintSubFolder, targetPrintSubFolder, printCachePath, errorText);
-			if (retval == FALSE) {
-				return -1;
-			}
-
-			BOOL MboxMail::CreateCachePath(CString & rootPrintSubFolder, CString & targetPrintSubFolder, CString & prtCachePath, CString & errorText)
-
-#endif
 			CString pathLast = MboxMail::GetLastPath();
-			//pathLast.TrimRight(L"\\");
-
 			CString datapath = MboxMail::GetLastDataPath();
 
 			CString outputFilePath = datapath + L"PrintCache";
@@ -3356,65 +3361,13 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString erText;
 			BOOL retPrint = PrintOutlookMsg(msgFilePath, outputFileNamePath, erText);
 
-				int deb = 1;
+			int deb = 1;
 
-#if 0
-			{
+			HWND h = GetSafeHwnd();
+			HINSTANCE result = ShellExecute(h, L"open", outputFileNamePath, NULL, NULL, SW_SHOWNORMAL);
+			CMainFrame::CheckShellExecuteResult(result, h);
 
-				CString datapath = MboxMail::GetLastDataPath();
-				CString msg2emlCachePath = datapath + "Msg2EmlCache";
-				BOOL retCreate = FileUtils::CreateDir(msg2emlCachePath);
-
-				CString path = MboxMail::GetLastPath();
-
-				CString msgFileNamePath = path;
-				msgFileNamePath.Append(newItemName);
-
-				CString emlFileNamePath = msg2emlCachePath;
-				emlFileNamePath.Append(L"\\");
-				emlFileNamePath.Append(msgFileBaseName);
-				emlFileNamePath.Append(L".eml");
-
-				BOOL retConv = ConvertOutlookMsg2Eml(msgFileNamePath, emlFileNamePath, errorText);
-				if (retConv)
-				{
-					int MaxShellExecuteErrorCode = 32;
-					//HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
-					HINSTANCE result = (HINSTANCE)(32 + 1);
-
-					CString mboxviewPath = CMainFrame::m_processPath;
-					INT nShowCmd = SW_SHOWNORMAL;
-
-					result = ShellExecute(NULL, L"open", mboxviewPath, emlFileNamePath, msg2emlCachePath, SW_SHOWNORMAL);
-					if ((UINT_PTR)result <= MaxShellExecuteErrorCode)
-					{
-						CString errorText;
-						CString errText;
-						ShellExecuteError2Text((UINT_PTR)result, errText);
-						CString fmt = L"\"%s\"\n\nFailed to open the eml file: ";
-						ResHelper::TranslateString(fmt);
-						errorText.Format(fmt, errText);
-
-						HWND h = GetSafeHwnd();
-						int answer = MyMessageBox(h, errorText, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-						if (answer == IDOK)
-							int deb = 1;  // ZMM Try again ??
-					}
-				}
-				else
-				{
-					_ASSERTE(!errorText.IsEmpty());   // ZMM Review ConvertOutlookMsg2Eml
-				}
-				return;
-			}
-#endif
-			////
-
-			//if (FileUtils::BrowseToFile(outputFileNamePath) == FALSE) {  // TODO: s_path error checking ??
-				HWND h = GetSafeHwnd();
-				HINSTANCE result = ShellExecute(h, L"open", outputFileNamePath, NULL, NULL, SW_SHOWNORMAL);
-				CMainFrame::CheckShellExecuteResult(result, h);
-			//}
+			expandedPrint = false;
 		}
 		break;
 		case M_FileLocation_Id:
