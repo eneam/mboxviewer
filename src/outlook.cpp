@@ -29,6 +29,8 @@
 // Coverting Outlook Mswg to eml files is quite challenging/complicated
 // This version is missing some features that need to be resolved later after initial release
 //
+// Initial investigation and prototyping, code needs cleanup such as review of m_baseDepthLevel, 
+// removing duplicate code, adding comments, etc
 
 // problem if using ISO c++17 and above
 // deleted "using namespace std" in header files and updated code instead of below
@@ -195,7 +197,7 @@ void DumpBuffer(FILE* out, const void* buffer, size_t len, int maxBinaryDumpLeng
 
 void DumpRTF(FILE* out, const void* buffer, size_t len, int maxDumpLength)
 {
-	fprintf(out, "  %d ", len);
+	fprintf(out, "  %d ", (int)len);
 
 	if (len <= 0) {
 		fprintf(out, "\"\"\n");
@@ -290,7 +292,7 @@ void DumpRTF(FILE* out, const void* buffer, size_t len, int maxDumpLength)
 
 void DumpBuffer(FILE* out, const void* buffer, size_t len, int maxDumpLength)
 {
-	fprintf(out, "  %d  ", len);
+	fprintf(out, "  %d  ", (int)len);
 
 	if (len <= 0) {
 		fprintf(out, "\"\"\n");
@@ -341,7 +343,7 @@ void DumpBuffer(FILE* out, const void* buffer, size_t len, int maxDumpLength)
 void DumpTextU16(FILE* out, const char* buffer, size_t len, int maxDumpLength)
 {
 	len = len / 2;
-	fprintf(out, "  %d  ", len);
+	fprintf(out, "  %d  ", (int)len);
 
 	if (len <= 0) {
 		fprintf(out, "\"\"\n");
@@ -402,7 +404,7 @@ void DumpTextU16(FILE* out, const char* buffer, size_t len, int maxDumpLength)
 
 void DumpTextU8(FILE* out, const char* buffer, size_t len, int maxDumpLength)
 {
-	fprintf(out, "  %d  ", len);
+	fprintf(out, "  %d  ", (int)len);
 
 	if (len <= 0) {
 		fprintf(out, "\"\"\n");
@@ -519,9 +521,7 @@ ParseOutlookMsg(void* cookie, struct cfbf* cfbf, DirEntry* e,
 	return retval;
 }
 
-
-int
-PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
+int PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
 	DirEntry* parent, unsigned long entry_id, int depth)
 {
 	std::string errorText;
@@ -671,7 +671,8 @@ PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
 		}
 	}
 
-	OutlookMessage::PrintDirProperties(cfbf, depthLevel, e, depth + 1);
+	int messageLevel = depthLevel;  // top or embeded, otherwise recipient or attachment
+	OutlookMessage::PrintDirProperties(cfbf, messageLevel, e, depth + 1);
 
 	if (!isStream)
 	{
@@ -1614,7 +1615,7 @@ void PrintProperty(struct cfbf* cfbf, int level, DirEntry* entry)
 	free(data);
 }
 
-void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* entry, int depth)
+void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int messageLevel, DirEntry* entry, int depth)
 {
 	std::string errorText;
 	if (entry == 0)
@@ -1643,14 +1644,14 @@ void OutlookMessage::PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* 
 
 		int arrayLength = 0;
 		char* entry_data = 0;
-		if (level == 0)  // top level message
+		if (messageLevel == 0)  // top level message
 		{
 			int topHdrSize = sizeof(PropertyHeaderTop);
 			arrayLength = entry->stream_size - topHdrSize;
 			PropertyHeaderTop* hdr = (PropertyHeaderTop*)data;
 			entry_data = data + topHdrSize;
 		}
-		else if (level == 1)  // not a top level message, ie embedded message
+		else if (messageLevel == 1)  // not a top level message, ie embedded message
 		{
 			int topHdrSize = sizeof(PropertyHeaderEmbeded);
 			arrayLength = entry->stream_size - topHdrSize;

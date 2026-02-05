@@ -254,7 +254,8 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 		else if (c == '}')  //exiting group
 		{
 			// Break very long single HTML line. Need better solution
-			AppendNL(groupStack, result, currentGroup);
+			// Commented out. Below doesn't work; it breaks for example <pre blocks and pre-wrap style
+			//AppendNL(groupStack, result, currentGroup);
 
 			groupStack.pop_front();
 			//Not outputting anything after last closing brace matching opening brace.
@@ -358,8 +359,6 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 					currentGroup.htmlRtf = 1;
 				else
 					currentGroup.htmlRtf = 0;
-
-				//appendIfNotIgnoredGroup(result, strLF, currentGroup, false);
 			}
 			else if (controlWord == "pard") {
 				appendIfNotIgnoredGroup(result, strLF, currentGroup, false);

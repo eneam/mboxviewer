@@ -267,7 +267,7 @@ public:
     static bool IsString8(char* buf, int buflen);
 
     void Print();
-    static void PrintDirProperties(struct cfbf* cfbf, int level, DirEntry* entry, int depth = 0);
+    static void PrintDirProperties(struct cfbf* cfbf, int messageLevel, DirEntry* entry, int depth = 0);
 
     static bool Write2File(wchar_t* cStrNamePath, const unsigned char* data, int dataLength);
     static int WriteToEmlFile(const char* msgFilePath, std::string& emlData_utf8);

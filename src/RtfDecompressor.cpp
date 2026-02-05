@@ -194,6 +194,7 @@ static const int Mela = 0x414c454d;
 		{
 			// crc32 is not used on MELA. Thus crc32 must be zero.
 			// crc32 is not zero usually because they are written from uninitialized memory.
+			_ASSERTE(compressedSize == uncompressedSize);
 			if (compressedSize != uncompressedSize)
 			{
 				char errText[512];
@@ -208,6 +209,7 @@ static const int Mela = 0x414c454d;
 				strncpy(errorText, "uncompressed-RTF cfbf_malloc failed", errTextLen);
 				return 0;
 			}
+			_ASSERTE((srclen - uncompressedSize) == 16);
 			if ((srclen - uncompressedSize) < 16)
 				uncompressedSize = srclen - 16;
 
