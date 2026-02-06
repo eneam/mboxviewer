@@ -2409,7 +2409,10 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 
 		char* eBuffer = (char*)cfbf_malloc(eLength);
 		if (eBuffer == NULL)
+		{
+			free(data);  // ZMM goto failed
 			return 1;
+		}
 		int retlen = eQP.GetOutput((unsigned char*)eBuffer, eLength);
 		if (retlen > 0)
 			int deb = 1;
@@ -2480,7 +2483,10 @@ htmlbody:
 
 			char* eBuffer = (char*)cfbf_malloc(eLength);
 			if (eBuffer == NULL)
+			{
+				free(data);  // ZMM got failed
 				return 1;
+			}
 			int retlen = eQP.GetOutput((unsigned char*)eBuffer, eLength);
 			if (retlen > 0)
 				int deb = 1;
@@ -2595,7 +2601,11 @@ rtfbody:
 
 				char* eBuffer = (char*)cfbf_malloc(eLength);
 				if (eBuffer == NULL)
+				{
+					free(data);  // ZMM goto failed ??
+					free(dst);
 					return 1;
+				}
 				int retlen = eQP.GetOutput((unsigned char*)eBuffer, eLength);
 				if (retlen > 0)
 					int deb = 1;
@@ -2706,7 +2716,10 @@ attachments:
 
 					char* eBuffer = (char*)cfbf_malloc(eLength);
 					if (eBuffer == NULL)
+					{
+						free(data);   // goto failed??
 						return 1;
+					}
 					int retlen = e64.GetOutput((unsigned char*)eBuffer, eLength);
 					if (retlen > 0)
 						int deb = 1;
@@ -2825,7 +2838,11 @@ attachments:
 
 							char* eBuffer = (char*)cfbf_malloc(eLength);
 							if (eBuffer == NULL)
-								return 1;
+							{
+								delete nested_msg;
+								it->m_attach.m_OutlookMessage = 0;
+								return 1;  // ZMM goto  failed??
+							}
 							int retlen = e64.GetOutput((unsigned char*)eBuffer, eLength);
 							if (retlen > 0)
 								int deb = 1;

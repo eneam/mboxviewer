@@ -272,9 +272,10 @@ static const int Mela = 0x414c454d;
 					if (end >= dstLen)
 					{
 						char errText[512];
-						sprintf(errText, "compressed-RTF algo failure: end=%d dstLen=%d",
+						sprintf(errText, "compressed-RTF algorithm failure: end=%d dstLen=%d",
 							end, dstLen);
 						strncpy(errorText, errText, errTextLen);
+						free(dst);
 						return 0;
 					}
 					while (offset < end)

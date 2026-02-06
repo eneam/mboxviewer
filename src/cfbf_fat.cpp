@@ -731,7 +731,10 @@ fail:
 
 void* cfbf_malloc(size_t _Size)
 {
-	if (_Size == 236544)
+	if (_Size == 168)
 		int deb = 1;
-	return malloc(_Size);
+	void* m =  malloc(_Size);
+
+	_ASSERTE(m);
+	return m;
 }

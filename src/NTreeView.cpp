@@ -3308,7 +3308,7 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		printToSubMenu.AppendMenu(MF_SEPARATOR);
 
 		const UINT M_Basic_Id = 1;
-		MyAppendMenu(&printToSubMenu, M_Basic_Id, L"Basic");
+		MyAppendMenu(&printToSubMenu, M_Basic_Id, L"Default");
 
 		const UINT M_Expanded_Id = 2;
 		MyAppendMenu(&printToSubMenu, M_Expanded_Id, L"Expanded");
