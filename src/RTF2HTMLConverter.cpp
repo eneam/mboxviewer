@@ -303,7 +303,8 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 					int deb = 1;
 
 				appendIfNotIgnoredGroup(result, decoded, currentGroup, retEncodedUTF8);
-				m_ansicpg_setUTF8 = retEncodedUTF8;  // update  m_ansicpg = CP_UTF8 before return from function
+				if (!m_ansicpg_setUTF8)
+					m_ansicpg_setUTF8 = retEncodedUTF8; 
 				continue;
 			}
 
@@ -466,7 +467,6 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 					bool ret = utf16TOutf8(unicodeSymbol, str_utf8, error);
 					if (ret)
 					{
-						result.append(str_utf8);
 						appendIfNotIgnoredGroup(result, str_utf8, currentGroup, true);
 
 						//m_ansicpg_setUTF8 = true;  // update  m_ansicpg = CP_UTF8 before return from function
@@ -522,6 +522,8 @@ std::string RTF2HTMLConverter::rtf2html(char* crtf, std::string& result)
 
 	if (m_ansicpg_setUTF8)
 		m_ansicpg = CP_UTF8;
+	else
+		int deb = 1;
 
 	return String("");  // Indicate ok;
 };
@@ -537,6 +539,7 @@ void RTF2HTMLConverter::appendIfNotIgnoredGroup(std::string& result, std::string
 			int deb = 1;
 
 		if (!isUTF8EncodedSymbols) {
+			// store for characters defined by \ansicpg; 7 and 8bit not just 7bit ascii
 			m_txt7bit.append(symbol);  // it will appended at some point and may have to be UTF8 encoded.
 		}
 		else if (!m_txt7bit.empty())  // ASCII text ??

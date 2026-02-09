@@ -27,6 +27,12 @@
 #include "cfbf.h"
 #include "outlook.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 static size_t
 strlen_utf16(uint16_t* s) {
 	size_t count = 0;

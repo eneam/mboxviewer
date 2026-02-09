@@ -144,6 +144,7 @@ struct Recipient
 
 struct RecipientInfo
 {
+    ~RecipientInfo();
     std::string m_name;
     Recipient m_recip;
 };

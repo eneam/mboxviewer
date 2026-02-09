@@ -26,17 +26,17 @@
 //////////////////////////////////////////////////////////////////
 //
 
-// Coverting Outlook Mswg to eml files is quite challenging/complicated
+// Converting Outlook Msg to eml files is quite challenging/complicated
 // This version is missing some features that need to be resolved later after initial release
 //
-// Initial investigation and prototyping, code needs cleanup such as review of m_baseDepthLevel, 
+// Initial investigation and prototyping, code needs cleanup 
 // removing duplicate code, adding comments, etc
 
 // problem if using ISO c++17 and above
 // deleted "using namespace std" in header files and updated code instead of below
 //#define _HAS_STD_BYTE 0 
 
-// Fix vars definitions
+// Fix vars definitions complains
 #pragma warning(disable : 4267) // warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 #pragma warning(disable : 4244)  // warning C4244: '=': conversion from 'UINT64' to 'UINT', possible loss of data
 #pragma warning(disable : 4996)  // warning C4996: 'strnicmp': The POSIX name for this item is deprecated.Instead, use the ISO C and C++ conformant name : _strnicmp.
@@ -63,6 +63,12 @@
 #include "TextUtilsEx.h"
 #include "mimetypes.h"
 #include "ResHelper.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
 
 
 extern int maxTextDumpLength;
@@ -459,6 +465,11 @@ void DumpTextU8(FILE* out, const char* buffer, size_t len, int maxDumpLength)
 		free(str);
 }
 
+RecipientInfo::~RecipientInfo()
+{
+	int deb = 1;
+}
+
 int
 PrintOutlookObject(void* cookie, struct cfbf* cfbf, DirEntry* e,
 	DirEntry* parent, unsigned long entry_id, int depth);
@@ -786,6 +797,9 @@ OutlookMessage::~OutlookMessage()
 			{
 				int deb = 1;
 			}
+			OutlookMessage* pMsg = itA->m_attach.m_OutlookMessage;
+			itA->m_attach.m_OutlookMessage = 0;
+			delete pMsg;
 		}
 		int deb = 1;
 	}
@@ -2155,30 +2169,12 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 	}
 	else
 	{
+		// ZMM Should I rely on provided header or recreate from  prov ided fierlds
+
 		DirEntry* entry = m_body.m_PidTagTransportMessageHeaders;
 		int data_len = 0;
 		char* data = cfbf_read_entry_data(m_cfbf, entry, &data_len, errorText);
-
-		bool isNULTerminated = false;
-		int nlCnt = 0;
-		int i;
-		for (i = (data_len-1); i >= 0; i--)
-		{
-			char c = data[i];
-			if (c == '\0')
-			{
-				isNULTerminated = true;
-				continue;
-			}
-			if ((c == '\n') || (c == '\r'))
-			{
-				continue;
-			}
-			else
-				break;
-		}
-
-		data_len = i + 1;
+		wchar_t* wdata = (wchar_t*)data;
 
 		if (!data)
 		{
@@ -2211,6 +2207,29 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 		fld = deletedContentTransferEncoding.c_str();
 		fldlen = deletedContentTransferEncoding.length();
 		lengthEnd = hdr_utf8.length();
+
+		// Remove empty trailing lines
+		const char* str = hdr_utf8.c_str();
+		int strlength = hdr_utf8.size();
+		int endpos = strlength;
+
+		int i;
+		for (i = (strlength - 1); i >= 0; i--)
+		{
+			char c = str[i];
+			if ((c == '\0') || (c == ' '))
+				continue;
+			else if ((c == '\n') || (c == '\r'))
+			{
+				endpos = i;
+			}
+			else
+				break;
+		}
+
+		hdr_utf8.erase(endpos);
+
+		hdr_utf8.append("\r\n");
 
 		if (!foundMessageId)
 		{
@@ -2899,8 +2918,9 @@ attachments:
 						}
 						int deb = 1;
 					}
-					delete nested_msg;
-					it->m_attach.m_OutlookMessage = 0;
+					// Works but to generalize Delete in destructor of OutlookMsgHelper
+					//delete nested_msg;
+					//it->m_attach.m_OutlookMessage = 0;
 				}
 			}
 			int deb = 1;
@@ -3317,6 +3337,8 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 
 	OutlookMsgHelper msgHelper(&cfbf, emlFileHandle, outputFile);
 
+
+	// ParseMsg will print message structure and content
 	int ret = msgHelper.msg.ParseMsg(&cfbf, ParseOutlookMsg, msgHelper, errorText);
 	if ((ret < 0) || (!errorText.empty()))
 		_ASSERTE((ret >= 0) && (errorText.empty()));

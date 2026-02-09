@@ -6,6 +6,7 @@ v 1.0.3.56
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
  - Added print option to show internal structure of Outlook MSG.;
+ - Resolved occasional issue with RTF to HTML conversion.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.55
