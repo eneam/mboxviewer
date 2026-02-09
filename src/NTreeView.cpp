@@ -2068,6 +2068,21 @@ void NTreeView::OnSelchanged(NMHDR* pNMHDR, LRESULT* pResult)
 				emlFileNamePath.Append(msgFileBaseName);
 				emlFileNamePath.Append(L".eml");
 
+				CString folderName = L"UMBoxViewer";
+				CString subfoldderName = L"PView";
+				CString localAppDataPath = FileUtils::GetMboxviewLocalAppDataPath((LPCWSTR)folderName, (LPCWSTR)subfoldderName);
+
+				CString tmp_emlFileNamePath(emlFileNamePath);
+				tmp_emlFileNamePath.Remove(L':');
+				CString emlMboxviewFileNamePath = localAppDataPath + tmp_emlFileNamePath + L".mboxview";
+
+				// Delete index file for now until msg2eml is stable otherwise user may see MessageBox
+				if (FileUtils::PathFileExist(emlMboxviewFileNamePath))
+				{
+					BOOL rtetDel = FileUtils::DelFile(emlMboxviewFileNamePath);
+					int deb = 1;
+				}
+
 				BOOL retConv = ConvertOutlookMsg2Eml(msgFileNamePath, emlFileNamePath, errorText);
 				if (retConv)
 				{
