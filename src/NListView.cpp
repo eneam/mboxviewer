@@ -13890,7 +13890,7 @@ int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyCon
 	CStringA nameExtensionA;
 	CString nameExtensionW;
 	CStringA nameBaseA;
-	CStringA nameBaseW;
+	CStringW nameBaseW;
 	//
 	BOOL alloc_tmpbuf = FALSE;
 	DWORD error;
@@ -13966,7 +13966,7 @@ int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyCon
 	{
 		//_ASSERTE(isOctetStream == FALSE);  // FIXME do we need to handle isOctetStream here
 
-		int pos = cStrNameW.ReverseFind('.');
+		int pos = cStrNameW.ReverseFind(L'.');
 		if (pos > 0)
 		{
 			nameExtensionW = cStrNameW.Mid(pos+1);
@@ -13993,9 +13993,20 @@ int NListView::DetermineAttachmentName(CFile *fpm, int mailPosition, MailBodyCon
 					cStrNameW += L"." + contentSubtypeW;
 			}
 		}
-		else
+		else if (!imageExtensionW.IsEmpty() && imageExtensionW.CompareNoCase(nameExtensionW))
 		{
-			; // just return cStrNameW
+			if ((imageExtensionW.CompareNoCase(L".jpg") == 0) && (nameExtensionW.CompareNoCase(L".jpeg") == 0))
+				;
+			else if ((imageExtensionW.CompareNoCase(L".jpeg") == 0) && (nameExtensionW.CompareNoCase(L".jpg") == 0))
+				;
+			else if ((imageExtensionW.CompareNoCase(L".jpg") == 0) ||
+				(imageExtensionW.CompareNoCase(L".png") == 0) ||
+				(imageExtensionW.CompareNoCase(L".jpeg") == 0))
+			{
+				cStrNameW += imageExtensionW;
+			}
+			else
+				; // just return cStrNameW
 		}
 	}
 	else  // cStrNameW.IsEmpty()
