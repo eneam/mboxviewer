@@ -161,7 +161,7 @@ static const int Mela = 0x414c454d;
 	/// Caller should initialize *dest to NULL
 	/// Caller is responsible for calling "free *dest"
 
-	int RtfDecompressor::DecompressRtf(FILE* out, unsigned char* src, int srclen, unsigned char** dest, char* errorText, int errorTextLen)
+	int RtfDecompressor::DecompressRtf(unsigned char* src, int srclen, unsigned char** dest, char* errorText, int errorTextLen)
 	{
 		*dest = 0;
 		int errTextLen = errorTextLen - 1;

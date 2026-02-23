@@ -74,6 +74,6 @@ public:
     /// Caller should initialize *dest to NULL
     /// Caller is responsible for calling "free *dest"
 
-    static int DecompressRtf(FILE* out, unsigned char* src, int srclen, unsigned char** dest, char* errorText, int errorTextLen);
+    static int DecompressRtf(unsigned char* src, int srclen, unsigned char** dest, char* errorText, int errorTextLen);
 
 };

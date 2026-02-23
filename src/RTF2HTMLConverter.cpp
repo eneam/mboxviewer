@@ -201,6 +201,21 @@ bool RTF2HTMLConverter::ansipgcTOutf8(const char* in, int inlen, int ansipgc, st
 	return ret;
 }
 
+bool RTF2HTMLConverter::ansipgcTOutf16(const char* instr, int inlen, int ansipgc, CString& outstr_utf16, DWORD& error)
+{
+	DWORD dwFlags = 0;
+	BOOL ret = TextUtilsEx::CodePage2WStr(instr, inlen, ansipgc, &outstr_utf16, error, dwFlags);
+	return ret;
+}
+
+bool RTF2HTMLConverter::ansipgcTOutf16(std::string& instr, int ansipgc, CString& outstr_utf16, DWORD& error)
+{
+	const char* in = instr.c_str();
+	int inlen = instr.length();
+	bool ret = RTF2HTMLConverter::ansipgcTOutf16(in, inlen, ansipgc, outstr_utf16, error);
+	return ret;
+}
+
 RTF2HTMLConverter::RTF2HTMLConverter()
 {
 	m_ansicpg = 0;  // windows ansi , 1252
@@ -571,6 +586,9 @@ bool RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumbe
 {
 	bool isUTF8EncodedSymbols = false;
 
+	if (hex.length() > 2)
+		int deb = 1;
+
 	result.clear();
 	for (size_t i = 0; i < hex.length(); i += 2)
 	{
@@ -598,6 +616,10 @@ bool RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumbe
 
 		if (m_alwaysEncodeASCII2UTF8 || (inCodePage != m_ansicpg) || m_ansicpg_setUTF8)
 		{
+			CString outstr_utf16;
+			bool retTOutf16 = RTF2HTMLConverter::ansipgcTOutf16(result, inCodePage, outstr_utf16, error);
+			const wchar_t* ch16 = (LPCWSTR)outstr_utf16;
+
 			std::string str_utf8;
 			bool ret = RTF2HTMLConverter::ansipgcTOutf8(result, inCodePage, str_utf8, error);
 			if (ret) {

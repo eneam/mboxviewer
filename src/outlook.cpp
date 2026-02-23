@@ -230,7 +230,7 @@ void DumpRTF(FILE* out, const void* buffer, size_t len, int maxDumpLength)
 
 	const unsigned char* src = static_cast<const unsigned char*>(buffer);
 
-	int retlen = RtfDecompressor::DecompressRtf(out, (unsigned char*)src, len, dest, errorText, errorTextLen);
+	int retlen = RtfDecompressor::DecompressRtf((unsigned char*)src, len, dest, errorText, errorTextLen);
 	if (retlen > 0)
 	{
 		dst[retlen] = 0;
@@ -2552,7 +2552,7 @@ rtfbody:
 		int errorTextLen = 256;
 
 		const unsigned char* src = (const unsigned char*)(data);
-		int retlen = RtfDecompressor::DecompressRtf(out, (unsigned char*)src, data_len, dest, errorText, errorTextLen);
+		int retlen = RtfDecompressor::DecompressRtf((unsigned char*)src, data_len, dest, errorText, errorTextLen);
 		if (retlen > 0)
 		{
 			dst[retlen] = 0;
@@ -3259,6 +3259,80 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 	return TRUE;
 }
 
+
+BOOL RtfToFile(CString& fileNamePath, struct cfbf* cfbf, DirEntry* entry)
+{
+	if (!entry || !cfbf)
+		return FALSE;
+
+	std::string errText;
+	int data_len = 0;
+	char* data = cfbf_read_entry_data(cfbf, entry, &data_len, errText);
+
+	if (!data)
+		return FALSE;
+
+	if (data_len <= 0)
+		return FALSE;
+
+	if (data_len < 16)   // check PidTagStoreSupportMask to see if RTF is compressed
+	{
+		BOOL retWrite = FileUtils::Write2File(fileNamePath, (unsigned char*)data, data_len);
+
+		free(data);
+		return retWrite;
+	}
+
+	BOOL ret = FALSE;
+	unsigned char* dst = 0;
+	unsigned char** dest = &dst;
+	char errorText[256]; errorText[0] = 0;
+	int errorTextLen = 256;
+
+	int retlen = RtfDecompressor::DecompressRtf((unsigned char*)data, data_len, dest, errorText, errorTextLen);
+	if (retlen <= 0)
+	{
+		return FALSE;
+	}
+
+		dst[retlen] = 0;
+
+		std::string RtfContentType("HTML Text");
+		char* cpos = strstr((char*)dst, "fromhtml1");
+		if (cpos == 0)
+			RtfContentType = "Plain Text";
+
+		dst[retlen] = 0;
+
+
+		CString rtfFilePath = fileNamePath + L".rtf.txt";
+		ret = FileUtils::Write2File(rtfFilePath, (unsigned char*)dst, retlen);
+
+
+
+
+	RTF2HTMLConverter rtf2html;
+
+	std::string result_utf8;
+	errText = rtf2html.rtf2html((char*)dst, result_utf8); // simplified extraction of Html, need to do better later
+	_ASSERTE(errText.empty());
+	if (!errText.empty())
+	{
+		// return partial result_utf8?
+		// append errorText to result_utf8 ??
+		// copy errorText to result_utf8 ??
+		int deb = 1;
+	}
+
+	CString htmlFilePath = fileNamePath + L".rtf.html";
+	ret = FileUtils::Write2File(htmlFilePath, (unsigned char*)result_utf8.c_str(), result_utf8.length());
+
+	free(dst);
+	free(data);
+	return ret;
+}
+
+
 BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CString& erText)
 {
 	std::string errorText;
@@ -3344,6 +3418,12 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 		_ASSERTE((ret >= 0) && (errorText.empty()));
 
 
+	CString fileNamePath = "C:\\Users\\tata\\Downloads\\RTFCache\\" + fileName;
+
+	DirEntry* entry = msgHelper.msg.m_body.m_PidTagRtfCompressed;
+	BOOL retWrite = RtfToFile(fileNamePath, &cfbf, entry);
+
+
 	outputFile = outFile;
 	outputFile = NULL;
 
@@ -3360,7 +3440,6 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 
 	return TRUE;
 }
-
 
 bool IsLittleEndianType()
 {

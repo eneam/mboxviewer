@@ -169,6 +169,9 @@ public:
     //
     bool ansipgcTOutf8(const char* instr, int inlen, int ansipgc, std::string& outstr_utf8, DWORD& error);
     bool ansipgcTOutf8(std::string& instr, int ansipgc, std::string& outstr_utf8, DWORD& error);
+    //
+    bool ansipgcTOutf16(const char* instr, int inlen, int ansipgc, CString& outstr_utf16, DWORD& error);
+    bool ansipgcTOutf16(std::string& instr, int ansipgc, CString& outstr_utf16, DWORD& error);
 };
 
 typedef struct

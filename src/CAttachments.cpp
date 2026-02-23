@@ -380,10 +380,22 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 			(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
 			(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
 			(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0) ||
-			(fileNameExtention.CompareNoCase(L".msg") == 0))
+			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0))
 		{
 			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_SHOWNORMAL);
+		}
+		else if (fileNameExtention.CompareNoCase(L".msg") == 0)
+		{
+			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
+		}
+		else if ((fileNameExtention.CompareNoCase(L".dat") == 0) ||
+			(fileNameExtention.CompareNoCase(L".ms-tnef") == 0))
+		{
+			CString winmail2emlExePath = LR"(F:\Documents\GIT1.0.3.50\Winmail2Eml\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			CString inputWinmailFilePath = filePath;
+			CString outputEmlFilePath = LR"(C:\Users\tata\Downloads\Winmail2Eml\)" + attachmentNameW + ".eml";
+			CString args = "--input-winmail-file \"" + inputWinmailFilePath + "\" --output-eml-file \"" + outputEmlFilePath + "\"";
+			result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
 		}
 		else
 		{

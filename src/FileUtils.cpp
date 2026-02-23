@@ -728,6 +728,12 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 			DWORD nWritten = 0;
 
 			BOOL retWrite = WriteFile(hFile, pszData, nLeft, &nWritten, 0);
+			if (retWrite == FALSE)
+			{
+				CString errText = FileUtils::GetLastErrorAsString();
+				DWORD err = GetLastError();
+				int deb = 1;
+			}
 			if (nWritten != nLeft)
 				int deb = 1;
 
