@@ -2216,11 +2216,15 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 	//mailCnt = 173245;
 
 	pCmdUI->Enable();
+	CString mailIndex;
+	
 	CString strMailIndex;
 	if (listView->m_lastSel >= 0)
-		strMailIndex.Format(L"Mail %d of %d", listView->m_lastSel + 1, mailCnt);
+		mailIndex.Format(L"%d", listView->m_lastSel + 1);
 	else
-		strMailIndex.Format(L"Mail xx of %d", mailCnt);
+		mailIndex = L"xx";
+
+	strMailIndex.Format(L"Mail %s of %d", mailIndex, mailCnt);
 
 	pCmdUI->SetText(strMailIndex);
 

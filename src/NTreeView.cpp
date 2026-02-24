@@ -8159,7 +8159,7 @@ int NTreeView::MergeOutlookMsgMailFiles(HTREEITEM hFolder)
 	_ASSERTE(path.Compare(fPath) == 0);
 
 	CString datapath = MboxMail::GetLastDataPath();
-	CString msg2emlCachePath = datapath + "Msg2EmlCache";
+	CString msg2emlCachePath = datapath + L"Msg2EmlCache";
 	BOOL retCreate = FileUtils::CreateDir(msg2emlCachePath);
 
 	int paneId = 0;

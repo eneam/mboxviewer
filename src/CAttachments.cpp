@@ -36,6 +36,7 @@
 #include "PictureCtrl.h"
 #include "CPictureCtrlDemoDlg.h"
 #include "ResHelper.h"
+#include "MboxMail.h"
 
 BEGIN_MESSAGE_MAP(CAttachments, CListCtrl)
 	//ON_WM_PAINT()
@@ -284,10 +285,43 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
 			(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
 			(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0) ||
-			(fileNameExtention.CompareNoCase(L".msg") == 0))
+			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0))
 		{
 			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_SHOWNORMAL);
+		}
+		else if (fileNameExtention.CompareNoCase(L".msg") == 0)
+		{
+			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
+		}
+		else if ((fileNameExtention.CompareNoCase(L".dat") == 0) ||
+			(fileNameExtention.CompareNoCase(L".ms-tnef") == 0))
+		{
+			CString processDir;
+			FileUtils::CPathGetPath(mboxviewPath, processDir);
+			// Release path
+			CString winmail2emlExePath = processDir + LR"(\Winmail2Eml\Winmail2Eml.exe)";
+
+#if 1
+			// Development path
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+
+
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+#endif
+
+			CString inputWinmailFilePath = filePath;
+
+			CString datapath = MboxMail::GetLastDataPath();
+			CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
+			BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
+			CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentName + ".eml";
+
+			CString args = "--mboxview-exe-path \"" + mboxviewPath +
+				"\" --input-winmail-file \"" + inputWinmailFilePath +
+				"\" --output-eml-file \"" + outputEmlFilePath + "\"";
+			result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
 		}
 		else
 		{
@@ -391,10 +425,30 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		else if ((fileNameExtention.CompareNoCase(L".dat") == 0) ||
 			(fileNameExtention.CompareNoCase(L".ms-tnef") == 0))
 		{
-			CString winmail2emlExePath = LR"(F:\Documents\GIT1.0.3.50\Winmail2Eml\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			CString processDir;
+			FileUtils::CPathGetPath(mboxviewPath, processDir);
+			// Release path
+			CString winmail2emlExePath = processDir + LR"(\Winmail2Eml\Winmail2Eml.exe)";
+
+#if 1
+			// Development path
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+#endif
+
 			CString inputWinmailFilePath = filePath;
-			CString outputEmlFilePath = LR"(C:\Users\tata\Downloads\Winmail2Eml\)" + attachmentNameW + ".eml";
-			CString args = "--input-winmail-file \"" + inputWinmailFilePath + "\" --output-eml-file \"" + outputEmlFilePath + "\"";
+
+			CString datapath = MboxMail::GetLastDataPath();
+			CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
+			BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
+			CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentNameW + ".eml";
+
+			CString args = "--mboxview-exe-path \"" + mboxviewPath +
+				"\" --input-winmail-file \"" + inputWinmailFilePath + 
+				"\" --output-eml-file \"" + outputEmlFilePath + "\"";
 			result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
 		}
 		else

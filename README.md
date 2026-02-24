@@ -43,6 +43,8 @@ Features
 * support for file based data configuration in addition to the default Registry based;
 * ability to configure font size of GUI objects;
 * support for Outlook .msg mail files;
+* support for winmail.dat and .ms-tnef attachments and files;
+
 
 License
 -------
@@ -104,6 +106,7 @@ In order to enable MBox Viewer to use the file based configuration,
 user needs to rename this file to MBoxViewer.config file or copy the sample file
 to C:\Users\UserName\AppData\Local\UMBoxViewer\Config folder and rename.
 
+
 Outlook .msg
 ------------
 
@@ -113,10 +116,18 @@ User can view individual .msg file or all .msg files can be converted to .eml fi
 
 Processing of .msg files is quite complicated and requires significant effort. This initial release doesn't support:
 
-1. processing winmail.dat attachments
-2. message body encoded as RTF Text
+1. message body encoded as RTF Text
 
 User feedback will help to decide whether additional development effort is justified.
+
+
+Support for winmail.dat and .ms-tnef attachments and files
+----------------------------------------------------------
+
+Users can view winmail.dat and .ms-tnef attachments by double left-click on the selected attachment or by right click on the attachment and selecting `open` option.
+
+Content of these files will be shown in the separate instance of MBox Viewer.
+
 
 Multiple Languages
 ------------------
@@ -170,10 +181,12 @@ See [CHANGE_LOG.md](CHANGE_LOG.md) file.
 Building
 --------
 
-MBox Viewer project executables are built under VS 2022. Project contains two solution files:
+MBox Viewer project executables are built under VS 2022. Project contains 3 solution files:
 
 **mboxview.sln** - this will build Release and Debug versions of mboxview.exe and mboxview64.exe executables
 
 **ForwardEmlFile/ForwardEmlFile.sln** -  this will build  Release and Debug versions of ForwardEmlFile.exe
+
+**Winmail2EmlFile/Winmail2Eml.sln** -  this will build  Release and Debug versions of Winmail2Email.exe
 
 

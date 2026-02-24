@@ -51,13 +51,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable 219
+
 /*
         MessageBox not supported unless project type is changed
         "<TargetFramework>net8.0</TargetFramework> to <TargetFramework>net8.0-windows</TargetFramework>, and add <UseWindowsForms>true</UseWindowsForms>"
 using System.Windows.Forms;
 */
 
-namespace ForwardEmlFile
+namespace Winmail2EmlFile
 {
     class IniFile
     {
@@ -106,7 +108,6 @@ namespace ForwardEmlFile
         /// <returns></returns>
         public string IniReadValue(string Section, string Key)
         {
-
             int i = GetPrivateProfileString(Section, Key, "", this.buff,
                                             this.buffLength, this.path);
             return this.buff.ToString();
@@ -263,20 +264,12 @@ namespace ForwardEmlFile
 #endif
 
             int numArgs = args.GetLength(0);
-            /*
-            if ((numArgs <= 0) || ((numArgs % 2) != 0))
-            {
-                string errorText = String.Format("Invalid command argument list: {0} .", String.Join(" ", args));
-                logger.Log(errorText);
-                System.Environment.Exit(ExitCodes.ExitCmdArguments);
-            }
-            */
 
             string inputWinmailFilePath = "";
             string outputEmlFilePath = "";
-            string protocolLoggerFilePath = "";
 
             // Development team options
+            string mboxviewExe = "";
 			string inputRtfFilePath = "";
 			string outputRtf2HtmlFilePath = "";
             string outputUnmodifiedEmlFilePath = "";
@@ -306,7 +299,11 @@ namespace ForwardEmlFile
                     System.Environment.Exit(ExitCodes.ExitCmdArguments);
                 }
 
-                if (key.CompareTo("--input-winmail-file") == 0)
+				if (key.CompareTo("--mboxview-exe-path") == 0)
+				{
+					mboxviewExe = val;
+				}
+				else if (key.CompareTo("--input-winmail-file") == 0)
                 {
                     inputWinmailFilePath = val;
                 }
@@ -486,15 +483,13 @@ namespace ForwardEmlFile
                         if (done) break;
 					}
 
-                    try
+					string emlFilePath = outputEmlFilePath;
+					try
                     {
-                        string emlFilePath = outputEmlFilePath;
-
 						if (outputEmlFilePath.Length == 0)
                         {
 							emlFilePath = inputWinmailFilePath + ".eml";
 						}
-
 						message.WriteTo(emlFilePath);
                     }
 					catch (Exception ex)
@@ -517,9 +512,8 @@ namespace ForwardEmlFile
 			}
             if (outputEmlFilePath.Length > 0)
             {
-                string mboxvieExe = """F:\Documents\GIT1.0.3.50\mboxviewer\x64\Debug\mboxview.exe""";
                 string cargs = outputEmlFilePath;
-                Process.Start(mboxvieExe, cargs);
+                Process.Start(mboxviewExe, cargs);
             }
 
 			logger.Log("Processing of winmail.dat file completed.");
@@ -531,8 +525,10 @@ namespace ForwardEmlFile
         {
             string tempPath = Path.GetTempPath();
             string tempPathAsFilePath = tempPath.TrimEnd('\\');
-            string dataPath = Path.GetDirectoryName(tempPathAsFilePath);
+            string? dataPath = Path.GetDirectoryName(tempPathAsFilePath);
             //string datapath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (dataPath == null)
+                dataPath = "";
             return dataPath;
         }
         public static string FindKeyinArgs(string[] args, string keyword)

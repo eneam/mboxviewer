@@ -715,7 +715,7 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 	{
 		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
-		TRACE(L"(FileSize)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errText);
+		TRACE(L"(CreateFileW)INVALID_HANDLE_VALUE error=%ld file=%s\n%s\n", err, cStrNamePath, errText);
 		return FALSE;
 	}
 	else
@@ -732,7 +732,9 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 			{
 				CString errText = FileUtils::GetLastErrorAsString();
 				DWORD err = GetLastError();
-				int deb = 1;
+				// hFile was valid butis it valid now??
+				BOOL retClose = CloseHandle(hFile);
+				return FALSE;
 			}
 			if (nWritten != nLeft)
 				int deb = 1;
@@ -823,8 +825,8 @@ int FileUtils::Write2File(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesTo
 	while (bytesToWrite > 0)
 	{
 		nwritten = 0;
-		int retW = WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL);
-		if (retW == 0) {
+		BOOL retW = WriteFile(hFile, pszData, bytesToWrite, &nwritten, NULL);
+		if (retW == FALSE) {
 			DWORD retval = GetLastError();
 			break;
 		}

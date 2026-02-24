@@ -586,9 +586,6 @@ bool RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumbe
 {
 	bool isUTF8EncodedSymbols = false;
 
-	if (hex.length() > 2)
-		int deb = 1;
-
 	result.clear();
 	for (size_t i = 0; i < hex.length(); i += 2)
 	{
@@ -616,10 +613,6 @@ bool RTF2HTMLConverter::hexToString(const std::string& hex, Charset charsetNumbe
 
 		if (m_alwaysEncodeASCII2UTF8 || (inCodePage != m_ansicpg) || m_ansicpg_setUTF8)
 		{
-			CString outstr_utf16;
-			bool retTOutf16 = RTF2HTMLConverter::ansipgcTOutf16(result, inCodePage, outstr_utf16, error);
-			const wchar_t* ch16 = (LPCWSTR)outstr_utf16;
-
 			std::string str_utf8;
 			bool ret = RTF2HTMLConverter::ansipgcTOutf8(result, inCodePage, str_utf8, error);
 			if (ret) {

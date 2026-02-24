@@ -37,9 +37,7 @@
 // Using regular expression is too limited
 
 
-// Fix vars definitions
-//#pragma warning(disable : 4267)
-//#pragma warning(disable : 4244)
+#pragma warning disable 219
 
 using System;
 using System.Collections;
@@ -220,7 +218,7 @@ namespace RTF2HTMLConversion
 			while (charIndex < length)
 			{
 				char c = rtf[charIndex];
-				Group currentGroup = groupStack.First.Value;
+				Group? currentGroup = groupStack.First.Value;
 				Debug.Assert(currentGroup != null);
 				if (c == '\r' || c == '\n')
 				{
@@ -678,7 +676,6 @@ namespace RTF2HTMLConversion
 			m_all_groups = "";
 			m_start = 0;
 			m_end = 0;
-			int deb = 1;
 		}
 		~RegexMacher()
 		{
@@ -687,7 +684,6 @@ namespace RTF2HTMLConversion
 
 		public void region(int start, int end)
 		{
-			int deb = 1;
 			if (start < m_start)
 				Debug.Assert(start >= m_start);
 			m_start = start;
