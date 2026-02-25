@@ -1896,7 +1896,7 @@ int ResHelper::LoadLanguageMapFromFileF16LE(CString& languageTranslationFilePath
 		if (retval <= 0)
 			break;
 
-		if (nSourceTextId == 567)
+		if (nSourceTextId == 807)
 		{
 			int deb = 1;
 		}

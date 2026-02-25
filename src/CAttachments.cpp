@@ -303,12 +303,23 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 #if 1
 			// Development path
-			if (!FileUtils::PathFileExist(winmail2emlExePath))
-				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			CString baseDir = processDir;
+			baseDir.TrimRight(L"\\");
+			CString baseDir2;
+			FileUtils::GetFolderPath(baseDir, baseDir2);
+			baseDir2.TrimRight(L"\\");
+			FileUtils::GetFolderPath(baseDir2, baseDir);
+			baseDir.TrimRight(L"\\");
 
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+			{
+				winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			}
 
 			if (!FileUtils::PathFileExist(winmail2emlExePath))
-				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+			{
+				winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+			}
 #endif
 
 			CString inputWinmailFilePath = filePath;
@@ -432,11 +443,23 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 #if 1
 			// Development path
-			if (!FileUtils::PathFileExist(winmail2emlExePath))
-				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			CString baseDir = processDir;
+			baseDir.TrimRight(L"\\");
+			CString baseDir2;
+			FileUtils::GetFolderPath(baseDir, baseDir2);
+			baseDir2.TrimRight(L"\\");
+			FileUtils::GetFolderPath(baseDir2, baseDir);
+			baseDir.TrimRight(L"\\");
 
 			if (!FileUtils::PathFileExist(winmail2emlExePath))
-				winmail2emlExePath = processDir + LR"(\..\..\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+			{
+				winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
+			}
+
+			if (!FileUtils::PathFileExist(winmail2emlExePath))
+			{
+				winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+			}
 #endif
 
 			CString inputWinmailFilePath = filePath;

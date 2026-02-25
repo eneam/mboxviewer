@@ -56,6 +56,7 @@
 #include "FontConfig.h"
 
 #include "NTreeView.h"
+#include "gdiplustypes.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -568,6 +569,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	m_wndStatusBar.ModifyStyle(0, CBRS_TOOLTIPS);   // DOESN'T SEEM TO WORK for dynamic text
 
+	SetStatusBarIndicatorPaneSize();
+
 	HWND hwnd = GetSafeHwnd();
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
 	float dpi = ::GetDpiForWindow(hwnd); // (WINVER >= 0x0605)  _WIN32_WINNT_WIN10
@@ -768,6 +771,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			FileUtils::CPathStripPath((LPCWSTR)languageFolderPath, language);
 		}
 
+
 		if (language.IsEmpty())
 			language = L"english";
 		else if (language.CompareNoCase(L"portuguese-brazil") == 0)
@@ -802,7 +806,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		CMainFrame::m_dfltStatusBarFont.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Arial");
 	CMainFrame::m_dfltStatusBarFont.GetLogFont(&barLogFont);
 	
-	m_wndStatusBar.SetFont(&m_dfltStatusBarFont); 
+	m_wndStatusBar.SetFont(&m_dfltStatusBarFont);
+
 	CWnd* wnd = CMainFrame::SetWindowFocus(this);
 	return 0;
 }
@@ -2224,7 +2229,9 @@ void CMainFrame::OnUpdateMailIndex(CCmdUI *pCmdUI)
 	else
 		mailIndex = L"xx";
 
-	strMailIndex.Format(L"Mail %s of %d", mailIndex, mailCnt);
+	CString fmt(L"Mail %s of %d");
+	ResHelper::TranslateString(fmt);
+	strMailIndex.Format(fmt, mailIndex, mailCnt);
 
 	pCmdUI->SetText(strMailIndex);
 
@@ -7352,3 +7359,157 @@ void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
 
 #endif   // _DEBUG
 }
+
+
+int CMainFrame::GetTextLength(HWND hWnd, CFont& font, CString& text)
+{
+#if 1
+	// Not verified yet
+	HDC hDC = ::GetDC(hWnd);
+	HFONT hf = font.operator HFONT();
+	HFONT hfntOld = (HFONT)SelectObject(hDC, hf);
+
+	SIZE sizeItem;
+	BOOL retA = GetTextExtentPoint32(hDC, text, text.GetLength(), &sizeItem);
+	int labelSize = sizeItem.cx;
+
+	SelectObject(hDC, hfntOld);
+	::ReleaseDC(hWnd, hDC);
+
+	return sizeItem.cx;
+#else
+	// Not finished yet
+	CString vFontFamily;
+	CString vFontFamily = "Segoe UI"; //font family
+	int vFontSize = 26; //font size
+
+	HDC hdc = ::GetDC(hwnd);
+	Gdiplus::Graphics graphics(hdc);
+	Gdiplus::FontFamily  theFontFamily(vFontFamily);
+	//Font        font(&theFontFamily, vFontSize, FontStyleRegular, UnitPixel);
+	Gdiplus::Font	font(&theFontFamily, vFontSize);
+	Gdiplus::PointF      pointF(0.0f, 0.0f);
+
+	Gdiplus::RectF boundRect;
+	graphics.MeasureString(text, -1, &font, pointF, &boundRect);
+	//or
+	//graphics.MeasureString(L"This is Text", strlen("This is Text"), pointF, &boundRect);
+
+	int width = boundRect.Width;
+	int height = boundRect.Height;
+
+	DeleteObject(&font);
+	ReleaseDC(LabelHandle, hdc);
+#endif
+}
+
+void CMainFrame::SetStatusBarIndicatorPaneSize()
+{
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+
+	int nIndex = 1;
+	UINT nID = m_wndStatusBar.GetItemID(nIndex);
+	UINT nStyle = SBPS_NORMAL;
+	int cxWidth1 = 200;
+	int cxWidth2 = 200;
+
+
+	CPaintDC dc(&m_wndStatusBar);
+	HDC hDC = dc.GetSafeHdc();
+
+	if (hDC)
+	{
+		// applicable to English langauge
+		// for other languages font is needed and more
+
+		CString paneText1 = L"Mail Retrieval In Progress ...";
+
+		SIZE sizeItem1;
+		if (GetTextExtentPoint32(hDC, paneText1, paneText1.GetLength(), &sizeItem1))
+			cxWidth1 = sizeItem1.cx;
+
+		CString paneFmt2 = L"Mail %s of %d";
+		CString paneText2;
+		paneText2.Format(paneFmt2, L"50000", 50000);
+
+		SIZE sizeItem2;
+		if (GetTextExtentPoint32(hDC, paneText2, paneText2.GetLength(), &sizeItem2))
+			cxWidth2 = sizeItem2.cx;
+	}
+
+	int panel1Size = cxWidth1 + 16;
+	int panel2Size = cxWidth2 + 16;
+	if (language.IsEmpty()) {
+		language = L"english";
+	}
+	else if (language.CompareNoCase(L"spanish") == 0)
+	{
+		panel1Size = 250;
+		panel2Size = 180;
+	}
+	else if (language.CompareNoCase(L"russian") == 0)
+	{
+		panel1Size = 220;
+		panel2Size = 170;
+	}
+	else if (language.CompareNoCase(L"romanian") == 0)
+	{
+		panel1Size = 200;
+		panel2Size = 180;
+	}
+	else if (language.CompareNoCase(L"portuguese-brazil") == 0)
+	{
+		panel1Size = 300;
+		panel2Size = 170;
+	}
+	else if (language.CompareNoCase(L"portuguese") == 0)
+	{
+		panel1Size = 260;
+		panel2Size = 170;
+	}
+	else if (language.CompareNoCase(L"polish") == 0)
+	{
+		panel1Size = 200;
+		panel2Size = 180;
+	}
+	else if (language.CompareNoCase(L"japanese") == 0)
+	{
+		panel1Size = 140;
+		panel2Size = 160;
+	}
+	else if (language.CompareNoCase(L"italian") == 0)
+	{
+		panel1Size = 210;
+		panel2Size = 170;
+	}
+	else if (language.CompareNoCase(L"german") == 0)
+	{
+		panel1Size = 180;
+		panel2Size = 170;
+	}
+	else if (language.CompareNoCase(L"french") == 0)
+	{
+		panel1Size = 260;
+		panel2Size = 190;
+	}
+	else if (language.CompareNoCase(L"chinese-simplified") == 0)
+	{
+		panel1Size = 140;
+		panel2Size = 200;
+	}
+	else if (language.CompareNoCase(L"arabic") == 0)
+	{
+		panel1Size = 160;
+		panel2Size = 180;
+	}
+
+	nIndex = 1;
+	nID = m_wndStatusBar.GetItemID(nIndex);
+	m_wndStatusBar.SetPaneInfo(nIndex, nID, nStyle, panel1Size);
+
+	nIndex = 2;
+	nID = m_wndStatusBar.GetItemID(nIndex);
+	m_wndStatusBar.SetPaneInfo(nIndex, nID, nStyle, panel2Size);
+}
+
