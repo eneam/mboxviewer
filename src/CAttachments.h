@@ -57,6 +57,7 @@ public:
 	BOOL FindAttachmentByNameA(CStringA &name);
 	//BOOL AddInlineAttachment(CString &name);
 	BOOL InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP);
+	BOOL GetWinmail2EmlProcessPath(CString& processPath);
 
 	NMsgView *m_pMsgView;
 	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;
