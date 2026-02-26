@@ -30,6 +30,7 @@
 //
 
 #include "stdafx.h"
+#include <GdiPlus.h>
 #include "Windows.h"
 #include "FileUtils.h"
 #include "TextUtilsEx.h"
@@ -762,15 +763,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (retGetVersion)
 	{
 		CString section_general = CString(sz_Software_mboxview) + L"\\General";
-
 		CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
-
-		if (language.IsEmpty())
-		{
-			CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
-			FileUtils::CPathStripPath((LPCWSTR)languageFolderPath, language);
-		}
-
 
 		if (language.IsEmpty())
 			language = L"english";
@@ -6743,34 +6736,27 @@ void CMainFrame::OnDevelopmentoptionsCodepageinstalled()
 void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 {
 	// TODO: Add your command handler code here
+	// Subfolder name is the same as languageName saved in General\language config entry
+	// ./Language/languageName/languageName.txt  , for example
+	// ./Language/spanish/spanish.txt
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 
-	CString lastFolderName;
-	CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
-	if (!lastLanguageFolderPath.IsEmpty())
-	{
-#if 0
-		lastFolderName = lastLanguageFolderPath;
-		lastFolderName.TrimRight(L"\\");
+	CString lastLanguageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
 
-		FileUtils::CPathStripPath((LPCWSTR)lastFolderName, lastFolderName);
-#else
-		lastLanguageFolderPath.TrimRight(L"\\");
-		FileUtils::CPathStripPath((LPCWSTR)lastLanguageFolderPath, lastFolderName);
-#endif
-	}
-	else
-		lastFolderName = L"english";
+	if (lastLanguageName.IsEmpty())
+		lastLanguageName = L"english";
 
-	// TODO: make dlg memeber of CMainFrame
+	CString lastFolderName = lastLanguageName;
+
+	// TODO: make dlg member of CMainFrame
 	CString languageFolder;
 	SelectLanguageDlg dlg;
 	dlg.m_lastFolderName = lastFolderName;
 
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK) {
-		languageFolder = dlg.m_LanguagetName;
+		languageFolder = dlg.m_LanguageName;
 		int deb = 1;
 	}
 	else if (nResponse == IDCANCEL)
@@ -6874,15 +6860,18 @@ void CMainFrame::OnLanguagetoolsResourcefileproperty()
 	CString folderName;
 	CString fileName;
 	CString filePath;
-	CString lastLanguageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
-	if (!lastLanguageFolderPath.IsEmpty())
+
+	CString lastLanguageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+	if (!lastLanguageName.IsEmpty())
 	{
-		lastFolderName = lastLanguageFolderPath;
+		lastFolderName = lastLanguageName;
 		lastFolderName.TrimRight(L"\\");
 
+		CString processFolderPath;
+		ResHelper::GetProcessFolderPath(processFolderPath);
 
-		FileUtils::CPathStripPath((LPCWSTR)lastFolderName, lastFolderName);
-		filePath = lastLanguageFolderPath + L"\\" + lastFolderName + L".txt";
+		CString lastLanguageFolderPath = processFolderPath + L"Language" + L"\\" + lastLanguageName;
+		filePath = lastLanguageFolderPath + L"\\" + lastLanguageName + L".txt";
 	}
 
 	int  isFile_UTF8 = ResHelper::IsFileUTF8(filePath);
@@ -7361,46 +7350,44 @@ void CMainFrame::OnLanguagetoolsUpdatetranslationfiles()
 }
 
 
-int CMainFrame::GetTextLength(HWND hWnd, CFont& font, CString& text)
+int CMainFrame::GetTextLength(HWND hWnd, CString& fontFamily, int fontSize, CString& text)
 {
-#if 1
-	// Not verified yet
-	HDC hDC = ::GetDC(hWnd);
-	HFONT hf = font.operator HFONT();
-	HFONT hfntOld = (HFONT)SelectObject(hDC, hf);
+	HDC hdc = ::GetDC(hWnd);
 
-	SIZE sizeItem;
-	BOOL retA = GetTextExtentPoint32(hDC, text, text.GetLength(), &sizeItem);
-	int labelSize = sizeItem.cx;
+	ULONG_PTR m_gdiplusToken = 0;
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
 
-	SelectObject(hDC, hfntOld);
-	::ReleaseDC(hWnd, hDC);
 
-	return sizeItem.cx;
-#else
-	// Not finished yet
-	CString vFontFamily;
-	CString vFontFamily = "Segoe UI"; //font family
-	int vFontSize = 26; //font size
+	int width = 0;
+	int height = 0;
 
-	HDC hdc = ::GetDC(hwnd);
-	Gdiplus::Graphics graphics(hdc);
-	Gdiplus::FontFamily  theFontFamily(vFontFamily);
-	//Font        font(&theFontFamily, vFontSize, FontStyleRegular, UnitPixel);
-	Gdiplus::Font	font(&theFontFamily, vFontSize);
-	Gdiplus::PointF      pointF(0.0f, 0.0f);
+	{ // Keep this otherwise font destructor will crash
+		Gdiplus::Graphics graphics(hdc);
+		Gdiplus::FontFamily  theFontFamily(fontFamily);
 
-	Gdiplus::RectF boundRect;
-	graphics.MeasureString(text, -1, &font, pointF, &boundRect);
-	//or
-	//graphics.MeasureString(L"This is Text", strlen("This is Text"), pointF, &boundRect);
+		Gdiplus::REAL gdiFontSize = (Gdiplus::REAL)fontSize;
+		Gdiplus::Font        font(fontFamily, gdiFontSize, Gdiplus::FontStyleRegular, Gdiplus::UnitPoint, 0);
 
-	int width = boundRect.Width;
-	int height = boundRect.Height;
+		Gdiplus::Status  sts = font.GetLastStatus();
 
-	DeleteObject(&font);
-	ReleaseDC(LabelHandle, hdc);
-#endif
+		//Gdiplus::PointF      pointF(0.0f, 0.0f);
+
+		Gdiplus::RectF boundRect;
+		Gdiplus::RectF layoutRect;
+
+		CString translatedText = text;
+		ResHelper::TranslateString(translatedText);
+		graphics.MeasureString(translatedText, -1, &font, layoutRect, &boundRect);
+
+		width = (int)boundRect.Width;
+		height = (int)boundRect.Height;
+	}
+
+	Gdiplus::GdiplusShutdown(m_gdiplusToken);
+
+	::ReleaseDC(hWnd, hdc);
+	return width;
 }
 
 void CMainFrame::SetStatusBarIndicatorPaneSize()
@@ -7411,35 +7398,65 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 	int nIndex = 1;
 	UINT nID = m_wndStatusBar.GetItemID(nIndex);
 	UINT nStyle = SBPS_NORMAL;
-	int cxWidth1 = 200;
-	int cxWidth2 = 200;
-
 
 	CPaintDC dc(&m_wndStatusBar);
 	HDC hDC = dc.GetSafeHdc();
+
+	CString paneText1_1 = L"Mail Retrieval Complete";
+	CString paneText1 = L"Mail Retrieval In Progress ...";
+	CString paneFmt2 = L"Mail %s of %d";
+	CString paneText2;
+	paneText2.Format(paneFmt2, L"50000", 50000);
+
+	HWND hWnd = GetSafeHwnd();
+	CFont textFont;
+
+#if 0
+	CString fontFamily = L"Arial";
+	int fontSize = 12;
+
+	int retGetLength1 = CMainFrame::GetTextLength(hWnd, fontFamily, fontSize, paneText1);
+	int retGetLength1_1 = CMainFrame::GetTextLength(hWnd, fontFamily, fontSize, paneText1_1);
+	int panel1Size = retGetLength1;
+	if (retGetLength1_1 > retGetLength1)
+		panel1Size = retGetLength1_1;
+	// works OK for all languages
+
+	// panel2Size is a bit small for paneText2 in chinese
+	int panel2Size = CMainFrame::GetTextLength(hWnd, fontFamily, fontSize, paneText2);
+
+	panel1Size += 16;
+	panel2Size += 16;
+
+	if (language.CompareNoCase(L"chinese-simplified") == 0)
+	{
+		panel1Size = 140;
+		panel2Size = 200;
+	}
+
+#else
+	int cxWidth1 = 200;
+	int cxWidth2 = 200;
 
 	if (hDC)
 	{
 		// applicable to English langauge
 		// for other languages font is needed and more
 
-		CString paneText1 = L"Mail Retrieval In Progress ...";
-
 		SIZE sizeItem1;
 		if (GetTextExtentPoint32(hDC, paneText1, paneText1.GetLength(), &sizeItem1))
 			cxWidth1 = sizeItem1.cx;
 
-		CString paneFmt2 = L"Mail %s of %d";
-		CString paneText2;
-		paneText2.Format(paneFmt2, L"50000", 50000);
-
 		SIZE sizeItem2;
 		if (GetTextExtentPoint32(hDC, paneText2, paneText2.GetLength(), &sizeItem2))
 			cxWidth2 = sizeItem2.cx;
+
+		int deb = 1;
 	}
 
 	int panel1Size = cxWidth1 + 16;
 	int panel2Size = cxWidth2 + 16;
+
 	if (language.IsEmpty()) {
 		language = L"english";
 	}
@@ -7503,6 +7520,7 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 		panel1Size = 160;
 		panel2Size = 180;
 	}
+#endif
 
 	nIndex = 1;
 	nID = m_wndStatusBar.GetItemID(nIndex);

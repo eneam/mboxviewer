@@ -316,7 +316,7 @@ public:
 	//
 	static QWORD m_lastMailDataPreviewDeletTime;
 
-	static int GetTextLength(HWND hwnd, CFont& font, CString &text);
+	static int GetTextLength(HWND hWnd, CString& fontFamily, int fontSize, CString& text);
 	void SetStatusBarIndicatorPaneSize();
 
 #ifdef _DEBUG

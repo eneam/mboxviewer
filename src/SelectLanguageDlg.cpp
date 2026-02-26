@@ -162,7 +162,7 @@ void SelectLanguageDlg::OnBnClickedOk()
 		CString text;
 		m_listBox.GetText(nSel, text);
 
-		m_LanguagetName = text;
+		m_LanguageName = text;
 	}
 
 	CDialogEx::OnOK();

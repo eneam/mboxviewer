@@ -65,7 +65,7 @@ public:
 	CString m_lastFolderName;
 	DerivedCListBox m_listBox;
 	//CListBox m_listBox;
-	CString m_LanguagetName;  // font family such as 
+	CString m_LanguageName;  // font family such as 
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME

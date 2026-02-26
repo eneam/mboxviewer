@@ -1988,9 +1988,16 @@ BOOL CmboxviewApp::InitInstance()
 
 	MboxMail::m_HintConfig.LoadHintBitmap();
 
-	CString languageFolderPath = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath");
-	if (!languageFolderPath.IsEmpty())
+	CString languageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+	if (!languageName.IsEmpty() && (languageName.CompareNoCase(L"english") != 0))
 	{
+		CString processFolderPath;
+		ResHelper::GetProcessFolderPath(processFolderPath);
+
+		CString languageFolderPath = processFolderPath + L"Language" + L"\\" + languageName;
+
+		CProfile::_WriteProfileString(HKEY_CURRENT_USER, section_general, L"languageFolderPath", languageFolderPath);
+
 		ResHelper::MyTrace(L"CmboxviewApp::InitInstance: %s\n", languageFolderPath);
 
 		CString FolderPath = languageFolderPath;
