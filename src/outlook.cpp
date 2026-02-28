@@ -3417,7 +3417,8 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 	if ((ret < 0) || (!errorText.empty()))
 		_ASSERTE((ret >= 0) && (errorText.empty()));
 
-
+#if _DEBUG
+#if 0
 	CString fileNamePath = "C:\\Users\\tata\\Downloads\\RTFCache\\" + fileName;
 
 	DirEntry* entry = msgHelper.msg.m_body.m_PidTagRtfCompressed;
@@ -3433,6 +3434,8 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 		msgHelper.msg.Print();
 		fprintf(outputFile, "\nOutlookMessage::Print END ###########################################\n");
 	}
+#endif
+#endif
 
 	fclose(outFile);
 

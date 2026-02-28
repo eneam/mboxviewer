@@ -25,7 +25,8 @@
 //
 //////////////////////////////////////////////////////////////////
 //
-// The RTF2HTMLConverterRFCCompliant.java was ported to c# by Zbigniew Minciel to integrate with free Windows MBox Viewer
+// The RTF2HTMLConverterRFCCompliant.java was ported to c# by Zbigniew Minciel to integrate with Winmail2Eml.exe and free Windows MBox Viewer
+// c# version is a port of c++ version, part of MBox Viewer code base
 //
 // https://github.com/bbottema/rtf-to-html/blob/master/src/main/java/org/bbottema/rtftohtml/impl/RTF2HTMLConverterRFCCompliant.java
 //  Apache License
@@ -49,13 +50,9 @@ using System.Text.RegularExpressions;
 
 namespace RTF2HTMLConversion
 {
-
 	using Integer = int;
 	using Charset = int;
 	using DWORD = uint;
-	//using Org.BouncyCastle.Bcpg;
-
-
 
 #if COMMENTS
 /**
@@ -69,7 +66,6 @@ namespace RTF2HTMLConversion
 #endif
 
 	//RTF charset number , codepage , Windows/Mac name
-
 
 	using FontMap = System.Collections.Generic.Dictionary<int, FontTableEntry>;
 	using Org.BouncyCastle.Utilities.Encoders;
@@ -281,8 +277,8 @@ namespace RTF2HTMLConversion
 							}
 						}
 
-						StringBuilder decodedSB = new(""); ;
-						bool retEncodedUTF16 = hexToString(hexEncodedSequence, effectiveCharset, decodedSB);
+						StringBuilder decodedSB = new("");
+						bool retEncodedUTF16 = hexToString(hexEncodedSequence, effectiveCharset, ref decodedSB);
 						if (decodedSB.Length == 0)
 							deb = 1;
 						else
@@ -499,8 +495,7 @@ namespace RTF2HTMLConversion
 
 			if (m_txt7bit.Length > 0)
 			{
-				//const char* str = m_txt7bit.c_str();
-
+				m_alwaysEncodeANSI2UTF16 = true;  // remaining chars must be encode as UT16
 				if (m_alwaysEncodeANSI2UTF16 || m_ansicpg_setUTF16)
 				{
 					DWORD error = 0;
@@ -577,8 +572,11 @@ namespace RTF2HTMLConversion
 			}
 		}
 
-		// Rewrite hexToString() and appendIfNotIgnoredGroup();
-		bool hexToString(string hexInput, Charset charsetNumber, StringBuilder res)
+		// Looks like ref in ref StringBuilder is not needed since class instance are passed by reference
+		// However, struct is passed by value.
+		// This is very confusing, ref is not required in all cases to pass arg by ref
+		// Microsoft always works hard to create user friendly environment :(
+		bool hexToString(string hexInput, Charset charsetNumber, ref StringBuilder res)
 		{
 			int deb = 1;
 			res.Clear();
@@ -639,6 +637,23 @@ namespace RTF2HTMLConversion
 			}
 			res.Append(result);
 			return isUTF16EncodedSymbols;
+		}
+
+		public static int GetFirstDiffIndex(string str1, string str2)
+		{
+			if (str1 == null || str2 == null) return -1;
+
+			int length = Math.Min(str1.Length, str2.Length);
+
+			for (int index = 0; index < length; index++)
+			{
+				if (str1[index] != str2[index])
+				{
+					return index;
+				}
+			}
+
+			return -1;
 		}
 	}
 
