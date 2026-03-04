@@ -64,6 +64,7 @@ public:
 	static int GetParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value);
 	static int GetFilenameParamValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset);
 	static int GetFilenameParamPartValue(CStringA &fieldLine, int startPos, const char *param, int paramLen, CStringA &value, BOOL &hasCharset);
+	static void GetFileName(CStringA& line, CStringA& name, UINT& charsetId, CStringA& parameter);
 	static BOOL isEmptyLine(const char* p, const char* e);
 	static char* SkipEmptyLines(const char* p, const char* e);
 	static char *EatNewLine(char* p, const char* e, bool &isEmpty);

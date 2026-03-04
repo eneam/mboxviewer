@@ -71,6 +71,7 @@ namespace RTF2HTMLConversion
 	using Org.BouncyCastle.Utilities.Encoders;
 	using System.Linq;
 	using static System.Net.Mime.MediaTypeNames;
+	using System.Reflection;
 
 	public class RTFCharsetArray
 	{
@@ -505,6 +506,20 @@ namespace RTF2HTMLConversion
 
 					if (ret)
 					{
+						
+						// Testing. Very inefficient
+						/*
+						string str1 = from; string str2 = to; string str1part = ""; string str2part = ""; int maxPartLength = -1; int index = 0;
+						while (index >= 0)
+						{
+							index = GetFirstDiff(str1, str2, ref str1part, ref str2part, maxPartLength);
+							if ((index < 0) || (str1part.Length == 0) || (str2part.Length == 0))
+								break;
+							str1 = str1part.Substring(1); str2 = str2part.Substring(1);
+						}
+						*/
+						
+
 						m_ansicpg_setUTF16 = true;
 						result.Append(to);
 					}
@@ -639,21 +654,52 @@ namespace RTF2HTMLConversion
 			return isUTF16EncodedSymbols;
 		}
 
-		public static int GetFirstDiffIndex(string str1, string str2)
+		public static string StringGetSubstring(string str, int index, int maxSubstringLength)
 		{
-			if (str1 == null || str2 == null) return -1;
+			string strpart;
+			int available = str.Length - index;
+			if ((maxSubstringLength >= 0) && (maxSubstringLength <= available))
+				strpart = str.Substring(index, maxSubstringLength);
+			else
+				strpart = str.Substring(index);
+			return strpart;
+		}
+
+		public static int GetFirstDiff(string str1, string str2, ref string str1part, ref string str2part, int maxPartLength)
+		{
+			// find better solution. Use AsSpan ?? etc
+			str1part = "";
+			str2part = "";
+			if (str1 == null || str2 == null)
+				return -1;
 
 			int length = Math.Min(str1.Length, str2.Length);
 
-			for (int index = 0; index < length; index++)
+			int index = 0;
+			for (index = 0; index < length; index++)
 			{
 				if (str1[index] != str2[index])
 				{
+					str1part = StringGetSubstring(str1,index, maxPartLength);
+					str2part = StringGetSubstring(str2,index, maxPartLength);
 					return index;
 				}
 			}
+			Debug.Assert(((str1.Length-length) == 0) || ((str2.Length-length) == 0));
+			if (str1.Length == str2.Length)
+				return -1;
+			else if (str1.Length < str2.Length)
+			{
+				str2part = StringGetSubstring(str2, str1.Length, maxPartLength);
+				index = str1.Length;
+			}
+			else
+			{
+				str1part = StringGetSubstring(str1, str2.Length, maxPartLength);
+				index = str2.Length;
+			}
 
-			return -1;
+			return -(index+1);
 		}
 	}
 
@@ -663,8 +709,6 @@ namespace RTF2HTMLConversion
 	{
 		public Charset charset { get; set; }
 	}
-
-
 
 	public struct RTFCharset
 	{
