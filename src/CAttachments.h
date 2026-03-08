@@ -38,6 +38,8 @@ public:
 	UINT m_charsetId;
 	CString m_name;
 	CStringW m_nameW;
+	CStringA m_mediaType;
+	CStringA m_mediaSubtype;
 };
 
 class CAttachments :
@@ -56,7 +58,7 @@ public:
 	BOOL FindAttachmentByNameW(CStringW &name);
 	BOOL FindAttachmentByNameA(CStringA &name);
 	//BOOL AddInlineAttachment(CString &name);
-	BOOL InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP);
+	BOOL InsertItemW(CStringW &cStrName, int id, CStringA& mediaType, CStringA& mediaSubtype);
 	BOOL GetWinmail2EmlProcessPath(CString& processPath);
 
 	NMsgView *m_pMsgView;

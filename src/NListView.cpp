@@ -5404,12 +5404,12 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		{
 			if (attachmentConfigParams && attachmentConfigParams->m_bShowAllAttachments_Window)
 			{
-				pMsgView->m_attachments.InsertItemW(attachmenName, i, 0);
+				pMsgView->m_attachments.InsertItemW(attachmenName, i, item->m_mediaType, item->m_mediaSubtype);
 			}
 		}
 		else
 		{
-			pMsgView->m_attachments.InsertItemW(attachmenName, i, 0);
+			pMsgView->m_attachments.InsertItemW(attachmenName, i, item->m_mediaType, item->m_mediaSubtype);
 		}
 	}
 
@@ -20308,6 +20308,16 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 		const char* data = outbuf->Data();
 		int dataLength = outbuf->Count();
 
+		AttachmentData* attachmentInfo = attachmentDB.GetAttachmentData(resultW);
+		if (attachmentInfo)
+		{
+			int pos = body->m_contentType.ReverseFind('/');
+			if (pos > 0)
+			{
+				attachmentInfo->m_mediaSubtype = body->m_contentType.Mid(pos + 1);
+				attachmentInfo->m_mediaType = body->m_contentType.Left(pos);
+			}
+		}
 
 		PWSTR ext = PathFindExtension(filePathW);
 		if (GdiUtils::IsSupportedPictureFileNameExtension(filePathW) || (ext == 0))
@@ -20319,7 +20329,6 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 
 			_ASSERTE((imageWidth > 0) && (imageHeight > 0));
 
-			AttachmentData* attachmentInfo = attachmentDB.GetAttachmentData(resultW);
 			if (attachmentInfo)
 			{
 				attachmentInfo->m_width = imageWidth;

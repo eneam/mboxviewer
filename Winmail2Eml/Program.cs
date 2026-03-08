@@ -404,7 +404,7 @@ namespace Winmail2EmlFile
 						}
 					}
 
-					string msgstr = message.ToString();
+					//string msgstr = message.ToString(); // debug
 
                     // Check if "text/html" and "text/rtf" parts exist
                     bool htmlPartExists = false;
@@ -436,7 +436,7 @@ namespace Winmail2EmlFile
                         if (!bodyPart.IsAttachment)
                         {
 							var part = (MimePart)bodyPart;
-							string partstr = part.ToString();
+							//string partstr = part.ToString();  // debug
 
                             if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "rtf"))
                             {

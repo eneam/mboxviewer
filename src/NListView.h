@@ -120,6 +120,8 @@ public:
 	int m_nextId;
 	_int64 m_length;
 	_int64 m_crc;
+	CStringA m_mediaType;   // for example "text"
+	CStringA m_mediaSubtype;  // for example "plain"
 };
 
 typedef CMap<CStringW, LPCWSTR, AttachmentData, AttachmentData> AttachmentDB;

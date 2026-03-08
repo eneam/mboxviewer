@@ -173,7 +173,7 @@ void CAttachments::Complete()
 	return;
 }
 
-BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
+BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CStringA& mediaType, CStringA& mediaSubtype)
 {
 	int index = CAttachments::FindAttachmentByNameW(cStrName);
 	// Caller must assure names are unique
@@ -181,6 +181,8 @@ BOOL CAttachments::InsertItemW(CStringW &cStrName, int id, CMimeBody* pBP)
 
 	AttachmentInfo *item = new AttachmentInfo;
 	item->m_nameW = cStrName;
+	item->m_mediaType = mediaType;
+	item->m_mediaSubtype = mediaSubtype;
 	m_attachmentTbl.Add(item);
 
 	return TRUE;
@@ -197,10 +199,11 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	int nItem = pnm->iItem;
-	if (nItem < 0)
+	if ((nItem < 0) || (nItem >= m_attachmentTbl.GetCount()))
 		return;
 
-	CStringW attachmentName = m_attachmentTbl[nItem]->m_nameW;
+	AttachmentInfo* attachmentInfo = m_attachmentTbl[nItem];
+	CStringW attachmentName = attachmentInfo->m_nameW;
 
 	TRACE(L"Selecting %d\n", pnm->iItem);
 
@@ -293,8 +296,8 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
 		}
-		else if ((fileNameExtention.CompareNoCase(L".dat") == 0) ||
-			(fileNameExtention.CompareNoCase(L".ms-tnef") == 0))
+		else if (((attachmentName.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
+			((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
 		{
 			CString winmail2emlExePath;
 			BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
@@ -350,11 +353,14 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 
+	//
 	int nItem = pnm->iItem;
-	if (nItem < 0)
+	if ((nItem < 0) || (nItem >= m_attachmentTbl.GetCount()))
 		return;
 
-	CStringW attachmentNameW = m_attachmentTbl[nItem]->m_nameW;
+	AttachmentInfo* attachmentInfo = m_attachmentTbl[nItem];
+	CStringW attachmentNameW = attachmentInfo->m_nameW;
+
 	CStringW ext = PathFindExtensionW(attachmentNameW);
 
 	CStringA extA;
@@ -415,8 +421,8 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
 		}
-		else if ((fileNameExtention.CompareNoCase(L".dat") == 0) ||
-			(fileNameExtention.CompareNoCase(L".ms-tnef") == 0))
+		else if (((attachmentNameW.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
+			((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
 		{
 			CString winmail2emlExePath;
 			BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
