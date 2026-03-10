@@ -5,7 +5,7 @@ Changes
 v 1.0.3.58
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
- - Processing of winmail.dat and .ms-tnef attachments was not correct in some cases.;
+ - Enhanced processing of winmail.dat and .ms-tnef attachments.;
  - Disabled unwanted debugging code in the release version.;
  - Updated User Manual to describe new and updated features.;
 
