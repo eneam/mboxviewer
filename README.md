@@ -116,7 +116,7 @@ User can view individual .msg file or all .msg files can be converted to .eml fi
 
 Processing of .msg files is quite complicated and requires significant effort. This initial release doesn't support:
 
-1. message body encoded as RTF Text
+1. message body encoded as RTF Text. This usually is not a problem since typically the message is included multiple times in the mail as Plain, HTML or RTF HTML text encoded body.
 
 User feedback will help to decide whether additional development effort is justified.
 
