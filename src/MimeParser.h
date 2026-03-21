@@ -120,14 +120,13 @@ public:
 	CStringA m_Description;
 	CStringA m_Disposition;
 	CStringA m_TransferEncoding;
-	CStringA m_SubType;
-	CStringA m_MainType;
+	CStringA m_mediaSubType;
+	CStringA m_mediaType;
 	CStringA m_Boundary;
 	CStringA m_ContentType;
 	CStringA m_ContentId;
 	CStringA m_ContentLocation;
-	CMimeHeader::MediaType m_MediaType;
-	CStringA m_Name;   // from Content-Type
+	CStringA m_Name;   // file name from Content-Type
 	UINT m_NamePageCode;
 	CStringA m_AttachmentName;  // filename From Content-Disposition
 	UINT m_AttachmentNamePageCode;

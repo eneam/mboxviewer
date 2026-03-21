@@ -2169,7 +2169,14 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 	}
 	else
 	{
-		// ZMM Should I rely on provided header or recreate from  prov ided fierlds
+		// ZMM Should I rely on provided header or recreate from  provided fields?
+		// YES Fix current unconditional removal of original "Content-Type"
+		// Current approach mostly works but it should be fixed/improved
+		// Need to create email part structure/tree based on available parts
+		// And later use the tree create email message
+		// Luckily most if not all mbox viewers handle imperfect emails
+		//
+		// mail header can indictate multiple body parts, single text Plain or Html body part or even single attachment only, etc
 
 		DirEntry* entry = m_body.m_PidTagTransportMessageHeaders;
 		int data_len = 0;
@@ -2347,21 +2354,26 @@ int OutlookMessage::Msg2Eml(std::string& hdr_utf8, std::string& errorText)
 		hdr_utf8.append("\r\n");
 
 		hdr_utf8.append("\r\n\r\n"); // to make sure
+	}
 
+	// Most if not all mbox viewers are ok if empty alternative body blocks
+	// Don't include empty body blocks just in case
+	if (hasPlainBody || hasHtmlBody || hasRtfBody)
+	{
 		hdr_utf8.append("--");
 		hdr_utf8.append(mixedBoundary);
 		hdr_utf8.append("\r\n"); // to make sure
+
+		hdr_utf8.append("Content-Type: multipart/alternative;\r\n    boundary=");
+		hdr_utf8.append(alternativeBoundary);
+		hdr_utf8.append("\r\n");
+
+		hdr_utf8.append("\r\n"); // to make sure
+
+		hdr_utf8.append("\r\n--");
+		hdr_utf8.append(alternativeBoundary);
+		hdr_utf8.append("\r\n"); // to make sure
 	}
-
-	hdr_utf8.append("Content-Type: multipart/alternative;\r\n    boundary=");
-	hdr_utf8.append(alternativeBoundary);
-	hdr_utf8.append("\r\n");
-
-	hdr_utf8.append("\r\n"); // to make sure
-
-	hdr_utf8.append("\r\n--");
-	hdr_utf8.append(alternativeBoundary);
-	hdr_utf8.append("\r\n"); // to make sure
 
 	// Preference order: HtmlBody, hasRtfBody, hasPlainBody or check PidTagNativeBody ??
 
@@ -2654,10 +2666,13 @@ rtfbody:
 
 attachments:
 
-	hdr_utf8.append("\r\n\r\n--");
-	hdr_utf8.append(alternativeBoundary);
-	hdr_utf8.append("--");
-	hdr_utf8.append("\r\n"); // to make sure
+	if (hasPlainBody || hasHtmlBody || hasRtfBody)
+	{
+		hdr_utf8.append("\r\n\r\n--");
+		hdr_utf8.append(alternativeBoundary);
+		hdr_utf8.append("--");
+		hdr_utf8.append("\r\n"); // to make sure
+	}
 
 	if (hasValidAttachments)
 		int deb = 1;
@@ -2928,9 +2943,6 @@ attachments:
 
 		if (hasValidAttachments)
 		{
-			//hdr_utf8.append("\r\n--");
-			//hdr_utf8.append(mixedBoundary);
-
 			hdr_utf8.append("\r\n\r\n--");
 			hdr_utf8.append(mixedBoundary);
 			hdr_utf8.append("--");
@@ -2938,8 +2950,10 @@ attachments:
 		}
 	}
 
-	TextUtilsEx::delete_charset2Id();
-	TextUtilsEx::delete_id2charset();
+
+	// will be done upon shutdown
+	//TextUtilsEx::delete_charset2Id();
+	//TextUtilsEx::delete_id2charset();
 
 	return 1;
 }

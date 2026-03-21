@@ -11462,10 +11462,10 @@ bool MailHeader::AssertHdr()
 	if (m_TransferEncoding.GetLength() > maxLargeLen)
 		MboxMail::assert_unexpected();
 
-	if (m_SubType.GetLength() > maxLargeLen)
+	if (m_mediaSubType.GetLength() > maxLargeLen)
 		MboxMail::assert_unexpected();
 
-	if (m_MainType.GetLength() > maxLargeLen)
+	if (m_mediaType.GetLength() > maxLargeLen)
 		MboxMail::assert_unexpected();
 
 	if (m_Boundary.GetLength() > maxLargeLen)
@@ -11476,8 +11476,6 @@ bool MailHeader::AssertHdr()
 
 	if (m_ContentId.GetLength() > maxLargeLen)
 		MboxMail::assert_unexpected();
-
-	//CMimeHeader::MediaType m_MediaType;
 
 	if (m_AttachmentName.GetLength() > maxLargeLen)
 		MboxMail::assert_unexpected();

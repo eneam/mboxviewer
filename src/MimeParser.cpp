@@ -70,13 +70,12 @@ void MailHeader::Clear()
 	m_Description.Empty();
 	m_Disposition.Empty();
 	m_TransferEncoding.Empty();
-	m_SubType.Empty();
-	m_MainType.Empty();
+	m_mediaSubType.Empty();
+	m_mediaType.Empty();
 	m_Boundary.Empty();
 	m_ContentType.Empty();
 	m_ContentId.Empty();
 	m_ContentLocation.Empty();
-	m_MediaType = CMimeHeader::MediaType::MEDIA_UNKNOWN;
 	m_AttachmentName.Empty();
 	m_AttachmentNamePageCode = 0;
 	m_AttachmentName2.Empty();
@@ -223,13 +222,14 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 		p++;
 
 	// make sure p is incremented within a loop or break
+	int sav_headLength = -1;
 	while (p < e)
 	{
 		if (((*p == '\r') && (*(p + 1) == '\n')) || (*p == '\n')) {
 
 			p = EatNLine(p, e);
-			int headLength = IntPtr2Int(p - pszData);
-			return headLength;
+			sav_headLength = IntPtr2Int(p - pszData);
+			//return headLength;
 			break;  // end of header
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cFrom, cFromLen) == 0) {
@@ -353,7 +353,6 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			{
 				BreakParser();
 
-#if 1
 				CStringA nameGet;
 				UINT charsetIdGet = 0;
 				CStringA parameter("name");
@@ -361,58 +360,6 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 				m_Name = nameGet;
 				m_NamePageCode = charsetIdGet;
-#endif
-
-#if 0
-
-				int ret = MimeParser::GetParamValue(line, cTypeLen, cName, cNameLen, m_Name);
-				if (!m_Name.IsEmpty()) 
-				{
-					UINT toCharsetId = 0; // not used anyway
-					CStringA charset;
-					UINT charsetId = 0;
-					DWORD error;
-					CStringA Name = TextUtilsEx::DecodeString(m_Name, charset, charsetId, toCharsetId, error);
-					// TODO: what about charset and charsetId :)
-					m_Name = Name;
-					m_NamePageCode = charsetId;
-					//m_IsAttachment = true;  // TODO: Caller need to decide
-				}
-				else
-				{
-					CStringA fileName;
-					int posret = line.Find(cNameStar);
-					if (posret > 0)
-					{
-						BOOL hasCharset;
-						// TODO: Concatenate multiple filename*0 , filename*1 segments if present;
-						int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cNameStar, cNameStarLen, fileName, hasCharset);
-
-						CStringA charset;
-						UINT charsetId = 0;
-
-						CStringA attachmentName;
-						if (hasCharset)
-						{
-							// example string UTF-8''Copy%20of%20JOHN%20KOWALSKI%20SECOND%20PRIORITIES%20Rev%201%20with%20effort%20cost.xlsx
-							// value looks like URL, may contatin %20 for example
-							// can value look like URL but without charset ?? try to verify
-							int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, attachmentName);
-
-							m_NamePageCode = charsetId;
-							m_Name = attachmentName;
-						}
-						else
-						{
-							m_NamePageCode = charsetId;
-							m_Name = fileName;
-						}
-						int deb = 1;
-					}
-				}
-				_ASSERTE(m_Name.Compare(nameGet) == 0);
-				_ASSERTE(m_NamePageCode == charsetIdGet);
-#endif
 			}
 		}
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cTransferEncoding, cTransferEncodingLen) == 0)
@@ -512,8 +459,6 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 			// attachment type or not, get the filename/attachment name
 
-#if 1
-
 			CStringA nameGet;
 			UINT charsetIdGet = 0;
 			CStringA parameter("filename");
@@ -521,58 +466,6 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 
 			m_AttachmentNamePageCode = charsetIdGet;
 			m_AttachmentName = nameGet;
-
-#endif
-#if 0
-			int ret = MimeParser::GetParamValue(line, cTypeLen, cFileName, cFileNameLen, m_AttachmentName);
-			if (!m_AttachmentName.IsEmpty())
-			{
-				UINT toCharsetId = 0; // not used anyway
-				CStringA charset;
-				UINT charsetId = 0;
-				DWORD error;
-				CStringA attachmentName = TextUtilsEx::DecodeString(m_AttachmentName, charset, charsetId, toCharsetId, error);
-				// TODO: what about charset and charsetId :)
-
-				m_AttachmentNamePageCode = charsetId;
-				m_AttachmentName = attachmentName;
-			}
-			else
-			{
-				// For now run this only if both regular Filename and Name are empty?
-				CStringA fileName;
-				int posret = line.Find(cFileNameStar);
-				if (posret > 0)
-				{
-					BOOL hasCharset;
-					// TODO: Concatenate multiple filename*0 , filename*1 segments if present;
-					int retval = MimeParser::GetFilenameParamValue(line, cDispositionLen, cFileNameStar, cFileNameStarLen, fileName, hasCharset);
-
-					CStringA charset;
-					UINT charsetId = 0;
-
-					CStringA attachmentName;
-					if (hasCharset)
-					{
-						// example string UTF-8''Copy%20of%20JOHN%20KOWALSKI%20SECOND%20PRIORITIES%20Rev%201%20with%20effort%20cost.xlsx
-						// value looks like URL, may contatin %20 for example
-						// can value look like URL but without charset ?? try to verify
-						int retdecode = TextUtilsEx::DecodeMimeChunkedString(fileName, charset, charsetId, hasCharset, attachmentName);
-
-						m_AttachmentNamePageCode = charsetId;
-						m_AttachmentName = attachmentName;
-					}
-					else
-					{
-						m_AttachmentNamePageCode = charsetId;
-						m_AttachmentName = fileName;
-					}
-					int deb = 1;
-				}
-			}
-			_ASSERTE(m_AttachmentName.Compare(nameGet) == 0);
-			_ASSERTE(m_AttachmentNamePageCode == charsetIdGet);
-#endif
 		}  // end of Disposition
 		else if (TextUtilsEx::strncmpUpper2Lower(p, e, cMsgId, cMsgIdLen) == 0) {
 			BreakParser();
@@ -627,9 +520,20 @@ int MailHeader::Load(const char* pszData, int nDataSize)
 			p = EatNLine(p, e);
 		}
 	}
+
+	int pos = m_ContentType.ReverseFind('/');
+	if (pos > 0)
+	{
+		m_mediaSubType = m_ContentType.Mid(pos + 1);
+		m_mediaType = m_ContentType.Left(pos);
+	}
+
 	if ((m_PageCode == 0) && m_IsTextHtml)
 		int deb = 1;
+
 	int headLength = IntPtr2Int(p - pszData);
+	if (sav_headLength >= 0)
+		_ASSERTE(headLength == sav_headLength);
 	return headLength;
 }
 
