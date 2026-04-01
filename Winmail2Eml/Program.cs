@@ -51,6 +51,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 #pragma warning disable 219
 
@@ -284,6 +285,7 @@ namespace Winmail2EmlFile
 			string mboxviewExe = "";
 			string inputRtfFilePath = "";
 			string outputRtf2HtmlFilePath = "";
+			string outputRtfPipe2HtmlFilePath = "";
 			string outputUnmodifiedEmlFilePath = "";
 
 			string Params = string.Join(" ", args);
@@ -335,6 +337,10 @@ namespace Winmail2EmlFile
 				{
 					outputRtf2HtmlFilePath = val;
 				}
+				else if (key.CompareTo("--output-rtfpipe-html-file") == 0)
+				{
+					outputRtfPipe2HtmlFilePath = val;
+				}
 				else if (key.CompareTo("--logger-file") == 0)
 				{
 					; // see FindKeyinArgs(args, "--logger-file");
@@ -349,32 +355,58 @@ namespace Winmail2EmlFile
 			// Register the CodePages encoding provider
 			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-			if (!File.Exists(inputWinmailFilePath))
+			if (!File.Exists(inputWinmailFilePath) && !File.Exists(inputRtfFilePath))
 			{
 				string errorText = String.Format("Input file {0} doesn't exist.", inputWinmailFilePath);
 				logger.Log(errorText);
 				System.Environment.Exit(ExitCodes.ExitCmdArguments);
 			}
 
-			// Used during development
-			if ((inputRtfFilePath.Length > 0) && (outputRtf2HtmlFilePath.Length > 0) && File.Exists(inputRtfFilePath))
+			// Used by development team
+			if ((inputRtfFilePath.Length > 0) && File.Exists(inputRtfFilePath))
 			{
 				try
 				{
 					StreamReader reader = new StreamReader(inputRtfFilePath, Encoding.UTF8);
 					string rtfText = reader.ReadToEnd();
-
 					byte[] bytesArr = GetBytes(rtfText);
 
-					RTF2HTMLConverter converter = new();
-					StringBuilder resultSB = new();
-
-					string res = converter.rtf2html(ref rtfText, ref resultSB);
-					string result = resultSB.ToString();
-
+					bool isHtmlText = rtfText.Contains("fromhtml1");
 					Encoding encodingUTF8 = Encoding.UTF8;
 
-					File.WriteAllText(outputRtf2HtmlFilePath, result, encodingUTF8);
+					string result;
+					if (isHtmlText)
+					{
+						RTF2HTMLConverter converter = new();
+						StringBuilder resultSB = new();
+
+						string res = converter.rtf2html(ref rtfText, ref resultSB);
+						result = resultSB.ToString();
+
+						string outRtf2HtmlFilePath = outputRtf2HtmlFilePath;
+						if (outputRtf2HtmlFilePath.Length <= 0)
+						{
+							outRtf2HtmlFilePath = inputRtfFilePath + ".Rtf2Html.html";
+						}
+
+						File.WriteAllText(outRtf2HtmlFilePath, result, encodingUTF8);
+					}
+
+					//const string rtfInlineObject = "[*[RTFINLINEOBJECT]*]";
+					//rtfText = rtfText.Replace("\\objattph", rtfInlineObject);
+
+					result = RtfToHtmlConverter.ConvertRtfToHtml(ref rtfText);
+
+					string outRtfPipe2HtmlFilePath = outputRtfPipe2HtmlFilePath;
+					if (outRtfPipe2HtmlFilePath.Length <= 0)
+					{
+						if (isHtmlText)
+							outRtfPipe2HtmlFilePath = inputRtfFilePath + ".RtfPipe.html";
+						else
+							outRtfPipe2HtmlFilePath += inputRtfFilePath + ".RtfPipe.text.html";
+
+					}
+					File.WriteAllText(outRtfPipe2HtmlFilePath, result, encodingUTF8);
 
 					deb = 1;
 				}
@@ -387,156 +419,159 @@ namespace Winmail2EmlFile
 				}
 			}
 
-			try
+			if ((inputWinmailFilePath.Length > 0) && File.Exists(inputWinmailFilePath))
 			{
-				using (var inputStream = new FileInfo(inputWinmailFilePath).OpenRead())
+				try
 				{
-					var tnef = new TnefPart { Content = new MimeKit.MimeContent(inputStream) };
-
-					MimeMessage message = tnef.ConvertToMessage();
-
-					var from = message.Headers["from"];
-					if ((from != null) && (from.Length == 0))
+					using (var inputStream = new FileInfo(inputWinmailFilePath).OpenRead())
 					{
-						message.Headers["from"] = "unknown@unknow.com";
-					}
+						var tnef = new TnefPart { Content = new MimeKit.MimeContent(inputStream) };
 
-					if (outputUnmodifiedEmlFilePath.Length > 0)
-					{
+						MimeMessage message = tnef.ConvertToMessage();
+
+						var from = message.Headers["from"];
+						if ((from != null) && (from.Length == 0))
+						{
+							message.Headers["from"] = "unknown@unknown.com";
+						}
+
+						if (outputUnmodifiedEmlFilePath.Length > 0)
+						{
+							try
+							{
+								message.WriteTo(outputUnmodifiedEmlFilePath);
+							}
+							catch (Exception ex)
+							{
+								string exText = ex.ToString();
+								logger.Log("Write to file failed: ", exText);
+
+								System.Environment.Exit(ExitCodes.ExitWriteUnmodifiedEmlFileFailure);
+							}
+						}
+
+						//string msgstr = message.ToString(); // debug
+
+						// Check if "text/html" and "text/rtf" parts exist
+						bool htmlPartExists = false;
+						bool rtfPartExists = false;
+						foreach (var bodyPart in message.BodyParts)
+						{
+							if (!bodyPart.IsAttachment)
+							{
+								var part = (MimePart)bodyPart;
+								if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "html"))
+								{
+									htmlPartExists = true;
+								}
+								if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "rtf"))
+								{
+									rtfPartExists = true;
+								}
+							}
+						}
+
+						foreach (var bodyPart in message.BodyParts)
+						{
+							bool done = false;
+							if (!bodyPart.IsAttachment)
+							{
+								var part = (MimePart)bodyPart;
+								//string partstr = part.ToString();  // debug
+
+								if ((part.ContentType.MediaType == "text") && ((part.ContentType.MediaSubtype == "plain") || (part.ContentType.MediaSubtype == "html")))
+								{
+									var ContentTransferEncoding = part.ContentTransferEncoding;
+									if (part.ContentTransferEncoding == ContentEncoding.Default)
+									{
+										part.ContentTransferEncoding = ContentEncoding.QuotedPrintable;
+									}
+								}
+								else if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "rtf"))
+								{
+									var ContentTransferEncoding = part.ContentTransferEncoding;
+
+									RTF2HTMLConverter converter = new();
+									StringBuilder resultSB = new();
+									string result = "";
+									bool isHtmlText = false;
+
+									try
+									{
+										using (var memory = new MemoryStream())
+										{
+											bool contentOnly = true;
+											part.Content.DecodeTo(memory);
+
+											var buffer = memory.ToArray();
+											var text = Encoding.UTF8.GetString(buffer);
+
+											isHtmlText = text.Contains("fromhtml1");
+
+											string res;
+											// RtfToHtmlConverter.ConvertRtfToHtml(ref text); supports both RTF Text and RTF HML encoding
+											// Need to test if converter.rtf2html(ref text, ref resultSB); can be commented out
+											if (isHtmlText)
+											{
+												res = converter.rtf2html(ref text, ref resultSB);
+												result = resultSB.ToString();
+											}
+											else
+												result = RtfToHtmlConverter.ConvertRtfToHtml(ref text);
+
+											var textPart = (TextPart)part;
+											textPart.Text = result;
+											part.ContentType.MediaSubtype = "html";
+											part.ContentTransferEncoding = ContentEncoding.QuotedPrintable;
+										}
+									}
+									catch (Exception ex)
+									{
+										string exText = ex.ToString();
+										logger.Log("Write to file failed: ", exText);
+
+										System.Environment.Exit(ExitCodes.ExitRtf2HtmlFailure);
+									}
+
+									done = true;
+								}
+							}
+						}
+
+						string emlFilePath = outputEmlFilePath;
 						try
 						{
-							message.WriteTo(outputUnmodifiedEmlFilePath);
+							if (outputEmlFilePath.Length == 0)
+							{
+								emlFilePath = inputWinmailFilePath + ".eml";
+							}
+							message.WriteTo(emlFilePath);
 						}
 						catch (Exception ex)
 						{
 							string exText = ex.ToString();
 							logger.Log("Write to file failed: ", exText);
 
-							System.Environment.Exit(ExitCodes.ExitWriteUnmodifiedEmlFileFailure);
+							System.Environment.Exit(ExitCodes.ExitWriteEmlFileFailure);
 						}
+
+						deb = 1;
 					}
-
-					//string msgstr = message.ToString(); // debug
-
-					// Check if "text/html" and "text/rtf" parts exist
-					bool htmlPartExists = false;
-					bool rtfPartExists = false;
-					foreach (var bodyPart in message.BodyParts)
-					{
-						if (!bodyPart.IsAttachment)
-						{
-							var part = (MimePart)bodyPart;
-							if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "html"))
-							{
-								htmlPartExists = true;
-							}
-							if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "rtf"))
-							{
-								rtfPartExists = true;
-							}
-						}
-					}
-
-					foreach (var bodyPart in message.BodyParts)
-					{
-						bool done = false;
-						if (!bodyPart.IsAttachment)
-						{
-							var part = (MimePart)bodyPart;
-							//string partstr = part.ToString();  // debug
-
-							if ((part.ContentType.MediaType == "text") && ((part.ContentType.MediaSubtype == "plain") || (part.ContentType.MediaSubtype == "html")))
-							{
-								var ContentTransferEncoding = part.ContentTransferEncoding;
-								if (part.ContentTransferEncoding == ContentEncoding.Default)
-								{
-									part.ContentTransferEncoding = ContentEncoding.QuotedPrintable;
-								}
-							}
-							else if ((part.ContentType.MediaType == "text") && (part.ContentType.MediaSubtype == "rtf"))
-							{
-								var ContentTransferEncoding = part.ContentTransferEncoding;
-
-								RTF2HTMLConverter converter = new();
-								StringBuilder resultSB = new();
-								string result = "";
-								bool isHtmlText = false;
-
-								try
-								{
-									using (var memory = new MemoryStream())
-									{
-										bool contentOnly = true;
-										part.Content.DecodeTo(memory);
-
-										var buffer = memory.ToArray();
-										var text = Encoding.UTF8.GetString(buffer);
-
-										isHtmlText = text.Contains("fromhtml1");
-
-										string res;
-										// RtfToHtmlConverter.ConvertRtfToHtml(ref text); supports both RTF Text and RTF HML encoding
-										// Need to test if converter.rtf2html(ref text, ref resultSB); can be commented out
-										if (isHtmlText)
-										{
-											res = converter.rtf2html(ref text, ref resultSB);
-											result = resultSB.ToString();
-										}
-										else
-											result = RtfToHtmlConverter.ConvertRtfToHtml(ref text);
-
-										var textPart = (TextPart)part;
-										textPart.Text = result;
-										part.ContentType.MediaSubtype = "html";
-										part.ContentTransferEncoding = ContentEncoding.QuotedPrintable;
-									}
-								}
-								catch (Exception ex)
-								{
-									string exText = ex.ToString();
-									logger.Log("Write to file failed: ", exText);
-
-									System.Environment.Exit(ExitCodes.ExitRtf2HtmlFailure);
-								}
-
-								done = true;
-							}
-						}
-					}
-
-					string emlFilePath = outputEmlFilePath;
-					try
-					{
-						if (outputEmlFilePath.Length == 0)
-						{
-							emlFilePath = inputWinmailFilePath + ".eml";
-						}
-						message.WriteTo(emlFilePath);
-					}
-					catch (Exception ex)
-					{
-						string exText = ex.ToString();
-						logger.Log("Write to file failed: ", exText);
-
-						System.Environment.Exit(ExitCodes.ExitWriteEmlFileFailure);
-					}
-
-					deb = 1;
 				}
-			}
-			catch (Exception ex)
-			{
-				string exstr = ex.ToString();
-				logger.Log("Processing of winmail.dat file failed: ", ex.ToString());
-				System.Environment.Exit(ExitCodes.ExitWinmailProcessingFailure);
-			}
-			if (outputEmlFilePath.Length > 0)
-			{
-				string cargs = outputEmlFilePath;
-				Process.Start(mboxviewExe, cargs);
-			}
+				catch (Exception ex)
+				{
+					string exstr = ex.ToString();
+					logger.Log("Processing of winmail.dat file failed: ", ex.ToString());
+					System.Environment.Exit(ExitCodes.ExitWinmailProcessingFailure);
+				}
+				if (outputEmlFilePath.Length > 0)
+				{
+					string cargs = outputEmlFilePath;
+					Process.Start(mboxviewExe, cargs);
+				}
 
-			logger.Log("Processing of winmail.dat file completed.");
+				logger.Log("Processing of winmail.dat file completed.");
+			}
 
 			System.Environment.Exit(ExitCodes.ExitOk);
 		}
