@@ -272,60 +272,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	if ((command == M_OPEN_Id) || forceOpen)
 	{
-		CStringW filePath = path + attachmentName;
-
-		DWORD binaryType = 0;
-		BOOL isExe = GetBinaryTypeW(filePath, &binaryType);
-
-		CString mboxviewPath = CMainFrame::m_processPath;
-
-		CString fileNameExtention;
-		FileUtils::GetFileExtension(attachmentName, fileNameExtention);
-
-		HWND h = GetSafeHwnd();
-
-		if ((fileNameExtention.CompareNoCase(L".eml") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0))
-		{
-			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_SHOWNORMAL);
-		}
-		else if (fileNameExtention.CompareNoCase(L".msg") == 0)
-		{
-			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
-		}
-		else if (((attachmentName.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
-			((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
-		{
-			CString winmail2emlExePath;
-			BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
-
-			CString inputWinmailFilePath = filePath;
-
-			CString datapath = MboxMail::GetLastDataPath();
-			CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
-			BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
-			CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentName + ".eml";
-
-			CString args = "--mboxview-exe-path \"" + mboxviewPath +
-				"\" --input-winmail-file \"" + inputWinmailFilePath +
-				"\" --output-eml-file \"" + outputEmlFilePath + "\"";
-			if (pathFound)
-			{
-				result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
-			}
-			else
-				; // alert MessageBox ??
-		}
-		else
-		{
-			result = ShellExecuteW(h, L"open", attachmentName, NULL, path, SW_SHOWNORMAL);
-		}
-
-		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
-
+		int retCode = CAttachments::OpenAttachment(attachmentInfo);
 		int deb = 1;
 	}
 	else if (command == M_OpenFileLocation_Id)
@@ -389,66 +336,8 @@ void CAttachments::OnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else
 	{
-		CStringW path = CMainFrame::GetMboxviewTempPath();
-		CStringW filePath = path + attachmentNameW;
-		// Windows Photos application doesn't show next/prev photo even with path specified
-		// Build in Picture Viewer is set as deafault
-
-		HWND h = GetSafeHwnd();
-
-#if 0
-		// for testing 
-		CString traceTxt;
-		traceTxt.Format(L"filePath=%s", filePath);
-		int answer = MyMessageBox(h, traceTxt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
-#endif
-
-		CString mboxviewPath = CMainFrame::m_processPath;
-
-		HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
-
-		CString  fileNameExtention = ext;
-
-		if ((fileNameExtention.CompareNoCase(L".eml") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
-			(fileNameExtention.CompareNoCase(L".mboxcl2") == 0))
-		{
-			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_SHOWNORMAL);
-		}
-		else if (fileNameExtention.CompareNoCase(L".msg") == 0)
-		{
-			result = ShellExecute(NULL, L"open", mboxviewPath, filePath, path, SW_HIDE);
-		}
-		else if (((attachmentNameW.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
-			((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
-		{
-			CString winmail2emlExePath;
-			BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
-
-			CString inputWinmailFilePath = filePath;
-
-			CString datapath = MboxMail::GetLastDataPath();
-			CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
-			BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
-			CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentNameW + ".eml";
-
-			CString args = "--mboxview-exe-path \"" + mboxviewPath +
-				"\" --input-winmail-file \"" + inputWinmailFilePath + 
-				"\" --output-eml-file \"" + outputEmlFilePath + "\"";
-			if (pathFound)
-			{
-				result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
-			}
-			else
-				; // alert ? MessageBox ??
-		}
-		else
-		{
-			result = ShellExecuteW(h, L"open", attachmentNameW, NULL, path, SW_SHOWNORMAL);
-		}
-		CMainFrame::CheckShellExecuteResult(result, h, &filePath);
+		int retCode = CAttachments::OpenAttachment(attachmentInfo);
+		int deb = 1;
 	}
 
 	*pResult = 0;
@@ -538,10 +427,18 @@ BOOL CAttachments::GetWinmail2EmlProcessPath(CString& processPath)
 	{
 		winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Debug\net8.0\Winmail2Eml.exe)";
 	}
+	if (!FileUtils::PathFileExist(winmail2emlExePath))
+	{
+		winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Debug\net8.0-windows\Winmail2Eml.exe)";
+	}
 
 	if (!FileUtils::PathFileExist(winmail2emlExePath))
 	{
 		winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Release\net8.0\Winmail2Eml.exe)";
+	}
+	if (!FileUtils::PathFileExist(winmail2emlExePath))
+	{
+		winmail2emlExePath = baseDir + LR"(\Winmail2Eml\bin\Release\net8.0-windows\Winmail2Eml.exe)";
 	}
 
 	if (FileUtils::PathFileExist(winmail2emlExePath))
@@ -551,4 +448,75 @@ BOOL CAttachments::GetWinmail2EmlProcessPath(CString& processPath)
 	}
 	else
 		return FALSE;
+}
+
+int CAttachments::OpenAttachment(AttachmentInfo* attachmentInfo)
+{
+	CString path = CMainFrame::GetMboxviewTempPath();
+
+	CString attachmentName = attachmentInfo->m_nameW;
+	CString filePath = path + attachmentName;
+	CStringW ext = PathFindExtensionW(attachmentName);
+
+	// Windows Photos application doesn't show next/prev photo even with path specified
+	// Build in Picture Viewer is set as deafault
+
+	HWND h = GetSafeHwnd();
+
+#if 0
+	// for testing 
+	CString traceTxt;
+	traceTxt.Format(L"filePath=%s", filePath);
+	int answer = MyMessageBox(h, traceTxt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_OK);
+#endif
+
+	CString mboxviewPath = CMainFrame::m_processPath;
+
+	HINSTANCE result = (HINSTANCE)(MaxShellExecuteErrorCode + 1);  // OK
+
+	CString  fileNameExtention = ext;
+
+	if ((fileNameExtention.CompareNoCase(L".eml") == 0) ||
+		(fileNameExtention.CompareNoCase(L".mbox") == 0) ||
+		(fileNameExtention.CompareNoCase(L".mboxrd") == 0) ||
+		(fileNameExtention.CompareNoCase(L".mboxcl") == 0) ||
+		(fileNameExtention.CompareNoCase(L".mboxcl2") == 0))
+	{
+		CString fPath = "\"" + filePath + "\"";
+		result = ShellExecute(NULL, L"open", mboxviewPath, fPath, path, SW_SHOWNORMAL);
+	}
+	else if (fileNameExtention.CompareNoCase(L".msg") == 0)
+	{
+		CString fPath = "\"" + filePath + "\"";
+		result = ShellExecute(NULL, L"open", mboxviewPath, fPath, path, SW_HIDE);
+	}
+	else if (((attachmentName.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
+		((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
+	{
+		CString winmail2emlExePath;
+		BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
+
+		CString inputWinmailFilePath = filePath;
+
+		CString datapath = MboxMail::GetLastDataPath();
+		CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
+		BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
+		CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentName + ".eml";
+
+		CString args = "--mboxview-exe-path \"" + mboxviewPath +
+			"\" --input-winmail-file \"" + inputWinmailFilePath +
+			"\" --output-eml-file \"" + outputEmlFilePath + "\"";
+		if (pathFound)
+		{
+			result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
+		}
+		else
+			; // alert ? MessageBox ??
+	}
+	else
+	{
+		result = ShellExecuteW(h, L"open", attachmentName, NULL, path, SW_SHOWNORMAL);
+	}
+	CMainFrame::CheckShellExecuteResult(result, h, &filePath);
+	return 0;
 }

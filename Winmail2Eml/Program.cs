@@ -41,11 +41,13 @@ using MimeKit.Utils;
 ///using System.Text.Encoding.CodePages;
 ///
 using RTF2HTMLConversion;
+using RtfPipe;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -246,6 +248,16 @@ namespace Winmail2EmlFile
 
 				var html = RtfPipe.Rtf.ToHtml(rtf.Trim('\0'));
 				return html;
+			}
+
+			public static string ConvertRtfPathToHtml(ref string path)
+			{
+				using (StreamReader stream = new StreamReader(path, Encoding.UTF8))
+				{
+					var actual = Rtf.ToHtml(stream);
+
+					return actual;
+				}
 			}
 		}
 

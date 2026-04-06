@@ -1870,6 +1870,7 @@ BOOL CmboxviewApp::InitInstance()
 
 
 	CString allCommanLineOptions(CWinApp::m_lpCmdLine);
+
 	BOOL bOnlyVerifyHasOptions = TRUE;
 	CCmdLine vcmdInfo(bOnlyVerifyHasOptions);
 
