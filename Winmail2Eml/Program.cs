@@ -38,22 +38,36 @@ using MimeKit.IO;
 using MimeKit.Text;
 using MimeKit.Tnef;
 using MimeKit.Utils;
+using Org.BouncyCastle.Asn1.X509;
+
 ///using System.Text.Encoding.CodePages;
 ///
 using RTF2HTMLConversion;
 using RtfPipe;
+using RtfPipe.Model;
+using RtfPipe.Tokens;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
+using System.Web;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Net.WebRequestMethods;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Winmail2EmlFile.Program;
 
 #pragma warning disable 219
 
@@ -227,6 +241,28 @@ namespace Winmail2EmlFile
 			System.Environment.Exit(ExitCodes.ExitUnhandledException);
 		}
 
+		static void ErrorExit(int ExitCode, string errorText)
+		{
+			Console.Beep();
+			System.Environment.Exit(ExitCode);
+		}
+
+		static void ErrorExit(ref string title, int exitCode, ref Exception ex, ref string targetHtmlLanguageCode, int beepCnt = 1)
+		{
+			for (int i = 0; i < beepCnt; i++)
+				Console.Beep();
+
+			string exText = ex.ToString();
+			string errorText = title + " Exit Code: " + exitCode.ToString() + "\n" + exText;
+			string contextText = title + " Exit Code: " + exitCode.ToString() + "\n";
+			//logger.Log(errorText);
+
+			string outputHtmlFile = "C:\\Users\\tata\\Downloads\\exText.html";
+			bool htmlOk = CreateTranslationHtml(ex, contextText, targetHtmlLanguageCode, ref outputHtmlFile);
+
+			System.Environment.Exit(exitCode);
+		}
+
 		public static class ExitCodes
 		{
 			public const int ExitOk = 0;
@@ -261,9 +297,64 @@ namespace Winmail2EmlFile
 			}
 		}
 
+		private static int _countDown = 30;
+
+		public static void TimerFired(object state)
+		{
+			// Will do all cleanup including timer thread ??
+			System.Environment.Exit(0);
+		}
+
+		public static void OnTimedEvent(object source, ElapsedEventArgs e)
+		{
+			
+			if (_countDown >= 10)
+				Console.Write("{0}\b\b", _countDown);
+			else
+				Console.Write("{0} \b\b", _countDown);
+
+			_countDown--;
+			if (_countDown < 0)
+				// Will  do all cleanup including timer thread ??
+				System.Environment.Exit(0);
+		}
+
+		public static void Usage()
+		{
+			Console.WriteLine("\n");
+			Console.WriteLine("Usage:\n");
+			Console.WriteLine("Winmai2Eml.exe [--target-html-language-code en|es|it|pt|pt-PT|pt-BR|fr|de|pl|ro|ja|ru|zh-CN|ar|uk|hu] winmail.dat");
+			Console.Write("\nEnter Return to Exit otherwise application will be closed automatically after {0} seconds: ", _countDown);
+
+			// Both solutions work
+#if C
+			var timer = new System.Threading.Timer(TimerFired, null, 10000, 0);
+
+			Console.ReadLine();
+			timer.Dispose();
+#else
+			// Create a timer with a 1 second interval.
+			var aTimer = new System.Timers.Timer(1000);
+			// Hook up the Elapsed event for the timer. 
+			aTimer.Elapsed += OnTimedEvent;
+			aTimer.AutoReset = true;
+			aTimer.Enabled = true;
+
+			Console.ReadLine();
+			aTimer.Close();
+			aTimer.Dispose();
+#endif
+
+			System.Environment.Exit(0);
+		}
+
+
 		public static void Main(string[] args)
 		{
-			int deb = 1;
+			int numArgs = args.GetLength(0);
+
+			if (numArgs == 0)
+				Usage();
 
 			AppDomain currentDomain = AppDomain.CurrentDomain;
 			currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
@@ -288,8 +379,6 @@ namespace Winmail2EmlFile
 			logger.Log("Debugger.Launch()");
 #endif
 
-			int numArgs = args.GetLength(0);
-
 			string inputWinmailFilePath = "";
 			string outputEmlFilePath = "";
 
@@ -299,11 +388,12 @@ namespace Winmail2EmlFile
 			string outputRtf2HtmlFilePath = "";
 			string outputRtfPipe2HtmlFilePath = "";
 			string outputUnmodifiedEmlFilePath = "";
+			string targetHtmlLanguageCode = "en";
 
 			string Params = string.Join(" ", args);
 
 			logger.Log("Command line argument list:");
-			for (int j = 0;  j < numArgs; j++)
+			for (int j = 0; j < numArgs; j++)
 			{
 				string key = args[j];
 				string val = "";
@@ -320,9 +410,9 @@ namespace Winmail2EmlFile
 
 				if (!key.StartsWith("--"))
 				{
-					string errorText = String.Format("Invalid key: {0} ", key);
+					string errorText = System.String.Format("Invalid key: {0} ", key);
 					logger.Log(errorText);
-					System.Environment.Exit(ExitCodes.ExitCmdArguments);
+					ErrorExit(ExitCodes.ExitCmdArguments, errorText);
 				}
 
 				if (key.CompareTo("--mboxview-exe-path") == 0)
@@ -357,30 +447,35 @@ namespace Winmail2EmlFile
 				{
 					; // see FindKeyinArgs(args, "--logger-file");
 				}
+				else if (key.CompareTo("--target-html-language-code") == 0)
+				{
+					targetHtmlLanguageCode = val;
+				}
 				else
 				{
-					logger.Log(String.Format("    Unknown Key: {0} {1}", args[j], args[j + 1]));
+					logger.Log(System.String.Format("    Unknown Key: {0} {1}", args[j], args[j + 1]));
 				}
-				logger.Log(String.Format("    {0} {1}", key, val));
+				logger.Log(System.String.Format("    {0} {1}", key, val));
 			}
 
 			// Register the CodePages encoding provider
 			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-			if (!File.Exists(inputWinmailFilePath) && !File.Exists(inputRtfFilePath))
+			if (!System.IO.File.Exists(inputWinmailFilePath) && !System.IO.File.Exists(inputRtfFilePath))
 			{
-				string errorText = String.Format("Input file {0} doesn't exist.", inputWinmailFilePath);
+				string errorText = System.String.Format("Input file {0} doesn't exist.", inputWinmailFilePath);
 				logger.Log(errorText);
-				System.Environment.Exit(ExitCodes.ExitCmdArguments);
+
+				ErrorExit(ExitCodes.ExitCmdArguments, errorText);
 			}
 
 			// Used by development team
-			if ((inputRtfFilePath.Length > 0) && File.Exists(inputRtfFilePath))
+			if ((inputRtfFilePath.Length > 0) && System.IO.File.Exists(inputRtfFilePath))
 			{
 				try
 				{
-					StreamReader reader = new StreamReader(inputRtfFilePath, Encoding.UTF8);
-					string rtfText = reader.ReadToEnd();
+					string rtfText = System.IO.File.ReadAllText(inputRtfFilePath);
+
 					byte[] bytesArr = GetBytes(rtfText);
 
 					bool isHtmlText = rtfText.Contains("fromhtml1");
@@ -401,7 +496,7 @@ namespace Winmail2EmlFile
 							outRtf2HtmlFilePath = inputRtfFilePath + ".Rtf2Html.html";
 						}
 
-						File.WriteAllText(outRtf2HtmlFilePath, result, encodingUTF8);
+						System.IO.File.WriteAllText(outRtf2HtmlFilePath, result, encodingUTF8);
 					}
 
 					//const string rtfInlineObject = "[*[RTFINLINEOBJECT]*]";
@@ -418,23 +513,24 @@ namespace Winmail2EmlFile
 							outRtfPipe2HtmlFilePath += inputRtfFilePath + ".RtfPipe.text.html";
 
 					}
-					File.WriteAllText(outRtfPipe2HtmlFilePath, result, encodingUTF8);
+					System.IO.File.WriteAllText(outRtfPipe2HtmlFilePath, result, encodingUTF8);
 
-					deb = 1;
+					int deb = 1;
 				}
 				catch (Exception ex)
 				{
-					string exText = ex.ToString();
-					logger.Log("Processing rtf file failed: ", exText);
-
-					System.Environment.Exit(ExitCodes.ExitRtf2HtmlFailure);
+					string title = "Processing rtf file failed:";
+					ErrorExit(ref title, ExitCodes.ExitRtf2HtmlFailure, ref ex, ref targetHtmlLanguageCode);
 				}
 			}
 
-			if ((inputWinmailFilePath.Length > 0) && File.Exists(inputWinmailFilePath))
+			if ((inputWinmailFilePath.Length > 0) && System.IO.File.Exists(inputWinmailFilePath))
 			{
 				try
 				{
+					if (!IsValidTnefSignature(inputWinmailFilePath))
+						throw new Exception("Invalid Tnef File ID Signature");
+
 					using (var inputStream = new FileInfo(inputWinmailFilePath).OpenRead())
 					{
 						var tnef = new TnefPart { Content = new MimeKit.MimeContent(inputStream) };
@@ -455,10 +551,8 @@ namespace Winmail2EmlFile
 							}
 							catch (Exception ex)
 							{
-								string exText = ex.ToString();
-								logger.Log("Write to file failed: ", exText);
-
-								System.Environment.Exit(ExitCodes.ExitWriteUnmodifiedEmlFileFailure);
+								string title = "Write to file failed:";
+								ErrorExit(ref title, ExitCodes.ExitWriteUnmodifiedEmlFileFailure, ref ex, ref targetHtmlLanguageCode);
 							}
 						}
 
@@ -539,10 +633,8 @@ namespace Winmail2EmlFile
 									}
 									catch (Exception ex)
 									{
-										string exText = ex.ToString();
-										logger.Log("Write to file failed: ", exText);
-
-										System.Environment.Exit(ExitCodes.ExitRtf2HtmlFailure);
+										string title = "Write to file failed:";
+										ErrorExit(ref title, ExitCodes.ExitRtf2HtmlFailure, ref ex, ref targetHtmlLanguageCode);
 									}
 
 									done = true;
@@ -561,20 +653,39 @@ namespace Winmail2EmlFile
 						}
 						catch (Exception ex)
 						{
-							string exText = ex.ToString();
-							logger.Log("Write to file failed: ", exText);
-
-							System.Environment.Exit(ExitCodes.ExitWriteEmlFileFailure);
+							string title = "Write to file failed:";
+							ErrorExit(ref title, ExitCodes.ExitWriteEmlFileFailure, ref ex, ref targetHtmlLanguageCode);
 						}
 
-						deb = 1;
+						//  Code to update names
+#if C
+						try
+						{
+							string rtfText = System.IO.File.ReadAllText(emlFilePath);
+
+							byte[] rawBytesArr = System.IO.File.ReadAllBytes(emlFilePath);
+							byte[] bytesArr = GetBytes(rtfText);
+
+							string fromStr = "zzzzzzz";
+							string toStr = "inspector";
+							string correctedString = Regex.Replace(rtfText, fromStr, toStr, RegexOptions.IgnoreCase);
+							if (correctedString.Count() <= 0)
+								Console.Beep();
+							System.IO.File.WriteAllText(emlFilePath, correctedString);
+						}
+						catch (Exception ex)
+						{
+							string title = "Write to file failed:";
+							ErrorExit(ref title, ExitCodes.ExitWriteEmlFileFailure, ref ex, ref targetHtmlLanguageCode);
+						}
+#endif
+						int deb = 1;
 					}
 				}
 				catch (Exception ex)
 				{
-					string exstr = ex.ToString();
-					logger.Log("Processing of winmail.dat file failed: ", ex.ToString());
-					System.Environment.Exit(ExitCodes.ExitWinmailProcessingFailure);
+					string title = "Processing of winmail.dat file failed:";
+					ErrorExit(ref title, ExitCodes.ExitWinmailProcessingFailure, ref ex, ref targetHtmlLanguageCode);
 				}
 				if (outputEmlFilePath.Length > 0)
 				{
@@ -627,6 +738,190 @@ namespace Winmail2EmlFile
 			return bytes;
 		}
 
+		public static bool IsValidTnefSignature(string filePath)
+		{
+			byte[] data = new byte[4];
+			using (BinaryReader reader = new BinaryReader(new FileStream(filePath, FileMode.Open)))
+			{
+				//reader.BaseStream.Seek(0, SeekOrigin.Begin);
+				reader.Read(data, 0, 4);
+			}
+			byte signature0 = data[0];
+			byte signature1 = data[1];
+			byte signature2 = data[2];
+			byte signature3 = data[3];
+			if ((signature0 != 0x78) ||
+				(signature1 != 0x9F) ||
+				(signature2 != 0x3E) ||
+				(signature3 != 0x22))
+			{
+				return false;
+			}
+			else
+				return true;
+		}
+
+public static bool CreateTranslationHtml(Exception ex, string contextText, string targetHtmlLanguageCode, ref string  outputHtmlFile)
+		{
+			// en to en translation would not work, removed
+			// function googleTranslateElementInit()
+			// new google.translate.TranslateElement({ pageLanguage: 'en',
+
+			string messageText = contextText + "\r\n" + ex.Message;
+
+			string htmlEncodedText = HttpUtility.HtmlEncode(messageText);
+
+			string htmlEncodedExceptionText = "<pre>\r\n" + htmlEncodedText + "\r\n</pre>";
+
+			string htmlEncodeStackTrace = HttpUtility.HtmlEncode(ex.StackTrace);
+			string htmlEncodeStackTraceText = "<pre>\r\n" + htmlEncodeStackTrace + "\r\n</pre>";
+
+			int d = 1;
+
+			string htmlDocHdrPlusStyle = """
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+
+<script type="text/javascript">
+
+function googleTranslateElementInit()
+{
+	new google.translate.TranslateElement({
+	includedLanguages: 'en,es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja,ru,zh-CN,ar,uk,hu'},
+    'google_translate_element');
+}
+
+function myTranslate(lang)
+{
+	var selectElement = document.querySelector('#google_translate_element select');
+	selectElement.value = lang;
+	selectElement.dispatchEvent(new Event('change'));
+}
+
+</script>
+
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</head>
+
+<style>
+
+.goog-te-gadget {
+	font-size: 19px !important;
+}
+
+body > .skiptranslate {
+	//display: none;
+}
+
+.goog-te-banner-frame.skiptranslate {
+	display: none !important;
+}
+
+body {
+top: 48px !important;
+	font-size: 18px !important;
+}
+
+@media print {
+# google_translate_element {display: none;}
+}
+</style>
+""";
+
+
+			string htmlBodyDivTranslate = """
+<!--Text that WILL be translated -->
+<div id="google_translate_element" ></div>
+""";
+
+			string htmlBodyAllsDone = """		
+<br>
+</body>
+</html>
+""";
+
+			string htmlBodyDicNoTranslate = """
+<!--Text that will NOT be translated-->
+<div class="notranslate">
+
+<p>
+""";
+
+			htmlBodyDicNoTranslate += htmlEncodeStackTraceText;
+
+			htmlBodyDicNoTranslate += """
+</p>
+
+</div>
+""";
+
+			string CRLF = "\r\n\r\n"; ;
+
+			try
+			{
+				using (var stream = new MemoryStream())
+				{
+					using (var writer = new StreamWriter(stream, Encoding.UTF8))
+					{
+						writer.Write(htmlDocHdrPlusStyle);
+						writer.Write(CRLF);
+
+						string bodyTranslate = System.String.Format("""<body onload="setTimeout(myTranslate, 1000, '{0}')">""", targetHtmlLanguageCode);
+
+						writer.Write(bodyTranslate);
+						writer.Write(CRLF);
+
+						writer.Write(htmlBodyDivTranslate);
+						writer.Write(CRLF);
+
+						string titleFile = """			
+<br><pre>---  Winmail2Eml Runtime Failure Exception Details  ---</pre><br>
+""";
+
+						writer.Write(titleFile);
+						writer.Write(CRLF);
+
+						writer.Write(htmlEncodedExceptionText);
+						writer.Write(CRLF);
+
+						writer.Write(htmlBodyDicNoTranslate);
+						writer.Write(CRLF);
+
+						writer.Write(htmlBodyAllsDone);
+						writer.Write(CRLF);
+
+						writer.Flush();
+
+						var buffer = stream.ToArray();
+						string text = Encoding.UTF8.GetString(buffer);
+
+						outputHtmlFile = GetLocalAppDataPath();
+
+						outputHtmlFile += "\\Temp\\UMBoxViewer\\MboxHelp";
+
+						if (!Directory.Exists(outputHtmlFile))
+						{
+							// Create the directory
+							Directory.CreateDirectory(outputHtmlFile);
+						}
+
+						outputHtmlFile += "\\exceptionTextWinmail2Eml.html";
+
+						System.IO.File.WriteAllText(outputHtmlFile, text);
+
+						Process.Start(new ProcessStartInfo(outputHtmlFile) { UseShellExecute = true });
+					}
+				}
+			}
+			catch (Exception except)
+			{
+				string text = except.ToString();
+				; // ignore
+			}
+			return true;
+		}
 	}
 }
 

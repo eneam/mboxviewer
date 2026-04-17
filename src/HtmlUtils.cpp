@@ -1300,7 +1300,7 @@ CStringA htmlDocHdrPlusStyle = R"----(
 function googleTranslateElementInit()
 {
     new google.translate.TranslateElement({ pageLanguage: 'en', 
-    includedLanguages: 'es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja,ru,zh-CN,ar,uk,hu'},
+    includedLanguages: 'en|es,it,pt,pt-PT,pt-BR,fr,de,pl,ro,ja,ru,zh-CN,ar,uk,hu'},
     'google_translate_element');
 }
 
@@ -1314,7 +1314,6 @@ function myTranslate(lang)
 </script>
 
 <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-<script type="text/javascript" src="https://translate.google.com/#en/en/Hello"></script>
 </head>
 
 <style>

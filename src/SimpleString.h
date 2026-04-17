@@ -132,13 +132,13 @@ public:
 
 	// Be aware!!!:  FindNoCase return to offset relative to the beginning of the stored string 
 	// and not the offset relative to the argument offset
-	int FindNoCase(int offset, char const* Src, int  Size);
-	int FindNoCase(int offset, char const* Src, int  Size, int ncount);
+	int FindNoCase(int offset, char const* Str, int  Size);
+	int FindNoCase(int offset, char const* Str, int  Size, int ncount);
 
 	// Find first char matching any char on the list Src
 	// Be aware!!!:  FindAny returns to offset relative to the beginning of the stored string 
 	// and not the offset relative to the argument offset
-	int FindAny(int offset, char const* Src);
+	int FindAny(int offset, char const* str);
 
 	// Find first char matching the char c
 	// Be aware!!!:  Find returns to offset relative to the beginning of the stored string 
@@ -146,7 +146,7 @@ public:
 
 	int Find(int offset, char const c);
 	//
-	int ReplaceNoCase(int offset, char const* Src, int Size, char const* newSrc, int newSize, int ncount);
+	int ReplaceNoCase(int offset, char const* Str, int Size, char const* newStr, int newSize, int ncount);
 
 	int Remove(int offsetBegin, int offsetEnd);
 

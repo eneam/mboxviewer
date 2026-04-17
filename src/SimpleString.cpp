@@ -33,14 +33,23 @@
 
 
 // Expensive !!!
-int SimpleString::FindNoCase(int offset, char const* Src, int  Size)
+int SimpleString::FindNoCase(int offset, char const* str, int  strSize)
 {
+	if (strSize <= 0)
+		return -1;
+
+	char patChar = *str;   // str must be in lower case
 	int i;
 	char *p;
-	for (i = offset; i < (m_count - Size); i++)
+	for (i = offset; i < (m_count - strSize); i++)
 	{
 		p = &m_data[i];
-		if (TextUtilsEx::strncmpUpper2Lower(p, (m_count - i), (char*)Src, Size) == 0)
+
+		char srcChar = tolower(*p);
+		if (srcChar != patChar)
+			continue;
+
+		if (TextUtilsEx::strncmpUpper2Lower(p, (m_count - i), (char*)str, strSize) == 0)
 			return i;
 	}
 	return -1;
@@ -48,23 +57,27 @@ int SimpleString::FindNoCase(int offset, char const* Src, int  Size)
 
 
 // Expensive !!!
-int SimpleString::FindNoCase(int offset, char const* Src, int  Size, int ncount)
+int SimpleString::FindNoCase(int offset, char const* str, int  strSize, int ncount)
 {
 	int i;
 	char* p;
 	if (ncount > m_count)
 		ncount = m_count;
 
-	for (i = offset; i < (ncount - Size); i++)
+	char patChar = *str;   // pattern must be in lower case
+	for (i = offset; i < (ncount - strSize); i++)
 	{
 		p = &m_data[i];
-		if (TextUtilsEx::strncmpUpper2Lower(p, ncount - i, (char*)Src, Size) == 0)
+		char srcChar = tolower(*p);
+		if (srcChar != patChar)
+			continue;
+		if (TextUtilsEx::strncmpUpper2Lower(p, ncount - i, (char*)str, strSize) == 0)
 			return i;
 	}
 	return -1;
 }
 
-int SimpleString::FindAny(int offset, char const* Src)
+int SimpleString::FindAny(int offset, char const* str)
 {
 	int i;
 	const char *p = m_data;
@@ -72,7 +85,7 @@ int SimpleString::FindAny(int offset, char const* Src)
 	for (i = offset; i < m_count; i++)
 	{
 		c = m_data[i];
-		p = ::strchr((const char*)Src, c);
+		p = ::strchr((const char*)str, c);
 		if (p)
 			return i;
 	}
@@ -88,11 +101,11 @@ int SimpleString::Find(int offset, char const c)
 		return -1;
 }
 
-int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char const* newSrc, int newSize, int ncount)
+int SimpleString::ReplaceNoCase(int offset, char const* Str, int Size, char const* newStr, int newSize, int ncount)
 {
 	int ret = -1;
-	int findSrcPos = FindNoCase(offset, Src, Size, ncount);
-	if (findSrcPos >= 0)
+	int findStrPos = FindNoCase(offset, Str, Size, ncount);
+	if (findStrPos >= 0)
 	{
 #ifdef _DEBUG
 		// Make local
@@ -106,11 +119,11 @@ int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char cons
 			tmp.Resize(needSize);
 			char* p = this->Data();
 
-			tmp.Append(p, findSrcPos);
-			tmp.Append(newSrc, newSize);
+			tmp.Append(p, findStrPos);
+			tmp.Append(newStr, newSize);
 
-			char* pNext = this->Data() + findSrcPos + Size;
-			tmp.Append(pNext, this->Count() - (findSrcPos + Size));
+			char* pNext = this->Data() + findStrPos + Size;
+			tmp.Append(pNext, this->Count() - (findStrPos + Size));
 		}
 #endif
 		int needSize = m_count;
@@ -123,33 +136,33 @@ int SimpleString::ReplaceNoCase(int offset, char const* Src, int Size, char cons
 			int i;
 			char* pNew = &m_data[needSize];
 			char *pOld = &m_data[needSize - Size];
-			for (i = m_count; i > findSrcPos; i--)
+			for (i = m_count; i > findStrPos; i--)
 			{
 				*pNew-- = *pOld--;
 			}
-			char *p = p = &m_data[findSrcPos];
+			char *p = p = &m_data[findStrPos];
 			// Replace inplace
-			memcpy(p, newSrc, newSize);
+			memcpy(p, newStr, newSize);
 		}
 		else
 		{
 			needSize = m_count - Size + newSize;
 
-			char* p = &m_data[findSrcPos];
+			char* p = &m_data[findStrPos];
 			// Replace inplace
-			memcpy(p, newSrc, newSize);
+			memcpy(p, newStr, newSize);
 
 			int i;
-			char* pNew = &m_data[findSrcPos + newSize];
-			char* pOld = &m_data[findSrcPos + Size];
-			for (i = findSrcPos + Size; i < m_count; i++)
+			char* pNew = &m_data[findStrPos + newSize];
+			char* pOld = &m_data[findStrPos + Size];
+			for (i = findStrPos + Size; i < m_count; i++)
 			{
 				*pNew++ = *pOld++;
 			}
 		}
 		SetCount(needSize);
 
-		ret = findSrcPos;
+		ret = findStrPos;
 #ifdef _DEBUG
 		// Make local
 		{

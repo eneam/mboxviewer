@@ -3183,6 +3183,11 @@ int IsValidOutlookMsgFile(CString& fname)
 		return 0;
 }
 
+std::string replace_all_case_insensitive(const std::string& str, const std::string& from, const std::string& to)
+{
+	std::regex pattern(from, std::regex_constants::icase); // icase flag for case insensitivity
+	return std::regex_replace(str, pattern, to);
+}
 
 BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText)
 {
@@ -3264,6 +3269,29 @@ BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, C
 	}
 
 	DWORD NumberOfBytesWritten = 0;
+
+	// Update names
+#if 0
+	std::string from("zzz");
+	std::string to("inspector");
+	msg_utf8 = replace_all_case_insensitive(msg_utf8, from, to);
+
+	from.assign("mmm");
+	msg_utf8 = replace_all_case_insensitive(msg_utf8, from, to);
+
+	from.assign("zzz");
+	to.assign("john");
+	msg_utf8 = replace_all_case_insensitive(msg_utf8, from, to);
+
+	from.assign("zzz");
+	to.assign("john");
+	msg_utf8 = replace_all_case_insensitive(msg_utf8, from, to);
+
+	from.assign("zzz");
+	to.assign("john");
+	msg_utf8 = replace_all_case_insensitive(msg_utf8, from, to);
+#endif
+
 	int retCode = OutlookMessage::Write2File(emlFileHandle, msg_utf8.c_str(), msg_utf8.size(), &NumberOfBytesWritten);
 
 	OutlookMessage::FileClose(emlFileHandle);
@@ -3309,21 +3337,18 @@ BOOL RtfToFile(CString& fileNamePath, struct cfbf* cfbf, DirEntry* entry)
 		return FALSE;
 	}
 
-		dst[retlen] = 0;
+	dst[retlen] = 0;
 
-		std::string RtfContentType("HTML Text");
-		char* cpos = strstr((char*)dst, "fromhtml1");
-		if (cpos == 0)
-			RtfContentType = "Plain Text";
+	std::string RtfContentType("HTML Text");
+	char* cpos = strstr((char*)dst, "fromhtml1");
+	if (cpos == 0)
+		RtfContentType = "Plain Text";
 
-		dst[retlen] = 0;
-
-
-		CString rtfFilePath = fileNamePath + L".rtf.txt";
-		ret = FileUtils::Write2File(rtfFilePath, (unsigned char*)dst, retlen);
+	dst[retlen] = 0;
 
 
-
+	CString rtfFilePath = fileNamePath + L".rtf.txt";
+	ret = FileUtils::Write2File(rtfFilePath, (unsigned char*)dst, retlen);
 
 	RTF2HTMLConverter rtf2html;
 

@@ -61,6 +61,7 @@ public:
 	BOOL InsertItemW(CStringW &cStrName, int id, CStringA& mediaType, CStringA& mediaSubtype);
 	BOOL GetWinmail2EmlProcessPath(CString& processPath);
 	int OpenAttachment(AttachmentInfo* attachmentInfo);
+	BOOL IsTnefFile(CString& filePath);
 
 	NMsgView *m_pMsgView;
 	CArray<AttachmentInfo*, AttachmentInfo*> m_attachmentTbl;

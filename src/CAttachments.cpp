@@ -492,26 +492,40 @@ int CAttachments::OpenAttachment(AttachmentInfo* attachmentInfo)
 	}
 	else if (((attachmentName.CompareNoCase(L"winmail.dat") == 0) || (fileNameExtention.CompareNoCase(L".ms-tnef") == 0)) ||
 		((attachmentInfo->m_mediaSubtype.CompareNoCase("ms-tnef") == 0) || (attachmentInfo->m_mediaSubtype.CompareNoCase("wnd.ms-tnef") == 0)))
-	{
-		CString winmail2emlExePath;
-		BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
-
-		CString inputWinmailFilePath = filePath;
-
-		CString datapath = MboxMail::GetLastDataPath();
-		CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
-		BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
-		CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentName + ".eml";
-
-		CString args = "--mboxview-exe-path \"" + mboxviewPath +
-			"\" --input-winmail-file \"" + inputWinmailFilePath +
-			"\" --output-eml-file \"" + outputEmlFilePath + "\"";
-		if (pathFound)
 		{
-			result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
-		}
-		else
-			; // alert ? MessageBox ??
+			CString winmail2emlExePath;
+			BOOL pathFound = CAttachments::GetWinmail2EmlProcessPath(winmail2emlExePath);
+
+			CString inputWinmailFilePath = filePath;
+
+			BOOL isTnefFileType = IsTnefFile(inputWinmailFilePath);
+
+			CString datapath = MboxMail::GetLastDataPath();
+			CString winmail2emlCachePath = datapath + L"Winmail2EmlCache";
+			BOOL retCreate = FileUtils::CreateDir(winmail2emlCachePath);
+			CString outputEmlFilePath = winmail2emlCachePath + L"\\" + attachmentName + ".eml";
+
+			CString languageName;
+			CString targetHtmlLanguageCode = "en";
+			if (!ResHelper::IsEnglishConfigured(languageName))
+			{
+				CString section_general = CString(sz_Software_mboxview) + L"\\General";
+				CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+				targetHtmlLanguageCode = ResHelper::GetLanguageCode(languageName);
+			}
+
+			CString args = "--mboxview-exe-path \"" + mboxviewPath +
+				"\" --input-winmail-file \"" + inputWinmailFilePath +
+				"\" --output-eml-file \"" + outputEmlFilePath +
+				"\" --target-html-language-code \"" + targetHtmlLanguageCode +
+				"\"";
+
+			if (pathFound)
+			{
+				result = ShellExecute(NULL, L"open", winmail2emlExePath, args, path, SW_HIDE);
+			}
+			else
+				; // alert ? MessageBox ??
 	}
 	else
 	{
@@ -519,4 +533,79 @@ int CAttachments::OpenAttachment(AttachmentInfo* attachmentInfo)
 	}
 	CMainFrame::CheckShellExecuteResult(result, h, &filePath);
 	return 0;
+}
+
+BOOL CAttachments::IsTnefFile(CString& cStrNamePath)
+{
+	SimpleString txt;
+	int bytes2Read = 8;  // or 512 if find "ipm.microsoft"; 
+
+	DWORD dwAccess = GENERIC_READ;
+	DWORD dwCreationDisposition = OPEN_EXISTING;
+
+	HANDLE hFile = CreateFile(cStrNamePath, dwAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, 0, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		int deb = 1;
+		return FALSE;
+	}
+	else
+	{
+		LPOVERLAPPED lpOverlapped = 0;
+		LPVOID       lpBuffer;
+		DWORD        nNumberOfBytesToRead;
+		DWORD      nNumberOfBytesRead;
+
+		_int64 fsize = FileUtils::FileSize(cStrNamePath);
+		if (fsize < bytes2Read)
+			return FALSE;
+
+		_int64 bytesLeft = bytes2Read;
+		txt.ClearAndResize((int)bytes2Read + 1);
+		lpBuffer = txt.Data();
+		while (bytesLeft > 0)
+		{
+			if (bytesLeft > 0xffffffff)
+				nNumberOfBytesToRead = 0xffffffff;
+			else
+				nNumberOfBytesToRead = (DWORD)bytesLeft;
+
+			BOOL retval = ::ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
+			if (retval == FALSE)
+				break;
+
+			int newCount = txt.Count() + nNumberOfBytesRead;
+			txt.SetCount(newCount);
+			lpBuffer = txt.Data(newCount);
+			bytesLeft -= nNumberOfBytesRead;
+		}
+		BOOL retClose = CloseHandle(hFile);
+
+		char* data = txt.Data();
+
+		UINT8 signature0 = (UINT8)data[0];
+		UINT8 signature1 = (UINT8)data[1];
+		UINT8 signature2 = (UINT8)data[2];
+		UINT8 signature3 = (UINT8)data[3];
+		if ((signature0 != 0x78) ||
+			(signature1 != 0x9F) ||
+			(signature2 != 0x3E) ||
+			(signature3 != 0x22))
+		{
+			//_ASSERTE(FALSE);
+			return FALSE;
+		}
+
+#if 0
+		// ignore for now
+		char* lowCasePat = "ipm.microsoft";
+		int lowCasePatLen = strlen(lowCasePat);
+		int isMail = txt.FindNoCase(0, lowCasePat, lowCasePatLen);
+		_ASSERTE(isMail >= 0);
+		if (isMail < 0)
+			return FALSE;
+#endif
+
+		return TRUE;
+	}
 }
