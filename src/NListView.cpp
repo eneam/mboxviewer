@@ -5209,20 +5209,29 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 
 		int deb = 1;
 	}
-	else
+	else  // didn't find Html Text; try to find Plain Text
 	{
 		outbuflarge->Clear();  // SimpleString* outbuflarge = MboxMail::m_outdata;
 		pageCode = 0;
 		textType = 0; // try Text next
-		int plainTextMode = 2;  // insert <img src=attachment name> image tags
+		int plainTextMode = 2;  // insert <img src=attachment name> image tags; encapsulate plain text as html text
 
 		int textlen = MboxMail::GetMailBody_mboxview(fpm, iItem, outbuflarge, pageCode, textType, plainTextMode);  // returns pageCode
 		if (textlen != outbuflarge->Count())
 			int deb = 1;
 
+
 		bdy = outbuflarge->Data();
 		bdylen = outbuflarge->Count();
 
+
+		// FIXME skip processing if bdylen <= 0
+		if (bdylen > 0)
+		{
+			// mail has one or more Plain Text blocks
+		}
+		
+		// FIXME Continue if bdylen > 0 only
 		////////////////////////////////////////
 
 
@@ -19188,7 +19197,7 @@ int NListView::ExportTextTextToTextFile(/*out*/CFile &fp, int mailPosition, /*in
 	//
 	int textType = 0; // Text
 	pageCode = 0;
-	int plainTextMode = 1;  // insert [attachment name] image info
+	int plainTextMode = 1;  // insert [attachment name] image info; create plain text
 	int textlen = MboxMail::GetMailBody_mboxview(fpm, mailPosition, outbuf, pageCode, textType, plainTextMode);  // returns pageCode
 	if (textlen != outbuf->Count())
 		int deb = 1;

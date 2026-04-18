@@ -7777,15 +7777,13 @@ int MboxMail::AppendInlineAttachmentNameSeparatorLine(MailBodyContent* body, int
 // Quite messy !!! Need cleaner solution. Find time. FIXMEFIXME
 int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf, UINT &pageCode, int textType, int plainTextMode)
 {
-	// Needs some work to properly process multiple blocks of the same type plain or html // FIXMEFIXME
-	//   and with different text encoding; rencode al as UTF8
-	// Need to handle Content-Type: multipart/alternative; to properly display multiple html block with embeded images
+	// Need to handle Content-Type: multipart/alternative; to properly display multiple html block with embedded images ???
 
 	_int64 fileOffset;
 	int bodyCnt = 0;
 
 	// We are using global buffers so check and assert if we collide. 
-	SimpleString *inbuf = MboxMail::m_inbuf;
+	SimpleString* inbuf = MboxMail::m_inbuf;
 	_ASSERTE(outbuf != inbuf);
 
 	outbuf->ClearAndResize(10000);
@@ -7794,81 +7792,64 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 	SimpleString* tmpbuf = MboxMail::m_largelocal3;
 	tmpbuf->Clear();
 
-	MailBodyContent *body;
+	MailBodyContent* body;
 	pageCode = 0;  // return body final page code
-	UINT bdyPageCode = 0;  // current page code for accumulated data
-	bool pageCodeConflict = false;
 
-	BOOL reencodeCurrent = FALSE;  // need to reencode accumalated body data
-	BOOL reencodeNew = FALSE;  // need to reencode new  body data
-	BOOL setAsUTF8 = FALSE;
 	UINT CP_US_ASCII = 20127;
 	DWORD error;
 
+
+	// inspect all text blocks to determine if plain text re-encoding to UTF8 is needed
+	// what about re-encoding of Html text blocks ??
 	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
 	{
-		reencodeCurrent = FALSE;
-		reencodeNew = FALSE;
-		setAsUTF8 = FALSE;
+		body = m->m_ContentDetailsArray[j];
 
+		if (textType == 0)
+		{
+			if (body->m_contentType.CompareNoCase("text/plain") != 0)
+				continue;
+		}
+		else if (textType == 1)
+		{
+			if (body->m_contentType.CompareNoCase("text/html") != 0)
+				continue;
+		}
+
+		// Merge only inline text blocks
+		if (body->m_contentDisposition.CompareNoCase("attachment") == 0)
+			continue;
+
+		if (bodyCnt == 0)
+		{
+			pageCode = body->m_pageCode;
+			if (textType == 1)
+				break; // return pageCode of the first Html block. Asking for trouble !!!
+		}
+		else if (pageCode != body->m_pageCode)
+		{
+			pageCode = CP_UTF8;
+			break;
+		}
+		bodyCnt++;
+	}
+
+	bodyCnt = 0;
+
+	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
+	{
 		tmpbuf->Clear();
 
 		body = m->m_ContentDetailsArray[j];
 
-#if 0
-
-		if ((!body->m_attachmentName.IsEmpty()) || 
-			(body->m_contentDisposition.CompareNoCase("attachment") == 0)) 
-		{
-			if ((textType == 0) && (plainTextMode > 0))
-			{
-#if 1
-				// Proper solution might be forward list of text blocks to the caller to decide whether to
-				// embedd given text block into merged mail text
-				int pos = body->m_contentType.ReverseFind('/');
-				if (pos > 0)
-				{
-					CStringA contentTypeMain;
-					CStringA contentTypeExtension;
-					contentTypeExtension = body->m_contentType.Mid(pos + 1);
-					contentTypeMain = body->m_contentType.Left(pos);
-					if (contentTypeMain.CompareNoCase("image") == 0)
-					{
-						//isValidContentTypeExtension = IsSupportedPictureFileExtension(contentTypeExt);
-						if (plainTextMode == 2)
-						{
-							//CStringA img = "\r\n<img  style=\"max-width:40%;\" src=\"";
-							CStringA img = "\r\n<img src=\"";
-							img.Append(body->m_attachmentName);
-							img.Append("\">\r\n");
-							outbuf->Append(img, img.GetLength());
-						}
-						else
-						{
-							CStringA img = "\r\n[";
-							img.Append(body->m_attachmentName);
-							img.Append("]\r\n");
-							outbuf->Append(img, img.GetLength());
-						}
-					}
-				}
-#endif
-			}
-			continue;
-		}
-#else
-		//if ((!body->m_attachmentName.IsEmpty()) ||
-			//(body->m_contentDisposition.CompareNoCase("attachment") == 0))
-		//{
 		// textType = 0 plain text, textType = 1 html text
 		// plainTextMode = 1 create plain text (print mail as text)
 		// plainTextMode = 2 encapsulate plain text as html text (print mail as html)
 		if ((textType == 0) && (plainTextMode > 0) && !body->m_attachmentName.IsEmpty())
 		{
-			// Support emails from iphone. Plain text with embeded images
-#if 1
-				// Proper solution might be forward list of text blocks to the caller to decide whether to
-				// embedd given text block into merged mail text
+			// Support emails from iphone. Plain text with embedded images
+			// Proper solution might be forward list of text blocks to the caller to decide whether to
+			// embed given text block into merged mail text
 			int pos = body->m_contentType.ReverseFind('/');
 			if (pos > 0)
 			{
@@ -7896,18 +7877,15 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 					}
 				}
 			}
-#endif
 		}
-			//continue;
-		//}
-#endif
+
 		if (textType == 0)
 		{
 			if (body->m_contentType.CompareNoCase("text/plain") != 0)
 			{
 				continue;
 			}
-		} 
+		}
 		else if (textType == 1)
 		{
 			if (body->m_contentType.CompareNoCase("text/html") != 0)
@@ -7916,63 +7894,16 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 			}
 		}
 
-#if 1
-		//  Fix for content-type of type text 
+		// Merge only inline text blocks
 		if (body->m_contentDisposition.CompareNoCase("attachment") == 0)
 		{
 			continue;
 		}
-#endif
 
-		if (bodyCnt == 0)
-		{
-			bdyPageCode = body->m_pageCode;  // current page code
-			pageCode = body->m_pageCode;  // return page code
-		}
-		else
-		{
-			UINT newBdyPageCode = body->m_pageCode;
-
-			if (bdyPageCode != newBdyPageCode)
-			{
-				if (((bdyPageCode == CP_UTF8) || (bdyPageCode == CP_US_ASCII)) && ((newBdyPageCode == CP_UTF8) || (newBdyPageCode == CP_US_ASCII)))
-				{
-					setAsUTF8 = TRUE;  
-				}
-				else if ((bdyPageCode == CP_UTF8) || (bdyPageCode == CP_US_ASCII))
-				{
-					// _ASSERTE((newBdyPageCode != CP_UTF8) && (newBdyPageCode != CP_US_ASCII));
-					reencodeNew = TRUE;
-				}
-				else if ((newBdyPageCode == CP_UTF8) || (newBdyPageCode == CP_US_ASCII))
-				{
-					// _ASSERTE((bdyPageCode != CP_UTF8) && (bdyPageCode != CP_US_ASCII));
-					reencodeCurrent = TRUE;
-				}
-				else
-				{
-					reencodeCurrent = TRUE;
-					reencodeNew = TRUE;
-				}
-				if (textType == 1)  // HTML case
-				{
-					if (newBdyPageCode == CP_US_ASCII)
-						pageCode = bdyPageCode;
-					else if (bdyPageCode == CP_US_ASCII)
-						pageCode = newBdyPageCode;
-				}
-				else
-				{
-					pageCode = newBdyPageCode;
-				}
-			}
-		}
 		if (textType == 1)  // HTML
 		{
-			// May need to reencode or if part(s) doean't have charset defined
-
-			reencodeCurrent = FALSE;
-			reencodeNew = FALSE;
+			// May need to reencode for now
+			_ASSERTE(bodyCnt == 0); // don't expect more than one Html block for typical MIME tree
 		}
 
 		int bodyLength = body->m_contentLength;
@@ -7983,13 +7914,13 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 			if (bodyLength < 0)
 				bodyLength = 0;
 		}
-		
+
 		fileOffset = m->m_startOff + body->m_contentOffset;
 		_int64 filePos = fpm.Seek(fileOffset, SEEK_SET);
 
 		inbuf->ClearAndResize(bodyLength);
 
-		char *bodyBegin = inbuf->Data();
+		char* bodyBegin = inbuf->Data();
 		int retlen = fpm.Read(bodyBegin, bodyLength);
 		if (retlen != bodyLength) {
 			bodyLength = retlen;
@@ -7999,86 +7930,72 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 		{
 			MboxCMimeCodeBase64 d64(bodyBegin, bodyLength);
 			int dlength = d64.GetOutputLength();
-			//
-			if (!reencodeCurrent && !reencodeNew)
+
+			int needLength = dlength + outbuf->Count() + 512;
+			outbuf->Resize(needLength);
+
+			if ((body->m_pageCode == pageCode) || (textType == 1))  // no re-encode of Html bloks
 			{
-				int needLength = dlength + outbuf->Count() + 512;
-				outbuf->Resize(needLength);
+				char* outptr = outbuf->Data(outbuf->Count());
 
 				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
-				if ((outbuf->Capacity() - outbuf->Count()) < dlength)
-				{
-					_ASSERTE(1);
-					int needMoreBytes = dlength - (outbuf->Capacity() - outbuf->Count());
-					needLength = outbuf->Capacity() + needMoreBytes;
-					outbuf->Resize(needLength);
-				}
-				char* outptr = outbuf->Data(outbuf->Count());
 
 				int retlen = d64.GetOutput((unsigned char*)outptr, dlength);
 				if (retlen > 0)
 					outbuf->SetCount(outbuf->Count() + retlen);
 
-				int deb2 = 1;
+				int deb = 1;
 			}
 			else
 			{
-				// Need to reencode to UTF-8 and append to output buffer
-				int needLength = dlength;
+				int needLength = dlength + 512;
 				tmpbuf->ClearAndResize(needLength);
 
 				int retlen = d64.GetOutput((unsigned char*)tmpbuf->Data(), dlength);
 				if (retlen > 0)
-				{
 					tmpbuf->SetCount(retlen);
-				}
+
+				int deb = 1;
 			}
 		}
 		else if (body->m_contentTransferEncoding.CompareNoCase("quoted-printable") == 0)
 		{
 			MboxCMimeCodeQP dGP(bodyBegin, bodyLength);
 			int dlength = dGP.GetOutputLength();
-			//
-			if (!reencodeCurrent && !reencodeNew)
+
+			int needLength = dlength + outbuf->Count() + 512;
+			outbuf->Resize(needLength);
+
+			if ((body->m_pageCode == pageCode) || (textType == 1))  // no re-encode of Html blocks
 			{
-				int needLength = dlength + outbuf->Count() + 512;
-				outbuf->Resize(needLength);
+				char* outptr = outbuf->Data(outbuf->Count());
 
 				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
-				if ((outbuf->Capacity() - outbuf->Count()) < dlength)
-				{
-					_ASSERTE(1);
-					int needMoreBytes = dlength - (outbuf->Capacity() - outbuf->Count());
-					needLength = outbuf->Capacity() + needMoreBytes;
-					outbuf->Resize(needLength);
-				}
-				char* outptr = outbuf->Data(outbuf->Count());
 
 				int retlen = dGP.GetOutput((unsigned char*)outptr, dlength);
 				if (retlen > 0)
-				{
 					outbuf->SetCount(outbuf->Count() + retlen);
-				}
+
+				int deb = 1;
 			}
 			else
 			{
-				int needLength = dlength;
+				int needLength = dlength + 512;
 				tmpbuf->ClearAndResize(needLength);
 
 				int retlen = dGP.GetOutput((unsigned char*)tmpbuf->Data(), dlength);
 				if (retlen > 0)
-				{
 					tmpbuf->SetCount(retlen);
-				}
+
+				int deb = 1;
 			}
 		}
 		else
 		{
-			// in case we have multiple bodies of the same type ?? not sure it is valid case/concern
-			// asking for trouble ??
-			_ASSERTE((body->m_contentTransferEncoding.CompareNoCase("base64") != 0) &&
-				(body->m_contentTransferEncoding.CompareNoCase("quoted-printable") != 0));
-			if (!reencodeCurrent && !reencodeNew)
+			//_ASSERTE(body->m_contentTransferEncoding.IsEmpty());
+			// no decoding needed ??
+
+			if ((body->m_pageCode == pageCode) || (textType == 1))  // no re-encode of Html
 			{
 				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
 				outbuf->Append(bodyBegin, bodyLength);
@@ -8089,74 +8006,28 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 			}
 		}
 
-		// reencodeCurrent and reencodeNew are always set to FALSE for HTML text block
-		if ((reencodeCurrent || reencodeNew) && (textType == 1))
-			_ASSERTE(FALSE);
-
-		if (reencodeCurrent || reencodeNew)
+		if (tmpbuf->Count() == 0)  // no re-encode of Html
+			;
+		else if (body->m_pageCode != pageCode)
 		{
-			SimpleString *result;
-			if (reencodeCurrent)
-			{
-				SimpleString *wBuff = MboxMail::m_largelocal1;
-				wBuff->ClearAndResize(4*outbuf->Count());
+			SimpleString* result;
+			SimpleString* wBuff = MboxMail::m_largelocal1;
+			wBuff->ClearAndResize(4 * tmpbuf->Count());
 
-				result = MboxMail::m_largelocal2;
-				result->ClearAndResize(4*outbuf->Count());
+			result = MboxMail::m_largelocal2;
+			result->ClearAndResize(4 * tmpbuf->Count());
 
-				BOOL retResult = TextUtilsEx::Str2UTF8(outbuf, bdyPageCode, result, wBuff, error);
-				if (retResult == TRUE)
-				{
-					outbuf->Clear();
-					outbuf->Append(result->Data(), result->Count());
-					pageCode = CP_UTF8;
-				}
-				else
-					; // don't touch outbuf
-			}
-			if (reencodeNew)
-			{
-				SimpleString *wBuff = MboxMail::m_largelocal1;
-				wBuff->ClearAndResize(4*tmpbuf->Count());
+			// TODO: make wBuff local to Str2UTF8
+			BOOL retResult = TextUtilsEx::Str2UTF8(tmpbuf, body->m_pageCode, result, wBuff, error);
 
-				result = MboxMail::m_largelocal2;
-				result->ClearAndResize(4*tmpbuf->Count());
+			AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
 
-				// TODO: make wBuff local to Str2UTF8
-				BOOL retResult = TextUtilsEx::Str2UTF8(tmpbuf, pageCode, result, wBuff, error);
-
-				AppendInlineAttachmentNameSeparatorLine(body, bodyCnt, outbuf, textType);
-
-				if (retResult == TRUE)
-				{
-					outbuf->Append(result->Data(), result->Count());
-					pageCode = CP_UTF8;
-				}
-				else
-				{
-					outbuf->Append(tmpbuf->Data(), tmpbuf->Count());
-				}
-			}
-			//charset = "utf-8";
-		}
-		else
-		{
-			; // all done
+			if (retResult == TRUE)
+				outbuf->Append(result->Data(), result->Count());
+			else
+				outbuf->Append(tmpbuf->Data(), tmpbuf->Count());
 		}
 
-		if (setAsUTF8)
-		{
-			pageCode = CP_UTF8;
-			bdyPageCode = CP_UTF8;
-		}
-		else if ((bdyPageCode == CP_UTF8) || (pageCode == CP_UTF8))
-		{
-			pageCode = CP_UTF8;
-			bdyPageCode = CP_UTF8;
-			if (bodyCnt > 0)
-				int deb = 1;
-		}
-	
 		bodyCnt++;
 
 		if (bodyCnt > 1)
