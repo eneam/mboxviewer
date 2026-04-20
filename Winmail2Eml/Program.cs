@@ -257,8 +257,7 @@ namespace Winmail2EmlFile
 			string contextText = title + " Exit Code: " + exitCode.ToString() + "\n";
 			//logger.Log(errorText);
 
-			string outputHtmlFile = "C:\\Users\\tata\\Downloads\\exText.html";
-			bool htmlOk = CreateTranslationHtml(ex, contextText, targetHtmlLanguageCode, ref outputHtmlFile);
+			bool htmlOk = CreateTranslationHtml(ex, contextText, targetHtmlLanguageCode);
 
 			System.Environment.Exit(exitCode);
 		}
@@ -469,11 +468,23 @@ namespace Winmail2EmlFile
 				ErrorExit(ExitCodes.ExitCmdArguments, errorText);
 			}
 
-			// Used by development team
+			// to support .rtf files
+			if (inputRtfFilePath.Length == 0)
+			{
+				string ext = Path.GetExtension(inputWinmailFilePath);
+				if (ext == ".rtf")
+				{
+					inputRtfFilePath = inputWinmailFilePath;
+				}
+			}
+
 			if ((inputRtfFilePath.Length > 0) && System.IO.File.Exists(inputRtfFilePath))
 			{
 				try
 				{
+					if (!IsValidRtfFile(inputWinmailFilePath))
+						throw new Exception("Invalid Rtf File: expected \"{\\rtf\" at the beginning of the file");
+
 					string rtfText = System.IO.File.ReadAllText(inputRtfFilePath);
 
 					byte[] bytesArr = GetBytes(rtfText);
@@ -515,11 +526,15 @@ namespace Winmail2EmlFile
 					}
 					System.IO.File.WriteAllText(outRtfPipe2HtmlFilePath, result, encodingUTF8);
 
-					int deb = 1;
+					Process.Start(new ProcessStartInfo(outRtfPipe2HtmlFilePath) { UseShellExecute = true });
+
+					logger.Log("Processing of {0} file completed.", inputRtfFilePath);
+
+					System.Environment.Exit(ExitCodes.ExitOk);;
 				}
 				catch (Exception ex)
 				{
-					string title = "Processing rtf file failed:";
+					string title = System.String.Format("Processing of {0} file failed:", inputRtfFilePath);
 					ErrorExit(ref title, ExitCodes.ExitRtf2HtmlFailure, ref ex, ref targetHtmlLanguageCode);
 				}
 			}
@@ -551,7 +566,7 @@ namespace Winmail2EmlFile
 							}
 							catch (Exception ex)
 							{
-								string title = "Write to file failed:";
+								string title = System.String.Format("Write to {0} file failed:", outputUnmodifiedEmlFilePath);
 								ErrorExit(ref title, ExitCodes.ExitWriteUnmodifiedEmlFileFailure, ref ex, ref targetHtmlLanguageCode);
 							}
 						}
@@ -633,7 +648,7 @@ namespace Winmail2EmlFile
 									}
 									catch (Exception ex)
 									{
-										string title = "Write to file failed:";
+										string title = System.String.Format("Conversion from Rtf to Html failed:");
 										ErrorExit(ref title, ExitCodes.ExitRtf2HtmlFailure, ref ex, ref targetHtmlLanguageCode);
 									}
 
@@ -653,7 +668,7 @@ namespace Winmail2EmlFile
 						}
 						catch (Exception ex)
 						{
-							string title = "Write to file failed:";
+							string title = System.String.Format("Write to {0} file failed:", emlFilePath);
 							ErrorExit(ref title, ExitCodes.ExitWriteEmlFileFailure, ref ex, ref targetHtmlLanguageCode);
 						}
 
@@ -684,7 +699,7 @@ namespace Winmail2EmlFile
 				}
 				catch (Exception ex)
 				{
-					string title = "Processing of winmail.dat file failed:";
+					string title = System.String.Format("Processing of {0} file failed:", inputWinmailFilePath);
 					ErrorExit(ref title, ExitCodes.ExitWinmailProcessingFailure, ref ex, ref targetHtmlLanguageCode);
 				}
 				if (outputEmlFilePath.Length > 0)
@@ -693,7 +708,7 @@ namespace Winmail2EmlFile
 					Process.Start(mboxviewExe, cargs);
 				}
 
-				logger.Log("Processing of winmail.dat file completed.");
+				logger.Log("Processing of {0} file completed.", inputWinmailFilePath);
 			}
 
 			System.Environment.Exit(ExitCodes.ExitOk);
@@ -745,6 +760,8 @@ namespace Winmail2EmlFile
 			{
 				//reader.BaseStream.Seek(0, SeekOrigin.Begin);
 				reader.Read(data, 0, 4);
+				reader.Close();
+				reader.Dispose();
 			}
 			byte signature0 = data[0];
 			byte signature1 = data[1];
@@ -761,11 +778,36 @@ namespace Winmail2EmlFile
 				return true;
 		}
 
-public static bool CreateTranslationHtml(Exception ex, string contextText, string targetHtmlLanguageCode, ref string  outputHtmlFile)
+		public static bool IsValidRtfFile(string filePath)
+		{
+			byte[] data = new byte[5];
+			using (BinaryReader reader = new BinaryReader(new FileStream(filePath, FileMode.Open)))
+			{
+				//reader.BaseStream.Seek(0, SeekOrigin.Begin);
+				reader.Read(data, 0, 5);
+				reader.Close();
+				reader.Dispose();
+			}
+			if ((data[0] == '{') &&
+				(data[1] == '\\') &&
+				((data[2] == 'r') || (data[2] == 'R') ) &&
+				((data[3] == 't') || (data[3] == 'T') ) &&
+				((data[4] == 'f') || (data[4] == 'F'))
+				)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool CreateTranslationHtml(Exception ex, string contextText, string targetHtmlLanguageCode)
 		{
 			// en to en translation would not work, removed
 			// function googleTranslateElementInit()
 			// new google.translate.TranslateElement({ pageLanguage: 'en',
+
+			string outputHtmlFile;
 
 			string messageText = contextText + "\r\n" + ex.Message;
 

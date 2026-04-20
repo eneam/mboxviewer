@@ -7902,8 +7902,12 @@ int MboxMail::GetMailBody_mboxview(CFile &fpm, MboxMail *m, SimpleString *outbuf
 
 		if (textType == 1)  // HTML
 		{
-			// May need to reencode for now
-			_ASSERTE(bodyCnt == 0); // don't expect more than one Html block for typical MIME tree
+			// don't expect more than one Html block for typical MIME tree, however
+			// Simple merging of multiple Html content may not work well
+			// Definitions such as Font size, etc may leak from one html to another and affect layout
+			// May have to do something similar to what is done when user selects multiple emails to open in web browser
+			// Goal is is isolate local definitions within each html content
+			_ASSERTE(bodyCnt == 0); 
 		}
 
 		int bodyLength = body->m_contentLength;
