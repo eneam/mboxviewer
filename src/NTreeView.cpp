@@ -57,6 +57,7 @@ IMPLEMENT_DYNCREATE(NTreeView, CWnd)
 int IsValidOutlookMsgFile(CString& fname);
 BOOL ConvertOutlookMsg2Eml(CString& msgFileNamePath, CString& emlFileNamePath, CString& erText);
 BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& oyputFileNamePath, CString& erText);
+BOOL PrintCompressedRtf(CString& msgFileNamePath, CString& oyputFileNamePath, CString& erText);
 extern int expandedPrint;
 
 
@@ -3383,6 +3384,13 @@ void NTreeView::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CMainFrame::CheckShellExecuteResult(result, h);
 
 			expandedPrint = false;
+
+#if _DEBUG
+			outputFileNamePath = outputFilePath + L"\\" + msgFileName + L".compressedRtf.rtf";
+			retPrint = PrintCompressedRtf(msgFilePath, outputFileNamePath, erText);
+
+			deb = 1;
+#endif
 		}
 		break;
 		case M_FileLocation_Id:

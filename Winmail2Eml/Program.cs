@@ -40,8 +40,6 @@ using MimeKit.Tnef;
 using MimeKit.Utils;
 using Org.BouncyCastle.Asn1.X509;
 
-///using System.Text.Encoding.CodePages;
-///
 using RTF2HTMLConversion;
 using RtfPipe;
 using RtfPipe.Model;
@@ -347,7 +345,6 @@ namespace Winmail2EmlFile
 			System.Environment.Exit(0);
 		}
 
-
 		public static void Main(string[] args)
 		{
 			int numArgs = args.GetLength(0);
@@ -482,12 +479,23 @@ namespace Winmail2EmlFile
 			{
 				try
 				{
-					if (!IsValidRtfFile(inputWinmailFilePath))
-						throw new Exception("Invalid Rtf File: expected \"{\\rtf\" at the beginning of the file");
+					string? rtfText = null;
+					if (!IsValidRtfFile(inputRtfFilePath))
+					{
+						string errorText = "";
+						byte[] rtfSrc = System.IO.File.ReadAllBytes(inputRtfFilePath);
+						if (IsValidCompressedRtfFile(rtfSrc, ref errorText))
+						{
+							byte[] byteRtf = MsgReader.Outlook.RtfDecompressor.DecompressRtf(rtfSrc);
+							rtfText = Encoding.ASCII.GetString(byteRtf);
+						}
+						else
+							throw new Exception("Invalid Rtf File: expected \"{\\rtf\" at the beginning of the file");
+					}
+					else
+						rtfText = System.IO.File.ReadAllText(inputRtfFilePath);
 
-					string rtfText = System.IO.File.ReadAllText(inputRtfFilePath);
-
-					byte[] bytesArr = GetBytes(rtfText);
+					//byte[] bytesArr = GetBytes(rtfText);
 
 					bool isHtmlText = rtfText.Contains("fromhtml1");
 					Encoding encodingUTF8 = Encoding.UTF8;
@@ -544,7 +552,9 @@ namespace Winmail2EmlFile
 				try
 				{
 					if (!IsValidTnefSignature(inputWinmailFilePath))
-						throw new Exception("Invalid Tnef File ID Signature");
+					{
+							throw new Exception("Invalid Tnef File ID Signature");
+					}
 
 					using (var inputStream = new FileInfo(inputWinmailFilePath).OpenRead())
 					{
@@ -799,6 +809,12 @@ namespace Winmail2EmlFile
 			}
 
 			return false;
+		}
+
+		public static bool IsValidCompressedRtfFile(byte[] rtfSrc, ref string errorText)
+		{
+			bool ret = MsgReader.Outlook.RtfDecompressor.IsValidCompressedRtf(rtfSrc, ref errorText);
+			return ret;
 		}
 
 		public static bool CreateTranslationHtml(Exception ex, string contextText, string targetHtmlLanguageCode)

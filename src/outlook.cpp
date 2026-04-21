@@ -3371,6 +3371,77 @@ BOOL RtfToFile(CString& fileNamePath, struct cfbf* cfbf, DirEntry* entry)
 	return ret;
 }
 
+BOOL PrintCompressedRtf(CString& msgFileNamePath, CString& outputFileNamePath, CString& erText)
+{
+	std::string errorText;
+
+	// It is likely unnecessary check
+	// ZMM What about encoding in Compound File Binary File Format (CFBF) files
+	// Parsing will fail if CFBF file is not encoded as little-endian
+	// Investigate if mix encoding is permitted in CFBF
+	if (!IsLittleEndianType())
+	{
+		erText = L"Outlook .msg files are supported on little-endian systems only\n.This system is big-endian.\n";
+		return FALSE;
+	}
+
+	struct cfbf cfbf;
+	if (cfbf_open(msgFileNamePath, &cfbf, errorText) != 0)
+	{
+		erText.Format(L"Failed to open %s file\n\n", msgFileNamePath);
+		ResHelper::TranslateString(erText);
+
+		// ZMM This total mess, fix this
+		size_t out_len = 0;
+		wchar_t* buff16 = UTF8ToUTF16((char*)errorText.c_str(), errorText.size(), &out_len);
+
+		if (buff16)
+		{
+			erText.Append(buff16, out_len);
+			free(buff16);
+		}
+
+		return FALSE;
+	}
+
+	CString errText;
+	BOOL truncate = TRUE;
+
+	size_t outlen = 0;
+	wchar_t* filePathW = cfbf.filepath;
+
+	CStringW fileName;
+	FileUtils::CPathStripPath(filePathW, fileName);
+
+	HANDLE emlFileHandle = INVALID_HANDLE_VALUE;
+
+	FILE* outputFile = 0;
+
+	OutlookMsgHelper msgHelper(&cfbf, emlFileHandle, outputFile);
+
+	// ParseMsg will not print message structure and content
+	int ret = msgHelper.msg.ParseMsg(&cfbf, ParseOutlookMsg, msgHelper, errorText);
+	if ((ret < 0) || (!errorText.empty()))
+		_ASSERTE((ret >= 0) && (errorText.empty()));
+
+	DirEntry* entry = msgHelper.msg.m_body.m_PidTagRtfCompressed;
+	if (entry)
+	{
+		int data_len = 0;
+		char* data = cfbf_read_entry_data(&cfbf, entry, &data_len, errorText);
+
+		if (data)
+		{
+			BOOL ret = FileUtils::Write2File(outputFileNamePath, (unsigned char*)data, data_len);
+			int deb = 1;
+		}
+	}
+
+	cfbf_close(&cfbf);
+
+	return TRUE;
+}
+
 
 BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CString& erText)
 {
@@ -3423,6 +3494,8 @@ BOOL PrintOutlookMsg(CString& msgFileNamePath, CString& outputFileNamePath, CStr
 			erText.Append(buff16, out_len);
 			free(buff16);
 		}
+
+		cfbf_close(&cfbf);
 
 		return FALSE;
 	}
