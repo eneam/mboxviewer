@@ -36,6 +36,12 @@
 #include "stdafx.h"
 #include "MyCButton.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 #define BLACK      RGB(0,0,0)
 #define YELLOW     RGB(255, 255, 0)
 #define RED        RGB(127,0,0)

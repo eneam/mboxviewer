@@ -54,6 +54,12 @@
 
 #include "cfbf_winhelper.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 void error(int status, int errnum, const char* format, ...) {
 	fprintf(stdout, "\nstatus=%d errnum=%d ", status, errnum);
 

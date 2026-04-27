@@ -11,6 +11,12 @@
 
 #include "mimetypes.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 std::string mimetypes::from_extension(const std::string& extension, bool strict)
 {
     if (extension.empty())

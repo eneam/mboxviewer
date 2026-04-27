@@ -37,6 +37,12 @@
 #include "TextUtilsEx.h"
 #include "ResHelper.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 
 #define GMAIL_MAX_MAIL_SIZE 25590
 #define YAHOO_MAX_MAIL_SIZE 40720

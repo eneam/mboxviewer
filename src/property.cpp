@@ -5,6 +5,12 @@
 #include "stdafx.h"
 #include "property.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 static CFBProperty propArr[] = {
     { 0x0001 , "PidTagTemplateData" },
     { 0x0002 , "PidTagAlternateRecipientAllowed" },

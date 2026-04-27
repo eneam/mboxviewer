@@ -35,6 +35,12 @@
 #include "MimeCode.h"
 #include "ResHelper.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 void TextUtilsEx::ReplaceNL2CRNL(const char *in, int inLength, SimpleString *out)
 {
 	// Assume out is done by caller

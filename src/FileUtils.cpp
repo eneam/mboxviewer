@@ -36,6 +36,12 @@
 #include "SimpleString.h"
 #include "ResHelper.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 bool FileUtils::PathDirExists(CString &dir)
 {
 	bool ret = FileUtils::PathDirExists((LPCWSTR)dir);

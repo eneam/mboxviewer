@@ -54,6 +54,12 @@
 
 #include "RTF2HTMLConverter.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 std::string UTF16ToUTF8(wchar_t* in, size_t in_len);
 
 static std::string CONTROL_WORD_PATTERN(R"(\\(([^a-zA-Z])|(([a-zA-Z]+)(-?\d*) ?)))");

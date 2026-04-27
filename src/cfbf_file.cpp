@@ -28,6 +28,12 @@
 
 #include "cfbf.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 void
 cfbf_close(struct cfbf* cfbf) {
 	cfbf_fat_close(&cfbf->fat);

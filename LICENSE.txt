@@ -9,6 +9,8 @@ MailKit open source library linked to connect to SMTP servers is licensed under 
 The mbox viewer executable doesn't link any non-free usage library and therefore it can be 
 freely used, as we understand, by individuals and organizations.
 
+Links to all open source libraries linked by MBox Viewer and corresponding licences are listed below.
+
 The mbox viewer software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -29,6 +31,9 @@ https://github.com/elocemearg/cfbfinfo/blob/master/LICENSE.txt
 https://github.com/Sicos1977/MSGReader/blob/master/MsgReader/Outlook/RtfDecompressor.cs
 
 https://github.com/bbottema/rtf-to-html/blob/master/LICENSE-2.0.txt
+
+https://github.com/erdomke/RtfPipe/blob/master/LICENSE
+https://github.com/cezarypiatek/FridaysForks.RtfPipe/blob/master/LICENSE
 
 Links to additional publications that can be usefull.
 

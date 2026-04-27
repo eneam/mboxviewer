@@ -31,6 +31,12 @@
 #include "FileUtils.h"
 #include "MyTcpClient.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 MyTcpClient::MyTcpClient(int port)
 {
 	m_TcpPort = port;

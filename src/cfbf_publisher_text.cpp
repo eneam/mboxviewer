@@ -23,6 +23,12 @@
 
 #include "cfbf.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 /* The CONTENTS stream of a Publisher file is a series of 512-byte sectors,
  * as required by the container format.
  *

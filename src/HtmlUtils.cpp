@@ -41,6 +41,12 @@
 #include <atlbase.h>
 
 #ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
+#ifdef _DEBUG
 #define HTML_ASSERT _ASSERTE
 #else
 #define HTML_ASSERT(x)

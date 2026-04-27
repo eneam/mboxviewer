@@ -33,6 +33,12 @@
 #include "MyPopupMenu.h"
 #include "MainFrm.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 int MyPopupMenu::m_fontSize = 0;
 CFont MyPopupMenu::m_font;
 LOGFONT MyPopupMenu::m_menuLogFont;

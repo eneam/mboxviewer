@@ -31,6 +31,12 @@
 #include "SimpleString.h"
 #include "TextUtilsEx.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 
 // Expensive !!!
 int SimpleString::FindNoCase(int offset, char const* str, int  strSize)

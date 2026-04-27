@@ -22,6 +22,12 @@
 
 #include "cfbf.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 void
 cfbf_fat_close(struct cfbf_fat* fat) {
 	free(fat->sector_entries);

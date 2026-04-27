@@ -36,6 +36,11 @@
 #include "StackWalker.h"
 #include "ExceptionUtil.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
 
 void __cdecl trans_func(unsigned int u, EXCEPTION_POINTERS* ep)
 {

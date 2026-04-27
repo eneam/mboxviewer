@@ -37,6 +37,12 @@
 #include "MboxMail.h"
 #include "ResHelper.h"
 
+#ifdef _DEBUG
+#undef THIS_FILE
+#define THIS_FILE __FILE__
+#define new DEBUG_NEW
+#endif
+
 // CustomNameTemplDld dialog
 
 IMPLEMENT_DYNAMIC(CustomNameTemplDlg, CDialogEx)
