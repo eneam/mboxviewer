@@ -46,28 +46,23 @@ bool FileUtils::PathDirExists(CString &dir)
 {
 	bool ret = FileUtils::PathDirExists((LPCWSTR)dir);
 	return ret;
-
 }
 
 bool FileUtils::PathDirExists(LPCWSTR path)
 {
 	DWORD dwFileAttributes = GetFileAttributesW(path);
+
 	if (dwFileAttributes == INVALID_FILE_ATTRIBUTES)
 	{
-		// may return invalid path or invalid file - not sure why
-		CStringW retW = GetLastErrorAsString();  
-		TRACE(L"%s : \"%s\"\n", retW, path);
-		int deb = 1;
+		// File or directory doesn't exist
+		CStringW retW = GetLastErrorAsString();
+		//TRACE(L"%s : \"%s\"\n", retW, path);  // Need to comment out ??
+		return false;
 	}
-
-	if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+	else //if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
 	{
 		bool bRes = ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
 		return bRes;
-	}
-	else
-	{
-		return false;
 	}
 }
 
@@ -89,7 +84,7 @@ BOOL FileUtils::PathFileExist(LPCWSTR path)
 	{
 		CString errText = FileUtils::GetLastErrorAsString();
 		DWORD err = GetLastError();
-		TRACE(L"(PathFileExist)error=%ld file=%s\n%s\n", err, path, errText);
+		//TRACE(L"(PathFileExist)error=%ld file=%s\n%s\n", err, path, errText);
 		return FALSE;
 	}
 }
@@ -227,7 +222,6 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	if (!FileUtils::VerifyName(directory))
 	{
 		TRACE(L"RemoveDir: Failed to delete, VerifyName failed \"%s\"\n", directory);
-		_ASSERTE(FALSE);
 		return FALSE;
 	}
 
@@ -239,6 +233,9 @@ BOOL FileUtils::RemoveDir(CString & directory, bool recursive, bool removeFolder
 	CString dir = directory;
 	dir.TrimRight(L"\\");
 	dir.Append(L"\\");
+
+	if (!PathDirExists(directory))
+		return TRUE;
 
 	CString searchPath = dir + L"*.*";
 	hSearch = FindFirstFileW(searchPath, &FileData);
@@ -386,7 +383,7 @@ BOOL FileUtils::CPathGetPath(const wchar_t *path, CString &filePath)
 	filePath.Empty();
 	filePath.Append(pathbuff);
 	delete[] pathbuff;
-	return ret;  // ret = 0; microsoft doc says if something goes wrong -:) 
+	return ret;  // ret = 0; Microsoft doc says if something goes wrong -:) 
 }
 
 void FileUtils::SplitFilePath(CString &fileName, CString &driveName, CString &directory, CString &fileNameBase, CString &fileNameExtention)
@@ -569,7 +566,7 @@ void  FileUtils::MakeValidFileNameA(CStringA& name, CStringA& result, BOOL bRepl
 	FileUtils::MakeValidFileNameA((LPCSTR)name, name.GetLength(), result, bReplaceWhiteWithUnderscore, extraValidation);
 }
 
-// name can be UTF8 or ansi or ascii. Replace invalid file name charcater with underscore or space
+// name can be UTF8 or Ansi or ascii. Replace invalid file name character with underscore or space
 void  FileUtils::MakeValidFileNameA(const char* name, int namelen, CStringA& result, BOOL bReplaceWhiteWithUnderscore, BOOL extraValidation)
 {
 	// Always merge consecutive underscore characters
@@ -738,7 +735,7 @@ BOOL FileUtils::Write2File(CString &cStrNamePath, const unsigned char *data, int
 			{
 				CString errText = FileUtils::GetLastErrorAsString();
 				DWORD err = GetLastError();
-				// hFile was valid butis it valid now??
+				// hFile was valid but is it valid now??
 				BOOL retClose = CloseHandle(hFile);
 				return FALSE;
 			}
@@ -878,9 +875,9 @@ BOOL FileUtils::ReadEntireFile(CString &cStrNamePath, SimpleString &txt)
 				nNumberOfBytesToRead = (DWORD)bytesLeft;
 
 			BOOL readRetCode = ::ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &nNumberOfBytesRead, lpOverlapped);
+			_ASSERTE(readRetCode == TRUE);
 			if (readRetCode == FALSE)
 			{
-				_ASSERTE(readRetCode == TRUE);
 				txt.Clear();
 				retCode = readRetCode;
 				break;
@@ -1007,12 +1004,13 @@ BOOL FileUtils::VerifyName(CString &name)
 #else
 	if (
 		(name.Find(L"UMBoxViewer") < 0) &&
+		(name.Find(L"MergeFolder") < 0) &&  // MergeFolder is Under dataFolder and not under UMboxViewer
 		(name.Find(L".WriteSupported") < 0)
 		)
 #endif
 	{
+		_ASSERTE(FALSE);  // 09/10/2026 not sure why _ASSERTE would result i Abort instead of MessageBox
 		TRACE(L"VerifyName: Failed \"%s\"\n", name);
-		_ASSERTE(FALSE);
 		return FALSE;
 	}
 	return TRUE;
@@ -1077,12 +1075,15 @@ BOOL FileUtils::ACopyFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL 
 // TODO: Should Copy make sure all files were copied and delete TO destination in case of any error ?
 // Try to copy first and remove from directory only if no errors ??
 
-CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPath, CStringArray * excludeFilter, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
+CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPath, 
+	CStringArray * excludeFilter, BOOL bFailIfExists, BOOL removeFolderAfterCopy)
 {
 	WIN32_FIND_DATAW FileData;
 	HANDLE hSearch;
 	BOOL	bFinished = FALSE;
 	CString errorText;
+
+	TRACE(L"FileUtils::CopyDirectory: fromFile=\"%s\n\"", cFromPath);
 
 	CString fromPath = cFromPath;
 	if (!FileUtils::PathDirExists(cFromPath))
@@ -1093,6 +1094,7 @@ CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPat
 		return errorText;
 	}
 
+	// excludeFilter: don't copy if path contains any of words listed in excludeFilter array
 	if (excludeFilter)
 	{
 		int count = (int)excludeFilter->GetCount();
@@ -1100,16 +1102,13 @@ CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPat
 		for (i = 0; i < excludeFilter->GetCount(); i++)
 		{
 			if (fromPath.Find(excludeFilter->GetAt(i)) >= 0)
-				break;
+				return errorText;
 		}
-		if (i == count)
-			return errorText;
 	}
 
 	if (!FileUtils::VerifyName(fromPath))
 	{
 		TRACE(L"CopyDirectory: VerifyName failed. Invalid From Directory Name  \"%s\"\n", fromPath);
-		_ASSERTE(FALSE);
 		//return TRUE; // FIXME
 	}
 
@@ -1125,7 +1124,6 @@ CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPat
 	if (!FileUtils::VerifyName(toPath))
 	{
 		TRACE(L"CopyDirectory: VerifyName failed. Invalid To Directory Name \"%s\"\n", toPath);
-		_ASSERTE(FALSE);
 		//return TRUE; // FIXME
 	}
 
@@ -1192,6 +1190,116 @@ CString FileUtils::CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPat
 	}
 	return errorText;
 }
+
+
+// Optimistic Copy, ignores many errors
+// How to handle partial failure??
+// Caller or this function should delete cToPath folder ??
+
+CString FileUtils::CopyDir(const wchar_t* cFromPath, const wchar_t* cToPath,
+	CStringArray* includeFileNameFilter, BOOL bFailIfExists)
+{
+	WIN32_FIND_DATAW FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+	CString errorText;
+
+	TRACE(L"FileUtils::CopyDir: fromFile=\"%s\n\"", cFromPath);
+
+	CString fromPath = cFromPath;
+	if (!FileUtils::PathDirExists(cFromPath))
+	{
+		errorText.Format(L"CopyDir: Invalid from directory path \"%s\"", fromPath);
+		//errorText = FileUtils::GetLastErrorAsStringW();
+		TRACE(L"%s", errorText);
+		return errorText;
+	}
+
+	if (!FileUtils::VerifyName(fromPath))
+	{
+		TRACE(L"CopyDir: VerifyName failed. Invalid From Directory Name  \"%s\"\n", fromPath);
+		//return TRUE; // FIXME
+	}
+
+	CString toPath = cToPath;
+	if (!FileUtils::CreateDir(cToPath))
+	{
+		errorText.Format(L"CopyDir: Create To directory \"%s\" failed.", toPath);
+		//errorText = FileUtils::GetLastErrorAsStringW();
+		TRACE(L"%s", errorText);
+		return errorText;
+	}
+
+	if (!FileUtils::VerifyName(toPath))
+	{
+		TRACE(L"CopyDir: VerifyName failed. Invalid To Directory Name \"%s\"\n", toPath);
+		//return TRUE; // FIXME
+	}
+
+	// Start searching for all files in the from directory.
+	CString searchPath = fromPath + L"*.*";
+	hSearch = FindFirstFileW(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE)
+	{
+		CString errText;
+		errText.Format(L"CopyDir: Didn't find files in \"%s\"", fromPath);
+		//CStringW errText = FileUtils::GetLastErrorAsStringW();
+		TRACE(L"%s", errText);
+		return errorText;   // Success, return empty error string
+	}
+
+	while (!bFinished)
+	{
+		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
+		{
+			CString fileFound = fromPath + FileData.cFileName;
+			CString toFilePath = toPath + FileData.cFileName;
+			if (FileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (includeFileNameFilter)
+				{
+					int count = (int)includeFileNameFilter->GetCount();
+					int i;
+					for (i = 0; i < count; i++)
+					{
+						if (fileFound.Find(includeFileNameFilter->GetAt(i)) >= 0)
+						{
+							if (!::CopyFileW(fileFound, toFilePath, bFailIfExists))
+							{
+								CString errText = FileUtils::GetLastErrorAsString();
+								TRACE(L"CopyDir: \"%s\"\n%s", fileFound, errText);
+								// FindClose(hSearch); return errText;   // ignore for now
+							}
+							else
+								break;
+						}
+					}
+				}
+			}
+			else // recursive
+			{
+				CString fromPath = fileFound + L"\\";
+				CString toPath = toFilePath + L"\\";
+				errorText = FileUtils::CopyDir(fromPath, toPath, includeFileNameFilter, bFailIfExists);
+				if (!errorText.IsEmpty())
+				{
+					TRACE(L"CopyDir: \"%s\"\n%s", fromPath, errorText);
+					// FindClose(hSearch); return errText;   // ignore for now
+				}
+			}
+		}
+		if (!FindNextFileW(hSearch, &FileData))
+		{
+			bFinished = TRUE;
+		}
+	}
+
+//done:
+	FindClose(hSearch);
+
+	return errorText;
+}
+
 
 CString FileUtils::MoveDirectory(const wchar_t *cFromPath, const wchar_t *cToPath)
 {
@@ -1292,6 +1400,7 @@ BOOL FileUtils::GetFolderList(CString &rootFolder, CList<CString, CString &> &fo
 	cacheFolderList.Add(L"ArchiveCache");
 	cacheFolderList.Add(L"ListCache");
 	cacheFolderList.Add(L"MergeCache");
+	cacheFolderList.Add(L"ExportCache");
 	//NTreeView::SetupCacheFolderList(cacheFolderList);  // should use this but it would need to include NTreeView.h
 
 	rootFolder.TrimRight(L"\\");

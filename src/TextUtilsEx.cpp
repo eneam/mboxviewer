@@ -2182,3 +2182,68 @@ int TextUtilsEx::ReplaceChar(char *str, char c_target, char c_replace)
 	return cnt;
 }
 
+
+int TextUtilsEx::IsRtl(unsigned char* s, int slen, UINT pageCode)
+{
+	int i = 0;
+	wchar_t wc;
+
+	DWORD error;
+	DWORD dwFlags = 0;
+	static SimpleString wstr;
+
+	if (pageCode != CP_UTF8)
+		int deb = 1;
+
+	BOOL ret = TextUtilsEx::CodePage2WStr((char*)s, slen, pageCode, &wstr, error, dwFlags);
+	if (ret == FALSE)
+		return 0;
+
+	wchar_t* wbuff = (wchar_t*)wstr.Data();
+	int wclen = wstr.Count() / 2;  // asume wchars are 2 byte long ???
+
+	int j;
+	for (j = 0; j < wclen; j++)
+	{
+		wc = *wbuff++;
+		if (IsRtl(wc))
+			return 1;
+	}
+	return 0;
+}
+
+// https://www.w3schools.com/charsets/ref_utf_rtl.asp
+// 
+// Do we need to be more specific ?? Investigate
+// https://stackoverflow.com/questions/4330951/how-to-detect-whether-a-character-belongs-to-a-right-to-left-language
+
+int TextUtilsEx::IsRtl(wchar_t c)
+{
+	if ((c < 0x0590) || (c > 0x18AF))
+		return 0;
+	// Create more ranges to optimize checks?
+
+	if (
+		// arabic
+		(c >= 0x0600) && (c <= 0x06FF) ||
+		(c >= 0x0750) && (c <= 0x07FF) ||
+		(c >= 0x08A0) && (c <= 0x08FF) ||
+		(c >= 0x0870) && (c <= 0x089F) ||
+		// Syriac
+		(c >= 0x0700) && (c <= 0x074F) ||
+		(c >= 0x0860) && (c <= 0x086F) ||
+		// Hebrew
+		(c >= 0x0590) && (c <= 0x05F4) ||  // 0x0590 is smallest value
+		// Thaana
+		(c >= 0x0780) && (c <= 0x07BF) ||
+		// N'Ko
+		(c >= 0x07C0) && (c <= 0x07FF) ||
+		// Mandaic
+		(c >= 0x0840) && (c <= 0x085F) ||
+		// Mongolian
+		(c >= 0x1800) && (c <= 0x18AF)  // 0x18AF is highest value
+		)
+		return 1;
+	else
+		return 0;
+}

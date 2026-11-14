@@ -220,13 +220,15 @@ int SimpleString::Resize(int size)
 	if (size > m_capacity)
 	{
 		int new_capacity = size + m_grow_size; // fudge factor ?
-		char *new_data = new char[new_capacity + 1]; // one extra to set NULL
-		if (new_data) {
+		char *new_data = new char[new_capacity + 2]; // two extra bytes to set NULL
+		if (new_data)
+		{
 			if (m_count > 0)
 				::memcpy(new_data, m_data, m_count);
 			delete[] m_data;
 			m_data = new_data;
 			m_data[m_count] = 0;
+			m_data[m_count+1] = 0;
 			m_capacity = new_capacity;
 		}
 		else

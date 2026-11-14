@@ -361,6 +361,7 @@ public:
 	HTREEITEM m_which;
 
 	int SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);
+	void AppendBodyStyle(CStringA& hdr, CStringA& textDirection);
 	int AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyCnt, CStringA& bdy, int textType);
 	int DoFastFind(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
 	int DoFastFindLegacy(int searchstart, BOOL mainThreadContext, int maxSearchDuration, BOOL findAll);
@@ -691,6 +692,9 @@ public:
 	void SetListColumnWidth(int nColWidthArray[]);
 	static BOOL LoadListColumnWidthFromRegistry(int nColWidthArray[]);
 	static BOOL WriteListColumnWidthToRegistry(int nColWidthArray[]);
+
+	//
+	static void AppendSelectionHighlightStyle(CStringA& text);
 
 	void InvalidateMain();
 

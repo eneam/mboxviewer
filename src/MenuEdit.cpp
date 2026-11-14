@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "MenuEdit.h"
 #include "ResHelper.h"
+//#include "mboxview.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,14 +41,16 @@ END_MESSAGE_MAP()
 #define BLACK      RGB(  0,  0,  0)
 #define WHITE      RGB(255,255,255)
 #define GRAY       RGB(192,192,192)
-
+#define YELLOW     RGB(0xFF,0xFF,0)
 
 
 CMenuEdit::CMenuEdit()
 {
 	m_crBkColor = ::GetSysColor(CTLCOLOR_STATIC); // Initializing background color to the system face color.
 	m_crBkColor = RGB(230, 230, 230);
+    //m_crBkColor = YELLOW;
 	m_crTextColor = BLACK; // Initializing text color to black
+    //m_crTextColor = RED;
 	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
 
@@ -143,3 +146,24 @@ HBRUSH CMenuEdit::CtlColor(CDC* pDC, UINT nCtlColor)
 
 	return hbr;
 }
+
+#if 0
+
+BOOL CMenuEdit::PreCreateWindow(CREATESTRUCT& cs)
+{
+    if (!CWnd::PreCreateWindow(cs))
+        return FALSE;
+
+#if 0
+    // Ignore CmboxviewApp::m_isRTL setting.
+    // Try to setup LTR. Doesn't seem to unfortunatly, was not able to resolve
+    // Should use CWebBrowser instead of CEdit ??
+    cs.dwExStyle = (WS_EX_LTRREADING | WS_EX_LEFT | WS_EX_RIGHTSCROLLBAR);
+
+    //cs.lpszClass = AfxRegisterWndClass(0);
+#endif
+    return TRUE;
+}
+
+#endif
+

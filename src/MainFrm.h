@@ -46,6 +46,7 @@
 #include "SMTPMailServerConfigDlg.h"
 #include "MyCDialogBar.h"
 #include "MyCToolBar.h"
+#include "SerializationHelper.h"
 
 class ConfigTree;
 
@@ -185,6 +186,18 @@ public:
 };
 
 
+// Simple for now
+class ColorHighlight
+{
+public:
+	ColorHighlight();
+
+	COLORREF m_menuTextColor;
+	COLORREF m_menuBackgroundColor;
+	COLORREF m_selectedTextColor;
+	COLORREF m_selectedBackgroundColor;
+};
+
 
 class CMainFrame : public CFrameWnd
 {
@@ -255,9 +268,15 @@ public:
 	void EnableAllMailLists(BOOL enable);
 	void SetupMailListsToInitialState();
 	BOOL IsUserMailsListEnabled();
+	//
 	void ConfigMessagewindowPosition(int msgViewPosition);
 	int GetMessageWindowPosition() { return m_msgViewPosition; }
 	void CheckMessagewindowPositionMenuOption(int msgViewPosition);
+	//
+	void LoadTextDirectionPosition();
+	int GetTextDirectionPosition() { return m_textDirectionPosition; }
+	void CheckTextDirectionPositionMenuOption(int textDirectionPosition);
+		//
 	void UpdateFilePrintconfig();
 	int MergeArchiveFiles();
 	BOOL SaveFileDialog(CString &fileName, CString &fileNameFilter, CString &dfltExtention, CString &inFolderPath, CString &outFolderPath, CString &title);
@@ -325,6 +344,12 @@ public:
 	static int GetTextLength(HWND hWnd, CString& fontFamily, int fontSize, CString& text);
 	void SetStatusBarIndicatorPaneSize();
 
+	static BOOL CopyDataFolder(CString& dataFolder, CString& newDataFolder, CString& errorText);
+
+	static UINT SetMenuState(CMenu* menu, UINT ID, BOOL setChecked);
+
+	static int GetStatusBarIndex(UINT indicatorID);
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -345,6 +370,7 @@ protected:  // control bar embedded members
 	BOOL m_bUserSelectedMailsCheckSet;
 	int m_msgViewPosition;
 	int  m_newMsgViewPosition;
+
 	NListView *m_pListView;
 	NTreeView *m_pTreeView;
 	NMsgView *m_pMsgView;
@@ -377,6 +403,10 @@ public:
 	// Outlook handling
 	static BOOL m_exitAfterDoneWithMSGProcessing;
 
+	// Highlitting color; Limited solution first
+	static int m_highlightingColorsStyle;
+	static ColorHighlight m_colorHighlight;
+
 	void CreateTooltipFont(CFont& font, CString& fontName, LOGFONT& logFont, HDC hdc = 0);
 
 	// From MergeFolderAndSubfolders
@@ -392,6 +422,12 @@ public:
 	ColorStyleConfigDlg *m_colorStyleDlg;
 	BOOL m_bViewMessageHeaders;
 	MailDB m_mailDB;
+
+	//
+	int m_textDirectionPosition;  // consider as CString Default, Auto, RTL, LTR, potential issue with Help option??
+	CStringA m_textDirection;
+	CStringA m_textAlignment;
+	//
 
 	BOOL CreateMailDbFile(MailDB &m_mailDB, CString &fileName);
 	BOOL WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp);
@@ -411,8 +447,18 @@ public:
 
 	BOOL MimeDecodeEncode(bool bEncoding, bool base64Type);
 
+	LRESULT OnSetMessageString_MFC(WPARAM wParam, LPARAM lParam);
+	LRESULT OnInitializationComplete(WPARAM wParam, LPARAM lParam);
+
+	virtual void GetMessageString(UINT nID, CString& rMessage) const;
+
+	void CheckHighlightColorMenuOption(int colorPosition);
+	void LoadHighlightColorStyle();
+
+	int LoadMailsInfo(CString& filePath, MailArchiveFileInfo& maileFileInfo, CString& errorText);
 
 	//BOOL PreTranslateMessage(MSG* pMsg);
+
 
 // Generated message map functions
 protected:
@@ -431,6 +477,9 @@ protected:
 
 
 public:
+	
+	//afx_msg LRESULT OnSetMessageString(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSetStatusBarText(WPARAM wParam, LPARAM lParam);
 
 	afx_msg void OnFileExportToCsv();
 	afx_msg void OnViewCodepageids();
@@ -516,6 +565,17 @@ public:
 	afx_msg void OnBas64Encode();
 	afx_msg void OnQuotedDecode();
 	afx_msg void OnQuotedEncode();
+	afx_msg void OnTextdirectionDefault();
+	afx_msg void OnTextdirectionAuto();
+	afx_msg void OnTextdirectionRighttoleft();
+	afx_msg void OnTextdirectionLefttoright();
+	afx_msg void OnTextdirectionHelp();
+	afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
+	afx_msg void OnHighlightcolorstyleconfigDefault();
+	afx_msg void OnHighlightcolorstyleconfigYellow();
+	afx_msg void OnHighlightcolorstyleconfigGreen();
+	afx_msg void OnHighlightcolorstyleconfigBlue();
+	afx_msg void OnHighlightcolorstyleconfigBrown();
 };
 
 /////////////////////////////////////////////////////////////////////////////

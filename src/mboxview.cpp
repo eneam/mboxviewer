@@ -1204,7 +1204,7 @@ CmboxviewApp::CmboxviewApp()
 #endif
 
 #if 0
-	CString rootFolder = "G:\\UMBoxViewer";
+	CString rootFolder = "G:\\UData\\\\UMBoxViewer";
 	CList<CString, CString&> folderList;
 	CString errorText;
 	int maxDepth = 10;
@@ -1219,6 +1219,7 @@ CmboxviewApp::CmboxviewApp()
 		folderPath = folderList.RemoveHead();
 		TRACE(L"Folder Path: \"%s\"\n", folderPath);
 	}
+	int debGetFolderList = 1;
 #endif
 
 #if 0
@@ -2082,6 +2083,37 @@ int deb = 1;
 		int deb = 1;
 	}
 
+#if _DEBUG
+#if 0
+	if (!dataFolder.IsEmpty())
+	{
+#if 0
+		CString newDataFolder = L"G:\\NewDataFolder";
+		BOOL ret = CMainFrame::CopyDataFolder(dataFolder, newDataFolder, errorText);
+#else
+		CString fromDataFolderPath = dataFolder + L"UMBoxViewer\\";
+		CString toDataFolderPath = L"G:\\NewDataFolder\\UMBoxViewer\\";
+
+		CStringArray excludeFilter;
+		excludeFilter.Add(L"PrintCache");
+		excludeFilter.Add(L"ImageCache");
+		excludeFilter.Add(L"AttachmentCache");
+		excludeFilter.Add(L"EmlCache");
+		//excludeFilter.Add(L"LabelCache");
+		excludeFilter.Add(L"ArchiveCache");
+		excludeFilter.Add(L"ListCache");
+		excludeFilter.Add(L"MergeCache");
+		excludeFilter.Add(L"ExportCache");
+
+		CStringW errorText = FileUtils::CopyDirectory(fromDataFolderPath, toDataFolderPath, &excludeFilter, FALSE, FALSE);
+		//FileUtils::RemoveDir(dataFolderPath, TRUE, TRUE);
+#endif
+
+		int deb = 1;
+	}
+#endif
+#endif
+
 	HANDLE procHandle = GetCurrentProcess();
 	BOOL priClass = SetPriorityClass(procHandle, ABOVE_NORMAL_PRIORITY_CLASS);
 	DWORD err = GetLastError();
@@ -2371,6 +2403,16 @@ int deb = 1;
 	MboxMail::ShowHint(HintConfig::FontSizeHint, h);
 
 	m_initInstanceState = FALSE;
+
+	if (pFrame)
+	{
+		HWND hw = pFrame->GetSafeHwnd();
+		if (hw != INVALID_HANDLE_VALUE)
+		{
+			LRESULT lres = pFrame->PostMessage(WM_CMD_PARAM_ON_SET_INITIALIZATION_COMPLETE, 0, 0);
+			int deb = 1;
+		}
+	}
 
 	return TRUE;
 }

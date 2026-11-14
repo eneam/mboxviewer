@@ -296,6 +296,7 @@ HBRUSH DataFolderConfigDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 void DataFolderConfigDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
+	// 09/07/2026  Below needs to be moved to the dialog caller  !!!
 
 	m_strUserConfiguredDataFolder.TrimRight(L"\\");
 	if (m_strUserConfiguredDataFolder.IsEmpty())

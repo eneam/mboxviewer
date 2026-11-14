@@ -951,8 +951,10 @@ int MimeParser::GetParamValue(CStringA &fieldLine, int startPos, const char *par
 				else
 					p++;
 			}
+			_ASSERTE((p < pend_sv) && (*p == '='));
 			if ((p < pend_sv) && (*p == '='))
 				break;
+			// else error; continue searching??
 		}
 		p = p_save + 1;
 		_ASSERTE(p > p_save);
@@ -964,54 +966,18 @@ int MimeParser::GetParamValue(CStringA &fieldLine, int startPos, const char *par
 	_ASSERTE(*p == '=');
 
 	p++; //jump over '='
-	// skip blanks
-	while (p < pend_sv)
-	{
-		if (*p != ' ')
-			break;
-		else
-			p++;
-	}
 
-	char* pend = pend_sv;
-	// handle quotes strings
-	char * pEndQoute = 0;
-	if (*p == '"')
-	{
-		// what is ending quote missing ??
-		// find within p and pend
-		pEndQoute = strchr(p+1, '"');
-		_ASSERTE(pEndQoute);
-		if (pEndQoute) {
-			pend = pEndQoute;
-		}
-		else
-		{
-			int deb = 1;
-		}
-	}
-	else
-	{
-		char* pend = strchr(p, ';');
-		if (pend == 0)
-			pend = pend_sv;
-
-		// trim end blanks
-		while (pend > p)
-		{
-			if (*p != ' ')
-				break;
-			else
-				pend--;
-		}
-	}
+	// find fragment between '=" and ';' and Trim("\"\t ");
+	char* pend = strchr(p, ';');
+	if (pend == 0)
+		pend = pend_sv;
 
 	char *posBegin = p;
 	char *posEnd = pend;
 
 	value = fieldLine.Mid(IntPtr2Int(posBegin - pbegin_sv), IntPtr2Int(posEnd - posBegin));
 
-	// should we trimp quoted values ?? probably not ??
+	// should we trim quoted values ?? probably not ??
 	value.Trim("\"\t ");
 
 	return 1;

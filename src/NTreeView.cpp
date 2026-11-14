@@ -7931,6 +7931,7 @@ BOOL NTreeView::DeleteOldDataFolder(CString& currentRootDataFolderPath, CString&
 	excludeFilter.Add(L"PrintCache");
 	excludeFilter.Add(L"MergeCache");
 
+
 	CStringW errorText = FileUtils::CopyDirectory(fromDataFolderPath, toDataFolderPath, &excludeFilter, FALSE, FALSE);
 	//FileUtils::RemoveDir(dataFolderPath, TRUE, TRUE);
 
@@ -8578,9 +8579,10 @@ restart:
 					return -1;
 
 				int paneId = 0;
-				CString stsText = L"Ready";
+				CString sText = L"Ready";
+				ResHelper::TranslateString(sText);
 				if (pFrame)
-					pFrame->SetStatusBarPaneText(paneId, stsText, TRUE);
+					pFrame->SetStatusBarPaneText(paneId, sText, TRUE);
 
 				//CString txt = L"Created Mbox Mail Archive file \n\n" + filePath;
 				CString txt = L"Created Mbox Mail Archive file";
@@ -9905,7 +9907,7 @@ void NTreeView::OpenRootFolderAndSubfolders_LabelView(CString& path, BOOL select
 	else
 		OpenLastSelection();
 
-	sText.Format(L"Ready", fname);
+	sText.Format(L"Ready");
 	ResHelper::TranslateString(sText);
 	if (pFrame)
 		pFrame->SetStatusBarPaneText(paneId, sText, TRUE);

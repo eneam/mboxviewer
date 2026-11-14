@@ -2,6 +2,14 @@
 Changes
 -------
 
+v 1.0.3.60
+
+ - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;
+ - Added "File->Text Direction" option to enable users to set text direction to Default, Auto, RTL and LTR.";
+ - Fixed occasional incorrect attachment names.;
+ - Added "File->Highlight Color Style Config" option to enable users to set predefined background highlight color.";
+ - Updated User Manual to describe new and updated features.;
+
 v 1.0.3.59
 
  - To improve mboxview, please post reviews on what works, what doesn't, create bug tickets and enhancement requests.;

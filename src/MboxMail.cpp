@@ -2005,7 +2005,6 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 				}
 				else if (bDate && bRcvDate && TextUtilsEx::strncmpUpper2Lower(p, e, cReceived, cReceivedLen) == 0)
 				{
-					//bDate = false; 
 					p = MimeParser::GetMultiLine(p, e, line);
 					rcved = line.Mid(cReceivedLen);
 					rcved.Trim();
@@ -2045,7 +2044,8 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 								date = rfcDateStr;
 								if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
 								{
-									bDate = false;
+									//bDate = false; // why not bRcvDate = false  11/10/2026
+									bRcvDate = false;
 									recv = FALSE;
 								}
 								else
@@ -2057,7 +2057,8 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 							date = dateStr;
 							if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
 							{
-								bDate = false;
+								//bDate = false;  // why not bRcvDate = false 11/10/2026
+								bRcvDate = false;
 								recv = FALSE;
 							}
 							else // if (dateStr.IsEmpty())
@@ -2070,7 +2071,8 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 									date = rfcDateStr;
 									if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
 									{
-										bDate = false;
+										//bDate = false;  // why not bRcvDate = false 11/10/2026
+										bRcvDate = false;
 										recv = FALSE;
 									}
 									else
@@ -2242,7 +2244,7 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 						headerDone = TRUE;   // skip remaining lines until next "From" or the end file 
 
 						// search for date
-						if (bDate)
+						if (bDate && bRcvDate)
 						{
 							date.Empty();
 
@@ -2269,7 +2271,7 @@ bool MboxMail::Process(MailArray & s_mails, CString &filePath, ProgressTimer& pr
 									date.Empty();
 
 									CStringA rfcDateStr;
-									if (CreateRFC822Date(date, rfcDateStr))
+									if (CreateRFC822Date(dateStr, rfcDateStr))
 									{
 										date = rfcDateStr;
 										if ((tdate = MboxMail::parseRFC822Date(date, format)) > 0)
@@ -3363,28 +3365,6 @@ char * MboxMail::ParseContent(MboxMail *mail, char *startPos, char *endPos)
 #endif
 	// now it is save to free mBody
 	MailBody::FreeMailBody(mBody);
-#if 0
-	// 
-	CFile fpm;
-	CFileException ExError2;
-	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
-	{
-		DWORD lastErr = ::GetLastError();
-		HWND h = GetSafeHwnd();
-		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
-		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
-	}
-
-	MailBodyContent* body;
-	SimpleString data;
-	for (int j = 0; j < m->m_ContentDetailsArray.size(); j++)
-	{
-		body = m->m_ContentDetailsArray[j];
-		data.Copy()
-
-		TRACE();
-	}
-#endif
 
 	return mailBegin;  // not used, what should we return ?
 }
@@ -5991,6 +5971,20 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 	workbuf->ClearAndResize(outbuflarge->Count() * 2);
 
+	BOOL foundHtml = TRUE;
+	if (outbuflarge->Count() == 0)
+	{
+		foundHtml = FALSE;
+
+		outbuflarge->Clear();
+		pageCode = 0;
+		textType = 0; // !!!!!!!!  no Html, try to get Plain  !!!!!!
+		int plainTextMode = 2;  // insert <img src=attachment name> image tags
+		textlen = GetMailBody_mboxview(fpm, mailPosition, outbuflarge, pageCode, textType, plainTextMode);  // returns pageCode
+		if (textlen != outbuflarge->Count())
+			int deb = 1;
+	}
+
 #if 0
 	// Doesn't seem to help
 	CString searchString = "!important";
@@ -6036,16 +6030,81 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		htmlHdrFldNameStyle.Format("<style>\r\n.hdrfldname{%s}\r\n.hdrfldtext{%s}\r\n</style>", fldNameFontStyle, fldTextFontStyle);
 	}
 
+
+	// Exploring RTL; No sure result is acceptable in most cases; need expert help
+	// See https://unicodefyi.com/guide/unicode-text-direction/
+	// Would make more sense to post process, in one place, after html file is fully constructed
+	// support for RTL is quite complex
+	// best if publisher inserts proper RTL controls
+	// Simpler imperfect solutions are as follow:
+	// 1) add body style attribute: <head><style>body {direction:rtl; ..;}
+	// 2) add body tag attribute <body dir=rtl>
+	// 3) add html attribute <html dir=rtl>
+
+	// Update <style> ; requires to touch many code places
+	CStringA textDirection = "";  // direction 'none' or default or default or set dir=rtl
+	CStringA textDirectionInHtmlTag = "";  // direction 'none' or default or set dir=rtl
+	CStringA textAlignment = "left";
+
+	if (!pFrame->m_textDirection.IsEmpty())
+	{
+		textDirection = pFrame->m_textDirection;
+		textDirectionInHtmlTag = pFrame->m_textDirection;
+		textAlignment = pFrame->m_textAlignment;
+		if (textDirection.CompareNoCase("auto") == 0)
+		{
+			int isRtl = TextUtilsEx::IsRtl((unsigned char*)outbuflarge->Data(), outbuflarge->Count(), pageCode);
+			if (isRtl)
+			{
+				textDirection = "rtl";
+				textDirectionInHtmlTag = "rtl";
+				textAlignment = "right";
+			}
+			else
+			{
+				textDirection = "ltr";
+				textDirectionInHtmlTag = "ltr";
+				textAlignment = "left";
+			}
+		}
+	}
+
+	// 09/30/2026 TODO:
+	// Fue to support text direction, Header fields formatting has small issue when merging multiple emails 
+	
 	//CString preStyle = "pre { overflow-x:auto;  white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
 	CStringA divAvoidPageBreak = "divAvoidBreak {break-inside:avoid;}";
 	CStringA preStyle = "pre { overflow-x:break-word; white-space:pre; white-space:hp-pre-wrap; white-space:-moz-pre-wrap; white-space:-o-pre-wrap;  white-space:-pre-wrap; white-space:pre-wrap; word-wrap:break-word;}";
 
 	CStringA bdyy;
 	bdyy.Append("\r\n\r\n<!DOCTYPE html>\r\n");
-	bdyy.Append("<html><body style=\"background-color:#FFFFFF;\"><div></div></body></html>");
-	bdyy.Append("<article style=\"width:");
+
+	if (textDirectionInHtmlTag.IsEmpty())
+		bdyy.Append("<html>");
+	else
+	{
+		CStringA dir = "<html dir=" + textDirectionInHtmlTag + ">";
+		bdyy.Append(dir);
+	}
+	bdyy.Append("<body style=\"");
+	CStringA dir = "";
+	if (!textDirection.IsEmpty())
+	{
+		dir = "direction:" + textDirection + ";";
+		bdyy.Append(dir);
+	}
+	bdyy.Append("background-color:#FFFFFF;\"><div></div></body></html>");
+	bdyy.Append("<article style=\"");
+	if (!textDirection.IsEmpty())
+	{
+		dir = "direction:" + textDirection + ";";
+		bdyy.Append(dir);
+	}
+	bdyy.Append("width:");
 	bdyy.Append("100%;");
-	bdyy.Append("float:left; position:left;background-color:#FFFFFF; margin: 0mm 0mm 0mm 0mm; \">");
+	CStringA alignmentAttrib = "float:" + textAlignment + ";position:" + textAlignment + ";";
+	bdyy.Append(alignmentAttrib);
+	bdyy.Append("background-color:#FFFFFF; margin: 0mm 0mm 0mm 0mm; \">");
 	bdyy.Append("<style>\r\n");
 	bdyy.Append("@media print {\r\n");
 	//bdyy.Append(divAvoidPageBreak);
@@ -6069,7 +6128,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 
 	bool extraHtmlHdr = false;
-	if (outbuflarge->Count() != 0)
+
+	//if (outbuflarge->Count() != 0)
+	if (foundHtml == TRUE)
 	{
 		// FIXME drop or enhance
 		//int retBG = NListView::RemoveBackgroundColor(outbuflarge->Data(), outbuflarge->Count(), &tmpbuf, mailPosition);
@@ -6206,8 +6267,10 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CStringA newBodyWidth = "width:";
 		newBodyWidth.Append("100%;");
 		CStringA newBodyMargin = margin;
-		bdy = "\r\n<div style=\"page-break-inside:avoid;position:initial;float:left;background-color:transparent;text-align:left;"
+		CStringA alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
+		bdy = "\r\n<div style=\"page-break-inside:avoid;position:initial;background-color:transparent;"
 			+ newBodyWidth + newBodyMargin
+			+ alignmentAttrib
 			+ "\">\r\n";   // div #1
 
 		fp.Write(bdy, bdy.GetLength());
@@ -6229,10 +6292,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		}
 		if (pFrame)
 		{
+			CStringA alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">"
 				+ base
 				+ htmlHdrFldNameStyle + "</head>\r\n"
-				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;float:left;text-align:left;font-weight:normal;"   // div #2
+				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;font-weight:normal;"   // div #2
+				+ alignmentAttrib
 				+ hdrWidth + hdrMargin + hdrBackgroundColor
 				+ font;
 			fp.Write(bdy, bdy.GetLength());
@@ -6291,7 +6356,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 				bdyBackgroundColor.Append(";");
 			}
 
-			bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;overflow-wrap:break-word !important;"
+			CStringA alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
+			bdy = "\r\n<div style=\"position:initial;overflow-wrap:break-word !important;"
+				+ alignmentAttrib
 				+ bodyWidth + margin + bdyBackgroundColor
 				+ "\"><br>\r\n";
 
@@ -6383,14 +6450,6 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 	}
 	else
 	{
-		outbuflarge->Clear();
-		pageCode = 0;
-		textType = 0; // !!!!!!!!  no Html, try to get Plain  !!!!!!
-		int plainTextMode = 2;  // insert <img src=attachment name> image tags
-		textlen = GetMailBody_mboxview(fpm, mailPosition, outbuflarge, pageCode, textType, plainTextMode);  // returns pageCode
-		if (textlen != outbuflarge->Count())
-			int deb = 1;
-
 		BOOL createEmbeddedImageFiles = TRUE;  // FIXME ???
 
 		SimpleString* outbuf = MboxMail::m_workbuf;
@@ -6436,7 +6495,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CStringA newBodyWidth = "width:";
 		newBodyWidth.Append("100%;");
 		CStringA newBodyMargin = margin;
-		bdy = "\r\n<div style=\"position:initial;float:left;background-color:transparent;text-align:left;"
+		CStringA alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
+		bdy = "\r\n<div style=\"position:initial;background-color:transparent;"
+			+ alignmentAttrib
 			+ newBodyWidth + newBodyMargin
 			+ "\">\r\n";   // div #1
 
@@ -6454,9 +6515,11 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		CStringA hdrMargin = "";
 		if (pFrame)
 		{
+			CStringA alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
 			bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + ";\">"
 				+ htmlHdrFldNameStyle + "</head>\r\n"
-				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;float:left;text-align:left;font-weight:normal;"   // div #2
+				+ "<body bgColor=#ffffff>\r\n<div style=\"position:initial;font-weight:normal;"   // div #2
+				+ alignmentAttrib
 				+ hdrWidth + hdrMargin + hdrBackgroundColor
 				+ font;
 			fp.Write(bdy, bdy.GetLength());
@@ -6492,7 +6555,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bodyWidth.Append(scale);
 		CStringA bodyBackgroundColor = "background-color:#FFFFFF;";
 		//bdy = "\r\n<div style=\'width:auto;position:initial;float:left;color:black;background-color:#FFFFFF;" + margin + "text-align:left\'>\r\n";
-		bdy = "\r\n<div style=\"position:initial;float:left;text-align:left;color:black;overflow-wrap:break-word !important;"
+		alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
+		bdy = "\r\n<div style=\"position:initial;color:black;overflow-wrap:break-word !important;"
+			+ alignmentAttrib
 			+ bodyWidth + margin + bodyBackgroundColor
 			+ "\">\r\n";
 		fp.Write(bdy, bdy.GetLength());

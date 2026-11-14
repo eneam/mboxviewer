@@ -54,6 +54,7 @@
 #include "TextUtilsEx.h"
 #include "CPictureCtrlDemoDlg.h"
 #include "GdiUtils.h"
+#include "ResHelper.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -161,11 +162,28 @@ void CPictureCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 		CStringW f(m_szFilePath);
 
-		if (m_cimage == 0) {
+		if (m_cimage == 0)
+		{
 			m_cimage = Image::FromFile(f);
 			Status sts = m_cimage->GetLastStatus();
 			if (sts != Gdiplus::Status::Ok)
 			{
+				CString txt = L"Image file exists but file loading failed:";
+				ResHelper::TranslateString(txt);
+				txt += L"\n\n" + f + L"\n\n";
+				CString help = L"Try to open file in another image viewer.\n"
+					L"Right click on the attachment file and select Open option";
+				ResHelper::TranslateString(help);
+				txt.Append(help);
+				txt.Append(L"\n\n");
+				CString cont = L"Continue?";
+				ResHelper::TranslateString(cont);
+				txt.Append(cont);
+
+				HWND h = GetSafeHwnd();
+				int answer = MyMessageBox(h, txt, L"Info", MB_APPLMODAL | MB_ICONINFORMATION | MB_YESNO);
+				if (answer != IDYES)
+					m_pPictureCtrlOwner->EndDialog(IDOK);
 				return;
 			}
 		}

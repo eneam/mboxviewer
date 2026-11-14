@@ -22,6 +22,9 @@ public:
 
 protected:
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+
+	//virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+
 	afx_msg void OnClose();
     afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 

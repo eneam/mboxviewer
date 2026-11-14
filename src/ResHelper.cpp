@@ -478,6 +478,18 @@ void ResHelper::UpdateDialogItemsInfo(CWnd* wnd, HWND hwndParent, int maxcnt, in
 	if (g_UpdateMenuItemsInfo == FALSE)
 		return;
 
+#if 0
+#if _DEBUG
+	if (wnd->GetSafeHwnd())
+	{
+		int slen = ::GetWindowText(wnd->GetSafeHwnd(), windowText, maxWindowTextLength);
+		UINT nCID = ::GetDlgCtrlID(wnd->GetSafeHwnd());
+		if (nCID == IDC_MSG_BOX_EDIT_TEXT)
+			int deb = 1;
+	}
+#endif
+#endif
+
 	if (CmboxviewApp::m_isRTL == TRUE)
 	{
 		if (CmboxviewApp::m_isRTLForDialogs)

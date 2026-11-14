@@ -37,14 +37,16 @@ using namespace Gdiplus;
 
 int GdiUtils::AutoRotateImageFromMemory(const char* pData, int nSize, const wchar_t* newImageFile, int &imageWidth, int &imageHeight)
 {
+	int widthB = 0;
+	int heightB = 0;
+	imageWidth = 0;
+	imageHeight = 0;
+
 	GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR m_gdiplusToken;
 	int retSts = GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
 	if (retSts != Gdiplus::Status::Ok)
 		return -1;
-
-	imageWidth = 0;
-	imageHeight = 0;
 
 	IStream* pStream = NULL;
 	Gdiplus::Image* pImage = NULL;
@@ -68,11 +70,8 @@ int GdiUtils::AutoRotateImageFromMemory(const char* pData, int nSize, const wcha
 			}
 		}
 
-		int widthB = pImage->GetWidth();
-		int heightB = pImage->GetHeight();
-
-		imageWidth = 0;
-		imageHeight = 0;
+		widthB = pImage->GetWidth();
+		heightB = pImage->GetHeight();
 
 		retSts = GdiUtils::AutoRotateImage(pImage, newImageFile, imageWidth, imageHeight);
 
@@ -91,6 +90,7 @@ int GdiUtils::AutoRotateImageFromMemory(const char* pData, int nSize, const wcha
 		retSts = -1;
 
 	GdiplusShutdown(m_gdiplusToken);
+
 	return retSts;
 }
 
@@ -587,6 +587,10 @@ BOOL GdiUtils::loadImage(BYTE* pData, size_t nSize, CStringW& extensionW, CStrin
 					extension = ".ico";
 					int deb = 1;
 				}
+				else if (gFormat == Gdiplus::ImageFormatHEIF) {
+					extension = ".heif";
+					int deb = 1;
+				}
 				else if (gFormat == Gdiplus::ImageFormatUndefined) {
 					int deb = 1;
 				}
@@ -656,6 +660,7 @@ BOOL GdiUtils::IsSupportedPictureFileExtension(CString& cext)
 		(cext.CompareNoCase(L".emf") == 0) ||
 		(cext.CompareNoCase(L".wmf") == 0) ||
 		(cext.CompareNoCase(L".heic") == 0) ||
+		//(cext.CompareNoCase(L".webp") == 0) ||
 		(cext.CompareNoCase(L".ico") == 0))
 	{
 		return TRUE;

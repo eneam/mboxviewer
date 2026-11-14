@@ -123,6 +123,9 @@ public:
 	static void WStr2WstrWithCommas(const wchar_t* wstr, int wstrlen, CString &wstrout);
 	static void Int2WstrWithCommas(INT64 numb, CString& wstrout);
 
+	static int IsRtl(unsigned char* s, int slen, UINT pageCode);
+	static int IsRtl(wchar_t c);
+
 	// based on MimeCode.cpp
 	static int SelectEncoding(int nLength, int nNonAsciiChars);
 	//

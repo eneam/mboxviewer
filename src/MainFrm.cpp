@@ -60,6 +60,8 @@
 #include "NTreeView.h"
 #include "gdiplustypes.h"
 
+#include <afxpriv.h>
+
 #ifdef _DEBUG
 #undef THIS_FILE
 #define THIS_FILE __FILE__
@@ -105,6 +107,8 @@ int CMainFrame::m_cnfBrowserZoom = 0;
 int CMainFrame::m_minBrowserZoom = 0;
 int CMainFrame::m_maxBrowserZoom = 0;
 
+int CMainFrame::m_highlightingColorsStyle = 0; // 0 == default; system defined
+ColorHighlight CMainFrame::m_colorHighlight;
 
 #define MaxShellExecuteErrorCode 32
 
@@ -287,6 +291,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//ON_UPDATE_COMMAND_UI(ID_SORTBY_CONVERSATION, &CMainFrame::OnUpdateByconversation)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL, &CMainFrame::OnUpdateMailDownloadStatus)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_MAIL_INDEX, &CMainFrame::OnUpdateMailIndex)
+	//ON_UPDATE_COMMAND_UI(ID_SEPARATOR, &CMainFrame::OnUpdateStatusBar)
 	ON_BN_CLICKED(IDC_ARCHIVE_LIST, &CMainFrame::OnBnClickedArchiveList)
 	ON_BN_CLICKED(IDC_FIND_LIST, &CMainFrame::OnBnClickedFindList)
 	ON_BN_CLICKED(IDC_EDIT_LIST, &CMainFrame::OnBnClickedEditList)
@@ -352,11 +357,25 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_BAS64_ENCODE, &CMainFrame::OnBas64Encode)
 	ON_COMMAND(ID_QUOTED_DECODE, &CMainFrame::OnQuotedDecode)
 	ON_COMMAND(ID_QUOTED_ENCODE, &CMainFrame::OnQuotedEncode)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_TEXTDIRECTION_DEFAULT, &CMainFrame::OnTextdirectionDefault)
+	ON_COMMAND(ID_TEXTDIRECTION_AUTO, &CMainFrame::OnTextdirectionAuto)
+	ON_COMMAND(ID_TEXTDIRECTION_RIGHTTOLEFT, &CMainFrame::OnTextdirectionRighttoleft)
+	ON_COMMAND(ID_TEXTDIRECTION_LEFTTORIGHT, &CMainFrame::OnTextdirectionLefttoright)
+	ON_COMMAND(ID_TEXTDIRECTION_HELP, &CMainFrame::OnTextdirectionHelp)
+	//ON_MESSAGE(WM_SETMESSAGESTRING, &CMainFrame::OnSetMessageString)  // Implemented virtual void GetMessageString(); instead
+	ON_MESSAGE(WM_CMD_PARAM_ON_SET_STATUSBAR_TEXT, &CMainFrame::OnSetStatusBarText)
+	ON_MESSAGE(WM_CMD_PARAM_ON_SET_INITIALIZATION_COMPLETE, &CMainFrame::OnInitializationComplete)
+	ON_COMMAND(ID_HIGHLIGHTCOLORSTYLECONFIG_DEFAULT, &CMainFrame::OnHighlightcolorstyleconfigDefault)
+	ON_COMMAND(ID_HIGHLIGHTCOLORSTYLECONFIG_YELLOW, &CMainFrame::OnHighlightcolorstyleconfigYellow)
+	ON_COMMAND(ID_HIGHLIGHTCOLORSTYLECONFIG_GREEN, &CMainFrame::OnHighlightcolorstyleconfigGreen)
+	ON_COMMAND(ID_HIGHLIGHTCOLORSTYLECONFIG_BLUE, &CMainFrame::OnHighlightcolorstyleconfigBlue)
+		ON_COMMAND(ID_HIGHLIGHTCOLORSTYLECONFIG_BROWN, &CMainFrame::OnHighlightcolorstyleconfigBrown)
+		END_MESSAGE_MAP()
 
 static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
+	ID_INDICATOR_TEXT_DIRECTION,
 	ID_INDICATOR_MAIL,
 	ID_INDICATOR_MAIL_INDEX,
 	ID_INDICATOR_CAPS,
@@ -439,6 +458,9 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_pListView = 0;
 	m_pTreeView = 0;
 	m_pMsgView = 0;
+
+	LoadTextDirectionPosition();
+	LoadHighlightColorStyle();
 
 #if 0
 	SimpleString* pStaticSS = 0;;
@@ -577,6 +599,20 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	SetStatusBarIndicatorPaneSize();
 
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	CString language;
+	BOOL languageFound = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language", language);
+	if (languageFound == TRUE)
+	{
+		if (m_textDirectionPosition == 0)
+		{
+			if (language.CompareNoCase(L"arabic") == 0)
+			{
+				m_textDirectionPosition = 2;
+			}
+		}
+	}
+
 	HWND hwnd = GetSafeHwnd();
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
 	float dpi = ::GetDpiForWindow(hwnd); // (WINVER >= 0x0605)  _WIN32_WINNT_WIN10
@@ -687,7 +723,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		//OnSetFocus(0);  // ???
 	}
 
-	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	//CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	m_relaxedMboxFileValidation = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"relaxedMboxFileValidation");
 
 	CString section_merge = CString(sz_Software_mboxview) + L"\\PrintConfig\\Merge";
@@ -864,6 +900,7 @@ void CMainFrame::OnActivateApp(BOOL bActive, DWORD dwThreadID)
 	{
 		TRACE(L"OnActivateApp: ACTIVE\n");
 		CMainFrame::RestoreWindowFocus();
+
 		int deb = 1;
 	}
 	else
@@ -2188,7 +2225,7 @@ void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 	if (pFrame)
 	{
 		if (pFrame) {
-			int paneId = 1;
+			int paneId = CMainFrame::GetStatusBarIndex(ID_INDICATOR_MAIL);
 			pFrame->SetStatusBarPaneText(paneId, strPage, FALSE);
 		}
 	}
@@ -3701,6 +3738,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile& fpMergeTo, CString& mboxFilePath, BO
 		MboxMail::Parse_LabelView(s_mails, mboxFilePath, itemCntLimit, parseContent);
 
 
+#if _DEBUG
 		CString mboxFileName;
 		FileUtils::GetFileName(mboxFilePath, mboxFileName);
 		if ((mboxFileName.Compare(L"mime-message-1.eml") == 0) ||
@@ -3710,6 +3748,7 @@ int CMainFrame::MergeMboxArchiveFile(CFile& fpMergeTo, CString& mboxFilePath, BO
 				int deb = 1;
 			int deb = 1;
 		}
+#endif
 
 		if (s_mails.GetCount() == 1)  // single mail message, fix potential "Line " issue
 		{
@@ -4631,6 +4670,52 @@ void CMainFrame::OnClose()
 	NListView* pListView = GetListView();
 	NMsgView* pMsgView = GetMsgView();
 
+
+#if _DEBUG
+#if 0
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	CString dataFolder;
+	BOOL ret = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"dataFolder", dataFolder);
+	if ((ret == FALSE) || dataFolder.IsEmpty())
+	{
+		if (CMainFrame::m_commandLineParms.m_bEmlPreviewMode == FALSE)
+			NTreeView::ImportLegacyRegistryData();
+		int deb = 1;
+	}
+
+	CString datapath = MboxMail::GetLastDataPath();
+
+	if (!dataFolder.IsEmpty())
+	{
+#if 0
+		CString newDataFolder = L"G:\\NewDataFolder";
+		BOOL ret = CMainFrame::CopyDataFolder(dataFolder, newDataFolder, errorText);
+#else
+		CString fromDataFolderPath = dataFolder + L"UMBoxViewer\\";
+		CString toDataFolderPath = L"G:\\NewDataFolder\\UMBoxViewer\\";
+
+		CStringArray excludeFilter;
+		excludeFilter.Add(L"PrintCache");
+		excludeFilter.Add(L"ImageCache");
+		excludeFilter.Add(L"AttachmentCache");
+		excludeFilter.Add(L"EmlCache");
+		//excludeFilter.Add(L"LabelCache");
+		excludeFilter.Add(L"ArchiveCache");
+		excludeFilter.Add(L"ListCache");
+		excludeFilter.Add(L"MergeCache");
+		excludeFilter.Add(L"ExportCache");
+
+		CStringW errorText = FileUtils::CopyDirectory(fromDataFolderPath, toDataFolderPath, &excludeFilter, FALSE, FALSE);
+		//FileUtils::RemoveDir(dataFolderPath, TRUE, TRUE);
+#endif
+
+		int deb = 1;
+	}
+#endif
+#endif
+
+
 	SaveLastSelection();
 
 	BOOL isDirty = MboxMail::m_editMails.m_bIsDirty;
@@ -4830,7 +4915,7 @@ void CMainFrame::OnClose()
 
 void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 {
-	// Implements synchrous Set Text capability to make sure Text is set and 
+	// Implements synchronous Set Text capability to make sure Text is set and 
 	// visible before long function is called (such as sort column)
 	// Command UI may not work in this case. TODO: verify
 	if (this->GetSafeHwnd())
@@ -6423,6 +6508,7 @@ void CMainFrame::OnFileDatafolderconfig()
 	{
 		NTreeView *pTreeView = GetTreeView();
 
+		_ASSERTE(pTreeView);
 		if (pTreeView)
 		{
 			if (actionCode == IDTRYAGAIN)
@@ -6433,16 +6519,93 @@ void CMainFrame::OnFileDatafolderconfig()
 				bool removeFolders = false;
 				BOOL retCode1 = FileUtils::RemoveDir(folder, recursive, removeFolders);
 				removeFolders = true;
-				BOOL retCode2 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+				//BOOL retCode2 = FileUtils::RemoveDir(folder, recursive, removeFolders);
+
+
+#if 0
+				// 10/15/2026
+				// Copy "MergeFolder" from old to new data folder
+				// There is more to be done to copy index file and MergeFolder to 
+				// avoid user to manually recreate index file
+				//_ASSERTE(FALSE);
+				//_ASSERTE(FALSE);
+				CString mergeFolder = newDataFolder + L"MergeFolder";
+				removeFolders = false;
+				BOOL retCode3 = FileUtils::RemoveDir(mergeFolder, recursive, removeFolders);
+				removeFolders = true;
+				BOOL retCode4 = FileUtils::RemoveDir(mergeFolder, recursive, removeFolders);
+
+#endif
 				const int deb = 1;
 			}
 
 			_ASSERTE(!currentDataFolder.IsEmpty() && !newDataFolder.IsEmpty());
+
+			CStringArray includeFileNameFilter;
+			includeFileNameFilter.Add(L".mboxview");
+			includeFileNameFilter.Add(L".mboxlist");
+			includeFileNameFilter.Add(L".WriteSupported");
+			includeFileNameFilter.Add(L".rootfolder");
+
+			CString fromDir = currentDataFolder + L"UMBoxViewer\\";
+			CString toDir = newDataFolder + L"UMBoxViewer\\";
+
+			BOOL bFailIfExists = FALSE;
+			CString errText = FileUtils::CopyDir(fromDir, toDir, &includeFileNameFilter, bFailIfExists);
+
 			// Keep it simple for now. Later inspect data under old Root Data Folder and decide what to to
 			//pTreeView->DeleteOldDataFolder(currentDataFolder, newDataFolder);
 			int deb = 1;
 		}
+		// 09/07/2026 Go figure it out. We use the registry entry dataFolder and below m_rootDataFolderPathConfig
 		MboxMail::s_folderContext.m_rootDataFolderPathConfig = newDataFolder;
+
+
+#if _DEBUG
+#if 0
+		// 10/15/2026
+		// Needs more to move data from old to  new data dolder
+		_ASSERTE(!currentDataFolder.IsEmpty() && !newDataFolder.IsEmpty());
+
+		//if (!dataFolder.IsEmpty())
+		{
+			CString fromDataFolderPath = currentDataFolder + L"UMBoxViewer\\";
+			CString toDataFolderPath = newDataFolder + L"UMBoxViewer\\";
+
+			CStringArray excludeFilter;
+			excludeFilter.Add(L"PrintCache");
+			excludeFilter.Add(L"ImageCache");
+			excludeFilter.Add(L"AttachmentCache");
+			excludeFilter.Add(L"EmlCache");
+			//excludeFilter.Add(L"LabelCache");
+			excludeFilter.Add(L"ArchiveCache");
+			excludeFilter.Add(L"ListCache");
+			excludeFilter.Add(L"MergeCache");
+			excludeFilter.Add(L"ExportCache");
+
+			//CString mergeFolder = currentDataFolder + L"MergeFolder\\";
+			CString mergeFolder = currentDataFolder;
+			mergeFolder.TrimRight(L"\\");
+			mergeFolder.Replace(L":", L"");
+			excludeFilter.Add(mergeFolder);
+
+			CStringW errorText = FileUtils::CopyDirectory(fromDataFolderPath, toDataFolderPath, &excludeFilter, FALSE, FALSE);
+
+			fromDataFolderPath = currentDataFolder + L"MergeFolder\\";
+			toDataFolderPath = newDataFolder + L"MergeFolder\\";
+			CStringArray* pExcludeFilter = 0;
+			CStringW errorText2 = FileUtils::CopyDirectory(fromDataFolderPath, toDataFolderPath, pExcludeFilter, FALSE, FALSE);
+
+			int retDelete = pTreeView->m_folderArray.Delete(fromDataFolderPath);
+			int retAdd = pTreeView->m_folderArray.Add(toDataFolderPath);
+			
+			//FileUtils::RemoveDir(dataFolderPath, TRUE, TRUE);
+
+			int deb = 1;
+		}
+#endif
+#endif
+
 	}
 }
 
@@ -7701,7 +7864,7 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
 	CString language = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
 
-	int nIndex = 1;
+	int nIndex = CMainFrame::GetStatusBarIndex(ID_INDICATOR_MAIL);
 	UINT nID = m_wndStatusBar.GetItemID(nIndex);
 	UINT nStyle = SBPS_NORMAL;
 
@@ -7709,10 +7872,18 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 	HDC hDC = dc.GetSafeHdc();
 
 	CString paneText1_1 = L"Mail Retrieval Complete";
+	ResHelper::TranslateString(paneText1_1);
 	CString paneText1 = L"Mail Retrieval In Progress ...";
+	ResHelper::TranslateString(paneText1);
 	CString paneFmt2 = L"Mail %s of %d";
 	CString paneText2;
-	paneText2.Format(paneFmt2, L"50000", 50000);
+	paneText2.Format(paneFmt2, L"5000000", 5000000);
+	ResHelper::TranslateString(paneText2);
+
+	CString paneText3 = L"Text Direction";
+	ResHelper::TranslateString(paneText3);
+	paneText3.Append(L": AUTO");
+
 
 	HWND hWnd = GetSafeHwnd();
 	CFont textFont;
@@ -7739,10 +7910,11 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 		panel1Size = 140;
 		panel2Size = 200;
 	}
-
-#else
+#endif
+#if 1
 	int cxWidth1 = 200;
 	int cxWidth2 = 200;
+	int cxWidth3 = 200;
 
 	if (hDC)
 	{
@@ -7757,12 +7929,19 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 		if (GetTextExtentPoint32(hDC, paneText2, paneText2.GetLength(), &sizeItem2))
 			cxWidth2 = sizeItem2.cx;
 
+		SIZE sizeItem3;
+		if (GetTextExtentPoint32(hDC, paneText3, paneText3.GetLength(), &sizeItem3))
+			cxWidth3 = sizeItem3.cx;
+
 		int deb = 1;
 	}
 
 	int panel1Size = cxWidth1 + 16;
 	int panel2Size = cxWidth2 + 16;
+	int panel3Size = cxWidth3 + 16;
+#endif
 
+#if 1
 	if (language.IsEmpty()) {
 		language = L"english";
 	}
@@ -7775,6 +7954,7 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 	{
 		panel1Size = 220;
 		panel2Size = 170;
+		panel3Size = cxWidth3 + 72;
 	}
 	else if (language.CompareNoCase(L"romanian") == 0)
 	{
@@ -7828,13 +8008,17 @@ void CMainFrame::SetStatusBarIndicatorPaneSize()
 	}
 #endif
 
-	nIndex = 1;
+	nIndex = CMainFrame::GetStatusBarIndex(ID_INDICATOR_MAIL);
 	nID = m_wndStatusBar.GetItemID(nIndex);
 	m_wndStatusBar.SetPaneInfo(nIndex, nID, nStyle, panel1Size);
 
-	nIndex = 2;
+	nIndex = CMainFrame::GetStatusBarIndex(ID_INDICATOR_MAIL_INDEX);
 	nID = m_wndStatusBar.GetItemID(nIndex);
 	m_wndStatusBar.SetPaneInfo(nIndex, nID, nStyle, panel2Size);
+
+	nIndex = CMainFrame::GetStatusBarIndex(ID_INDICATOR_TEXT_DIRECTION);
+	nID = m_wndStatusBar.GetItemID(nIndex);
+	m_wndStatusBar.SetPaneInfo(nIndex, nID, nStyle, panel3Size);
 }
 
 BOOL CMainFrame::MimeDecodeEncode(bool bEncoding, bool base64Type)
@@ -7967,4 +8151,601 @@ void CMainFrame::OnQuotedEncode()
 	bool base64Type = false; // quoted
 	BOOL ret = CMainFrame::MimeDecodeEncode(bEncoding, base64Type);
 	int deb = 1;
+}
+
+
+// Not ready yet. Goal is to copy index files and delete temporary files.
+// Need also consider how to process MergeFolder under dataFolder
+BOOL CMainFrame::CopyDataFolder(CString& dataFolder, CString& newDataFolder, CString& errorText)
+{
+
+	CString folderPath = dataFolder;
+	WIN32_FIND_DATA FileData;
+	HANDLE hSearch;
+	BOOL	bFinished = FALSE;
+	int fileCnt = 0;
+
+	// Start searching for all folders in the current directory.
+	CString searchPath = folderPath + "\\*.*";
+	hSearch = FindFirstFile(searchPath, &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE) {
+		TRACE(L"GetFolderList: No files found.\n");
+		return FALSE;
+	}
+
+
+	//CString folderName;
+	CString fileName;
+	while (!bFinished)
+	{
+		if (!(wcscmp(FileData.cFileName, L".") == 0 || wcscmp(FileData.cFileName, L"..") == 0))
+		{
+			fileName = CString(FileData.cFileName);
+			CString fileFound = folderPath + fileName;
+
+			if (FileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+			{
+				fileFound.TrimRight(L"\\");
+				fileFound.Append(L"\\");
+#if 0
+				FileUtils::CPathStripPath(folderPath, folderName);
+				ignoreFolder = FALSE;
+				for (int i = 0; i < cacheFolderList.GetCount(); i++)
+				{
+					CString& cacheFolderName = cacheFolderList[i];
+					if (fileName.Compare(cacheFolderName) == 0)
+					{
+						ignoreFolder = TRUE;
+						break;
+					}
+				}
+				if (!ignoreFolder)
+#endif
+				CString labelCacheFolder = fileFound + L"labelCache";
+				if (FileUtils::PathDirExists(labelCacheFolder))
+				{
+					CString subFolder = labelCacheFolder.Mid(dataFolder.GetLength());
+					CString toFolderPath = newDataFolder + L"\\" + subFolder;
+					CStringArray* excludeFilter = 0;
+					BOOL bFailIfExists = FALSE;
+					BOOL removeFolderAfterCopy = FALSE;
+
+					CString retFolder = FileUtils::CopyDirectory(fileFound, toFolderPath, 
+						excludeFilter, bFailIfExists, removeFolderAfterCopy);
+				}
+				BOOL bRetval = CMainFrame::CopyDataFolder(fileFound, newDataFolder, errorText);
+			}
+			else
+				fileCnt++;
+		}
+		if (!FindNextFile(hSearch, &FileData)) {
+			bFinished = TRUE;
+			break;
+		}
+	}
+	FindClose(hSearch);
+	return TRUE;
+}
+
+
+void CMainFrame::OnTextdirectionDefault()
+{
+	// TODO: Add your command handler code here
+	m_textDirectionPosition = 1;
+	CMainFrame::CheckTextDirectionPositionMenuOption(1);
+	int deb = 1;
+}
+
+void CMainFrame::OnTextdirectionAuto()
+{
+	// TODO: Add your command handler code here
+	m_textDirectionPosition = 2;
+	CMainFrame::CheckTextDirectionPositionMenuOption(2);
+	int deb = 1;
+}
+
+void CMainFrame::OnTextdirectionRighttoleft()
+{
+	// TODO: Add your command handler code here
+	m_textDirectionPosition = 3;
+	CMainFrame::CheckTextDirectionPositionMenuOption(3);
+	int deb = 1;
+}
+
+void CMainFrame::OnTextdirectionLefttoright()
+{
+	// TODO: Add your command handler code here
+	m_textDirectionPosition = 4;
+	CMainFrame::CheckTextDirectionPositionMenuOption(4);
+	int deb = 1;
+}
+
+void CMainFrame::OnTextdirectionHelp()
+{
+	// TODO: Add your command handler code here
+	int deb = 1;
+}
+
+void CMainFrame::CheckTextDirectionPositionMenuOption(int textDirectionPosition)
+{
+	// Investigate !! There must be better way assuming ID are in range
+
+	_ASSERTE((textDirectionPosition >= 0) || (textDirectionPosition <= 4));
+
+	CMenu* mmenu = this->GetMenu();
+	CMenu* menu = mmenu->GetSubMenu(0);
+	UINT retval = 0;
+
+	retval = menu->CheckMenuItem(ID_TEXTDIRECTION_DEFAULT, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_TEXTDIRECTION_AUTO, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_TEXTDIRECTION_RIGHTTOLEFT, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_TEXTDIRECTION_LEFTTORIGHT, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_TEXTDIRECTION_HELP, MF_UNCHECKED);
+
+	m_textDirection = L"";
+	m_textAlignment = L"left";
+
+	if (textDirectionPosition == 0)
+	{
+		m_textDirection = L"";
+		m_textAlignment = L"left";
+		//retval = CMainFrame::SetMenuState(menu, ID_TEXTDIRECTION_DEFAULT, TRUE);
+		retval = menu->CheckMenuItem(ID_TEXTDIRECTION_DEFAULT, MF_CHECKED);
+	}
+	else if (textDirectionPosition == 1)
+	{
+		m_textDirection = L"";
+		m_textAlignment = L"left";
+		//retval = CMainFrame::SetMenuState(menu, ID_TEXTDIRECTION_DEFAULT, TRUE);
+		retval = menu->CheckMenuItem(ID_TEXTDIRECTION_DEFAULT, MF_CHECKED);
+	}
+	else if (textDirectionPosition == 2)
+	{
+		m_textDirection = L"auto";
+		m_textAlignment = L"left";
+		//retval = CMainFrame::SetMenuState(menu, ID_TEXTDIRECTION_AUTO, TRUE);
+		retval = menu->CheckMenuItem(ID_TEXTDIRECTION_AUTO, MF_CHECKED);
+	}
+	else if (textDirectionPosition == 3)
+	{
+		m_textDirection = L"rtl";
+		m_textAlignment = L"right";
+		//retval = CMainFrame::SetMenuState(menu, ID_TEXTDIRECTION_RIGHTTOLEFT, TRUE);
+		retval = menu->CheckMenuItem(ID_TEXTDIRECTION_RIGHTTOLEFT, MF_CHECKED);
+	}
+	else if (textDirectionPosition == 4)
+	{
+		m_textDirection = "ltr";
+		m_textAlignment = "left";
+		//retval = CMainFrame::SetMenuState(menu, ID_TEXTDIRECTION_LEFTTORIGHT, TRUE);
+		retval = menu->CheckMenuItem(ID_TEXTDIRECTION_LEFTTORIGHT, MF_CHECKED);
+	}
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, 
+		L"textDirectionPosition", CMainFrame::m_textDirectionPosition);
+
+	CString sText = L"";
+	if (!m_textDirection.IsEmpty())
+	{
+		sText = L"Text Direction";
+		ResHelper::TranslateString(sText);
+		sText += L" " + m_textDirection.MakeUpper();
+	}
+
+	int paneId = CMainFrame::GetStatusBarIndex(ID_INDICATOR_TEXT_DIRECTION);
+	SetStatusBarPaneText(paneId, sText, FALSE);
+
+	NListView* pListView = GetListView();
+	pListView->Invalidate();
+	if (pListView->m_lastSel >= 0)
+	{
+		pListView->m_bApplyColorStyle = TRUE;
+		pListView->SelectItem(pListView->m_lastSel);
+	}
+}
+
+void CMainFrame::LoadTextDirectionPosition()
+{
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	m_textDirection = "";
+	m_textAlignment = "left";
+	m_textDirectionPosition = 0;    // default but not set yet
+
+	int textDirectionPosition;
+	BOOL found = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"textDirectionPosition", textDirectionPosition);
+	if (found)
+	{
+		m_textDirectionPosition = textDirectionPosition;
+		if (m_textDirectionPosition == 0)
+		{
+			m_textDirection = L"";
+			m_textAlignment = L"left";
+		}
+		else if (m_textDirectionPosition == 1)
+		{
+			m_textDirection = L"";
+			m_textAlignment = L"left";
+		}
+		else if (m_textDirectionPosition == 2)
+		{
+			m_textDirection = L"auto";
+			m_textAlignment = L"left";
+		}
+		else if (m_textDirectionPosition == 3)
+		{
+			m_textDirection = L"rtl";
+			m_textAlignment = L"right";
+		}
+		else if (m_textDirectionPosition == 4)
+		{
+			m_textDirection = L"ltr";
+			m_textAlignment = L"left";
+		}
+		else
+			_ASSERTE((m_textDirectionPosition >= 0) || (m_textDirectionPosition <= 4));
+	}
+}
+
+UINT CMainFrame::SetMenuState(CMenu* menu, UINT ID, BOOL setChecked)
+{
+	UINT state = menu->GetMenuState(ID, MF_BYCOMMAND);
+	ASSERT(state != 0xFFFFFFFF);
+
+	UINT retState = state & MF_CHECKED;
+	if (retState)
+	{
+		if (!setChecked)
+			retState = menu->CheckMenuItem(ID, MF_UNCHECKED | MF_BYCOMMAND);
+	}
+	else
+	{
+		if (setChecked)
+			retState = menu->CheckMenuItem(ID, MF_CHECKED | MF_BYCOMMAND);
+	}
+	return retState;
+}
+
+int CMainFrame::GetStatusBarIndex(UINT indicatorID)
+{
+	int cnt = sizeof(indicators) / sizeof(UINT);
+	for (int i = 0; i < cnt; i++)
+	{
+		if (indicatorID == ID_SEPARATOR)
+			return 0;
+		else if (indicatorID == ID_INDICATOR_TEXT_DIRECTION)
+			return 1;
+		else if (indicatorID == ID_INDICATOR_MAIL)
+			return 2;
+		else if (indicatorID == ID_INDICATOR_MAIL_INDEX)
+			return 3;
+		else if (indicatorID == ID_INDICATOR_CAPS)
+			return 4;
+		else if (indicatorID == ID_INDICATOR_NUM)
+			return 5;
+		else if (indicatorID == ID_INDICATOR_SCRL)
+			return 6;
+		else 
+			return 0;
+	}
+	return 0;
+}
+
+#if 0
+// Works but not used anymore; Instead below is used
+// CMainFrame::GetMessageString(UINT nID, CString& rMessage) const
+LRESULT CMainFrame::OnSetMessageString(WPARAM wParam, LPARAM lParam)
+{
+#if 1
+	// Copied from MFC source code and translated AFX_IDS_IDLEMESSAGE string
+	// More efficient implementation
+	return CMainFrame::OnSetMessageString_MFC(wParam, lParam);
+#else
+	// this will set StatusBar to "Ready"
+	LRESULT res = CFrameWnd::OnSetMessageString(wParam, lParam);
+
+#if _DEBUG
+	int paneId = CMainFrame::GetStatusBarIndex(ID_SEPARATOR);
+	CString sText = m_wndStatusBar.GetPaneText(paneId);
+	if (sText.Find(L"Display program information") >= 0)
+		int deb = 1;
+#endif
+
+	if (wParam == AFX_IDS_IDLEMESSAGE)
+	{
+		// This will translate and update StatusBar text
+		LRESULT lres = PostMessage(WM_CMD_PARAM_ON_SET_STATUSBAR_TEXT, 0, 0);
+		int deb = 1;
+	}
+
+	return res;
+#endif
+}
+#endif
+
+LRESULT CMainFrame::OnSetMessageString_MFC(WPARAM wParam, LPARAM lParam)
+{
+	UINT nIDLast = m_nIDLastMessage;
+	m_nFlags &= ~WF_NOPOPMSG;
+
+	CWnd* pMessageBar = GetMessageBar();
+	if (pMessageBar != NULL)
+	{
+		LPCTSTR lpsz = NULL;
+		CString strMessage;
+
+		// set the message bar text
+		if (lParam != 0)
+		{
+			ASSERT(wParam == 0);    // can't have both an ID and a string
+			lpsz = (LPCTSTR)lParam; // set an explicit string
+		}
+		else if (wParam != 0)
+		{
+			// map SC_CLOSE to PREVIEW_CLOSE when in print preview mode
+			if (wParam == AFX_IDS_SCCLOSE && m_lpfnCloseProc != NULL)
+				wParam = AFX_IDS_PREVIEW_CLOSE;
+
+			// get message associated with the ID indicated by wParam
+		 //NT64: Assume IDs are still 32-bit
+			GetMessageString((UINT)wParam, strMessage);
+			if (wParam == AFX_IDS_IDLEMESSAGE)
+				ResHelper::TranslateString(strMessage);
+			lpsz = strMessage;
+		}
+		pMessageBar->SetWindowText(lpsz);
+
+		// update owner of the bar in terms of last message selected
+		CFrameWnd* pFrameWnd = pMessageBar->GetParentFrame();
+		if (pFrameWnd != NULL)
+		{
+			_ASSERTE(pFrameWnd == this);  // updated for MBoxViewer use case
+			m_nIDLastMessage = (UINT)wParam;
+			m_nIDTracking = (UINT)wParam;
+			//pFrameWnd->m_nIDLastMessage = (UINT)wParam;  // m_nIDLastMessage & m_nIDTracking are protected members
+			//pFrameWnd->m_nIDTracking = (UINT)wParam;
+		}
+	}
+
+	m_nIDLastMessage = (UINT)wParam;    // new ID (or 0)
+	m_nIDTracking = (UINT)wParam;       // so F1 on toolbar buttons work
+	return nIDLast;
+}
+
+LRESULT CMainFrame::OnSetStatusBarText(WPARAM wParam, LPARAM lParam)
+{
+	int paneId = CMainFrame::GetStatusBarIndex(ID_SEPARATOR);
+	CString sText = m_wndStatusBar.GetPaneText(paneId);
+	if (sText.Find(L"Display program information") >= 0)
+		int deb = 1;
+	_ASSERTE(sText.Compare(L"Ready") == 0);
+
+	if (sText.Compare(L"Ready") == 0)
+	{
+		ResHelper::TranslateString(sText);
+		SetStatusBarPaneText(paneId, sText, FALSE);
+	}
+	return 0;
+}
+
+// Not used. Didn't work; din't investigate
+void CMainFrame::OnUpdateStatusBar(CCmdUI* pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+
+	int deb = 1;
+}
+
+LRESULT CMainFrame::OnInitializationComplete(WPARAM wParam, LPARAM lParam)
+{
+	CheckTextDirectionPositionMenuOption(m_textDirectionPosition);
+
+	CheckHighlightColorMenuOption(m_highlightingColorsStyle);
+
+	const int msgViewPosition = GetMessageWindowPosition();
+	CheckMessagewindowPositionMenuOption(msgViewPosition);
+
+	// Create Function
+	NMsgView* pMsgView = GetMsgView();
+	_ASSERTE(pMsgView);
+	const int hdrPaneLayout = pMsgView->GetHdrPaneLayout();
+
+	CMenu* menu = GetMenu();
+	_ASSERTE(menu);
+	if (hdrPaneLayout == 0)
+	{
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_CHECKED);
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_UNCHECKED);
+	}
+	else
+	{
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_DEFAULT, MF_UNCHECKED);
+		menu->CheckMenuItem(ID_MESSAGEHEADERPANELAYOUT_EXPANDED, MF_CHECKED);
+	}
+	// end new function
+	return 0;
+}
+
+void CMainFrame::GetMessageString(UINT nID, CString& rMessage) const
+{
+	CFrameWnd::GetMessageString(nID, rMessage);
+	ResHelper::TranslateString(rMessage);
+
+	if (!rMessage.IsEmpty())
+		TRACE(L"GetMessageString: nID: %d\nrMessage:n%s\n", nID, rMessage);
+
+	if (nID == AFX_IDS_IDLEMESSAGE)
+		int d = 1; // ResHelper::TranslateString(rMessage);
+
+	int deb = 1;
+}
+
+ColorHighlight::ColorHighlight()
+{
+	m_menuTextColor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+	m_menuBackgroundColor = GetSysColor(COLOR_MENUHILIGHT);
+
+	m_selectedTextColor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+	m_selectedBackgroundColor = GetSysColor(COLOR_MENUHILIGHT);
+}
+
+void CMainFrame::OnHighlightcolorstyleconfigDefault()
+{
+	// TODO: Add your command handler code here
+
+	CMainFrame::m_highlightingColorsStyle = 0;
+	CheckHighlightColorMenuOption(CMainFrame::m_highlightingColorsStyle);
+}
+
+void CMainFrame::OnHighlightcolorstyleconfigYellow()
+{
+	// TODO: Add your command handler code here
+
+	CMainFrame::m_highlightingColorsStyle = 1;
+	CheckHighlightColorMenuOption(CMainFrame::m_highlightingColorsStyle);
+}
+
+void CMainFrame::OnHighlightcolorstyleconfigGreen()
+{
+	// TODO: Add your command handler code here
+
+	CMainFrame::m_highlightingColorsStyle = 2;
+	CheckHighlightColorMenuOption(CMainFrame::m_highlightingColorsStyle);
+}
+
+void CMainFrame::OnHighlightcolorstyleconfigBlue()
+{
+	// TODO: Add your command handler code here
+
+	CMainFrame::m_highlightingColorsStyle = 3;
+	CheckHighlightColorMenuOption(CMainFrame::m_highlightingColorsStyle);
+}
+
+void CMainFrame::OnHighlightcolorstyleconfigBrown()
+{
+	// TODO: Add your command handler code here
+
+	CMainFrame::m_highlightingColorsStyle = 4;
+	CheckHighlightColorMenuOption(CMainFrame::m_highlightingColorsStyle);
+}
+
+// Manage as range/group; requires consecutive IDs
+void CMainFrame::CheckHighlightColorMenuOption(int highlightingColorsStyle)
+{
+	// Investigate !! There must be better way assuming ID are in range
+	CMenu* mmenu = this->GetMenu();
+	CMenu* menu = mmenu->GetSubMenu(0);
+	UINT retval = 0;
+
+	retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_DEFAULT, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_YELLOW, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_GREEN, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_BLUE, MF_UNCHECKED);
+	retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_BROWN, MF_UNCHECKED);
+
+	if (highlightingColorsStyle == 0)
+	{
+		CMainFrame::m_colorHighlight.m_menuTextColor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+		CMainFrame::m_colorHighlight.m_menuBackgroundColor = GetSysColor(COLOR_MENUHILIGHT);
+
+		CMainFrame::m_colorHighlight.m_selectedBackgroundColor = GetSysColor(COLOR_MENUHILIGHT);
+		CMainFrame::m_colorHighlight.m_selectedTextColor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+
+		retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_DEFAULT, MF_CHECKED);
+	}
+	else if (highlightingColorsStyle == 1)
+	{
+		CMainFrame::m_colorHighlight.m_menuTextColor = RGB(0, 0, 0);  // black
+		CMainFrame::m_colorHighlight.m_menuBackgroundColor = RGB(255, 246, 0); // Cadmium Yellow 
+
+		CMainFrame::m_colorHighlight.m_selectedBackgroundColor = RGB(255, 246, 0); // Cadmium Yellow 
+		CMainFrame::m_colorHighlight.m_selectedTextColor = RGB(0, 0, 0);  //  black
+
+		retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_YELLOW, MF_CHECKED);
+	}
+	else if (highlightingColorsStyle == 2)
+	{
+		CMainFrame::m_colorHighlight.m_menuTextColor = RGB(0, 0, 0);  // black
+		CMainFrame::m_colorHighlight.m_menuBackgroundColor = RGB(193, 255, 193);  // light green
+
+		CMainFrame::m_colorHighlight.m_selectedBackgroundColor = RGB(193, 255, 193);  // light green
+		CMainFrame::m_colorHighlight.m_selectedTextColor = RGB(0, 0, 0);  //  black
+
+		retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_GREEN, MF_CHECKED);
+	}
+	else if (highlightingColorsStyle == 3)
+	{
+		CMainFrame::m_colorHighlight.m_menuTextColor = RGB(0, 0, 0);  // black
+		CMainFrame::m_colorHighlight.m_menuBackgroundColor = RGB(173, 216, 230);  // light blue
+
+		CMainFrame::m_colorHighlight.m_selectedBackgroundColor = RGB(173, 216, 230);  // blue
+		CMainFrame::m_colorHighlight.m_selectedTextColor = RGB(0, 0, 0);  //  black
+
+		retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_BLUE, MF_CHECKED);
+	}
+	else if (highlightingColorsStyle == 4)
+	{
+		CMainFrame::m_colorHighlight.m_menuTextColor = RGB(0, 0, 0);  // black
+		CMainFrame::m_colorHighlight.m_menuBackgroundColor = RGB(0xF5, 0xDE, 0xB3);  // light brown
+
+		CMainFrame::m_colorHighlight.m_selectedBackgroundColor = RGB(0xF5, 0xDE, 0xB3);  // light brown
+		CMainFrame::m_colorHighlight.m_selectedTextColor = RGB(0, 0, 0);  //  black
+
+		retval = menu->CheckMenuItem(ID_HIGHLIGHTCOLORSTYLECONFIG_BROWN, MF_CHECKED);
+	}
+
+	NMsgView* pMsgView = GetMsgView();
+	pMsgView->SetFindHighlightColorStyleHTML();
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	retval = CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general,
+		L"highlightColorStyle", CMainFrame::m_highlightingColorsStyle);
+
+	NListView* pListView = GetListView();
+	pListView->Invalidate();
+	if (pListView->m_lastSel >= 0)
+	{
+		pListView->m_bApplyColorStyle = TRUE;
+		pListView->SelectItem(pListView->m_lastSel);
+	}
+}
+
+void CMainFrame::LoadHighlightColorStyle()
+{
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	m_highlightingColorsStyle = 0;    // default
+
+	int highlightColorStyle;
+	BOOL found = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"highlightColorStyle", highlightColorStyle);
+	if (found)
+	{
+		_ASSERTE((m_highlightingColorsStyle >= 0) || (m_highlightingColorsStyle <= 4));
+
+		m_highlightingColorsStyle = highlightColorStyle;
+	}
+}
+
+int CMainFrame::LoadMailsInfo(CString& filePath, MailArchiveFileInfo& mailFileInfo, CString& errorText)
+{
+	NListView* pListView = GetListView();
+	if (!pListView)
+		return -1;
+
+	SerializerHelper sz(filePath);
+	if (!sz.open(FALSE))
+	{
+		return -1;
+	}
+
+	MailArchiveFileInfo mFileInfo;
+	int ret = pListView->LoadMailsInfo(sz, mFileInfo, errorText);
+	if (ret < 0)
+	{
+		sz.close();
+	}
+	else
+		mailFileInfo.Copy(mFileInfo);
+	return ret;
 }

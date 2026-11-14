@@ -73,6 +73,7 @@ protected:
 public:
 	void PageSetup();
 	void Navigate(LPCWSTR url, DWORD flags);
+	void Refresh2(int level = REFRESH_COMPLETELY);
 	CWebBrowser2 m_ie;
 	BOOL m_bNavigateComplete;
 

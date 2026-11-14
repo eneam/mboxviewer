@@ -195,3 +195,16 @@ MBox Viewer project executables are built under VS 2022. Project contains 3 solu
 **Winmail2EmlFile/Winmail2Eml.sln** -  this will build  Release and Debug versions of Winmail2Email.exe
 
 
+Reviews
+--------
+
+[Softpedia](https://www.softpedia.com/get/Internet/E-mail/Mail-Utilities/MBox-Viewer.shtml)
+
+[Majorgeeks](https://www.majorgeeks.com/files/details/mbox_viewer.html)
+
+[Cool Utils](https://www.coolutils.com/Free-EML-Viewers)
+
+[MBox Viewer on SourceForge](https://sourceforge.net/projects/mbox-viewer/)
+
+
+

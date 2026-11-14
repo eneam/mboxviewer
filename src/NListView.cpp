@@ -2589,6 +2589,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 #endif
 	//BOOL retA = ResHelper::ActivateToolTips(&this->m_list, m_toolTip); 
 	//BOOL retE = this->m_list.EnableToolTips();
+
 	return 0;
 }
 
@@ -2979,6 +2980,12 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 		DWORD bkcolor = ::GetSysColor(COLOR_HIGHLIGHT);
 		DWORD txcolor = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
+
+		if (CMainFrame::m_highlightingColorsStyle != 0)
+		{
+			bkcolor = CMainFrame::m_colorHighlight.m_menuBackgroundColor;
+			txcolor = CMainFrame::m_colorHighlight.m_menuTextColor;
+		}
 
 		//if ((iSubItem == 0) && (abs(MboxMail::b_mails_which_sorted) == 99))
 		if (iSubItem == 0)
@@ -3598,6 +3605,16 @@ BOOL NListView::SaveMails(LPCWSTR cache, BOOL mainThread, CString &errorText)
 	for (i = 0; i < ni; i++)
 	{
 		m = MboxMail::s_mails[i];
+		if (oldestMailTime == -1)
+		{
+			if (m->m_timeDate != -1)
+				oldestMailTime = m->m_timeDate;
+		}
+		if (latestMailTime == -1)
+		{
+			if (m->m_timeDate != -1)
+				latestMailTime = m->m_timeDate;
+		}
 		if (m->m_timeDate < oldestMailTime)
 			oldestMailTime = m->m_timeDate;
 		else if (m->m_timeDate > latestMailTime)
@@ -4738,6 +4755,14 @@ void NListView::FillCtrl()
 			ni = MboxMail::s_mails.GetSize();
 			m_list.SetItemCount(ni);
 			//Cache2Text(cache, m_format);
+
+			MailArchiveFileInfo maileFileInfo;
+			CString errorText;
+			int retLoadInfo = pFrame->LoadMailsInfo(cache, maileFileInfo, errorText);
+			if (retLoadInfo >= 0)
+			{
+				m_maileFileInfo.Copy(maileFileInfo);
+			}
 		}
 
 		MboxMail::pCUPDUPData = NULL;
@@ -4990,6 +5015,28 @@ int NListView::AppendInlineAttachmentNameSeparatorLine(CMimeBody* pBP, int bodyC
 	return 1;
 }
 
+void NListView::AppendBodyStyle(CStringA &hdr, CStringA& textDirection)
+{
+	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
+	if (!textDirection.IsEmpty() || (m_bApplyColorStyle && (color != COLOR_WHITE)))
+	{
+		hdr.Append("\r\nbody {");
+		if (!textDirection.IsEmpty())
+		{
+			hdr.Append("direction: " + textDirection + ";");
+		}
+		if (m_bApplyColorStyle && (color != COLOR_WHITE))
+		{
+			CStringA colorStr;
+			int retC2S = Color2Str(color, colorStr);
+			hdr.Append("background-color: #");
+			hdr.Append(colorStr);
+			hdr.Append(";");
+		}
+		hdr.Append("}");
+	}
+}
+
 int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALSE */)
 {
 	CMainFrame *pFrame = 0;
@@ -5047,10 +5094,11 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 	pMsgView->m_bAttach = FALSE;
 
 	// Already set for ID_INDICATOR_MAIL
-	if (pFrame) {
+	if (pFrame)
+	{
 		CString sText = L"Mail Retrieval In Progress ...";
 		ResHelper::TranslateString(sText);
-		int paneId = 1;
+		int paneId = CMainFrame::GetStatusBarIndex(ID_INDICATOR_MAIL);
 		pFrame->SetStatusBarPaneText(paneId, sText, FALSE);
 	}
 
@@ -5079,25 +5127,10 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 	if (!fpm.Open(MboxMail::s_path, CFile::modeRead | CFile::shareDenyWrite, &ExError2))
 	{
 		DWORD lastErr = ::GetLastError();
-#if 1
+
 		HWND h = GetSafeHwnd();
 		CString fmt = L"Could not open mail file:\n\n\"%s\"\n\n%s";  // new format
 		CString errorText = FileUtils::ProcessCFileFailure(fmt, MboxMail::s_path, ExError2, lastErr, h);
-#else
-		CString exErrorStr = FileUtils::GetFileExceptionErrorAsString(ExError2);
-
-		CString txt;
-		CString fmt = L"Could not open \"%s\" mail file.\n%s";
-		ResHelper::TranslateString(fmt);
-		txt.Format(fmt, MboxMail::s_path, exErrorStr);
-
-		//TRACE(L"%s\n", txt);
-		//errorText = txt;
-
-		HWND h = NULL; // we don't have any window yet
-		int answer = MyMessageBox(h, txt, L"Error", MB_APPLMODAL | MB_ICONERROR | MB_OK);
-#endif
-		//fp.Close();
 		return -1;
 	}
 
@@ -5115,6 +5148,21 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 	int textlen = MboxMail::GetMailBody_mboxview(fpm, iItem, outbuflarge, pageCode, textType, plainTextMode);  // returns pageCode
 	if (textlen != outbuflarge->Count())
 		int deb = 1;
+
+	// Exploring RTL; No sure result is acceptable in most cases; need expert help
+	// See https://unicodefyi.com/guide/unicode-text-direction/
+	// Would make more sense to post process, in one place, after html file is fully constructed
+	// support for RTL is quite complex
+	// best if publisher inserts proper RTL controls
+	// Simpler imperfect solutions are as follow:
+	// 1) add body style attribute: <head><style>body {direction:rtl; ..;}
+	// 2) add body tag attribute <body dir=rtl>
+	// 3) add html attribute <html dir=rtl>
+	
+	// Update <style> ; requires to touch many code places
+	CStringA textDirection = "";  // direction 'none' or default or default or set dir=rtl
+	CStringA textDirectionInHtmlTag = "";  // direction 'none' or default or default or set dir=rtl
+	CStringA textAlignment = "left";
 
 	if (outbuflarge->Count() > 0)
 	{
@@ -5150,6 +5198,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		if (strCodePage == CP_ASCII)
 			strCodePage = CP_UTF8;
 
+		UINT pageCode = strCodePage;
 		if (strCodePage != CP_UTF8)
 #endif
 		{
@@ -5166,9 +5215,27 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 				inData = (char*)result->Data();
 				inDataLen = result->Count();
 				bdycharset = "UTF-8";
+				pageCode = CP_UTF8;
 			}
 			else
 				result = 0;
+		}
+
+		if (!pFrame->m_textDirection.IsEmpty())
+		{
+			textDirection = pFrame->m_textDirection;
+			textDirectionInHtmlTag = pFrame->m_textDirection;
+			textAlignment = pFrame->m_textAlignment;
+			if (textDirection.CompareNoCase("auto") == 0)
+			{
+				int isRtl = TextUtilsEx::IsRtl((unsigned char*)inData, inDataLen, pageCode);
+				if (isRtl)
+				{
+					textDirection = "rtl";
+					textDirectionInHtmlTag = "rtl";
+					textAlignment = "right";
+				}
+			}
 		}
 
 		if (bdycharset.IsEmpty())
@@ -5252,16 +5319,22 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 			outbuf->ClearAndResize(bdylen + 1024);
 
 			outbuf->Append("<!DOCTYPE html>\r\n");
-			CStringA hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n";
+
 			DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
-			if (m_bApplyColorStyle && (color != COLOR_WHITE))
+
+			CStringA hdr = "<html><head>";
+			if (!textDirectionInHtmlTag.IsEmpty())
 			{
-				CStringA colorStr;
-				int retC2S = Color2Str(color, colorStr);
-				hdr = "<html><head><style>body{background-color: #";
-				hdr.Append(colorStr);
-				hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n");
+				hdr = "<html dir=" + textDirectionInHtmlTag + "><head>";
 			}
+
+			hdr.Append("<style>");
+			AppendBodyStyle(hdr, textDirection);
+			AppendSelectionHighlightStyle(hdr);
+			hdr.Append("</style>");
+
+			hdr.Append("\r\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head><body><br>\r\n");
+
 			outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
 			outbuf->Append(bdy, bdylen);
@@ -5290,37 +5363,39 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 				// Don't think any harm done if we always create extra block
 				// Unfortunately don't have respective test eml files to prove
 
-				CStringA hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n";
 				DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
-				if (m_bApplyColorStyle && (color != COLOR_WHITE))
+
+				CStringA hdr = "<html><head>";
+				if (!textDirectionInHtmlTag.IsEmpty())
 				{
-					CStringA colorStr;
-					int retC2S = Color2Str(color, colorStr);
-					hdr = "<html><head><style>body{background-color: #";
-					hdr.Append(colorStr);
-					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
+					hdr = "<html dir=" + textDirectionInHtmlTag + "><head>";
 				}
+
+				hdr.Append("<style>");
+				AppendBodyStyle(hdr, textDirection);
+				AppendSelectionHighlightStyle(hdr);
+				hdr.Append("</style>");
+
+				hdr.Append("\r\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
 
 				outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 				int deb = 1;
 			}
 			else
 			{
-				DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
-				if (m_bApplyColorStyle && (color != COLOR_WHITE))
+				CStringA hdr = "<html><head>";
+				if (!textDirectionInHtmlTag.IsEmpty())
 				{
-					CStringA colorStr;
-					int retC2S = Color2Str(color, colorStr);
-					CStringA hdr = "<html><head><style>body{background-color: #";
-					hdr.Append(colorStr);
-					hdr.Append(";}</style><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
-					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
+					hdr = "<html dir=" + textDirectionInHtmlTag + "><head>";
 				}
-				else
-				{
-					CStringA hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n";
-					outbuf->Append((LPCSTR)hdr, hdr.GetLength());
-				}
+
+				hdr.Append("<style>");
+				AppendBodyStyle(hdr, textDirection);
+				AppendSelectionHighlightStyle(hdr);
+				hdr.Append("</style>");
+
+				hdr.Append("\r\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\"></head></html><br>\r\n");
+				outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 			}
 			outbuf->Append(bdy, bdylen);
 
@@ -5356,7 +5431,6 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 
 		bdy = outbuflarge->Data();
 		bdylen = outbuflarge->Count();
-
 
 		// FIXME skip processing if bdylen <= 0
 		if (bdylen > 0)
@@ -5395,6 +5469,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		if (strCodePage == CP_ASCII)
 			strCodePage = CP_UTF8;
 
+		UINT pageCode = strCodePage;
 		if (strCodePage != CP_UTF8)
 #endif
 		{
@@ -5411,9 +5486,27 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 				bdy = (char*)result->Data();
 				bdylen = result->Count();
 				bdycharset = "UTF-8";
+				pageCode = CP_UTF8;
 			}
 			else
 				result = 0;
+		}
+
+		if (!pFrame->m_textDirection.IsEmpty())
+		{
+			textDirection = pFrame->m_textDirection;
+			textDirectionInHtmlTag = pFrame->m_textDirection;
+			textAlignment = pFrame->m_textAlignment;
+			if (textDirection.CompareNoCase("auto") == 0)
+			{
+				int isRtl = TextUtilsEx::IsRtl((unsigned char*)bdy, bdylen, pageCode);
+				if (isRtl)
+				{
+					textDirection = "rtl";
+					textDirectionInHtmlTag = "rtl";
+					textAlignment = "right";
+				}
+			}
 		}
 
 		//if (bdycharset.IsEmpty() || (bdycharset.CompareNoCase("us-ascii") == 0))
@@ -5424,7 +5517,12 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		outbuf->ClearAndResize(bdylen*4 + 1000);
 
 		outbuf->Append("<!DOCTYPE html>\r\n");
-		CStringA hdr = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">";
+		CStringA hdr = "<html>";
+		if (!textDirectionInHtmlTag.IsEmpty())
+		{
+			hdr = "<html dir=" + textDirectionInHtmlTag + ">";
+		}
+		hdr.Append("<head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">");
 		hdr.Append("<style>\r\n");
 		hdr.Append("@media print {\r\n");
 		//hdr.Append(divAvoidPageBreak);
@@ -5433,16 +5531,11 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 		hdr.Append("\r\n}\r\n");
 		hdr.Append(preStyle);
 
-		DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessage);
-		if (m_bApplyColorStyle && (color != COLOR_WHITE))
-		{
-			CStringA colorStr;
-			int retC2S = Color2Str(color, colorStr);
-			hdr.Append("\r\nbody {background-color: #");
-			hdr.Append(colorStr);
-			hdr.Append(";}");
-		}
-		hdr.Append("\r\n</style></head><body><br>\r\n");
+		AppendBodyStyle(hdr, textDirection);
+		AppendSelectionHighlightStyle(hdr);
+		hdr.Append("</style>");
+
+		hdr.Append("\r\n</head><body><br>\r\n");
 
 		outbuf->Append((LPCSTR)hdr, hdr.GetLength());
 
@@ -5604,7 +5697,7 @@ int NListView::SelectItem(int iItem, BOOL ignoreViewMessageHeader /* dflt = FALS
 
 	// Display mail in internal IE
 	pMsgView->m_browser.Navigate(m_curFile, NULL);
-	// Update layou to show/hide attachments
+	// Update layout to show/hide attachments
 	pMsgView->UpdateLayout();
 
 	MboxMail::ShowHint(HintConfig::MailSelectionHint, GetSafeHwnd());
@@ -19681,9 +19774,9 @@ void NListView::AppendPictureAttachments(MboxMail *m, AttachmentMgr& attachmentD
 }
 
 //#################################################################################################
-//# inData  - points to encoded HTML block retrived frim raw mail
+//# inData  - points to encoded HTML block retrieved frim raw mail
 //# inDataLen - length of inData
-//# output - (out) buffer with updated HTML referncing created inline/embedded images
+//# output - (out) buffer with updated HTML referencing created inline/embedded images
 //# relativeSrcImgFilePath - relative path to folder containing created image files
 //# absoluteSrcImgFilePath - absolute folder path to created image files.
 //#
@@ -20510,7 +20603,32 @@ int NListView::CreateMailAttachments(CFile* fpm, int mailPosition, CString* atta
 			}
 
 			if (retRotate != 0)
+			{
 				ret = FileUtils::Write2File(filePathW, (unsigned char*)data, dataLength);  // FIXMEFIXME
+
+				// 10/18/2026 Investigate why processing of heic files fails sometimes
+				// write to file anyway and open with Windows application
+
+				// Fails also most likely
+				int ret = GdiUtils::GetImageSizeFromFile(filePathW, imageWidth, imageHeight);
+
+				if (attachmentInfo)
+				{
+					if ((imageWidth > 0) && (imageHeight > 0))
+					{
+						attachmentInfo->m_width = imageWidth;
+						attachmentInfo->m_height = imageHeight;
+					}
+					else
+					{
+						attachmentInfo->m_width = 400;
+						attachmentInfo->m_height = 400;
+					}
+				}
+
+
+				int deb = 1;
+			}
 		}
 		else
 		{
@@ -20788,3 +20906,22 @@ void NListView::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruc
 	CWnd::Default();
 #endif
 }
+
+void NListView::AppendSelectionHighlightStyle(CStringA &text)
+{
+	if (CMainFrame::m_highlightingColorsStyle != 0)
+	{
+		/* Background color for selected text */
+		/* Text color for selected text */
+
+		CStringA backgroundColor;
+		NListView::Color2Str(CMainFrame::m_colorHighlight.m_selectedBackgroundColor, backgroundColor);
+		CStringA textColor;
+		NListView::Color2Str(CMainFrame::m_colorHighlight.m_selectedTextColor, textColor);
+
+		CStringA style;
+		style.Format("\n::selection{ background-color: #%s; color: #%s; }", backgroundColor, textColor);
+		text.Append(style);
+	}
+}
+

@@ -109,6 +109,8 @@ public:
 	//
 	static CStringW CopyDirectory(const wchar_t* cFromPath, const wchar_t* cToPath, CStringArray *excludeFilter = 0, BOOL bFailIfExists = FALSE, BOOL removeFolderAfterCopy = FALSE);
 	//
+	static CStringW CopyDir(const wchar_t* cFromPath, const wchar_t* cToPath, CStringArray* includeFileNameFilter = 0, BOOL bFailIfExists = FALSE);
+	//
 	static CString MoveDirectory(const wchar_t *cFromPath, const wchar_t *cToPath);
 	//
 	static CString GetLastErrorAsString(DWORD errorCode = 0xFFFF);

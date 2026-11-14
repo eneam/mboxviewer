@@ -135,10 +135,16 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	// Set the appropriate foreground and background colors. 
 	if (lpDrawItemStruct->itemState & ODS_SELECTED)
 	{
-		clrPrevText = SetTextColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_HIGHLIGHTTEXT));
-		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENUHILIGHT));
+		DWORD bkHighlight = GetSysColor(COLOR_MENUHILIGHT);
+		DWORD txtHighlight = GetSysColor(COLOR_HIGHLIGHTTEXT);
+		if (CMainFrame::m_highlightingColorsStyle != 0)
+		{
+			bkHighlight = CMainFrame::m_colorHighlight.m_menuBackgroundColor;
+			txtHighlight = CMainFrame::m_colorHighlight.m_menuTextColor;
+		}
+
+		clrPrevText = SetTextColor(lpDrawItemStruct->hDC, txtHighlight);
+		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC, bkHighlight);
 	}
 	else
 	{
@@ -237,10 +243,16 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	// Set the appropriate foreground and background colors. 
 	if (lpDrawItemStruct->itemState & ODS_SELECTED)
 	{
-		clrPrevText = SetTextColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_HIGHLIGHTTEXT));
-		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENUHILIGHT));
+		DWORD bkHighlight = GetSysColor(COLOR_MENUHILIGHT);
+		DWORD txtHighlight = GetSysColor(COLOR_HIGHLIGHTTEXT);
+		if (CMainFrame::m_highlightingColorsStyle != 0)
+		{
+			bkHighlight = CMainFrame::m_colorHighlight.m_menuBackgroundColor;
+			txtHighlight = CMainFrame::m_colorHighlight.m_menuTextColor;
+		}
+
+		clrPrevText = SetTextColor(lpDrawItemStruct->hDC, txtHighlight);
+		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC, bkHighlight);
 	}
 	else
 	{

@@ -48,9 +48,11 @@ public:
 		m_capacity = capacity;
 		if (m_capacity < DFLT_GROW_SIZE)
 			m_capacity = DFLT_GROW_SIZE;
-		m_data = new char[m_capacity + 1];  // extra byte for NULL
-		if (m_data)
+		m_data = new char[m_capacity + 2];  // two extra bytes for NULL
+		if (m_data) {
 			m_data[0] = 0;
+			m_data[1] = 0;
+		}
 		else
 			m_capacity = 0;  // this would be a problem. introduce m_error ?
 	};
@@ -68,7 +70,7 @@ public:
 	int Count() { return m_count; }
 	void SetCount(int count) {
 		_ASSERTE(count <= m_capacity); _ASSERTE(m_data);
-		m_count = count; m_data[count] = 0;
+		m_count = count; m_data[count] = 0; m_data[count+1] = 0;
 	}
 	void Clear() {
 		SetCount(0);
@@ -96,6 +98,7 @@ public:
 		if (!CanAdd(1)) Resize(m_capacity + 1);
 		m_data[m_count++] = c;
 		m_data[m_count] = 0;
+		m_data[m_count+1] = 0;
 	}
 
 	void Copy(char const* Src, int  Size) {
@@ -151,14 +154,17 @@ public:
 	int Remove(int offsetBegin, int offsetEnd);
 
 	char GetAt(int pos) {
+		_ASSERTE((pos + 1) <= m_count);
 		return m_data[pos];
 	}
 	void SetAt(int pos, char c) {
+		_ASSERTE((pos+1) <= m_count);
 		m_data[pos] = c;
 	}
 	void SetAtGrow(int pos, char c) {
+		_ASSERTE((pos + 1) <= m_count);
 		if (!CanAdd(1))
-			Resize(m_count + 1);
+			Resize(m_count + 2);
 		m_data[pos] = c;
 	}
 };

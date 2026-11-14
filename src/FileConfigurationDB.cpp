@@ -633,8 +633,11 @@ int ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key)
 	ConfigNode* node = ConfigTree::FindNode(configPath);
 	if (node && !node->m_isSectionNode)
 	{
-		__int64 intval = _ttoi64(node->m_value);
-		return (int)intval;
+		//__int64 intval = _ttoi64(node->m_value);
+		STIF_FLAGS dwFlags = STIF_SUPPORT_HEX;
+		long long intval64;
+		BOOL ret = (QWORD)StrToInt64ExW(node->m_value, dwFlags, &intval64);
+		return (int)intval64;
 	}
 	else
 	{
@@ -683,7 +686,11 @@ BOOL ConfigTree::_GetProfileInt(HKEY hKey, LPCWSTR section, LPCWSTR key, DWORD& 
 		ConfigNode* node = ConfigTree::FindNode(configPath);
 		if (node && !node->m_isSectionNode)
 		{
-			intval = (DWORD)_ttoi64(node->m_value);
+			//intval = (DWORD)_ttoi64(node->m_value);
+			STIF_FLAGS dwFlags = STIF_SUPPORT_HEX;
+			long long intval64;
+			BOOL ret = (QWORD)StrToInt64ExW(node->m_value, dwFlags, &intval64);
+			intval = intval64;
 			return TRUE;
 		}
 		else
@@ -712,7 +719,11 @@ BOOL ConfigTree::_GetProfileInt64(HKEY hKey, LPCWSTR section, LPCWSTR key, QWORD
 	ConfigNode* node = ConfigTree::FindNode(configPath);
 	if (node && !node->m_isSectionNode)
 	{
-		intval = (QWORD)_ttoi64(node->m_value);
+		//intval = (QWORD)_ttoi64(node->m_value);
+		STIF_FLAGS dwFlags = STIF_SUPPORT_HEX;
+		long long intval64;
+		BOOL ret = (QWORD)StrToInt64ExW(node->m_value, dwFlags, &intval64);
+		intval = intval64;
 		return TRUE;
 	}
 	else

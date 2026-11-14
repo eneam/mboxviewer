@@ -81,7 +81,8 @@ NMsgView::NMsgView()
 	m_bMax = TRUE;
 
 	m_searchID = L"mboxview_Search";
-	m_matchStyle = L"color: white; background-color: blue";
+
+	SetFindHighlightColorStyleHTML();
 
 	// Get the log font.
 	NONCLIENTMETRICS ncm;
@@ -268,10 +269,28 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	sysImgList.Detach();
 	//	m_attachments.SetExtendedStyle(WS_EX_STATICEDGE);
 
-	if (!m_hdr.Create(WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY | WS_VSCROLL | WS_HSCROLL | WS_SYSMENU , CRect(), this, IDC_EDIT_MAIL_HDR))
+	DWORD dwStyle = WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY | WS_VSCROLL | WS_HSCROLL | WS_SYSMENU;
+#if 1
+	if (!m_hdr.Create(dwStyle, CRect(), this, IDC_EDIT_MAIL_HDR))
 	{
 		int deb = 1;
 	}
+#if 0
+	// Try to force LTR when arabic is set
+	DWORD exStyle1 = m_hdr.GetExStyle();
+	// Commented out. Doesn't work.
+	// Should use CWebBrowser instead of CEdit ??
+	BOOL retDirection = m_hdr.ModifyStyleEx(0xFFFFFFFF, WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR);
+	DWORD exStyle2 = m_hdr.GetExStyle();
+#endif
+#else
+	DWORD dwStyleEx = WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR;
+	if (!m_hdr.CreateEx(dwStyleEx, L"Edit", L"Test", dwStyle, CRect(), this, IDC_EDIT_MAIL_HDR))
+	{
+		int deb = 1;
+	}
+	DWORD exStyle = m_hdr.GetExStyle();
+#endif
 
 	// TODO: Move to CMainFrame
 
@@ -281,6 +300,9 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		if (pFrame->GetMessageWindowPosition() > 1)
 			m_hdrPaneLayout = 1;
 
+#if 0
+		// Didn't work properly for languages other than English
+		// Didn't investigate just Moved to LRESULT CMainFrame::OnInitializationComplete(WPARAM wParam, LPARAM lParam)
 		if (m_hdrPaneLayout == 0)
 		{
 			CMenu *menu = pFrame->GetMenu();
@@ -295,6 +317,7 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		}
 
 		pFrame->CheckMessagewindowPositionMenuOption(pFrame->GetMessageWindowPosition());
+#endif
 	}
 
 	return 0;
@@ -1197,6 +1220,12 @@ void NMsgView::OnRButtonDown(UINT nFlags, CPoint point)
 	if (command == M_CLEAR_FIND_TEXT_Id)
 	{
 		ClearSearchResultsInIHTMLDocument(m_searchID);
+
+
+		// Investigation only
+		//Sleep(2000);
+		//m_browser.Refresh2();
+
 		int deb = 1;
 	}
 	else if ((command == M_ENABLE_DISABLE_COLOR_Id))
@@ -1534,14 +1563,15 @@ int NMsgView::ShowMailHeader(int mailPosition)
 			{
 				m_hdrData.Clear();
 				m_hdrData.Append("\r\n");
-
+				
 				DWORD error;
 				UINT CP_US_ASCII = 20127;
 				//int codePage = CP_US_ASCII;
 				int codePage = CP_ACP;
 				TextUtilsEx::CodePage2WStr(m_hdrDataTmp.Data(), m_hdrDataTmp.Count(), codePage, &m_hdrData, error);
 
-				wchar_t* data = (wchar_t*)m_hdrData.Data();
+				wchar_t *data = (wchar_t*)m_hdrData.Data();
+				int deb = 1;
 			}
 		}
 	}
@@ -2017,5 +2047,21 @@ void NMsgView::RecreateMailHdrMenu()
 
 		pListView->Invalidate();
 		pListView->SelectItem(pListView->m_lastSel);
+	}
+}
+
+void NMsgView::SetFindHighlightColorStyleHTML()
+{
+	m_matchStyle = L"color: white; background-color: blue";
+	if (CMainFrame::m_highlightingColorsStyle != 0)
+	{
+		CString backgroundColor;
+		NListView::Color2Str(CMainFrame::m_colorHighlight.m_selectedBackgroundColor, backgroundColor);
+		CStringA textColor;
+		NListView::Color2Str(CMainFrame::m_colorHighlight.m_selectedTextColor, textColor);
+
+		m_matchStyle.Format(L"color: #%s; background-color: #%s", textColor, backgroundColor);
+
+		int deb = 1;
 	}
 }

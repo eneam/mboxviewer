@@ -59,6 +59,7 @@ public:
 	//CListCtrl	m_attachments;
 	CAttachments m_attachments;
 	CMenuEdit m_hdr;
+	//CEdit m_hdr;
 	SimpleString m_hdrData;
 	SimpleString m_hdrDataTmp;
 	int m_hdrWindowLen;
@@ -84,6 +85,8 @@ public:
 	int m_show_charsets;
 	int m_bImageViewer;
 	int m_hdrPaneLayout;
+
+	int GetHdrPaneLayout() { return m_hdrPaneLayout; }
 
 // Attributes
 public:
@@ -142,6 +145,8 @@ public:
 	MyPopupMenu *m_pMenu;
 	BOOL m_menuInitialed;
 	void RecreateMailHdrMenu();
+
+	void SetFindHighlightColorStyleHTML();
 
 	// Generated message map functions
 protected:

@@ -107,6 +107,17 @@ void CBrowser::OnSize(UINT nType, int cx, int cy)
 	m_ie.MoveWindow( 0, 0, cx, cy );
 }
 
+void CBrowser::Refresh2(int level)
+{
+	// pointer to a VARIANT of type VT_I4 or VT_I2 that specifies one of the
+
+	COleVariant* pvarLevel = new COleVariant((long)(level), VT_I4);
+
+	m_ie.Refresh2(pvarLevel);
+
+	delete pvarLevel;
+}
+
 void CBrowser::Navigate(LPCWSTR url, DWORD flags)
 {
 	COleVariant* pvarURL = new COleVariant( url );
@@ -183,6 +194,27 @@ void CBrowser::OnDocumentCompleteExplorer(LPDISPATCH pDisp, VARIANT FAR* URL)
 	}
 	pListView->m_bHighlightAllSet = FALSE;
 	pListView->m_bCaseSens = FALSE;
+#if 0
+	// Set text direction after documnet is complete
+	// or inject Java script into Html before calling Navigate
+	CWebBrowser2* pWebBrowser = &pMsgView->m_browser.m_ie;
+	if (pMsgView->m_browser)
+	{
+		// Access the document
+		IDispatch* pDisp;
+		//pWebBrowser->GetDocument(&pDisp);
+
+		//if (pDisp)
+		{
+			// Use JavaScript to set the direction
+			CString script = _T("document.body.style.direction = 'rtl';");
+			//pWebBrowser->Navigate2(script, NULL, NULL, NULL, NULL);
+			pWebBrowser->Navigate(script, 0);
+			//pDisp->Release();
+		}
+	}
+#endif
+
 #if 0
 	// Already set by Command UI in void CMainFrame::OnUpdateMailDownloadStatus(CCmdUI *pCmdUI)
 	if (pFrame) {
