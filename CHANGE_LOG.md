@@ -8,6 +8,7 @@ v 1.0.3.60
  - Added "File->Text Direction" option to enable users to set text direction to Default, Auto, RTL and LTR.";
  - Fixed occasional incorrect attachment names.;
  - Added "File->Highlight Color Style Config" option to enable users to set predefined background highlight color.";
+ - Enhanced to copy all index files from current to new data folder.;
  - Updated User Manual to describe new and updated features.;
 
 v 1.0.3.59

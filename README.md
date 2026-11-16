@@ -177,6 +177,18 @@ User has an option to increase the font size of GUI objects if desired. On the m
 Use CTRL+mouse scroll wheel to change the font size in the mail message window.
 
 
+Text Direction
+--------------
+
+User has an option to set text direction to AUTO, RTL and LTR in addition to Default. In AUTO mode, MBoxViewer will examine mail text characters and set text direction to LTR or RTL. In the Default mode no changes to the mail text are made.
+
+
+Text Highlight Color
+--------------------
+
+User has an option to set text highlight color to predefined yellow, green, blue and brown color.
+
+
 Changes
 -------
 
