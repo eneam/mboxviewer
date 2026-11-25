@@ -35,7 +35,7 @@
 
 #define COLOR_NOT_SET 0xFFFFFF
 #define COLOR_WHITE RGB(255, 255, 255)
-#define COLOR_DARK_TEXT RGB(214, 220, 226)
+#define COLOR_DARK_TEXT RGB(255, 255, 255)
 #define PeachPuff1 	RGB(255,218,185)
 #define AntiqueWhite3 RGB(205,192,176)
 
