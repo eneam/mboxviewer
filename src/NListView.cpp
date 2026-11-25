@@ -401,6 +401,7 @@ NListView::NListView() : m_list(this)
 
 	m_lastSel = -1;  // last/currently selected item
 	m_bInFind = FALSE;
+	m_nQuickSearchSourceList = 0;
 	m_subjectSortType = 0;
 
 	CString section_options = CString(sz_Software_mboxview) + L"\\Options";
@@ -6055,6 +6056,72 @@ void NListView::OnEditFind()
 	MboxMail::ShowHint(HintConfig::FindDialogHint, GetSafeHwnd());
 
 	LRESULT lres = this->PostMessage(WM_CMD_PARAM_ON_SWITCH_WINDOW_MESSAGE, 0, 0);
+}
+
+void NListView::ApplyQuickSearch(const CString &text)
+{
+	if (m_bInFind)
+		return;
+
+	if (text.IsEmpty())
+	{
+		if (m_nQuickSearchSourceList != 0)
+		{
+			int sourceList = m_nQuickSearchSourceList;
+			m_nQuickSearchSourceList = 0;
+			SwitchToMailList(sourceList, TRUE);
+			MboxMail::s_mails_find.SetCountKeepData(0);
+			MboxMail::m_findMails.m_lastSel = -1;
+		}
+		return;
+	}
+
+	// Remember which list was being viewed before the first keystroke so it
+	// can be restored when the search box is cleared.
+	if (m_nQuickSearchSourceList == 0)
+	{
+		m_nQuickSearchSourceList = (MboxMail::nWhichMailList == IDC_FIND_LIST)
+			? IDC_ARCHIVE_LIST : MboxMail::nWhichMailList;
+	}
+
+	// Consecutive searches must run against the source list, not the
+	// previous result set.
+	if (MboxMail::nWhichMailList == IDC_FIND_LIST)
+		SwitchToMailList(m_nQuickSearchSourceList, TRUE);
+
+	CFindDlgParams savedParams;
+	savedParams.Copy(m_findParams);
+	int savedSearchType = m_SearchType;
+
+	m_findParams.SetDflts();
+	m_findParams.m_string = text;
+	m_findParams.m_bFrom = TRUE;
+	m_findParams.m_bSubject = TRUE;
+	m_findParams.m_bTo = FALSE;
+	m_findParams.m_bCC = FALSE;
+	m_findParams.m_bBCC = FALSE;
+	m_findParams.m_bContent = FALSE;
+	m_findParams.m_bAttachments = FALSE;
+	m_findParams.m_bAttachmentName = FALSE;
+	m_findParams.m_bHighlightAll = FALSE;
+	m_findParams.m_bCaseSensitive = FALSE;
+	m_findParams.m_bWholeWord = FALSE;
+	m_findParams.m_bFindNext = TRUE;
+	m_findParams.m_bFindAll = TRUE;
+	m_findParams.m_bFindAllMailsThatDontMatch = FALSE;
+	m_findParams.m_filterDates = FALSE;
+	m_SearchType = 0;  // basic search, headers only
+
+	m_bInFind = TRUE;
+
+	DoFastFind(0, TRUE, 0, TRUE);
+
+	if (MboxMail::nWhichMailList != IDC_FIND_LIST)
+		SwitchToMailList(IDC_FIND_LIST, TRUE);
+
+	m_bInFind = FALSE;
+	m_findParams.Copy(savedParams);
+	m_SearchType = savedSearchType;
 }
 
 int NListView::CheckMatch(int i, CStringA &searchString)

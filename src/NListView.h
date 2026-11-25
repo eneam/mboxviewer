@@ -326,6 +326,7 @@ public:
 	BOOL MatchIfFieldFolded(int mailPosition, char *fld);
 	// 
 	int CheckMatch(int which, CStringA &searchString);
+	void ApplyQuickSearch(const CString &text);
 	
 	int MatchHeaderFldSingleAddress(int fldIndx, CStringA &fld, UINT hdrFldCodePage, CFindAdvancedParams &params, int pos = 1);
 	int MatchHeaderFld(int fldIndx, CStringA &fld, UINT hdrFldCodePage, CFindAdvancedParams &params, int pos = 1);
@@ -358,6 +359,7 @@ public:
 
 	// BOOL m_bFindNext;  // FIXMEFIXME
 	BOOL m_bInFind;
+	int m_nQuickSearchSourceList;  // mail list to restore when quick search is cleared
 	HTREEITEM m_which;
 
 	int SelectItem(int which, BOOL ignoreViewMessageHeader = FALSE);

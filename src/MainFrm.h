@@ -509,6 +509,8 @@ public:
 	afx_msg void OnNMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButton2();
 	afx_msg void OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnEnChangeQuickSearch();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnViewUserselectedmails();
 	afx_msg void OnUpdateViewUserselectedmails(CCmdUI *pCmdUI);
 	afx_msg void OnHelpMboxviewhelp();

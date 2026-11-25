@@ -111,6 +111,8 @@ int CMainFrame::m_highlightingColorsStyle = 0; // 0 == default; system defined
 ColorHighlight CMainFrame::m_colorHighlight;
 
 #define MaxShellExecuteErrorCode 32
+#define QUICK_SEARCH_TIMER_ID 1001
+#define QUICK_SEARCH_CUE_BANNER 0x1501
 
 MBoxViewerDB::MBoxViewerDB()
 {
@@ -300,6 +302,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_EDIT_LIST, &CMainFrame::OnNMCustomdrawEditList)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMainFrame::OnBnClickedButton2)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
+	ON_EN_CHANGE(IDC_QUICK_SEARCH, &CMainFrame::OnEnChangeQuickSearch)
+	ON_WM_TIMER()
 	ON_COMMAND(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnViewUserselectedmails)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnUpdateViewUserselectedmails)
 	ON_COMMAND(ID_HELP_MBOXVIEWHELP, &CMainFrame::OnHelpMboxviewhelp)
@@ -625,6 +629,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create dialogbar\n");
 		return -1;		// fail to create
 	}
+
+	CWnd *pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
+	if (pQuickSearch)
+		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)L"Search sender or subject");
 
 	DWORD dwCtrlStyle = RBS_BANDBORDERS;
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP;
@@ -2559,6 +2567,30 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 	}
 	int deb = 1;
+}
+
+void CMainFrame::OnEnChangeQuickSearch()
+{
+	KillTimer(QUICK_SEARCH_TIMER_ID);
+	SetTimer(QUICK_SEARCH_TIMER_ID, 250, NULL);
+}
+
+void CMainFrame::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == QUICK_SEARCH_TIMER_ID)
+	{
+		KillTimer(nIDEvent);
+
+		CString text;
+		m_wndDlgBar.GetDlgItemText(IDC_QUICK_SEARCH, text);
+
+		NListView *pListView = GetListView();
+		if (pListView)
+			pListView->ApplyQuickSearch(text);
+		return;
+	}
+
+	CFrameWnd::OnTimer(nIDEvent);
 }
 
 void CMainFrame::OnViewUserselectedmails()
