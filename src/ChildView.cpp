@@ -47,6 +47,7 @@
 CChildView::CChildView(int msgViewPosition)
 {
 	m_msgViewPosition = msgViewPosition;
+	m_bAdjustingColumns = FALSE;
 }
 
 CChildView::~CChildView()
@@ -153,7 +154,8 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	GetClientRect(rect);
 	CSize treeSize = rect.Size();
 
-	treeSize.cx = 177;
+	// 3-column layout defaults: folders | message list | reading pane.
+	treeSize.cx = 220;
 	treeSize.cy = 200;
 
 	int tree_frameCx = treeSize.cx;
@@ -207,7 +209,7 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CSize listSize;
 
-	listSize.cx = 700;
+	listSize.cx = 420;
 	listSize.cy = 200;
 
 	int list_frameCx = listSize.cx;
@@ -332,6 +334,57 @@ void CChildView::GetMsgPosition(int &row, int &col)
 	}
 }
 
+void CChildView::EnsureThreeColumnsVisible(int cx)
+{
+	if (m_bAdjustingColumns || (m_msgViewPosition <= 1) || (cx <= 0))
+		return;
+
+	int treeWidth = 0;
+	int treeMin = 0;
+	int innerWidth = 0;
+	int innerMin = 0;
+	m_verSplitter.GetColumnInfo(0, treeWidth, treeMin);
+	m_horSplitter.GetColumnInfo(0, innerWidth, innerMin);
+
+	// treeWidth == 0 means the user hid the folders pane; keep it hidden.
+	if ((treeWidth <= 0) || (innerWidth <= 0))
+		return;
+
+	const int minTreeWidth = 160;
+	const int minInnerWidth = 200;
+	const int minLastWidth = 180;
+	int lastWidth = cx - treeWidth - innerWidth;
+	if (lastWidth >= minLastWidth)
+		return;
+
+	if (cx < minTreeWidth + minInnerWidth + minLastWidth)
+	{
+		treeWidth = cx / 3;
+		innerWidth = cx / 3;
+	}
+	else
+	{
+		int excess = minLastWidth - lastWidth;
+
+		int reduce = innerWidth - minInnerWidth;
+		if (reduce > excess)
+			reduce = excess;
+		innerWidth -= reduce;
+		excess -= reduce;
+
+		reduce = treeWidth - minTreeWidth;
+		if (reduce > excess)
+			reduce = excess;
+		treeWidth -= reduce;
+	}
+
+	m_bAdjustingColumns = TRUE;
+	m_verSplitter.SetColumnInfo(0, treeWidth, 0);
+	m_horSplitter.SetColumnInfo(0, innerWidth, 0);
+	m_verSplitter.RecalcLayout();
+	m_bAdjustingColumns = FALSE;
+}
+
 void CChildView::OnSize(UINT nType, int cx, int cy) 
 {
 	CWnd::OnSize(nType, cx, cy);
@@ -349,6 +402,7 @@ void CChildView::OnSize(UINT nType, int cx, int cy)
 		return;
 
 	m_verSplitter.MoveWindow(0, 0, cx, cy);	
+	EnsureThreeColumnsVisible(cx);
 }
 
 

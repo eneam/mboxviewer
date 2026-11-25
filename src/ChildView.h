@@ -55,8 +55,11 @@ public:
 	void GetListPosition(int &row, int &col);
 	void GetMsgPosition(int &row, int &col);
 
+	void EnsureThreeColumnsVisible(int cx);
+
 	CNSplit	m_verSplitter, m_horSplitter;
 	int m_msgViewPosition;
+	BOOL m_bAdjustingColumns;
 
 // Attributes
 public:

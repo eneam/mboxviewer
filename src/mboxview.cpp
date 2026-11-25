@@ -2249,7 +2249,9 @@ int deb = 1;
 
 	g_tu.Init();
 
-	DWORD msgViewPosition = 1;
+	// Default layout: 3 columns (folders | message list | reading pane).
+	// Bottom and left reading pane modes remain available from the existing menu.
+	DWORD msgViewPosition = 2;
 	BOOL retval;
 	retval = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"messageWindowPosition", msgViewPosition);
 	if (retval == TRUE) {
