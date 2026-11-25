@@ -82,6 +82,7 @@ MBoxViewerDB CMainFrame::m_ViewerGlobalDB;
 CommandLineParms CMainFrame::m_commandLineParms;
 
 ColorStylesDB CMainFrame::m_ColorStylesDB;
+BOOL CMainFrame::m_bDarkTheme = FALSE;
 
 BOOL CMainFrame::m_relaxedMboxFileValidation = FALSE;
 BOOL CMainFrame::m_relativeInlineImageFilePath = TRUE;
@@ -301,6 +302,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_FIND_LIST, &CMainFrame::OnNMCustomdrawFindList)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_EDIT_LIST, &CMainFrame::OnNMCustomdrawEditList)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMainFrame::OnBnClickedButton2)
+	ON_BN_CLICKED(ID_VIEW_TOGGLE_THEME, &CMainFrame::OnViewToggleTheme)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
 	ON_EN_CHANGE(IDC_QUICK_SEARCH, &CMainFrame::OnEnChangeQuickSearch)
 	ON_WM_TIMER()
@@ -428,6 +430,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_ColorStylesDB.LoadFromRegistry();
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	m_bDarkTheme = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"darkTheme");
+	if (m_bDarkTheme)
+		m_ColorStylesDB.m_colorStyles.SetDarkTheme();
 
 	m_colorStyleDlg = 0;
 	m_NamePatternParams.SetDflts();
@@ -633,6 +639,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CWnd *pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
 	if (pQuickSearch)
 		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)L"Search sender or subject");
+
+	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
+	if (pThemeButton)
+		pThemeButton->SetWindowText(m_bDarkTheme ? L"Light" : L"Dark");
 
 	DWORD dwCtrlStyle = RBS_BANDBORDERS;
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP;
@@ -2591,6 +2601,24 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 	}
 
 	CFrameWnd::OnTimer(nIDEvent);
+}
+
+void CMainFrame::OnViewToggleTheme()
+{
+	m_bDarkTheme = !m_bDarkTheme;
+	if (m_bDarkTheme)
+		m_ColorStylesDB.m_colorStyles.SetDarkTheme();
+	else
+		m_ColorStylesDB.m_colorStyles.SetColorStyle(ColorStylesDB::ColorDefault);
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"darkTheme", m_bDarkTheme);
+
+	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
+	if (pThemeButton)
+		pThemeButton->SetWindowText(m_bDarkTheme ? L"Light" : L"Dark");
+
+	PostMessage(WM_CMD_PARAM_NEW_COLOR_MESSAGE, (WPARAM)m_ColorStylesDB.m_selectedColorStyle, 0);
 }
 
 void CMainFrame::OnViewUserselectedmails()

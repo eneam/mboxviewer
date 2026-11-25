@@ -35,6 +35,7 @@
 
 #define COLOR_NOT_SET 0xFFFFFF
 #define COLOR_WHITE RGB(255, 255, 255)
+#define COLOR_DARK_TEXT RGB(224, 224, 224)
 #define PeachPuff1 	RGB(255,218,185)
 #define AntiqueWhite3 RGB(205,192,176)
 
@@ -59,6 +60,7 @@ public:
 
 	void SetDefaults();
 	void SetColorStyle(int colorStyle);
+	void SetDarkTheme();
 
 	void CopyArray(DWORD *array, int arrayLength);
 	DWORD GetColor(int index);

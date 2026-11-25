@@ -5034,6 +5034,8 @@ void NListView::AppendBodyStyle(CStringA &hdr, CStringA& textDirection)
 			hdr.Append(colorStr);
 			hdr.Append(";");
 		}
+		if (CMainFrame::m_bDarkTheme)
+			hdr.Append("color: #E0E0E0;");
 		hdr.Append("}");
 	}
 }
@@ -15950,6 +15952,7 @@ BOOL NListView::OnEraseBkgnd(CDC* pDC)
 	//if (!m_bApplyColorStyle) color = RGB(255, 255, 255);
 
 	m_list.SetBkColor(color);
+	m_list.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 	pDC->FillRect(&rect, &CBrush(color));
 
 	return TRUE;

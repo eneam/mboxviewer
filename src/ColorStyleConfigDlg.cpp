@@ -461,6 +461,7 @@ void ColorStyleConfig::SetDefaults()
 	}
 	m_ColorTbl[MailConversion1] = PeachPuff1;
 	m_ColorTbl[MailConversion2] = AntiqueWhite3;
+	m_ReplaceAllWhiteBackgrounTags = TRUE;
 }
 
 void ColorStyleConfig::SetColorStyle(int colorStyle)
@@ -625,6 +626,23 @@ void ColorStyleConfig::SetColorStyle(int colorStyle)
 		m_ColorTbl[MailConversion2] = RGB(205, 192, 196);
 	}
 	int deb = 1;
+}
+
+void ColorStyleConfig::SetDarkTheme()
+{
+	for (int i = 0; i < MailMaxPanes; i++)
+	{
+		m_ColorTbl[i] = RGB(36, 36, 36);
+	}
+	m_ColorTbl[MailArchiveList] = RGB(32, 32, 32);
+	m_ColorTbl[MailSummaryList] = RGB(40, 40, 40);
+	m_ColorTbl[MailMessage] = RGB(28, 28, 28);
+	m_ColorTbl[MailMessageAttachments] = RGB(36, 36, 36);
+	m_ColorTbl[MailSummaryTitles] = RGB(48, 48, 48);
+	m_ColorTbl[MailMessageHeader] = RGB(36, 36, 36);
+	m_ColorTbl[MailConversion1] = RGB(70, 45, 45);
+	m_ColorTbl[MailConversion2] = RGB(45, 55, 70);
+	m_ReplaceAllWhiteBackgrounTags = TRUE;
 }
 
 void ColorStyleConfig::CopyArray(DWORD *table, int tableLength)

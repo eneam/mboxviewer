@@ -433,6 +433,7 @@ public:
 	BOOL WriteMTPServerConfig(MailConfig &serverConfig, CFile &fp);
 
 	static ColorStylesDB m_ColorStylesDB;
+	static BOOL m_bDarkTheme;
 
 	void OpenFolderAndSubfolders(CString &path);
 	void OpenRootFolderAndSubfolders(CString &path);
@@ -511,6 +512,7 @@ public:
 	afx_msg void OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnEnChangeQuickSearch();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnViewToggleTheme();
 	afx_msg void OnViewUserselectedmails();
 	afx_msg void OnUpdateViewUserselectedmails(CCmdUI *pCmdUI);
 	afx_msg void OnHelpMboxviewhelp();
