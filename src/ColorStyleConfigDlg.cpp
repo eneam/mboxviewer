@@ -630,18 +630,21 @@ void ColorStyleConfig::SetColorStyle(int colorStyle)
 
 void ColorStyleConfig::SetDarkTheme()
 {
+	// Surface scale: deeper base, lighter elevated panes. No pure black,
+	// no shadows: hierarchy comes from progressive lightness (dark UI guidance).
 	for (int i = 0; i < MailMaxPanes; i++)
 	{
-		m_ColorTbl[i] = RGB(36, 36, 36);
+		m_ColorTbl[i] = RGB(24, 27, 31);
 	}
-	m_ColorTbl[MailArchiveList] = RGB(32, 32, 32);
-	m_ColorTbl[MailSummaryList] = RGB(40, 40, 40);
-	m_ColorTbl[MailMessage] = RGB(28, 28, 28);
-	m_ColorTbl[MailMessageAttachments] = RGB(36, 36, 36);
-	m_ColorTbl[MailSummaryTitles] = RGB(48, 48, 48);
-	m_ColorTbl[MailMessageHeader] = RGB(36, 36, 36);
-	m_ColorTbl[MailConversion1] = RGB(70, 45, 45);
-	m_ColorTbl[MailConversion2] = RGB(45, 55, 70);
+	m_ColorTbl[MailArchiveList] = RGB(18, 20, 23);
+	m_ColorTbl[MailSummaryList] = RGB(30, 33, 38);
+	m_ColorTbl[MailMessage] = RGB(38, 42, 47);
+	m_ColorTbl[MailMessageAttachments] = RGB(30, 33, 38);
+	m_ColorTbl[MailSummaryTitles] = RGB(45, 49, 55);
+	m_ColorTbl[MailMessageHeader] = RGB(38, 42, 47);
+	// Desaturated semantic surfaces stay legible without visual vibration.
+	m_ColorTbl[MailConversion1] = RGB(66, 49, 52);
+	m_ColorTbl[MailConversion2] = RGB(46, 57, 67);
 	m_ReplaceAllWhiteBackgrounTags = TRUE;
 }
 

@@ -2519,13 +2519,14 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 		CRect rect = pNMCD->rc;
 		HDC hDC = pNMCD->hdc;
 
-#define LightGreen 	RGB(193,255,193) // green
+		COLORREF background = m_bDarkTheme ? RGB(52, 74, 64) : RGB(193, 255, 193);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0);
 
 		if (dc.Attach(hDC))
 		{
-			dc.FillRect(&rect, &CBrush(LightGreen));
+			dc.FillRect(&rect, &CBrush(background));
 			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(RGB(0, 0, 0));
+			dc.SetTextColor(foreground);
 
 			dc.Detach();
 		}
@@ -2570,13 +2571,14 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 		CRect rect = pNMCD->rc;
 		HDC hDC = pNMCD->hdc;
 
-#define LightGray 	RGB(240,240,240) // gray
+		COLORREF background = m_bDarkTheme ? RGB(45, 49, 55) : RGB(240, 240, 240);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0);
 
 		if (dc.Attach(hDC))
 		{
-			dc.FillRect(&rect, &CBrush(LightGray));
+			dc.FillRect(&rect, &CBrush(background));
 			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(RGB(0, 0, 0));
+			dc.SetTextColor(foreground);
 
 			dc.Detach();
 		}
