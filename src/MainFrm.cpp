@@ -305,6 +305,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_BN_CLICKED(ID_VIEW_TOGGLE_THEME, &CMainFrame::OnViewToggleTheme)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
 	ON_EN_CHANGE(IDC_QUICK_SEARCH, &CMainFrame::OnEnChangeQuickSearch)
+	ON_BN_CLICKED(IDC_QUICK_SEARCH_ICON, &CMainFrame::OnEnChangeQuickSearch)
 	ON_WM_TIMER()
 	ON_COMMAND(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnViewUserselectedmails)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnUpdateViewUserselectedmails)
@@ -639,9 +640,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CWnd *pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
 	if (pQuickSearch)
 	{
-		CString cueBanner = L"Search sender or subject";
+		CString cueBanner = L"Pesquisar remetente ou assunto";
 		ResHelper::TranslateString(cueBanner);
 		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)cueBanner);
+		CWnd* pSearchIcon = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH_ICON);
+		if (pSearchIcon)
+			pSearchIcon->ModifyStyle(0, SS_OWNERDRAW | SS_NOTIFY);
 	}
 
 	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
@@ -2589,6 +2593,10 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CMainFrame::OnEnChangeQuickSearch()
 {
+	CWnd* pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
+	if (pQuickSearch && GetFocus() != pQuickSearch)
+		pQuickSearch->SetFocus();
+
 	KillTimer(QUICK_SEARCH_TIMER_ID);
 	SetTimer(QUICK_SEARCH_TIMER_ID, 250, NULL);
 }
@@ -7738,6 +7746,33 @@ void CMainFrame::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStru
 
 void CMainFrame::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
+	if (nIDCtl == IDC_QUICK_SEARCH_ICON && lpDrawItemStruct && lpDrawItemStruct->hDC)
+	{
+		CDC dc;
+		dc.Attach(lpDrawItemStruct->hDC);
+		CRect rect = lpDrawItemStruct->rcItem;
+
+		COLORREF background = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH) ?
+			::GetSysColor(COLOR_WINDOW) : ::GetSysColor(COLOR_3DFACE);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(90, 90, 90);
+		dc.FillRect(&rect, &CBrush(background));
+
+		CPen pen(PS_SOLID, 1, foreground);
+		CPen* oldPen = dc.SelectObject(&pen);
+		int left = rect.left + 3;
+		int top = rect.top + 2;
+		int size = min(rect.Width() - 6, rect.Height() - 4);
+		if (size >= 6)
+		{
+			dc.Ellipse(left, top, left + size - 3, top + size - 3);
+			dc.MoveTo(left + size - 4, top + size - 4);
+			dc.LineTo(left + size, top + size);
+		}
+		dc.SelectObject(oldPen);
+		dc.Detach();
+		return;
+	}
+
 	MyPopupMenu::OnDrawItem(nIDCtl, lpDrawItemStruct);
 	int deb = 1;
 }

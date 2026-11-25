@@ -628,6 +628,7 @@
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
 #define IDC_QUICK_SEARCH                59150
+#define IDC_QUICK_SEARCH_ICON            59151
 
 // Next default values for new objects
 // 
