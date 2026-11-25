@@ -35,6 +35,7 @@
 
 #include "stdafx.h"
 #include "MyCButton.h"
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -55,7 +56,7 @@ MyCButton::MyCButton()
 
 	m_crBkColor = ::GetSysColor(COLOR_3DFACE); // Initializing background color to the system face color.
 	//m_crBkColor = YELLOW;
-	m_crTextColor = BLACK; // Initializing text color to black; not abl to change anyway
+	m_crTextColor = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : BLACK;
 	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
 

@@ -249,7 +249,7 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_attachments.SetExtendedStyle(LVS_EX_LABELTIP | m_attachments.GetExtendedStyle());
 
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
-	m_attachments.SetTextColor(RGB(0, 0, 0));
+	m_attachments.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 	if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName))
 		if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Verdana"))
 			m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Arial");

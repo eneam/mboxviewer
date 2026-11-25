@@ -40,6 +40,7 @@
 #include "SerializationHelper.h"
 #include "MimeHelper.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 
 #ifdef USE_STACK_WALKER
 #include "StackWalker.h"
@@ -3156,12 +3157,12 @@ Message body
 You can set by selecting "Optional Header" as the search Target and set the following conditions as the Optional Header :
 
 Optional Header Fields:
-: X-TO-ADDR …Extracts a unique email address included in TO
-: X-CC-ADDR …Extracts a unique email address included in CC
-: X-TO-CC-ADDR …Extracts a unique email address included in TO and CC
-: X-TO-DOMAIN …Extracts a unique domain included in TO
-: X-CC-DOMAIN …Extracts a unique domain included in CC
-: X-TO-CC-DOMAIN …Extracts a unique domain included in TO and CC
+: X-TO-ADDR ï¿½Extracts a unique email address included in TO
+: X-CC-ADDR ï¿½Extracts a unique email address included in CC
+: X-TO-CC-ADDR ï¿½Extracts a unique email address included in TO and CC
+: X-TO-DOMAIN ï¿½Extracts a unique domain included in TO
+: X-CC-DOMAIN ï¿½Extracts a unique domain included in CC
+: X-TO-CC-DOMAIN ï¿½Extracts a unique domain included in TO and CC
 */
 
 /*
@@ -6341,11 +6342,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bodyWidth.Append(scale);
 		if (1)
 		{
-			CStringA fontColor = "black";  // TODO: probably no harm done setting to black always
+			CStringA fontColor = CMainFrame::m_bDarkTheme ? "white" : "black";
 			CStringA bdyBackgroundColor;
 			if (bodyBackgroundColor.IsEmpty())
 			{
-				bdyBackgroundColor = "background-color:#FFFFFF;color:black;";
+				bdyBackgroundColor = CMainFrame::m_bDarkTheme ?
+					"background-color:#262A2F;color:white;" : "background-color:#FFFFFF;color:black;";
 			}
 			else // if (!bodyBackgroundColor.IsEmpty())
 			{
@@ -6553,10 +6555,12 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 
 		CStringA bodyWidth = "width:";
 		bodyWidth.Append(scale);
-		CStringA bodyBackgroundColor = "background-color:#FFFFFF;";
+		CStringA bodyBackgroundColor = CMainFrame::m_bDarkTheme ?
+			"background-color:#262A2F;" : "background-color:#FFFFFF;";
+		CStringA bodyFontColor = CMainFrame::m_bDarkTheme ? "white" : "black";
 		//bdy = "\r\n<div style=\'width:auto;position:initial;float:left;color:black;background-color:#FFFFFF;" + margin + "text-align:left\'>\r\n";
 		alignmentAttrib = "float:" + textAlignment + ";text-align:" + textAlignment + ";";
-		bdy = "\r\n<div style=\"position:initial;color:black;overflow-wrap:break-word !important;"
+		bdy = "\r\n<div style=\"position:initial;color:" + bodyFontColor + ";overflow-wrap:break-word !important;"
 			+ alignmentAttrib
 			+ bodyWidth + margin + bodyBackgroundColor
 			+ "\">\r\n";
@@ -6565,7 +6569,9 @@ int MboxMail::printSingleMailToHtmlFile(/*out*/CFile &fp, int mailPosition, /*in
 		bdy = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=" + bdycharset + "\">";
 		bdy.Append("<style>\r\n");
 		bdy.Append(preStyle);
-		bdy.Append("\r\n</style></head><body bgColor=#ffffff><br>\r\n");
+		bdy.Append(CMainFrame::m_bDarkTheme ?
+			"\r\n</style></head><body bgColor=#262A2F><br>\r\n" :
+			"\r\n</style></head><body bgColor=#ffffff><br>\r\n");
 		fp.Write(bdy, bdy.GetLength());
 
 		if (textConfig.m_nCodePageId && (pageCode != 0) && (pageCode != textConfig.m_nCodePageId))
@@ -6759,20 +6765,21 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldName
 {
 	MY_USES_CONVERSION;
 	const int lineHeight = 120;
+	const char* fontColor = CMainFrame::m_bDarkTheme ? "white" : "black";
 	if (hdrFieldConfig.m_bHdrFontDflt == 0)
 	{
 		int nameFontSize = hdrFieldConfig.m_nHdrFontSize;
 		int textFontSize = hdrFieldConfig.m_nHdrFontSize;
 
-		fldTextFontStyle.Format("overflow-wrap:break-word;color:black;font-size:%dpx;line-height:%d%%;", textFontSize, lineHeight);
+		fldTextFontStyle.Format("overflow-wrap:break-word;color:%s;font-size:%dpx;line-height:%d%%;", fontColor, textFontSize, lineHeight);
 
 		if (hdrFieldConfig.m_bHdrBoldFldName)
 		{
-			fldNameFontStyle.Format("color:black;font-weight:bold;font-size:%dpx;line-height:%d%%;", nameFontSize, lineHeight);
+			fldNameFontStyle.Format("color:%s;font-weight:bold;font-size:%dpx;line-height:%d%%;", fontColor, nameFontSize, lineHeight);
 		}
 		else
 		{
-			fldNameFontStyle.Format("color:black;font-size:%dpx; line-height:%d%%;", nameFontSize, lineHeight);
+			fldNameFontStyle.Format("color:%s;font-size:%dpx; line-height:%d%%;", fontColor, nameFontSize, lineHeight);
 		}
 	}
 	else
@@ -6815,11 +6822,11 @@ int MboxMail::CreateFldFontStyle(HdrFldConfig &hdrFieldConfig, CStringA &fldName
 		if (hdrFieldConfig.m_HdrFldFontText.m_bIsItalic)
 			textFontStyle = "italic";
 
-		fldNameFontStyle.Format("color:black;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
-			nameFontStyle, nameFontWeight, nameFontSize, lineHeight, nameFont, nameFontFamily);
+		fldNameFontStyle.Format("color:%s;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
+			fontColor, nameFontStyle, nameFontWeight, nameFontSize, lineHeight, nameFont, nameFontFamily);
 
-		fldTextFontStyle.Format("overflow-wrap:break-word;color:black;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
-			textFontStyle, textFontWeight, textFontSize, lineHeight, textFont, textFontFamily);
+		fldTextFontStyle.Format("overflow-wrap:break-word;color:%s;font-style:%s;font-weight:%s;font-size:%dpx;line-height:%d%%;font-family:\"%s\",%s;",
+			fontColor, textFontStyle, textFontWeight, textFontSize, lineHeight, textFont, textFontFamily);
 	}
 	return 1;
 }
@@ -11865,7 +11872,7 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 	else if (hintNumber == HintConfig::FindDialogHint)
 	{
 		hintText.Append(
-			L"You can specify single ‘*’ character as the search string to FIND dialog to find subset of mails:\n"
+			L"You can specify single ï¿½*ï¿½ character as the search string to FIND dialog to find subset of mails:\n"
 			"\n"
 			"1. Find mails that have CC header field by checking out CC check box only.\n\n"
 			"2. Find mails that have BCC header field by checking out BCC check box only.\n\n"
@@ -11876,7 +11883,7 @@ void MboxMail::CreateHintText(int hintNumber, CString& hintText)
 	else if (hintNumber == HintConfig::AdvancedFindDialogHint)
 	{
 		hintText.Append(
-			L"You can specify single ‘*’ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
+			L"You can specify single ï¿½*ï¿½ character as the search string in any of the Filter fields in Advanced Find dialog to find subset of mails:\n"
 			"\n"
 			"1. Find all mails that have CC header field by checking out CC check box only.\n\n"
 			"2. Find all mails that have BCC header field by checking out BCC check box only.\n\n"

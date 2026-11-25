@@ -2516,7 +2516,7 @@ int NListView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	int d = 1;
 
 	m_list.SendMessage((CCM_FIRST + 0x7), 5, 0); // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
-	m_list.SetTextColor (::GetSysColor(COLOR_WINDOWTEXT));
+	m_list.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : ::GetSysColor(COLOR_WINDOWTEXT));
 	NListView::ResetFont();
 
 	CMainFrame *pFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetApp()->m_pMainWnd);
@@ -3009,7 +3009,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					}
 
 					dc.SetBkMode(TRANSPARENT);
-					dc.SetTextColor(RGB(0, 0, 0));
+					dc.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 				}
 				else
 				{
@@ -3023,7 +3023,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 					{
 						dc.FillRect(&rect0, &CBrush(color));
 						dc.SetBkMode(TRANSPARENT);
-						dc.SetTextColor(RGB(0, 0, 0));
+						dc.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 					}
 				}
 
@@ -3241,7 +3241,7 @@ void NListView::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					dc.FillRect(&rect, &CBrush(color));
 					dc.SetBkMode(TRANSPARENT);
-					dc.SetTextColor(RGB(0, 0, 0));
+					dc.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 				}
 
 				dc.Detach();

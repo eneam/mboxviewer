@@ -304,6 +304,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMainFrame::OnBnClickedButton2)
 	ON_BN_CLICKED(ID_VIEW_TOGGLE_THEME, &CMainFrame::OnViewToggleTheme)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
+	ON_NOTIFY(NM_CUSTOMDRAW, ID_VIEW_TOGGLE_THEME, &CMainFrame::OnNMCustomdrawToggleTheme)
 	ON_EN_CHANGE(IDC_QUICK_SEARCH, &CMainFrame::OnEnChangeQuickSearch)
 	ON_BN_CLICKED(IDC_QUICK_SEARCH_ICON, &CMainFrame::OnEnChangeQuickSearch)
 	ON_WM_TIMER()
@@ -2501,12 +2502,13 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
+	BOOL selected = TRUE;
 	CWnd *p = m_wndDlgBar.GetDlgItem((int)pNMCD->dwItemSpec);
 	if (p) {
 		CButton *button = (CButton*)p;
-		int nFlags = button->GetCheck();
+		selected = (button->GetCheck() != 0);
 
-		if (nFlags == 0)
+		if (!selected && !m_bDarkTheme)
 			return;
 		int deb = 1;
 	}
@@ -2519,7 +2521,8 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 		CRect rect = pNMCD->rc;
 		HDC hDC = pNMCD->hdc;
 
-		COLORREF background = m_bDarkTheme ? RGB(52, 74, 64) : RGB(193, 255, 193);
+		COLORREF background = m_bDarkTheme ?
+			(selected ? RGB(52, 74, 64) : RGB(30, 33, 38)) : RGB(193, 255, 193);
 		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0);
 
 		if (dc.Attach(hDC))
@@ -2553,6 +2556,31 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 	CMainFrame::OpenHelpFile(helpFileName, h);
 
 	return;
+}
+
+void CMainFrame::OnNMCustomdrawToggleTheme(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	*pResult = 0;
+
+	if (m_bDarkTheme && pNMCD->dwDrawStage == CDDS_PREPAINT)
+	{
+		CString text;
+		m_wndDlgBar.GetDlgItemText(ID_VIEW_TOGGLE_THEME, text);
+		CDC dc;
+		CRect rect = pNMCD->rc;
+		if (dc.Attach(pNMCD->hdc))
+		{
+			dc.FillRect(&rect, &CBrush(RGB(45, 49, 55)));
+			dc.SetBkMode(TRANSPARENT);
+			dc.SetTextColor(COLOR_DARK_TEXT);
+			dc.DrawText(text, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+			dc.Detach();
+		}
+		*pResult = CDRF_SKIPDEFAULT;
+	}
+	else
+		*pResult = CDRF_DODEFAULT;
 }
 
 void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
