@@ -2035,6 +2035,9 @@ BOOL CmboxviewApp::InitInstance()
 	MboxMail::m_HintConfig.LoadHintBitmap();
 
 	CString languageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
+	if (languageName.IsEmpty())
+		languageName = L"portuguese";
+
 	if (!languageName.IsEmpty() && (languageName.CompareNoCase(L"english") != 0))
 	{
 		CString processFolderPath;

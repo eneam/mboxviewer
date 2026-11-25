@@ -63,6 +63,7 @@ public:
 	CWnd* m_pParent;
 
 	CString m_lastFolderName;
+	CStringArray m_languageFolders;  // parallel to the displayed language names
 	DerivedCListBox m_listBox;
 	//CListBox m_listBox;
 	CString m_LanguageName;  // font family such as 

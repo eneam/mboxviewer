@@ -83,6 +83,18 @@ END_MESSAGE_MAP()
 
 // SelectLanguageDlg message handlers
 
+static void GetLanguageDisplayName(const CString& folderName, CString& displayName)
+{
+	if (folderName.CompareNoCase(L"english") == 0)
+		displayName = L"English";
+	else if (folderName.CompareNoCase(L"portuguese") == 0)
+		displayName = L"Portugu\x00EAs de Portugal";
+	else if (folderName.CompareNoCase(L"portuguese-brazil") == 0)
+		displayName = L"Portugu\x00EAs (Brasil)";
+	else
+		displayName = folderName;
+}
+
 
 void SelectLanguageDlg::OnBnClickedStaticSelectLang1()
 {
@@ -98,7 +110,15 @@ BOOL SelectLanguageDlg::OnInitDialog()
 
 	LoadLanguages();
 
-	int lastIndex = m_listBox.FindStringExact(0, m_lastFolderName);
+	int lastIndex = -1;
+	for (int i = 0; i < m_languageFolders.GetSize(); i++)
+	{
+		if (m_languageFolders[i].CompareNoCase(m_lastFolderName) == 0)
+		{
+			lastIndex = i;
+			break;
+		}
+	}
 	if (lastIndex < 0)
 		lastIndex = 0;
 	int retIndex = m_listBox.SetCurSel(lastIndex);
@@ -114,6 +134,8 @@ BOOL SelectLanguageDlg::OnInitDialog()
 
 void SelectLanguageDlg::LoadLanguages()
 {
+	m_languageFolders.RemoveAll();
+
 	CFileFind finder;
 
 	// build a string with wildcards
@@ -128,7 +150,10 @@ void SelectLanguageDlg::LoadLanguages()
 	// start working for files
 	BOOL bWorking = finder.FindFile(strWildcard);
 
-	m_listBox.AddString(L"english");
+	CString displayName;
+	GetLanguageDisplayName(L"english", displayName);
+	m_listBox.AddString(displayName);
+	m_languageFolders.Add(L"english");
 	while (bWorking)
 	{
 		bWorking = finder.FindNextFile();
@@ -148,7 +173,9 @@ void SelectLanguageDlg::LoadLanguages()
 
 			if (FolderName.CompareNoCase(L"english") != 0)
 			{
-				m_listBox.AddString(FolderName);
+				GetLanguageDisplayName(FolderName, displayName);
+				m_listBox.AddString(displayName);
+				m_languageFolders.Add(FolderName);
 			}
 		}
 	}
@@ -161,12 +188,9 @@ void SelectLanguageDlg::OnBnClickedOk()
 
 	int nSel = m_listBox.GetCurSel();
 
-	if ((nSel >= 0) && (nSel < m_listBox.GetCount()))
+	if ((nSel >= 0) && (nSel < m_languageFolders.GetSize()))
 	{
-		CString text;
-		m_listBox.GetText(nSel, text);
-
-		m_LanguageName = text;
+		m_LanguageName = m_languageFolders[nSel];
 	}
 
 	CDialogEx::OnOK();

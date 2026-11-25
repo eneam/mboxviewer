@@ -638,11 +638,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CWnd *pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
 	if (pQuickSearch)
-		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)L"Search sender or subject");
+	{
+		CString cueBanner = L"Search sender or subject";
+		ResHelper::TranslateString(cueBanner);
+		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)cueBanner);
+	}
 
 	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
 	if (pThemeButton)
-		pThemeButton->SetWindowText(m_bDarkTheme ? L"Light" : L"Dark");
+	{
+		CString themeText = m_bDarkTheme ? L"Light" : L"Dark";
+		ResHelper::TranslateString(themeText);
+		pThemeButton->SetWindowText(themeText);
+	}
 
 	DWORD dwCtrlStyle = RBS_BANDBORDERS;
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP;
@@ -2616,7 +2624,11 @@ void CMainFrame::OnViewToggleTheme()
 
 	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
 	if (pThemeButton)
-		pThemeButton->SetWindowText(m_bDarkTheme ? L"Light" : L"Dark");
+	{
+		CString themeText = m_bDarkTheme ? L"Light" : L"Dark";
+		ResHelper::TranslateString(themeText);
+		pThemeButton->SetWindowText(themeText);
+	}
 
 	PostMessage(WM_CMD_PARAM_NEW_COLOR_MESSAGE, (WPARAM)m_ColorStylesDB.m_selectedColorStyle, 0);
 }
@@ -7274,7 +7286,7 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	CString lastLanguageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
 
 	if (lastLanguageName.IsEmpty())
-		lastLanguageName = L"english";
+		lastLanguageName = L"portuguese";
 
 	CString lastFolderName = lastLanguageName;
 

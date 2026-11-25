@@ -299,9 +299,13 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 			CString errorText;
 			if (FileUtils::WCopyFile(sourcePath, dlgFile.GetPathName(), FALSE, errorText) == FALSE)
 			{
+				CString fmt = L"Could not save attachment.\n\n%s";
+				ResHelper::TranslateString(fmt);
 				CString txt;
-				txt.Format(L"Could not save attachment.\n\n%s", (LPCTSTR)errorText);
-				MyMessageBox(GetSafeHwnd(), txt, L"Save Attachment", MB_APPLMODAL | MB_ICONERROR | MB_OK);
+				txt.Format(fmt, (LPCTSTR)errorText);
+				CString caption = L"Save Attachment";
+				ResHelper::TranslateString(caption);
+				MyMessageBox(GetSafeHwnd(), txt, caption, MB_APPLMODAL | MB_ICONERROR | MB_OK);
 			}
 		}
 	}
