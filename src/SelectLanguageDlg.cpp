@@ -83,6 +83,18 @@ END_MESSAGE_MAP()
 
 // SelectLanguageDlg message handlers
 
+static void GetLanguageDisplayName(const CString& folderName, CString& displayName)
+{
+	if (folderName.CompareNoCase(L"english") == 0)
+		displayName = L"English";
+	else if (folderName.CompareNoCase(L"portuguese") == 0)
+		displayName = L"Portugu\x00EAs de Portugal";
+	else if (folderName.CompareNoCase(L"portuguese-brazil") == 0)
+		displayName = L"Portugu\x00EAs (Brasil)";
+	else
+		displayName = folderName;
+}
+
 
 void SelectLanguageDlg::OnBnClickedStaticSelectLang1()
 {
@@ -98,7 +110,15 @@ BOOL SelectLanguageDlg::OnInitDialog()
 
 	LoadLanguages();
 
-	int lastIndex = m_listBox.FindStringExact(0, m_lastFolderName);
+	int lastIndex = -1;
+	for (int i = 0; i < m_languageFolders.GetSize(); i++)
+	{
+		if (m_languageFolders[i].CompareNoCase(m_lastFolderName) == 0)
+		{
+			lastIndex = i;
+			break;
+		}
+	}
 	if (lastIndex < 0)
 		lastIndex = 0;
 	int retIndex = m_listBox.SetCurSel(lastIndex);
@@ -114,6 +134,8 @@ BOOL SelectLanguageDlg::OnInitDialog()
 
 void SelectLanguageDlg::LoadLanguages()
 {
+	m_languageFolders.RemoveAll();
+
 	CFileFind finder;
 
 	// build a string with wildcards
@@ -128,7 +150,10 @@ void SelectLanguageDlg::LoadLanguages()
 	// start working for files
 	BOOL bWorking = finder.FindFile(strWildcard);
 
-	m_listBox.AddString(L"english");
+	CString displayName;
+	GetLanguageDisplayName(L"english", displayName);
+	m_listBox.AddString(displayName);
+	m_languageFolders.Add(L"english");
 	while (bWorking)
 	{
 		bWorking = finder.FindNextFile();
@@ -148,7 +173,9 @@ void SelectLanguageDlg::LoadLanguages()
 
 			if (FolderName.CompareNoCase(L"english") != 0)
 			{
-				m_listBox.AddString(FolderName);
+				GetLanguageDisplayName(FolderName, displayName);
+				m_listBox.AddString(displayName);
+				m_languageFolders.Add(FolderName);
 			}
 		}
 	}
@@ -161,12 +188,9 @@ void SelectLanguageDlg::OnBnClickedOk()
 
 	int nSel = m_listBox.GetCurSel();
 
-	if ((nSel >= 0) && (nSel < m_listBox.GetCount()))
+	if ((nSel >= 0) && (nSel < m_languageFolders.GetSize()))
 	{
-		CString text;
-		m_listBox.GetText(nSel, text);
-
-		m_LanguageName = text;
+		m_LanguageName = m_languageFolders[nSel];
 	}
 
 	CDialogEx::OnOK();
@@ -192,7 +216,7 @@ DerivedCListBox::DerivedCListBox()
 
 	m_crBkColor = ::GetSysColor(COLOR_3DFACE); // Initializing background color to the system face color.
 	//m_crBkColor = YELLOW;
-	m_crTextColor = BLACK; // Initializing text color to black; not abl to change anyway
+	m_crTextColor = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : BLACK;
 	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
 
@@ -217,7 +241,9 @@ HBRUSH DerivedCListBox::CtlColor(CDC* pDC, UINT nCtlColor)
 
 	hbr = (HBRUSH)m_brBkgnd; // Passing a Handle to the Brush
 	pDC->SetBkColor(m_crBkColor); // Setting the Color of the Text Background to the one passed by the Dialog
-	pDC->SetTextColor(m_crTextColor); // TODO: doesn't work ; Setting the Text Color to the one Passed by the Dialog
+	BOOL darkBackground = (GetRValue(m_crBkColor) + GetGValue(m_crBkColor) + GetBValue(m_crBkColor)) < 384;
+	pDC->SetTextColor(CMainFrame::m_bDarkTheme ?
+		(darkBackground ? COLOR_DARK_TEXT : RGB(0, 0, 0)) : m_crTextColor);
 
 	return hbr;
 }

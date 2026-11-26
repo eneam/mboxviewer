@@ -284,7 +284,8 @@ void CBrowser::BeforeNavigate(LPDISPATCH pDisp /* pDisp */, VARIANT* URL,
 
 		url = L"about:<html><head><style>body{background-color: #";
 		url.Append(colorStr);
-		url.Append(L";}</style></head><body></body></html><br>");
+		url.Append(CMainFrame::m_bDarkTheme ? L";color:#FFFFFF;}" : L";}");
+		url.Append(L"</style></head><body></body></html><br>");
 	}
 
 	if ((strURL.CompareNoCase(url) != 0) 

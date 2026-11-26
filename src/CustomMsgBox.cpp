@@ -208,7 +208,7 @@ BOOL CustomMsgBox::OnInitDialog()
 	// Width will not be used
 
 	HFONT hfntOld = (HFONT)dc.SelectObject(hfntNew);
-	dc.SetTextColor(RGB(0, 0, 0));
+	dc.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 
 	CSize textSize;
 	if (m_textStr.GetLength() != 0)

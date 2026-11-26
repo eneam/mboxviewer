@@ -4,6 +4,7 @@
 #include "stdafx.h"
 //#include "afxdialogex.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 #include "MyCDialogBar.h"
 
 #ifdef _DEBUG
@@ -19,6 +20,7 @@ IMPLEMENT_DYNAMIC(MyCDialogBar, CDialogBar)
 
 MyCDialogBar::MyCDialogBar()
 {
+	m_darkBackgroundBrush.CreateSolidBrush(RGB(30, 33, 38));
 	int deb = 1;
 }
 
@@ -36,6 +38,7 @@ void MyCDialogBar::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(MyCDialogBar, CDialogBar)
 	//ON_MESSAGE(WM_INITDIALOG, OnInitDialog)   // not needed for ToolTips
 	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &MyCDialogBar::OnTtnNeedText)
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 
@@ -58,6 +61,18 @@ LRESULT MyCDialogBar::OnInitDialog(WPARAM wParam, LPARAM lParam)
 	return bRet;
 }
 #endif
+
+HBRUSH MyCDialogBar::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	if (CMainFrame::m_bDarkTheme)
+	{
+		pDC->SetTextColor(COLOR_DARK_TEXT);
+		pDC->SetBkColor(RGB(30, 33, 38));
+		pDC->SetBkMode(TRANSPARENT);
+		return (HBRUSH)m_darkBackgroundBrush.GetSafeHandle();
+	}
+	return CDialogBar::OnCtlColor(pDC, pWnd, nCtlColor);
+}
 
 BOOL MyCDialogBar::OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 {

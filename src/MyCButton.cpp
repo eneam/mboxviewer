@@ -35,6 +35,7 @@
 
 #include "stdafx.h"
 #include "MyCButton.h"
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -55,7 +56,7 @@ MyCButton::MyCButton()
 
 	m_crBkColor = ::GetSysColor(COLOR_3DFACE); // Initializing background color to the system face color.
 	//m_crBkColor = YELLOW;
-	m_crTextColor = BLACK; // Initializing text color to black; not abl to change anyway
+	m_crTextColor = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : BLACK;
 	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
 
@@ -79,7 +80,9 @@ HBRUSH MyCButton::CtlColor(CDC* pDC, UINT nCtlColor)
 
 	hbr = (HBRUSH)m_brBkgnd; // Passing a Handle to the Brush
 	pDC->SetBkColor(m_crBkColor); // Setting the Color of the Text Background to the one passed by the Dialog
-	pDC->SetTextColor(m_crTextColor); // TODO: doesn't work ; Setting the Text Color to the one Passed by the Dialog
+	BOOL darkBackground = (GetRValue(m_crBkColor) + GetGValue(m_crBkColor) + GetBValue(m_crBkColor)) < 384;
+	pDC->SetTextColor(CMainFrame::m_bDarkTheme ?
+		(darkBackground ? COLOR_DARK_TEXT : RGB(0, 0, 0)) : m_crTextColor);
 
 	return hbr;
 }

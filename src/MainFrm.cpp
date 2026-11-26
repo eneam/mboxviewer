@@ -82,6 +82,7 @@ MBoxViewerDB CMainFrame::m_ViewerGlobalDB;
 CommandLineParms CMainFrame::m_commandLineParms;
 
 ColorStylesDB CMainFrame::m_ColorStylesDB;
+BOOL CMainFrame::m_bDarkTheme = FALSE;
 
 BOOL CMainFrame::m_relaxedMboxFileValidation = FALSE;
 BOOL CMainFrame::m_relativeInlineImageFilePath = TRUE;
@@ -111,6 +112,8 @@ int CMainFrame::m_highlightingColorsStyle = 0; // 0 == default; system defined
 ColorHighlight CMainFrame::m_colorHighlight;
 
 #define MaxShellExecuteErrorCode 32
+#define QUICK_SEARCH_TIMER_ID 1001
+#define QUICK_SEARCH_CUE_BANNER 0x1501
 
 MBoxViewerDB::MBoxViewerDB()
 {
@@ -299,7 +302,12 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_FIND_LIST, &CMainFrame::OnNMCustomdrawFindList)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_EDIT_LIST, &CMainFrame::OnNMCustomdrawEditList)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMainFrame::OnBnClickedButton2)
+	ON_BN_CLICKED(ID_VIEW_TOGGLE_THEME, &CMainFrame::OnViewToggleTheme)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_BUTTON2, &CMainFrame::OnNMCustomdrawButton2)
+	ON_NOTIFY(NM_CUSTOMDRAW, ID_VIEW_TOGGLE_THEME, &CMainFrame::OnNMCustomdrawToggleTheme)
+	ON_EN_CHANGE(IDC_QUICK_SEARCH, &CMainFrame::OnEnChangeQuickSearch)
+	ON_BN_CLICKED(IDC_QUICK_SEARCH_ICON, &CMainFrame::OnEnChangeQuickSearch)
+	ON_WM_TIMER()
 	ON_COMMAND(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnViewUserselectedmails)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_USERSELECTEDMAILS, &CMainFrame::OnUpdateViewUserselectedmails)
 	ON_COMMAND(ID_HELP_MBOXVIEWHELP, &CMainFrame::OnHelpMboxviewhelp)
@@ -424,6 +432,10 @@ CMainFrame::CMainFrame(int msgViewPosition):m_wndView(msgViewPosition)
 	m_ColorStylesDB.LoadFromRegistry();
 
 	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+
+	m_bDarkTheme = CProfile::_GetProfileInt(HKEY_CURRENT_USER, section_general, L"darkTheme");
+	if (m_bDarkTheme)
+		m_ColorStylesDB.m_colorStyles.SetDarkTheme();
 
 	m_colorStyleDlg = 0;
 	m_NamePatternParams.SetDflts();
@@ -624,6 +636,25 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	{
 		TRACE0("Failed to create dialogbar\n");
 		return -1;		// fail to create
+	}
+
+	CWnd *pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
+	if (pQuickSearch)
+	{
+		CString cueBanner = L"Pesquisar remetente ou assunto";
+		ResHelper::TranslateString(cueBanner);
+		pQuickSearch->SendMessage(QUICK_SEARCH_CUE_BANNER, FALSE, (LPARAM)(LPCTSTR)cueBanner);
+		CWnd* pSearchIcon = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH_ICON);
+		if (pSearchIcon)
+			pSearchIcon->ModifyStyle(0, SS_OWNERDRAW | SS_NOTIFY);
+	}
+
+	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
+	if (pThemeButton)
+	{
+		CString themeText = m_bDarkTheme ? L"Light" : L"Dark";
+		ResHelper::TranslateString(themeText);
+		pThemeButton->SetWindowText(themeText);
 	}
 
 	DWORD dwCtrlStyle = RBS_BANDBORDERS;
@@ -2471,12 +2502,13 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
+	BOOL selected = TRUE;
 	CWnd *p = m_wndDlgBar.GetDlgItem((int)pNMCD->dwItemSpec);
 	if (p) {
 		CButton *button = (CButton*)p;
-		int nFlags = button->GetCheck();
+		selected = (button->GetCheck() != 0);
 
-		if (nFlags == 0)
+		if (!selected && !m_bDarkTheme)
 			return;
 		int deb = 1;
 	}
@@ -2489,13 +2521,15 @@ void CMainFrame::NMCustomdrawEditList(NMHDR *pNMHDR, LRESULT *pResult)
 		CRect rect = pNMCD->rc;
 		HDC hDC = pNMCD->hdc;
 
-#define LightGreen 	RGB(193,255,193) // green
+		COLORREF background = m_bDarkTheme ?
+			(selected ? RGB(52, 74, 64) : RGB(30, 33, 38)) : RGB(193, 255, 193);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0);
 
 		if (dc.Attach(hDC))
 		{
-			dc.FillRect(&rect, &CBrush(LightGreen));
+			dc.FillRect(&rect, &CBrush(background));
 			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(RGB(0, 0, 0));
+			dc.SetTextColor(foreground);
 
 			dc.Detach();
 		}
@@ -2524,6 +2558,31 @@ void CMainFrame::OnBnClickedButton2()  // help button on tool bar
 	return;
 }
 
+void CMainFrame::OnNMCustomdrawToggleTheme(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	*pResult = 0;
+
+	if (m_bDarkTheme && pNMCD->dwDrawStage == CDDS_PREPAINT)
+	{
+		CString text;
+		m_wndDlgBar.GetDlgItemText(ID_VIEW_TOGGLE_THEME, text);
+		CDC dc;
+		CRect rect = pNMCD->rc;
+		if (dc.Attach(pNMCD->hdc))
+		{
+			dc.FillRect(&rect, &CBrush(RGB(45, 49, 55)));
+			dc.SetBkMode(TRANSPARENT);
+			dc.SetTextColor(COLOR_DARK_TEXT);
+			dc.DrawText(text, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+			dc.Detach();
+		}
+		*pResult = CDRF_SKIPDEFAULT;
+	}
+	else
+		*pResult = CDRF_DODEFAULT;
+}
+
 void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
@@ -2540,13 +2599,14 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 		CRect rect = pNMCD->rc;
 		HDC hDC = pNMCD->hdc;
 
-#define LightGray 	RGB(240,240,240) // gray
+		COLORREF background = m_bDarkTheme ? RGB(45, 49, 55) : RGB(240, 240, 240);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0);
 
 		if (dc.Attach(hDC))
 		{
-			dc.FillRect(&rect, &CBrush(LightGray));
+			dc.FillRect(&rect, &CBrush(background));
 			dc.SetBkMode(TRANSPARENT);
-			dc.SetTextColor(RGB(0, 0, 0));
+			dc.SetTextColor(foreground);
 
 			dc.Detach();
 		}
@@ -2559,6 +2619,56 @@ void CMainFrame::OnNMCustomdrawButton2(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 	}
 	int deb = 1;
+}
+
+void CMainFrame::OnEnChangeQuickSearch()
+{
+	CWnd* pQuickSearch = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH);
+	if (pQuickSearch && GetFocus() != pQuickSearch)
+		pQuickSearch->SetFocus();
+
+	KillTimer(QUICK_SEARCH_TIMER_ID);
+	SetTimer(QUICK_SEARCH_TIMER_ID, 250, NULL);
+}
+
+void CMainFrame::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == QUICK_SEARCH_TIMER_ID)
+	{
+		KillTimer(nIDEvent);
+
+		CString text;
+		m_wndDlgBar.GetDlgItemText(IDC_QUICK_SEARCH, text);
+
+		NListView *pListView = GetListView();
+		if (pListView)
+			pListView->ApplyQuickSearch(text);
+		return;
+	}
+
+	CFrameWnd::OnTimer(nIDEvent);
+}
+
+void CMainFrame::OnViewToggleTheme()
+{
+	m_bDarkTheme = !m_bDarkTheme;
+	if (m_bDarkTheme)
+		m_ColorStylesDB.m_colorStyles.SetDarkTheme();
+	else
+		m_ColorStylesDB.m_colorStyles.SetColorStyle(ColorStylesDB::ColorDefault);
+
+	CString section_general = CString(sz_Software_mboxview) + L"\\General";
+	CProfile::_WriteProfileInt(HKEY_CURRENT_USER, section_general, L"darkTheme", m_bDarkTheme);
+
+	CWnd *pThemeButton = m_wndDlgBar.GetDlgItem(ID_VIEW_TOGGLE_THEME);
+	if (pThemeButton)
+	{
+		CString themeText = m_bDarkTheme ? L"Light" : L"Dark";
+		ResHelper::TranslateString(themeText);
+		pThemeButton->SetWindowText(themeText);
+	}
+
+	PostMessage(WM_CMD_PARAM_NEW_COLOR_MESSAGE, (WPARAM)m_ColorStylesDB.m_selectedColorStyle, 0);
 }
 
 void CMainFrame::OnViewUserselectedmails()
@@ -4939,7 +5049,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				m_wndStatusBar.GetItemRect(paneId, &r);
 
 				COLORREF bgRet;
-				bgRet = dc.SetBkColor(::GetSysColor(COLOR_3DFACE));
+				bgRet = dc.SetBkColor(m_bDarkTheme ? RGB(30, 33, 38) : ::GetSysColor(COLOR_3DFACE));
 
 				COLORREF newBgCol = dc.GetBkColor();
 				dc.FillSolidRect(r, newBgCol);
@@ -4952,7 +5062,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 
 				COLORREF crRet = 0;
 				if (setColor)
-					crRet = dc.SetTextColor(RGB(0, 0, 200));
+					crRet = dc.SetTextColor(m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 200));
 
 				// Set font
 				CFont  *pOldFont = dc.SelectObject(&CMainFrame::m_dfltStatusBarFont);
@@ -5119,7 +5229,8 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 
 				url = "about:<html><head><style>body{background-color: #";
 				url.Append(colorStr);
-				url.Append(";}</style></head><body></body></html><br>");
+				url.Append(m_bDarkTheme ? ";color:#FFFFFF;}" : ";}");
+				url.Append("</style></head><body></body></html><br>");
 			}
 			CString wurl = MYA2W(url);
 			pMsgView->m_browser.Navigate(wurl, NULL);
@@ -7214,7 +7325,7 @@ void CMainFrame::OnDevelopmentoptionsSelectlanguage()
 	CString lastLanguageName = CProfile::_GetProfileString(HKEY_CURRENT_USER, section_general, L"language");
 
 	if (lastLanguageName.IsEmpty())
-		lastLanguageName = L"english";
+		lastLanguageName = L"portuguese";
 
 	CString lastFolderName = lastLanguageName;
 
@@ -7666,6 +7777,33 @@ void CMainFrame::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStru
 
 void CMainFrame::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
+	if (nIDCtl == IDC_QUICK_SEARCH_ICON && lpDrawItemStruct && lpDrawItemStruct->hDC)
+	{
+		CDC dc;
+		dc.Attach(lpDrawItemStruct->hDC);
+		CRect rect = lpDrawItemStruct->rcItem;
+
+		COLORREF background = m_wndDlgBar.GetDlgItem(IDC_QUICK_SEARCH) ?
+			::GetSysColor(COLOR_WINDOW) : ::GetSysColor(COLOR_3DFACE);
+		COLORREF foreground = m_bDarkTheme ? COLOR_DARK_TEXT : RGB(90, 90, 90);
+		dc.FillRect(&rect, &CBrush(background));
+
+		CPen pen(PS_SOLID, 1, foreground);
+		CPen* oldPen = dc.SelectObject(&pen);
+		int left = rect.left + 3;
+		int top = rect.top + 2;
+		int size = min(rect.Width() - 6, rect.Height() - 4);
+		if (size >= 6)
+		{
+			dc.Ellipse(left, top, left + size - 3, top + size - 3);
+			dc.MoveTo(left + size - 4, top + size - 4);
+			dc.LineTo(left + size, top + size);
+		}
+		dc.SelectObject(oldPen);
+		dc.Detach();
+		return;
+	}
+
 	MyPopupMenu::OnDrawItem(nIDCtl, lpDrawItemStruct);
 	int deb = 1;
 }

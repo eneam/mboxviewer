@@ -198,6 +198,7 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	const wchar_t *Open = L"Open";
 	const wchar_t *Print = L"Print";
+	const wchar_t *SaveAs = L"Save As...";
 	const wchar_t *OpenFileLocation = L"Open File Location";
 
 	LPNMITEMACTIVATE pnm = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -229,6 +230,9 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	const UINT M_PRINT_Id = 2;
 	MyAppendMenu(&menu, M_PRINT_Id, Print);
+
+	const UINT M_SaveAs_Id = 4;
+	MyAppendMenu(&menu, M_SaveAs_Id, SaveAs);
 
 	const UINT M_OpenFileLocation_Id = 3;
 	MyAppendMenu(&menu, M_OpenFileLocation_Id, OpenFileLocation);
@@ -280,6 +284,30 @@ void CAttachments::OnRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		int retCode = CAttachments::OpenAttachment(attachmentInfo);
 		int deb = 1;
+	}
+	else if (command == M_SaveAs_Id)
+	{
+		CStringW sourcePath = path + attachmentName;
+		CString extension;
+		FileUtils::GetFileExtension(attachmentName, extension);
+
+		CFileDialog dlgFile(FALSE, extension.IsEmpty() ? NULL : (LPCTSTR)extension,
+			attachmentName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
+			L"All Files (*.*)|*.*||", this);
+		if (dlgFile.DoModal() == IDOK)
+		{
+			CString errorText;
+			if (FileUtils::WCopyFile(sourcePath, dlgFile.GetPathName(), FALSE, errorText) == FALSE)
+			{
+				CString fmt = L"Could not save attachment.\n\n%s";
+				ResHelper::TranslateString(fmt);
+				CString txt;
+				txt.Format(fmt, (LPCTSTR)errorText);
+				CString caption = L"Save Attachment";
+				ResHelper::TranslateString(caption);
+				MyMessageBox(GetSafeHwnd(), txt, caption, MB_APPLMODAL | MB_ICONERROR | MB_OK);
+			}
+		}
 	}
 	else if (command == M_OpenFileLocation_Id)
 	{
@@ -380,6 +408,7 @@ BOOL CAttachments::OnEraseBkgnd(CDC* pDC)
 
 	SetBkColor(color);
 	BOOL ret = SetTextBkColor(color);
+	SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 	pDC->FillRect(&rect, &CBrush(color));
 
 	return TRUE;

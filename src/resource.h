@@ -623,9 +623,12 @@
 #define ID_HIGHLIGHTCOLORSTYLECONFIG_GREEN 32959
 #define ID_HIGHLIGHTCOLORSTYLECONFIG_BLUE 32960
 #define ID_HIGHLIGHTCOLORSTYLECONFIG_BROWN 32961
+#define ID_VIEW_TOGGLE_THEME             32962
 #define ID_INDICATOR_TEXT_DIRECTION     57666
 #define ID_INDICATOR_MAIL               59142
 #define ID_INDICATOR_MAIL_INDEX         59143
+#define IDC_QUICK_SEARCH                59150
+#define IDC_QUICK_SEARCH_ICON            59151
 
 // Next default values for new objects
 // 
@@ -633,7 +636,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        249
-#define _APS_NEXT_COMMAND_VALUE         32962
+#define _APS_NEXT_COMMAND_VALUE         32963
 #define _APS_NEXT_CONTROL_VALUE         1438
 #define _APS_NEXT_SYMED_VALUE           118
 #endif

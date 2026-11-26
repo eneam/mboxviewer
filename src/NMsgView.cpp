@@ -249,7 +249,7 @@ int NMsgView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_attachments.SetExtendedStyle(LVS_EX_LABELTIP | m_attachments.GetExtendedStyle());
 
 	m_attachments.SendMessage((CCM_FIRST + 0x7), 5, 0);  // #define CCM_SETVERSION          (CCM_FIRST + 0x7)
-	m_attachments.SetTextColor(RGB(0, 0, 0));
+	m_attachments.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 	if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, CMainFrame::m_dfltFontName))
 		if (!m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Verdana"))
 			m_font.CreatePointFont(CMainFrame::m_dfltPointFontSize, L"Arial");
@@ -867,15 +867,23 @@ void NMsgView::OnPaint()
 	m_rcCaption.bottom = m_rcCaption.top + nOffset;
 
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailMessageHeader);
+	COLORREF headerBg;
 	if (color == COLOR_WHITE)
 	{
-		dc.FillSolidRect(m_rcCaption, ::GetSysColor(COLOR_WINDOW));
+		headerBg = ::GetSysColor(COLOR_WINDOW);
+		dc.FillSolidRect(m_rcCaption, headerBg);
 	}
 	else
 	{
 		if (pListView && !pListView->m_bApplyColorStyle)
 			color = RGB(255, 255, 255);
-		dc.FillSolidRect(m_rcCaption, color);
+		headerBg = color;
+		dc.FillSolidRect(m_rcCaption, headerBg);
+	}
+	if (CMainFrame::m_bDarkTheme &&
+		(GetRValue(headerBg) + GetGValue(headerBg) + GetBValue(headerBg)) < 384)
+	{
+		dc.SetTextColor(COLOR_DARK_TEXT);
 	}
 	dc.Draw3dRect(m_rcCaption, ::GetSysColor(COLOR_BTNHIGHLIGHT), ::GetSysColor(COLOR_BTNSHADOW));
 

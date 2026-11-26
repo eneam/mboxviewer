@@ -233,6 +233,8 @@ void ColorStyleConfigDlg::OnNMCustomdrawColorButton(NMHDR *pNMHDR, LRESULT *pRes
 			dc.FillRect(&rect, &CBrush(m_buttonColor));
 			::FrameRect(hDC, rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
+			BOOL darkButton = (GetRValue(m_buttonColor) + GetGValue(m_buttonColor) + GetBValue(m_buttonColor)) < 384;
+			dc.SetTextColor(darkButton ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 			dc.DrawText(L"Pick Color", &rect, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 
 			dc.Detach();
@@ -461,6 +463,7 @@ void ColorStyleConfig::SetDefaults()
 	}
 	m_ColorTbl[MailConversion1] = PeachPuff1;
 	m_ColorTbl[MailConversion2] = AntiqueWhite3;
+	m_ReplaceAllWhiteBackgrounTags = TRUE;
 }
 
 void ColorStyleConfig::SetColorStyle(int colorStyle)
@@ -625,6 +628,26 @@ void ColorStyleConfig::SetColorStyle(int colorStyle)
 		m_ColorTbl[MailConversion2] = RGB(205, 192, 196);
 	}
 	int deb = 1;
+}
+
+void ColorStyleConfig::SetDarkTheme()
+{
+	// Surface scale: deeper base, lighter elevated panes. No pure black,
+	// no shadows: hierarchy comes from progressive lightness (dark UI guidance).
+	for (int i = 0; i < MailMaxPanes; i++)
+	{
+		m_ColorTbl[i] = RGB(24, 27, 31);
+	}
+	m_ColorTbl[MailArchiveList] = RGB(18, 20, 23);
+	m_ColorTbl[MailSummaryList] = RGB(30, 33, 38);
+	m_ColorTbl[MailMessage] = RGB(38, 42, 47);
+	m_ColorTbl[MailMessageAttachments] = RGB(30, 33, 38);
+	m_ColorTbl[MailSummaryTitles] = RGB(45, 49, 55);
+	m_ColorTbl[MailMessageHeader] = RGB(38, 42, 47);
+	// Desaturated semantic surfaces stay legible without visual vibration.
+	m_ColorTbl[MailConversion1] = RGB(66, 49, 52);
+	m_ColorTbl[MailConversion2] = RGB(46, 57, 67);
+	m_ReplaceAllWhiteBackgrounTags = TRUE;
 }
 
 void ColorStyleConfig::CopyArray(DWORD *table, int tableLength)

@@ -4825,6 +4825,7 @@ BOOL NTreeView::OnEraseBkgnd(CDC* pDC)
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailArchiveList);
 
 	m_tree.SetBkColor(color);
+	m_tree.SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 
 	CRect rect;
 	GetClientRect(&rect);

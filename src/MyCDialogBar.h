@@ -25,5 +25,9 @@ protected:
 public:
 	afx_msg LRESULT OnInitDialog(WPARAM, LPARAM);
 	afx_msg BOOL OnTtnNeedText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+
+private:
+	CBrush m_darkBackgroundBrush;
 };
 

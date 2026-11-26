@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "MenuEdit.h"
 #include "ResHelper.h"
+#include "MainFrm.h"
 //#include "mboxview.h"
 
 #ifdef _DEBUG
@@ -49,7 +50,7 @@ CMenuEdit::CMenuEdit()
 	m_crBkColor = ::GetSysColor(CTLCOLOR_STATIC); // Initializing background color to the system face color.
 	m_crBkColor = RGB(230, 230, 230);
     //m_crBkColor = YELLOW;
-	m_crTextColor = BLACK; // Initializing text color to black
+	m_crTextColor = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : BLACK;
     //m_crTextColor = RED;
 	m_brBkgnd.CreateSolidBrush(m_crBkColor); // Creating the Brush Color For the Edit Box Background
 }
@@ -139,7 +140,9 @@ HBRUSH CMenuEdit::CtlColor(CDC* pDC, UINT nCtlColor)
 	HBRUSH hbr;
 	hbr = (HBRUSH)m_brBkgnd; // Passing a Handle to the Brush
 	pDC->SetBkColor(m_crBkColor); // Setting the Color of the Text Background to the one passed by the Dialog
-	pDC->SetTextColor(m_crTextColor); // Setting the Text Color to the one Passed by the Dialog
+	BOOL darkBackground = (GetRValue(m_crBkColor) + GetGValue(m_crBkColor) + GetBValue(m_crBkColor)) < 384;
+	pDC->SetTextColor(CMainFrame::m_bDarkTheme ?
+		(darkBackground ? COLOR_DARK_TEXT : RGB(0, 0, 0)) : m_crTextColor);
 
 	if (nCtlColor)       // To get rid of compiler warning
 		nCtlColor += 0;
