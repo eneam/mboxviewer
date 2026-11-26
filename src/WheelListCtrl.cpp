@@ -107,6 +107,11 @@ void CWheelListCtrl::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	DWORD color = CMainFrame::m_ColorStylesDB.m_colorStyles.GetColor(ColorStyleConfig::MailSummaryTitles);
 	dc.FillRect(&rect, &CBrush(color));
 	dc.SetBkMode(TRANSPARENT);
+	if (CMainFrame::m_bDarkTheme &&
+		(GetRValue(color) + GetGValue(color) + GetBValue(color)) < 384)
+	{
+		dc.SetTextColor(COLOR_DARK_TEXT);
+	}
 
 	dc.Detach();
 

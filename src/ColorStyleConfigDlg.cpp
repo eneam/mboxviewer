@@ -233,6 +233,8 @@ void ColorStyleConfigDlg::OnNMCustomdrawColorButton(NMHDR *pNMHDR, LRESULT *pRes
 			dc.FillRect(&rect, &CBrush(m_buttonColor));
 			::FrameRect(hDC, rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
+			BOOL darkButton = (GetRValue(m_buttonColor) + GetGValue(m_buttonColor) + GetBValue(m_buttonColor)) < 384;
+			dc.SetTextColor(darkButton ? COLOR_DARK_TEXT : RGB(0, 0, 0));
 			dc.DrawText(L"Pick Color", &rect, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 
 			dc.Detach();

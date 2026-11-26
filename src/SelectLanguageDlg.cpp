@@ -241,7 +241,9 @@ HBRUSH DerivedCListBox::CtlColor(CDC* pDC, UINT nCtlColor)
 
 	hbr = (HBRUSH)m_brBkgnd; // Passing a Handle to the Brush
 	pDC->SetBkColor(m_crBkColor); // Setting the Color of the Text Background to the one passed by the Dialog
-	pDC->SetTextColor(m_crTextColor); // TODO: doesn't work ; Setting the Text Color to the one Passed by the Dialog
+	BOOL darkBackground = (GetRValue(m_crBkColor) + GetGValue(m_crBkColor) + GetBValue(m_crBkColor)) < 384;
+	pDC->SetTextColor(CMainFrame::m_bDarkTheme ?
+		(darkBackground ? COLOR_DARK_TEXT : RGB(0, 0, 0)) : m_crTextColor);
 
 	return hbr;
 }

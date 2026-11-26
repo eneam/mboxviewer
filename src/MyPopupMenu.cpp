@@ -135,8 +135,8 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	// Set the appropriate foreground and background colors. 
 	if (lpDrawItemStruct->itemState & ODS_SELECTED)
 	{
-		DWORD bkHighlight = GetSysColor(COLOR_MENUHILIGHT);
-		DWORD txtHighlight = GetSysColor(COLOR_HIGHLIGHTTEXT);
+		DWORD bkHighlight = CMainFrame::m_bDarkTheme ? RGB(45, 49, 55) : GetSysColor(COLOR_MENUHILIGHT);
+		DWORD txtHighlight = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : GetSysColor(COLOR_HIGHLIGHTTEXT);
 		if (CMainFrame::m_highlightingColorsStyle != 0)
 		{
 			bkHighlight = CMainFrame::m_colorHighlight.m_menuBackgroundColor;
@@ -149,9 +149,9 @@ void MyPopupMenu::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	else
 	{
 		clrPrevText = SetTextColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENUTEXT));
+			CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : GetSysColor(COLOR_MENUTEXT));
 		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENU));
+			CMainFrame::m_bDarkTheme ? RGB(30, 33, 38) : GetSysColor(COLOR_MENU));
 	}
 
 	hfntPrev = (HFONT)SelectObject(lpDrawItemStruct->hDC, pMyItem->m_hfont);
@@ -243,8 +243,8 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	// Set the appropriate foreground and background colors. 
 	if (lpDrawItemStruct->itemState & ODS_SELECTED)
 	{
-		DWORD bkHighlight = GetSysColor(COLOR_MENUHILIGHT);
-		DWORD txtHighlight = GetSysColor(COLOR_HIGHLIGHTTEXT);
+		DWORD bkHighlight = CMainFrame::m_bDarkTheme ? RGB(45, 49, 55) : GetSysColor(COLOR_MENUHILIGHT);
+		DWORD txtHighlight = CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : GetSysColor(COLOR_HIGHLIGHTTEXT);
 		if (CMainFrame::m_highlightingColorsStyle != 0)
 		{
 			bkHighlight = CMainFrame::m_colorHighlight.m_menuBackgroundColor;
@@ -257,9 +257,9 @@ void MyPopupMenu::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	else
 	{
 		clrPrevText = SetTextColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENUTEXT));
+			CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : GetSysColor(COLOR_MENUTEXT));
 		clrPrevBkgnd = SetBkColor(lpDrawItemStruct->hDC,
-			GetSysColor(COLOR_MENU));
+			CMainFrame::m_bDarkTheme ? RGB(30, 33, 38) : GetSysColor(COLOR_MENU));
 	}
 
 	hfntPrev = (HFONT)SelectObject(lpDrawItemStruct->hDC, pMyItem->m_hfont);

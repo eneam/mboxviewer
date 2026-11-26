@@ -185,7 +185,8 @@ void MyCustomEdit::OnPaint()
 	COLORREF color = ::GetSysColor(COLOR_3DFACE);
 	dc.FillRect(&rect, &CBrush(color));
 	dc.SetBkMode(TRANSPARENT);
-	//dc.SetTextColor(txcolor);
+	if ((GetRValue(color) + GetGValue(color) + GetBValue(color)) < 384)
+		dc.SetTextColor(COLOR_DARK_TEXT);
 
 	int xpos = 3;
 	int ypos = 3;

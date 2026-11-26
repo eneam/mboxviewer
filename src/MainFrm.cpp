@@ -5049,7 +5049,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 				m_wndStatusBar.GetItemRect(paneId, &r);
 
 				COLORREF bgRet;
-				bgRet = dc.SetBkColor(::GetSysColor(COLOR_3DFACE));
+				bgRet = dc.SetBkColor(m_bDarkTheme ? RGB(30, 33, 38) : ::GetSysColor(COLOR_3DFACE));
 
 				COLORREF newBgCol = dc.GetBkColor();
 				dc.FillSolidRect(r, newBgCol);
@@ -5062,7 +5062,7 @@ void CMainFrame::SetStatusBarPaneText(int paneId, CString &sText, BOOL setColor)
 
 				COLORREF crRet = 0;
 				if (setColor)
-					crRet = dc.SetTextColor(RGB(0, 0, 200));
+					crRet = dc.SetTextColor(m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 200));
 
 				// Set font
 				CFont  *pOldFont = dc.SelectObject(&CMainFrame::m_dfltStatusBarFont);
@@ -5229,7 +5229,8 @@ LRESULT CMainFrame::OnCmdParam_ColorChanged(WPARAM wParam, LPARAM lParam)
 
 				url = "about:<html><head><style>body{background-color: #";
 				url.Append(colorStr);
-				url.Append(";}</style></head><body></body></html><br>");
+				url.Append(m_bDarkTheme ? ";color:#FFFFFF;}" : ";}");
+				url.Append("</style></head><body></body></html><br>");
 			}
 			CString wurl = MYA2W(url);
 			pMsgView->m_browser.Navigate(wurl, NULL);

@@ -2434,7 +2434,7 @@ HBRUSH CAboutDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		pWnd->GetSafeHwnd() == m_link.GetSafeHwnd()
 		)
 	{
-		pDC->SetTextColor(RGB(0, 0, 200));
+		pDC->SetTextColor(CMainFrame::m_bDarkTheme ? COLOR_DARK_TEXT : RGB(0, 0, 200));
 		if (m_linkFont.m_hObject == NULL)
 		{
 			LOGFONT lf;

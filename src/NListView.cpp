@@ -5034,8 +5034,12 @@ void NListView::AppendBodyStyle(CStringA &hdr, CStringA& textDirection)
 			hdr.Append(colorStr);
 			hdr.Append(";");
 		}
+		else if (CMainFrame::m_bDarkTheme)
+		{
+			hdr.Append("background-color: #262A2F;");
+		}
 		if (CMainFrame::m_bDarkTheme)
-			hdr.Append("color: #E0E0E0;");
+			hdr.Append("color: #FFFFFF;");
 		hdr.Append("}");
 	}
 }
